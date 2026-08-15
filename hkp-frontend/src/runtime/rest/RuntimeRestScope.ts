@@ -1,5 +1,6 @@
 import {
   AppImpl,
+  LogEntry,
   ProcessContext,
   RuntimeApi,
   RuntimeDescriptor,
@@ -112,6 +113,13 @@ export default class RuntimeRestScope implements RuntimeScope {
             }
           } else if (msg.type === "result") {
             this.onResult(null, msg.data, null);
+          } else if (msg.type === "log" && msg.entry) {
+            // What this runtime recorded. A board attached to a coordinator has
+            // its entries kept there — the runtime sends them over its own
+            // connection, and this copy is for whoever is watching now. A board
+            // this browser coordinates (the playground, Readymade running
+            // locally) has no other destination, so this is where they surface.
+            this.emitLog(msg.entry);
           } else {
             console.warn(
               "RuntimeRestScope.runtimeOutput.onmessage unknown message type",
@@ -179,6 +187,28 @@ export default class RuntimeRestScope implements RuntimeScope {
       );
     }
     return true;
+  }
+
+  /**
+   * Entries this runtime reported, for whoever is watching.
+   *
+   * Unlike a runtime the browser hosts, nothing here produces entries: they
+   * arrive already made from the runtime that recorded them, so this only
+   * hands them on.
+   */
+  private logTargets = new Set<(entry: LogEntry) => void>();
+
+  registerLogTarget(target: (entry: LogEntry) => void): () => void {
+    this.logTargets.add(target);
+    return () => {
+      this.logTargets.delete(target);
+    };
+  }
+
+  emitLog(entry: LogEntry) {
+    for (const target of this.logTargets) {
+      target(entry);
+    }
   }
 
   getApi(): RuntimeApi {

@@ -7,6 +7,8 @@
 #include <types/data.h>
 #include <types/message.h>
 
+#include <log_entry.h>
+
 namespace hkp {
 
 class Service;
@@ -48,6 +50,19 @@ public:
   virtual void sendData(Data data, MessagePurpose purpose,
                         const std::string& sender,
                         std::function<void(Data)> callback = nullptr) = 0;
+
+  // Record something about the run in progress. Unlike a notification, which
+  // exists for whoever is watching and may be dropped when nobody is, an entry
+  // has to survive with nobody attached — a board running unwatched is exactly
+  // the case a log is for.
+  virtual void log(const Service& svc, LogLevel level, const std::string& event,
+                   const nlohmann::json& data = nullptr) = 0;
+
+  // Pass an entry a nested pipeline produced outward, unchanged. Distinct from
+  // log() because the entry already names its own run and service: re-deriving
+  // those here would relabel work done inside a sub-pipeline as the work of the
+  // service hosting it, which is the nesting the entry exists to record.
+  virtual void forwardLog(const LogEntry& entry) = 0;
 
   // Close the process lifecycle bracket for `svc` (send "call-process-finished"
   // with `data`).  Called by Service::emit when deferred async work completes,

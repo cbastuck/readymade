@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types/types.h>
+#include <log_entry.h>
 
 namespace hkp {
 
@@ -80,6 +81,12 @@ protected:
   virtual bool onBypassChanged(bool bypass);
   json& mergeBypassState(json &state) const;
   void sendNotification(const Data& params) const;
+
+  // Record something about the run in progress. The run and this service are
+  // taken from the call the host is inside, so a service says only what
+  // happened. Dropped when nothing is collecting, or outside a call.
+  void log(LogLevel level, const std::string& event,
+           const nlohmann::json& data = nullptr) const;
   void setBypass(bool bypass);
   bool isBypass() const;
 

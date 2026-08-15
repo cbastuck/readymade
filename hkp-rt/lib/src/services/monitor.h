@@ -30,6 +30,7 @@ public:
   Monitor(const std::string& instanceId)
      : Service(instanceId, serviceId())
      , m_logToConsole(false)
+     , m_logToBoard(false)
   { 
   }
 
@@ -38,6 +39,10 @@ public:
     auto j = getJSONFromData(data);
     if (j)
     {
+      if (j->contains("logToBoard"))
+      {
+        m_logToBoard = (*j)["logToBoard"];
+      }
       if (j->contains("logToConsole"))
       {
         m_logToConsole = (*j)["logToConsole"];
@@ -60,12 +65,21 @@ public:
   {
     return Service::mergeStateWith({
       { "logToConsole", m_logToConsole },
+      { "logToBoard", m_logToBoard },
       { "fileLogPath", m_fileLogPath }
     });
   }
 
   Data process(Data data) override
   {
+    if (m_logToBoard)
+    {
+      // The payload rides in `data`, which the runtime drops unless the board
+      // asked for it — so a probe left switched on cannot quietly widen what
+      // the log holds.
+      auto asJson = getJSONFromData(data);
+      log(LogLevel::Info, "monitor", asJson ? *asJson : nlohmann::json(nullptr));
+    }
     if (m_logToConsole)
     {
       using namespace hkp;
@@ -124,6 +138,10 @@ public:
 private:
   std::string m_recent;
   bool m_logToConsole;
+  // Also record what passes through into the board's log. A probe is already
+  // sitting where a board author found the flow worth watching; this keeps that
+  // judgement after the author stops watching, without a second service.
+  bool m_logToBoard;
   std::string m_fileLogPath;
 };
 

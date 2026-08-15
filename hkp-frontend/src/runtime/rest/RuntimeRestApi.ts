@@ -14,6 +14,7 @@ import {
 } from "hkp-frontend/src/types";
 import RuntimeRestScope from "./RuntimeRestScope";
 import { EngineState } from "hkp-frontend/src/BoardContext";
+import { startedRun } from "../processContext";
 
 // A runtime reports its notification WebSocket URL using its own externalIP,
 // which is 127.0.0.1 for an embedded runtime (correct only for a client on the
@@ -339,7 +340,7 @@ export async function processRuntime(
   const runtime = scope.descriptor;
 
   if (
-    !scope.sendMessageViaWebsocket(params, context || null, "processRuntime")
+    !scope.sendMessageViaWebsocket(params, startedRun(context), "processRuntime")
   ) {
     // if sending failed, we probably don't have a runtimeOutput, we send a REST request
     // TODO what if params is not an object?

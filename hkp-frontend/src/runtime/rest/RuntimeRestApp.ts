@@ -13,6 +13,11 @@ export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
   const notificationTargets = new NotificationTargets();
   return {
     getAuthenticatedUser: () => scope.authenticatedUser,
+    // A remote runtime records its own entries and carries them to the board's
+    // coordinator over its own connection; this side only proxies a view of it,
+    // so there is nothing here to record.
+    log: () => {},
+
     notify: (service: InstanceId, notification: any): void => {
       notificationTargets.notify(service, notification);
     },

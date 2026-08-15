@@ -27,6 +27,11 @@ export function createRuntimeGraphQLApp(scope: RuntimeGraphQLScope): AppImpl {
     ) => {
       notificationTargets.unregister(svc, onNotification);
     },
+    // A remote runtime records its own entries and carries them to the board's
+    // coordinator over its own connection; this side only proxies a view of it,
+    // so there is nothing here to record.
+    log: () => {},
+
     notify: (service: InstanceId, notification: any): void => {
       // TODO: the type of first parameter is bad
       if (!notificationTargets.hasCallbacks(service)) {

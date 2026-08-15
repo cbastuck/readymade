@@ -114,6 +114,9 @@ void Runtime::load(const RuntimeConfiguration& config)
   m_runtimeId = config.runtimeId;
   m_runtimeName = config.runtimeName;
   m_garbageCollected = config.garbageCollected;
+  m_logData = config.logData;
+  m_logging = config.logging;
+  m_logLevel = levelFromString(config.logLevel);
   auto services = config.services;
   for (auto &service : services)
   {
@@ -152,6 +155,9 @@ RuntimeConfiguration Runtime::getConfiguration() const
   config.runtimeName = m_runtimeName; 
   config.boardName = m_boardName;
   config.garbageCollected = m_garbageCollected;
+  config.logData = m_logData;
+  config.logging = m_logging;
+  config.logLevel = toString(m_logLevel);
 
   for (auto &svc : m_services)
   {
@@ -282,15 +288,94 @@ void Runtime::notifyProcessFinished(const Service& service, const Data& data)
   sendServiceLifecycleNotification(service, "call-process-finished", data);
 }
 
-Data Runtime::process(Data data, json context)
+Data Runtime::process(Data data, ProcessContext context)
 {
+  // Restored rather than cleared, so that a service calling back into this
+  // runtime from inside its own process — the pull a cache miss performs —
+  // leaves the outer call running under what it started with.
+  const auto previous = m_context;
+  const auto hadContext = m_hasContext;
+  m_context = context;
+  m_hasContext = true;
+
   onProcessBegin();
   if (m_services.empty())
   {
+    m_context = previous;
+    m_hasContext = hadContext;
     return data;
   }
   auto result = processFrom(*m_services.front(), data, false);
-  return onProcessEnd(result, context);
+  const auto& out = onProcessEnd(result, context);
+
+  m_context = previous;
+  m_hasContext = hadContext;
+  return out;
+}
+
+void Runtime::log(const Service& svc, LogLevel level, const std::string& event,
+                  const nlohmann::json& data)
+{
+  // Nothing to attribute an entry to means nothing worth recording: a service
+  // logging outside a call has no run, and an entry naming no run cannot be
+  // found again.
+  //
+  // Deliberately not also skipping when no local target is registered: entries
+  // leave this runtime over its socket as well, so "nobody registered a
+  // callback here" does not mean nobody is collecting. Whether anything is
+  // attached to that socket is the server's to know.
+  //
+  // Below the level the board keeps is the same as off: no entry is built.
+  if (!m_logging || levelRank(level) < levelRank(m_logLevel) || !m_hasContext)
+    return;
+
+  LogEntry entry;
+  entry.runId = m_context.runId;
+  entry.parentRunId = m_context.parentRunId;
+  entry.ts = isoTimestamp();
+  entry.runtimeId = m_runtimeId;
+  entry.serviceUuid = svc.getId();
+  entry.level = level;
+  entry.event = event;
+  if (m_logData && !data.is_null())
+    entry.data = data;
+
+  forwardLog(entry);
+}
+
+void Runtime::forwardLog(const LogEntry& entry)
+{
+  for (const auto& target : m_logTargets)
+    target(entry);
+
+  // Out to whoever is collecting this runtime's output — in a deployed board,
+  // the coordinator, which is the only instance that keeps a board's log.
+  //
+  // Captured by value rather than through `this`, as sendData is and for the
+  // same reason: this runs later, and an entry recorded just before teardown
+  // must not dereference a freed Runtime.
+  App* app = m_app.get();
+  const std::string runtimeId = m_runtimeId;
+  const nlohmann::json message = {{"type", "log"}, {"entry", entry.toJson()}};
+  app->postCallback([app, runtimeId, message]() {
+    try
+    {
+      if (auto server = app->getServer())
+      {
+        server->sendText(runtimeId, message.dump());
+      }
+    }
+    catch (const std::exception& e)
+    {
+      // Losing an entry is not worth taking the event loop down for.
+      std::cerr << "Runtime::forwardLog: dropping entry: " << e.what() << std::endl;
+    }
+  });
+}
+
+void Runtime::registerLogTarget(std::function<void(const LogEntry&)> target)
+{
+  m_logTargets.push_back(std::move(target));
 }
 
 Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore, std::function<void(Data)> callback)
@@ -307,6 +392,15 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
        ++next)
   {
     sendServiceLifecycleNotification(**next, "call-process", data);
+    // The flow itself, at debug: which service the runtime called, and below,
+    // what it returned and how long it took.
+    //
+    // Deliberately without the value flowing through. The level says how much
+    // of the shape of a run to keep, and turning it up must not also start
+    // recording the data — what flows through is recorded only where a service
+    // was configured to record it.
+    log(**next, LogLevel::Debug, "service.process");
+    const auto startedAt = std::chrono::steady_clock::now();
     data = (*next)->startProcess(data);
     if ((*next)->takeProcessDeferred())
     {
@@ -317,16 +411,33 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
       return onProcessEnd(Null());
     }
     sendServiceLifecycleNotification(**next, "call-process-finished", data);
+    {
+      LogEntry done;
+      done.runId = m_context.runId;
+      done.parentRunId = m_context.parentRunId;
+      done.ts = isoTimestamp();
+      done.runtimeId = m_runtimeId;
+      done.serviceUuid = (*next)->getId();
+      done.level = LogLevel::Debug;
+      done.event = "service.processed";
+      done.durationMs = std::chrono::duration<double, std::milli>(
+                          std::chrono::steady_clock::now() - startedAt).count();
+      if (m_logging && levelRank(LogLevel::Debug) >= levelRank(m_logLevel) && m_hasContext)
+        forwardLog(done);
+    }
     if (isNull(data)) // stop processing on null
     {
+      // Where the run ended, named. Above debug because it is the outcome of
+      // the run rather than a step in it.
+      log(**next, LogLevel::Info, "pipeline.stopped");
       return onProcessEnd(data);
     }
     if (isEarlyReturn(data))
     {
-      return onProcessEnd(getControlFlowData(data), json{}, callback);
+      return onProcessEnd(getControlFlowData(data), {}, callback);
     }
   }
-  return onProcessEnd(data, nullptr, callback);;
+  return onProcessEnd(data, {}, callback);
 }
 
 void Runtime::sendServiceLifecycleNotification(const Service& service, const std::string& state, const Data& data)
@@ -516,7 +627,7 @@ void Runtime::onProcessBegin()
   m_processDepth.increment();
 }
 
-const Data& Runtime::onProcessEnd(const Data& data, json context, std::function<void(Data)> callback)
+const Data& Runtime::onProcessEnd(const Data& data, ProcessContext context, std::function<void(Data)> callback)
 {
   if (m_processDepth.decrement() == 0)
   {  
@@ -524,15 +635,14 @@ const Data& Runtime::onProcessEnd(const Data& data, json context, std::function<
     if (!m_boardName.empty())
     {
         std::string requestId = "RUNTIME";
-        auto contextId = context["requestId"];
         auto purpose = MessagePurpose::RESULT;
         if (callback)
         {
           requestId = generateUUID();
         }
-        else if (contextId.is_string())
+        else if (!context.requestId.empty())
         {
-          requestId = contextId.get<std::string>();
+          requestId = context.requestId;
         }
         if (callback)
         {
@@ -543,7 +653,7 @@ const Data& Runtime::onProcessEnd(const Data& data, json context, std::function<
             std::cerr << "Runtime::onProcessEnd: No empty slot available in m_pendingResolve" << std::endl;
           }
         }
-        else if (contextId.is_string())
+        else if (!context.requestId.empty())
         {
           purpose = MessagePurpose::RESULT_WITH_REQUEST_ID;
         }
@@ -615,12 +725,12 @@ void Runtime::onSessionJSONData(json msg)
   auto type = msg["type"].get<std::string>();
   if (type == "processRuntime")
   {
-    process(data, context);
+    process(data, ProcessContext::fromJson(context));
   }
   else if (type == "resolveResult")
   {
     std::cout << "Need to resolve the result: " << data << context << std::endl;
-    auto requestId = context["requestId"].get<std::string>();
+    auto requestId = ProcessContext::fromJson(context).requestId;
     auto callback = findAndRemovePendingCallback(requestId);
     if (callback)
     {

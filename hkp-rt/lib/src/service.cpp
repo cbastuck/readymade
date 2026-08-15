@@ -145,6 +145,15 @@ void Service::sendNotification(const Data& value) const
   }
 }
 
+void Service::log(LogLevel level, const std::string& event,
+                  const nlohmann::json& data) const
+{
+  if (m_host)
+  {
+    m_host->log(*this, level, event, data);
+  }
+}
+
 bool Service::onBypassChanged(bool bypass)
 {
   return bypass; // accept the bypass request by default

@@ -59,6 +59,9 @@ public:
   Data process(Data data);
 
   // ── RuntimeHost ──────────────────────────────────────────────────────────
+  void log(const Service& svc, LogLevel level, const std::string& event,
+           const nlohmann::json& data = nullptr) override;
+  void forwardLog(const LogEntry& entry) override;
   Data processFrom(const Service& svc, Data data,
                    bool advanceBefore = true,
                    std::function<void(Data)> callback = nullptr) override;

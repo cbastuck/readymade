@@ -265,6 +265,43 @@ export function useCoordinatorBridge(
     }
   }, [runtimeIdsKey, sendRegistration]);
 
+  // Carry what this board's browser runtimes record to the coordinator, which
+  // is the only instance that keeps a board's log — a browser closes, and the
+  // entries have to outlive it. Remote runtimes send their own over their own
+  // connection; this is the leg only a browser can serve.
+  //
+  // Re-registered whenever the board's browser runtimes change, for the same
+  // reason the registration above is: a runtime added later would otherwise
+  // record into nothing.
+  useEffect(() => {
+    const context = boardContextRef.current;
+    if (!context) {
+      return;
+    }
+
+    const releases: Array<() => void> = [];
+    for (const runtimeId of runtimeIdsRef.current) {
+      const scope = context.scopes[runtimeId];
+      if (!scope || typeof scope.registerLogTarget !== "function") {
+        continue;
+      }
+      releases.push(
+        scope.registerLogTarget((entry) => {
+          const ws = wsRef.current;
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "log", entry }));
+          }
+        }),
+      );
+    }
+
+    return () => {
+      for (const release of releases) {
+        release();
+      }
+    };
+  }, [runtimeIdsKey]);
+
   const configureRemoteService = useCallback(
     (runtimeId: string, serviceUuid: string, config: unknown) =>
       new Promise<unknown>((resolve, reject) => {

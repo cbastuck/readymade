@@ -80,6 +80,33 @@ struct RuntimeConfiguration
    * to connect to it.
    */
   bool garbageCollected = false;
+  /**
+   * Whether this runtime records anything at all.
+   *
+   * False unless the board turns it on. A board that is not being looked into
+   * has no reason to be writing a line per call to somebody's disk, and a log
+   * kept by default is one nobody decided to keep — including for the data it
+   * holds.
+   */
+  bool logging = false;
+  /**
+   * The least severe level this runtime records.
+   *
+   * The flow itself — every service call and return — is recorded at `debug`,
+   * so this is what decides whether a board keeps a trace of what ran or only
+   * what its services chose to say.
+   */
+  std::string logLevel = "info";
+  /**
+   * Whether an entry may carry the `data` a service passed with it.
+   *
+   * Only service-authored entries have one: the flow this runtime records for
+   * itself never carries the values passing through, so nothing reaches a log
+   * unless a service was configured to put it there. That per-service opt-in is
+   * the real gate, which is why this defaults to allowed. False is a board-wide
+   * override for a deployment that must never write payloads.
+   */
+  bool logData = true;
   std::vector<ServiceConfiguration> services;
 
   // readonly values 

@@ -243,6 +243,7 @@ struct Server::impl
   void wsOnClose(crow::websocket::connection& conn);
   void reapIfAbandoned(const std::string& runtimeId);
   void sendNotification(const std::string& runtimeId, const std::string& frame);
+  void sendText(const std::string& runtimeId, const std::string& text);
 
   JsonResponse makeJsonResponse(const json &_body)
   {
@@ -872,6 +873,28 @@ void Server::impl::reapIfAbandoned(const std::string& runtimeId)
   app->removeRuntime(runtimeId);
 }
 
+void Server::impl::sendText(const std::string& runtimeId, const std::string& text)
+{
+  // A text frame rather than the binary one notifications take: what travels
+  // here is a JSON message whose `type` the receiver dispatches on, not a YAS
+  // frame carrying a Data.
+  std::lock_guard<std::mutex> lock(wsMutex);
+  auto it = wsByRuntime.find(runtimeId);
+  if (it == wsByRuntime.end())
+  {
+    return;
+  }
+  for (auto* conn : it->second)
+  {
+    auto* state = static_cast<WsConnState*>(conn->userdata());
+    if (state && state->type == "writer")
+    {
+      continue;  // write-only clients don't receive anything back
+    }
+    conn->send_text(text);
+  }
+}
+
 void Server::impl::sendNotification(const std::string& runtimeId, const std::string& frame)
 {
   std::lock_guard<std::mutex> lock(wsMutex);
@@ -894,6 +917,11 @@ void Server::impl::sendNotification(const std::string& runtimeId, const std::str
 void Server::sendNotification(const std::string& runtimeId, const std::string& frame)
 {
   m_impl->sendNotification(runtimeId, frame);
+}
+
+void Server::sendText(const std::string& runtimeId, const std::string& text)
+{
+  m_impl->sendText(runtimeId, text);
 }
 
 void Server::setAllowedUsers(const std::vector<std::string>& emails)

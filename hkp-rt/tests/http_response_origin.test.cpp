@@ -118,6 +118,11 @@ public:
                 std::function<void(Data)>) override {}
 
   void notifyProcessFinished(const Service&, const Data&) override {}
+  void log(const Service&, LogLevel, const std::string&,
+           const nlohmann::json& = nullptr) override {}
+
+  void forwardLog(const LogEntry&) override {}
+
 
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override {

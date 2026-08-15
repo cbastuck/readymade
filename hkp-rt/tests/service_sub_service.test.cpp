@@ -175,6 +175,11 @@ public:
         return s.sender == sender && s.purpose == MessagePurpose::NOTIFICATION;
       }));
   }
+  void log(const Service&, LogLevel, const std::string&,
+           const nlohmann::json& = nullptr) override {}
+
+  void forwardLog(const LogEntry&) override {}
+
 
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override {

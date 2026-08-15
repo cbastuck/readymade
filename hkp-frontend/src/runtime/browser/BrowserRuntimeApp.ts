@@ -3,6 +3,7 @@ import { findServiceUI } from "./UIRegistry";
 import {
   AppImpl,
   InstanceId,
+  LogLevel,
   ServiceAction,
   ServiceClass,
   ServiceDescriptor,
@@ -83,6 +84,15 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
 
     configureService: (svc: ServiceDescriptor, config: any) =>
       (svc as ServiceInstance).configure(config),
+
+    log: (
+      service: InstanceId,
+      level: LogLevel,
+      event: string,
+      data?: any,
+    ) => {
+      scope.log(service, level, event, data);
+    },
 
     notify: (service: InstanceId, notification: any) => {
       if (!notificationTargets.hasCallbacks(service)) {

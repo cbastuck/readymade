@@ -92,6 +92,15 @@ export interface RuntimeScope {
   serializeState?: () => any;
   setState?: (partialUpdate: { [key: string]: any }) => void;
   close?: () => Promise<void>;
+
+  /**
+   * Where this runtime's log entries go, if it keeps any.
+   *
+   * Optional because only a runtime this browser hosts records here: a scope
+   * that proxies a remote runtime has nothing to register, since that runtime
+   * carries its own entries to the coordinator over its own connection.
+   */
+  registerLogTarget?: (target: (entry: LogEntry) => void) => () => void;
 }
 
 export type ExternalInput = {
@@ -219,6 +228,14 @@ export type AppInstance = AppImpl;
 export type AppImpl = {
   getAuthenticatedUser: () => User | null;
   notify: (svc: InstanceId, notification: any) => void; // TODO: should be InstanceId instead of ServiceImpl
+  /**
+   * Record something about the run the service is being called in.
+   *
+   * Unlike `notify`, which exists for whoever is watching and may be dropped
+   * when nobody is, an entry has to survive with nobody attached. The run is
+   * taken from the call the service is inside, so it says only what happened.
+   */
+  log: (svc: InstanceId, level: LogLevel, event: string, data?: any) => void;
   next: (svc: InstanceId | null, result: any) => void;
   getServiceById: (uuid: string) => ServiceInstance | null;
   sendAction: (action: ServiceAction) => void;
@@ -315,9 +332,62 @@ export type RuntimeImpl = {
   destroyRuntime: () => Promise<void>;
 };
 
+/**
+ * What travels with a process call rather than with the data it carries.
+ *
+ * The ordered service list says what runs; this says which invocation it is
+ * running as. The distinction matters as soon as anything has to attribute work
+ * after the fact — which run produced this, and what invoked that run — because
+ * the payload cannot answer it: the same data can flow through the same
+ * services for entirely unrelated reasons.
+ *
+ * The shape is shared with the other runtimes (see TODO-CONSOLIDATION.md
+ * section 4), which is why `runId` is not folded into `requestId`: the two have
+ * different lifetimes and a run makes any number of awaited calls.
+ */
+export type LogLevel = "debug" | "info" | "warn" | "error";
+
+/**
+ * One thing worth recording about a run. Shaped as the other runtimes shape it,
+ * because a board's log is assembled by its coordinator from all of them.
+ */
+export type LogEntry = {
+  runId: string;
+  parentRunId?: string;
+  /** ISO 8601, set by the runtime that produced the entry. */
+  ts: string;
+  runtimeId: string;
+  serviceUuid: string;
+  level: LogLevel;
+  event: string;
+  data?: unknown;
+  durationMs?: number;
+};
+
 export type ProcessContext = {
+  /**
+   * Where to send a result somebody is waiting for.
+   *
+   * A *reply address*, not a run identity — it is built from a message's
+   * sender, exists only while a response is awaited, and is consumed on
+   * resolution.
+   */
   requestId: string;
   onResolve?: (result: any) => void;
+  /**
+   * Identifies one invocation of a board — one user action, one timer tick, one
+   * arriving message — across every service and runtime it reaches.
+   *
+   * Optional while the browser runtime does not mint one for every call; a
+   * context arriving from another runtime carries it.
+   */
+  runId?: string;
+  /**
+   * The run this one was invoked from, for a nested pipeline. Absent on a run
+   * triggered from outside rather than from inside another run, which is what
+   * makes a trace reconstructable as a tree rather than a list.
+   */
+  parentRunId?: string;
 };
 
 export type RuntimeApi = {
