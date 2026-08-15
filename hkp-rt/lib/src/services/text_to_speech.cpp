@@ -26,6 +26,7 @@ const std::string kDefaultServerUrl = "http://127.0.0.1:8081";
 const std::string kDefaultModel = "tts-1";
 const std::string kDefaultVoice = "af_heart";
 constexpr double kDefaultSpeed = 1.0;
+constexpr double kDefaultVariation = 0.667; // the inflect reference default
 constexpr int kDefaultSampleRate = 24000; // Kokoro synthesizes at this rate
 constexpr int kDefaultNumThreads = 2;
 constexpr double kDefaultTimeoutSec = 120.0;
@@ -142,6 +143,7 @@ public:
       return "failed to load the Kokoro model — check modelPath, voicesPath, tokensPath, dataDir";
     }
     m_sampleRate = SherpaOnnxOfflineTtsSampleRate(m_tts);
+    m_numSpeakers.store(SherpaOnnxOfflineTtsNumSpeakers(m_tts), std::memory_order_relaxed);
     m_loadedKey = key();
     return {};
   }
@@ -153,12 +155,18 @@ public:
       SherpaOnnxDestroyOfflineTts(m_tts);
       m_tts = nullptr;
     }
+    m_numSpeakers.store(0, std::memory_order_relaxed);
     m_loadedKey.clear();
   }
 
+  // Cached rather than read off the engine on demand: getState() runs on the
+  // thread serving the request, and the engine pointer is only valid while
+  // localMutex is held — which a worker holds for the whole of a synthesis.
+  // Taking that lock here would stall a state read for seconds; an atomic
+  // answers immediately and cannot observe a half-released engine.
   int numSpeakers() const
   {
-    return m_tts ? SherpaOnnxOfflineTtsNumSpeakers(m_tts) : 0;
+    return m_numSpeakers.load(std::memory_order_relaxed);
   }
 
   Synthesis generate(const std::string& text, double speed, int speakerId)
@@ -198,6 +206,7 @@ private:
 
   const SherpaOnnxOfflineTts* m_tts = nullptr;
   int m_sampleRate = kDefaultSampleRate;
+  std::atomic<int> m_numSpeakers{ 0 };
   std::string m_loadedKey;
 };
 
@@ -368,6 +377,18 @@ struct TextToSpeechImpl
     return numThreads;
 #endif
   }
+
+  // How many speakers the loaded Kokoro model offers, i.e. the range `speakerId`
+  // may take. Zero until the model has been loaded, which happens lazily on the
+  // first synthesis — and zero on a build without the local backend, or on the
+  // inflect backend, whose model is single-speaker and has no speaker input.
+  int numSpeakersValue() const {
+#ifdef HKP_SPEECH_ENABLED
+    return local.numSpeakers();
+#else
+    return 0;
+#endif
+  }
 };
 
 TextToSpeech::TextToSpeech(const std::string& instanceId)
@@ -484,33 +505,80 @@ std::string TextToSpeech::getServiceId() const
   return serviceId();
 }
 
+// Backend-specific settings are reported only when they can mean something:
+// the selected backend's group always, another backend's group only once it
+// holds a value someone chose. A board that has never used Kokoro therefore
+// carries no Kokoro paths, and a board that has keeps them across a switch.
+//
+// The second half of that rule is what makes this safe. Board persistence
+// replaces a service's stored state with whatever getState() returns
+// (`state: config` in hkp-frontend/src/core/boardPersistence.ts), so a field
+// dropped here is a field erased from the board on the next save. Reporting a
+// configured-but-inactive group costs a few lines of JSON; omitting it would
+// silently discard the model paths of whichever backend the board is not
+// using at the moment it happens to be saved.
 json TextToSpeech::getState() const
 {
-  return Service::mergeStateWith(json{
+  json state{
     { "backend", m_impl->backend },
-    { "serverUrl", m_impl->serverUrl },
-    { "model", m_impl->model },
-    { "voice", m_impl->voice },
-    { "speakerId", m_impl->speakerId },
-    { "modelPath", m_impl->modelPathRef() },
-    { "voicesPath", m_impl->voicesPathRef() },
-    { "tokensPath", m_impl->tokensPathRef() },
-    { "dataDir", m_impl->dataDirRef() },
-    { "lexicon", m_impl->lexiconRef() },
-    { "dictDir", m_impl->dictDirRef() },
-    { "lang", m_impl->langRef() },
-    { "numThreads", m_impl->numThreadsRef() },
-    { "modelDir", m_impl->inflectModelDirRef() },
-    { "espeakDataPath", m_impl->inflectEspeakDataPathRef() },
-    { "inflectNumThreads", m_impl->inflectNumThreadsRef() },
-    { "variation", m_impl->inflectVariationRef() },
-    { "seed", m_impl->inflectSeedRef() },
-    { "splitOnAbbreviations", m_impl->inflectSplitOnAbbreviationsRef() },
     { "speed", m_impl->speed },
     { "sampleRate", kDefaultSampleRate },
-    { "timeoutSec", m_impl->timeoutSec },
     { "status", m_impl->status }
-  });
+  };
+
+  const bool kokoroConfigured =
+    !m_impl->modelPathRef().empty() || !m_impl->voicesPathRef().empty() ||
+    !m_impl->tokensPathRef().empty() || !m_impl->dataDirRef().empty() ||
+    !m_impl->lexiconRef().empty() || !m_impl->dictDirRef().empty() ||
+    !m_impl->langRef().empty() || m_impl->numThreadsRef() != kDefaultNumThreads ||
+    m_impl->speakerId != 0;
+
+  if (m_impl->backend == "local" || kokoroConfigured)
+  {
+    state["modelPath"] = m_impl->modelPathRef();
+    state["voicesPath"] = m_impl->voicesPathRef();
+    state["tokensPath"] = m_impl->tokensPathRef();
+    state["dataDir"] = m_impl->dataDirRef();
+    state["lexicon"] = m_impl->lexiconRef();
+    state["dictDir"] = m_impl->dictDirRef();
+    state["lang"] = m_impl->langRef();
+    state["numThreads"] = m_impl->numThreadsRef();
+    state["speakerId"] = m_impl->speakerId;
+    // Read-only: the range speakerId may take, 0 until the model lazy-loads.
+    state["numSpeakers"] = m_impl->numSpeakersValue();
+  }
+
+  const bool inflectConfigured =
+    !m_impl->inflectModelDirRef().empty() ||
+    !m_impl->inflectEspeakDataPathRef().empty() ||
+    m_impl->inflectNumThreadsRef() != 0 ||
+    m_impl->inflectVariationRef() != kDefaultVariation ||
+    m_impl->inflectSeedRef() != 0 ||
+    !m_impl->inflectSplitOnAbbreviationsRef();
+
+  if (m_impl->backend == "inflect" || inflectConfigured)
+  {
+    state["modelDir"] = m_impl->inflectModelDirRef();
+    state["espeakDataPath"] = m_impl->inflectEspeakDataPathRef();
+    state["inflectNumThreads"] = m_impl->inflectNumThreadsRef();
+    state["variation"] = m_impl->inflectVariationRef();
+    state["seed"] = m_impl->inflectSeedRef();
+    state["splitOnAbbreviations"] = m_impl->inflectSplitOnAbbreviationsRef();
+  }
+
+  const bool serverConfigured =
+    m_impl->serverUrl != kDefaultServerUrl || m_impl->model != kDefaultModel ||
+    m_impl->voice != kDefaultVoice || m_impl->timeoutSec != kDefaultTimeoutSec;
+
+  if (m_impl->backend == "server" || serverConfigured)
+  {
+    state["serverUrl"] = m_impl->serverUrl;
+    state["model"] = m_impl->model;
+    state["voice"] = m_impl->voice;
+    state["timeoutSec"] = m_impl->timeoutSec;
+  }
+
+  return Service::mergeStateWith(state);
 }
 
 Data TextToSpeech::process(Data data)

@@ -22,7 +22,8 @@
  *             voice (server backend voice name),
  *             modelPath, voicesPath, tokensPath, dataDir, lexicon, dictDir
  *             (local backend: the sherpa Kokoro model files),
- *             speakerId (local backend speaker index),
+ *             speakerId (local backend speaker index; the reported read-only
+ *             numSpeakers state gives its valid range once the model is loaded),
  *             modelDir, espeakDataPath, inflectNumThreads, variation (0.0-1.0),
  *             seed, splitOnAbbreviations (inflect backend),
  *             speed (0.5-2.0), lang, numThreads,
@@ -45,6 +46,13 @@
  * needs are a fraction of sherpa's stack, which is what makes it the local
  * backend that fits on mobile. Selecting a backend the build omits is reported
  * as an error naming the option to rebuild with.
+ *
+ * Reported state is scoped to the backend: a backend's settings appear while it
+ * is selected, and otherwise only once they hold a value someone chose, so a
+ * board carries the fields it uses rather than every backend's. configure()
+ * still accepts any of them at any time — the scoping is what is reported, not
+ * what is settable, which is what lets a board pre-load a backend it has not
+ * switched to yet.
  *
  * Both local backends phonemize through espeak-ng, whose configuration and
  * working buffers are process globals. Calls are serialized on one process-wide
