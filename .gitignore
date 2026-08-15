@@ -12,3 +12,6 @@ tmp
 hookup.to
 sign.local.env.sh 
 .cache
+
+# Python bytecode from scripts/
+__pycache__/
