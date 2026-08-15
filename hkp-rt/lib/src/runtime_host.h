@@ -49,6 +49,12 @@ public:
                         const std::string& sender,
                         std::function<void(Data)> callback = nullptr) = 0;
 
+  // Close the process lifecycle bracket for `svc` (send "call-process-finished"
+  // with `data`).  Called by Service::emit when deferred async work completes,
+  // so a host that surfaces a per-service processing indicator can bracket the
+  // real duration.  Hosts without such an indicator may ignore it.
+  virtual void notifyProcessFinished(const Service& svc, const Data& data) = 0;
+
   // Instantiate a new SubRuntime from a JSON array of service-config objects.
   // ownerInParent is the service in this host that owns the new SubRuntime.
   virtual std::shared_ptr<SubRuntime> createSubRuntime(

@@ -147,8 +147,20 @@ export default class RuntimeRestScope implements RuntimeScope {
       return false;
     }
     if (isData(params)) {
-      // TODO: add support to resolve results with binary Data
-      const blob = serializeYasMessage(params, context?.requestId || "");
+      // The binary frame has no `type` field, so the purpose carries the
+      // distinction the JSON branch below gets from `type`: a resolveResult is
+      // a NOTIFICATION addressed to the pending request named in `sender`,
+      // while a processRuntime push must be anything else for the receiver to
+      // run it through the pipeline rather than look for a callback.
+      const purpose =
+        type === "resolveResult"
+          ? MessagePurpose.NOTIFICATION
+          : MessagePurpose.RESULT;
+      const blob = serializeYasMessage(
+        params,
+        context?.requestId || "",
+        purpose,
+      );
       this.runtimeOutput.send(blob);
     } else {
       // TextData { type: TextSymbol, text: "..." } carries a string result

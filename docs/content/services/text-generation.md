@@ -1,6 +1,6 @@
 # Text Generation
 
-Generates text with a local large language model running in the Python runtime — via an OpenAI-compatible server or fully in-process.
+Generates text with a local large language model — via an OpenAI-compatible server or fully in-process.
 
 ---
 
@@ -9,6 +9,10 @@ Generates text with a local large language model running in the Python runtime �
 | Runtime | Service ID |
 |---|---|
 | Python (hkp-python) | `text-generation` |
+| C++ (hkp-rt) | `text-generation` |
+
+Both runtimes expose the same state keys, the same input shapes, and the same
+output JSON, so a board can move the service between them unchanged.
 
 ---
 
@@ -26,8 +30,8 @@ Two backends are available, selected by the `backend` state:
   need a custom llama.cpp build, such as the 1-bit Bonsai 27B reference
   model via the PrismML fork.
 - **`local`** — the service loads a standard GGUF (Qwen, Llama, Mistral, ...)
-  directly into the Python runtime via `llama-cpp-python`. No external
-  server process is needed.
+  directly into the runtime process — via `llama-cpp-python` in hkp-python,
+  via embedded llama.cpp in hkp-rt. No external server process is needed.
 
 The natural producer is the **Speech To Text** service — its output JSON
 carries a `text` key that pipes straight in — and the natural consumer is
@@ -44,13 +48,27 @@ OpenAI-compatible server, e.g.:
 llama-server -m Bonsai-27B-Q1_0.gguf --port 8081 -ngl 99
 ```
 
-**Local backend** — the in-process engine is an optional extra of hkp-python:
+**Local backend (hkp-python)** — the in-process engine is an optional extra:
 
 ```
 pip install "hkp-python[llm]"
 ```
 
-plus a GGUF file on disk (e.g. `Qwen3-0.6B-Q8_0.gguf` from Hugging Face).
+**Local backend (hkp-rt)** — llama.cpp is embedded at build time. It is on by
+default on macOS, Linux, and Windows, and off for iOS and Android builds, which
+would otherwise pay its compile time and binary size:
+
+```
+cmake -B build -DHKP_LLAMA_ENABLED=ON ..
+```
+
+On Apple silicon the Metal shaders are embedded in the binary, so nothing has
+to sit next to the runtime at load time. When the flag is off the service still
+loads and the server backend still works; only `backend: "local"` reports that
+it was not compiled in.
+
+Either way you also need a GGUF file on disk (e.g. `Qwen3-0.6B-Q8_0.gguf` from
+Hugging Face).
 
 ---
 
@@ -89,8 +107,13 @@ local mode, add `/no_think` to the system prompt to suppress reasoning
 
 For thinking models the reasoning is split off into the `thinking` field;
 `text` carries only the answer. Unsupported input, an unreachable server,
-or a missing `[llm]` extra produce `{ "error": "..." }` with a hint instead
-of crashing the pipeline.
+or a local backend that is unavailable produce `{ "error": "..." }` with a
+hint instead of crashing the pipeline.
+
+In `local` mode `model` reports the GGUF path rather than a server-assigned
+model name. Streamed `streamText` notifications carry the raw model output, so
+for a thinking model the live view briefly shows the `<think>` block; the final
+result always has it split into `thinking`.
 
 ---
 
@@ -133,3 +156,13 @@ The attached demo board uses the server backend (Injector → text-generation
 
 Start the Python runtime (`hkp-python`, default port 8080), open the board,
 and inject a prompt.
+
+For hkp-rt the equivalent runtime config ships as
+`hkp-rt/config/text-generation-example.json`:
+
+```
+./build/hkp-rt/exe/Debug/hkp-rt 5556 127.0.0.1 hkp-rt/config/text-generation-example.json
+curl -X POST http://127.0.0.1:5556/runtimes/text-generation-example \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Name three primary colors."}'
+```

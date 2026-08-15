@@ -42,6 +42,7 @@ catch_discover_tests(hkp-rt-runtime-tests)
 add_executable(hkp-rt-service-tests
   service_base.test.cpp
   service_filter.test.cpp
+  service_injector.test.cpp
   service_map.test.cpp
   service_static.test.cpp
   service_cache.test.cpp

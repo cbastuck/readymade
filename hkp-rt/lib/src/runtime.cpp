@@ -26,7 +26,17 @@ Runtime::Runtime(OwnsMe<App> app, const std::string& runtimeId, const std::strin
   // to start here; the Server owns the transport.
 }
 
-Runtime::~Runtime() = default;
+Runtime::~Runtime()
+{
+  // Wind down any async service workers while this Runtime — its service list,
+  // process context, everything — is still fully alive. A worker's final emit()
+  // then traverses a live pipeline; joining later (during member destruction)
+  // would let it touch already-destroyed state.
+  for (auto& svc : m_services)
+  {
+    svc->shutdown();
+  }
+}
 
 void Runtime::onWebSocketMessage(const std::string& message, bool isBinary)
 {
@@ -239,13 +249,37 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
   // Marshal onto the event loop and hand the serialized frame to the shared
   // Server WebSocket, which fans it out to the connections bound to this
   // runtime. (Server::sendNotification / Crow's send_binary are thread-safe.)
-  m_app->postCallback([this, data, purpose, sender]() {
-    auto server = m_app->getServer();
-    if (server)
+  //
+  // Capture app + runtimeId by value, not `this`: this callback runs later, and
+  // a notification posted just before the Runtime is torn down (e.g. a worker's
+  // final emit during shutdown) must not dereference a freed Runtime.
+  App* app = m_app.get();
+  std::string runtimeId = m_runtimeId;
+  app->postCallback([app, runtimeId, data, purpose, sender]() {
+    try
     {
-      server->sendNotification(m_runtimeId, Message::serializeToString(data, purpose, sender));
+      auto server = app->getServer();
+      if (server)
+      {
+        server->sendNotification(runtimeId, Message::serializeToString(data, purpose, sender));
+      }
+    }
+    catch (const std::exception& e)
+    {
+      // A single unserializable payload (e.g. a streamed text chunk split
+      // mid-UTF-8) must never terminate the event-loop thread and take the whole
+      // process with it. Drop it and carry on.
+      std::cerr << "Runtime::sendData: dropping notification: " << e.what() << std::endl;
     }
   });
+}
+
+void Runtime::notifyProcessFinished(const Service& service, const Data& data)
+{
+  // Same lifecycle event the synchronous loop sends, but driven by emit() when
+  // deferred async work lands — so a service's processing indicator brackets the
+  // real duration instead of the instant deferCompletion() return.
+  sendServiceLifecycleNotification(service, "call-process-finished", data);
 }
 
 Data Runtime::process(Data data, json context)
@@ -268,12 +302,20 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
     throw std::runtime_error("Runtime::processNext service not found in runtime");
   }
 
-  for (auto next = advanceBefore ? std::next(it) : it; 
-       next != m_services.cend(); 
+  for (auto next = advanceBefore ? std::next(it) : it;
+       next != m_services.cend();
        ++next)
   {
     sendServiceLifecycleNotification(**next, "call-process", data);
     data = (*next)->startProcess(data);
+    if ((*next)->takeProcessDeferred())
+    {
+      // The service handed its work to a worker and will emit() the real result
+      // later; emit() sends this service's "call-process-finished" then. Withhold
+      // it here and stop the synchronous push (the deferred result re-enters via
+      // emit → nextAsync, driving the services that follow).
+      return onProcessEnd(Null());
+    }
     sendServiceLifecycleNotification(**next, "call-process-finished", data);
     if (isNull(data)) // stop processing on null
     {

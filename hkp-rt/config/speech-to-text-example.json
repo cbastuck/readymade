@@ -1,0 +1,35 @@
+{
+  "id": "speech-to-text-example",
+  "name": "Speech To Text",
+  "services": [
+    {
+      "serviceId": "core-input",
+      "uuid": "core-input-1",
+      "name": "Audio Input",
+      "state": {
+        "sampleRate": 16000
+      }
+    },
+    {
+      "serviceId": "speech-to-text",
+      "uuid": "speech-to-text-1",
+      "name": "Speech To Text",
+      "state": {
+        "backend": "local",
+        "encoderPath": "~/models/sherpa-onnx-whisper-tiny/tiny-encoder.onnx",
+        "decoderPath": "~/models/sherpa-onnx-whisper-tiny/tiny-decoder.onnx",
+        "tokensPath": "~/models/sherpa-onnx-whisper-tiny/tiny-tokens.txt",
+        "language": "auto",
+        "sampleRate": 16000
+      }
+    },
+    {
+      "serviceId": "monitor",
+      "uuid": "monitor-1",
+      "name": "Monitor",
+      "state": {
+        "logToConsole": true
+      }
+    }
+  ]
+}

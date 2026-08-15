@@ -46,12 +46,27 @@ public:
   // ending the current process() call.  Thread-safe — posts via the App's
   // io_context, so it can also be called from a background thread.
   // Equivalent to nextAsync() but communicates intent: this service produces
-  // more than one output for a single input.
+  // more than one output for a single input.  emit() also closes the process
+  // lifecycle bracket for this service (sends "call-process-finished" with the
+  // result), so a service that deferCompletion()'d has its processing indicator
+  // reflect the true end of the async work rather than the instant return.
   void emit(Data partialResult);
+
+  // Runtime-facing: returns true (and resets) if the most recent process() call
+  // deferred its completion via deferCompletion().  The runtime uses this to
+  // withhold the synchronous "call-process-finished" for that call — emit()
+  // sends it later, when the deferred work actually finishes.
+  bool takeProcessDeferred();
 
   inline const std::string &getId() const { return m_instanceId; }
   inline const std::string &getName() const { return m_instanceName; }
   virtual std::string getServiceId() const = 0;
+
+  // Called by the host (Runtime) before it tears itself down, while the host and
+  // its service list are still fully alive. A service that runs work on a
+  // background thread joins it here, so its final emit() drives the pipeline
+  // through a live host rather than half-destroyed state. Default: nothing.
+  virtual void shutdown() {}
 
   // Inputs are a static property of a service, and are not supposed to change through lifetime.
   // Usually services don't provide additional inputs, examples that do are websocket_server_service.h,
@@ -68,6 +83,12 @@ protected:
   void setBypass(bool bypass);
   bool isBypass() const;
 
+  // Call from process() (as the return value) when the real output will be
+  // produced later via emit() on a worker thread.  Returns Null() to stop the
+  // synchronous push and marks the call deferred so the runtime withholds the
+  // "call-process-finished" lifecycle event until emit() actually delivers.
+  Data deferCompletion();
+
   json mergeStateWith(const json& update) const
   {
     auto state = Service::getState();
@@ -77,6 +98,10 @@ protected:
 
 private:
   RuntimeHost* m_host = nullptr;
+  // Set by deferCompletion(), consumed by the runtime's processFrom right after
+  // process() returns — both on the pipeline thread, so a plain bool is enough
+  // (emit(), which runs on the worker, never touches it).
+  bool m_processDeferred = false;
 
 protected:
   std::string m_instanceName;

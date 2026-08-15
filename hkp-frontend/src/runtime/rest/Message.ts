@@ -32,7 +32,15 @@ export type Message = {
   sender: string;
 };
 
-export function serializeYasMessage(data: Data, sender: string): Blob {
+// `purpose` tells the receiver what to do with the frame. A remote runtime
+// reads NOTIFICATION as "this resolves the pending request named by `sender`"
+// and every other purpose as "push this through the pipeline", so pushing a
+// frame under the wrong purpose silently drops it at a callback lookup.
+export function serializeYasMessage(
+  data: Data,
+  sender: string,
+  purpose: MessagePurpose = MessagePurpose.NOTIFICATION
+): Blob {
   const header = new ArrayBuffer(
     7 + // YAS header
       2 + // Result Header Type
@@ -46,7 +54,7 @@ export function serializeYasMessage(data: Data, sender: string): Blob {
   offset += writeYasHeader(view);
 
   // Write the data purpose (2 bytes)
-  view.setUint16(offset, MessagePurpose.NOTIFICATION, true); // Data Purpose
+  view.setUint16(offset, purpose, true); // Data Purpose
   offset += 2;
 
   // Write the Data Type ID (2 bytes)
@@ -232,7 +240,7 @@ function serializeYasRingBuffer(data: FloatRingBuffer): ArrayBuffer {
   offset += 4;
 
   // Write the timestamp (uint64_t)
-  view.setBigUint64(offset, BigInt(data.id), true);
+  view.setBigUint64(offset, BigInt(data.ts), true);
   offset += 8;
 
   return buffer;

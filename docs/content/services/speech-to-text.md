@@ -1,6 +1,6 @@
 # Speech To Text
 
-Transcribes spoken audio to text with a local open-source Whisper model running in the Python runtime.
+Transcribes spoken audio to text with a local open-source Whisper model — in the Python runtime via faster-whisper, or in the C++ runtime via embedded sherpa-onnx.
 
 ---
 
@@ -9,6 +9,12 @@ Transcribes spoken audio to text with a local open-source Whisper model running 
 | Runtime | Service ID |
 |---|---|
 | Python (hkp-python) | `speech-to-text` |
+| C++ (hkp-rt) | `speech-to-text` |
+
+Both runtimes consume the same `FloatRingBuffer` input and emit the same
+transcript JSON, so a board can move the service between them unchanged. The
+hkp-rt version adds a `server` backend (an OpenAI-compatible transcription
+endpoint) alongside its in-process `local` backend.
 
 ---
 
@@ -112,3 +118,54 @@ record in the browser, transcribe in Python, display in the browser:
 
 Start the Python runtime (`hkp-python`, default port 8080), open the
 board, hit **Record**, speak, then **Stop & Transcribe**.
+
+---
+
+## hkp-rt (C++ runtime)
+
+The C++ runtime runs the same service with two backends selected by the
+`backend` state:
+
+- **`local`** (default) — a Whisper ONNX model runs in-process via embedded
+  [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx). Compiled in when the
+  runtime is built with `-DHKP_SPEECH_ENABLED=ON` (the default on desktop;
+  off for iOS/Android, which fall back to the server backend).
+- **`server`** — a thin client for an OpenAI-compatible
+  `POST /v1/audio/transcriptions` endpoint. Always available.
+
+### Model
+
+Download a sherpa-onnx Whisper model and point the three path keys at its files:
+
+```
+curl -sL https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2 | tar xj
+```
+
+Use a **multilingual** model (e.g. `sherpa-onnx-whisper-tiny`), not an
+English-only `.en` build — the decoder expects a language token that `.en`
+models don't emit.
+
+### Configuration (hkp-rt)
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `backend` | `string` | `"local"` | `local` or `server` |
+| `serverUrl` | `string` | `"http://127.0.0.1:8081"` | Server backend: base URL |
+| `model` | `string` | `"whisper-1"` | Server backend: model name |
+| `encoderPath` | `string` | `""` | Local backend: Whisper encoder ONNX (`~` expands) |
+| `decoderPath` | `string` | `""` | Local backend: Whisper decoder ONNX |
+| `tokensPath` | `string` | `""` | Local backend: tokens file |
+| `language` | `string` | `"auto"` | ISO code (e.g. `"en"`) or `"auto"` to detect |
+| `numThreads` | `number` | `2` | Local backend: inference threads |
+| `sampleRate` | `number` | `16000` | Rate of the incoming samples; resampled to 16 kHz internally |
+
+A single `FloatRingBuffer` hop carries at most ~88200 samples (the runtime's
+fixed ring-buffer size), i.e. ~5.5 s at 16 kHz — the service transcribes one
+such utterance per call.
+
+### Example (hkp-rt)
+
+`hkp-rt/config/speech-to-text-example.json` wires the microphone straight into
+the transcriber: `core-input` → `speech-to-text` (local) → `monitor`. It pairs
+naturally with **text-generation** and **text-to-speech** to form a fully local
+voice loop inside one C++ runtime.

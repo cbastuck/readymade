@@ -68,6 +68,7 @@ public:
   void sendData(Data data, MessagePurpose purpose,
                 const std::string& sender,
                 std::function<void(Data)> callback = nullptr) override;
+  void notifyProcessFinished(const Service& svc, const Data& data) override;
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override;
 

@@ -1,0 +1,31 @@
+{
+  "id": "text-generation-example",
+  "name": "Text Generation",
+  "services": [
+    {
+      "serviceId": "text-generation",
+      "uuid": "text-generation-1",
+      "name": "Text Generation",
+      "state": {
+        "backend": "local",
+        "modelPath": "~/models/Qwen3-0.6B-Q8_0.gguf",
+        "contextSize": 4096,
+        "gpuLayers": -1,
+        "systemPrompt": "You are a helpful assistant. /no_think",
+        "temperature": 0.7,
+        "topP": 0.95,
+        "topK": 20,
+        "maxTokens": 256,
+        "stream": true
+      }
+    },
+    {
+      "serviceId": "monitor",
+      "uuid": "monitor-1",
+      "name": "Monitor",
+      "state": {
+        "logToConsole": true
+      }
+    }
+  ]
+}

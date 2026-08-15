@@ -398,11 +398,12 @@ crow::response Server::impl::getRuntimes()
 
 crow::response Server::impl::deleteRuntime(const std::string& runtimeId)
 {
-  bool removedSuccessfully = app->removeRuntime(runtimeId);
-  if (!removedSuccessfully)
-  {
-    return crow::response{crow::status::NOT_FOUND} ;      
-  }
+  // Idempotent: a runtime already gone is the desired end state, not an error.
+  // A client removing a runtime closes its notification socket first, and that
+  // close reaps a garbage-collected runtime on its own — so by the time this
+  // explicit DELETE arrives the runtime is frequently already removed. Returning
+  // NOT_FOUND there surfaces a spurious "Failed to remove runtime" to the user.
+  app->removeRuntime(runtimeId);
   return makeJsonResponse(json{{"id", runtimeId}});
 }
 

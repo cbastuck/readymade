@@ -1,6 +1,8 @@
 #pragma once
 
 #include <list>
+#include <memory>
+#include <mutex>
 #include <vector>
 #include <chrono>
 
@@ -68,11 +70,21 @@ private:
   std::list<std::shared_ptr<Runtime>>::iterator findRuntime(const std::string& runtimeId);
   std::list<std::shared_ptr<Runtime>>::const_iterator findRuntime(const std::string& runtimeId) const;
 
+  // Look a runtime up and return a shared_ptr copy under the lock. Callers then
+  // operate on the copy without holding the lock: the copy keeps the Runtime
+  // alive even if another thread removes it concurrently, so operations never
+  // touch a half-destroyed Runtime. Returns nullptr when not found.
+  std::shared_ptr<Runtime> findRuntimeShared(const std::string& runtimeId) const;
+
   std::shared_ptr<Runtime> appendRuntime(const RuntimeConfiguration& config);
 
   void startEventLoop();
   void stopEventLoop();
 private:
+  // Guards the structure of m_runtimes (find/insert/erase) only. Held just long
+  // enough to look up or mutate the list — never across a Runtime operation
+  // (process/getConfiguration), which run on a shared_ptr copy instead.
+  mutable std::mutex m_runtimesMutex;
   std::list<std::shared_ptr<Runtime>> m_runtimes;
   std::unique_ptr<Registry> m_registry;
   boost::asio::io_context m_io;

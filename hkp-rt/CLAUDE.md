@@ -46,7 +46,39 @@ All dependency management lives in the **root `CMakeLists.txt`** and **root `vcp
 | minimp4 (MP4 demuxer) | CPM | fetched at configure time |
 | Crow HTTP | vendored header | `3rdparty/crow.h` |
 | avcpp (FFmpeg C++ wrapper) | local subdir | `3rdparty/avcpp/` |
+| inflect (TTS pipeline) | vendored subdir | `3rdparty/inflect/` |
 | vcpkg itself | local subdir | `3rdparty/vcpkg/` |
+
+### Optional ML backends
+
+Three independent options gate the in-process ML backends; each service keeps a
+server backend that is always available, so turning one off narrows what a board
+can run locally rather than removing the service.
+
+| Option | Default | Brings in | Serves |
+|--------|---------|-----------|--------|
+| `HKP_LLAMA_ENABLED` | ON (OFF on iOS/Android) | llama.cpp | `text-generation` local backend |
+| `HKP_SPEECH_ENABLED` | ON (OFF on iOS/Android) | sherpa-onnx (+ onnxruntime, espeak-ng, kaldi, openfst, piper-phonemize) | `speech-to-text` Whisper, `text-to-speech` Kokoro |
+| `HKP_INFLECT_ENABLED` | ON (OFF on iOS/Android) | `3rdparty/inflect` (+ onnxruntime, espeak-ng) | `text-to-speech` inflect backend |
+
+`HKP_INFLECT_ENABLED` reuses sherpa's onnxruntime and espeak-ng when
+`HKP_SPEECH_ENABLED` is on, so on a full desktop build it adds no third-party
+code. On its own it is far smaller than sherpa's stack, which is what makes a
+local voice viable where sherpa is not built:
+
+```bash
+cmake -B build -DCMAKE_OSX_ARCHITECTURES="$(uname -m)" \
+      -DHKP_SPEECH_ENABLED=OFF -DHKP_INFLECT_ENABLED=ON ..
+```
+
+Two notes on that pairing. espeak-ng must be a **single** copy in the binary —
+two static archives collide on symbols — so the version is build-wide, and both
+configurations pin the same fork sherpa uses. What a voice says is fixed by the
+espeak-ng **data directory**, a runtime path, not by that code version, so each
+engine points at its own data (an en-US-only set is 824 KB against 19 MB for the
+full one). And espeak-ng's configuration is a process global: a build carrying
+both engines should point `dataDir` and `espeakDataPath` at the same directory,
+because whichever initialises first wins.
 
 The root CMakeLists.txt creates a single `hkp-rt-deps` INTERFACE target that aggregates all of the above. Both `hkp-rt-lib` and `hkp-rt-bundle` link against it.
 

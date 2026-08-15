@@ -21,7 +21,31 @@ import { Progress } from "hkp-frontend/src/ui-components/primitives/progress";
 
 type InjectorMode = "data" | "file" | "drop";
 
+/**
+ * Hands a file's contents to the service. Runtimes differ in how a payload
+ * reaches a service, so the transport is supplied by the concrete UI.
+ */
+export type InjectFile = (
+  service: ServiceInstance,
+  payload: string | ArrayBuffer,
+  asText: boolean,
+) => void;
+
+const injectIntoBrowserRuntime: InjectFile = (service, payload, asText) => {
+  const result = asText
+    ? payload
+    : new Blob([payload], { type: "application/octet-stream" });
+  service.app.next(service, result);
+};
+
 export default function InjectorUI(props: ServiceUIProps) {
+  return <InjectorUIBase {...props} injectFile={injectIntoBrowserRuntime} />;
+}
+
+export function InjectorUIBase({
+  injectFile,
+  ...props
+}: ServiceUIProps & { injectFile: InjectFile }) {
   const [blob, setBlob] = useState<Blob | null>(null);
   const [dropName, setDropName] = useState<string | undefined>(undefined);
   const [items, setItems] = useState<Array<any> | null>(null);
@@ -221,10 +245,7 @@ export default function InjectorUI(props: ServiceUIProps) {
       console.log("Error Injector.readFile", reader.error);
     });
     reader.addEventListener("loadend", (_ev: any) => {
-      const result = asText
-        ? reader.result
-        : new Blob([reader.result!], { type: "application/octet-stream" });
-      service.app.next(service, result);
+      injectFile(service, reader.result as string | ArrayBuffer, asText);
       setFileProgress(0);
     });
     reader.addEventListener("progress", (ev) => {

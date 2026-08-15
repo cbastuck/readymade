@@ -1,0 +1,23 @@
+{
+  "id": "injector-example",
+  "name": "Injector",
+  "services": [
+    {
+      "serviceId": "injector",
+      "uuid": "injector-1",
+      "name": "Injector",
+      "state": {
+        "recentInjection": { "message": "Hello from the Injector!" },
+        "plainText": false
+      }
+    },
+    {
+      "serviceId": "monitor",
+      "uuid": "monitor-1",
+      "name": "Monitor",
+      "state": {
+        "logToConsole": true
+      }
+    }
+  ]
+}
