@@ -18,6 +18,7 @@ class CapturingHost final : public RuntimeHost {
 public:
   std::vector<Data> pushed;
   std::vector<Data> notifications;
+  std::vector<Data> processFinished;
 
   void attach(Service& svc) { svc.setParentHost(*this); }
 
@@ -39,6 +40,10 @@ public:
   void sendData(Data data, MessagePurpose, const std::string&,
                 std::function<void(Data)>) override {
     notifications.push_back(data);
+  }
+
+  void notifyProcessFinished(const Service&, const Data& data) override {
+    processFinished.push_back(data);
   }
 
   std::shared_ptr<SubRuntime> createSubRuntime(const Service&, const json&) override {

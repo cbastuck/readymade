@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15...3.31)
 
-if(NOT BUILD_TESTING)
+if(NOT HKP_RT_BUILD_TESTS)
   return()
 endif()
 
