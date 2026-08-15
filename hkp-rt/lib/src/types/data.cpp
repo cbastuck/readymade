@@ -27,9 +27,13 @@ std::string stringify(const Data& data)
   }
 
   auto json = getJSONFromData(data);
-  if (json) 
+  if (json)
   {
-    return json->dump();
+    // error_handler_t::replace: substitute U+FFFD for invalid UTF-8 rather than
+    // throwing. Streamed partial text can end mid-multibyte-character (e.g. a
+    // split emoji), and a throw here propagates out of the event-loop callback
+    // that serializes notifications and terminates the process.
+    return json->dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
   }
   
   auto rb = getRingBufferFromData(data);

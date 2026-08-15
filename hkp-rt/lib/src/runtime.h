@@ -44,6 +44,7 @@ public:
   void scheduleProcessFrom(const Service &service, Data data, bool advanceBefore=true) override;
   bool isConnected(const Service &svc) const override;
   void sendData(Data data, MessagePurpose purpose, const std::string& sender, std::function<void(Data)> callback = nullptr) override;
+  void notifyProcessFinished(const Service& svc, const Data& data) override;
 
   // Create a SubRuntime from a JSON array of service-config objects.
   // Services are parented to the SubRuntime (not this Runtime) so that

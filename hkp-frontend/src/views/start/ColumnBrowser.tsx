@@ -176,6 +176,7 @@ export default function ColumnBrowser({
             placeholder="Search boards and tags…"
             value={searchQuery}
             onChange={(e) => onSearchQuery(e.target.value)}
+            spellCheck={false}
           />
         </div>
       </div>

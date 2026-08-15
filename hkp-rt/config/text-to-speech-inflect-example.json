@@ -1,0 +1,28 @@
+{
+  "id": "text-to-speech-inflect-example",
+  "name": "Text To Speech (inflect)",
+  "services": [
+    {
+      "serviceId": "text-to-speech",
+      "uuid": "text-to-speech-1",
+      "name": "Text To Speech",
+      "state": {
+        "backend": "inflect",
+        "modelDir": "~/Development/claude/models/inflect-micro-v2-onnx",
+        "espeakDataPath": "~/Development/claude/models/inflect-micro-v2-onnx/espeak-ng-data",
+        "speed": 1.0,
+        "variation": 0.667,
+        "seed": 0,
+        "splitOnAbbreviations": true
+      }
+    },
+    {
+      "serviceId": "core-output",
+      "uuid": "core-output-1",
+      "name": "Audio Output",
+      "state": {
+        "sampleRate": 24000
+      }
+    }
+  ]
+}

@@ -170,10 +170,33 @@ std::shared_ptr<SubRuntime> Service::createSubRuntime(const json& servicesConfig
 
 void Service::emit(Data partialResult)
 {
+  // Close this service's process lifecycle bracket at the true end of the async
+  // work: the runtime withheld "call-process-finished" when process() deferred
+  // (see deferCompletion), so send it now with the real result before driving
+  // the rest of the pipeline. A host without a per-service processing indicator
+  // (SubRuntime) ignores it.
+  if (m_host)
+  {
+    m_host->notifyProcessFinished(*this, partialResult);
+  }
+
   // nextAsync posts via App::postCallback, making this safe to call from
   // a background thread.  Each emission drives an independent traversal of
   // the services that follow this one in the outer pipeline.
   nextAsync(std::move(partialResult));
+}
+
+Data Service::deferCompletion()
+{
+  m_processDeferred = true;
+  return Null();
+}
+
+bool Service::takeProcessDeferred()
+{
+  bool deferred = m_processDeferred;
+  m_processDeferred = false;
+  return deferred;
 }
 
 }
