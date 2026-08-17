@@ -14,7 +14,7 @@ export function TextInputRenderer({
   const [vaultResolved, setVaultResolved] = useState<string | null>(null);
   const autoSubmitted = useRef(false);
   const { getSecret } = useVault();
-  const { setState } = useFacadeState();
+  const { state, setState } = useFacadeState();
 
   useEffect(() => {
     if (!widget.vaultKey) {
@@ -34,7 +34,7 @@ export function TextInputRenderer({
       return;
     }
     autoSubmitted.current = true;
-    executeActions({ action: widget.action, actions: widget.actions, value: vaultResolved, boardContext, setState });
+    executeActions({ action: widget.action, actions: widget.actions, value: vaultResolved, boardContext, setState, state });
   }, [vaultResolved]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = useCallback(() => {
@@ -45,7 +45,7 @@ export function TextInputRenderer({
     if (widget.vaultKey) {
       vaultSet(widget.vaultKey, text);
     }
-    executeActions({ action: widget.action, actions: widget.actions, value: text, boardContext, setState });
+    executeActions({ action: widget.action, actions: widget.actions, value: text, boardContext, setState, state });
   }, [value, widget.action, widget.actions, widget.vaultKey, boardContext, setState]);
 
   return (

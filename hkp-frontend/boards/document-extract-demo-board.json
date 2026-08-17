@@ -1,0 +1,55 @@
+{
+  "boardName": "Document Extract Demo",
+  "description": "Fetch a document, read it, and turn it into structured fields.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "go",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Fetch",
+        "state": { "recentInjection": "go" }
+      }
+    ],
+    "node": [
+      {
+        "uuid": "fetch",
+        "serviceId": "http-client",
+        "serviceName": "Fetch Document",
+        "state": {
+          "url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+          "method": "get"
+        }
+      },
+      {
+        "uuid": "read",
+        "serviceId": "document-extract",
+        "serviceName": "Read Document",
+        "state": {
+          "backend": "xberg",
+          "ocr": false,
+          "maxChars": 20000
+        }
+      },
+      {
+        "uuid": "extracted",
+        "serviceId": "monitor",
+        "serviceName": "Extracted Text"
+      }
+    ]
+  }
+}

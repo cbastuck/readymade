@@ -1,20 +1,58 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { DataTableWidget } from "../../types";
 import { findService, resolvePath } from "../../findService";
+import { useFacadeState } from "../../FacadeStateContext";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_MAX_PAGES = 50;
+const DEFAULT_ROW_KEY = "key";
+const DEFAULT_SELECTION_STATE = "selection";
 
-function extractRow(
+type Row = Record<string, unknown>;
+
+/**
+ * What a notification says about the table.
+ *
+ * An object is one more row; an array is the table as it now stands. A service
+ * reporting something that happened sends the first, and one reporting what is
+ * currently there sends the second — and the difference matters, because
+ * appending a queue every time it is read would show every item once per read.
+ */
+function extractRows(
   notification: unknown,
   path?: string,
-): Record<string, unknown> | null {
+): { rows: Row[]; replace: boolean } | null {
   const val = path ? resolvePath(notification, path) : notification;
-  if (val !== null && typeof val === "object" && !Array.isArray(val)) {
-    return val as Record<string, unknown>;
+  if (Array.isArray(val)) {
+    return {
+      rows: val.filter(
+        (item): item is Row => item !== null && typeof item === "object",
+      ),
+      replace: true,
+    };
+  }
+  if (val !== null && typeof val === "object") {
+    return { rows: [val as Row], replace: false };
   }
   return null;
+}
+
+/**
+ * The value a column names, which may sit inside the row.
+ *
+ * Dotted, like `source.path`, so a table can show fields of a nested object
+ * without a service in front of it reshaping every row — which in the shared
+ * Map dialect would need an arrow function, and that dialect has none.
+ */
+function cellValue(row: Row, column: string): unknown {
+  return column.includes(".") ? resolvePath(row, column) : row[column];
+}
+
+/** What a dotted column is called: its last segment, not the whole path. */
+function columnLabel(column: string): string {
+  const dot = column.lastIndexOf(".");
+  return dot === -1 ? column : column.slice(dot + 1);
 }
 
 function formatCell(val: unknown): string {
@@ -45,10 +83,18 @@ export function DataTableRenderer({
   const maxRows = pageSize * maxPages;
   const overflow = widget.overflow ?? "drop-oldest";
 
-  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [columns, setColumns] = useState<string[]>(widget.columns ?? []);
   const [page, setPage] = useState(0);
   const wasOnLastPage = useRef(true);
+  // Whether this table shows current state rather than a growing log; set by
+  // the first notification that carries a whole table.
+  const replaces = useRef(false);
+
+  const rowKey = widget.rowKey ?? DEFAULT_ROW_KEY;
+  const selectionState = widget.selectionState ?? DEFAULT_SELECTION_STATE;
+  const { setState } = useFacadeState();
+  const [selected, setSelected] = useState<string[]>([]);
 
   const sourceService = useMemo(
     () => findService(boardContext, widget.source.serviceUuid),
@@ -59,14 +105,36 @@ export function DataTableRenderer({
     if (!sourceService?.app) return;
     const handler = (notification: any) => {
       if (notification?.__internal) return;
-      const row = extractRow(notification, widget.source.path);
-      if (!row) return;
+      const update = extractRows(notification, widget.source.path);
+      if (!update) return;
 
-      setRows((prev) => addRow(prev, row, maxRows, overflow));
+      if (update.replace) {
+        replaces.current = true;
+      }
+      setRows((prev) =>
+        update.replace
+          ? update.rows
+          : update.rows.reduce(
+              (acc, row) => addRow(acc, row, maxRows, overflow),
+              prev,
+            ),
+      );
+
+      if (update.replace && widget.selectable) {
+        // A row that is no longer there cannot stay picked — it was acted on,
+        // by this person or by somebody else looking at the same queue.
+        const present = new Set(
+          update.rows.map((row) => String(cellValue(row, rowKey) ?? "")),
+        );
+        setSelected((prev) => prev.filter((key) => present.has(key)));
+      }
 
       if (!widget.columns) {
         setColumns((prev) => {
-          const newKeys = Object.keys(row).filter((k) => !prev.includes(k));
+          const seen = update.rows.flatMap((row) => Object.keys(row));
+          const newKeys = seen.filter(
+            (k, i) => !prev.includes(k) && seen.indexOf(k) === i,
+          );
           return newKeys.length > 0 ? [...prev, ...newKeys] : prev;
         });
       }
@@ -75,11 +143,38 @@ export function DataTableRenderer({
     return () => {
       sourceService.app.unregisterNotificationTarget?.(sourceService, handler);
     };
-  }, [sourceService, widget.source.path, maxRows, overflow, widget.columns]);
+  }, [
+    sourceService,
+    widget.source.path,
+    maxRows,
+    overflow,
+    widget.columns,
+    widget.selectable,
+    rowKey,
+  ]);
 
-  // Auto-advance to tail page when following
+  // Published rather than held: a button elsewhere in the panel is what acts on
+  // a selection, and facade state is how one widget reaches another.
   useEffect(() => {
-    if (wasOnLastPage.current) {
+    if (widget.selectable) {
+      setState(selectionState, selected);
+    }
+  }, [selected, selectionState, widget.selectable]);
+
+  const toggleRow = (key: string) => {
+    setSelected((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  };
+
+  // Auto-advance to tail page when following.
+  //
+  // Only for a log, where the newest row is the interesting one. A table that
+  // reports what is currently there has no tail to follow — jumping to the last
+  // page on every refresh would take somebody working through a queue away from
+  // the page they were reading.
+  useEffect(() => {
+    if (wasOnLastPage.current && !replaces.current) {
       const total = Math.max(1, Math.ceil(rows.length / pageSize));
       setPage(total - 1);
     }
@@ -88,6 +183,14 @@ export function DataTableRenderer({
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const safePage = Math.min(page, totalPages - 1);
   const pageRows = rows.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
+  // Select-all covers the page in view, not the whole buffer: a header box that
+  // silently picked rows on other pages would approve things nobody looked at.
+  const pageKeys = pageRows
+    .map((row) => String(cellValue(row, rowKey) ?? ""))
+    .filter(Boolean);
+  const allOnPageSelected =
+    pageKeys.length > 0 && pageKeys.every((key) => selected.includes(key));
 
   // Pad to pageSize so the table height never jumps as rows arrive
   const displayRows: Record<string, unknown>[] =
@@ -126,6 +229,32 @@ export function DataTableRenderer({
         >
           <thead>
             <tr>
+              {widget.selectable && (
+                <th
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    padding: "6px 0 6px 12px",
+                    width: 28,
+                    background: "hsl(var(--background))",
+                    borderBottom: "1px solid hsl(var(--border))",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    aria-label="Select all"
+                    checked={pageKeys.length > 0 && allOnPageSelected}
+                    onChange={() =>
+                      setSelected((prev) =>
+                        allOnPageSelected
+                          ? prev.filter((key) => !pageKeys.includes(key))
+                          : [...new Set([...prev, ...pageKeys])],
+                      )
+                    }
+                    style={{ cursor: "pointer" }}
+                  />
+                </th>
+              )}
               {columns.map((col) => (
                 <th
                   key={col}
@@ -144,7 +273,7 @@ export function DataTableRenderer({
                     textTransform: "uppercase",
                   }}
                 >
-                  {col}
+                  {columnLabel(col)}
                 </th>
               ))}
             </tr>
@@ -153,7 +282,7 @@ export function DataTableRenderer({
             {displayRows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={1}
+                  colSpan={columns.length + (widget.selectable ? 1 : 0) || 1}
                   style={{
                     padding: "24px 12px",
                     textAlign: "center",
@@ -164,15 +293,41 @@ export function DataTableRenderer({
                 </td>
               </tr>
             ) : (
-              displayRows.map((row, i) => (
+              displayRows.map((row, i) => {
+                const key = String(cellValue(row, rowKey) ?? "");
+                const isSelected = !!key && selected.includes(key);
+                return (
                 <tr
                   key={i}
                   style={{
                     height: 28,
-                    background:
-                      i % 2 === 1 ? "hsl(var(--muted))" : "transparent",
+                    background: isSelected
+                      ? "hsl(var(--accent, var(--muted)))"
+                      : i % 2 === 1
+                        ? "hsl(var(--muted))"
+                        : "transparent",
                   }}
                 >
+                  {widget.selectable && (
+                    <td
+                      style={{
+                        padding: "5px 0 5px 12px",
+                        width: 28,
+                        borderBottom: "1px solid hsl(var(--border))",
+                      }}
+                    >
+                      {/* Padding rows keep the table height steady and stand
+                          for nothing, so they get no box to tick. */}
+                      {key && (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleRow(key)}
+                          style={{ cursor: "pointer" }}
+                        />
+                      )}
+                    </td>
+                  )}
                   {columns.map((col) => (
                     <td
                       key={col}
@@ -184,11 +339,12 @@ export function DataTableRenderer({
                         fontFamily: "var(--font-mono, monospace)",
                       }}
                     >
-                      {formatCell(row[col])}
+                      {formatCell(cellValue(row, col))}
                     </td>
                   ))}
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

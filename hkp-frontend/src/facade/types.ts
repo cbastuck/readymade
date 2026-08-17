@@ -71,6 +71,20 @@ export type StatusIndicatorWidget = {
   statusColors?: Record<string, string>;
 };
 
+// Renders whatever a service is saying, as text. The one widget whose subject
+// is the value itself rather than a shape derived from it — a reason, a
+// summary, a count. Reads its source like status-indicator, so it shows what
+// the service already holds rather than waiting for the next notification.
+export type TextWidget = {
+  type: "text";
+  source: FacadeWidgetSource;
+  // Shown, muted, while the source has nothing to say.
+  placeholder?: string;
+  tone?: "normal" | "muted" | "error";
+  fontSize?: number;
+  mono?: boolean;
+};
+
 export type ButtonWidget = {
   type: "button";
   label: string;
@@ -180,6 +194,10 @@ export type LineChartWidget = {
   symbol?: string;
 };
 
+// Rows arrive from a service notification. A notification carrying an object is
+// one more row, appended to what is already there — a log. A notification
+// carrying an *array* is the whole table as it now stands, replacing it — which
+// is what a service reporting a queue or a query result sends.
 export type DataTableWidget = {
   type: "data-table";
   source: FacadeWidgetSource;
@@ -189,8 +207,19 @@ export type DataTableWidget = {
   maxPages?: number;
   // What to do when the buffer is full. Default: "drop-oldest".
   overflow?: "drop-new" | "drop-oldest";
-  // Explicit ordered column list. When omitted, columns are derived from incoming data.
+  // Explicit ordered column list. When omitted, columns are derived from
+  // incoming data. A name may be dotted ("value.subject") to read a field of a
+  // nested object; the header shows its last segment.
   columns?: string[];
+  // Adds a checkbox per row. What gets picked is written to facade state, so a
+  // button elsewhere in the panel can act on it: { "$state": "<selectionState>" }.
+  selectable?: boolean;
+  // Column holding the value written to facade state for a picked row. May be
+  // dotted. Default: "key".
+  rowKey?: string;
+  // Facade state key the picked rows are written to, as an array. Default:
+  // "selection".
+  selectionState?: string;
 };
 
 // A state reference used in widget props to read from facade state.
@@ -216,6 +245,7 @@ export type FacadeWidget =
   | TextInputWidget
   | JsonInputWidget
   | StatusIndicatorWidget
+  | TextWidget
   | ButtonWidget
   | QrCodeWidget
   | FilePickWidget

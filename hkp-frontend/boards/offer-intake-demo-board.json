@@ -1,0 +1,213 @@
+{
+  "boardName": "Offer Intake",
+  "description": "Enquiries arrive and wait. A person approves the ones worth processing; each approved one is read, extracted into fields, and written on.",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "intake",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Enquiry Webhook",
+        "state": {
+          "mountName": "missive-intake",
+          "mode": "process_on_session",
+          "pipeline": [
+            {
+              "uuid": "dump",
+              "serviceId": "store",
+              "serviceName": "Dump",
+              "state": {
+                "mode": "put",
+                "keyFrom": "body.id",
+                "valueFrom": "body"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "after-intake",
+        "serviceId": "stopper",
+        "serviceName": "Intake Ends Here"
+      },
+      {
+        "uuid": "refresh",
+        "serviceId": "timer",
+        "serviceName": "Queue Refresh",
+        "state": {
+          "periodic": true,
+          "periodicValue": 5,
+          "periodicUnit": "s",
+          "start": true
+        }
+      },
+      {
+        "uuid": "queue",
+        "serviceId": "store",
+        "serviceName": "Waiting",
+        "state": {
+          "mode": "list",
+          "limit": 100
+        }
+      },
+      {
+        "uuid": "after-queue",
+        "serviceId": "stopper",
+        "serviceName": "Queue Feeds The Panel Only"
+      },
+      {
+        "uuid": "approved",
+        "serviceId": "store",
+        "serviceName": "Approved",
+        "state": {
+          "mode": "release"
+        }
+      },
+      {
+        "uuid": "as-prompt",
+        "serviceId": "map",
+        "serviceName": "As Prompt",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "key=": "params.key",
+            "text=": "'From: ' + (params.value.from || '(unknown)') + '\\nSubject: ' + (params.value.subject || '(none)') + '\\n\\n' + (params.value.text || params.value.body || JSON.stringify(params.value))"
+          }
+        }
+      },
+      {
+        "uuid": "extract",
+        "serviceId": "text-generation",
+        "serviceName": "Extract Offer",
+        "state": {
+          "backend": "anthropic",
+          "model": "claude-sonnet-5",
+          "systemPrompt": "Extract the booking request from this enquiry. Leave a field out when the message does not state it — never guess.",
+          "maxTokens": 1024,
+          "jsonSchema": {
+            "type": "object",
+            "properties": {
+              "hotel": {
+                "type": "string"
+              },
+              "rooms": {
+                "type": "integer"
+              },
+              "roomType": {
+                "type": "string"
+              },
+              "arrival": {
+                "type": "string",
+                "description": "ISO date"
+              },
+              "departure": {
+                "type": "string",
+                "description": "ISO date"
+              },
+              "breakfastIncluded": {
+                "type": "boolean"
+              },
+              "specialRequests": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "hotel",
+              "rooms"
+            ]
+          }
+        }
+      },
+      {
+        "uuid": "result",
+        "serviceId": "monitor",
+        "serviceName": "Extracted",
+        "state": {
+          "logToBoard": true
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "approval",
+        "title": "Enquiries waiting",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "queue",
+                "path": "records"
+              },
+              "selectable": true,
+              "rowKey": "key",
+              "selectionState": "picked",
+              "columns": [
+                "key",
+                "value.from",
+                "value.subject",
+                "createdAt"
+              ],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Process selected",
+                  "action": {
+                    "serviceUuid": "approved",
+                    "configure": {
+                      "keys": {
+                        "$state": "picked"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "generating": "#eab308",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "error"
+                  },
+                  "tone": "error",
+                  "placeholder": "Ready"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

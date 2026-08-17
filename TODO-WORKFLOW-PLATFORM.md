@@ -18,11 +18,11 @@ consumer, not the reason.
 
 | | Gap | Runtime | Effort | Phase | Status |
 | --- | --- | --- | --- | --- | --- |
-| G1 | `text-generation` with an Anthropic backend | node | M | 0 | ☐ |
+| G1 | `text-generation` with an Anthropic backend | node | M | 0 | ☑ |
 | G1b | Tool-use as nested sub-pipelines | node | L | 2 | ✎ |
-| G2 | `document-extract` (xberg backend) | node | M | 0 | ☐ |
+| G2 | `document-extract` (xberg backend) | node | M | 0 | ☑ |
 | G3 | OCR cascade — native text → local OCR → vision | node | S | 1 | ☐ |
-| G4 | `store` — durable board-scoped KV | node | M | 0 | ☐ |
+| G4 | `store` — durable board-scoped KV | node | M | 0 | ☑ |
 | G5 | Control-flow parity (10 services) | node | L | 1 | ☐ |
 | G6 | Approval queue — table-backed decoupling | node | L | 2 | ✎ |
 | G7 | Board-level logging over the existing bridges | coordinator + runtimes | M | 1 | ✎ |
@@ -262,19 +262,86 @@ tokens push, user JWTs read.**
 Goal: one deployed board that demonstrates C1–C4 on a single real offer email. This is the
 demo that decides whether the customer engages at all, so it favours breadth over depth.
 
-- ☐ **G1 — `text-generation`, Anthropic backend.** Messages array in, system prompt,
-  JSON-schema-constrained output, vision (image parts), `usage` reported in the existing
-  output contract. No tool-use yet. Effort M.
-- ☐ **G2 — `document-extract`.** xberg backend behind an optional dependency, `backend`
-  state present from the start. PDF text layer, DOCX, XLSX, HTML → text. Emits text plus a
-  confidence/yield signal that G3 will later branch on. Effort M.
-- ☐ **G4 — `store`.** Durable, board-scoped, keyed. File-backed; reuse the
-  `fileBoardStore` patterns in `hkp-node/src/coordinator/`. Solves the customer's stated
-  "user navigates away while the model runs for 20–60 s" problem and backs the cheap-dump
-  table. Effort M.
-- ☐ **Demo board.** Missive sidebar → mount → `document-extract` → `text-generation` →
-  facade approval table → `http-client` writes Baserow → read-back diff. Deployed to the
-  coordinator so *any* employee can trigger it.
+- ☑ **G1 — `text-generation`, Anthropic backend.** Done 2026-08-15.
+  `hkp-node/src/services/text-generation.ts` — same service id, state contract and output
+  shape as hkp-python's, so the UI panel and any board move across unchanged. Messages
+  array in, system prompt as a parameter, `jsonSchema` (sent as a forced tool, parsed
+  object emitted as `json`), images from `{meta, binary}` or `{images: [...]}`, streaming
+  as `{streamText}`, `thinking`, and `usage` in the shared shape. The key is write-only and
+  falls back to `ANTHROPIC_API_KEY` in the runtime's environment — which is how a deployed
+  board avoids carrying one at all, and the answer to the ⚠ constraint for this service.
+  Answers are pushed, not returned (the `http-client` inversion-of-control path), because
+  generation outlives the pass that started it. No tool-use yet — that is G1b.
+  `hkp-node/tests/text-generation.test.ts` (19), demo board
+  `text-generation-anthropic-demo-board.json`, docs page extended.
+- ☑ **G2 — `document-extract`.** Done 2026-08-15.
+  `hkp-node/src/services/document-extract.ts`, `backend` state (`xberg` | `builtin`) from
+  the start. Emits `{text, chars, pages, charsPerPage, sparse, method, format, backend,
+  durationMs, truncated?, textCoverage?, confidence?, metadata?, tables?}`.
+  `hkp-node/tests/document-extract.test.ts` (20), demo board
+  `document-extract-demo-board.json`, docs page `docs/content/services/document-extract.md`.
+
+  Three things the decision above got wrong or left open, settled by building it:
+
+  - **The package is `@xberg-io/xberg`, not `xberg`** — the bare name is not on npm. Its
+    API is `extract({kind:"bytes", bytes, mimeType?, filename?}, config)` →
+    `{results: [{content, mimeType, counts:{pages}, extractionMethod,
+    extractionConfidence:{textCoverage, combined}, tables, metadata}], errors}`.
+  - **Registration is not conditional after all.** It was going to be, but `builtin` is a
+    real backend (text/HTML/JSON/CSV, no dependency), so hiding the whole service when the
+    optional package is absent would remove something that works. The dependency is absent
+    from `package.json` entirely, resolved by dynamic import, and reported with an install
+    hint when missing.
+  - **OCR is on by default, and `sparse` marks what even OCR could not read.** An earlier
+    version of this entry had OCR off on the grounds that it "costs money". That was
+    wrong: xberg's OCR engines run locally, so a scanned page costs CPU and nothing else,
+    and refusing to read one just hands back an empty document. `ocr` is now
+    `auto` (default) | `off` | `force`, mapping to the library's own
+    `disableOcr` / `forceOcr`, with `ocrBackend` and `ocrLanguage` passed through.
+    `sparse` therefore means something stronger than before — *a local engine could not
+    read these pages either* — which is exactly the point at which paying is justified.
+    It prefers the backend's `textCoverage` over character density, because density cannot
+    see which pages produced text.
+- ☑ **G4 — `store`.** Done 2026-08-15. `hkp-node/src/services/store.ts` over
+  `services/recordStore.ts`, which follows `coordinator/fileBoardStore.ts` exactly:
+  derived path names, tmp-then-rename, `0o700`/`0o600`. Five modes (put/get/list/delete/
+  clear); a `get` miss returns nothing and stops the pipeline, which is what makes
+  look-up-then-fetch two services rather than a branch. `HKP_STORE_DIR` moves it,
+  `HKP_STORE_DIR=""` keeps records in memory. `hkp-node/tests/store.test.ts` (23), demo
+  board `store-demo-board.json`, docs page `docs/content/services/store.md`.
+
+  **Prerequisite built with it: runtimes now know their tenant and board.**
+  `RuntimeHost.scope()` returns `{owner, boardName}`; `RuntimeApp` passes the owner key it
+  already resolves into `HostedRuntime`, and `sub-service` hands its scope down to a nested
+  pipeline the same way it already hands down log settings. Without this a service could
+  not namespace anything durable — it is told its own configuration and nothing about who
+  asked for it — and one tenant's records would land in another's. Anything stateful after
+  this (G6's approval queue, G12's secret store) needs the same seam.
+- ◐ **Demo board.** `offer-intake-demo-board.json` — the loop, end to end, minus the
+  customer-specific ends. Webhook → `store` (put) → a facade table of what is waiting →
+  a person ticks rows → `store` (release) → `document-extract` → `text-generation` with a
+  `jsonSchema` → monitor. Their sidebar posts to the mount instead of an n8n webhook,
+  which needs no work on our side.
+
+  **The human checkpoint, built the cheap way (2026-08-16).** No approval service and no
+  new widget: `data-table` gained row selection, and `store` gained a `release` mode.
+  - A table notification carrying an **array** now replaces the table rather than
+    appending — appending a queue on every read would show every item once per read.
+    An object still appends, so existing log-style tables are unchanged. Replace-mode
+    tables also stop auto-jumping to the last page, which would take somebody working
+    through a queue away from the page they were reading.
+  - `selectable` writes the picked rows into facade state; an ordinary `button` sends
+    them on with `{"keys": {"$state": "picked"}}`, using the `$state` resolution that
+    already existed in `executeActions.ts`.
+  - `release` acts **on configure**, because a facade button can only configure a
+    service — the same shape Timer uses for `start: true`. `keys` is kept out of
+    `getState` so a saved board cannot re-release on open.
+  - Select-all covers the page in view, not the whole buffer.
+
+  Still open before this is a customer demo: `http-client` writing Baserow and the
+  read-back diff (needs their schema and a credential — see the ⚠ constraint), and
+  whether approval should be reversible. **Approving is currently final**: a released
+  record leaves the store, so a failure downstream loses it. That is G8's job.
 
 The demo board is the deliverable, not the services. Their sidebar stays their sidebar; it
 posts to a mount instead of an n8n webhook, which needs no work on our side.
@@ -302,12 +369,23 @@ Goal: a board that can be trusted with real correspondence unattended.
   TODO-CONSOLIDATION §1 (load every board in `hkp-frontend/boards/`, assert each
   non-browser `serviceId` resolves in that runtime's registry) to cover the parity set.
   Effort L.
-- ☐ **G3 — OCR cascade.** Native text layer → local OCR (Tesseract or PaddleOCR via
-  xberg) → escalate to Claude vision only on low confidence or a table layout that fails
-  to parse. Depends on G5 for the branch. Effort S on top of G2.
+- ☐ **G3 — OCR cascade.** Mostly built already, and smaller than this entry assumed.
+  G2 covers the first two tiers: native text layer, then local OCR, both inside
+  `document-extract` and both free of per-page cost. What remains is the third tier and
+  it is **configuration, not a new service** — xberg implements it internally as
+  `ocr.vlmFallback: {mode: "disabled" | "on_low_quality", qualityThreshold} | {mode: "always"}`
+  plus `ocr.vlmConfig` (an `LlmConfig`), so escalation to a vision model is a few state
+  fields on the service that already exists. Two ways to expose it, to be decided when
+  built: hand it to xberg (one service, one call, the library picks per page) or branch in
+  the board on `sparse` into a `text-generation` with the page images (visible in the
+  board, costs a `switch` from G5, and reuses G1's vision support). The first is simpler;
+  the second is the one a board creator can see and cap.
   Be honest in any pitch: the customer's worst documents (bad faxed scans) are exactly
   where local OCR is weakest. The claim is *"most documents cost nothing, the hard ones
   cost a known, capped amount"* — not *"free"*.
+  Engine note for deployment: `tesseract` is the one engine that is **not** bundled (system
+  install plus language packs); `paddleocr`/`sceptre`/`candle-*` download weights from
+  Hugging Face on first use, so the first document through a cold runtime is slow.
 - ☐ **G8 — retry / backoff / dead-letter.** There is nothing today: a flaky Baserow call
   loses data silently. Decide between a runtime-level policy and a `retry` sub-service
   wrapper. Effort M.
@@ -337,8 +415,36 @@ two additions, mirroring exactly how `notification` already flows:
 Entry shape, shared by both hops:
 
 ```
-{ runId, ts, runtimeId, serviceUuid, level, event, data?, durationMs? }
+{ runId, parentRunId, ts, runtimeId, serviceUuid, level, event, data?, durationMs? }
 ```
+
+**`parentRunId` is required, not reserved** (decided 2026-08-15). A run stops being a line
+the moment sub-services exist — `sub-service`, `http-server-subservices` handlers, `Switch`
+cases — and **G1b makes every tool call a nested pipeline**. With a flat id, the outer
+pipeline and everything inside every nested one share one id: the log can say the entries
+belong to one run but not how they nest, so a Switch with three cases plus a tool-use loop
+is 40 entries in timestamp order with no structure. Since the point of G1b is that a tool
+call is an inspectable pipeline, a log that cannot show *"the model called this tool, which
+ran these three services"* misses the feature it exists to support — and tool calls
+interleave, because a loop makes several per turn.
+
+Each nested invocation mints its own `runId` and records the one it was invoked from, so a
+reader rebuilds the tree:
+
+```
+run A  (webhook)
+├─ document-extract
+├─ text-generation
+│   ├─ run B  parent=A   (tool: baserow-lookup) → http-client
+│   └─ run C  parent=A   (tool: write-row)      → http-client
+└─ monitor
+```
+
+This is trace/span in miniature (`runId` ≈ trace id). Deliberately *not* a full span model
+— the parent link is most of the value for nesting at a fraction of the complexity.
+hkp-rt corroborates that nesting needs tracking at all: its `ProcessDepth` counter
+(renamed from `ProcessContext`, TODO-CONSOLIDATION §4) exists because the runtime cannot
+otherwise tell when a run is finished.
 
 Service-facing, on `RuntimeHost` beside the existing `notify`:
 
@@ -381,8 +487,9 @@ session token (see the decision above).
 *will* eventually log something it should not. So redaction is the last layer, not the
 first:
 
-- **`data` is opt-in, default off.** Look at the entry shape: `runId`, `ts`, `runtimeId`,
-  `serviceUuid`, `level`, `durationMs` are structural and carry no PII risk; `event` is a
+- **`data` is opt-in, default off.** Look at the entry shape: `runId`, `parentRunId`, `ts`,
+  `runtimeId`, `serviceUuid`, `level`, `durationMs` are structural and carry no PII risk;
+  `event` is a
   service-authored string, bounded and low-risk. **Essentially all PII risk lives in the
   free-form `data` payload.** Making that one field opt-in per board means a service that
   forgets to redact can only leak through a channel somebody deliberately enabled. It

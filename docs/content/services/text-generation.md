@@ -1,28 +1,31 @@
 # Text Generation
 
-Generates text with a local large language model — via an OpenAI-compatible server or fully in-process.
+Generates text with a large language model — a local one via an OpenAI-compatible server or in-process, or a hosted one.
 
 ---
 
 ## Available in
 
-| Runtime | Service ID |
-|---|---|
-| Python (hkp-python) | `text-generation` |
-| C++ (hkp-rt) | `text-generation` |
+| Runtime | Service ID | Backends |
+|---|---|---|
+| Python (hkp-python) | `text-generation` | `server`, `local` |
+| C++ (hkp-rt) | `text-generation` | `server`, `local` |
+| Node.js (hkp-node) | `text-generation` | `anthropic` |
 
-Both runtimes expose the same state keys, the same input shapes, and the same
-output JSON, so a board can move the service between them unchanged.
+All three expose the same state keys, the same input shapes, and the same
+output JSON, so a board can move the service between them unchanged. Which
+backends a runtime offers differs — the local ones run a model on the machine,
+the node one calls a hosted API.
 
 ---
 
 ## What it does
 
-Text Generation takes a prompt, runs it through a locally hosted LLM, and
-emits the answer as JSON to the next service or runtime. Everything runs
-locally — no text leaves your machine.
+Text Generation takes a prompt, runs it through an LLM, and emits the answer as
+JSON to the next service or runtime.
 
-Two backends are available, selected by the `backend` state:
+On **hkp-python** and **hkp-rt** everything runs locally — no text leaves your
+machine — through one of two backends selected by the `backend` state:
 
 - **`server`** (default) — the service is a thin client to any locally
   running server that speaks the OpenAI chat-completions API
@@ -32,6 +35,13 @@ Two backends are available, selected by the `backend` state:
 - **`local`** — the service loads a standard GGUF (Qwen, Llama, Mistral, ...)
   directly into the runtime process — via `llama-cpp-python` in hkp-python,
   via embedded llama.cpp in hkp-rt. No external server process is needed.
+
+On **hkp-node** the backend is **`anthropic`**: a hosted Claude model, reached
+over the network. Text does leave the machine, and in exchange the service needs
+no model on disk, no GPU, and no server process — which is what makes it the one
+that works on a board deployed to a coordinator with nobody watching. It also
+adds three things the local backends have no equivalent for: constrained output
+(`jsonSchema`), images in the input, and extended reasoning.
 
 The natural producer is the **Speech To Text** service — its output JSON
 carries a `text` key that pipes straight in — and the natural consumer is
@@ -70,6 +80,20 @@ it was not compiled in.
 Either way you also need a GGUF file on disk (e.g. `Qwen3-0.6B-Q8_0.gguf` from
 Hugging Face).
 
+**Anthropic backend (hkp-node)** — an API key, and nothing else. Give it to the
+service as `apiKey`, or put `ANTHROPIC_API_KEY` in the environment the runtime
+starts in:
+
+```
+ANTHROPIC_API_KEY=sk-ant-... npm start
+```
+
+Prefer the environment for anything deployed. `apiKey` is write-only — the
+service accepts it and never gives it back, the same way `smtp-email` treats
+its password — but it is still a credential inside the board, and a board can be
+downloaded, shared as a link, or sent through the AI Refiner. A key in the
+environment is in none of those places.
+
 ---
 
 ## Configuration
@@ -96,6 +120,60 @@ In local mode the model loads lazily on first use and reloads when
 local mode, add `/no_think` to the system prompt to suppress reasoning
 (the `thinking` toggle is a llama-server chat-template extension).
 
+### Anthropic backend (hkp-node)
+
+Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
+`timeoutSec` and `stream`, which mean what they mean everywhere else:
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `backend` | `string` | `"anthropic"` | The only backend this runtime offers |
+| `apiKey` | `string` | `""` | Write-only; falls back to `ANTHROPIC_API_KEY` in the runtime's environment |
+| `apiKeyConfigured` | `bool` | — | Read-only: whether a key is available, from either source |
+| `baseUrl` | `string` | `"https://api.anthropic.com"` | Override to point at a proxy |
+| `model` | `string` | `"claude-sonnet-5"` | Any model the API accepts |
+| `thinking` | `bool\|null` | `null` | `true` turns on extended reasoning, reported in `thinking` |
+| `thinkingBudgetTokens` | `number` | `1024` | Tokens reasoning may use; `maxTokens` is lifted above it when it is not already |
+| `jsonSchema` | `object\|string\|null` | `null` | Constrains the answer to a shape — see below |
+
+Two behaviours worth knowing:
+
+- **`thinking: true` fixes sampling.** `temperature`, `topP` and `topK` are not
+  sent while reasoning, because the API rejects a request that carries them.
+- **`jsonSchema` turns streaming off** for that call. A constrained answer
+  arrives as arguments rather than prose, and half of a JSON object is of no
+  use to anything.
+
+---
+
+## Constrained output
+
+Set `jsonSchema` to a JSON Schema and the answer is guaranteed to match it. The
+parsed object is emitted as `json`, and `text` carries the same object
+serialized, so a board that only knows the shared output contract still has
+something to route.
+
+```json
+{
+  "serviceId": "text-generation",
+  "state": {
+    "systemPrompt": "Extract the booking request. Leave a field out when the message does not state it — never guess.",
+    "jsonSchema": {
+      "type": "object",
+      "properties": {
+        "hotel": { "type": "string" },
+        "rooms": { "type": "integer" },
+        "arrival": { "type": "string", "description": "ISO date" }
+      },
+      "required": ["hotel", "rooms"]
+    }
+  }
+}
+```
+
+Under the hood the schema is sent as a single tool the model is required to
+call — the API's own mechanism for this — and its arguments are the answer.
+
 ---
 
 ## Input / Output
@@ -103,7 +181,24 @@ local mode, add `/no_think` to the system prompt to suppress reasoning
 | | Shape |
 |---|---|
 | **Input** | `String` prompt, or JSON with `prompt`, `text`, or a full `messages` array |
-| **Output** | `{ "text": string, "thinking"?: string, "model": string, "durationMs": number, "usage": { "promptTokens": number, "completionTokens": number } }` |
+| **Output** | `{ "text": string, "json"?: any, "thinking"?: string, "model": string, "durationMs": number, "usage": { "promptTokens": number, "completionTokens": number } }` |
+
+The `anthropic` backend also reads **images** out of the input, so a scan or a
+photo that arrived from `http-client`, an email attachment, or a `file-pick`
+widget can be asked about directly:
+
+| Input carries | Becomes |
+|---|---|
+| `{ meta: { contentType: "image/png" }, binary }` — what `http-client` and `http-server-subservices` produce | one image, plus `prompt`/`text` as the question |
+| `{ images: [{ contentType, data }, ...] }` — `data` as bytes or base64 | one part each |
+
+Images are placed before the question, which is how the model reads them best.
+
+**On the node runtime the answer is pushed, not returned.** Generation takes
+seconds, and the pipeline does not wait — so the service returns nothing, stops
+the push, and calls the rest of the pipeline itself once the answer arrives (the
+inversion-of-control path `http-client` also takes). For a board this is
+invisible: the services after it run with the result, as they would anyway.
 
 For thinking models the reasoning is split off into the `thinking` field;
 `text` carries only the answer. Unsupported input, an unreachable server,
@@ -166,3 +261,15 @@ curl -X POST http://127.0.0.1:5556/runtimes/text-generation-example \
   -H 'Content-Type: application/json' \
   -d '{"prompt":"Name three primary colors."}'
 ```
+
+For the Anthropic backend, `boards/text-generation-anthropic-demo-board.json`
+turns a booking enquiry into structured fields (Injector → text-generation with
+a `jsonSchema` → monitor). Start hkp-node with a key in its environment and
+inject the message:
+
+```
+ANTHROPIC_API_KEY=sk-ant-... npm start --prefix hkp-node
+```
+
+The monitor shows the extracted object, not prose — which is what makes the
+next service in a board able to act on it.
