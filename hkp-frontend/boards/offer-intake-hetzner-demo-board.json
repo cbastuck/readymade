@@ -1,6 +1,6 @@
 {
-  "boardName": "Offer Intake",
-  "description": "Enquiries arrive and wait. A person approves the ones worth processing; each approved one is read, extracted into fields, and written on. Extraction runs against a local model, so start one first: ./build/bin/llama-server -m ~/Development/claude/models/Qwen3-0.6B-Q8_0.gguf --port 8081",
+  "boardName": "Offer Intake (Hetzner)",
+  "description": "Enquiries arrive and wait. A person approves the ones worth processing; each approved one is read, extracted into fields, and written on. Extraction runs against Hetzner's hosted inference API, which needs one thing set on the Extract Offer service: apiKey. It is write-only — configure it on the panel and it is never saved back into this board. The model is preset to Qwen/Qwen3.6-35B-A3B-FP8; the endpoint also serves Qwen3.8-27B, and lists whatever it currently has: curl -s https://inference.hetzner.com/api/v1/models -H \"Authorization: Bearer $TOKEN\"",
   "runtimes": [
     {
       "id": "intake",
@@ -123,11 +123,11 @@
         "serviceName": "Extract Offer",
         "state": {
           "backend": "server",
-          "serverUrl": "http://127.0.0.1:8081",
-          "model": "qwen3-0.6b",
+          "serverUrl": "https://inference.hetzner.com/api/v1",
+          "model": "Qwen/Qwen3.6-35B-A3B-FP8",
           "systemPrompt": "Extract the booking request from this enquiry. Leave a field out when the message does not state it — never guess.",
           "thinking": false,
-          "maxTokens": 1024,
+          "maxTokens": 4096,
           "jsonSchema": {
             "type": "object",
             "properties": {

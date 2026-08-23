@@ -123,7 +123,7 @@ environment is in none of those places.
 | `topK` | `number` | `20` | Top-k sampling |
 | `maxTokens` | `number` | `512` | Completion token budget |
 | `timeoutSec` | `number` | `300` | Server backend: request timeout |
-| `thinking` | `bool\|null` | `null` | Server backend (llama-server only): force thinking on/off; `null` sends nothing |
+| `thinking` | `bool\|null` | `null` | Server backend: force thinking on/off, for a server whose chat template takes the flag; `null` sends nothing |
 | `stream` | `bool` | `true` | Generate token by token and notify the growing text as `{streamText}` (final notification carries `streamDone: true`) for live chat-bot-style display; the pipeline output is unaffected and still emitted once, when generation finishes. Set `false` for servers without SSE support |
 
 In local mode the model loads lazily on first use and reloads when
@@ -141,18 +141,45 @@ Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
 | `backend` | `string` | `"anthropic"` | `anthropic` (hosted) or `server` (OpenAI-compatible HTTP) |
 | `apiKey` | `string` | `""` | Write-only; falls back to `ANTHROPIC_API_KEY` in the runtime's environment |
 | `apiKeyConfigured` | `bool` | — | Read-only: whether a key is available, from either source |
-| `baseUrl` | `string` | `"https://api.anthropic.com"` | Override to point at a proxy |
+| `serverUrl` | `string` | `""` | Empty means the backend's own address; set it for a proxy, or for a hosted OpenAI-compatible endpoint |
+| `endpoint` | `string` | — | Read-only: the URL this configuration actually reaches |
 | `model` | `string` | `"claude-sonnet-5"` | Any model the API accepts |
 | `thinking` | `bool\|null` | `null` | `true` turns on extended reasoning, reported in `thinking` |
 | `thinkingBudgetTokens` | `number` | `1024` | Tokens reasoning may use; `maxTokens` is lifted above it when it is not already |
 | `jsonSchema` | `object\|string\|null` | `null` | Constrains the answer to a shape — see below |
 
-On `backend: "server"` this runtime reads `serverUrl` rather than `baseUrl`,
-and behaves as the server backend does everywhere else. One difference is
-deliberate and worth stating: **the `ANTHROPIC_API_KEY` fallback does not apply
-there.** That key belongs to the hosted API, and a board naming its own address
-would otherwise hand the credential to whatever is listening at it. A server
-that does want a token gets the configured `apiKey` as a bearer.
+**One address field, for both backends.** `serverUrl` left empty means "wherever
+this backend lives" — `https://api.anthropic.com` or `http://127.0.0.1:8081` —
+and the default is resolved when the request is made rather than written into
+the board, so switching backends carries nothing stale across. Set it to point
+at a proxy, or at a hosted OpenAI-compatible endpoint. `endpoint` reports where
+a configuration actually reaches, including the API version, which is the one
+question the address alone does not answer:
+
+```json
+{ "backend": "server", "serverUrl": "https://inference.example.com/api/v1" }
+→ endpoint: "https://inference.example.com/api/v1/chat/completions"
+```
+
+A base URL already carrying a version keeps it; a bare origin gets `/v1` added,
+because that is how the two kinds of server hand their address out.
+
+One difference between the backends is deliberate and worth stating: **the
+`ANTHROPIC_API_KEY` fallback does not apply on `server`.** That key belongs to
+the hosted API, and a board naming its own address would otherwise hand the
+credential to whatever is listening at it. A server that does want a token gets
+the configured `apiKey` as a bearer.
+
+**A reasoning model needs `thinking: false` to answer inside a schema.** Qwen3
+and its relatives reason before answering by default, and a `jsonSchema`
+constrains output from the first token — leaving nowhere to reason. What comes
+back is a well-formed response that spent its whole `maxTokens` budget and
+carries no answer. Setting `thinking: false` sends
+`chat_template_kwargs: {enable_thinking: false}`, which those templates honour;
+raising `maxTokens` works too, more slowly. A generation that produces neither
+text nor `json` is reported as a failure and stops the pipeline rather than
+being passed on, so a board that settles its work at the end cannot mark an
+item done having produced nothing.
 
 Two behaviours worth knowing:
 
