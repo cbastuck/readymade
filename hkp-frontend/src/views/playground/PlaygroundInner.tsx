@@ -47,7 +47,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
       />
       <SaveBoardDialog
         isOpen={props.isSaveDialogVisible}
-        suggestedName={props.suggestedName}
+        suggestedName={boardContext.boardName || props.suggestedName}
         suggestedDescription={props.description}
         onSave={props.onSaveDialog}
         onCancel={() => props.setIsSaveDialogVisible(false)}
