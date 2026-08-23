@@ -211,7 +211,9 @@ export default function ServiceFrame({
   }, [service, configVisible]);
 
   const onInject = (data: any) => {
-    service.app.next(service, data);
+    // A replay: the inspector is pushing a value back through the board, so the
+    // service this plug belongs to has not produced anything to record.
+    service.app.next(service, data, { replay: true });
   };
 
   const onChangeName = (newName: string) => {

@@ -225,6 +225,22 @@ export type ServiceAction = {
 
 export type AppInstance = AppImpl;
 
+export type NextOptions = {
+  /**
+   * The value is being pushed back in from outside rather than produced by the
+   * service — the flow inspector replaying a captured or hand-edited value, a
+   * panel pushing its buffer downstream.
+   *
+   * A service emitting on its own (a Timer tick, an arriving message) was never
+   * called by the pipeline, so nothing else reports the output it just made and
+   * `next` reports it on the service's behalf. A replay has no such output:
+   * counting one would have the service record work it never did, and the flow
+   * inspector would grow a history entry for every click of its own Inject
+   * button.
+   */
+  replay?: boolean;
+};
+
 export type AppImpl = {
   getAuthenticatedUser: () => User | null;
   notify: (svc: InstanceId, notification: any) => void; // TODO: should be InstanceId instead of ServiceImpl
@@ -236,7 +252,15 @@ export type AppImpl = {
    * taken from the call the service is inside, so it says only what happened.
    */
   log: (svc: InstanceId, level: LogLevel, event: string, data?: any) => void;
-  next: (svc: InstanceId | null, result: any) => void;
+  /**
+   * Emits `result` as if `svc` had just produced it: the services after `svc`
+   * run, `svc` itself and everything before it does not.
+   */
+  next: (
+    svc: InstanceId | null,
+    result: any,
+    options?: NextOptions,
+  ) => void;
   getServiceById: (uuid: string) => ServiceInstance | null;
   sendAction: (action: ServiceAction) => void;
   storeServiceData: (serviceUuid: string, key: string, value: string) => void;

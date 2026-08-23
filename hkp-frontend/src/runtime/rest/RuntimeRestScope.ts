@@ -6,6 +6,7 @@ import {
   RuntimeDescriptor,
   RuntimeScope,
   ServiceAction,
+  ServiceDescriptor,
   ServiceRegistry,
   User,
 } from "hkp-frontend/src/types";
@@ -38,6 +39,15 @@ export default class RuntimeRestScope implements RuntimeScope {
   authenticatedUser: User | null = null;
   runtimeOutput: WebSocket | undefined;
   registry: ServiceRegistry = [];
+  /**
+   * The runtime's services in pipeline order.
+   *
+   * A browser runtime keeps its instances and can say what follows a given
+   * service; a remote one only ever sees descriptors, so the order is kept here
+   * to answer the same question — which service a result should be handed to
+   * next.
+   */
+  services: Array<ServiceDescriptor> = [];
 
   constructor(
     runtime: RuntimeDescriptor,

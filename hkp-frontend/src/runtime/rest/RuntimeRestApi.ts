@@ -221,6 +221,7 @@ async function attachRuntime(
     user,
   );
   scope.registry = registry;
+  scope.services = existing.services;
   return {
     runtime: descriptor,
     // The running services, not the board's: their state is what is live.
@@ -320,6 +321,7 @@ export async function attachRuntimes(
       user,
     );
     scope.registry = registry;
+    scope.services = cur.services;
     return {
       ...acc,
       runtimes: [...acc.runtimes, rt],
@@ -459,13 +461,48 @@ export async function getServiceConfig(
   return state;
 }
 
+/**
+ * Runs the pipeline from `service` onward, that service included.
+ *
+ * The runtime-wide entry point (`processRuntime`) always starts at the first
+ * service, which is the wrong thing for anything that means "carry on from
+ * here" — replaying a captured value from the flow inspector, a panel pushing
+ * its buffer downstream. Both need the services before the target left alone.
+ */
 export async function processService(
-  _scope: RuntimeScope,
-  _service: InstanceId,
-  _params: any,
+  scope: RuntimeScope,
+  service: InstanceId,
+  params: any,
   _context?: ProcessContext | null,
 ): Promise<any> {
-  throw new Error("RemoteRuntime processService no implemented");
+  const runtime = scope.descriptor;
+  const res = await fetch(
+    `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}/process`,
+    {
+      method: "POST",
+      body: JSON.stringify(params ?? null),
+      headers: {
+        "content-type": "application/json",
+        ...authHeaders((scope as RuntimeRestScope).authenticatedUser),
+      },
+    },
+  );
+  if (!res.ok) {
+    throw new Error(
+      `Failed to process service ${service.uuid}: ${res.status} ${res.statusText}`,
+    );
+  }
+
+  // A pipeline that stopped answers with an empty body rather than JSON.
+  const body = await res.text();
+  if (!body) {
+    return null;
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    return body;
+  }
 }
 
 export async function rearrangeServices(
@@ -545,6 +582,7 @@ async function createRuntimeRequest(
     user ?? null,
   );
   scope.registry = normalizedRegistry;
+  scope.services = rt.services ?? [];
 
   return {
     runtime: rt,

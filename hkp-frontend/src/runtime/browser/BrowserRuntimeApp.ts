@@ -4,6 +4,7 @@ import {
   AppImpl,
   InstanceId,
   LogLevel,
+  NextOptions,
   ServiceAction,
   ServiceClass,
   ServiceDescriptor,
@@ -29,8 +30,13 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     // whether the runtime's UI component has rendered. Null on plain web.
     mintToken: (request: RuntimeTokenRequest): Promise<string | null> =>
       mintTokenViaPlatform(request),
-    next: (svc: InstanceId | null, result: any) => {
-      if (svc) {
+    next: (svc: InstanceId | null, result: any, options?: NextOptions) => {
+      // The loop in scope.next only reports the services it calls, and this one
+      // is not among them: it emitted on its own. Reporting it here is what
+      // keeps a Timer from looking idle while the service after it plainly
+      // receives data. A replay is the case with nothing to report — the value
+      // came from outside, so the service produced nothing.
+      if (svc && !options?.replay) {
         onServiceProcess(app, svc, undefined);
         onServiceResult(app, svc, result);
       }
