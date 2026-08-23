@@ -5,11 +5,13 @@ import { useVault } from "hkp-frontend/src/VaultContext";
 import { vaultSet } from "hkp-frontend/src/vault";
 import { useFacadeState } from "../../FacadeStateContext";
 import { executeActions } from "../../executeActions";
+import { usePressFeedback } from "../../pressFeedback";
 
 export function TextInputRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<TextInputWidget>) {
+  const submitPress = usePressFeedback("primary");
   const [value, setValue] = useState("");
   const [vaultResolved, setVaultResolved] = useState<string | null>(null);
   const autoSubmitted = useRef(false);
@@ -97,6 +99,7 @@ export function TextInputRenderer({
           }}
         />
         <button
+          {...submitPress.handlers}
           onClick={submit}
           style={{
             padding: "8px 14px",
@@ -108,6 +111,7 @@ export function TextInputRenderer({
             fontSize: 12,
             fontWeight: 500,
             flexShrink: 0,
+            ...submitPress.style,
           }}
         >
           {widget.submitLabel ?? "Set"}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { FilePickWidget } from "../../types";
 import { findService } from "../../boardServices";
+import { usePressFeedback } from "../../pressFeedback";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 type UploadState = "idle" | "sending" | "done";
@@ -23,6 +24,11 @@ export function FilePickRenderer({
   const [preview, setPreview] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>("");
   const [uploadState, setUploadState] = useState<UploadState>("idle");
+  const resetPress = usePressFeedback();
+  const sendPress = usePressFeedback(
+    "primary",
+    !file || uploadState === "sending",
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   const actionService = useMemo(
@@ -118,6 +124,7 @@ export function FilePickRenderer({
             {file?.name}
           </p>
           <button
+            {...resetPress.handlers}
             onClick={reset}
             style={{
               padding: "10px 24px",
@@ -128,6 +135,7 @@ export function FilePickRenderer({
               cursor: "pointer",
               fontSize: 14,
               fontWeight: 500,
+              ...resetPress.style,
             }}
           >
             Send another
@@ -258,6 +266,7 @@ export function FilePickRenderer({
               (actionService as any).send?.(file);
             }}
             disabled={!file || uploadState === "sending"}
+            {...sendPress.handlers}
             style={{
               width: "100%",
               maxWidth: 360,
@@ -276,7 +285,7 @@ export function FilePickRenderer({
                 file && uploadState !== "sending" ? "pointer" : "not-allowed",
               fontSize: 15,
               fontWeight: 600,
-              transition: "background 0.15s",
+              ...sendPress.style,
             }}
           >
             {uploadState === "sending" ? "Sending…" : "Send"}

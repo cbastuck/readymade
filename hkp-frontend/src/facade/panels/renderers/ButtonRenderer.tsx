@@ -2,6 +2,7 @@ import { ButtonWidget } from "../../types";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { useFacadeState } from "../../FacadeStateContext";
 import { executeActions } from "../../executeActions";
+import { usePressFeedback } from "../../pressFeedback";
 import {
   StatusDot,
   statusColor,
@@ -17,8 +18,10 @@ export function ButtonRenderer({
     boardContext,
     widget.indicator?.source,
   );
+  const press = usePressFeedback();
   return (
     <button
+      {...press.handlers}
       onClick={() => {
         executeActions({
           action: widget.action,
@@ -45,7 +48,7 @@ export function ButtonRenderer({
         fontSize: 13,
         fontWeight: 500,
         fontFamily: "monospace",
-        transition: "opacity 0.15s",
+        ...press.style,
       }}
     >
       {widget.indicator && (
