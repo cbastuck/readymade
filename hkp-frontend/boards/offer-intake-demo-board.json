@@ -3,8 +3,35 @@
   "description": "Enquiries arrive and wait. A person approves the ones worth processing; each approved one is read, extracted into fields, and written on.",
   "runtimes": [
     {
-      "id": "node",
-      "name": "hkp-node",
+      "id": "intake",
+      "name": "1 · Intake",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "queue",
+      "name": "2 · Waiting",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "process",
+      "name": "3 · Processing",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "requeue",
+      "name": "4 · Back to waiting",
       "type": "rest",
       "url": "http://127.0.0.1:8080",
       "state": {
@@ -13,7 +40,7 @@
     }
   ],
   "services": {
-    "node": [
+    "intake": [
       {
         "uuid": "intake",
         "serviceId": "http-server-subservices",
@@ -38,8 +65,10 @@
       {
         "uuid": "after-intake",
         "serviceId": "stopper",
-        "serviceName": "Intake Ends Here"
-      },
+        "serviceName": "Stored — Nothing Else Runs"
+      }
+    ],
+    "queue": [
       {
         "uuid": "refresh",
         "serviceId": "timer",
@@ -64,8 +93,10 @@
       {
         "uuid": "after-queue",
         "serviceId": "stopper",
-        "serviceName": "Queue Feeds The Panel Only"
-      },
+        "serviceName": "The Panel Reads This"
+      }
+    ],
+    "process": [
       {
         "uuid": "approved",
         "serviceId": "store",
@@ -151,8 +182,10 @@
       {
         "uuid": "after-settle",
         "serviceId": "stopper",
-        "serviceName": "Processing Ends Here"
-      },
+        "serviceName": "Done — Nothing Else Runs"
+      }
+    ],
+    "requeue": [
       {
         "uuid": "return",
         "serviceId": "store",
