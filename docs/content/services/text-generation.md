@@ -10,12 +10,13 @@ Generates text with a large language model — a local one via an OpenAI-compati
 |---|---|---|
 | Python (hkp-python) | `text-generation` | `server`, `local` |
 | C++ (hkp-rt) | `text-generation` | `server`, `local` |
-| Node.js (hkp-node) | `text-generation` | `anthropic` |
+| Node.js (hkp-node) | `text-generation` | `server`, `anthropic` |
 
 All three expose the same state keys, the same input shapes, and the same
 output JSON, so a board can move the service between them unchanged. Which
-backends a runtime offers differs — the local ones run a model on the machine,
-the node one calls a hosted API.
+backends a runtime offers differs: every runtime can talk to a **server**,
+hkp-python and hkp-rt can additionally load a GGUF **in-process**, and hkp-node
+can additionally call a **hosted API**.
 
 ---
 
@@ -36,12 +37,22 @@ machine — through one of two backends selected by the `backend` state:
   directly into the runtime process — via `llama-cpp-python` in hkp-python,
   via embedded llama.cpp in hkp-rt. No external server process is needed.
 
-On **hkp-node** the backend is **`anthropic`**: a hosted Claude model, reached
-over the network. Text does leave the machine, and in exchange the service needs
-no model on disk, no GPU, and no server process — which is what makes it the one
-that works on a board deployed to a coordinator with nobody watching. It also
-adds three things the local backends have no equivalent for: constrained output
-(`jsonSchema`), images in the input, and extended reasoning.
+**hkp-node** offers `server` and, instead of `local`, **`anthropic`**: a hosted
+Claude model, reached over the network. Text does leave the machine, and in
+exchange the service needs no model on disk, no GPU, and no server process —
+which is what makes it the one that works on a board deployed to a coordinator
+with nobody watching. It also adds images in the input and extended reasoning,
+which the local backends have no equivalent for.
+
+Node cannot load a GGUF in-process the way the other two can, which is why it
+has no `local`. On this runtime, local means a server next door — the same
+`server` backend, pointed at `127.0.0.1`. A board therefore moves between a
+model on your desk and a hosted one by changing two fields:
+
+```json
+{ "backend": "server",    "serverUrl": "http://127.0.0.1:8081", "model": "qwen3-0.6b" }
+{ "backend": "anthropic", "model": "claude-sonnet-5" }
+```
 
 The natural producer is the **Speech To Text** service — its output JSON
 carries a `text` key that pipes straight in — and the natural consumer is
@@ -120,14 +131,14 @@ In local mode the model loads lazily on first use and reloads when
 local mode, add `/no_think` to the system prompt to suppress reasoning
 (the `thinking` toggle is a llama-server chat-template extension).
 
-### Anthropic backend (hkp-node)
+### hkp-node
 
 Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
 `timeoutSec` and `stream`, which mean what they mean everywhere else:
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `backend` | `string` | `"anthropic"` | The only backend this runtime offers |
+| `backend` | `string` | `"anthropic"` | `anthropic` (hosted) or `server` (OpenAI-compatible HTTP) |
 | `apiKey` | `string` | `""` | Write-only; falls back to `ANTHROPIC_API_KEY` in the runtime's environment |
 | `apiKeyConfigured` | `bool` | — | Read-only: whether a key is available, from either source |
 | `baseUrl` | `string` | `"https://api.anthropic.com"` | Override to point at a proxy |
@@ -135,6 +146,13 @@ Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
 | `thinking` | `bool\|null` | `null` | `true` turns on extended reasoning, reported in `thinking` |
 | `thinkingBudgetTokens` | `number` | `1024` | Tokens reasoning may use; `maxTokens` is lifted above it when it is not already |
 | `jsonSchema` | `object\|string\|null` | `null` | Constrains the answer to a shape — see below |
+
+On `backend: "server"` this runtime reads `serverUrl` rather than `baseUrl`,
+and behaves as the server backend does everywhere else. One difference is
+deliberate and worth stating: **the `ANTHROPIC_API_KEY` fallback does not apply
+there.** That key belongs to the hosted API, and a board naming its own address
+would otherwise hand the credential to whatever is listening at it. A server
+that does want a token gets the configured `apiKey` as a bearer.
 
 Two behaviours worth knowing:
 
@@ -148,10 +166,12 @@ Two behaviours worth knowing:
 
 ## Constrained output
 
-Set `jsonSchema` to a JSON Schema and the answer is guaranteed to match it. The
+Set `jsonSchema` to a JSON Schema and the answer comes back in that shape. The
 parsed object is emitted as `json`, and `text` carries the same object
 serialized, so a board that only knows the shared output contract still has
 something to route.
+
+Available on hkp-node, on either of its backends.
 
 ```json
 {
@@ -171,8 +191,19 @@ something to route.
 }
 ```
 
-Under the hood the schema is sent as a single tool the model is required to
-call — the API's own mechanism for this — and its arguments are the answer.
+How the schema is sent depends on the backend, and so does how much it
+guarantees:
+
+| Backend | Sent as | Guarantee |
+|---|---|---|
+| `anthropic` | a single tool the model is required to call | the shape is enforced by the API |
+| `server` | `response_format: { type: "json_schema" }` | enforced by servers that implement it — llama.cpp compiles the schema to a grammar |
+
+Not every OpenAI-compatible server implements `response_format`, and one that
+does not answers in prose while reporting nothing unusual. When that happens
+the answer is still handed on with `text` set and `json` absent, and the
+runtime logs a `service.degraded` warning naming the likely cause — so a board
+sees what came back rather than an empty result it has to guess about.
 
 ---
 

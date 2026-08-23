@@ -1,6 +1,6 @@
 {
   "boardName": "Offer Intake",
-  "description": "Enquiries arrive and wait. A person approves the ones worth processing; each approved one is read, extracted into fields, and written on.",
+  "description": "Enquiries arrive and wait. A person approves the ones worth processing; each approved one is read, extracted into fields, and written on. Extraction runs against a local model, so start one first: ./build/bin/llama-server -m ~/Development/claude/models/Qwen3-0.6B-Q8_0.gguf --port 8081",
   "runtimes": [
     {
       "id": "intake",
@@ -122,8 +122,9 @@
         "serviceId": "text-generation",
         "serviceName": "Extract Offer",
         "state": {
-          "backend": "anthropic",
-          "model": "claude-sonnet-5",
+          "backend": "server",
+          "serverUrl": "http://127.0.0.1:8081",
+          "model": "qwen3-0.6b",
           "systemPrompt": "Extract the booking request from this enquiry. Leave a field out when the message does not state it — never guess.",
           "maxTokens": 1024,
           "jsonSchema": {
