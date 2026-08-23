@@ -1,5 +1,5 @@
 import { TextWidget } from "../../types";
-import { extractText } from "../../findService";
+import { extractText } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { useNotificationValue } from "./StatusIndicatorRenderer";
 

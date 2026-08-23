@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { DataTableWidget } from "../../types";
-import { findService, resolvePath } from "../../findService";
+import { findService } from "../../boardServices";
+import { resolvePath } from "../../readValue";
 import { useFacadeState } from "../../FacadeStateContext";
 import { WidgetRendererProps } from "../widgetRegistry";
 

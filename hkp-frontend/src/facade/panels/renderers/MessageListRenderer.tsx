@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { MessageListWidget } from "../../types";
-import { findService, extractText } from "../../findService";
+import { findService } from "../../boardServices";
+import { extractText } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 type ChatMessage = {

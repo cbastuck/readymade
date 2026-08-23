@@ -41,6 +41,16 @@ public:
 
   Data process(Data data, ProcessContext context = ProcessContext::newRun());
 
+  // Runs the pipeline starting **at** a named service rather than after it.
+  //
+  // processFrom() exists for a service handing work onward — it means "carry on
+  // behind me", so by default it advances past the caller. This is the other
+  // question: something outside the pipeline wants one service to do its job
+  // with a given payload, and that service must actually run. Throws when the
+  // runtime holds no service by that id.
+  Data processAt(const std::string& instanceId, Data data,
+                 ProcessContext context = ProcessContext::newRun());
+
   // ── RuntimeHost overrides ────────────────────────────────────────────────
   Data processFrom(const Service &service, Data data, bool advanceBefore=true, std::function<void(Data)> callback = nullptr) override;
   void scheduleProcessFrom(const Service &service, Data data, bool advanceBefore=true) override;

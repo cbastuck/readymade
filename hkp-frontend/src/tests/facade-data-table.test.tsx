@@ -57,9 +57,9 @@ function renderTable(widget: Partial<DataTableWidget> = {}) {
 }
 
 // findService looks a service up in the board; here the stub is the only one.
-vi.mock("hkp-frontend/src/facade/findService", async () => {
+vi.mock("hkp-frontend/src/facade/boardServices", async () => {
   const actual = await vi.importActual<any>(
-    "hkp-frontend/src/facade/findService",
+    "hkp-frontend/src/facade/boardServices",
   );
   return {
     ...actual,

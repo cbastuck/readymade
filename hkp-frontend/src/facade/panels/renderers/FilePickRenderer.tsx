@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { FilePickWidget } from "../../types";
-import { findService } from "../../findService";
+import { findService } from "../../boardServices";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 type UploadState = "idle" | "sending" | "done";

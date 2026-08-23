@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { XYPadWidget } from "../../types";
-import { findService } from "../../findService";
+import { findService } from "../../boardServices";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 const THUMB_RADIUS = 18;

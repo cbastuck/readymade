@@ -69,10 +69,12 @@ namespace in it untouched.
 |---|---|---|
 | `put` (default) | Writes a record | `{ key, value, createdAt, updatedAt }` |
 | `get` | Reads one back | the record, or **nothing at all** on a miss |
-| `list` | Every record of the board, oldest first | `{ records: [...], count }` |
+| `list` | Records of the board, oldest first | `{ records: [...], count }` |
 | `delete` | Removes one | `{ key, deleted }` |
-| `clear` | Empties the board's table | `{ cleared }` |
-| `release` | Lets picked records through and forgets them | one pass **per record** |
+| `clear` | Empties the table | `{ cleared }` |
+| `release` | Hands named records to the pipeline, one pass **per record** | the record |
+| `ack` | Settles the record this run was carrying — it finally leaves | `{ key, acknowledged }` |
+| `requeue` | Puts stranded records back where anyone can take them | nothing |
 
 **A `get` miss stops the pipeline.** That is the cache signal: whatever follows
 is the "go and fetch it" path, so it runs only when the lookup found nothing.
@@ -83,38 +85,74 @@ store (get) → http-client (fetch it) → store (put) → ...
 
 ---
 
-## The human checkpoint
+## A queue with a checkpoint in it
 
-`release` is how a person decides what gets processed. It takes a list of keys,
-sends each of those records down the rest of the pipeline **one pass at a
-time**, and removes them from the store. Everything else stays exactly where it
-was — the queue is what has *not* been dealt with.
+The last three modes turn the table into a work queue that something outside the
+board — usually a person — decides the pace of.
 
-It runs from `configure` as well as from an input, because a facade button can
-only configure a service; it does not start a pipeline pass. So a panel is:
+`release` takes a list of keys and sends each of those records down the rest of
+the pipeline, **one pass per record**. Everything else stays where it was: the
+queue is what has *not* been dealt with. One pass per record rather than one
+batch, because what follows an approval is per-item work — read this document,
+write this row — and a board should not have to unpack a batch to do it.
 
-```json
-{ "type": "data-table", "source": { "serviceUuid": "queue", "path": "records" },
-  "selectable": true, "rowKey": "key", "selectionState": "picked" },
-{ "type": "button", "label": "Process selected",
-  "action": { "serviceUuid": "approved",
-              "configure": { "keys": { "$state": "picked" } } } }
+The keys arrive as **input**, so whoever decides sends them with the pipeline's
+`process` entry point: a facade button, an HTTP call to a mount, or a service
+upstream that picked them itself.
+
+### Nothing is lost when the work fails
+
+A released record is **leased, not deleted**. It leaves the queue, but stays on
+disk until an `ack` says the work finished:
+
+```
+store(release) → … → http-client(Baserow) → store(ack)
+                                            ↑ the success point
 ```
 
-One pass per record rather than one batch: what follows an approval is per-item
-work — read this document, write this row — and a board should not have to
-unpack a batch to do it.
+Where you put the `ack` is how the board says what "done" means. That has to be
+declared, because **the pipeline cannot report its own outcome**: a service that
+answers late returns nothing from its pass, so success and failure look
+identical to whatever called it.
 
-`keys` is never reported in `getState`, so a saved board cannot carry a stale
-list that would release again the next time it is opened.
+An `ack` with no key settles the record **this run** was carrying. `release`
+hands each record to a run of its own and writes that run onto the record, and
+the run id threads through every service after it — including the ones that
+answer long after the pass that started them. So the acknowledgement finds its
+record without the board carrying the key through every step, which the services
+in between would otherwise drop. Naming a key outright still works where a board
+prefers it.
 
-**Approving is final.** A released record is gone from the store, so if the
-pipeline behind it fails, it is not waiting to be retried. Retry and
-dead-lettering are a separate concern; until they exist, treat approval as a
-commitment.
+Anything that never reaches the `ack` stays in flight: out of the queue, so
+nobody takes it twice, and still there. `requeue` is how it goes back.
 
-Records already dealt with are passed over without complaint — two people
-looking at the same queue is the normal case, not an error.
+Every record says which state it is in, so one table can show both:
+
+```json
+{ "type": "data-table",
+  "source": { "serviceUuid": "queue", "path": "records" },
+  "columns": ["state", "key", "value.subject"] }
+```
+
+| `show` | Returns |
+|---|---|
+| `"waiting"` (default) | Records nobody is dealing with — the queue |
+| `"in-flight"` | Released and not yet acknowledged |
+| `"all"` | Both, which is what a single table wants |
+
+`state` is reported rather than left to be inferred from whether a lease is
+present — a column showing a timestamp, blank when absent, is not something a
+reader should have to decode.
+
+Acting on a mixed selection is safe: `release` passes over what is already in
+flight, so a second click cannot start the same work twice, and `requeue` passes
+over what was never handed out. Records already settled are passed over without
+complaint — two people looking at one queue is the normal case, not an error.
+
+**There is no lease timeout yet.** A record whose pipeline died stays in flight
+until somebody returns it. That is deliberate for now: this queue exists because
+a human is in the loop, and the same human can decide a stranded record is worth
+another go.
 
 ---
 
@@ -122,13 +160,13 @@ looking at the same queue is the normal case, not an error.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `mode` | `string` | `"put"` | One of the six above |
+| `mode` | `string` | `"put"` | One of the eight above |
 | `namespace` | `string` | `""` | Which of the board's tables. Empty is the board's own |
 | `key` | `string` | `""` | The key to act on, when every pass means the same slot |
 | `keyFrom` | `string` | `""` | Dotted path into the input to take the key from, e.g. `meta.messageId` |
 | `valueFrom` | `string` | `""` | Dotted path to the part worth keeping; the whole input by default |
 | `limit` | `number` | `0` | `list`: how many records to take, oldest first. `0` = all |
-| `keys` | `string[]` | — | `release`: the records to let through. Write-only; accepts keys or whole records |
+| `show` | `string` | `"waiting"` | `list`: `waiting`, `in-flight`, or `all` |
 | `lastCount` | `number` | — | Read-only: what the last pass saw |
 
 **Where the key comes from**, in order: `keyFrom` if it leads anywhere, then a
@@ -139,13 +177,17 @@ made, so an unnamed dump keeps its arrival order.
 An input shaped `{ key, value }` is understood as a record handed over as one:
 the wrapper is not what gets stored.
 
+`release` and `requeue` name their records on the **input**, as
+`{ "keys": [...] }` or the keys themselves. Whole records work too, so a service
+upstream can hand them over without unpacking.
+
 ---
 
 ## Input / Output
 
 | | Shape |
 |---|---|
-| **Input** | anything to keep (`put`), or the key(s) to act on (`get`, `delete`, `release`) |
+| **Input** | anything to keep (`put`), or the key(s) to act on (`get`, `delete`, `release`, `requeue`) |
 | **Output** | see the mode table above |
 
 **The outcome is pushed, not returned.** The disk answers asynchronously and
@@ -201,7 +243,8 @@ enquiries in without processing them, and a timer picks up the batch later.
     { "serviceId": "http-server-subservices", "state": { "pipeline": [
       { "serviceId": "store", "state": { "mode": "put", "keyFrom": "body.id" } }
     ] } },
-    { "serviceId": "timer", "state": { "mode": "periodic", "intervalMs": 60000 } },
+    { "serviceId": "timer", "state": {
+      "periodic": true, "periodicValue": 1, "periodicUnit": "m", "start": true } },
     { "serviceId": "store", "state": { "mode": "list", "limit": 10 } },
     { "serviceId": "monitor" }
   ]

@@ -25,7 +25,19 @@ export type SetStateAction = {
   key: string;
 };
 
-export type WidgetAction = ConfigureAction | SetStateAction;
+// Asks a service to do its job with a payload, running the pipeline from that
+// service onward. Distinct from configuring it: configure says what a service
+// *is*, this says do this now. Without it a board could only reach a service by
+// writing into its configuration, which meant anything a button had to cause
+// was smuggled in as a config field the service read as a command.
+// `$$input` and { "$state": ... } are substituted the same way.
+export type ProcessAction = {
+  type: "process";
+  serviceUuid: string;
+  payload?: Record<string, unknown>;
+};
+
+export type WidgetAction = ConfigureAction | SetStateAction | ProcessAction;
 
 export type MessageListWidget = {
   type: "message-list";

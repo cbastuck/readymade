@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import LevelMeter from "hkp-frontend/src/ui-components/LevelMeter";
 import { LevelMeterWidget } from "../../types";
-import { findService, resolvePath } from "../../findService";
+import { findService } from "../../boardServices";
+import { resolvePath } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 export function LevelMeterRenderer({

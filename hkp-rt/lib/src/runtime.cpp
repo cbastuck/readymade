@@ -313,6 +313,31 @@ Data Runtime::process(Data data, ProcessContext context)
   return out;
 }
 
+Data Runtime::processAt(const std::string& instanceId, Data data, ProcessContext context)
+{
+  auto it = findServiceById(instanceId);
+  if (it == m_services.cend())
+  {
+    throw std::runtime_error("Runtime::processAt service not found in runtime");
+  }
+
+  // The same context bookkeeping process() does, and for the same reason: a
+  // service pulling back into this runtime from inside its own call must leave
+  // the outer call running under what it started with.
+  const auto previous = m_context;
+  const auto hadContext = m_hasContext;
+  m_context = context;
+  m_hasContext = true;
+
+  onProcessBegin();
+  auto result = processFrom(**it, data, /*advanceBefore=*/false);
+  const auto& out = onProcessEnd(result, context);
+
+  m_context = previous;
+  m_hasContext = hadContext;
+  return out;
+}
+
 void Runtime::log(const Service& svc, LogLevel level, const std::string& event,
                   const nlohmann::json& data)
 {

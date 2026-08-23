@@ -57,6 +57,7 @@
         "serviceName": "Waiting",
         "state": {
           "mode": "list",
+          "show": "all",
           "limit": 100
         }
       },
@@ -138,6 +139,27 @@
         "state": {
           "logToBoard": true
         }
+      },
+      {
+        "uuid": "settle",
+        "serviceId": "store",
+        "serviceName": "Acknowledge",
+        "state": {
+          "mode": "ack"
+        }
+      },
+      {
+        "uuid": "after-settle",
+        "serviceId": "stopper",
+        "serviceName": "Processing Ends Here"
+      },
+      {
+        "uuid": "return",
+        "serviceId": "store",
+        "serviceName": "Return To Queue",
+        "state": {
+          "mode": "requeue"
+        }
       }
     ]
   },
@@ -160,6 +182,7 @@
               "rowKey": "key",
               "selectionState": "picked",
               "columns": [
+                "state",
                 "key",
                 "value.from",
                 "value.subject",
@@ -173,14 +196,32 @@
                 {
                   "type": "button",
                   "label": "Process selected",
-                  "action": {
-                    "serviceUuid": "approved",
-                    "configure": {
-                      "keys": {
-                        "$state": "picked"
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "approved",
+                      "payload": {
+                        "keys": {
+                          "$state": "picked"
+                        }
                       }
                     }
-                  }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Return to queue",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "return",
+                      "payload": {
+                        "keys": {
+                          "$state": "picked"
+                        }
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "status-indicator",

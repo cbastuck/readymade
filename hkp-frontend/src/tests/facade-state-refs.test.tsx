@@ -15,20 +15,23 @@ import { FacadeStateContext } from "../facade/FacadeStateContext";
  */
 
 const configured: unknown[] = [];
+const processed: unknown[] = [];
 
-vi.mock("../facade/findService", () => ({
+vi.mock("../facade/boardServices", () => ({
   findService: () => ({
     uuid: "svc",
     configure: (config: unknown) => {
       configured.push(config);
     },
   }),
-  resolvePath: (obj: any, path: string) =>
-    path.split(".").reduce((cur: any, key: string) => cur?.[key], obj),
+  processService: (_ctx: unknown, uuid: string, payload: unknown) => {
+    processed.push({ uuid, payload });
+  },
 }));
 
 function renderButton(state: Record<string, unknown>) {
   configured.length = 0;
+  processed.length = 0;
   return render(
     <FacadeStateContext.Provider value={{ state, setState: () => {} }}>
       <ButtonRenderer
@@ -46,6 +49,53 @@ function renderButton(state: Record<string, unknown>) {
     </FacadeStateContext.Provider>,
   );
 }
+
+function renderProcessButton(state: Record<string, unknown>) {
+  configured.length = 0;
+  processed.length = 0;
+  return render(
+    <FacadeStateContext.Provider value={{ state, setState: () => {} }}>
+      <ButtonRenderer
+        widget={{
+          type: "button",
+          label: "Process selected",
+          actions: [
+            {
+              type: "process",
+              serviceUuid: "approved",
+              payload: { keys: { $state: "picked" } },
+            },
+          ],
+        }}
+        boardContext={{ scopes: {}, services: {}, runtimes: [] } as any}
+        panelContext={{ knobValues: {}, onKnobChange: () => {} }}
+      />
+    </FacadeStateContext.Provider>,
+  );
+}
+
+describe("asking a service to do its job", () => {
+  it("sends the payload to the service, without configuring it", () => {
+    // The verb a facade was missing: before this, causing work meant writing
+    // into a service's configuration and hoping it read it as a command.
+    renderProcessButton({ picked: ["msg-0001"] });
+
+    fireEvent.click(screen.getByText("Process selected"));
+
+    expect(processed).toEqual([
+      { uuid: "approved", payload: { keys: ["msg-0001"] } },
+    ]);
+    expect(configured).toEqual([]);
+  });
+
+  it("resolves facade state in the payload the same way", () => {
+    renderProcessButton({ picked: [] });
+
+    fireEvent.click(screen.getByText("Process selected"));
+
+    expect(processed).toEqual([{ uuid: "approved", payload: { keys: [] } }]);
+  });
+});
 
 describe("a widget action reading facade state", () => {
   it("sends the value another widget published, not the reference to it", () => {

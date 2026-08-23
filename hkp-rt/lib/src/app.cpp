@@ -192,6 +192,17 @@ Data App::processRuntime(const std::string& runtimeId, const Data& data)
   return rt->process(data);
 }
 
+Data App::processServiceAt(const std::string& runtimeId,
+                           const std::string& instanceId, const Data& data)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return false;
+  }
+  return rt->processAt(instanceId, data);
+}
+
 json App::getRegistry() const
 {
   auto r = json::array();

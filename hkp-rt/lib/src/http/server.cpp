@@ -182,6 +182,9 @@ struct Server::impl
     CROW_ROUTE(crow, "/runtimes/<string>/services/<string>")
         .methods("POST"_method)([this](const crow::request &req, std::string runtimeId, std::string instanceId) -> crow::response { return configureService(req, runtimeId, instanceId); }); 
 
+    CROW_ROUTE(crow, "/runtimes/<string>/services/<string>/process")
+        .methods("POST"_method)([this](const crow::request &req, std::string runtimeId, std::string instanceId) -> crow::response { return processService(req, runtimeId, instanceId); });
+
     CROW_ROUTE(crow, "/runtimes/<string>/services/<string>")
         .methods("GET"_method)([this](const crow::request &req, std::string runtimeId, std::string instanceId) -> crow::response { return getServiceState(runtimeId, instanceId); }); 
 
@@ -234,6 +237,7 @@ struct Server::impl
   crow::response getRuntimeById(const std::string& id);
   crow::response rearrangeServices(const crow::request &req, const std::string& runtimeId);
   crow::response processRuntime(const crow::request &req, const std::string& runtimeId);
+  crow::response processService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId);
   crow::response getRuntimeInputs(const crow::request &req, const std::string& runtimeId);
   crow::response getRuntimeInput(const crow::request &req, const std::string& runtimeId, const std::string& inputId);
 
@@ -595,24 +599,13 @@ crow::response Server::impl::rearrangeServices(const crow::request &req, const s
   return makeJsonResponse(res);
 }
 
-crow::response Server::impl::processRuntime(const crow::request &req, const std::string& runtimeId)
+// Builds the Data variant a request body means, by its content type. Shared
+// by the runtime-wide process route and the per-service one, so an upload
+// reaches a service the same way whichever entry point it arrives through.
+static std::optional<Data> buildInputData(const crow::request& req,
+                                          const std::string& contentType)
 {
-  auto rt = app->getRuntime(runtimeId);
-  if (!rt)
-  {
-    return crow::response{crow::status::NOT_FOUND};
-  }
 
-  if (req.body.empty())
-  {
-    return crow::response(crow::status::BAD_REQUEST);
-  }
-
-  auto contentType = req.get_header_value("Content-Type");
-
-  // Build the appropriate Data variant from the request body and content type.
-  auto buildInputData = [&]() -> std::optional<Data>
-  {
     if (contentType == "application/json")
     {
       try
@@ -689,9 +682,24 @@ crow::response Server::impl::processRuntime(const crow::request &req, const std:
       }
       return Data(std::move(binary));
     }
-  };
+}
 
-  auto inputData = buildInputData();
+crow::response Server::impl::processRuntime(const crow::request &req, const std::string& runtimeId)
+{
+  auto rt = app->getRuntime(runtimeId);
+  if (!rt)
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+
+  if (req.body.empty())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto contentType = req.get_header_value("Content-Type");
+
+  auto inputData = buildInputData(req, contentType);
   if (!inputData)
   {
     std::cerr << "processRuntime: cannot parse body with Content-Type: " << contentType << '\n';
@@ -729,6 +737,66 @@ crow::response Server::impl::processRuntime(const crow::request &req, const std:
   {
     std::cerr << "processRuntime error: " << e.what() << '\n';
     return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+  }
+}
+
+// Runs the pipeline starting at one service, with a given payload.
+//
+// Distinct from configuring it: configure says what a service *is*, this says
+// do your job with this. A facade button had only the former, so anything it
+// needed to cause had to be smuggled in as a config field a service read as a
+// command.
+crow::response Server::impl::processService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId)
+{
+  auto rt = app->getRuntime(runtimeId);
+  if (!rt)
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+
+  auto contentType = req.get_header_value("Content-Type");
+  // An empty body is a service being told to act on nothing, which is a
+  // reasonable thing to ask of one that takes no input.
+  auto inputData = req.body.empty() ? std::optional<Data>(json::object())
+                                    : buildInputData(req, contentType);
+  if (!inputData)
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  try
+  {
+    auto result = app->processServiceAt(runtimeId, instanceId, std::move(*inputData));
+
+    if (auto j = getJSONFromData(result))
+      return makeJsonResponse(*j);
+
+    if (auto b = getBinaryFromData(result))
+    {
+      crow::response res(200);
+      res.body = std::string(b->begin(), b->end());
+      res.set_header("Content-Type", "application/octet-stream");
+      res.set_header("Access-Control-Allow-Origin", allowedOrigins);
+      return res;
+    }
+
+    if (auto s = getStringFromData(result))
+    {
+      crow::response res(200);
+      res.body = *s;
+      res.set_header("Content-Type", "text/plain");
+      res.set_header("Access-Control-Allow-Origin", allowedOrigins);
+      return res;
+    }
+
+    return crow::response(crow::status::OK);
+  }
+  catch (const std::exception& e)
+  {
+    // The runtime holds no service by that id; anything else it throws is a
+    // service failing, which is not the caller's mistake.
+    std::cerr << "processService error: " << e.what() << '\n';
+    return crow::response(crow::status::NOT_FOUND);
   }
 }
 

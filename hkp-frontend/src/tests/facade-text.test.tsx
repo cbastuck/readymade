@@ -17,8 +17,8 @@ import { TextWidget } from "../facade/types";
 let serviceState: Record<string, unknown> = {};
 let handler: ((notification: unknown) => void) | null = null;
 
-vi.mock("../facade/findService", async () => {
-  const actual = await vi.importActual<any>("../facade/findService");
+vi.mock("../facade/boardServices", async () => {
+  const actual = await vi.importActual<any>("../facade/boardServices");
   return {
     ...actual,
     findService: () => ({
