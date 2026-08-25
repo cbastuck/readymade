@@ -30,7 +30,8 @@ consumer, not the reason.
 | G9 | `imap-email` attachments, search, labels | node | S–M | 1 | ☐ |
 | G10 | Board as a public page, **read and write** | frontend + coordinator | L | 3 | ✎ |
 | G11 | `budget` — token/cost cap that stops a pipeline | node | S | 1 | ☐ |
-| G12 | Secret store — secrets never enter service state | node + frontend | M | 1 | ✎ |
+| G12 | Secret store — secrets never enter service state | node + frontend | M | 1 | ◐ |
+| G12b | Replace value-matched redaction on save | frontend | S–M | 1 | ✎ |
 | G13 | `baserow` and `missive` services | node | M each | 2 | ☐ |
 
 Everything except G10 and G12's frontend half lands in **hkp-node**. None of it needs C++
@@ -198,6 +199,51 @@ Serialization is then safe *by construction* — there is nothing to redact beca
 state never held it. Until it lands, the constraint above is documented rather than
 enforced.
 
+**2026-08-23 — G12's frontend half shipped; `redactSecrets` is a stopgap to be replaced (G12b).**
+`{{secret.<alias>}}` references, both passes, and a `SecretStore` interface live in
+`hkp-frontend/src/core/secrets.ts`; the desktop app resolves them from `~/.hkp/vault.json`
+(`meander/backend/vault.h`, `0600`, **not encrypted**) via a Secrets tab in the settings
+dialog. Resolution happens in `restoreBoard`, so it covers every runtime type and reaches
+browser services and the no-backend playground — which runtime-side resolution never
+could.
+
+Resolving in a client is what creates the need to redact on the way out, and the shipped
+redaction **matches on the secret's value**: `serializeBoard` scans the serialized state
+for any stored value and writes the reference back in its place. It is the reason a board
+can be saved again without leaking, and it is the part to reconsider.
+
+Why it is there at all: `getState` is not consistent about credentials. `imap-email` and
+`smtp-email` mask theirs (`password: ""`), so nothing survives the round-trip and nothing
+needs redacting — the reference is simply lost and retyped, which is the accepted
+behaviour. But `http-client` reports `headers` verbatim (`http-client.ts:106`), so a
+resolved `Authorization` header would be written into the board on the next save. That is
+the case G12 exists for: every Synnevents credential rides in a header.
+
+What is wrong with matching on value:
+
+- A short or ordinary secret rewrites unrelated text anywhere in the board. Real tokens
+  are long and high-entropy, so it should not bite — but the failure is silent and
+  corrupts a board rather than leaking one.
+- It infers intent from a coincidence of strings. A field that happens to equal a secret
+  is redacted whether or not it ever was one.
+- The board is scanned in full on every save, so cost grows with board size × secrets held.
+
+Options for G12b, none chosen:
+
+1. **Make `http-client` mask its headers per key**, the way `imap-email` masks its
+   password. Redaction then has no remaining caller and is deleted. Rejected once (see
+   2026-08-15) on the grounds that per-key secret-ness needs special handling — but that
+   objection was about *declaring* which keys are secret, and a header whose value was
+   resolved from a reference is already known to be one.
+2. **Keep the reference in service state and resolve at request time.** The service holds
+   `{{secret.x}}`, `getState` reports it unchanged, and nothing needs putting back.
+   Scoped to `http-client` this is small; as a general rule it makes every service that
+   takes a credential responsible for resolving one.
+3. **Runtime-side resolution** — the other half of the decision already taken. When
+   hkp-node resolves references itself, a resolved secret never reaches a client, board
+   state never holds one, and redaction is unnecessary by construction. This is the
+   endpoint; 1 or 2 is what closes the gap until then.
+
 **2026-08-15 — board-level logging rides the existing sockets; no new REST ingestion.**
 The coordinator already holds a persistent authenticated WebSocket **per provisioned
 runtime** (`session.ts:441`, `sockets: runtimeId → WebSocket`), opened with a per-runtime
@@ -238,9 +284,14 @@ tokens push, user JWTs read.**
 
 **Non-blocking**
 
-2. Should `budget` (G11) cap per board, per tenant, or both? Per-tenant quota machinery
+2. Should the runtime report run completion (`run <id> ended, with this outcome`)? Nothing
+   does today, which is why `store`'s ack has to be placed by hand and why a failure
+   cannot be told from a slow run. It would serve retry (G8), dead-lettering, board
+   health, and would let a service host work as a sub-pipeline and know whether it
+   succeeded. Raised 2026-08-16 and deferred by decision — the ack covers phase 0.
+3. Should `budget` (G11) cap per board, per tenant, or both? Per-tenant quota machinery
    already exists in `auth.ts` and may partly cover this.
-3. xberg also does Whisper audio transcription, which overlaps `speech-to-text` in
+4. xberg also does Whisper audio transcription, which overlaps `speech-to-text` in
    hkp-python and hkp-rt. Not a conflict today — just do not route audio through
    `document-extract`.
 
@@ -338,10 +389,33 @@ demo that decides whether the customer engages at all, so it favours breadth ove
     `getState` so a saved board cannot re-release on open.
   - Select-all covers the page in view, not the whole buffer.
 
+  **Approval is no longer final (2026-08-16).** A released record is *leased*, not
+  deleted: it leaves the queue but stays on disk until a `store` in `ack` mode, placed
+  where the board says success is, settles it. Anything that never reaches the ack stays
+  in flight — visible via `list` with `show: "in-flight"`, returned with `requeue`.
+
+  The problem this had to solve is worth recording, because it will come back for every
+  other "did that work?" question: **the pipeline cannot report its own outcome.** A
+  service that answers late (`text-generation`, `http-client`) returns `null` from its
+  pass, so success and failure are indistinguishable to whatever called it. Three designs
+  were considered — an explicit ack, hosting the work as a sub-service and watching its
+  result, and a real run-completion signal on the runtime. Sub-services were rejected:
+  `emitResult` carries no run identity, so with several records in flight nothing says
+  which result belongs to which. The run-completion signal is the right long-term answer
+  and is deferred (see the open question below).
+
+  What made the ack workable without board bookkeeping is that `ProcessContext.runId`
+  *does* survive the async gap — services capture it and hand it back to `processFrom`.
+  So `release` mints a run per record and writes it onto the lease, and `ack` settles
+  whatever record its own run is carrying. The record's key never has to be carried
+  through the pipeline, which the services in between would drop anyway.
+
+  There is deliberately **no lease timeout**: a stranded record waits for a person, which
+  suits a board whose whole point is a human checkpoint. Add one when boards run with
+  nobody looking at the in-flight table.
+
   Still open before this is a customer demo: `http-client` writing Baserow and the
-  read-back diff (needs their schema and a credential — see the ⚠ constraint), and
-  whether approval should be reversible. **Approving is currently final**: a released
-  record leaves the store, so a failure downstream loses it. That is G8's job.
+  read-back diff (needs their schema and a credential — see the ⚠ constraint).
 
 The demo board is the deliverable, not the services. Their sidebar stays their sidebar; it
 posts to a mount instead of an n8n webhook, which needs no work on our side.
