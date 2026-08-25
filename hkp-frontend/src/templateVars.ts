@@ -10,10 +10,16 @@ function getMeanderConfig(): Record<string, any> {
  * Returns the current map of template variable names to their resolved values,
  * e.g. { HKP_WEBAPP_URL: "http://192.168.1.5:9090", HKP_RUNTIME_URL: "..." }.
  * Returns an empty object when the host config is not available.
+ *
+ * These are the host's addresses, which a receiving device cannot derive on its
+ * own — that is what makes them worth carrying to a partner board. For plain
+ * substitution use resolveTemplateVars, which also covers the browser case.
  */
 export function getTemplateVarMap(): Record<string, string> {
   const config = getMeanderConfig();
-  if (!config.lanIp) return {};
+  if (!config.lanIp) {
+    return {};
+  }
   return {
     HKP_WEBAPP_URL: `http://${config.lanIp}:${config.frontendPort}`,
     HKP_RUNTIME_URL: `http://${config.lanIp}:${config.apiPort}`,
@@ -22,12 +28,38 @@ export function getTemplateVarMap(): Record<string, string> {
 }
 
 /**
+ * Returns the origin the webapp is served from, used as the value of
+ * HKP_WEBAPP_URL when the host has not injected its LAN address. Empty when
+ * there is no document to read an origin from.
+ */
+function getWebappOrigin(): string {
+  return typeof window !== "undefined" ? window.location.origin : "";
+}
+
+/**
+ * Returns the map used to substitute template variables. This is the host
+ * config map, plus a HKP_WEBAPP_URL falling back to the origin the webapp is
+ * served from, so a link built in a plain browser is still absolute.
+ */
+function getResolutionMap(): Record<string, string> {
+  const vars = getTemplateVarMap();
+  if (!vars.HKP_WEBAPP_URL) {
+    const origin = getWebappOrigin();
+    if (origin) {
+      return { ...vars, HKP_WEBAPP_URL: origin };
+    }
+  }
+  return vars;
+}
+
+/**
  * Replaces HKP_WEBAPP_URL and HKP_RUNTIME_URL template variables in a string
- * using config injected by the host at startup. Returns the string unchanged if
- * the config is not available (e.g. plain browser context).
+ * using config injected by the host at startup. HKP_WEBAPP_URL falls back to
+ * the webapp's own origin; the runtime variables are left in place when the
+ * host config is not available (e.g. plain browser context).
  */
 export function resolveTemplateVars(value: string): string {
-  const vars = getTemplateVarMap();
+  const vars = getResolutionMap();
   for (const [key, resolved] of Object.entries(vars)) {
     value = value.split(key).join(resolved);
   }
