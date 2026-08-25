@@ -16,8 +16,16 @@
  * other. Nothing is registered until a host registers something.
  */
 
-/** `{{secret.alias}}`, tolerating whitespace inside the braces. */
-const REFERENCE = /\{\{\s*secret\.([A-Za-z0-9_-]+)\s*\}\}/g;
+/**
+ * `{{secret.alias}}`, tolerating whitespace inside the braces.
+ *
+ * Dots are part of an alias rather than separators: `secret.` is a fixed
+ * prefix and `}}` terminates, so `{{secret.gmail.imap}}` has exactly one
+ * reading. Allowing them matters because the app's older per-service vault
+ * path writes `<serviceUuid>.<field>` keys, and those have to be nameable by
+ * the same syntax as everything else in the store.
+ */
+const REFERENCE = /\{\{\s*secret\.([A-Za-z0-9_.-]+)\s*\}\}/g;
 
 export type SecretStore = {
   /** The value behind an alias, or null when the store does not have it. */

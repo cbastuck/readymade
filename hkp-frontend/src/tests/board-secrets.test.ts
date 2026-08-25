@@ -138,3 +138,31 @@ describe("the store a host registers", () => {
     expect(resolveSecrets({ k: "{{secret.x}}" }).value).toEqual({ k: "value" });
   });
 });
+
+describe("what an alias may be called", () => {
+  it("accepts a dotted name", () => {
+    // `secret.` is a fixed prefix and `}}` terminates, so there is exactly one
+    // reading — and the app's older per-service vault writes dotted keys
+    // (`<serviceUuid>.<field>`) that must be nameable the same way.
+    const { value } = resolveSecrets(
+      { a: "{{secret.gmail.imap}}", b: "{{secret.alpaca.apiKey}}" },
+      storeOf({ "gmail.imap": "pw", "alpaca.apiKey": "sk-1" }),
+    );
+
+    expect(value).toEqual({ a: "pw", b: "sk-1" });
+  });
+
+  it("round-trips a dotted name back to its reference", () => {
+    const store = storeOf({ "alpaca.apiKey": "sk-1" });
+    expect(redactSecrets({ k: "sk-1" }, store)).toEqual({
+      k: "{{secret.alpaca.apiKey}}",
+    });
+  });
+
+  it("leaves a reference with no alias alone", () => {
+    const { value, missing } = resolveSecrets({ k: "{{secret.}}" }, storeOf({}));
+
+    expect(value).toEqual({ k: "{{secret.}}" });
+    expect(missing).toEqual([]);
+  });
+});

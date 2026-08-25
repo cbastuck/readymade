@@ -41,8 +41,8 @@ export default function SecretsTab() {
     setError("");
     // The alias is what a board writes into a reference, so it is limited to
     // what a reference can express rather than to what a name could be.
-    if (!/^[A-Za-z0-9_-]+$/.test(name)) {
-      setError("Use letters, digits, hyphens and underscores only.");
+    if (!/^[A-Za-z0-9_.-]+$/.test(name)) {
+      setError("Use letters, digits, dots, hyphens and underscores only.");
       return;
     }
     if (!value) {
