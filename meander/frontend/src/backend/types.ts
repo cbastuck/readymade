@@ -45,6 +45,14 @@ export interface BackendAdapter {
   getRuntimeSettings?(): Promise<RuntimeSettings>;
   setRuntimeSettings?(settings: Partial<RuntimeSettings>): Promise<RuntimeSettings>;
 
+  // Secrets a board refers to by alias ({{secret.<alias>}}). Values are held
+  // by the host, never by a board — see hkp-frontend/src/core/secrets.ts.
+  // Optional: absent on hosts with no secret store, which callers feature-
+  // detect before offering to manage them.
+  listSecrets?(): Promise<string[]>;
+  setSecret?(alias: string, value: string): Promise<void>;
+  deleteSecret?(alias: string): Promise<void>;
+
   // Mints a short-lived capability token from the embedded runtime, scoped to
   // processing `runtimeId` (POST /runtimes/<runtimeId>). Returns null if the
   // host can't mint. Absent on the plain-browser backend. One transport per

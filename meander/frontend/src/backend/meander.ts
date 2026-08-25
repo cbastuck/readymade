@@ -12,6 +12,7 @@ import {
   PickerOptions,
   RuntimeSettings,
 } from "./types";
+import { vaultAliases, vaultDelete, vaultSet } from "hkp-frontend/src/vault";
 
 const encodePathSegment = (value: string) => encodeURIComponent(value);
 
@@ -100,6 +101,36 @@ export const meanderBackend: BackendAdapter = {
     });
     if (!res.ok) throw new Error(`Failed to save settings: ${res.statusText}`);
     return res.json();
+  },
+
+  async listSecrets(): Promise<string[]> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.secretAliases) {
+      // An older app build: the injected vault is the only source of names.
+      return vaultAliases();
+    }
+    return (await saucer.exposed.secretAliases()) ?? [];
+  },
+
+  async setSecret(alias: string, value: string): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.setSecret) {
+      throw new Error("This build cannot store secrets");
+    }
+    await saucer.exposed.setSecret(alias, value);
+    // The injected copy is what boards resolve against, and it is only read at
+    // page creation — so the write has to land in both places or a secret just
+    // saved would not resolve until the app is restarted.
+    vaultSet(alias, value);
+  },
+
+  async deleteSecret(alias: string): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.deleteSecret) {
+      throw new Error("This build cannot store secrets");
+    }
+    await saucer.exposed.deleteSecret(alias);
+    vaultDelete(alias);
   },
 
   async mintProcessRuntimeToken(runtimeId: string): Promise<string | null> {

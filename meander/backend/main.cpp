@@ -400,6 +400,19 @@ int real_main(int argc, char *argv[])
     return vault.setSecret(key, value);
   });
 
+  webview->expose("deleteSecret", [&vault](const std::string& key) -> bool
+  {
+    return vault.deleteSecret(key);
+  });
+
+  // The names only. A page that needs a value already has every value, from
+  // the injection above; this is for a settings view, which needs to list what
+  // is held without reading any of it.
+  webview->expose("secretAliases", [&vault]() -> std::vector<std::string>
+  {
+    return vault.aliases();
+  });
+
   // Fallback: open target="_blank" link clicks in the OS default browser.
   webview->on<saucer::webview::event::navigate>(
     [](const saucer::navigation &nav) -> saucer::policy
