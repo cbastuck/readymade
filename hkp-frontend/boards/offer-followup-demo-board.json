@@ -1,0 +1,291 @@
+{
+  "boardName": "Offer Intake — Follow-up",
+  "description": "Email arrives, is read once by the model, and either becomes a complete booking request or a drafted reply asking for what is missing. Nothing is sent: every draft waits in the panel for a person to read it. Needs {{secret.gmail.imap}} and {{secret.hetzner.token}} in Settings → Secrets.",
+  "runtimes": [
+    {
+      "id": "intake",
+      "name": "1 · Read the mail",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "review",
+      "name": "2 · Awaiting review",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "intake": [
+      {
+        "uuid": "mailbox",
+        "serviceId": "imap-email",
+        "serviceName": "Mailbox",
+        "state": {
+          "host": "imap.gmail.com",
+          "port": 993,
+          "username": "bstckbrln@gmail.com",
+          "password": "{{secret.gmail.imap}}",
+          "tls": true,
+          "mailbox": "INBOX"
+        }
+      },
+      {
+        "uuid": "as-prompt",
+        "serviceId": "map",
+        "serviceName": "As Prompt",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "prompt=": "'Today is ' + formatNow('YYYY-MM-DD') + '.' + '\\n\\nFrom: ' + (params.from || '(unknown)') + '\\nSubject: ' + (params.subject || '(none)') + '\\nReceived: ' + (params.date || '') + '\\n\\n' + (params.text || '')"
+          }
+        }
+      },
+      {
+        "uuid": "extract",
+        "serviceId": "text-generation",
+        "serviceName": "Read The Enquiry",
+        "state": {
+          "backend": "server",
+          "serverUrl": "https://inference.hetzner.com/api/v1",
+          "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+          "apiKey": "{{secret.hetzner.token}}",
+          "systemPrompt": "You read a hotel booking enquiry and pull the booking request out of it.\n\nRequired: numberOfRooms, dateOfArrival, dateOfDeparture.\nOptional: maximumPrice, searchDistrict, breakfast, numberOfBeds.\n\nLeave a field out when the email does not state it — never guess, and never infer a number of rooms from a plural. List every required field you left out in `missing`.\n\n`language` is the language the enquiry was written in, as a two-letter code.\n\nThen always write `followUp`: a short, polite reply to the sender asking for exactly the fields in `missing`, and nothing else. Write it in `language` — an enquiry in German is answered in German. Sign it 'SYN'. When `missing` is empty, write a brief acknowledgement instead; nothing is sent without a person reading it first.\n\nDates are resolved against the date given in the message and written as YYYY-MM-DD.",
+          "thinking": false,
+          "maxTokens": 4096,
+          "jsonSchema": {
+            "type": "object",
+            "properties": {
+              "request": {
+                "type": "object",
+                "properties": {
+                  "numberOfRooms": {
+                    "type": "integer"
+                  },
+                  "dateOfArrival": {
+                    "type": "string",
+                    "description": "ISO date, YYYY-MM-DD"
+                  },
+                  "dateOfDeparture": {
+                    "type": "string",
+                    "description": "ISO date, YYYY-MM-DD"
+                  },
+                  "maximumPrice": {
+                    "type": "number",
+                    "description": "Budget per room per night, EUR"
+                  },
+                  "searchDistrict": {
+                    "type": "string"
+                  },
+                  "breakfast": {
+                    "type": "boolean"
+                  },
+                  "numberOfBeds": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "missing": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Required fields the email does not state"
+              },
+              "replyTo": {
+                "type": "string",
+                "description": "Email address to answer, from the From header"
+              },
+              "language": {
+                "type": "string",
+                "description": "Language of the enquiry, e.g. de or en"
+              },
+              "followUp": {
+                "type": "object",
+                "properties": {
+                  "subject": {
+                    "type": "string",
+                    "description": "Subject line, written in `language`"
+                  },
+                  "body": {
+                    "type": "string",
+                    "description": "The message, written in `language`, signed 'SYN'"
+                  }
+                },
+                "description": "A reply to the sender asking for exactly the fields listed in `missing`",
+                "required": ["subject", "body"]
+              }
+            },
+            "required": [
+              "request",
+              "missing",
+              "replyTo",
+              "language",
+              "followUp"
+            ]
+          }
+        }
+      },
+      {
+        "uuid": "assemble",
+        "serviceId": "map",
+        "serviceName": "Check What Is Missing",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "key=": "(params.json && params.json.replyTo || '(unknown)') + ' ' + formatNow('YYYY-MM-DD HH:mm:ss')",
+            "value.request=": "params.json && params.json.request",
+            "value.missing=": "filter([!params.json || !params.json.request || params.json.request.numberOfRooms === undefined || params.json.request.numberOfRooms === null || params.json.request.numberOfRooms === '' ? 'numberOfRooms' : '', !params.json || !params.json.request || params.json.request.dateOfArrival === undefined || params.json.request.dateOfArrival === null || params.json.request.dateOfArrival === '' ? 'dateOfArrival' : '', !params.json || !params.json.request || params.json.request.dateOfDeparture === undefined || params.json.request.dateOfDeparture === null || params.json.request.dateOfDeparture === '' ? 'dateOfDeparture' : ''], 'item !== \"\"')",
+            "value.replyTo=": "params.json && params.json.replyTo || ''",
+            "value.language=": "params.json && params.json.language || ''",
+            "value.followUp=": "params.json && params.json.followUp",
+            "value.readAt=": "formatNow('YYYY-MM-DD HH:mm')"
+          }
+        }
+      },
+      {
+        "uuid": "keep-request",
+        "serviceId": "store",
+        "serviceName": "Every Enquiry Read",
+        "state": {
+          "mode": "put",
+          "namespace": "requests"
+        }
+      },
+      {
+        "uuid": "gate",
+        "serviceId": "map",
+        "serviceName": "Complete? Then Nothing To Ask",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "=": "params.value.missing.length === 0 ? null : params"
+          }
+        }
+      },
+      {
+        "uuid": "queue-draft",
+        "serviceId": "store",
+        "serviceName": "Draft Awaiting Review",
+        "state": {
+          "mode": "put",
+          "namespace": "drafts"
+        }
+      },
+      {
+        "uuid": "after-intake",
+        "serviceId": "stopper",
+        "serviceName": "Drafted — Nothing Is Sent"
+      }
+    ],
+    "review": [
+      {
+        "uuid": "refresh",
+        "serviceId": "timer",
+        "serviceName": "Panel Refresh",
+        "state": {
+          "periodic": true,
+          "periodicValue": 5,
+          "periodicUnit": "s",
+          "start": true
+        }
+      },
+      {
+        "uuid": "drafts",
+        "serviceId": "store",
+        "serviceName": "Drafts",
+        "state": {
+          "mode": "list",
+          "namespace": "drafts",
+          "show": "all",
+          "limit": 100
+        }
+      },
+      {
+        "uuid": "after-review",
+        "serviceId": "stopper",
+        "serviceName": "The Panel Reads This"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "review",
+        "title": "Follow-ups awaiting review",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "drafts",
+                "path": "records"
+              },
+              "rowKey": "key",
+              "columns": [
+                "value.replyTo",
+                "value.language",
+                "value.missing",
+                "value.followUp.subject",
+                "value.followUp.body",
+                "createdAt"
+              ],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "generating": "#eab308",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "error"
+                  },
+                  "tone": "error",
+                  "placeholder": "Waiting for mail"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "source": {
+                "serviceUuid": "extract",
+                "path": "json.followUp.subject"
+              },
+              "placeholder": "The last draft written appears here"
+            },
+            {
+              "type": "text",
+              "source": {
+                "serviceUuid": "extract",
+                "path": "json.followUp.body"
+              },
+              "mono": true,
+              "placeholder": ""
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

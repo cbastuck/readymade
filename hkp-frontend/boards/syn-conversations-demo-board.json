@@ -1,0 +1,839 @@
+{
+  "boardName": "SYN Conversations",
+  "runtimes": [
+    {
+      "id": "test",
+      "name": "0 · Test without mail",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "intake",
+      "name": "1 · Mail in",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "dispatch",
+      "name": "2 · Decide",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "followup",
+      "name": "3 · Draft follow-up",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "review",
+      "name": "3 · What is there",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "approve",
+      "name": "4 · Approve",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "reject",
+      "name": "5 · Reject",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "test": [
+      {
+        "uuid": "demo-enquiry",
+        "serviceId": "injector",
+        "serviceName": "Injector",
+        "state": {
+          "recentInjection": {
+            "text": "Ich benötige Zimmer in Ost Berlin für zwei Nächte. Ich würde am 17.10.2026 anreisen. Es soll ein ruhiges Zimmer für maximal 200€ sein, mit Frühstück und falls möglich möglich mit Sauna\nChristoph"
+          },
+          "plainText": false
+        }
+      },
+      {
+        "uuid": "compose",
+        "serviceId": "map",
+        "serviceName": "Map",
+        "state": {
+          "mode": "replace",
+          "arrayMode": "single",
+          "template": {
+            "messageId=": "uuid.v7() + '@test.local'",
+            "from": "tester@example.com",
+            "to": "buchung@syn.example",
+            "subject": "Testanfrage",
+            "text=": "params.text",
+            "references": [],
+            "inReplyTo": ""
+          },
+          "sensingMode": false
+        }
+      },
+      {
+        "uuid": "file-test-mail",
+        "serviceId": "conversations",
+        "serviceName": "Conversations",
+        "state": {
+          "mode": "ingest",
+          "initialState": "init",
+          "direction": "inbound"
+        }
+      },
+      {
+        "uuid": "after-test",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "intake": [
+      {
+        "uuid": "mailbox",
+        "serviceId": "imap-email",
+        "serviceName": "IMAP Email",
+        "state": {
+          "host": "imap.gmail.com",
+          "port": 993,
+          "username": "bstckbrln@gmail.com",
+          "tls": true,
+          "mailbox": "INBOX",
+          "running": false,
+          "error": "",
+          "password": "{{secret.gmail.imap}}",
+          "passwordConfigured": false
+        }
+      },
+      {
+        "uuid": "file-mail",
+        "serviceId": "conversations",
+        "serviceName": "Conversations",
+        "state": {
+          "mode": "ingest",
+          "initialState": "init",
+          "direction": "inbound"
+        }
+      },
+      {
+        "uuid": "after-intake",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "dispatch": [
+      {
+        "uuid": "tick",
+        "serviceId": "timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 30,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": false,
+          "counter": 0
+        }
+      },
+      {
+        "uuid": "poll",
+        "serviceId": "conversations",
+        "serviceName": "Conversations",
+        "state": {
+          "mode": "actionable",
+          "inState": [
+            "init"
+          ],
+          "idleSeconds": 0,
+          "limit": 10
+        }
+      },
+      {
+        "uuid": "per-conversation",
+        "serviceId": "iterator",
+        "serviceName": "Iterator",
+        "state": {
+          "itemsFrom": "conversations",
+          "limit": 0,
+          "bypass": false,
+          "pipeline": [
+            {
+              "serviceId": "conversations",
+              "uuid": "read-thread",
+              "state": {
+                "mode": "thread",
+                "limit": 50
+              }
+            },
+            {
+              "serviceId": "join",
+              "uuid": "understand",
+              "serviceName": "Join",
+              "state": {
+                "as": "extraction",
+                "mode": "overwrite",
+                "bypass": false,
+                "pipeline": [
+                  {
+                    "serviceId": "map",
+                    "uuid": "as-prompt",
+                    "state": {
+                      "mode": "replace",
+                      "arrayMode": "single",
+                      "template": {
+                        "prompt=": "'Booking enquiry thread ' + params.conversationId + '\\n\\n' + stringify(params.emails)"
+                      },
+                      "sensingMode": false
+                    }
+                  },
+                  {
+                    "serviceId": "text-generation",
+                    "uuid": "extract",
+                    "state": {
+                      "backend": "server",
+                      "apiKey": "{{secret.hetzner.token}}",
+                      "apiKeyConfigured": true,
+                      "serverUrl": "https://inference.hetzner.com/api/v1",
+                      "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+                      "systemPrompt": "You read hotel booking enquiries. Extract only what the guest actually stated — never guess a value, and leave a field out when the message does not state it. List the names of the required fields that are still unknown in `missing`: numberOfRooms, dateOfArrival, dateOfDeparture. Set `language` to the ISO 639-1 code of the language the guest wrote in.",
+                      "temperature": 0.3,
+                      "topP": 0.95,
+                      "topK": 20,
+                      "maxTokens": 2048,
+                      "timeoutSec": 300,
+                      "stream": true,
+                      "thinking": false,
+                      "thinkingBudgetTokens": 1024,
+                      "jsonSchema": {
+                        "type": "object",
+                        "properties": {
+                          "numberOfRooms": {
+                            "type": "integer"
+                          },
+                          "dateOfArrival": {
+                            "type": "string",
+                            "description": "ISO date, YYYY-MM-DD"
+                          },
+                          "dateOfDeparture": {
+                            "type": "string",
+                            "description": "ISO date, YYYY-MM-DD"
+                          },
+                          "maximumPrice": {
+                            "type": "number",
+                            "description": "In euro, per night unless the guest says otherwise"
+                          },
+                          "searchDistrict": {
+                            "type": "string"
+                          },
+                          "breakfast": {
+                            "type": "boolean"
+                          },
+                          "numberOfBeds": {
+                            "type": "integer"
+                          },
+                          "missing": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Required fields the enquiry does not state"
+                          },
+                          "language": {
+                            "type": "string",
+                            "description": "ISO 639-1 code of the guest's language"
+                          }
+                        },
+                        "required": [
+                          "missing",
+                          "language"
+                        ]
+                      },
+                      "status": "idle",
+                      "error": ""
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "serviceId": "conversations",
+              "uuid": "keep-extraction",
+              "state": {
+                "mode": "put-artifact",
+                "kind": "extraction",
+                "payloadFrom": "extraction.json",
+                "status": "recorded"
+              }
+            },
+            {
+              "serviceId": "map",
+              "uuid": "decide-state",
+              "serviceName": "Map",
+              "state": {
+                "mode": "overwrite",
+                "arrayMode": "single",
+                "template": {
+                  "state=": "params.payload.missing && params.payload.missing.length > 0 ? 'needs-follow-up' : 'ready'"
+                },
+                "sensingMode": false
+              }
+            },
+            {
+              "serviceId": "conversations",
+              "uuid": "advance",
+              "state": {
+                "mode": "transition",
+                "stateFrom": "state",
+                "states": [
+                  "init",
+                  "needs-follow-up",
+                  "ready",
+                  "waiting-approval",
+                  "waiting-reply",
+                  "done"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "after-dispatch",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "review": [
+      {
+        "uuid": "refresh",
+        "serviceId": "timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 5,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": true,
+          "counter": 0
+        }
+      },
+      {
+        "uuid": "all-conversations",
+        "serviceId": "conversations",
+        "serviceName": "Conversations",
+        "state": {
+          "mode": "actionable",
+          "inState": [
+            "init",
+            "needs-follow-up",
+            "ready",
+            "waiting-approval",
+            "waiting-reply",
+            "done"
+          ],
+          "idleSeconds": 0,
+          "limit": 50
+        }
+      },
+      {
+        "uuid": "extractions",
+        "serviceId": "conversations",
+        "serviceName": "Conversations",
+        "state": {
+          "mode": "list-artifacts",
+          "kind": "extraction",
+          "status": "",
+          "limit": 50
+        }
+      },
+      {
+        "uuid": "drafts",
+        "serviceId": "conversations",
+        "serviceName": "Conversations",
+        "state": {
+          "mode": "list-artifacts",
+          "kind": "follow-up",
+          "status": "pending",
+          "limit": 50
+        }
+      },
+      {
+        "uuid": "after-review",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "approve": [
+      {
+        "uuid": "approve-each",
+        "serviceId": "iterator",
+        "serviceName": "Iterator",
+        "state": {
+          "itemsFrom": "ids",
+          "limit": 0,
+          "bypass": false,
+          "pipeline": [
+            {
+              "serviceId": "conversations",
+              "uuid": "mark-approved",
+              "state": {
+                "mode": "set-artifact-status",
+                "status": "approved"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "after-approve",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "reject": [
+      {
+        "uuid": "reject-each",
+        "serviceId": "iterator",
+        "serviceName": "Iterator",
+        "state": {
+          "itemsFrom": "ids",
+          "limit": 0,
+          "bypass": false,
+          "pipeline": [
+            {
+              "serviceId": "conversations",
+              "uuid": "mark-rejected",
+              "state": {
+                "mode": "set-artifact-status",
+                "status": "rejected"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "after-reject",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "followup": [
+      {
+        "uuid": "tick-followup",
+        "serviceId": "timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 30,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": false,
+          "counter": 0
+        }
+      },
+      {
+        "uuid": "poll-followup",
+        "serviceId": "conversations",
+        "serviceName": "Conversations",
+        "state": {
+          "mode": "actionable",
+          "inState": [
+            "needs-follow-up"
+          ],
+          "idleSeconds": 0,
+          "limit": 10
+        }
+      },
+      {
+        "uuid": "per-conversation-draft",
+        "serviceId": "iterator",
+        "serviceName": "Iterator",
+        "state": {
+          "itemsFrom": "conversations",
+          "limit": 0,
+          "bypass": false,
+          "pipeline": [
+            {
+              "serviceId": "conversations",
+              "uuid": "read-thread-again",
+              "state": {
+                "mode": "thread",
+                "limit": 50
+              }
+            },
+            {
+              "serviceId": "join",
+              "uuid": "recall",
+              "serviceName": "Join",
+              "state": {
+                "as": "known",
+                "mode": "overwrite",
+                "bypass": false,
+                "pipeline": [
+                  {
+                    "serviceId": "conversations",
+                    "uuid": "list-known",
+                    "state": {
+                      "mode": "list-artifacts",
+                      "kind": "extraction",
+                      "status": "",
+                      "limit": 5
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "serviceId": "join",
+              "uuid": "compose-reply",
+              "serviceName": "Join",
+              "state": {
+                "as": "draft",
+                "mode": "overwrite",
+                "bypass": false,
+                "pipeline": [
+                  {
+                    "serviceId": "map",
+                    "uuid": "as-draft-prompt",
+                    "serviceName": "Map",
+                    "state": {
+                      "mode": "replace",
+                      "arrayMode": "single",
+                      "sensingMode": false,
+                      "template": {
+                        "prompt=": "'The guest wrote:\\n\\n' + stringify(params.emails) + '\\n\\nStill missing: ' + (params.known.count > 0 ? stringify(params.known.artifacts[0].payload.missing) : '(unknown)')"
+                      }
+                    }
+                  },
+                  {
+                    "serviceId": "text-generation",
+                    "uuid": "write-followup",
+                    "state": {
+                      "backend": "server",
+                      "apiKey": "{{secret.hetzner.token}}",
+                      "apiKeyConfigured": true,
+                      "serverUrl": "https://inference.hetzner.com/api/v1",
+                      "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+                      "systemPrompt": "You write short, polite follow-up emails for a hotel booking desk. Ask only for the details listed as missing — never invent or restate details the guest already gave. Write in the same language the guest wrote in, and sign off as the booking team.",
+                      "temperature": 0.3,
+                      "topP": 0.95,
+                      "topK": 20,
+                      "maxTokens": 2048,
+                      "timeoutSec": 300,
+                      "stream": true,
+                      "thinking": false,
+                      "thinkingBudgetTokens": 1024,
+                      "jsonSchema": {
+                        "type": "object",
+                        "properties": {
+                          "subject": {
+                            "type": "string"
+                          },
+                          "body": {
+                            "type": "string",
+                            "description": "The full email text"
+                          },
+                          "language": {
+                            "type": "string",
+                            "description": "ISO 639-1 code"
+                          }
+                        },
+                        "required": [
+                          "subject",
+                          "body"
+                        ]
+                      },
+                      "status": "idle",
+                      "error": ""
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "serviceId": "conversations",
+              "uuid": "keep-draft",
+              "state": {
+                "mode": "put-artifact",
+                "kind": "follow-up",
+                "payloadFrom": "draft.json",
+                "status": "pending"
+              }
+            },
+            {
+              "serviceId": "conversations",
+              "uuid": "advance-to-approval",
+              "state": {
+                "mode": "transition",
+                "state": "waiting-approval",
+                "states": [
+                  "init",
+                  "needs-follow-up",
+                  "ready",
+                  "waiting-approval",
+                  "waiting-reply",
+                  "done"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "after-followup",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ]
+  },
+  "description": "Booking enquiries arrive as mail, are filed into conversations by their mail headers, and are read by a model into structured fields. When something required is missing, a second model turn drafts the follow-up email asking for it — and that draft waits for a person, because nothing is sent without approval. Everything lives in the board's own SQLite database (~/.hkp/node/db), so it survives a restart.\n\nTo drive the whole loop by hand: press 'File demo enquiry' (the Injector in runtime 0 holds a German test enquiry), then '1 · Extract', then '2 · Draft follow-up'. Or type your own text into the field beside them.\n\nArtifact status says what is waiting on whom. An extraction is 'recorded' — it is data, and nobody has to look at it. A follow-up draft is 'pending' — it does not go anywhere until somebody approves it.\n\nConversation states: init → needs-follow-up (something required is missing) or ready (nothing is) → waiting-approval → waiting-reply → done.\n\nExtraction and drafting both run against Hetzner's inference API using the {{secret.hetzner.token}} alias from Settings → Secrets. For a local model instead, set both text-generation services' URL to http://127.0.0.1:8081 and clear their key, then run: ./build/bin/llama-server -m ~/Development/claude/models/Qwen3-0.6B-Q8_0.gguf --port 8081\n\nFor real mail, set host, username and the {{secret.gmail.imap}} password on the Mailbox service in runtime 1 and start it; IMAP IDLE pushes new mail in, and a message already filed is ignored, so re-delivery costs nothing.",
+  "facade": {
+    "layout": "columns",
+    "panels": [
+      {
+        "id": "conversations",
+        "title": "Conversations",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "all-conversations",
+                "path": "conversations"
+              },
+              "rowKey": "conversationId",
+              "columns": [
+                "state",
+                "subject",
+                "participants",
+                "conversationId",
+                "updatedAt"
+              ],
+              "pageSize": 8
+            },
+            {
+              "direction": "row",
+              "items": [
+                {
+                  "type": "text-input",
+                  "label": "File a test enquiry",
+                  "placeholder": "Ich benötige Zimmer in Ost Berlin für zwei Nächte…",
+                  "submitLabel": "File it",
+                  "grow": true,
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "compose",
+                      "payload": {
+                        "text": "$$input"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "File demo enquiry",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "demo-enquiry",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "1 · Extract",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "poll",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "2 · Draft follow-up",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "poll-followup",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "generating": "#eab308",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "error"
+                  },
+                  "tone": "error",
+                  "placeholder": "Ready"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "extractions",
+        "title": "What was understood",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "extractions",
+                "path": "artifacts"
+              },
+              "rowKey": "id",
+              "columns": [
+                "status",
+                "payload.numberOfRooms",
+                "payload.dateOfArrival",
+                "payload.dateOfDeparture",
+                "payload.maximumPrice",
+                "payload.searchDistrict",
+                "payload.breakfast",
+                "payload.missing",
+                "payload.language",
+                "conversationId"
+              ],
+              "pageSize": 8
+            }
+          ]
+        }
+      },
+      {
+        "id": "follow-ups",
+        "title": "Follow-up emails awaiting approval",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "drafts",
+                "path": "artifacts"
+              },
+              "selectable": true,
+              "rowKey": "id",
+              "selectionState": "picked",
+              "columns": [
+                "status",
+                "payload.subject",
+                "payload.body",
+                "payload.language",
+                "conversationId",
+                "createdAt"
+              ],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Approve selected",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "approve-each",
+                      "payload": {
+                        "ids": {
+                          "$state": "picked"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Reject selected",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "reject-each",
+                      "payload": {
+                        "ids": {
+                          "$state": "picked"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "acceptedSyncSenders": [],
+  "rejectedSyncSenders": []
+}

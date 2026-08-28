@@ -16,7 +16,12 @@ export default function ImapEmailUI(props: ServiceUIProps) {
   const [passwordConfigured, setPasswordConfigured] = useState(false);
   const [tls, setTls] = useState(true);
   const [mailbox, setMailbox] = useState("INBOX");
+  // What the user asked for, and what the connection is actually doing —
+  // they differ while a dropped connection is being re-established.
+  const [enabled, setEnabled] = useState(false);
   const [running, setRunning] = useState(false);
+  const [status, setStatus] = useState("disconnected");
+  const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState("");
 
   const onUpdate = useCallback((state: any) => {
@@ -30,7 +35,12 @@ export default function ImapEmailUI(props: ServiceUIProps) {
 
     if (state.tls !== undefined) setTls(state.tls);
     if (state.mailbox !== undefined) setMailbox(state.mailbox);
+    if (state.enabled !== undefined) setEnabled(state.enabled);
     if (state.running !== undefined) setRunning(state.running);
+    if (state.status !== undefined) setStatus(state.status);
+    if (state.reconnectAttempts !== undefined) {
+      setAttempts(state.reconnectAttempts);
+    }
     if (state.error !== undefined) setError(state.error);
   }, []);
 
@@ -111,17 +121,24 @@ export default function ImapEmailUI(props: ServiceUIProps) {
         <div className="flex items-center gap-2 pt-1">
           <Button
             className="hkp-svc-btn"
-            onClick={() => configure({ connect: !running })}
+            onClick={() => configure({ connect: !enabled })}
             disabled={
-              !running &&
+              !enabled &&
               (!host || !username || (!password && !passwordConfigured))
             }
           >
-            {running ? "Disconnect" : "Connect"}
+            {enabled ? "Disconnect" : "Connect"}
           </Button>
           {running && (
             <span className="text-xs text-green-500 tracking-widest uppercase">
               Live
+            </span>
+          )}
+          {enabled && !running && (
+            <span className="text-xs text-amber-500 tracking-widest uppercase">
+              {status === "reconnecting"
+                ? `Reconnecting${attempts > 1 ? ` (${attempts})` : ""}`
+                : "Connecting"}
             </span>
           )}
         </div>

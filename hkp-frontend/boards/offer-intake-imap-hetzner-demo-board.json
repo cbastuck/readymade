@@ -1,0 +1,356 @@
+{
+  "runtimes": [
+    {
+      "id": "intake",
+      "name": "1 · Intake",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "queue",
+      "name": "2 · Waiting",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "process",
+      "name": "3 · Processing",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "requeue",
+      "name": "4 · Back to waiting",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "intake": [
+      {
+        "uuid": "mailbox",
+        "serviceId": "imap-email",
+        "serviceName": "IMAP Email",
+        "state": {
+          "host": "imap.gmail.com",
+          "port": 993,
+          "username": "bstckbrln@gmail.com",
+          "tls": true,
+          "mailbox": "INBOX",
+          "running": false,
+          "error": "",
+          "password": "{{secret.gmail.imap}}",
+          "passwordConfigured": false
+        }
+      },
+      {
+        "uuid": "dump",
+        "serviceId": "store",
+        "serviceName": "Store",
+        "state": {
+          "mode": "put",
+          "namespace": "",
+          "key": "",
+          "keyFrom": "messageId",
+          "valueFrom": "",
+          "limit": 0,
+          "show": "waiting",
+          "lastCount": 0,
+          "error": ""
+        }
+      },
+      {
+        "uuid": "after-intake",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "queue": [
+      {
+        "uuid": "refresh",
+        "serviceId": "timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 5,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": true,
+          "counter": 455
+        }
+      },
+      {
+        "uuid": "queue",
+        "serviceId": "store",
+        "serviceName": "Store",
+        "state": {
+          "mode": "list",
+          "namespace": "",
+          "key": "",
+          "keyFrom": "",
+          "valueFrom": "",
+          "limit": 100,
+          "show": "all",
+          "lastCount": 0,
+          "error": ""
+        }
+      },
+      {
+        "uuid": "after-queue",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "process": [
+      {
+        "uuid": "approved",
+        "serviceId": "store",
+        "serviceName": "Store",
+        "state": {
+          "mode": "release",
+          "namespace": "",
+          "key": "",
+          "keyFrom": "",
+          "valueFrom": "",
+          "limit": 0,
+          "show": "waiting",
+          "lastCount": 0,
+          "error": ""
+        }
+      },
+      {
+        "uuid": "as-prompt",
+        "serviceId": "map",
+        "serviceName": "Map",
+        "state": {
+          "mode": "replace",
+          "arrayMode": "array",
+          "template": {
+            "key=": "params.key",
+            "text=": "'From: ' + (params.value.from || '(unknown)') + '\\nSubject: ' + (params.value.subject || '(none)') + '\\n\\n' + (params.value.text || params.value.body || JSON.stringify(params.value))"
+          },
+          "sensingMode": false
+        }
+      },
+      {
+        "uuid": "extract",
+        "serviceId": "text-generation",
+        "serviceName": "Text Generation",
+        "state": {
+          "backend": "server",
+          "apiKey": "{{secret.hetzner.token}}",
+          "apiKeyConfigured": true,
+          "serverUrl": "https://inference.hetzner.com/api/v1",
+          "endpoint": "https://inference.hetzner.com/api/v1/chat/completions",
+          "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+          "systemPrompt": "Extract the booking request from this enquiry. Leave a field out when the message does not state it — never guess.",
+          "temperature": 0.7,
+          "topP": 0.95,
+          "topK": 20,
+          "maxTokens": 4096,
+          "timeoutSec": 300,
+          "stream": true,
+          "thinking": false,
+          "thinkingBudgetTokens": 1024,
+          "jsonSchema": {
+            "type": "object",
+            "properties": {
+              "hotel": {
+                "type": "string"
+              },
+              "rooms": {
+                "type": "integer"
+              },
+              "roomType": {
+                "type": "string"
+              },
+              "arrival": {
+                "type": "string",
+                "description": "ISO date"
+              },
+              "departure": {
+                "type": "string",
+                "description": "ISO date"
+              },
+              "breakfastIncluded": {
+                "type": "boolean"
+              },
+              "specialRequests": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["hotel", "rooms"]
+          },
+          "status": "idle",
+          "error": ""
+        }
+      },
+      {
+        "uuid": "result",
+        "serviceId": "monitor",
+        "serviceName": "Monitor",
+        "state": {
+          "fileLogPath": "",
+          "logToConsole": false,
+          "renderTextEditor": true,
+          "logToBoard": true
+        }
+      },
+      {
+        "uuid": "settle",
+        "serviceId": "store",
+        "serviceName": "Store",
+        "state": {
+          "mode": "ack",
+          "namespace": "",
+          "key": "",
+          "keyFrom": "",
+          "valueFrom": "",
+          "limit": 0,
+          "show": "waiting",
+          "lastCount": 0,
+          "error": ""
+        }
+      },
+      {
+        "uuid": "after-settle",
+        "serviceId": "stopper",
+        "serviceName": "Stopper",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "requeue": [
+      {
+        "uuid": "return",
+        "serviceId": "store",
+        "serviceName": "Store",
+        "state": {
+          "mode": "requeue",
+          "namespace": "",
+          "key": "",
+          "keyFrom": "",
+          "valueFrom": "",
+          "limit": 0,
+          "show": "waiting",
+          "lastCount": 0,
+          "error": ""
+        }
+      }
+    ]
+  },
+  "description": "Enquiries arrive as email and wait. A person approves the ones worth processing; each approved one is read, extracted into fields, and written on. The mailbox is watched over IMAP IDLE, so new mail pushes itself into the board — there is nothing to poll and nothing to expose. Set host, username and password on the Mailbox service (the password is write-only and never saved back into this board). Extraction runs against a local model, so start one first: ./build/bin/llama-server -m ~/Development/claude/models/Qwen3-0.6B-Q8_0.gguf --port 8081",
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "approval",
+        "title": "Enquiries waiting",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "queue",
+                "path": "records"
+              },
+              "selectable": true,
+              "rowKey": "key",
+              "selectionState": "picked",
+              "columns": [
+                "state",
+                "key",
+                "value.from",
+                "value.subject",
+                "createdAt"
+              ],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Process selected",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "approved",
+                      "payload": {
+                        "keys": {
+                          "$state": "picked"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Return to queue",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "return",
+                      "payload": {
+                        "keys": {
+                          "$state": "picked"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "generating": "#eab308",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "error"
+                  },
+                  "tone": "error",
+                  "placeholder": "Ready"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "acceptedSyncSenders": [],
+  "rejectedSyncSenders": []
+}

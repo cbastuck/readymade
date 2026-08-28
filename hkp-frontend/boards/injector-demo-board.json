@@ -1,10 +1,20 @@
 {
   "boardName": "Injector Demo",
+  "description": "The Browser runtime shows Injector running in-process, with no backend needed. The Node runtime shows the same service behind hkp-node's REST API — needs hkp-node running locally on port 8080.",
   "runtimes": [
     {
       "id": "ui",
       "name": "Browser",
       "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "node",
+      "name": "Node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
       "state": {
         "wrapServices": false
       }
@@ -23,6 +33,21 @@
       {
         "uuid": "monitor-svc",
         "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ],
+    "node": [
+      {
+        "uuid": "node-injector-svc",
+        "serviceId": "injector",
+        "serviceName": "Injector",
+        "state": {
+          "recentInjection": "Hello from hkp-node!"
+        }
+      },
+      {
+        "uuid": "node-monitor-svc",
+        "serviceId": "monitor",
         "serviceName": "Monitor"
       }
     ]
