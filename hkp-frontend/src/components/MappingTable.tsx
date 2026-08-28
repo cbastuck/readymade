@@ -198,7 +198,7 @@ export default function MappingTable({
 
       {rows.length > 0 ? (
         <div className="mx-2 max-h-[250px] overflow-y-auto">
-          <Table>
+          <Table className="hkp-mapping-table">
             <TableHeader>
               <TableRow>
                 <TableHead
@@ -226,6 +226,7 @@ export default function MappingTable({
                 >
                   <TableCell className="text-left p-0 w-[50%]">
                     <SubmittableInputWithToggle
+                      className="hkp-map-key-input"
                       fullWidth
                       hideBottomBorder
                       value={key}

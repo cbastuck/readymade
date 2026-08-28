@@ -46,7 +46,10 @@ export default function RuntimeRestServiceUI(props: Props) {
       <div
         key={service.uuid}
         id={service.uuid}
-        style={{ minWidth: compact ? 150 : 200, paddingBottom: 12 }}
+        style={{
+          minWidth: compact ? 150 : 200,
+          paddingBottom: compact ? 6 : 12,
+        }}
       >
         {Object.keys(properties).map((prop) => {
           const val = properties[prop];
@@ -192,7 +195,11 @@ export default function RuntimeRestServiceUI(props: Props) {
       initialSize={initialSize}
     >
       {props.genericUI === false ? (
-        <div key={service.uuid} id={service.uuid} style={{ paddingBottom: 12 }}>
+        <div
+          key={service.uuid}
+          id={service.uuid}
+          style={{ paddingBottom: compact ? 6 : 12 }}
+        >
           {props.children}
         </div>
       ) : (

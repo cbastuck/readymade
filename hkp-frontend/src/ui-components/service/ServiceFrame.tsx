@@ -265,7 +265,7 @@ export default function ServiceFrame({
               background: "var(--bg-card, white)",
               border: "1px solid var(--border-mid, #d8d2ca)",
               flexShrink: 0,
-              margin: "4px 0",
+              margin: "var(--hkp-svc-card-margin-y, 4px) 0",
             })}
           >
             {/* Inner wrapper clips content to card radius */}
@@ -371,7 +371,7 @@ export default function ServiceFrame({
             borderRadius: theme.serviceBorderRadius ?? theme.borderRadius,
             textAlign: "center",
             backgroundColor: theme.serviceBackgroundColor,
-            margin: "10px 0px",
+            margin: "var(--hkp-svc-card-margin-y, 10px) 0px",
             boxShadow: theme.serviceBoxShadow,
             overflow: "hidden",
           })}

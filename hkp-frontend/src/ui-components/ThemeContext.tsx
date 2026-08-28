@@ -200,7 +200,7 @@ const APPEARANCE_STORAGE_KEY = "hkp-appearance";
 const DEFAULT_APPEARANCE: AppearanceState = {
   accentId: "lagoon",
   fontId: "theme",
-  densityId: "comfortable",
+  densityId: "compact",
 };
 
 function restoreAppearance(): AppearanceState {
@@ -280,8 +280,9 @@ function applyAppearance(appearance: AppearanceState) {
   }
 
   const density = DENSITY_PRESETS.find((p) => p.id === appearance.densityId);
-  // The default preset drops the attribute so the `:root` token values apply.
-  if (!density || density.id === DEFAULT_APPEARANCE.densityId) {
+  // `compact` is what the CSS keys on; `comfortable` carries the attribute too
+  // but no rule targets it, so the bare `:root` token values apply.
+  if (!density) {
     root.removeAttribute("data-density");
   } else {
     root.setAttribute("data-density", density.id);

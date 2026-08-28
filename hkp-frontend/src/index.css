@@ -58,9 +58,13 @@
      ServiceUI field components and the playground service-card CSS below. */
   --hkp-svc-row-min-width: 350px;
   --hkp-svc-body-pad-x: 16px;
+  --hkp-svc-body-pad-top: 8px;
   --hkp-svc-font: 13px;
   --hkp-svc-font-sm: 11px;
   --hkp-svc-label-tracking: 1px;
+  --hkp-svc-header-pad-y: 10px;
+  --hkp-svc-header-pad-x: 12px;
+  --hkp-svc-header-gap: 7px;
 }
 
 /* Compact density — a size axis independent of the colour theme. Beats the
@@ -69,9 +73,14 @@
 :root[data-density="compact"] {
   --hkp-svc-row-min-width: 200px;
   --hkp-svc-body-pad-x: 10px;
+  --hkp-svc-body-pad-top: 3px;
   --hkp-svc-font: 12px;
   --hkp-svc-font-sm: 10px;
-  --hkp-svc-label-tracking: 0px;
+  --hkp-svc-label-tracking: 0.3px;
+  --hkp-svc-header-pad-y: 5px;
+  --hkp-svc-header-pad-x: 8px;
+  --hkp-svc-header-gap: 5px;
+  --hkp-svc-card-margin-y: 3px;
   --r-card: 10px;
 }
 
@@ -545,6 +554,41 @@ blockquote:after {
    compact tightens the letter-spacing that otherwise eats horizontal room. */
 .hkp-svc-field-label {
   letter-spacing: var(--hkp-svc-label-tracking, 1px) !important;
+}
+
+/* GroupLabel renders these as <h4>, which the base layer paints in the heavy
+   display face (hkp-fnt-sans / Walkway Black) at text-lg — too loud once the
+   tracking is pulled in. Compact drops it to the card's own UI face and size. */
+:root[data-density="compact"] .hkp-svc-field-label {
+  font-family: "DM Sans", system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  font-size: var(--hkp-svc-font, 12px) !important;
+}
+
+/* MappingTable's key field is an editable input, but in compact it should read
+   like a field label — same face, weight and size as .hkp-svc-field-label. */
+:root[data-density="compact"] .hkp-map-key-input {
+  font-family: "DM Sans", system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  font-size: var(--hkp-svc-font, 12px) !important;
+}
+
+/* Compact MappingTable row height had two causes: the <table> carries
+   Tailwind's `text-sm` (an absolute `line-height: 1.25rem` that inherits into
+   every cell), and the per-row delete button is a default-size shadcn Button
+   locked to `h-10` (40px), which `align-middle` then centres the small inputs
+   inside. Collapse both so rows sit tight against their dividers. */
+:root[data-density="compact"] .hkp-mapping-table td,
+:root[data-density="compact"] .hkp-mapping-table th {
+  line-height: 1.15 !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+:root[data-density="compact"] .hkp-mapping-table td button {
+  height: auto !important;
+  min-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 /* Service name in header: override Editable's tracking-widest / text-base */
