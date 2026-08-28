@@ -19,7 +19,7 @@ export default function SyncIndicator({ style, inSync, label, onClick }: Props) 
             backgroundColor: "#E8E8E8",
             border: "1px solid rgb(186, 186, 186)",
             borderRadius: 2,
-            letterSpacing: 1,
+            letterSpacing: "var(--hkp-svc-label-tracking, 1px)",
             textAlign: "center",
             paddingTop: 10,
             minWidth: labelWidth,

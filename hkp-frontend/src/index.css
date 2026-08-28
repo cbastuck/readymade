@@ -52,6 +52,27 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Service-card sizing. Swapped as a group by [data-density="compact"]; a
+     theme may override --hkp-svc-body-pad-x for its own spec. Consumed by
+     ServiceUI field components and the playground service-card CSS below. */
+  --hkp-svc-row-min-width: 350px;
+  --hkp-svc-body-pad-x: 16px;
+  --hkp-svc-font: 13px;
+  --hkp-svc-font-sm: 11px;
+  --hkp-svc-label-tracking: 1px;
+}
+
+/* Compact density — a size axis independent of the colour theme. Beats the
+   per-theme values on specificity (:root[data-density=…] over [data-theme=…])
+   and by load order. */
+:root[data-density="compact"] {
+  --hkp-svc-row-min-width: 200px;
+  --hkp-svc-body-pad-x: 10px;
+  --hkp-svc-font: 12px;
+  --hkp-svc-font-sm: 10px;
+  --hkp-svc-label-tracking: 0px;
+  --r-card: 10px;
 }
 
 html,
@@ -329,6 +350,9 @@ blockquote:after {
   --r-card: 14px;
   --r-runtime: 18px;
 
+  /* Playground's own service-body padding spec (comfortable). */
+  --hkp-svc-body-pad-x: 13px;
+
   --board-dot: oklch(0.76 0.012 62);
   --board-padding: 15px;
 }
@@ -496,16 +520,38 @@ blockquote:after {
 /* Service body: apply design spec horizontal padding to ServiceUI's inner content div.
    Vertical spacing is left to individual service UIs to avoid double-padding. */
 [data-theme="playground"] .hkp-service-card .flex.flex-col.font-sans {
-  padding: 0 13px !important;
+  padding: 0 var(--hkp-svc-body-pad-x, 13px) !important;
   display: flex;
   flex-direction: column;
+}
+
+/* Compact density pulls the whole service-card subtree down a base size;
+   comfortable is left at each theme's own inherited size. */
+:root[data-density="compact"] .hkp-service-card {
+  font-size: var(--hkp-svc-font, 12px);
+}
+
+/* Form controls inside a service card carry their own fixed sizes (Tailwind
+   text-base / text-[0.87rem]); in compact they follow the card base instead. */
+:root[data-density="compact"] .hkp-service-card input,
+:root[data-density="compact"] .hkp-service-card select,
+:root[data-density="compact"] .hkp-service-card textarea,
+:root[data-density="compact"] .hkp-service-card [contenteditable] {
+  font-size: var(--hkp-svc-font, 12px);
+}
+
+/* Opt-in field-label class (add to a ServiceUI field's labelClassName). Beats
+   GroupLabel's built-in tracking-[6px] and follows the density token so
+   compact tightens the letter-spacing that otherwise eats horizontal room. */
+.hkp-svc-field-label {
+  letter-spacing: var(--hkp-svc-label-tracking, 1px) !important;
 }
 
 /* Service name in header: override Editable's tracking-widest / text-base */
 [data-theme="playground"] [data-service-header] [contenteditable],
 [data-theme="playground"] [data-service-header] input[type="text"],
 [data-theme="playground"] [data-service-header] span.cursor-text {
-  font-size: 13px !important;
+  font-size: var(--hkp-svc-font, 13px) !important;
   font-weight: 500 !important;
   letter-spacing: 0 !important;
   color: var(--text, #1a1a1a) !important;

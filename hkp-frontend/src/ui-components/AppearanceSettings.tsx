@@ -1,5 +1,6 @@
 import {
   ACCENT_PRESETS,
+  DENSITY_PRESETS,
   FONT_PRESETS,
   ThemeName,
   useThemeControl,
@@ -17,8 +18,16 @@ const THEME_OPTIONS: Array<{ id: ThemeName; label: string }> = [
  * settings dialog — must live under a ThemeProvider.
  */
 export default function AppearanceSettings() {
-  const { themeName, setThemeName, accentId, setAccentId, fontId, setFontId } =
-    useThemeControl();
+  const {
+    themeName,
+    setThemeName,
+    accentId,
+    setAccentId,
+    fontId,
+    setFontId,
+    densityId,
+    setDensityId,
+  } = useThemeControl();
 
   return (
     <div className="flex flex-col gap-5 pt-2 text-sm">
@@ -70,6 +79,30 @@ export default function AppearanceSettings() {
                 background: `linear-gradient(135deg, ${preset.accent} 50%, ${preset.accentSecondary} 50%)`,
               }}
             />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <span className="uppercase tracking-[0.12em] text-slate-400 text-[0.68rem] font-semibold">
+          Density
+        </span>
+        <span className="text-[0.8rem] text-slate-500 leading-snug">
+          Compact shrinks service cards and their text across every theme.
+        </span>
+        <div className="flex gap-2">
+          {DENSITY_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              onClick={() => setDensityId(preset.id)}
+              className={`rounded-lg border px-3 py-2 text-[0.85rem] font-semibold transition-colors ${
+                densityId === preset.id
+                  ? "border-slate-800 bg-slate-800 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              {preset.label}
+            </button>
           ))}
         </div>
       </div>

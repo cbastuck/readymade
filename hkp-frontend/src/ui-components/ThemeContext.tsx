@@ -183,10 +183,25 @@ export const FONT_PRESETS: FontPreset[] = [
   },
 ];
 
-type AppearanceState = { accentId: string; fontId: string };
+export type DensityPreset = { id: string; label: string };
+
+// Compactness of service cards — a size axis independent of the colour theme.
+// "comfortable" leaves every theme at its own defaults; "compact" swaps a
+// handful of size tokens (`--hkp-svc-*` in index.css) by putting
+// `data-density="compact"` on <html>, the same mechanism accent and font use.
+export const DENSITY_PRESETS: DensityPreset[] = [
+  { id: "comfortable", label: "Comfortable" },
+  { id: "compact", label: "Compact" },
+];
+
+type AppearanceState = { accentId: string; fontId: string; densityId: string };
 
 const APPEARANCE_STORAGE_KEY = "hkp-appearance";
-const DEFAULT_APPEARANCE: AppearanceState = { accentId: "lagoon", fontId: "theme" };
+const DEFAULT_APPEARANCE: AppearanceState = {
+  accentId: "lagoon",
+  fontId: "theme",
+  densityId: "comfortable",
+};
 
 function restoreAppearance(): AppearanceState {
   try {
@@ -198,6 +213,8 @@ function restoreAppearance(): AppearanceState {
     return {
       accentId: typeof parsed.accentId === "string" ? parsed.accentId : DEFAULT_APPEARANCE.accentId,
       fontId: typeof parsed.fontId === "string" ? parsed.fontId : DEFAULT_APPEARANCE.fontId,
+      densityId:
+        typeof parsed.densityId === "string" ? parsed.densityId : DEFAULT_APPEARANCE.densityId,
     };
   } catch {
     return DEFAULT_APPEARANCE;
@@ -261,6 +278,14 @@ function applyAppearance(appearance: AppearanceState) {
     ensureWebfontLoaded(font);
     root.style.setProperty("--hkp-start-font", font.family);
   }
+
+  const density = DENSITY_PRESETS.find((p) => p.id === appearance.densityId);
+  // The default preset drops the attribute so the `:root` token values apply.
+  if (!density || density.id === DEFAULT_APPEARANCE.densityId) {
+    root.removeAttribute("data-density");
+  } else {
+    root.setAttribute("data-density", density.id);
+  }
 }
 
 type ThemeControl = {
@@ -270,6 +295,8 @@ type ThemeControl = {
   setAccentId: (id: string) => void;
   fontId: string;
   setFontId: (id: string) => void;
+  densityId: string;
+  setDensityId: (id: string) => void;
 };
 
 export const ThemeCtx = createContext<ThemeContextState>(defaultTheme);
@@ -280,6 +307,8 @@ const ThemeControlCtx = createContext<ThemeControl>({
   setAccentId: () => {},
   fontId: DEFAULT_APPEARANCE.fontId,
   setFontId: () => {},
+  densityId: DEFAULT_APPEARANCE.densityId,
+  setDensityId: () => {},
 });
 
 export function ThemeProvider({ children, defaultThemeName = "default" }: { children: ReactNode; defaultThemeName?: ThemeName }) {
@@ -323,6 +352,8 @@ export function ThemeProvider({ children, defaultThemeName = "default" }: { chil
     setAccentId: (id) => setAppearance((prev) => ({ ...prev, accentId: id })),
     fontId: appearance.fontId,
     setFontId: (id) => setAppearance((prev) => ({ ...prev, fontId: id })),
+    densityId: appearance.densityId,
+    setDensityId: (id) => setAppearance((prev) => ({ ...prev, densityId: id })),
   };
 
   return (

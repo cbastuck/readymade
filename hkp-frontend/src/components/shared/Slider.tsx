@@ -31,7 +31,7 @@ export default function Slider({
 }: Props) {
   const [stateValue, setStateValue] = useState<number>(syncedValue);
 
-  const fontSize = 11;
+  const fontSize = "var(--hkp-svc-font-sm, 11px)";
   const value = synced ? stateValue : syncedValue;
   const inSync = synced ? value === syncedValue : true;
   return (
@@ -41,7 +41,7 @@ export default function Slider({
         display: "flex",
         flexDirection: "row",
         margin: "3px 0px",
-        minWidth: "350px",
+        minWidth: "var(--hkp-svc-row-min-width, 350px)",
       }}
     >
       <SyncIndicator
