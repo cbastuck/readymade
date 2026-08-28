@@ -70,6 +70,7 @@ export default function InputField({
           onSubmit={onChange}
           disabled={disabled}
           className={`my-0 ${className} font-menu`}
+          labelClassName="hkp-svc-field-label"
           fullWidth
           minHeight={false}
           isExpandable={isExpandable}

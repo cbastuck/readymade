@@ -146,7 +146,7 @@ export default function RuntimeRestServiceUI(props: Props) {
           // dials it, so it is taken far more often than it is typed.
           const isMount =
             prop === MOUNT_FIELD || prop.endsWith(`.${MOUNT_FIELD}`);
-
+          const valueWithType = renderValueWithType(val, type);
           return (
             <div
               className="flex items-end"
@@ -156,7 +156,7 @@ export default function RuntimeRestServiceUI(props: Props) {
                 labelClassName="hkp-svc-field-label"
                 fullWidth
                 title={prop}
-                value={renderValueWithType(val, type)}
+                value={valueWithType}
                 onSubmit={(value) => {
                   service.configure({
                     [prop]: type === "number" ? Number(value) : value,
@@ -164,6 +164,7 @@ export default function RuntimeRestServiceUI(props: Props) {
                 }}
                 type={type}
                 disabled={readonly}
+                isExpandable={true}
               />
               {(readonly || isMount) && (
                 <CopyButton value={String(val ?? "")} label={prop} />

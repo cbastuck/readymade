@@ -21,16 +21,7 @@
     },
     {
       "id": "dispatch",
-      "name": "2 · Decide",
-      "type": "rest",
-      "url": "http://127.0.0.1:8080",
-      "state": {
-        "wrapServices": false
-      }
-    },
-    {
-      "id": "followup",
-      "name": "3 · Draft follow-up",
+      "name": "2 · Decide & act",
       "type": "rest",
       "url": "http://127.0.0.1:8080",
       "state": {
@@ -174,7 +165,11 @@
         "state": {
           "mode": "actionable",
           "inState": [
-            "init"
+            "init",
+            "needs-follow-up",
+            "ready",
+            "waiting-approval",
+            "waiting-reply"
           ],
           "idleSeconds": 0,
           "limit": 10
@@ -190,124 +185,384 @@
           "bypass": false,
           "pipeline": [
             {
-              "serviceId": "conversations",
-              "uuid": "read-thread",
-              "state": {
-                "mode": "thread",
-                "limit": 50
-              }
-            },
-            {
               "serviceId": "join",
-              "uuid": "understand",
+              "uuid": "with-thread",
               "serviceName": "Join",
               "state": {
-                "as": "extraction",
+                "as": "thread",
                 "mode": "overwrite",
                 "bypass": false,
                 "pipeline": [
                   {
-                    "serviceId": "map",
-                    "uuid": "as-prompt",
+                    "serviceId": "conversations",
+                    "uuid": "read-thread",
                     "state": {
-                      "mode": "replace",
-                      "arrayMode": "single",
-                      "template": {
-                        "prompt=": "'Booking enquiry thread ' + params.conversationId + '\\n\\n' + stringify(params.emails)"
-                      },
-                      "sensingMode": false
-                    }
-                  },
-                  {
-                    "serviceId": "text-generation",
-                    "uuid": "extract",
-                    "state": {
-                      "backend": "server",
-                      "apiKey": "{{secret.hetzner.token}}",
-                      "apiKeyConfigured": true,
-                      "serverUrl": "https://inference.hetzner.com/api/v1",
-                      "model": "Qwen/Qwen3.6-35B-A3B-FP8",
-                      "systemPrompt": "You read hotel booking enquiries. Extract only what the guest actually stated — never guess a value, and leave a field out when the message does not state it. List the names of the required fields that are still unknown in `missing`: numberOfRooms, dateOfArrival, dateOfDeparture. Set `language` to the ISO 639-1 code of the language the guest wrote in.",
-                      "temperature": 0.3,
-                      "topP": 0.95,
-                      "topK": 20,
-                      "maxTokens": 2048,
-                      "timeoutSec": 300,
-                      "stream": true,
-                      "thinking": false,
-                      "thinkingBudgetTokens": 1024,
-                      "jsonSchema": {
-                        "type": "object",
-                        "properties": {
-                          "numberOfRooms": {
-                            "type": "integer"
-                          },
-                          "dateOfArrival": {
-                            "type": "string",
-                            "description": "ISO date, YYYY-MM-DD"
-                          },
-                          "dateOfDeparture": {
-                            "type": "string",
-                            "description": "ISO date, YYYY-MM-DD"
-                          },
-                          "maximumPrice": {
-                            "type": "number",
-                            "description": "In euro, per night unless the guest says otherwise"
-                          },
-                          "searchDistrict": {
-                            "type": "string"
-                          },
-                          "breakfast": {
-                            "type": "boolean"
-                          },
-                          "numberOfBeds": {
-                            "type": "integer"
-                          },
-                          "missing": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "description": "Required fields the enquiry does not state"
-                          },
-                          "language": {
-                            "type": "string",
-                            "description": "ISO 639-1 code of the guest's language"
-                          }
-                        },
-                        "required": [
-                          "missing",
-                          "language"
-                        ]
-                      },
-                      "status": "idle",
-                      "error": ""
+                      "mode": "thread",
+                      "limit": 50
                     }
                   }
                 ]
               }
             },
             {
-              "serviceId": "conversations",
-              "uuid": "keep-extraction",
+              "serviceId": "join",
+              "uuid": "recall",
+              "serviceName": "Join",
               "state": {
-                "mode": "put-artifact",
-                "kind": "extraction",
-                "payloadFrom": "extraction.json",
-                "status": "recorded"
+                "as": "known",
+                "mode": "overwrite",
+                "bypass": false,
+                "pipeline": [
+                  {
+                    "serviceId": "conversations",
+                    "uuid": "list-known",
+                    "state": {
+                      "mode": "list-artifacts",
+                      "kind": "extraction",
+                      "status": "",
+                      "limit": 5
+                    }
+                  }
+                ]
               }
             },
             {
-              "serviceId": "map",
-              "uuid": "decide-state",
-              "serviceName": "Map",
+              "serviceId": "join",
+              "uuid": "with-approved",
+              "serviceName": "Join",
               "state": {
+                "as": "approved",
                 "mode": "overwrite",
-                "arrayMode": "single",
-                "template": {
-                  "state=": "params.payload.missing && params.payload.missing.length > 0 ? 'needs-follow-up' : 'ready'"
-                },
-                "sensingMode": false
+                "bypass": false,
+                "pipeline": [
+                  {
+                    "serviceId": "conversations",
+                    "uuid": "list-approved",
+                    "state": {
+                      "mode": "list-artifacts",
+                      "kind": "follow-up",
+                      "status": "approved",
+                      "limit": 5
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "serviceId": "communication-dispatcher",
+              "uuid": "manager",
+              "serviceName": "Communication Dispatcher",
+              "state": {
+                "goal": "Book a hotel room for the guest who wrote in: understand what they asked for, obtain anything required that they did not say, and get to a confirmed booking.",
+                "stateFrom": "state",
+                "maxContextChars": 20000,
+                "states": [
+                  {
+                    "name": "init",
+                    "describe": "the enquiry has arrived and nothing has been read out of it yet"
+                  },
+                  {
+                    "name": "needs-follow-up",
+                    "describe": "something required is missing and the guest has not been asked for it yet"
+                  },
+                  {
+                    "name": "ready",
+                    "describe": "everything required is known"
+                  },
+                  {
+                    "name": "waiting-approval",
+                    "describe": "a draft email is waiting for a colleague to approve it"
+                  },
+                  {
+                    "name": "waiting-reply",
+                    "describe": "we have written to the guest and are waiting for their answer"
+                  },
+                  {
+                    "name": "done",
+                    "describe": "nothing further is needed"
+                  }
+                ],
+                "decide": [
+                  {
+                    "serviceId": "text-generation",
+                    "uuid": "decide-llm",
+                    "state": {
+                      "backend": "server",
+                      "apiKey": "{{secret.hetzner.token}}",
+                      "apiKeyConfigured": true,
+                      "serverUrl": "https://inference.hetzner.com/api/v1",
+                      "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+                      "systemPrompt": "",
+                      "temperature": 0.3,
+                      "topP": 0.95,
+                      "topK": 20,
+                      "maxTokens": 1024,
+                      "timeoutSec": 300,
+                      "stream": true,
+                      "thinking": false,
+                      "thinkingBudgetTokens": 1024,
+                      "jsonSchema": null,
+                      "status": "idle",
+                      "error": ""
+                    },
+                    "serviceName": "Text Generation"
+                  }
+                ],
+                "actions": [
+                  {
+                    "name": "extract",
+                    "describe": "Read the thread and record what the guest asked for, including which required details they did not state. Takes no parameters.",
+                    "available": "",
+                    "pipeline": [
+                      {
+                        "serviceId": "join",
+                        "uuid": "understand",
+                        "serviceName": "Join",
+                        "state": {
+                          "as": "extraction",
+                          "mode": "overwrite",
+                          "bypass": false,
+                          "pipeline": [
+                            {
+                              "serviceId": "map",
+                              "uuid": "as-prompt",
+                              "state": {
+                                "mode": "replace",
+                                "arrayMode": "single",
+                                "template": {
+                                  "prompt=": "'Booking enquiry thread ' + params.conversationId + '\\n\\n' + stringify(params.thread.emails)"
+                                },
+                                "sensingMode": false
+                              }
+                            },
+                            {
+                              "serviceId": "text-generation",
+                              "uuid": "extract",
+                              "state": {
+                                "backend": "server",
+                                "apiKey": "{{secret.hetzner.token}}",
+                                "apiKeyConfigured": true,
+                                "serverUrl": "https://inference.hetzner.com/api/v1",
+                                "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+                                "systemPrompt": "You read hotel booking enquiries. Extract only what the guest actually stated — never guess a value, and leave a field out when the message does not state it. List the names of the required fields that are still unknown in `missing`: numberOfRooms, dateOfArrival, dateOfDeparture. Set `language` to the ISO 639-1 code of the language the guest wrote in.",
+                                "temperature": 0.3,
+                                "topP": 0.95,
+                                "topK": 20,
+                                "maxTokens": 2048,
+                                "timeoutSec": 300,
+                                "stream": true,
+                                "thinking": false,
+                                "thinkingBudgetTokens": 1024,
+                                "jsonSchema": {
+                                  "type": "object",
+                                  "properties": {
+                                    "numberOfRooms": {
+                                      "type": "integer"
+                                    },
+                                    "dateOfArrival": {
+                                      "type": "string",
+                                      "description": "ISO date, YYYY-MM-DD"
+                                    },
+                                    "dateOfDeparture": {
+                                      "type": "string",
+                                      "description": "ISO date, YYYY-MM-DD"
+                                    },
+                                    "maximumPrice": {
+                                      "type": "number",
+                                      "description": "In euro, per night unless the guest says otherwise"
+                                    },
+                                    "searchDistrict": {
+                                      "type": "string"
+                                    },
+                                    "breakfast": {
+                                      "type": "boolean"
+                                    },
+                                    "numberOfBeds": {
+                                      "type": "integer"
+                                    },
+                                    "missing": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "Required fields the enquiry does not state"
+                                    },
+                                    "language": {
+                                      "type": "string",
+                                      "description": "ISO 639-1 code of the guest's language"
+                                    }
+                                  },
+                                  "required": ["missing", "language"]
+                                },
+                                "status": "idle",
+                                "error": ""
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "serviceId": "conversations",
+                        "uuid": "keep-extraction",
+                        "state": {
+                          "mode": "put-artifact",
+                          "kind": "extraction",
+                          "payloadFrom": "extraction.json",
+                          "status": "recorded"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "follow-up",
+                    "describe": "Draft an email asking the guest for details we still need. The draft is stored for a colleague to approve; it is not sent. params: { missing: string[] } — the field names to ask about.",
+                    "available": "params.known.count > 0",
+                    "pipeline": [
+                      {
+                        "serviceId": "join",
+                        "uuid": "compose-reply",
+                        "serviceName": "Join",
+                        "state": {
+                          "as": "draft",
+                          "mode": "overwrite",
+                          "bypass": false,
+                          "pipeline": [
+                            {
+                              "serviceId": "map",
+                              "uuid": "as-draft-prompt",
+                              "serviceName": "Map",
+                              "state": {
+                                "mode": "replace",
+                                "arrayMode": "single",
+                                "sensingMode": false,
+                                "template": {
+                                  "prompt=": "'The guest wrote:\\n\\n' + stringify(params.thread.emails) + '\\n\\nStill missing: ' + (params.params.missing ? stringify(params.params.missing) : (params.known.count > 0 ? stringify(params.known.artifacts[0].payload.missing) : '(unknown)'))"
+                                }
+                              }
+                            },
+                            {
+                              "serviceId": "text-generation",
+                              "uuid": "write-followup",
+                              "state": {
+                                "backend": "server",
+                                "apiKey": "{{secret.hetzner.token}}",
+                                "apiKeyConfigured": true,
+                                "serverUrl": "https://inference.hetzner.com/api/v1",
+                                "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+                                "systemPrompt": "You write short, polite follow-up emails for a hotel booking desk. Ask only for the details listed as missing — never invent or restate details the guest already gave. Write in the same language the guest wrote in, and sign off as the booking team.",
+                                "temperature": 0.3,
+                                "topP": 0.95,
+                                "topK": 20,
+                                "maxTokens": 2048,
+                                "timeoutSec": 300,
+                                "stream": true,
+                                "thinking": false,
+                                "thinkingBudgetTokens": 1024,
+                                "jsonSchema": {
+                                  "type": "object",
+                                  "properties": {
+                                    "subject": {
+                                      "type": "string"
+                                    },
+                                    "body": {
+                                      "type": "string",
+                                      "description": "The full email text"
+                                    },
+                                    "language": {
+                                      "type": "string",
+                                      "description": "ISO 639-1 code"
+                                    }
+                                  },
+                                  "required": ["subject", "body"]
+                                },
+                                "status": "idle",
+                                "error": ""
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "serviceId": "conversations",
+                        "uuid": "keep-draft",
+                        "state": {
+                          "mode": "put-artifact",
+                          "kind": "follow-up",
+                          "payloadFrom": "draft.json",
+                          "status": "pending"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "send",
+                    "describe": "Send the approved draft to the guest and file it in the thread. Only possible once a colleague has approved one. Takes no parameters.",
+                    "available": "params.approved.count > 0 && params.thread.lastInbound",
+                    "pipeline": [
+                      {
+                        "serviceId": "join",
+                        "uuid": "deliver",
+                        "serviceName": "Join",
+                        "state": {
+                          "as": "sent",
+                          "mode": "overwrite",
+                          "bypass": false,
+                          "pipeline": [
+                            {
+                              "serviceId": "map",
+                              "uuid": "as-envelope",
+                              "serviceName": "Map",
+                              "state": {
+                                "mode": "replace",
+                                "arrayMode": "single",
+                                "sensingMode": false,
+                                "template": {
+                                  "to=": "params.thread.lastInbound.from",
+                                  "subject=": "params.approved.artifacts[0].payload.subject",
+                                  "body=": "params.approved.artifacts[0].payload.body",
+                                  "inReplyTo=": "params.thread.lastInbound.messageId",
+                                  "references=": "params.thread.lastInbound.messageId"
+                                }
+                              }
+                            },
+                            {
+                              "serviceId": "smtp-email",
+                              "uuid": "send-mail",
+                              "serviceName": "SMTP Email",
+                              "state": {
+                                "mode": "envelope",
+                                "host": "smtp.gmail.com",
+                                "port": 465,
+                                "username": "bstckbrln@gmail.com",
+                                "password": "{{secret.gmail.imap}}",
+                                "from": "bstckbrln@gmail.com",
+                                "tls": true,
+                                "allowedRecipients": ["mail@cbastuck.de"]
+                              }
+                            },
+                            {
+                              "serviceId": "conversations",
+                              "uuid": "file-outbound",
+                              "state": {
+                                "mode": "ingest",
+                                "direction": "outbound"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "serviceId": "conversations",
+                        "uuid": "mark-sent",
+                        "state": {
+                          "mode": "set-artifact-status",
+                          "status": "sent",
+                          "idFrom": "approved.artifacts.0.id"
+                        }
+                      }
+                    ]
+                  }
+                ]
               }
             },
             {
@@ -330,7 +585,7 @@
         }
       },
       {
-        "uuid": "after-dispatch",
+        "uuid": "after-act",
         "serviceId": "stopper",
         "serviceName": "Stopper",
         "state": {
@@ -389,7 +644,7 @@
         "state": {
           "mode": "list-artifacts",
           "kind": "follow-up",
-          "status": "pending",
+          "status": "",
           "limit": 50
         }
       },
@@ -461,178 +716,6 @@
           "bypass": false
         }
       }
-    ],
-    "followup": [
-      {
-        "uuid": "tick-followup",
-        "serviceId": "timer",
-        "serviceName": "Timer",
-        "state": {
-          "periodic": true,
-          "periodicValue": 30,
-          "periodicUnit": "s",
-          "oneShotDelay": 0,
-          "oneShotDelayUnit": "ms",
-          "running": false,
-          "counter": 0
-        }
-      },
-      {
-        "uuid": "poll-followup",
-        "serviceId": "conversations",
-        "serviceName": "Conversations",
-        "state": {
-          "mode": "actionable",
-          "inState": [
-            "needs-follow-up"
-          ],
-          "idleSeconds": 0,
-          "limit": 10
-        }
-      },
-      {
-        "uuid": "per-conversation-draft",
-        "serviceId": "iterator",
-        "serviceName": "Iterator",
-        "state": {
-          "itemsFrom": "conversations",
-          "limit": 0,
-          "bypass": false,
-          "pipeline": [
-            {
-              "serviceId": "conversations",
-              "uuid": "read-thread-again",
-              "state": {
-                "mode": "thread",
-                "limit": 50
-              }
-            },
-            {
-              "serviceId": "join",
-              "uuid": "recall",
-              "serviceName": "Join",
-              "state": {
-                "as": "known",
-                "mode": "overwrite",
-                "bypass": false,
-                "pipeline": [
-                  {
-                    "serviceId": "conversations",
-                    "uuid": "list-known",
-                    "state": {
-                      "mode": "list-artifacts",
-                      "kind": "extraction",
-                      "status": "",
-                      "limit": 5
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "serviceId": "join",
-              "uuid": "compose-reply",
-              "serviceName": "Join",
-              "state": {
-                "as": "draft",
-                "mode": "overwrite",
-                "bypass": false,
-                "pipeline": [
-                  {
-                    "serviceId": "map",
-                    "uuid": "as-draft-prompt",
-                    "serviceName": "Map",
-                    "state": {
-                      "mode": "replace",
-                      "arrayMode": "single",
-                      "sensingMode": false,
-                      "template": {
-                        "prompt=": "'The guest wrote:\\n\\n' + stringify(params.emails) + '\\n\\nStill missing: ' + (params.known.count > 0 ? stringify(params.known.artifacts[0].payload.missing) : '(unknown)')"
-                      }
-                    }
-                  },
-                  {
-                    "serviceId": "text-generation",
-                    "uuid": "write-followup",
-                    "state": {
-                      "backend": "server",
-                      "apiKey": "{{secret.hetzner.token}}",
-                      "apiKeyConfigured": true,
-                      "serverUrl": "https://inference.hetzner.com/api/v1",
-                      "model": "Qwen/Qwen3.6-35B-A3B-FP8",
-                      "systemPrompt": "You write short, polite follow-up emails for a hotel booking desk. Ask only for the details listed as missing — never invent or restate details the guest already gave. Write in the same language the guest wrote in, and sign off as the booking team.",
-                      "temperature": 0.3,
-                      "topP": 0.95,
-                      "topK": 20,
-                      "maxTokens": 2048,
-                      "timeoutSec": 300,
-                      "stream": true,
-                      "thinking": false,
-                      "thinkingBudgetTokens": 1024,
-                      "jsonSchema": {
-                        "type": "object",
-                        "properties": {
-                          "subject": {
-                            "type": "string"
-                          },
-                          "body": {
-                            "type": "string",
-                            "description": "The full email text"
-                          },
-                          "language": {
-                            "type": "string",
-                            "description": "ISO 639-1 code"
-                          }
-                        },
-                        "required": [
-                          "subject",
-                          "body"
-                        ]
-                      },
-                      "status": "idle",
-                      "error": ""
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "serviceId": "conversations",
-              "uuid": "keep-draft",
-              "state": {
-                "mode": "put-artifact",
-                "kind": "follow-up",
-                "payloadFrom": "draft.json",
-                "status": "pending"
-              }
-            },
-            {
-              "serviceId": "conversations",
-              "uuid": "advance-to-approval",
-              "state": {
-                "mode": "transition",
-                "state": "waiting-approval",
-                "states": [
-                  "init",
-                  "needs-follow-up",
-                  "ready",
-                  "waiting-approval",
-                  "waiting-reply",
-                  "done"
-                ]
-              }
-            }
-          ]
-        }
-      },
-      {
-        "uuid": "after-followup",
-        "serviceId": "stopper",
-        "serviceName": "Stopper",
-        "state": {
-          "bypass": false
-        }
-      }
     ]
   },
   "description": "Booking enquiries arrive as mail, are filed into conversations by their mail headers, and are read by a model into structured fields. When something required is missing, a second model turn drafts the follow-up email asking for it — and that draft waits for a person, because nothing is sent without approval. Everything lives in the board's own SQLite database (~/.hkp/node/db), so it survives a restart.\n\nTo drive the whole loop by hand: press 'File demo enquiry' (the Injector in runtime 0 holds a German test enquiry), then '1 · Extract', then '2 · Draft follow-up'. Or type your own text into the field beside them.\n\nArtifact status says what is waiting on whom. An extraction is 'recorded' — it is data, and nobody has to look at it. A follow-up draft is 'pending' — it does not go anywhere until somebody approves it.\n\nConversation states: init → needs-follow-up (something required is missing) or ready (nothing is) → waiting-approval → waiting-reply → done.\n\nExtraction and drafting both run against Hetzner's inference API using the {{secret.hetzner.token}} alias from Settings → Secrets. For a local model instead, set both text-generation services' URL to http://127.0.0.1:8081 and clear their key, then run: ./build/bin/llama-server -m ~/Development/claude/models/Qwen3-0.6B-Q8_0.gguf --port 8081\n\nFor real mail, set host, username and the {{secret.gmail.imap}} password on the Mailbox service in runtime 1 and start it; IMAP IDLE pushes new mail in, and a message already filed is ignored, so re-delivery costs nothing.",
@@ -693,7 +776,7 @@
                 },
                 {
                   "type": "button",
-                  "label": "1 · Extract",
+                  "label": "Run a step",
                   "actions": [
                     {
                       "type": "process",
@@ -703,15 +786,20 @@
                   ]
                 },
                 {
-                  "type": "button",
-                  "label": "2 · Draft follow-up",
-                  "actions": [
-                    {
-                      "type": "process",
-                      "serviceUuid": "poll-followup",
-                      "payload": {}
-                    }
-                  ]
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "manager",
+                    "path": "lastAction"
+                  },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "manager",
+                    "path": "lastReason"
+                  },
+                  "placeholder": "not run yet"
                 },
                 {
                   "type": "status-indicator",
@@ -771,7 +859,7 @@
       },
       {
         "id": "follow-ups",
-        "title": "Follow-up emails awaiting approval",
+        "title": "Follow-up emails",
         "layout": {
           "direction": "column",
           "items": [

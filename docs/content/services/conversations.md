@@ -86,7 +86,7 @@ a board bug that shows up the first time anyone presses it.
 | Mode | What it does | Emits |
 |---|---|---|
 | `ingest` (default) | Files an email under its thread | `{ conversationId, state, isNew, participants, email }`, or **nothing** if already known |
-| `thread` | The conversation's emails, oldest first | `{ conversationId, emails: [...], count }` |
+| `thread` | The conversation's emails, oldest first | `{ conversationId, emails: [...], count, lastInbound }` |
 | `transition` | Moves a conversation to another state | `{ conversationId, state, previous, updatedAt }` |
 | `actionable` | Conversations a poll should act on | `{ conversations: [...], count }` |
 | `put-artifact` | Keeps something the workflow produced | the artifact |
@@ -132,8 +132,21 @@ tick while the last decision is still being carried out.
 | `kind` | `string` | `""` | Artifacts: the board's word for what this is |
 | `status` | `string` | `"pending"` | Artifacts: the status to write, or to filter on |
 | `payloadFrom` | `string` | `""` | `put-artifact`: dotted path to the part worth keeping |
+| `idFrom` | `string` | `""` | `set-artifact-status`: dotted path to the artifact id |
 | `lastCount` | `number` | — | Read-only: what the last pass saw |
 | `error` | `string` | — | Read-only: why the last pass produced nothing |
+
+**`lastInbound`** is the last message someone sent *to us*, separately from the
+list. A reply goes to whoever wrote in, and taking the last email instead is
+right only until we have sent one ourselves — at which point a board would
+quietly address its reply to its own sending address. It is `null` on a thread
+with nothing inbound in it.
+
+**`idFrom`** is for marking an artifact after acting on it. A pass that has just
+sent a message carries what was sent, not the draft it was sent from, so the
+board says where to look — `approved.artifacts.0.id`. Without it, the id has to
+be the input's own `id`, which means a Map reshaping the record purely to
+satisfy the next service.
 
 **Where the conversation id comes from**, in order: `conversationFrom` if it
 leads anywhere, then a `conversationId` field on the input, then a bare string
