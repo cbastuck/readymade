@@ -138,6 +138,52 @@ describe("nested pipeline navigation", () => {
     ).toBeNull();
   });
 
+  it("marks the gap when a level is opened from inside inline content", () => {
+    // A host whose own pipeline holds another host: expanding the outer one
+    // inline puts a pipeline between the board and whatever is opened from it,
+    // and that pipeline has no level of its own to name or go back to.
+    const inner = host("inner", "Join", [
+      { serviceId: "map", instanceId: "m2" },
+    ]);
+    const InnerHostUI = () => (
+      <SubServicePipelineUI service={inner} findServiceUI={findServiceUI} />
+    );
+
+    render(
+      <NestedNavProvider rootLabel="Board">
+        <SubServicePipelineUI
+          service={host("outer", "Iterator", [
+            { serviceId: "sub-service", instanceId: "i1" },
+          ])}
+          findServiceUI={() => InnerHostUI as any}
+        />
+      </NestedNavProvider>,
+    );
+
+    fireEvent.click(screen.getByTitle("Show content inline"));
+    fireEvent.click(openButton("Join"));
+
+    expect(trail().getByText("Join")).toBeTruthy();
+    expect(trail().getByText("…")).toBeTruthy();
+  });
+
+  it("leaves the gap unmarked when a level is opened directly", () => {
+    render(
+      <NestedNavProvider rootLabel="Board">
+        <SubServicePipelineUI
+          service={host("h1", "Iterator", [
+            { serviceId: "map", instanceId: "m1" },
+          ])}
+          findServiceUI={findServiceUI}
+        />
+      </NestedNavProvider>,
+    );
+
+    fireEvent.click(openButton("Iterator"));
+
+    expect(trail().queryByText("…")).toBeNull();
+  });
+
   it("offers nothing to open where there is nowhere to open it", () => {
     // An embedded board or a facade renders panels without the provider.
     render(

@@ -30,13 +30,25 @@ import {
 } from "react";
 
 /** One open level: the pipeline that was opened, and what to call it. */
-export type NestedLevel = { id: string; label: string };
+export type NestedLevel = {
+  id: string;
+  label: string;
+  /**
+   * Whether pipelines shown inline stand between this level and the one above.
+   *
+   * Expanding a pipeline inside a panel does not make a level of it, so a level
+   * opened from within one is deeper in the board than the trail can account
+   * for. The gap is named rather than hidden: those pipelines have no level to
+   * go back to, so the trail says something is there without offering to.
+   */
+  viaInline?: boolean;
+};
 
 export type NestedNavigation = {
   /** The open levels, outermost first. `stack[d]` is the level at depth d + 1. */
   stack: NestedLevel[];
   /** Opens a pipeline from a host sitting at `depth`, closing anything deeper. */
-  open: (id: string, label: string, depth: number) => void;
+  open: (id: string, label: string, depth: number, viaInline?: boolean) => void;
   /** Closes a level and everything below it. A no-op if it is not open. */
   close: (id: string) => void;
   /** Walks back out to `depth`; 0 is the board itself. */
@@ -54,12 +66,22 @@ export const NestedNavContext = createContext<NestedNavigation | null>(null);
 /** How deep the surrounding tree already is. The board itself is 0. */
 export const LevelDepthContext = createContext(0);
 
+/**
+ * How many pipelines shown inline the surrounding tree has passed through since
+ * the current level. Reset to 0 by a level, incremented by each inline strip.
+ */
+export const InlineHopsContext = createContext(0);
+
 export function useNestedNavigation(): NestedNavigation | null {
   return useContext(NestedNavContext);
 }
 
 export function useLevelDepth(): number {
   return useContext(LevelDepthContext);
+}
+
+export function useInlineHops(): number {
+  return useContext(InlineHopsContext);
 }
 
 type Props = {
@@ -106,8 +128,8 @@ export default function NestedNavProvider({
   const navigation = useMemo<NestedNavigation>(
     () => ({
       stack,
-      open: (id, label, depth) =>
-        setStack((prev) => [...prev.slice(0, depth), { id, label }]),
+      open: (id, label, depth, viaInline) =>
+        setStack((prev) => [...prev.slice(0, depth), { id, label, viaInline }]),
       close: (id) =>
         setStack((prev) => {
           const at = prev.findIndex((level) => level.id === id);
@@ -205,7 +227,16 @@ function Breadcrumbs({
   rootLabel: string;
   onGoTo: (depth: number) => void;
 }) {
-  const crumbs = [{ id: "__root", label: rootLabel }, ...stack];
+  const crumbs: NestedLevel[] = [{ id: "__root", label: rootLabel }, ...stack];
+
+  const separator = (
+    <span
+      aria-hidden="true"
+      style={{ margin: "0 6px", fontSize: 12, opacity: 0.45, flexShrink: 0 }}
+    >
+      /
+    </span>
+  );
 
   return (
     <nav
@@ -228,6 +259,20 @@ function Breadcrumbs({
             key={crumb.id}
             style={{ display: "flex", alignItems: "center", flexShrink: 0 }}
           >
+            {/* Pipelines shown inline are between this level and the one above.
+                They are not levels, so there is nothing to go back to — the gap
+                is stated rather than passed off as adjacency. */}
+            {crumb.viaInline && (
+              <>
+                <span
+                  title="Pipelines shown inline, which are not levels of their own"
+                  style={{ fontSize: 12, opacity: 0.45, flexShrink: 0 }}
+                >
+                  …
+                </span>
+                {separator}
+              </>
+            )}
             <button
               className="hkp-crumb-link"
               onClick={() => onGoTo(index)}
@@ -236,19 +281,7 @@ function Breadcrumbs({
             >
               {crumb.label}
             </button>
-            {!isLast && (
-              <span
-                aria-hidden="true"
-                style={{
-                  margin: "0 6px",
-                  fontSize: 12,
-                  opacity: 0.45,
-                  flexShrink: 0,
-                }}
-              >
-                /
-              </span>
-            )}
+            {!isLast && separator}
           </div>
         );
       })}

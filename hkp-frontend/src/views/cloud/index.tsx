@@ -48,6 +48,7 @@ import {
 import { toast } from "sonner";
 import CoordinatorsMenu from "./CoordinatorsMenu";
 import CloudBoard from "./Board";
+import NestedNavProvider from "../../runtime/ui/NestedNavigation";
 import Sidebar from "../playground/Sidebar";
 import { useCoordinatorBridge } from "./useCoordinatorBridge";
 import { CoordinatorSnapshotStore } from "./coordinatorSnapshot";
@@ -369,9 +370,8 @@ function CloudBoardInner({
   const hydratedRef = useRef<string | null>(null);
   useEffect(() => {
     const hydrate = () => {
-      const config = bridgeAccess.snapshot.getConfig() as
-        | BoardDescriptor
-        | null;
+      const config =
+        bridgeAccess.snapshot.getConfig() as BoardDescriptor | null;
       if (!config || hydratedRef.current === board.boardName) {
         return;
       }
@@ -535,16 +535,14 @@ export default function CloudBoards({
     );
   }, [coordinators, user]);
 
-  const {
-    data: allCoordinatorBoards = [],
-    isLoading: isLoadingAllBoards,
-  } = useSWR(
-    user
-      ? `all-boards:${user.userId}:${coordinators.map((c) => c.url).join(",")}`
-      : null,
-    allBoardsFetcher,
-    { revalidateOnFocus: false },
-  );
+  const { data: allCoordinatorBoards = [], isLoading: isLoadingAllBoards } =
+    useSWR(
+      user
+        ? `all-boards:${user.userId}:${coordinators.map((c) => c.url).join(",")}`
+        : null,
+      allBoardsFetcher,
+      { revalidateOnFocus: false },
+    );
 
   const onSelectCoordinator = (coordinator: CoordinatorDescriptor) => {
     setSelectedCoordinator(coordinator);
@@ -652,7 +650,9 @@ export default function CloudBoards({
     if (!target) {
       return;
     }
-    const coordinator = coordinators.find((c) => c.url === target.coordinatorUrl);
+    const coordinator = coordinators.find(
+      (c) => c.url === target.coordinatorUrl,
+    );
     if (!coordinator) {
       return;
     }
@@ -831,9 +831,7 @@ export default function CloudBoards({
       if (result.unreachable.length > 0) {
         // Partly applied is worth saying out loud: the rest of the board took
         // it, and those runtimes did not.
-        toast.error(
-          `Not applied to: ${result.unreachable.join(", ")}`,
-        );
+        toast.error(`Not applied to: ${result.unreachable.join(", ")}`);
       }
       await reloadBoards();
     } catch (err) {
@@ -992,72 +990,81 @@ export default function CloudBoards({
           style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}
         >
           <Sidebar />
-          <div
-            ref={boardCanvasRef}
-            style={{
-              flex: 1,
-              overflow: "auto",
-              overscrollBehaviorX: "none",
-              display: "flex",
-              flexDirection: "column",
-              background:
-                "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
-            }}
-          >
-            {/* Keep the board mounted in background so WebSocket notification
+          {/* A cloud board nests exactly as a playground board does, so a
+              pipeline on one is opened the same way. Outside the canvas rather
+              than inside it: the levels cover the canvas, and a layer within a
+              scroll container would be sized to the content and scroll away
+              with it. */}
+          <NestedNavProvider rootLabel={mountedBoard?.boardName || "Board"}>
+            <div
+              ref={boardCanvasRef}
+              style={{
+                flex: 1,
+                overflow: "auto",
+                overscrollBehaviorX: "none",
+                display: "flex",
+                flexDirection: "column",
+                background:
+                  "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
+              }}
+            >
+              {/* Keep the board mounted in background so WebSocket notification
                 targets stay registered while the user browses the landing. */}
-            {mountedBoard && (
-              <div
-                style={{
-                  display:
-                    selectedCoordinator && selectedBoard ? "contents" : "none",
-                }}
-              >
-                {openBoardErrors.length > 0 && (
-                  <div className="m-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
-                    <div className="font-semibold">
-                      {boardStatus === "stopped"
-                        ? "This board stopped, but not everything let go."
-                        : "This board didn’t fully start — runtime output won’t flow."}
+              {mountedBoard && (
+                <div
+                  style={{
+                    display:
+                      selectedCoordinator && selectedBoard
+                        ? "contents"
+                        : "none",
+                  }}
+                >
+                  {openBoardErrors.length > 0 && (
+                    <div className="m-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                      <div className="font-semibold">
+                        {boardStatus === "stopped"
+                          ? "This board stopped, but not everything let go."
+                          : "This board didn’t fully start — runtime output won’t flow."}
+                      </div>
+                      <ul className="mt-1 list-disc pl-5 break-words">
+                        {openBoardErrors.map((e, i) => (
+                          <li key={i}>{e}</li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul className="mt-1 list-disc pl-5 break-words">
-                      {openBoardErrors.map((e, i) => (
-                        <li key={i}>{e}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <CloudBoardInner
-                  board={mountedBoard}
-                  bridgeWsUrl={
-                    selectedCoordinator
-                      ? selectedCoordinator.url
-                          .replace(/^http(s?):\/\//, "ws$1://")
-                          .replace(/\/coordinator\/?$/, "") +
-                        "/coordinator/bridge"
-                      : null
-                  }
-                  userId={user?.userId ?? null}
-                  idToken={user?.idToken ?? null}
-                  bridgeAccess={bridgeAccess}
-                  onHydrate={(config) =>
-                    boardProviderRef.current?.setBoardState(config)
-                  }
+                  )}
+                  <CloudBoardInner
+                    board={mountedBoard}
+                    bridgeWsUrl={
+                      selectedCoordinator
+                        ? selectedCoordinator.url
+                            .replace(/^http(s?):\/\//, "ws$1://")
+                            .replace(/\/coordinator\/?$/, "") +
+                          "/coordinator/bridge"
+                        : null
+                    }
+                    userId={user?.userId ?? null}
+                    idToken={user?.idToken ?? null}
+                    bridgeAccess={bridgeAccess}
+                    onHydrate={(config) =>
+                      boardProviderRef.current?.setBoardState(config)
+                    }
+                  />
+                </div>
+              )}
+              {!(selectedCoordinator && selectedBoard) && (
+                <CloudBoardsLanding
+                  user={user}
+                  coordinators={coordinators}
+                  allCoordinatorBoards={allCoordinatorBoards}
+                  isLoading={isLoadingAllBoards}
+                  onSelectBoard={onSelectBoardFromLanding}
+                  onNewBoard={onNewBoard}
+                  onManageCoordinators={() => setIsManageCoordinatorsOpen(true)}
                 />
-              </div>
-            )}
-            {!(selectedCoordinator && selectedBoard) && (
-              <CloudBoardsLanding
-                user={user}
-                coordinators={coordinators}
-                allCoordinatorBoards={allCoordinatorBoards}
-                isLoading={isLoadingAllBoards}
-                onSelectBoard={onSelectBoardFromLanding}
-                onNewBoard={onNewBoard}
-                onManageCoordinators={() => setIsManageCoordinatorsOpen(true)}
-              />
-            )}
-          </div>
+              )}
+            </div>
+          </NestedNavProvider>
         </div>
       </div>
 

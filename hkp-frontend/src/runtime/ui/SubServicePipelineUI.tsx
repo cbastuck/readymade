@@ -18,7 +18,9 @@ import ServiceWithDropBars from "../ServiceWithDropBars";
 import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
 import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 import {
+  InlineHopsContext,
   LevelDepthContext,
+  useInlineHops,
   useLevelDepth,
   useNestedNavigation,
 } from "./NestedNavigation";
@@ -63,6 +65,7 @@ export default function SubServicePipelineUI({
   const isMobileHost = useIsMobileHost();
   const navigation = useNestedNavigation();
   const depth = useLevelDepth();
+  const inlineHops = useInlineHops();
 
   const label =
     levelLabel || service.serviceName || service.serviceId || "Pipeline";
@@ -105,12 +108,12 @@ export default function SubServicePipelineUI({
     <div className="w-full flex flex-col">
       {/* Where the content can be shown, and the two places it can be shown in:
           here inside the panel, or on a level of its own. */}
-      <div className="flex w-full items-center gap-2">
+      <div className="flex w-full items-center gap-2 mt-1">
         <span
           className="text-gray-400 whitespace-nowrap"
           style={{ fontSize: 12 }}
         >
-          Show Content
+          Show nested sevices
         </span>
 
         <button
@@ -129,7 +132,9 @@ export default function SubServicePipelineUI({
         {navigation && (
           <button
             className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
-            onClick={() => navigation.open(service.uuid, label, depth)}
+            onClick={() =>
+              navigation.open(service.uuid, label, depth, inlineHops > 0)
+            }
             aria-label={`Open ${label} as its own level`}
             title={`Open ${label} as its own level`}
           >
@@ -142,39 +147,46 @@ export default function SubServicePipelineUI({
         )}
       </div>
 
+      {/* Shown here rather than opened, so anything nested inside it is one
+          more hop from the level this panel sits on. */}
       {!collapsed &&
         (pipeline.length === 0 ? (
           <div className="text-xs text-neutral-500">Empty container</div>
         ) : (
-          <PipelineStrip
-            service={service}
-            pipeline={pipeline}
-            registry={registry}
-            findServiceUI={findServiceUI}
-            FallbackUI={FallbackUI}
-            getActualInstance={getActualInstance}
-          />
+          <InlineHopsContext.Provider value={inlineHops + 1}>
+            <PipelineStrip
+              service={service}
+              pipeline={pipeline}
+              registry={registry}
+              findServiceUI={findServiceUI}
+              FallbackUI={FallbackUI}
+              getActualInstance={getActualInstance}
+            />
+          </InlineHopsContext.Provider>
         ))}
 
       {/* Opened, this pipeline renders on its own level instead — still from
-          here, so it stays live and stays this host's to configure. */}
+          here, so it stays live and stays this host's to configure. A level is
+          where the trail can account for things again, so the hops reset. */}
       {layer &&
         createPortal(
           <LevelDepthContext.Provider value={depth + 1}>
-            <PipelineLevel
-              label={label}
-              selector={selector("sub-pipeline-level")}
-              isEmpty={pipeline.length === 0}
-            >
-              <PipelineStrip
-                service={service}
-                pipeline={pipeline}
-                registry={registry}
-                findServiceUI={findServiceUI}
-                FallbackUI={FallbackUI}
-                getActualInstance={getActualInstance}
-              />
-            </PipelineLevel>
+            <InlineHopsContext.Provider value={0}>
+              <PipelineLevel
+                label={label}
+                selector={selector("sub-pipeline-level")}
+                isEmpty={pipeline.length === 0}
+              >
+                <PipelineStrip
+                  service={service}
+                  pipeline={pipeline}
+                  registry={registry}
+                  findServiceUI={findServiceUI}
+                  FallbackUI={FallbackUI}
+                  getActualInstance={getActualInstance}
+                />
+              </PipelineLevel>
+            </InlineHopsContext.Provider>
           </LevelDepthContext.Provider>,
           layer,
         )}
@@ -205,7 +217,12 @@ function PipelineLevel({
   const theme = useTheme();
 
   return (
-    <div className="flex flex-col" style={{ padding: 12 }}>
+    // A block, not a flex column: the runtime frame carries `align-self:
+    // flex-start`, which in a column flex would size it to its content — as
+    // wide as every service on it — and the level would scroll sideways around
+    // a strip that already scrolls on its own. On a board its parent is a plain
+    // block too, so the frame simply fills the width it is given.
+    <div style={{ padding: 12 }}>
       <div
         className="hkp-runtime-container select-none"
         style={{
