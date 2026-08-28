@@ -16,7 +16,10 @@ import {
 import RuntimeRestServiceUI from "../rest/RuntimeRestServiceUI";
 import ServiceWithDropBars from "../ServiceWithDropBars";
 import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
-import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
+import {
+  useTheme,
+  useThemeControl,
+} from "hkp-frontend/src/ui-components/ThemeContext";
 import {
   InlineHopsContext,
   LevelDepthContext,
@@ -174,7 +177,7 @@ export default function SubServicePipelineUI({
             <InlineHopsContext.Provider value={0}>
               <PipelineLevel
                 label={label}
-                selector={selector("sub-pipeline-level")}
+                selector={selector("sub-pipeline-level", true)}
                 isEmpty={pipeline.length === 0}
               >
                 <PipelineStrip
@@ -215,6 +218,8 @@ function PipelineLevel({
   children: React.ReactNode;
 }) {
   const theme = useTheme();
+  const { densityId } = useThemeControl();
+  const compact = densityId === "compact";
 
   return (
     // A block, not a flex column: the runtime frame carries `align-self:
@@ -234,7 +239,15 @@ function PipelineLevel({
           color: theme.textColor,
         }}
       >
-        <div className="hkp-runtime-header bg-[#FFFFFF8F] border-b border-gray-300 flex items-center gap-3 px-4 py-2">
+        {/* The same height a runtime header is: its own controls are sized
+            down to their icons, so a full-size trigger here — 40px, against a
+            24px icon row — would make this strip taller than every header on
+            the board it is standing in for. */}
+        <div
+          className={`hkp-runtime-header bg-[#FFFFFF8F] border-b border-gray-300 flex items-center gap-3 px-4 ${
+            compact ? "py-1" : "py-2"
+          }`}
+        >
           <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
           <div className="flex ml-auto">{selector}</div>
         </div>

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { ChevronDown, ChevronRight, Trash } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import InputField from "hkp-frontend/src/components/shared/InputField";
@@ -30,6 +31,31 @@ type Action = {
 
 const DESCRIPTION_STYLE = { fontSize: 12, opacity: 0.7 } as const;
 
+const CARD_STYLE = {
+  border: "1px solid hsl(var(--border))",
+  borderRadius: 4,
+} as const;
+
+/** Marks the action the manager last chose. */
+function ActiveDot({ isActive }: { isActive: boolean }) {
+  if (!isActive) {
+    return null;
+  }
+  return (
+    <span
+      title="last chosen"
+      style={{
+        display: "inline-block",
+        width: 6,
+        height: 6,
+        borderRadius: "50%",
+        flexShrink: 0,
+        background: "var(--hkp-accent)",
+      }}
+    />
+  );
+}
+
 export default function CommunicationDispatcherUI(props: ServiceUIProps) {
   const { service } = props;
   const [goal, setGoal] = useState("");
@@ -42,6 +68,10 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
   const [lastReason, setLastReason] = useState("");
   const [error, setError] = useState("");
   const [newAction, setNewAction] = useState("");
+  // One action's fields at a time: the set of actions is the menu the
+  // manager picks from, so the whole list stays readable while only the
+  // one being edited is unfolded.
+  const [openAction, setOpenAction] = useState<string | null>(null);
 
   const read = useCallback((state: any) => {
     if (!state) {
@@ -113,8 +143,9 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
       onInit={read}
       onNotification={read}
       genericUI={false}
+      initialSize={{ width: 460, height: undefined }}
     >
-      <div className="flex flex-col gap-3" style={{ minWidth: 420 }}>
+      <div className="flex flex-col gap-3" style={{ minWidth: 320 }}>
         <InputField
           label="Goal"
           value={goal}
@@ -151,51 +182,96 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
               ? ` · states: ${states.map((s) => s.name).join(", ")}`
               : ""}
           </span>
-          {actions.map((action) => (
-            <div key={action.name} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span
-                  className="font-mono"
-                  style={{ fontSize: 12, whiteSpace: "nowrap" }}
+          {actions.map((action) => {
+            const isOpen = openAction === action.name;
+            return (
+              <div
+                key={action.name}
+                className="flex flex-col"
+                style={CARD_STYLE}
+              >
+                {/* Closed, a card says what the action is called and what it is
+                    for — the two things that tell it from its neighbours. */}
+                <div
+                  className="flex items-center gap-2 px-2 py-1 cursor-pointer"
+                  onClick={() => setOpenAction(isOpen ? null : action.name)}
                 >
-                  {action.name}
-                </span>
-                <InputField
-                  label=""
-                  value={action.describe}
-                  isExpandable
-                  onChange={(value) =>
-                    void edit({ branch: action.name, describe: value })
-                  }
-                />
-                <Button
-                  className="hkp-svc-btn"
-                  onClick={() => void edit({ removeAction: action.name })}
-                >
-                  Remove
-                </Button>
+                  {isOpen ? (
+                    <ChevronDown size={14} strokeWidth={1.5} />
+                  ) : (
+                    <ChevronRight size={14} strokeWidth={1.5} />
+                  )}
+                  <span
+                    className="font-mono"
+                    style={{ fontSize: 12, whiteSpace: "nowrap" }}
+                  >
+                    {action.name}
+                  </span>
+                  <ActiveDot isActive={lastAction === action.name} />
+                  {!isOpen && (
+                    <span
+                      className="truncate"
+                      style={{ ...DESCRIPTION_STYLE, minWidth: 0, flex: 1 }}
+                    >
+                      {action.describe}
+                    </span>
+                  )}
+                  <Button
+                    className="hkp-svc-btn hkp-svc-btn--icon ml-auto flex items-center text-muted-foreground hover:text-destructive"
+                    aria-label={`Remove ${action.name}`}
+                    title={`Remove ${action.name}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (isOpen) {
+                        setOpenAction(null);
+                      }
+                      void edit({ removeAction: action.name });
+                    }}
+                  >
+                    <Trash size={14} strokeWidth={1.5} />
+                  </Button>
+                </div>
+
+                {isOpen && (
+                  <div className="flex flex-col gap-1 px-2 pb-2">
+                    <InputField
+                      label="describe"
+                      value={action.describe}
+                      isExpandable
+                      onChange={(value) =>
+                        void edit({ branch: action.name, describe: value })
+                      }
+                    />
+                    {/* When this action is on the menu at all. An expression
+                        over the input, so an action that cannot apply is never
+                        offered. */}
+                    <InputField
+                      label="available"
+                      value={action.available}
+                      onChange={(value) =>
+                        void edit({ branch: action.name, available: value })
+                      }
+                    />
+                    <div className="pl-4">
+                      <SubServicePipelineUI
+                        service={branch(
+                          action.name,
+                          action.name,
+                          action.pipeline,
+                        )}
+                        findServiceUI={findServiceUI}
+                        defaultCollapsed={true}
+                        // An action's name is only meaningful next to the
+                        // dispatcher it belongs to — several on a board can
+                        // each have a 'send'.
+                        levelLabel={`${service.serviceName} · ${action.name}`}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-              {/* When this action is on the menu at all. An expression over the
-                  input, so an action that cannot apply is never offered. */}
-              <InputField
-                label="available"
-                value={action.available}
-                onChange={(value) =>
-                  void edit({ branch: action.name, available: value })
-                }
-              />
-              <div className="pl-4">
-                <SubServicePipelineUI
-                  service={branch(action.name, action.name, action.pipeline)}
-                  findServiceUI={findServiceUI}
-                  defaultCollapsed={true}
-                  // An action's name is only meaningful next to the dispatcher
-                  // it belongs to — several on a board can each have a 'send'.
-                  levelLabel={`${service.serviceName} · ${action.name}`}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           <div className="flex items-center gap-2">
             <InputField
