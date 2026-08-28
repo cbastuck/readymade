@@ -35,7 +35,9 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
   const [goal, setGoal] = useState("");
   const [actions, setActions] = useState<Action[]>([]);
   const [decide, setDecide] = useState<PipelineEntry[]>([]);
-  const [states, setStates] = useState<Array<{ name: string; describe: string }>>([]);
+  const [states, setStates] = useState<
+    Array<{ name: string; describe: string }>
+  >([]);
   const [lastAction, setLastAction] = useState("");
   const [lastReason, setLastReason] = useState("");
   const [error, setError] = useState("");
@@ -87,7 +89,11 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
    * One branch, dressed as a service whose `pipeline` state and configure()
    * speak SubServicePipelineUI's protocol.
    */
-  const branch = (name: string, label: string, pipeline: PipelineEntry[]): ServiceInstance =>
+  const branch = (
+    name: string,
+    label: string,
+    pipeline: PipelineEntry[],
+  ): ServiceInstance =>
     ({
       uuid: `${service.uuid}-branch-${name}`,
       serviceId: "communication-dispatcher",
@@ -102,8 +108,13 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
     }) as unknown as ServiceInstance;
 
   return (
-    <RuntimeRestServiceUI {...props} onInit={read} onNotification={read} genericUI={false}>
-      <div className="flex flex-col gap-3" style={{ minWidth: 320 }}>
+    <RuntimeRestServiceUI
+      {...props}
+      onInit={read}
+      onNotification={read}
+      genericUI={false}
+    >
+      <div className="flex flex-col gap-3" style={{ minWidth: 420 }}>
         <InputField
           label="Goal"
           value={goal}
@@ -135,19 +146,27 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
 
         <div className="flex flex-col gap-1">
           <span style={{ fontSize: 12 }}>
-            Actions{states.length > 0 ? ` · states: ${states.map((s) => s.name).join(", ")}` : ""}
+            Actions
+            {states.length > 0
+              ? ` · states: ${states.map((s) => s.name).join(", ")}`
+              : ""}
           </span>
           {actions.map((action) => (
             <div key={action.name} className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <span className="font-mono" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                <span
+                  className="font-mono"
+                  style={{ fontSize: 12, whiteSpace: "nowrap" }}
+                >
                   {action.name}
                 </span>
                 <InputField
                   label=""
                   value={action.describe}
                   isExpandable
-                  onChange={(value) => void edit({ branch: action.name, describe: value })}
+                  onChange={(value) =>
+                    void edit({ branch: action.name, describe: value })
+                  }
                 />
                 <Button
                   className="hkp-svc-btn"
@@ -161,7 +180,9 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
               <InputField
                 label="available"
                 value={action.available}
-                onChange={(value) => void edit({ branch: action.name, available: value })}
+                onChange={(value) =>
+                  void edit({ branch: action.name, available: value })
+                }
               />
               <div className="pl-4">
                 <SubServicePipelineUI
@@ -205,7 +226,9 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
           </div>
         )}
         {error && (
-          <div style={{ fontSize: 12, color: "var(--hkp-error, #ef4444)" }}>{error}</div>
+          <div style={{ fontSize: 12, color: "var(--hkp-error, #ef4444)" }}>
+            {error}
+          </div>
         )}
       </div>
     </RuntimeRestServiceUI>

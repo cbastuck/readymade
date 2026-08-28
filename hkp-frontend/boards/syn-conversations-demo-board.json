@@ -118,7 +118,7 @@
           "username": "bstckbrln@gmail.com",
           "tls": true,
           "mailbox": "INBOX",
-          "running": false,
+          "running": true,
           "error": "",
           "password": "{{secret.gmail.imap}}",
           "passwordConfigured": false
@@ -150,11 +150,11 @@
         "serviceName": "Timer",
         "state": {
           "periodic": true,
-          "periodicValue": 30,
+          "periodicValue": 10,
           "periodicUnit": "s",
           "oneShotDelay": 0,
           "oneShotDelayUnit": "ms",
-          "running": false,
+          "running": true,
           "counter": 0
         }
       },
