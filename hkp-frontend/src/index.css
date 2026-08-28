@@ -619,6 +619,13 @@ blockquote:after {
   transition: all 0.15s !important;
   box-shadow: none !important;
 }
+/* Icon-only variant: the icon is the whole label, so the padding a text button
+   needs only makes it look heavier than what it does. Higher specificity than
+   .hkp-svc-btn so it wins that rule's `!important` padding. */
+[data-theme="playground"] .hkp-svc-btn.hkp-svc-btn--icon {
+  padding: 3px !important;
+  border-radius: 6px !important;
+}
 [data-theme="playground"] .hkp-svc-btn:hover:not(:disabled):not(.hkp-rpill) {
   border-color: var(--hkp-border) !important;
   background: var(--hkp-border) !important;
@@ -633,6 +640,32 @@ blockquote:after {
   opacity: 0.4 !important;
   cursor: default !important;
 }
+/* Breadcrumb crumbs: a path, so they read as links rather than as controls.
+   Opt-in class on the button element; the element stays a button because it
+   moves through a stack rather than to an address. */
+.hkp-crumb-link {
+  border: none;
+  background: none;
+  padding: 0;
+  height: auto;
+  min-height: 0;
+  box-shadow: none;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--hkp-accent-violet);
+  cursor: pointer;
+}
+.hkp-crumb-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+/* Where the trail has arrived: the page itself, not a way to somewhere. */
+.hkp-crumb-link:disabled {
+  color: var(--text, inherit);
+  font-weight: 600;
+  cursor: default;
+  opacity: 1;
+}
+
 [data-theme="playground"] .hkp-btn-primary {
   background: var(--hkp-accent) !important;
   border-color: var(--hkp-accent) !important;

@@ -14,6 +14,9 @@ import { ServiceInstance } from "hkp-frontend/src/types";
  * nested service up by id alone therefore silently resolved a versioned service
  * to the UI of its older revision: a Map inside an http-server-subservices
  * showed the pre-v1 panel while the same Map beside it showed the current one.
+ *
+ * The pipeline is folded until asked for, so these expand it: the lookup is
+ * what is under test, not when the strip is drawn.
  */
 
 function pipelineService(pipeline: Array<Record<string, unknown>>) {
@@ -40,6 +43,7 @@ describe("UI lookup for nested services", () => {
       <SubServicePipelineUI
         service={pipelineService([{ serviceId: "map", instanceId: "inner" }])}
         findServiceUI={findServiceUI}
+        defaultCollapsed={false}
       />,
     );
 
@@ -59,6 +63,7 @@ describe("UI lookup for nested services", () => {
           { serviceId: "monitor", instanceId: "inner" },
         ])}
         findServiceUI={findServiceUI}
+        defaultCollapsed={false}
       />,
     );
 

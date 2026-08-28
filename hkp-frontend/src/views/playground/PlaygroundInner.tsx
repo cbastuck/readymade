@@ -13,6 +13,7 @@ import { PlaygroundInnerProps } from "./Playground.types";
 import Sidebar from "./Sidebar";
 import { useThemeControl } from "../../ui-components/ThemeContext";
 import { HKP_DND_RUNTIME_CLASS_TYPE } from "../../components/DropTypes";
+import NestedNavProvider from "../../runtime/ui/NestedNavigation";
 
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -58,65 +59,70 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
         style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}
       >
         {isPlayground && <Sidebar />}
-        <div
-          className={
-            isRtClassDragOver ? "hkp-board-runtime-drop-active" : undefined
-          }
-          ref={boardCanvasRef}
-          style={{
-            flex: 1,
-            overflow: "auto",
-            overscrollBehaviorX: "none",
-            display: "flex",
-            flexDirection: "column",
-            ...(isPlayground
-              ? {
-                  background:
-                    "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
+        {/* Levels drilled into nested pipelines cover the canvas and nothing
+            else, so the trail out of them sits above the board rather than
+            above the whole window. */}
+        <NestedNavProvider rootLabel={boardContext.boardName || "Board"}>
+          <div
+            className={
+              isRtClassDragOver ? "hkp-board-runtime-drop-active" : undefined
+            }
+            ref={boardCanvasRef}
+            style={{
+              flex: 1,
+              overflow: "auto",
+              overscrollBehaviorX: "none",
+              display: "flex",
+              flexDirection: "column",
+              ...(isPlayground
+                ? {
+                    background:
+                      "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
+                  }
+                : {}),
+            }}
+            onDragOver={(ev) => {
+              if (ev.dataTransfer.types.includes(HKP_DND_RUNTIME_CLASS_TYPE)) {
+                setIsRtClassDragOver(true);
+                ev.preventDefault();
+              }
+            }}
+            onDragLeave={() => setIsRtClassDragOver(false)}
+            onDrop={(ev) => {
+              const data = ev.dataTransfer.getData(HKP_DND_RUNTIME_CLASS_TYPE);
+              if (data) {
+                setIsRtClassDragOver(false);
+                const rtClass: RuntimeClass = JSON.parse(data);
+                boardContext.addRuntime({
+                  ...rtClass,
+                  name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
+                });
+                ev.preventDefault();
+              }
+            }}
+          >
+            {boardContext.errorOnFetch ? (
+              <BoardFetchError
+                boardName={
+                  boardContext.boardName || props.requestedBoardName || ""
                 }
-              : {}),
-          }}
-          onDragOver={(ev) => {
-            if (ev.dataTransfer.types.includes(HKP_DND_RUNTIME_CLASS_TYPE)) {
-              setIsRtClassDragOver(true);
-              ev.preventDefault();
-            }
-          }}
-          onDragLeave={() => setIsRtClassDragOver(false)}
-          onDrop={(ev) => {
-            const data = ev.dataTransfer.getData(HKP_DND_RUNTIME_CLASS_TYPE);
-            if (data) {
-              setIsRtClassDragOver(false);
-              const rtClass: RuntimeClass = JSON.parse(data);
-              boardContext.addRuntime({
-                ...rtClass,
-                name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
-              });
-              ev.preventDefault();
-            }
-          }}
-        >
-          {boardContext.errorOnFetch ? (
-            <BoardFetchError
-              boardName={
-                boardContext.boardName || props.requestedBoardName || ""
-              }
-              error={boardContext.errorOnFetch}
-            />
-          ) : (
-            <BoardEntryPoint
-              isLoading={
-                boardContext.isFetching || !!boardContext.awaitUserLogin
-              }
-              showLoginRequired={!!boardContext.awaitUserLogin}
-              boardContext={boardContext}
-              requestedBoardName={props.requestedBoardName}
-              description={props.description}
-              onChangeBoardname={props.onChangeBoardname}
-              emptySlot={props.emptySlot}
-            />
-          )}
-        </div>
+                error={boardContext.errorOnFetch}
+              />
+            ) : (
+              <BoardEntryPoint
+                isLoading={
+                  boardContext.isFetching || !!boardContext.awaitUserLogin
+                }
+                showLoginRequired={!!boardContext.awaitUserLogin}
+                boardContext={boardContext}
+                requestedBoardName={props.requestedBoardName}
+                description={props.description}
+                onChangeBoardname={props.onChangeBoardname}
+                emptySlot={props.emptySlot}
+              />
+            )}
+          </div>
+        </NestedNavProvider>
       </div>
 
       <Footer />

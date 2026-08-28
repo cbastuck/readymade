@@ -128,6 +128,7 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
               service={branch("decide", "Decide", decide)}
               findServiceUI={findServiceUI}
               defaultCollapsed={true}
+              levelLabel={`${service.serviceName} · decide`}
             />
           </div>
         </div>
@@ -167,6 +168,9 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
                   service={branch(action.name, action.name, action.pipeline)}
                   findServiceUI={findServiceUI}
                   defaultCollapsed={true}
+                  // An action's name is only meaningful next to the dispatcher
+                  // it belongs to — several on a board can each have a 'send'.
+                  levelLabel={`${service.serviceName} · ${action.name}`}
                 />
               </div>
             </div>
