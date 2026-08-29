@@ -32,14 +32,40 @@ const REVEAL_HIGHLIGHT_MS = 2000;
 /** How long to keep looking for a service's panel after opening its levels. */
 const REVEAL_TIMEOUT_MS = 2000;
 
+/** What the accent is where no theme defines one, and where one is defined in
+ *  a form the canvas cannot be handed. */
+const FALLBACK_ACCENT = "#0abcfb";
+
+/**
+ * The theme's accent, as something a canvas can be given.
+ *
+ * The token is authored in whatever colour space the theme was written in —
+ * the playground's is `oklch` — while everything here hands the colour
+ * straight to a canvas as a fill, a stroke and a shadow, and mixes it towards
+ * white for the colour a lit card takes. So it is put through a canvas first,
+ * which either hands back a plain hex or does not recognise it and leaves the
+ * probe's own value in place; anything that does not come back as a hex is not
+ * something the rest of this can use, and the documented accent stands in.
+ */
 function accentColor(): string {
   if (typeof window === "undefined") {
-    return "#0abcfb";
+    return FALLBACK_ACCENT;
   }
-  const value = getComputedStyle(document.documentElement)
+  const declared = getComputedStyle(document.documentElement)
     .getPropertyValue("--hkp-accent")
     .trim();
-  return value || "#0abcfb";
+  if (!declared) {
+    return FALLBACK_ACCENT;
+  }
+
+  const probe = document.createElement("canvas").getContext("2d");
+  if (!probe) {
+    return FALLBACK_ACCENT;
+  }
+  probe.fillStyle = FALLBACK_ACCENT;
+  probe.fillStyle = declared;
+  const resolved = String(probe.fillStyle);
+  return /^#[0-9a-f]{6}$/i.test(resolved) ? resolved : FALLBACK_ACCENT;
 }
 
 /**
@@ -290,6 +316,8 @@ export default function OverviewView() {
     const node = hit ? scene?.byUuid.get(hit.uuid) : undefined;
     if (node) {
       overview?.hide();
+      // Named before the trip, so the way back can say where it goes back from.
+      overview?.setRevealed({ uuid: node.uuid, label: node.label });
       revealService(node, labelFor, navigation);
     }
   };

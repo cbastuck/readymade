@@ -16,6 +16,7 @@ import { HKP_DND_RUNTIME_CLASS_TYPE } from "../../components/DropTypes";
 import NestedNavProvider from "../../runtime/ui/NestedNavigation";
 import { OverviewProvider } from "../../overview/OverviewContext";
 import OverviewView from "../../overview/OverviewView";
+import OverviewToolbarButton from "../../overview/OverviewToolbarButton";
 
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -40,7 +41,12 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
           hideNavigation={props.hideNavigation}
           menuSlot={props.menuSlot}
           logoSlot={props.logoSlot}
-          actionsSlot={<DeployMenu />}
+          actionsSlot={
+            <>
+              <OverviewToolbarButton />
+              <DeployMenu />
+            </>
+          }
           includeNavigationLinks={!props.hideNavigation}
         />
 
