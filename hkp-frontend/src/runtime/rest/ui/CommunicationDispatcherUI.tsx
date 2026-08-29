@@ -5,6 +5,7 @@ import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import InputField from "hkp-frontend/src/components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import SubServicePipelineUI from "../../ui/SubServicePipelineUI";
+import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
 import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import { findServiceUI } from "../UIRegistry";
 
@@ -56,6 +57,43 @@ function ActiveDot({ isActive }: { isActive: boolean }) {
   );
 }
 
+/** One side of the exchange, as it went over the wire. */
+function Transcript({ label, text }: { label: string; text: string }) {
+  if (!text) {
+    return null;
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <span style={DESCRIPTION_STYLE}>{label}</span>
+        {/* A prompt is read somewhere else — pasted into a model, diffed
+            against the last one — and the card it sits in suppresses selection
+            for dragging, so taking it by hand is not an option. */}
+        <CopyButton className="ml-auto" value={text} label={label} />
+      </div>
+      <pre
+        className="font-mono"
+        style={{
+          fontSize: 11,
+          margin: 0,
+          padding: 6,
+          maxHeight: 220,
+          overflow: "auto",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          background: "hsl(var(--muted))",
+          borderRadius: 4,
+          // The service card is unselectable so it can be dragged; this is
+          // text to be read and taken, which is the exception to that.
+          userSelect: "text",
+        }}
+      >
+        {text}
+      </pre>
+    </div>
+  );
+}
+
 export default function CommunicationDispatcherUI(props: ServiceUIProps) {
   const { service } = props;
   const [goal, setGoal] = useState("");
@@ -68,6 +106,9 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
   const [lastReason, setLastReason] = useState("");
   const [error, setError] = useState("");
   const [newAction, setNewAction] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [exchangeOpen, setExchangeOpen] = useState(false);
   // One action's fields at a time: the set of actions is the menu the
   // manager picks from, so the whole list stays readable while only the
   // one being edited is unfolded.
@@ -97,6 +138,19 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
     }
     if (typeof state.error === "string") {
       setError(state.error);
+    }
+    // The question is only ever notified — it carries the whole conversation,
+    // so the service does not keep it — while the answer arrives both ways:
+    // in full on the pass that produced it, abbreviated in the state read back
+    // afterwards. Preferring the full one keeps a reload from shortening what
+    // is already on screen.
+    if (typeof state.decidePrompt === "string") {
+      setPrompt(state.decidePrompt);
+    }
+    if (typeof state.decideAnswer === "string") {
+      setAnswer(state.decideAnswer);
+    } else if (typeof state.lastAnswer === "string" && state.lastAnswer) {
+      setAnswer((current) => current || state.lastAnswer);
     }
   }, []);
 
@@ -302,8 +356,52 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
           </div>
         )}
         {error && (
-          <div style={{ fontSize: 12, color: "var(--hkp-error, #ef4444)" }}>
-            {error}
+          <div className="flex items-start gap-2">
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--hkp-error, #ef4444)",
+                // A failure names an address, a status and a service, and the
+                // next thing done with it is pasting it somewhere; the card it
+                // sits in suppresses selection so it can be dragged.
+                userSelect: "text",
+              }}
+            >
+              {error}
+            </div>
+            <CopyButton className="ml-auto" value={error} label="error" />
+          </div>
+        )}
+
+        {/* The exchange behind the decision. A decision that did not parse, or
+            parsed into the wrong action, is unreadable without the question it
+            answered and the answer it gave — and neither is anywhere else on
+            the board. */}
+        {(prompt || answer) && (
+          <div className="flex flex-col" style={CARD_STYLE}>
+            <div
+              className="flex items-center gap-2 px-2 py-1 cursor-pointer"
+              onClick={() => setExchangeOpen(!exchangeOpen)}
+            >
+              {exchangeOpen ? (
+                <ChevronDown size={14} strokeWidth={1.5} />
+              ) : (
+                <ChevronRight size={14} strokeWidth={1.5} />
+              )}
+              <span style={{ fontSize: 12 }}>Last exchange</span>
+              <span
+                className="truncate"
+                style={{ ...DESCRIPTION_STYLE, minWidth: 0, flex: 1 }}
+              >
+                {answer}
+              </span>
+            </div>
+            {exchangeOpen && (
+              <div className="flex flex-col gap-2 px-2 pb-2">
+                <Transcript label="asked" text={prompt} />
+                <Transcript label="answered" text={answer} />
+              </div>
+            )}
           </div>
         )}
       </div>
