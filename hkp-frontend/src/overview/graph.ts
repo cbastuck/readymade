@@ -51,7 +51,6 @@ export type OverviewNode = {
   parent?: string;
   /** Hosts from the outermost in — what has to be opened to reach this node. */
   ancestry: string[];
-  hasChildren: boolean;
   bypassed: boolean;
   x: number;
   y: number;
@@ -149,7 +148,6 @@ export function buildScene(
           index,
           parent,
           ancestry,
-          hasChildren: children.length > 0,
           bypassed: !!(service?.bypass ?? service?.state?.bypass),
           x,
           y: row * ROW_SPACING,

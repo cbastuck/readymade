@@ -57,8 +57,9 @@ describe("buildScene", () => {
     expect(scene.byUuid.get("host")!.z).toBe(0);
     expect(scene.byUuid.get("inner")!.z).toBe(LAYER_SPACING);
     expect(scene.byUuid.get("deepest")!.z).toBe(2 * LAYER_SPACING);
-    expect(scene.byUuid.get("host")!.hasChildren).toBe(true);
-    expect(scene.byUuid.get("inner")!.hasChildren).toBe(false);
+    // The host stays where it was; what it contains is placed behind it.
+    expect(scene.byUuid.get("host")!.depth).toBe(0);
+    expect(scene.byUuid.get("inner")!.depth).toBe(1);
   });
 
   it("records what has to be opened to reach a nested service", () => {

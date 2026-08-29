@@ -364,22 +364,6 @@ export function render(
           }
         }
 
-        // A service hosting a pipeline is drawn with the edge of what is
-        // behind it showing, so a level exists on screen before it is opened.
-        if (node.hasChildren) {
-          ctx.strokeStyle = palette.cardBorder;
-          ctx.lineWidth = 1;
-          roundedRect(
-            ctx,
-            left + width * 0.06,
-            top + height * 0.12,
-            width,
-            height,
-            6 * point.scale + 2,
-          );
-          ctx.stroke();
-        }
-
         ctx.restore();
       },
     });

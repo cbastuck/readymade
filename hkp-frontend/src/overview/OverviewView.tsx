@@ -20,6 +20,7 @@ import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigatio
 import { ActivityTracker } from "./activity";
 import { Camera, createCamera, orbit, pan, project, zoom } from "./camera";
 import { OverviewNode, buildScene } from "./graph";
+import { ServicesByRuntime, readBoardShape } from "./shape";
 import { HitTarget, defaultPalette, hitTest, render } from "./render";
 import { useOverview } from "./OverviewContext";
 
@@ -129,16 +130,48 @@ export default function OverviewView() {
   // the tooltip cannot end up describing a different view than the canvas.
   const palette = useMemo(() => defaultPalette(accentColor()), []);
 
+  // What the services report about themselves, which is where a pipeline built
+  // in this session is. Read when the view opens, and again whenever the board
+  // gains or loses a service — the two moments the answer can have changed.
+  const [reported, setReported] = useState<ServicesByRuntime | null>(null);
+  useEffect(() => {
+    if (!visible || !boardContext) {
+      setReported(null);
+      return;
+    }
+    let current = true;
+    readBoardShape({
+      runtimes: boardContext.runtimes,
+      services: boardContext.services,
+      scopes: boardContext.scopes,
+      runtimeApis: boardContext.runtimeApis,
+    })
+      .then((shape) => {
+        if (current) {
+          setReported(shape);
+        }
+      })
+      .catch(() => {
+        // Nothing to show for it: the descriptors below still draw a board.
+      });
+    return () => {
+      current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, boardContext?.runtimes, boardContext?.services]);
+
   const scene = useMemo(() => {
     if (!boardContext) {
       return null;
     }
-    return buildScene(boardContext.runtimes, boardContext.services);
+    // The descriptors draw the board straight away; what the services report
+    // replaces them a moment later, and is what carries the nesting.
+    return buildScene(boardContext.runtimes, reported ?? boardContext.services);
     // The scene is rebuilt whenever the board's shape changes. Configuration
     // that leaves the shape alone does not touch these slices, and depending on
     // the whole context instead would rebuild it on every board render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardContext?.runtimes, boardContext?.services]);
+  }, [boardContext?.runtimes, boardContext?.services, reported]);
 
   const labelFor = useCallback(
     (uuid: string) => scene?.byUuid.get(uuid)?.label ?? "Pipeline",
