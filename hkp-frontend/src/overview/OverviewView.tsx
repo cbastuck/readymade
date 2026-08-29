@@ -23,6 +23,8 @@ import { OverviewNode, buildScene } from "./graph";
 import { ServicesByRuntime, readBoardShape } from "./shape";
 import { HitTarget, defaultPalette, hitTest, render } from "./render";
 import { useOverview } from "./OverviewContext";
+import OverviewDetails from "./OverviewDetails";
+import { NodeActivity } from "./activity";
 
 /** Stands in before the board is being listened to, so a frame drawn in
  *  between shows every node idle rather than allocating a tracker to say so. */
@@ -123,6 +125,18 @@ export default function OverviewView() {
   const trackerRef = useRef<ActivityTracker | null>(null);
   const hoveredRef = useRef<string | null>(null);
   const [hovered, setHovered] = useState<OverviewNode | null>(null);
+  const selectedRef = useRef<string | null>(null);
+  const [selectedUuid, setSelectedUuid] = useState<string | null>(null);
+  selectedRef.current = selectedUuid;
+
+  // What the tracker knows about the selected node, sampled rather than
+  // watched: it is written to on every call a service takes, which on a board
+  // driven by a timer is far more often than a panel should be redrawn.
+  const [selectedActivity, setSelectedActivity] = useState<{
+    activity?: NodeActivity;
+    processing: boolean;
+    now: number;
+  }>({ processing: false, now: 0 });
 
   const visible = !!overview?.visible;
 
@@ -265,6 +279,7 @@ export default function OverviewView() {
           palette,
           now: performance.now(),
           hoveredUuid: hoveredRef.current,
+          selectedUuid: selectedRef.current,
         });
       }
       frame = requestAnimationFrame(draw);
@@ -346,14 +361,20 @@ export default function OverviewView() {
       event.clientX - bounds.left,
       event.clientY - bounds.top,
     );
-    const node = hit ? scene?.byUuid.get(hit.uuid) : undefined;
-    if (node) {
+    // Selecting rather than leaving: what a node is takes reading, and going
+    // to it is one of the things the panel then offers.
+    setSelectedUuid(hit?.uuid ?? null);
+  };
+
+  const openInPlayground = useCallback(
+    (node: OverviewNode) => {
       overview?.hide();
       // Named before the trip, so the way back can say where it goes back from.
       overview?.setRevealed({ uuid: node.uuid, label: node.label });
       revealService(node, labelFor, navigation);
-    }
-  };
+    },
+    [overview, labelFor, navigation],
+  );
 
   // Wheel is bound directly rather than through React: zooming has to stop the
   // page from scrolling, and React's wheel handler cannot.
@@ -373,11 +394,42 @@ export default function OverviewView() {
   }, [visible]);
 
   useEffect(() => {
+    if (!visible || !selectedUuid) {
+      setSelectedActivity({ processing: false, now: 0 });
+      return;
+    }
+    const sample = () => {
+      const activity = trackerRef.current?.get(selectedUuid);
+      setSelectedActivity({
+        activity: activity ? { ...activity } : undefined,
+        processing: activity?.startedAt !== undefined,
+        now: performance.now(),
+      });
+    };
+    sample();
+    const timer = setInterval(sample, 250);
+    return () => clearInterval(timer);
+  }, [visible, selectedUuid]);
+
+  // A node stops existing when the board it was on changes shape under the
+  // view; the panel must not go on describing it.
+  useEffect(() => {
+    if (selectedUuid && scene && !scene.byUuid.has(selectedUuid)) {
+      setSelectedUuid(null);
+    }
+  }, [scene, selectedUuid]);
+
+  useEffect(() => {
     if (!visible) {
       return;
     }
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // The panel is what was opened last, so it is what closes first.
+        if (selectedRef.current) {
+          setSelectedUuid(null);
+          return;
+        }
         overview?.hide();
       }
       if (event.key === "r" || event.key === "R") {
@@ -391,6 +443,10 @@ export default function OverviewView() {
   if (!visible || !scene || !boardContext) {
     return null;
   }
+
+  const selected = selectedUuid
+    ? (scene.byUuid.get(selectedUuid) ?? null)
+    : null;
 
   const hoveredPoint =
     hovered && cameraRef.current
@@ -432,7 +488,7 @@ export default function OverviewView() {
           {scene.nodes.length} services · {scene.runtimes.length} runtimes
         </span>
         <span style={{ opacity: 0.45, marginLeft: "auto" }}>
-          drag orbit · shift-drag pan · wheel zoom · click to open · R reset
+          drag orbit · shift-drag pan · wheel zoom · click to inspect · R reset
         </span>
         <button
           onClick={() => overview?.hide()}
@@ -451,76 +507,106 @@ export default function OverviewView() {
         </button>
       </div>
 
-      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-        <canvas
-          ref={canvasRef}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={() => {
-            hoveredRef.current = null;
-            setHovered(null);
-          }}
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "block",
-            cursor: hovered ? "pointer" : "grab",
-            touchAction: "none",
-          }}
-        />
-
-        {scene.nodes.length === 0 && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: palette.textMuted,
-              fontFamily: "monospace",
-              fontSize: 13,
-              pointerEvents: "none",
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
+        <div
+          style={{ position: "relative", flex: 1, minWidth: 0, minHeight: 0 }}
+        >
+          <canvas
+            ref={canvasRef}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={() => {
+              hoveredRef.current = null;
+              setHovered(null);
             }}
-          >
-            This board has no services yet.
-          </div>
-        )}
-
-        {hovered && hoveredPoint && (
-          <div
             style={{
-              position: "absolute",
-              left: Math.min(hoveredPoint.x + 14, window.innerWidth - 260),
-              top: hoveredPoint.y + 14,
-              pointerEvents: "none",
-              background: palette.card,
-              border: `1px solid ${palette.cardBorder}`,
-              borderRadius: 6,
-              boxShadow: "0 6px 20px rgba(34, 38, 43, 0.16)",
-              padding: "8px 10px",
-              color: palette.text,
-              fontFamily: "monospace",
-              fontSize: 11,
-              lineHeight: 1.5,
-              maxWidth: 240,
+              width: "100%",
+              height: "100%",
+              display: "block",
+              cursor: hovered ? "pointer" : "grab",
+              touchAction: "none",
             }}
-          >
-            <div style={{ fontWeight: 600 }}>{hovered.label}</div>
-            <div style={{ color: palette.textMuted }}>{hovered.serviceId}</div>
-            <div style={{ color: palette.textMuted }}>
-              {hovered.runtimeId}
-              {hovered.depth > 0 ? ` · level ${hovered.depth}` : ""}
-              {hovered.bypassed ? " · bypassed" : ""}
+          />
+
+          {scene.nodes.length === 0 && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: palette.textMuted,
+                fontFamily: "monospace",
+                fontSize: 13,
+                pointerEvents: "none",
+              }}
+            >
+              This board has no services yet.
             </div>
-            {trackerRef.current?.get(hovered.uuid) && (
+          )}
+
+          {hovered && hoveredPoint && (
+            <div
+              style={{
+                position: "absolute",
+                left: Math.min(hoveredPoint.x + 14, window.innerWidth - 260),
+                top: hoveredPoint.y + 14,
+                pointerEvents: "none",
+                background: palette.card,
+                border: `1px solid ${palette.cardBorder}`,
+                borderRadius: 6,
+                boxShadow: "0 6px 20px rgba(34, 38, 43, 0.16)",
+                padding: "8px 10px",
+                color: palette.text,
+                fontFamily: "monospace",
+                fontSize: 11,
+                lineHeight: 1.5,
+                maxWidth: 240,
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>{hovered.label}</div>
               <div style={{ color: palette.textMuted }}>
-                {trackerRef.current.get(hovered.uuid)?.calls} calls · last{" "}
-                {trackerRef.current.get(hovered.uuid)?.lastResult}
+                {hovered.serviceId}
               </div>
-            )}
-          </div>
+              <div style={{ color: palette.textMuted }}>
+                {hovered.runtimeId}
+                {hovered.depth > 0 ? ` · level ${hovered.depth}` : ""}
+                {hovered.bypassed ? " · bypassed" : ""}
+              </div>
+              {trackerRef.current?.get(hovered.uuid) && (
+                <div style={{ color: palette.textMuted }}>
+                  {trackerRef.current.get(hovered.uuid)?.calls} calls · last{" "}
+                  {trackerRef.current.get(hovered.uuid)?.lastOut?.summary}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {selected && (
+          <OverviewDetails
+            node={selected}
+            scene={scene}
+            runtimeLabel={
+              scene.runtimes.find((r) => r.id === selected.runtimeId)?.label ??
+              selected.runtimeId
+            }
+            activity={selectedActivity.activity}
+            processing={selectedActivity.processing}
+            now={selectedActivity.now}
+            palette={palette}
+            onOpenInPlayground={() => openInPlayground(selected)}
+            onClose={() => setSelectedUuid(null)}
+          />
         )}
       </div>
     </div>,

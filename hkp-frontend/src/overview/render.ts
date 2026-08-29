@@ -140,14 +140,23 @@ export type RenderOptions = {
   palette: Palette;
   now: number;
   hoveredUuid?: string | null;
+  selectedUuid?: string | null;
 };
 
 export function render(
   ctx: CanvasRenderingContext2D,
   options: RenderOptions,
 ): HitTarget[] {
-  const { scene, camera, viewport, activity, palette, now, hoveredUuid } =
-    options;
+  const {
+    scene,
+    camera,
+    viewport,
+    activity,
+    palette,
+    now,
+    hoveredUuid,
+    selectedUuid,
+  } = options;
 
   ctx.save();
   ctx.fillStyle = palette.background;
@@ -300,6 +309,7 @@ export function render(
         : Math.max(0, (state.litUntil - now) / COOLDOWN_MS)
       : 0;
     const hovered = hoveredUuid === node.uuid;
+    const selected = selectedUuid === node.uuid;
 
     drawables.push({
       depth: point.depth,
@@ -308,7 +318,9 @@ export function render(
         // What is further back is dimmer. Every card faces the camera, so
         // without this a nested level reads as another row of the pipeline
         // rather than as something standing behind it.
-        const fade = Math.max(0.4, Math.min(1, point.scale * 1.7));
+        const fade = selected
+          ? 1
+          : Math.max(0.4, Math.min(1, point.scale * 1.7));
         ctx.globalAlpha = node.bypassed ? fade * 0.4 : fade;
 
         if (heat > 0) {
@@ -327,9 +339,11 @@ export function render(
         ctx.shadowBlur = 0;
         ctx.shadowOffsetY = 0;
 
+        // What is selected is being read about on the side, so it is marked
+        // more firmly than what the pointer merely happens to be over.
         ctx.strokeStyle =
-          heat > 0 || hovered ? palette.accent : palette.cardBorder;
-        ctx.lineWidth = hovered ? 2 : 1;
+          selected || hovered || heat > 0 ? palette.accent : palette.cardBorder;
+        ctx.lineWidth = selected ? 2.5 : hovered ? 2 : 1;
         ctx.setLineDash(node.bypassed ? [3, 3] : []);
         ctx.stroke();
         ctx.setLineDash([]);
@@ -353,8 +367,8 @@ export function render(
           if (showDetail) {
             ctx.font = `${detailSize}px ui-monospace, SFMono-Regular, monospace`;
             ctx.fillStyle = palette.textMuted;
-            const detail = state?.lastResult
-              ? `${state.calls} · ${state.lastResult}`
+            const detail = state?.lastOut
+              ? `${state.calls} · ${state.lastOut.summary}`
               : node.serviceId.split("/").pop() || "";
             ctx.fillText(
               truncate(ctx, detail, inner),

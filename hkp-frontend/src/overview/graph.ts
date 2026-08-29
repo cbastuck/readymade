@@ -52,6 +52,12 @@ export type OverviewNode = {
   /** Hosts from the outermost in — what has to be opened to reach this node. */
   ancestry: string[];
   bypassed: boolean;
+  /**
+   * What the service reports it is configured with, for reading rather than
+   * for drawing — the scene places a node from the fields above and never
+   * looks in here.
+   */
+  state?: unknown;
   x: number;
   y: number;
   z: number;
@@ -149,6 +155,7 @@ export function buildScene(
           parent,
           ancestry,
           bypassed: !!(service?.bypass ?? service?.state?.bypass),
+          state: service?.state,
           x,
           y: row * ROW_SPACING,
           z: depth * LAYER_SPACING,

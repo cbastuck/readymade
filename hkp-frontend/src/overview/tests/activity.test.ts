@@ -36,6 +36,37 @@ describe("ActivityTracker", () => {
     expect([...targets.keys()].sort()).toEqual(["a", "b"]);
   });
 
+  it("keeps what a call was given as well as what it answered", () => {
+    const { tracker, targets } = trackerOnBoard();
+    targets.get("a")!({
+      __internal: { state: "call-process", data: { tick: 7 } },
+    });
+    expect(tracker.get("a")!.lastIn!.preview).toBe("{tick: 7}");
+    expect(tracker.get("a")!.lastIn!.summary).toBe("object 1");
+    // Nothing has come back yet, so there is nothing to say about it.
+    expect(tracker.get("a")!.lastOut).toBeUndefined();
+
+    targets.get("a")!({
+      __internal: { state: "call-process-finished", data: [1, 2] },
+    });
+    expect(tracker.get("a")!.lastOut!.preview).toBe("[1, 2]");
+    expect(tracker.get("a")!.lastIn!.preview).toBe("{tick: 7}");
+  });
+
+  it("does not hold on to what crossed, only to what it said about it", () => {
+    const { tracker, targets } = trackerOnBoard();
+    const buffer = new Float32Array(1024);
+    targets.get("a")!({
+      __internal: { state: "call-process", data: { audio: buffer } },
+    });
+
+    const kept = tracker.get("a")!.lastIn!;
+    expect(typeof kept.preview).toBe("string");
+    expect(Object.values(kept).some((v) => v instanceof Float32Array)).toBe(
+      false,
+    );
+  });
+
   it("lights a node for the length of the call and counts it", () => {
     const { tracker, targets } = trackerOnBoard();
     targets.get("a")!({ __internal: { state: "call-process", data: null } });
@@ -47,6 +78,7 @@ describe("ActivityTracker", () => {
     });
     expect(tracker.get("a")!.startedAt).toBeUndefined();
     expect(tracker.get("a")!.litUntil).toBeGreaterThan(performance.now());
+    expect(tracker.get("a")!.lastOut!.summary).toBe("object 1");
   });
 
   it("sends a pulse onward only when something was passed on", () => {

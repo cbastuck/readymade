@@ -13,6 +13,7 @@
  * depth: a sub-service reports the pipeline it hosts as part of its own
  * configuration, nested pipelines and all.
  */
+import { redactSecrets } from "hkp-frontend/src/core/secrets";
 import {
   RuntimeApiMap,
   RuntimeDescriptor,
@@ -59,7 +60,10 @@ export async function readBoardShape({
             if (!config || typeof config !== "object") {
               return service;
             }
-            return { ...service, state: config };
+            // What a service was configured with is read back here and put on
+            // screen, so a resolved secret becomes its reference again — the
+            // same exchange saving a board makes, for the same reason.
+            return { ...service, state: redactSecrets(config) };
           } catch {
             // One service that cannot be asked — a runtime going away
             // mid-read — costs its own detail, not the rest of the board.
