@@ -8,6 +8,7 @@ import VSpacer from "../../components/shared/VSpacer";
 import Board from "./Board";
 
 import LoadIndicator from "./LoadIndicator";
+import { OverviewToggleButton } from "../../overview/OverviewContext";
 import FacadeRenderer from "../../facade/FacadeRenderer";
 
 type Props = {
@@ -117,8 +118,20 @@ export default function BoardEntryPoint({
     );
   }
 
+  // A board with a facade switches views from the facade's own button row. One
+  // without a facade has no such row, and the overview is not a facade feature,
+  // so it gets a row of its own here.
   return (
     <div style={t.w100} className={className}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          padding: "6px 12px 0",
+        }}
+      >
+        <OverviewToggleButton />
+      </div>
       <div style={s(t.fs16, t.ls1, t.tc)}>
         <div>{boardContent}</div>
       </div>

@@ -1093,3 +1093,12 @@ blockquote:after {
 [data-theme="sketch"] .rounded-full.bg-secondary {
   border-radius: 2px !important;
 }
+
+/* Where the overview left off: the service it was asked to open, marked long
+   enough to be found on a board that scrolled to reach it. */
+.hkp-service-card--revealed {
+  outline: 2px solid var(--hkp-accent, #0abcfb);
+  outline-offset: 3px;
+  border-radius: var(--r-card, 14px);
+  transition: outline-color 400ms ease-out;
+}

@@ -11,6 +11,7 @@ import {
   isLocalhostUrl,
   resolveTemplateVarsInObject,
 } from "hkp-frontend/src/templateVars";
+import { OverviewToggleButton } from "hkp-frontend/src/overview/OverviewContext";
 
 type FacadeRendererProps = {
   facade: FacadeDescriptor;
@@ -314,6 +315,7 @@ export default function FacadeRenderer({
           >
             {showRuntime ? "{ hide board }" : "{ show board }"}
           </button>
+          <OverviewToggleButton />
         </div>
       </div>
 
