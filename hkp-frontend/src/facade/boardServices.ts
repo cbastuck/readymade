@@ -108,3 +108,40 @@ export function processService(
     return;
   }
 }
+
+/**
+ * The board as one unit's view may see it.
+ *
+ * A facade addresses a service by uuid alone, and `findService` answers with
+ * the first match across the whole board. That is ambiguous the moment two
+ * runtimes hold the same uuid — which units make ordinary, since a unit's
+ * uuids are scoped by its own runtimes and nothing stops two units using the
+ * same ones.
+ *
+ * Narrowing the context a view renders against fixes it for every widget at
+ * once, without a single renderer having to know that units exist: a unit's
+ * facade searches its own runtimes and finds its own services. An empty
+ * `runtimeIds` means a view over the whole board — the composition's own
+ * facade, or a board that was never assembled from units — and is left alone.
+ */
+export function narrowBoardContext(
+  boardContext: BoardContextState,
+  runtimeIds: string[],
+): BoardContextState {
+  if (!runtimeIds.length) {
+    return boardContext;
+  }
+  const wanted = new Set(runtimeIds);
+  const pick = <T,>(map: { [runtimeId: string]: T }): { [id: string]: T } =>
+    Object.fromEntries(
+      Object.entries(map).filter(([runtimeId]) => wanted.has(runtimeId)),
+    );
+
+  return {
+    ...boardContext,
+    runtimes: boardContext.runtimes.filter((runtime) => wanted.has(runtime.id)),
+    services: pick(boardContext.services),
+    scopes: pick(boardContext.scopes),
+    registry: pick(boardContext.registry),
+  };
+}

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { BoardContextState } from "../../BoardContext";
+import { narrowBoardContext } from "../../facade/boardServices";
 import EmptyBoard from "./EmptyBoard";
 import { s, t } from "../../styles";
 
@@ -31,8 +33,16 @@ export default function BoardEntryPoint({
   onChangeBoardname,
   emptySlot,
 }: Props) {
-  const facade = boardContext.facade;
   const boardName = boardContext.boardName || requestedBoardName || "";
+
+  // Units are not merged into one surface: each contributes a view, and the
+  // board is looked at through one of them at a time. A board that is not a
+  // composition has the single facade it always had.
+  const views = boardContext.linkage?.views ?? [];
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const activeView =
+    views.find((view) => view.id === activeViewId) ?? views[0] ?? null;
+  const facade = activeView?.facade ?? boardContext.facade;
   const isPlaygroundEmpty =
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
@@ -107,9 +117,49 @@ export default function BoardEntryPoint({
           overflow: "hidden",
         }}
       >
+        {views.length > 1 && (
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              padding: "6px 8px 0",
+              flexWrap: "wrap",
+              flexShrink: 0,
+            }}
+          >
+            {views.map((view) => {
+              const isActive = view.id === activeView?.id;
+              return (
+                <button
+                  key={view.id}
+                  onClick={() => setActiveViewId(view.id)}
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: 1,
+                    padding: "4px 10px",
+                    borderRadius: 4,
+                    border: "1px solid hsl(var(--border))",
+                    background: isActive
+                      ? "var(--hkp-accent-violet-dim)"
+                      : "transparent",
+                    color: isActive ? "var(--hkp-accent-violet)" : "inherit",
+                    cursor: "pointer",
+                  }}
+                >
+                  {view.title}
+                </button>
+              );
+            })}
+          </div>
+        )}
         <FacadeRenderer
           facade={facade}
-          boardContext={boardContext}
+          // A unit's view searches that unit's runtimes, so two units may use
+          // the same service uuid without their widgets finding each other's.
+          boardContext={narrowBoardContext(
+            boardContext,
+            activeView?.runtimeIds ?? [],
+          )}
           boardName={boardName}
           runtimeContent={boardContent}
         />

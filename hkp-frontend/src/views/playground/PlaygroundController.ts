@@ -11,6 +11,8 @@ import { FacadeDescriptor } from "../../facade/types";
 import { BoardProviderHandle } from "../../BoardContext";
 
 import { generateRandomName } from "../../core/board";
+import { BoardDocuments } from "../../core/boardPersistence";
+import { unitBaseName } from "../../runtime/board/units";
 
 import {
   defaultName,
@@ -148,22 +150,32 @@ export function usePlaygroundController(
         const name = loadedName || requestedBoardNameRef.current;
         const desc = descriptionRef.current;
         const saveName = loadedName || props.boardName || name;
-        const data = await boardProviderRef.current?.state.serializeBoard();
+        // A board assembled from units is written back as the documents it was
+        // assembled from, never as the one board it happens to be running as —
+        // saving the projection would flatten the composition permanently. An
+        // ordinary board is a composition of none and takes the same path.
+        const documents =
+          await boardProviderRef.current?.state.serializeBoardDocuments();
+        const data = documents?.composition;
 
         if (props.onSaveBoard && data) {
           props.onSaveBoard(saveName, {
             ...data,
             description: desc,
           });
+          saveUnitDocuments(documents);
         } else {
           storeBoardToLocalStorage(
             name,
             JSON.stringify({ ...data, name, description: desc }),
             desc,
           );
+          const units = saveUnitDocuments(documents);
           appContext?.pushNotification({
             type: "success",
-            message: `The Board '${saveName}' was saved.`,
+            message: units
+              ? `The Board '${saveName}' and ${units} unit${units === 1 ? "" : "s"} were saved.`
+              : `The Board '${saveName}' was saved.`,
           });
         }
       } else {
@@ -452,7 +464,12 @@ export function usePlaygroundController(
     desc: string,
     isSuggestedName: boolean,
   ) => {
-    const data = await boardProviderRef.current?.state.serializeBoard();
+    // Saving under a new name renames the composition; its units keep their own
+    // documents and are written back where they came from.
+    const documents =
+      await boardProviderRef.current?.state.serializeBoardDocuments();
+    saveUnitDocuments(documents);
+    const data = documents?.composition;
     if (props.onSaveBoard && data) {
       props.onSaveBoard(name, { ...data, description: desc });
     } else {
@@ -526,4 +543,35 @@ export function usePlaygroundController(
     onSaveDialog,
     onChangeBoardname,
   };
+}
+
+/**
+ * Writes each unit of a composition back to the saved board it came from.
+ *
+ * Addressed the way it was resolved — by the base name of its `uri` — so a save
+ * lands where the next load will look. A unit read from a URL has no writable
+ * place to go back to and is skipped rather than being copied into local
+ * storage under a name nothing references.
+ */
+function saveUnitDocuments(documents: BoardDocuments | null | undefined): number {
+  if (!documents?.units.length) {
+    return 0;
+  }
+  let written = 0;
+  for (const unit of documents.units) {
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(unit.uri)) {
+      console.warn(
+        `Unit "${unit.name}" came from ${unit.uri} and cannot be saved back there.`,
+      );
+      continue;
+    }
+    const name = unitBaseName(unit.uri);
+    storeBoardToLocalStorage(
+      name,
+      JSON.stringify({ ...unit.board, name }, null, 2),
+      unit.board.description,
+    );
+    written += 1;
+  }
+  return written;
 }

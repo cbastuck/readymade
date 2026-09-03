@@ -14,6 +14,7 @@ import {
   RuntimeApiMap,
 } from "../types";
 import { FacadeDescriptor } from "../facade/types";
+import { BoardLinkage } from "../runtime/board/units";
 import { BoardContextState, EngineState } from "../BoardContext";
 import { BoardCoordinator } from "./coordinator";
 import { AppContextState } from "../AppContext";
@@ -91,6 +92,7 @@ export type BoardStateRefs = {
   setIsFetching: Dispatch<SetStateAction<boolean>>;
   setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>>;
   setFacade: Dispatch<SetStateAction<FacadeDescriptor | undefined>>;
+  setLinkage: Dispatch<SetStateAction<BoardLinkage | undefined>>;
 };
 
 export function getRuntimeScopeApi(

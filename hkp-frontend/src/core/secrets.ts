@@ -25,6 +25,8 @@
  * path writes `<serviceUuid>.<field>` keys, and those have to be nameable by
  * the same syntax as everything else in the store.
  */
+import { mapStrings } from "../runtime/board/traversal";
+
 const REFERENCE = /\{\{\s*secret\.([A-Za-z0-9_.-]+)\s*\}\}/g;
 
 export type SecretStore = {
@@ -140,27 +142,8 @@ export function redactSecrets<T>(value: T, from: SecretStore = store): T {
 
 /**
  * Applies `visit` to every string in a structure, rebuilding it as it goes.
- *
- * Only plain objects and arrays are entered. A board's state can carry things
- * that are not JSON — a Uint8Array, a class instance a service put there — and
- * rebuilding one of those field by field would quietly change what it is.
+ * Shared with the unit-parameter pass — see `runtime/board/traversal`.
  */
 function walk(value: unknown, visit: (text: string) => string): unknown {
-  if (typeof value === "string") {
-    return visit(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map((item) => walk(item, visit));
-  }
-  if (value === null || typeof value !== "object") {
-    return value;
-  }
-  if (Object.getPrototypeOf(value) !== Object.prototype) {
-    return value;
-  }
-  const out: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(value)) {
-    out[key] = walk(entry, visit);
-  }
-  return out;
+  return mapStrings(value, visit);
 }

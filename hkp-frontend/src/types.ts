@@ -68,6 +68,14 @@ export type RuntimeDescriptor = RuntimeClass & {
   user?: User | null;
   boardName?: string;
   customActions?: Array<RuntimeCustomAction>;
+  /**
+   * Which unit contributed this runtime, and what that unit calls it. Written
+   * by the projection when a board is assembled from units, absent on a runtime
+   * the board itself declares — which is what tells a save where to put it.
+   * See `runtime/board/units`.
+   */
+  unit?: string;
+  unitRuntimeId?: string;
 };
 
 export type OnResult = (
