@@ -65,14 +65,17 @@ export function isComposition(board: UnitBoard | undefined): boolean {
  * reachable this way; that is the gap an explicit name would close.
  */
 export function defaultUnitOrigin(
-  getSavedBoard: (name: string) => UnitBoard | null,
+  getSavedBoard: (
+    name: string,
+  ) => UnitBoard | null | Promise<UnitBoard | null>,
 ): UnitOrigin {
   return {
     describe: () => "saved boards",
     load: async (ref) => {
       if (ref.kind === "relative") {
         return (
-          getSavedBoard(ref.value) ?? getSavedBoard(unitBaseName(ref.value))
+          (await getSavedBoard(ref.value)) ??
+          (await getSavedBoard(unitBaseName(ref.value)))
         );
       }
       const response = await fetch(ref.value);
@@ -138,15 +141,23 @@ export async function linkBoard(
       diagnostics.push({
         level: "error",
         code: "unit-unresolved",
+        uri: entry.uri,
         message: `Unit "${entry.uri}" could not be read: ${err?.message ?? err}`,
       });
       continue;
     }
     if (!board) {
+      // Saying where we looked matters more here than usual: a `uri` is
+      // relative to wherever the composition came from, so the same reference
+      // is resolvable one way of opening a board and not another.
       diagnostics.push({
         level: "error",
         code: "unit-unresolved",
-        message: `Unit "${entry.uri}" was not found in ${origin.describe()}.`,
+        uri: entry.uri,
+        message:
+          `Unit "${entry.uri}" was not found in ${origin.describe()}. ` +
+          `Open the composition and its units together, load it from a URL they sit beside, ` +
+          `or save the unit as a board named "${unitBaseName(ref.value)}".`,
       });
       continue;
     }
@@ -182,7 +193,24 @@ export async function linkBoard(
  * Warnings are the things a unit is allowed to have — an open import is what
  * running one on its own looks like.
  */
-export function reportUnitDiagnostics(diagnostics: Diagnostic[]): void {
+export type UnitLinkError = Error & {
+  /** The composition that failed, ready to be linked again. */
+  board?: UnitBoard;
+  /** The `uri` of every unit that could not be found. */
+  missing: string[];
+};
+
+/** True for the error `reportUnitDiagnostics` throws, which carries a remedy. */
+export function isUnitLinkError(error: unknown): error is UnitLinkError {
+  return (
+    error instanceof Error && Array.isArray((error as UnitLinkError).missing)
+  );
+}
+
+export function reportUnitDiagnostics(
+  diagnostics: Diagnostic[],
+  board?: UnitBoard,
+): void {
   for (const entry of diagnostics) {
     const where = entry.unit ? `[${entry.unit}] ` : "";
     if (entry.level === "error") {
@@ -194,20 +222,184 @@ export function reportUnitDiagnostics(diagnostics: Diagnostic[]): void {
 
   const errors = diagnostics.filter((entry) => entry.level === "error");
   if (errors.length) {
-    throw new Error(
-      `This board could not be linked:\n${errors
-        .map((entry) => `• ${entry.unit ? `${entry.unit}: ` : ""}${entry.message}`)
-        .join("\n")}`,
+    const failure: UnitLinkError = Object.assign(
+      new Error(
+        `This board could not be linked:\n${errors
+          .map(
+            (entry) => `• ${entry.unit ? `${entry.unit}: ` : ""}${entry.message}`,
+          )
+          .join("\n")}`,
+      ),
+      {
+        // What the board was, and which of its units could not be found, so
+        // whoever shows this can offer to go and get them rather than leaving
+        // the reader to work out which files are meant.
+        board,
+        missing: diagnostics
+          .filter((entry) => entry.code === "unit-unresolved")
+          .map((entry) => entry.uri)
+          .filter((uri): uri is string => !!uri),
+      },
     );
+    throw failure;
   }
 
   const warnings = diagnostics.filter((entry) => entry.level === "warning");
   if (warnings.length) {
+    // All of them, not the first of them: these are a list of independent
+    // observations about different units, and showing one while counting three
+    // leaves the reader knowing something is wrong and not what.
     toast.warning(
       warnings.length === 1
         ? warnings[0].message
         : `${warnings.length} things to check in this board's units`,
-      { description: warnings.length === 1 ? undefined : warnings[0].message },
+      warnings.length === 1
+        ? undefined
+        : {
+            description: warnings
+              .map((entry) => `• ${entry.message}`)
+              .join("\n"),
+            style: { whiteSpace: "pre-line" },
+            duration: 10000,
+          },
     );
   }
+}
+
+/**
+ * A set of documents that arrived together — several files dropped at once, or
+ * picked in one dialog — as an origin.
+ *
+ * This is the most literal reading of "the origin the composition came from":
+ * the composition and its units were handed over in one gesture, so the gesture
+ * is the scope. A browser gives a page no access to the siblings of a single
+ * dropped file, which is why dropping a composition on its own cannot resolve
+ * anything and dropping it *with* its units can.
+ */
+export function filesUnitOrigin(
+  documents: Map<string, UnitBoard>,
+): UnitOrigin {
+  const byBaseName = new Map<string, UnitBoard>();
+  for (const [name, board] of documents) {
+    byBaseName.set(unitBaseName(name), board);
+  }
+  return {
+    describe: () => "the files that were opened",
+    load: async (ref) =>
+      documents.get(ref.value) ??
+      byBaseName.get(unitBaseName(ref.value)) ??
+      null,
+  };
+}
+
+/**
+ * A composition that was fetched from a URL, resolving its units beside it.
+ *
+ * This is what "relative to the composition" can actually mean in a browser.
+ * A page cannot read `file://`, and a file the user picked comes with no access
+ * to the folder it sits in — so a reference next to a *file* is only resolvable
+ * when the files were handed over together (`filesUnitOrigin`). A reference
+ * next to a *URL* needs nothing extra: `syn-hotels-unit-board.json` beside
+ * `/boards/syn-board.json` is an ordinary relative URL, and the units come from
+ * wherever the composition did.
+ */
+export function urlUnitOrigin(baseUrl: string): UnitOrigin {
+  const base = new URL(baseUrl, window.location.href);
+  return {
+    describe: () => `the location of ${base.pathname}`,
+    load: async (ref) => {
+      const target =
+        ref.kind === "absolute" ? ref.value : new URL(ref.value, base).href;
+      const response = await fetch(target);
+      if (!response.ok) {
+        return null;
+      }
+      return (await response.json()) as UnitBoard;
+    },
+  };
+}
+
+/**
+ * Several origins tried in turn, so a board can be reachable more than one way.
+ *
+ * The first that answers wins; one that throws is treated as not having the
+ * document rather than as a failure, since a later origin may still have it.
+ * Only when none answer does the caller see an unresolved unit.
+ */
+export function chainUnitOrigins(...origins: UnitOrigin[]): UnitOrigin {
+  const usable = origins.filter(Boolean);
+  return {
+    describe: () => usable.map((origin) => origin.describe()).join(", or "),
+    load: async (ref) => {
+      for (const origin of usable) {
+        try {
+          const board = await origin.load(ref);
+          if (board) {
+            return board;
+          }
+        } catch {
+          // Try the next one; the last word belongs to the caller.
+        }
+      }
+      return null;
+    },
+  };
+}
+
+/**
+ * A composition opened from a real file, resolving its units beside it on disk.
+ *
+ * This is the case a browser cannot do and a native shell can. A page given a
+ * file through `<input type="file">` learns nothing about the folder it came
+ * from, so a composition picked that way can only be linked if its units were
+ * handed over with it. A native picker returns a *path*, and a native read
+ * takes one — so `syn-hotels-unit-board.json` beside
+ * `file:///…/boards/syn-board.json` resolves exactly the way the reference
+ * reads, with nothing to pick twice and nothing to save first.
+ *
+ * `readFile` is passed in rather than imported: this package knows nothing
+ * about which shell it is running in, and the shells are the ones that have it.
+ */
+export function nativeFileUnitOrigin(
+  compositionPath: string,
+  readFile: (uri: string) => Promise<string>,
+): UnitOrigin {
+  const base = toFileUrl(compositionPath);
+  return {
+    describe: () => `the folder holding ${base.pathname.split("/").pop()}`,
+    load: async (ref) => {
+      if (ref.kind === "absolute" && !ref.value.startsWith("file:")) {
+        const response = await fetch(ref.value);
+        return response.ok ? ((await response.json()) as UnitBoard) : null;
+      }
+      const target = new URL(ref.value, base).href;
+      const source = await readFile(target);
+      return source ? (JSON.parse(source) as UnitBoard) : null;
+    },
+  };
+}
+
+/**
+ * Where a unit reference points, given the file its composition was read from.
+ *
+ * Exposed because copying a composition into a library has to fetch the same
+ * neighbours the linker would, and should not have to reimplement how a
+ * reference resolves to do it.
+ */
+export function resolveUnitFileUrl(
+  compositionPath: string,
+  uri: string,
+): string {
+  return new URL(uri, toFileUrl(compositionPath)).href;
+}
+
+/**
+ * A native picker may hand back either a `file://` URL or a plain path; both
+ * mean the same file, and only the URL form composes with a relative reference.
+ */
+function toFileUrl(pathOrUri: string): URL {
+  if (/^[a-z][a-z0-9+.-]*:/i.test(pathOrUri)) {
+    return new URL(pathOrUri);
+  }
+  return new URL(`file://${pathOrUri.startsWith("/") ? "" : "/"}${pathOrUri}`);
 }

@@ -1306,6 +1306,11 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
     setView("facade");
   }, [loadedBoardName]);
 
+  // Which view is shown, if the board offers more than one. Declared with the
+  // other hooks, above the early return below: it must be called on every
+  // render, including those where there is no board context yet.
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+
   if (!boardContext) {
     return null;
   }
@@ -1315,7 +1320,6 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
   // One view at a time, the same as the desktop: a composition's units each
   // contribute one, and a board that is not a composition has only its own.
   const views = boardContext.linkage?.views ?? [];
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const activeView =
     views.find((v) => v.id === activeViewId) ?? views[0] ?? null;
   const facade = activeView?.facade ?? boardFacade;
@@ -1383,6 +1387,7 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
         <>
           {views.length > 1 && (
             <div
+              role="tablist"
               style={{
                 display: "flex",
                 gap: 6,
@@ -1394,22 +1399,11 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
               {views.map((v) => (
                 <button
                   key={v.id}
+                  role="tab"
+                  aria-selected={v.id === activeView?.id}
+                  className="hkp-view-tab hkp-view-tab--touch"
+                  style={{ whiteSpace: "nowrap" }}
                   onClick={() => setActiveViewId(v.id)}
-                  style={{
-                    fontSize: 16,
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    whiteSpace: "nowrap",
-                    border: "1px solid hsl(var(--border))",
-                    background:
-                      v.id === activeView?.id
-                        ? "var(--hkp-accent-violet-dim)"
-                        : "transparent",
-                    color:
-                      v.id === activeView?.id
-                        ? "var(--hkp-accent-violet)"
-                        : "inherit",
-                  }}
                 >
                   {v.title}
                 </button>
@@ -1417,6 +1411,7 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
             </div>
           )}
           <MobileFacadeView
+            key={activeView?.id ?? "facade"}
             facade={facade}
             boardContext={narrowBoardContext(
               boardContext,

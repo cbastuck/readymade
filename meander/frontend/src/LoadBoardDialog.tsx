@@ -10,6 +10,7 @@ import { Clock, Trash } from "lucide-react";
 
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { BoardDescriptor } from "hkp-frontend/src/types";
+import { nativeFileUnitOrigin } from "hkp-frontend/src/core/linkUnits";
 
 import { deleteBoard, loadBoard } from "./actions";
 import { getBackend } from "./backend";
@@ -140,7 +141,13 @@ export default function LoadBoardDialog({
     const boardContent = await backend.readFile(path);
     if (boardContent) {
       const board = JSON.parse(boardContent) as BoardDescriptor;
-      boardContext?.setBoardState(board);
+      // A board picked from disk may be a composition, and its units are named
+      // relative to it. We know where it came from, so its neighbours resolve
+      // without the user picking or saving anything else.
+      boardContext?.setBoardState(
+        board,
+        nativeFileUnitOrigin(path, (uri) => backend.readFile(uri)),
+      );
       onSetVisible(false);
       onBoardLoaded?.(board);
     }

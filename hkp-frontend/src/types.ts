@@ -540,6 +540,14 @@ export type BoardDescriptor = {
   boardName?: string;
   description?: string;
   facade?: import("./facade/types").FacadeDescriptor;
+  /**
+   * What this board says about being a unit — the topics it imports and
+   * exports — and which units it is assembled from. Both are part of the
+   * document and travel with it wherever a board does, since linking happens
+   * downstream of every path a board arrives by. See `runtime/board/units`.
+   */
+  unit?: import("./runtime/board/units").UnitDeclaration;
+  units?: Array<import("./runtime/board/units").UnitEntry>;
 };
 
 export function isRuntimeDescriptorConfig(data: any): data is RuntimeDescriptor & { services: any[] } {

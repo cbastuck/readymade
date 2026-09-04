@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 import { UnitBoard, hasErrors } from "../../runtime/board/units";
-import { defaultUnitOrigin, linkBoard } from "../linkUnits";
+import {
+  defaultUnitOrigin,
+  filesUnitOrigin,
+  isComposition,
+  linkBoard,
+} from "../linkUnits";
 
 vi.mock("sonner", () => ({ toast: { warning: vi.fn(), error: vi.fn() } }));
 
@@ -98,5 +103,36 @@ describe("the SYN composition", () => {
     expect(alone.runtimes.map((rt) => rt.id)).toContain("intake");
     expect(hasErrors(diagnostics)).toBe(false);
     expect(diagnostics.some((d) => d.code === "unit-import-open")).toBe(true);
+  });
+});
+
+describe("dropping the SYN files together", () => {
+  it("resolves the units out of the set that was dropped", async () => {
+    const dropped = new Map<string, UnitBoard>([
+      ["syn-board.json", board("syn-board.json")],
+      ["syn-booking-unit-board.json", board("syn-booking-unit-board.json")],
+      ["syn-hotels-unit-board.json", board("syn-hotels-unit-board.json")],
+    ]);
+
+    const composition = [...dropped.values()].find((b) => isComposition(b));
+    expect(composition).toBeDefined();
+
+    const { board: linked, diagnostics } = await linkBoard(
+      composition!,
+      filesUnitOrigin(dropped),
+    );
+    expect(linked.runtimes.map((rt) => rt.id)).toContain("hotels.intake");
+    expect(hasErrors(diagnostics)).toBe(false);
+  });
+
+  it("cannot resolve a composition dropped on its own", async () => {
+    const alone = new Map<string, UnitBoard>([
+      ["syn-board.json", board("syn-board.json")],
+    ]);
+    const { diagnostics } = await linkBoard(
+      board("syn-board.json"),
+      filesUnitOrigin(alone),
+    );
+    expect(diagnostics.some((d) => d.code === "unit-unresolved")).toBe(true);
   });
 });

@@ -9,9 +9,16 @@ import { isUserAuthenticated } from "../runtime/graphql/RuntimeGraphQLApi";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { BoardContextState } from "../BoardContext";
 import { redactSecrets, resolveSecrets } from "./secrets";
-import { defaultUnitOrigin, linkBoard, reportUnitDiagnostics } from "./linkUnits";
+import {
+  UnitOrigin,
+  chainUnitOrigins,
+  defaultUnitOrigin,
+  linkBoard,
+  reportUnitDiagnostics,
+} from "./linkUnits";
 import { BoardLinkage, unlinkProjection, UnitBoard } from "../runtime/board/units";
 import { getLocalBoard } from "../views/playground/common";
+import { loadSavedBoardViaPlatform } from "../platform/PlatformContext";
 import { toast } from "sonner";
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
@@ -161,15 +168,32 @@ function reportMissingSecrets(missing: string[]): void {
  */
 export async function linkBoardDocument(
   board: BoardDescriptor | undefined,
+  origin?: UnitOrigin,
 ): Promise<{ board: BoardDescriptor | undefined; linkage?: BoardLinkage }> {
   if (!board) {
     return { board };
   }
-  const projection = await linkBoard(
-    board,
-    defaultUnitOrigin((name) => getLocalBoard(name) ?? null),
+  // Saved boards are always in scope: a unit may be one whichever way the
+  // composition itself arrived. Anything the host knows is tried first.
+  // Both stores, because where a board was saved depends on the host: the
+  // native app keeps its library on disk behind its backend, the web keeps it
+  // in local storage. A unit saved in one and looked for in the other is
+  // reported missing while sitting in plain sight in the library.
+  const savedBoards = defaultUnitOrigin(
+    async (name) =>
+      (await loadSavedBoardViaPlatform(name)) ?? getLocalBoard(name) ?? null,
   );
-  reportUnitDiagnostics(projection.diagnostics);
+  const from = origin ? chainUnitOrigins(origin, savedBoards) : savedBoards;
+  const projection = await linkBoard(board, from);
+  if (board.units?.length) {
+    // A composition that resolves to nothing is otherwise indistinguishable
+    // from an empty board, which is exactly how a link that never ran looks.
+    console.info(
+      `Board units: linked ${projection.units.length} of ${board.units.length} into ${projection.board.runtimes.length} runtimes` +
+        ` [${projection.board.runtimes.map((rt) => rt.id).join(", ")}]`,
+    );
+  }
+  reportUnitDiagnostics(projection.diagnostics, board);
   return {
     board: projection.board,
     // Nothing to remember about a board that is only itself.
@@ -195,7 +219,10 @@ export async function fetchBoard(
     const board = await propsRef.fetchBoard();
     // Units are resolved before anything is provisioned: what runs is the
     // projection, and a board that declares no units is its own projection.
-    const { board: linked, linkage } = await linkBoardDocument(board);
+    const { board: linked, linkage } = await linkBoardDocument(
+      board,
+      propsRef.unitOrigin?.(),
+    );
     refs.setFacade(linked?.facade);
     refs.setLinkage(linkage);
     const data = await restoreBoard(linked, refs, waitForUserLogin);
@@ -322,7 +349,22 @@ export async function setBoardState(
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
   removeRuntime: (runtime: RuntimeDescriptor) => Promise<void>,
+  origin?: UnitOrigin,
 ) {
+  // Linking first, before anything is torn down: a board that arrives by drop,
+  // by applying edited source or over a share link goes through here rather
+  // than through `fetchBoard`, and it may be a composition. Resolving it can
+  // fail — a unit that is not where the composition says it is — and failing
+  // after the current runtimes were destroyed would leave nothing at all.
+  let linked: BoardDescriptor | undefined;
+  let linkage: BoardLinkage | undefined;
+  try {
+    ({ board: linked, linkage } = await linkBoardDocument(newState, origin));
+  } catch (err: any) {
+    refs.setErrorOnFetch(err);
+    return;
+  }
+
   // Destroy all existing runtimes (and their services) before loading the new
   // board — otherwise long-lived resources like SSE streams, setInterval timers
   // and AudioContexts keep running in the background after the board switches.
@@ -331,8 +373,10 @@ export async function setBoardState(
     await removeRuntime(runtime);
   }
 
-  refs.setFacade(newState.facade);
-  const data = await restoreBoard(newState, refs, waitForUserLogin);
+  refs.setErrorOnFetch(undefined);
+  refs.setFacade(linked?.facade);
+  refs.setLinkage(linkage);
+  const data = await restoreBoard(linked, refs, waitForUserLogin);
   if (data) {
     refs.setBoardNameState(data.boardName);
     refs.setRuntimes(data.runtimes);

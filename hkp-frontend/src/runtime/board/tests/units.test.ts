@@ -467,3 +467,29 @@ describe("unlinking", () => {
     }
   });
 });
+
+describe("checking declarations against what runs", () => {
+  it("reads the substituted topic, not the parameter that carried it", () => {
+    // Before this was checked against the projection, a unit that parameterised
+    // its topic was reported as consuming "{{param.inTopic}}" — undeclared —
+    // and as not consuming the topic it plainly does.
+    const hotels = unitBoard("hotels", {
+      imports: ["booking.ready"],
+      consumes: "{{param.inTopic}}",
+      params: { inTopic: "booking.ready" },
+    });
+    const booking = unitBoard("booking", {
+      exports: ["booking.ready"],
+      publishes: "booking.ready",
+    });
+
+    const { diagnostics } = projectUnits(emptyComposition, [
+      { entry: { uri: "booking" }, board: booking, name: "booking" },
+      { entry: { uri: "hotels" }, board: hotels, name: "hotels" },
+    ]);
+
+    expect(diagnostics.map((d) => d.code)).not.toContain("unit-import-undeclared");
+    expect(diagnostics.map((d) => d.code)).not.toContain("unit-import-unconsumed");
+    expect(hasErrors(diagnostics)).toBe(false);
+  });
+});

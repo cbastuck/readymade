@@ -119,6 +119,7 @@ export default function BoardEntryPoint({
       >
         {views.length > 1 && (
           <div
+            role="tablist"
             style={{
               display: "flex",
               gap: 4,
@@ -127,32 +128,25 @@ export default function BoardEntryPoint({
               flexShrink: 0,
             }}
           >
-            {views.map((view) => {
-              const isActive = view.id === activeView?.id;
-              return (
-                <button
-                  key={view.id}
-                  onClick={() => setActiveViewId(view.id)}
-                  style={{
-                    fontSize: 12,
-                    letterSpacing: 1,
-                    padding: "4px 10px",
-                    borderRadius: 4,
-                    border: "1px solid hsl(var(--border))",
-                    background: isActive
-                      ? "var(--hkp-accent-violet-dim)"
-                      : "transparent",
-                    color: isActive ? "var(--hkp-accent-violet)" : "inherit",
-                    cursor: "pointer",
-                  }}
-                >
-                  {view.title}
-                </button>
-              );
-            })}
+            {views.map((view) => (
+              <button
+                key={view.id}
+                role="tab"
+                aria-selected={view.id === activeView?.id}
+                className="hkp-view-tab"
+                onClick={() => setActiveViewId(view.id)}
+              >
+                {view.title}
+              </button>
+            ))}
           </div>
         )}
         <FacadeRenderer
+          // A different view is a different surface: remounting lets it build
+          // its own facade state and run its own `facade.init`, which are keyed
+          // to the board name and would otherwise be inherited from whichever
+          // view was shown first.
+          key={activeView?.id ?? "facade"}
           facade={facade}
           // A unit's view searches that unit's runtimes, so two units may use
           // the same service uuid without their widgets finding each other's.

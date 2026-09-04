@@ -15,6 +15,7 @@ import {
 } from "../types";
 import { FacadeDescriptor } from "../facade/types";
 import { BoardLinkage } from "../runtime/board/units";
+import { UnitOrigin } from "./linkUnits";
 import { BoardContextState, EngineState } from "../BoardContext";
 import { BoardCoordinator } from "./coordinator";
 import { AppContextState } from "../AppContext";
@@ -38,6 +39,13 @@ export type Props = {
   coordinator?: BoardCoordinator;
 
   fetchBoard?: () => Promise<BoardDescriptor>;
+  /**
+   * Where this board's units are to be looked for, when the host knows how the
+   * board arrived — beside the URL it was fetched from, among the files it was
+   * dropped with. Called per load, since that answer changes with the board.
+   * Without one, units are looked for among saved boards.
+   */
+  unitOrigin?: () => UnitOrigin | undefined;
   isRuntimeInScope?: () => boolean;
   onRemoveRuntime?: (runtime: RuntimeDescriptor) => Promise<void>;
   /**

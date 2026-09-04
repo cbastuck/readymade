@@ -47,6 +47,7 @@ import {
 } from "./core/boardContextTypes";
 import { FacadeDescriptor } from "./facade/types";
 import { BoardLinkage } from "./runtime/board/units";
+import { UnitOrigin } from "./core/linkUnits";
 import {
   fetchBoard as fetchBoardOp,
   serializeBoard as serializeBoardOp,
@@ -125,7 +126,15 @@ type BoardContextAPI = {
    * from units. See `core/boardPersistence`.
    */
   serializeBoardDocuments: () => Promise<BoardDocuments | null>;
-  setBoardState: (newState: BoardDescriptor) => Promise<void>;
+  /**
+   * Loads a board that arrived whole — dropped, pasted as source, or restored
+   * from a link. `origin` says where its units may be found, when the way it
+   * arrived carries that; without one they are looked for among saved boards.
+   */
+  setBoardState: (
+    newState: BoardDescriptor,
+    origin?: UnitOrigin,
+  ) => Promise<void>;
   setBoardName: (name: string) => void;
 
   isRuntimeInScope: (runtime: RuntimeDescriptor) => boolean;
@@ -510,8 +519,14 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const serializeBoard = () => serializeBoardOp(getRefs());
     const serializeBoardDocuments = () =>
       serializeBoardDocumentsOp(getRefs(), providerStateRef.current.linkage);
-    const setBoardState = (newState: BoardDescriptor) =>
-      setBoardStateOp(newState, getRefs(), waitForUserLogin, removeRuntime);
+    const setBoardState = (newState: BoardDescriptor, origin?: UnitOrigin) =>
+      setBoardStateOp(
+        newState,
+        getRefs(),
+        waitForUserLogin,
+        removeRuntime,
+        origin,
+      );
 
     const setBoardName = (name: string) => {
       setBoardNameState(name);

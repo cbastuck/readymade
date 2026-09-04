@@ -12,7 +12,11 @@ import { BoardProviderHandle } from "../../BoardContext";
 
 import { generateRandomName } from "../../core/board";
 import { BoardDocuments } from "../../core/boardPersistence";
-import { unitBaseName } from "../../runtime/board/units";
+import { UnitOrigin, urlUnitOrigin } from "../../core/linkUnits";
+import {
+  UnitBoard,
+  unitBaseName,
+} from "../../runtime/board/units";
 
 import {
   defaultName,
@@ -41,6 +45,9 @@ import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import { restoreCoordinators, withCoordinatorEngines } from "../../common";
 import { AppCtx } from "../../AppContext";
 import { PlaygroundProps } from "./Playground.types";
+
+/** The two keys that make a board a unit, a composition, or both. */
+type UnitDocument = Pick<UnitBoard, "unit" | "units">;
 
 const restoredAvailableRuntimeEngines = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]",
@@ -75,6 +82,7 @@ export type PlaygroundControllerState = {
     isSuggestedName: boolean,
   ) => Promise<BoardDescriptor | null | undefined>;
   onChangeBoardname: (newName: string) => void;
+  unitOrigin: () => UnitOrigin | undefined;
 };
 
 export function usePlaygroundController(
@@ -95,6 +103,9 @@ export function usePlaygroundController(
       defaultName,
   );
   const [description, setDescription] = useState("");
+  // Where the current board was fetched from, when it came from a URL. Its
+  // units are relative to that, the same way any relative URL would be.
+  const boardSourceUrlRef = useRef<string | null>(null);
   const facadeRef = useRef<FacadeDescriptor | undefined>(undefined);
   const [initialFetched, setInitialFetched] = useState(false);
   const [acceptedSyncSenders, setAcceptedSyncSenders] =
@@ -261,6 +272,7 @@ export function usePlaygroundController(
         }
       }
 
+      boardSourceUrlRef.current = null;
       const brd =
         props.match?.params?.board ||
         props.boardName ||
@@ -269,6 +281,7 @@ export function usePlaygroundController(
         if (params.template) {
           return createBoardFromTemplate(params.template, params);
         } else if (params.src) {
+          boardSourceUrlRef.current = params.src;
           return importBoard(params.src);
         } else if (params.fromLink) {
           return importFromLink(params.fromLink, params.vars);
@@ -313,7 +326,9 @@ export function usePlaygroundController(
       runtimes = [],
       services = {},
       registry = {},
-    } = initialBord;
+      unit,
+      units,
+    } = initialBord as PlaygroundState & UnitDocument;
 
     setAcceptedSyncSenders(accepted);
     setRejectedSyncSenders(rejected);
@@ -333,8 +348,19 @@ export function usePlaygroundController(
       services,
       registry,
       facade: facadeData,
+      // What the board says about being a unit, and which units it is made of,
+      // travel with it: linking happens after this and has nothing else to read
+      // them from. Dropping them here is indistinguishable from a board that
+      // declares neither — an empty composition, silently.
+      unit,
+      units,
     };
   };
+
+  const unitOrigin = () =>
+    boardSourceUrlRef.current
+      ? urlUnitOrigin(boardSourceUrlRef.current)
+      : undefined;
 
   const serializeBoard = async (
     descriptor: BoardDescriptor,
@@ -542,6 +568,7 @@ export function usePlaygroundController(
     onAction,
     onSaveDialog,
     onChangeBoardname,
+    unitOrigin,
   };
 }
 

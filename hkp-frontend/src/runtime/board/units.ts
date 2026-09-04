@@ -98,11 +98,12 @@ export type UnitEntry = {
   runtimes?: { [unitRuntimeId: string]: UnitRuntimeBinding };
 };
 
-/** A board document, which may declare itself a unit, a composition, or both. */
-export type UnitBoard = BoardDescriptor & {
-  unit?: UnitDeclaration;
-  units?: UnitEntry[];
-};
+/**
+ * A board document read as what it may also be: a unit, a composition, or both.
+ * The same type as any other board — `unit` and `units` live on every board
+ * descriptor, because they have to survive every path a board arrives by.
+ */
+export type UnitBoard = BoardDescriptor;
 
 export type Diagnostic = {
   level: "error" | "warning";
@@ -110,6 +111,8 @@ export type Diagnostic = {
   message: string;
   /** Which unit it concerns; absent for the composition itself. */
   unit?: string;
+  /** The reference that produced it, where one did. */
+  uri?: string;
 };
 
 /** A unit as it was placed into the projection. */
@@ -313,7 +316,7 @@ export function projectUnits(
     services,
   };
 
-  diagnostics.push(...validateProjection(root, units));
+  diagnostics.push(...validateProjection(root, units, services));
 
   return { board, units, views, diagnostics };
 }
@@ -469,6 +472,7 @@ function requalifyMounts(
 export function validateProjection(
   root: UnitBoard,
   units: PlacedUnit[],
+  services: { [runtimeId: string]: ServiceDescriptor[] } = {},
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
@@ -497,7 +501,13 @@ export function validateProjection(
   const published = new Set<string>();
   const consumed = new Set<string>();
   for (const unit of units) {
-    const topics = topicsUsedBy(unit.source.services ?? {});
+    // The *projected* services, not the source document: parameters are
+    // substituted by then, which is the whole reason a topic that crosses a
+    // unit boundary is worth making a parameter — `{{param.topic}}` is opaque
+    // to this check, the value it resolves to is not.
+    const topics = topicsUsedBy(
+      Object.values(unit.runtimeIds).map((runtimeId) => services[runtimeId]),
+    );
     diagnostics.push(...checkDeclaredTopics(unit.name, unit.declaration, topics));
     for (const topic of topics.published) {
       published.add(topic);

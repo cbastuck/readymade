@@ -120,6 +120,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                     boardContext.boardName || props.requestedBoardName || ""
                   }
                   error={boardContext.errorOnFetch}
+                  boardContext={boardContext}
                 />
               ) : (
                 <BoardEntryPoint

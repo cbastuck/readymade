@@ -1102,3 +1102,43 @@ blockquote:after {
   border-radius: var(--r-card, 14px);
   transition: outline-color 400ms ease-out;
 }
+
+/* ── Facade view tabs ──────────────────────────────────────────────────────
+   One tab per view of a board: each unit of a composition contributes one, and
+   so does the composition itself. Deliberately not scoped to a theme — a facade
+   is shown under all of them, and the playground's tokens simply do not exist
+   elsewhere — so every colour names a token *and* the value to use without it.
+   Selection rides on aria-selected, which the tabs must carry anyway. */
+.hkp-view-tab {
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-mid, rgb(0 0 0 / 0.15));
+  background: var(--bg-card, rgb(255 255 255 / 0.75));
+  color: var(--text-mid, inherit);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+.hkp-view-tab:hover {
+  border-color: var(--hkp-accent-violet, #7c3aed);
+  color: var(--hkp-accent-violet, #7c3aed);
+}
+.hkp-view-tab:active {
+  background: var(--hkp-accent-violet-dim, rgb(124 58 237 / 0.12));
+}
+.hkp-view-tab[aria-selected="true"] {
+  background: var(--hkp-accent-violet-dim, rgb(124 58 237 / 0.12));
+  border-color: var(--hkp-accent-violet, #7c3aed);
+  color: var(--hkp-accent-violet, #7c3aed);
+}
+/* Touch targets on the mobile canvas, where the same tabs are thumb-sized. */
+.hkp-view-tab--touch {
+  font-size: 16px;
+  padding: 6px 12px;
+  border-radius: 8px;
+}

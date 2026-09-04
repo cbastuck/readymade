@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { BoardDescriptor } from "hkp-frontend/src/types";
+import { resolveUnitFileUrl } from "hkp-frontend/src/core/linkUnits";
+import { unitBaseName } from "hkp-frontend/src/runtime/board/units";
 import { useAppContext } from "hkp-frontend/src/AppContext";
 import { useNavigate } from "hkp-frontend/src/router";
 import { findDemoBoard } from "hkp-frontend/src/demoRegistry";
@@ -158,6 +160,28 @@ export default function StartPage({ onRestoreBoard }: Props) {
     let unique = name;
     for (let i = 2; taken.has(unique); i++) {
       unique = `${name} ${i}`;
+    }
+    // A composition is not one file. Copying it in without the units it names
+    // would put a board in the library that cannot be opened, so they come too
+    // — each under the base name of the reference that found it, which is what
+    // the composition will look for when it is next opened from here.
+    for (const unit of board.units ?? []) {
+      try {
+        const source = await backend.readFile(
+          resolveUnitFileUrl(path, unit.uri),
+        );
+        const unitBoard = JSON.parse(source) as BoardDescriptor;
+        // Saved under the name the reference will look for, but keeping its
+        // own board name: that name is the unit's identity to a server — mount
+        // addresses and unnamed database files are derived from it — so the
+        // library key and the board's name are deliberately different things.
+        await backend.saveBoard(unitBaseName(unit.uri), unitBoard);
+      } catch (err) {
+        window.alert(
+          `"${name}" refers to the unit "${unit.uri}", which could not be read from the same folder.`,
+        );
+        console.error(`Importing unit ${unit.uri} failed`, err);
+      }
     }
     try {
       await backend.saveBoard(unique, { ...board, boardName: unique });
