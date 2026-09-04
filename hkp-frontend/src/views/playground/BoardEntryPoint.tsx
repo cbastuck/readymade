@@ -11,6 +11,7 @@ import Board from "./Board";
 
 import LoadIndicator from "./LoadIndicator";
 import FacadeRenderer from "../../facade/FacadeRenderer";
+import { useFacadeView } from "../../facade/FacadeViewContext";
 
 type Props = {
   className?: string;
@@ -40,6 +41,10 @@ export default function BoardEntryPoint({
   // composition has the single facade it always had.
   const views = boardContext.linkage?.views ?? [];
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  // The tabs switch between facades, so they belong to the facade half and go
+  // with it. The choice is kept rather than reset: the tab comes back on the
+  // view it was left on.
+  const facadeView = useFacadeView();
   const activeView =
     views.find((view) => view.id === activeViewId) ?? views[0] ?? null;
   const facade = activeView?.facade ?? boardContext.facade;
@@ -117,7 +122,7 @@ export default function BoardEntryPoint({
           overflow: "hidden",
         }}
       >
-        {views.length > 1 && (
+        {views.length > 1 && facadeView?.showFacade !== false && (
           <div
             role="tablist"
             style={{
