@@ -31,7 +31,7 @@ consumer, not the reason.
 | G10  | Board as a public page, **read and write**                                | frontend + coordinator | L      | 3     | ✎      |
 | G11  | `budget` — token/cost cap that stops a pipeline                           | node                   | S      | 1     | ☐      |
 | G12  | Secret store — secrets never enter service state                          | node + frontend        | M      | 1     | ◐      |
-| G12b | Replace value-matched redaction on save                                   | frontend               | S–M    | 1     | ✎      |
+| G12b | Replace value-matched redaction on save — **see TODO-SECRETS.md**         | all runtimes           | L      | 1     | ✎      |
 | G13  | `baserow` and `missive` services                                          | node                   | M each | 2     | ☐      |
 | G14  | Split and re-join — carry context past a service that replaces its output | node                   | M      | 1     | ✎      |
 | G15  | Expressions must not be arbitrary JavaScript in the runtime process       | node                   | S      | 0     | ☑      |
@@ -250,6 +250,24 @@ Open, and deliberately not decided yet:
   value handed to it.
 - **`null` inside a branch.** Stopping a nested pipeline is a normal thing to do — a
   Filter does it — and it must not read as "stop the outer pipeline too".
+
+**2026-09-04 — G12b decided; the options below are closed. See TODO-SECRETS.md.**
+Chosen: references stay inline in service state and are resolved at point of use through
+`withSecrets(state, { to })`, which requires a destination and checks it against an
+`audience` recorded on the vault entry (learned on first use). Values reach remote runtimes
+in the `POST /runtimes` create payload, into a per-runtime in-memory map with no read path,
+carrying only the aliases that runtime's board references. Provisioning asks the user per
+(board, runtime, url, alias set). `redactSecrets` and the `imap`/`smtp` masking convention
+are both deleted. This is option 2 below, generalised from `http-client` to every runtime,
+plus the destination binding that option 3 would not have given on its own.
+
+Two things the note below does not say, both found on 2026-09-04. Value-matching is not
+merely imprecise, it is a **dictionary oracle**: a hostile board carries unbounded
+candidate strings and reads off which ones matched, with the alias, as soon as the victim
+saves or shares. And redaction had by then grown two callers beyond `http-client` —
+`overview/shape.ts` and `overview/activity.ts`, the latter scanning pipeline data. The
+larger hole is the forward path, which no amount of redaction touches: an imported board
+writing `{{secret.gmail}}` into an `http-client` URL exfiltrates on first run.
 
 **2026-08-23 — G12's frontend half shipped; `redactSecrets` is a stopgap to be replaced (G12b).**
 `{{secret.<alias>}}` references, both passes, and a `SecretStore` interface live in
