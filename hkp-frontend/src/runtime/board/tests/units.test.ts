@@ -493,3 +493,61 @@ describe("checking declarations against what runs", () => {
     expect(hasErrors(diagnostics)).toBe(false);
   });
 });
+
+describe("saving a unit that holds a credential", () => {
+  const withSecret: UnitBoard = {
+    boardName: "SYN Booking",
+    unit: { name: "booking" },
+    runtimes: [{ id: "intake", name: "In", type: "rest", url: "http://x" }],
+    services: {
+      intake: [
+        {
+          uuid: "mailbox",
+          serviceId: "imap-email",
+          serviceName: "IMAP",
+          state: {
+            host: "imap.gmail.com",
+            password: "{{secret.gmail.imap}}",
+            passwordConfigured: false,
+          },
+        },
+      ],
+    },
+  };
+
+  const link = () =>
+    projectUnits({ boardName: "SYN", runtimes: [], services: {} }, [
+      { entry: { uri: "booking.json" }, board: withSecret, name: "booking" },
+    ]);
+
+  it("keeps the reference when the service masks what it holds", () => {
+    const { board, units } = link();
+    // What a write-only service reports: the value blanked, a flag instead.
+    const reported = deepClone(board);
+    reported.services["booking.intake"][0].state = {
+      host: "imap.gmail.com",
+      password: "",
+      passwordConfigured: true,
+    };
+
+    const { units: documents } = unlinkProjection(reported, units);
+    expect(documents[0].board.services.intake[0].state.password).toBe(
+      "{{secret.gmail.imap}}",
+    );
+  });
+
+  it("still takes a password somebody actually set", () => {
+    const { board, units } = link();
+    const reported = deepClone(board);
+    reported.services["booking.intake"][0].state = {
+      host: "imap.gmail.com",
+      password: "{{secret.other.mailbox}}",
+      passwordConfigured: true,
+    };
+
+    const { units: documents } = unlinkProjection(reported, units);
+    expect(documents[0].board.services.intake[0].state.password).toBe(
+      "{{secret.other.mailbox}}",
+    );
+  });
+});

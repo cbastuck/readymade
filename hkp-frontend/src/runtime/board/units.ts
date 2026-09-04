@@ -831,7 +831,21 @@ export function restoreEdits(
     }
     return merged;
   }
+  // A service that holds a credential answers `getState` with an empty string
+  // rather than echoing it back — write-only, deliberately. That empty value
+  // means "not reported", never "cleared", so where the document named a
+  // secret the name stands. Without this the reference is replaced by the mask
+  // on the first save, and the board quietly stops knowing which secret it
+  // needs.
+  if (typeof source === "string" && current === "" && isTemplate(source)) {
+    return source;
+  }
   return current;
+}
+
+/** `{{secret.…}}` or `{{param.…}}` — a name for a value, not the value. */
+function isTemplate(value: string): boolean {
+  return /\{\{\s*(secret|param)\./.test(value);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

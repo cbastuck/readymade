@@ -1116,25 +1116,40 @@ blockquote:after {
   padding: 4px 10px;
   border-radius: 6px;
   border: 1px solid var(--border-mid, rgb(0 0 0 / 0.15));
-  background: var(--bg-card, rgb(255 255 255 / 0.75));
+  background: var(--bg-card, #fff);
   color: var(--text-mid, inherit);
   cursor: pointer;
   transition:
     background 0.15s,
     border-color 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.1s;
 }
-.hkp-view-tab:hover {
+.hkp-view-tab:hover:not([aria-selected="true"]) {
+  /* The tint laid *over* the card, not in place of it. The `-dim` tokens are
+     translucent by definition, so assigning one as the background would make a
+     hovered tab see-through while its neighbours stayed solid — the same
+     inversion the selected state had. */
+  background:
+    linear-gradient(
+      var(--hkp-accent-violet-dim, rgb(124 58 237 / 0.12)),
+      var(--hkp-accent-violet-dim, rgb(124 58 237 / 0.12))
+    ),
+    var(--bg-card, #fff);
   border-color: var(--hkp-accent-violet, #7c3aed);
   color: var(--hkp-accent-violet, #7c3aed);
 }
 .hkp-view-tab:active {
-  background: var(--hkp-accent-violet-dim, rgb(124 58 237 / 0.12));
+  transform: translateY(1px);
 }
+/* Opaque, not a tint. A translucent fill would let the board show through the
+   selected tab while its unselected neighbours stayed solid — which reads as
+   the selected one being the empty one, the opposite of what it means. */
 .hkp-view-tab[aria-selected="true"] {
-  background: var(--hkp-accent-violet-dim, rgb(124 58 237 / 0.12));
+  background: var(--hkp-accent-violet, #7c3aed);
   border-color: var(--hkp-accent-violet, #7c3aed);
-  color: var(--hkp-accent-violet, #7c3aed);
+  color: #fff;
+  font-weight: 500;
 }
 /* Touch targets on the mobile canvas, where the same tabs are thumb-sized. */
 .hkp-view-tab--touch {
