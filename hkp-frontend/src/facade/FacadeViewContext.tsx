@@ -63,6 +63,19 @@ function readMode(boardName: string): FacadeViewMode {
 }
 
 /**
+ * Whether there is a board yet.
+ *
+ * A board with no runtimes is not shown as a board at all — the playground
+ * offers a place to start one instead — so there is nothing for these controls
+ * to act on and nowhere for a facade to sit.
+ */
+export function boardHasRuntimes(
+  boardContext: BoardContextState | null | undefined,
+): boolean {
+  return (boardContext?.runtimes.length ?? 0) > 0;
+}
+
+/**
  * Whether there is a facade to switch away from.
  *
  * A composition contributes a view per unit and an ordinary board has the one
@@ -71,11 +84,11 @@ function readMode(boardName: string): FacadeViewMode {
 export function boardHasFacade(
   boardContext: BoardContextState | null | undefined,
 ): boolean {
-  if (!boardContext || boardContext.runtimes.length === 0) {
+  if (!boardHasRuntimes(boardContext)) {
     return false;
   }
   return (
-    (boardContext.linkage?.views.length ?? 0) > 0 || !!boardContext.facade
+    (boardContext!.linkage?.views.length ?? 0) > 0 || !!boardContext!.facade
   );
 }
 

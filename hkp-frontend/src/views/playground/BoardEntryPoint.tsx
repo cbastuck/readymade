@@ -12,6 +12,10 @@ import Board from "./Board";
 import LoadIndicator from "./LoadIndicator";
 import FacadeRenderer from "../../facade/FacadeRenderer";
 import { useFacadeView } from "../../facade/FacadeViewContext";
+import { FacadeDescriptor } from "../../facade/types";
+
+/** What the editor starts from on a board that declares no facade yet. */
+const EMPTY_FACADE: FacadeDescriptor = { layout: "single", panels: [] };
 
 type Props = {
   className?: string;
@@ -108,7 +112,9 @@ export default function BoardEntryPoint({
     />
   );
 
-  if (facade) {
+  // The editor is where a facade is started, so it opens on a board that has
+  // none — with nothing in the facade half until it puts something there.
+  if (facade || facadeView?.editorOpen) {
     return (
       <div
         className={className}
@@ -152,7 +158,7 @@ export default function BoardEntryPoint({
           // to the board name and would otherwise be inherited from whichever
           // view was shown first.
           key={activeView?.id ?? "facade"}
-          facade={facade}
+          facade={facade ?? EMPTY_FACADE}
           // A unit's view searches that unit's runtimes, so two units may use
           // the same service uuid without their widgets finding each other's.
           boardContext={narrowBoardContext(

@@ -54,10 +54,16 @@ export default function FacadeRenderer({
   // Without a provider the facade is all there is, which is what a host that
   // offers no such controls means by mounting none.
   const view = useFacadeView();
-  const showRuntime = view ? view.showRuntime : false;
-  const showFacade = view ? view.showFacade : true;
   const showEditor = view?.editorOpen ?? false;
   const [draftFacade, setDraftFacade] = useState<FacadeDescriptor>(facade);
+
+  // A facade with no panels in it is not something to look at, so the board
+  // takes the space whatever the chosen layout says — the editor is open on a
+  // board that has no facade yet, and the facade half arrives with its first
+  // panel.
+  const anyPanels = draftFacade.panels.length > 0;
+  const showFacade = anyPanels && (view ? view.showFacade : true);
+  const showRuntime = !anyPanels || (view ? view.showRuntime : false);
 
   // Reset the draft whenever a different board is loaded.
   useEffect(() => {

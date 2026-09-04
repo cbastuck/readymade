@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 import { BoardCtx, type BoardContextState } from "hkp-frontend/src/BoardContext";
 import FacadeViewControls from "../FacadeViewControls";
@@ -20,10 +20,18 @@ function renderControls(state: Partial<BoardContextState>) {
   );
 }
 
+const withRuntime = {
+  runtimes: [{ id: "ui" }],
+} as unknown as Partial<BoardContextState>;
+
 const withFacade = {
   runtimes: [{ id: "ui" }],
   facade: { panels: [] },
 } as unknown as Partial<BoardContextState>;
+
+function editorButton() {
+  return screen.getByRole("button", { name: "Toggle the facade editor" });
+}
 
 describe("boardHasFacade", () => {
   beforeEach(() => localStorage.clear());
@@ -69,11 +77,31 @@ describe("FacadeViewControls", () => {
     ).toBe("false");
   });
 
-  it("stays in place but refuses on a board with nothing to look at", () => {
+  it("offers no layout to choose on a board with no facade", () => {
+    renderControls(withRuntime);
+    expect(screen.queryByRole("group", { name: "Board view" })).toBe(null);
+  });
+
+  it("offers the editor there anyway, because that is where one is started", () => {
+    renderControls(withRuntime);
+    expect(editorButton().hasAttribute("disabled")).toBe(false);
+  });
+
+  it("asks what to look at once the editor is open on such a board", () => {
+    renderControls(withRuntime);
+    fireEvent.click(editorButton());
+    expect(screen.getByRole("group", { name: "Board view" })).toBeDefined();
+  });
+
+  it("refuses the editor while there is no board to put a facade on", () => {
     renderControls({});
-    const button = screen.getByRole("button", { name: "Show the board only" });
-    expect(button).toBeDefined();
-    expect(button.hasAttribute("disabled")).toBe(true);
+    expect(editorButton().hasAttribute("disabled")).toBe(true);
+  });
+
+  it("offers no layout to choose there either, opened editor or not", () => {
+    renderControls({});
+    fireEvent.click(editorButton());
+    expect(screen.queryByRole("group", { name: "Board view" })).toBe(null);
   });
 
   it("renders nothing where no provider is mounted", () => {
