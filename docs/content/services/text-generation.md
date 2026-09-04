@@ -91,19 +91,42 @@ it was not compiled in.
 Either way you also need a GGUF file on disk (e.g. `Qwen3-0.6B-Q8_0.gguf` from
 Hugging Face).
 
-**Anthropic backend (hkp-node)** — an API key, and nothing else. Give it to the
-service as `apiKey`, or put `ANTHROPIC_API_KEY` in the environment the runtime
-starts in:
+**Anthropic backend (hkp-node)** — an API key, and nothing else. The service
+looks in two places: its own `apiKey`, then `ANTHROPIC_API_KEY` in the
+environment the runtime starts in.
 
 ```
 ANTHROPIC_API_KEY=sk-ant-... npm start
 ```
 
-Prefer the environment for anything deployed. `apiKey` is write-only — the
-service accepts it and never gives it back, the same way `smtp-email` treats
-its password — but it is still a credential inside the board, and a board can be
-downloaded, shared as a link, or sent through the AI Refiner. A key in the
-environment is in none of those places.
+`apiKey` is write-only — the service accepts it and never gives it back, the
+same way `smtp-email` treats its password — but a key typed straight into it is
+still a credential inside the board, and a board can be downloaded, shared as a
+link, or sent through the AI Refiner. A key in the environment is in none of
+those places, which is why it is the one to prefer for anything deployed.
+
+### A secret reference, in the Readymade app
+
+Boards run in the app rarely have an environment to put anything in, and the
+app has its own store for exactly this. Add the key under **Settings →
+Secrets** with a name of your choosing, and refer to it from the board by that
+name instead of pasting the value:
+
+```json
+{ "backend": "anthropic", "model": "claude-sonnet-5", "apiKey": "{{secret.anthropic}}" }
+```
+
+The board says *which* secret the field needs and never what it is. The value
+is substituted in as the board loads, before any service is configured — so it
+reaches `apiKey` the same way a typed one does, and the file on disk still
+holds no credential and stays safe to save, share, or hand to the AI Refiner.
+The store is the app's own (`~/.hkp/vault.json` on desktop) and the settings
+dialog only ever lists names, never values. The browser playground has no such
+store, so a board opened there — or anywhere the secret is not configured —
+loads with the field unset and names the alias it was missing.
+
+References work in any service field on any runtime — `smtp-email`'s password,
+an `http-client` header — not just this one.
 
 ---
 
@@ -139,7 +162,7 @@ Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `backend` | `string` | `"anthropic"` | `anthropic` (hosted) or `server` (OpenAI-compatible HTTP) |
-| `apiKey` | `string` | `""` | Write-only; falls back to `ANTHROPIC_API_KEY` in the runtime's environment |
+| `apiKey` | `string` | `""` | Write-only; takes a `{{secret.…}}` reference, and falls back to `ANTHROPIC_API_KEY` in the runtime's environment |
 | `apiKeyConfigured` | `bool` | — | Read-only: whether a key is available, from either source |
 | `serverUrl` | `string` | `""` | Empty means the backend's own address; set it for a proxy, or for a hosted OpenAI-compatible endpoint |
 | `endpoint` | `string` | — | Read-only: the URL this configuration actually reaches |
@@ -328,6 +351,10 @@ inject the message:
 ```
 ANTHROPIC_API_KEY=sk-ant-... npm start --prefix hkp-node
 ```
+
+In the Readymade app, where there is no such environment, store the key under
+Settings → Secrets and set the service's `apiKey` to `{{secret.anthropic}}`
+instead.
 
 The monitor shows the extracted object, not prose — which is what makes the
 next service in a board able to act on it.

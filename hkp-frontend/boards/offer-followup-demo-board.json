@@ -54,7 +54,7 @@
         "state": {
           "backend": "server",
           "serverUrl": "https://inference.hetzner.com/api/v1",
-          "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+          "model": "Qwen3.8-27B",
           "apiKey": "{{secret.hetzner.token}}",
           "systemPrompt": "You read a hotel booking enquiry and pull the booking request out of it.\n\nRequired: numberOfRooms, dateOfArrival, dateOfDeparture.\nOptional: maximumPrice, searchDistrict, breakfast, numberOfBeds.\n\nLeave a field out when the email does not state it — never guess, and never infer a number of rooms from a plural. List every required field you left out in `missing`.\n\n`language` is the language the enquiry was written in, as a two-letter code.\n\nThen always write `followUp`: a short, polite reply to the sender asking for exactly the fields in `missing`, and nothing else. Write it in `language` — an enquiry in German is answered in German. Sign it 'SYN'. When `missing` is empty, write a brief acknowledgement instead; nothing is sent without a person reading it first.\n\nDates are resolved against the date given in the message and written as YYYY-MM-DD.",
           "thinking": false,
