@@ -1,5 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
+/** The app's UI family. Themes that don't name their own font fall back to it,
+ *  and the font presets layer their own family on top of it. */
+export const UI_FONT_STACK = "'DM Sans', system-ui, sans-serif";
+
 const defaultTheme = {
   textColor: "",
   backgroundColor: "white",
@@ -55,7 +59,7 @@ const playgroundTheme = {
   popoverBackgroundColor: "",
   serviceBorderWidth: 1,
   serviceContentPaddingBottom: 0,
-  fontFamily: "'DM Sans', system-ui, sans-serif",
+  fontFamily: UI_FONT_STACK,
   serviceBoxShadow: "var(--shadow-card, 0 1px 2px oklch(0.4 0.01 280 / 0.05), 0 3px 12px oklch(0.4 0.01 280 / 0.07))",
   runtimeBoxShadow: "var(--shadow-runtime, 0 2px 8px oklch(0.4 0.02 280 / 0.07), 0 8px 28px oklch(0.4 0.02 280 / 0.05))",
 };
@@ -75,7 +79,7 @@ const mobileTheme = {
   popoverBackgroundColor: "#ffffff",
   serviceBorderWidth: 1.5,
   serviceContentPaddingBottom: 0,
-  fontFamily: "'DM Sans', system-ui, sans-serif",
+  fontFamily: UI_FONT_STACK,
   serviceBoxShadow: "0 1px 3px rgba(0,0,0,0.06)",
   runtimeBoxShadow: "0 1px 3px rgba(0,0,0,0.06)",
 };
@@ -172,13 +176,13 @@ export const FONT_PRESETS: FontPreset[] = [
   {
     id: "character",
     label: "Character",
-    family: "'Space Grotesk', 'DM Sans', system-ui, sans-serif",
+    family: `'Space Grotesk', ${UI_FONT_STACK}`,
     webfont: SPACE_GROTESK,
   },
   {
     id: "swiss",
     label: "Swiss",
-    family: "'Archivo', 'DM Sans', system-ui, sans-serif",
+    family: `'Archivo', ${UI_FONT_STACK}`,
     webfont: ARCHIVO,
   },
 ];
@@ -366,6 +370,13 @@ export function ThemeProvider({ children, defaultThemeName = "default" }: { chil
 
 export function useTheme() {
   return useContext(ThemeCtx);
+}
+
+/** The family to render UI text in: whatever the active theme (and the user's
+ *  font preset) resolves to, falling back to the app's own stack for themes
+ *  that leave the choice to the document. */
+export function useUiFont() {
+  return useTheme().fontFamily || UI_FONT_STACK;
 }
 
 export function useThemeControl() {

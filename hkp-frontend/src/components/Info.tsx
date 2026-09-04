@@ -1,3 +1,5 @@
+import { useUiFont } from "hkp-frontend/src/ui-components/ThemeContext";
+
 type Props = {
   className?: string;
   headline: string;
@@ -7,7 +9,7 @@ type Props = {
 export default function Info({ className, headline, children }: Props) {
   // Match the app UI rather than the Tailwind config's `serif` slot, which
   // points at an unregistered family and falls through to the browser's Times.
-  const uiFont = '"DM Sans", system-ui, sans-serif';
+  const uiFont = useUiFont();
   return (
     <div className={`${className} m-2`}>
       {headline && (
