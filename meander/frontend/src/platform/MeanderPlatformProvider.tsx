@@ -6,6 +6,7 @@ import {
   RuntimeAccessSettings,
   RuntimeTokenRequest,
 } from "hkp-frontend/src/platform/PlatformContext";
+import { BoardDescriptor } from "hkp-frontend/src/types";
 import { getBackend } from "../backend";
 import { meanderLogin, type NativeLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
@@ -136,11 +137,18 @@ const loadSavedBoardNative = async (name: string) => {
   }
 };
 
+/** Puts a board into the host's library, which on this platform is on disk. */
+const saveSavedBoardNative = async (name: string, board: BoardDescriptor) => {
+  const backend = await getBackend();
+  await backend.saveBoard(name, board);
+};
+
 const capabilities: PlatformCapabilities = isNative
   ? {
       pickFiles: pickFilesNative,
       readFile: async (uri) => (await getBackend()).readFile(uri),
       loadSavedBoard: loadSavedBoardNative,
+      saveSavedBoard: saveSavedBoardNative,
       saveRuntimeToDisk: async (json, _filename) => {
         const backend = await getBackend();
         const path = await backend.pickSavePath({ filters: ["*.json"] });
@@ -159,6 +167,7 @@ const capabilities: PlatformCapabilities = isNative
   : isIOS || isAndroid
     ? {
         loadSavedBoard: loadSavedBoardNative,
+        saveSavedBoard: saveSavedBoardNative,
         setRuntimeAllowedUser: setRuntimeAllowedUserNative,
         // Native Auth0 login via ASWebAuthenticationSession on iOS and browser
         // redirect capture on Android.

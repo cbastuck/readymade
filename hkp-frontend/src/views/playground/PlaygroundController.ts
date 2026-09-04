@@ -12,7 +12,15 @@ import { BoardProviderHandle } from "../../BoardContext";
 
 import { generateRandomName } from "../../core/board";
 import { BoardDocuments } from "../../core/boardPersistence";
-import { UnitOrigin, urlUnitOrigin } from "../../core/linkUnits";
+import {
+  UnitOrigin,
+  nativeFileUnitOrigin,
+  urlUnitOrigin,
+} from "../../core/linkUnits";
+import {
+  readFileViaPlatform,
+  saveSavedBoardViaPlatform,
+} from "../../platform/PlatformContext";
 import {
   UnitBoard,
   unitBaseName,
@@ -174,14 +182,14 @@ export function usePlaygroundController(
             ...data,
             description: desc,
           });
-          saveUnitDocuments(documents);
+          await saveUnitDocuments(documents);
         } else {
           storeBoardToLocalStorage(
             name,
             JSON.stringify({ ...data, name, description: desc }),
             desc,
           );
-          const units = saveUnitDocuments(documents);
+          const units = await saveUnitDocuments(documents);
           appContext?.pushNotification({
             type: "success",
             message: units
@@ -357,10 +365,29 @@ export function usePlaygroundController(
     };
   };
 
-  const unitOrigin = () =>
-    boardSourceUrlRef.current
-      ? urlUnitOrigin(boardSourceUrlRef.current)
-      : undefined;
+  /**
+   * Where this board's units are to be found, given how the board arrived.
+   *
+   * A file and a URL are the same idea — the units are named relative to the
+   * composition — and differ only in who can read them: a URL is fetched, a
+   * path is read through the host, which is the only one that can.
+   */
+  const unitOrigin = () => {
+    const source = props.boardSource ?? boardSourceUrlRef.current;
+    if (!source) {
+      return undefined;
+    }
+    if (/^https?:\/\//i.test(source) || source.startsWith("/")) {
+      return urlUnitOrigin(source);
+    }
+    return nativeFileUnitOrigin(source, async (uri) => {
+      const contents = await readFileViaPlatform(uri);
+      if (contents === null) {
+        throw new Error(`Cannot read ${uri} on this platform`);
+      }
+      return contents;
+    });
+  };
 
   const serializeBoard = async (
     descriptor: BoardDescriptor,
@@ -494,7 +521,7 @@ export function usePlaygroundController(
     // documents and are written back where they came from.
     const documents =
       await boardProviderRef.current?.state.serializeBoardDocuments();
-    saveUnitDocuments(documents);
+    await saveUnitDocuments(documents);
     const data = documents?.composition;
     if (props.onSaveBoard && data) {
       props.onSaveBoard(name, { ...data, description: desc });
@@ -512,6 +539,15 @@ export function usePlaygroundController(
         );
       }
     }
+
+    // The board is now called what it was saved as — on every host, not only
+    // where a route change happens to carry the new name. Without this the
+    // title keeps the name the board had before it was ever saved, and the next
+    // save dialog suggests that stale name back.
+    boardProviderRef.current?.state.setBoardName(name);
+    setRequestedBoardName(name);
+    requestedBoardNameRef.current = name;
+    props.onChangeBoardname?.(name);
 
     setDescription(desc);
     descriptionRef.current = desc;
@@ -580,24 +616,29 @@ export function usePlaygroundController(
  * place to go back to and is skipped rather than being copied into local
  * storage under a name nothing references.
  */
-function saveUnitDocuments(documents: BoardDocuments | null | undefined): number {
+async function saveUnitDocuments(
+  documents: BoardDocuments | null | undefined,
+): Promise<number> {
   if (!documents?.units.length) {
     return 0;
   }
   let written = 0;
   for (const unit of documents.units) {
-    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(unit.uri)) {
-      console.warn(
-        `Unit "${unit.name}" came from ${unit.uri} and cannot be saved back there.`,
-      );
-      continue;
-    }
+    // Named by the base name of the reference that found it, so the next load
+    // looks it up where this put it. The board keeps its own `boardName`: that
+    // is the unit's identity to a server, and the library key is not.
     const name = unitBaseName(unit.uri);
-    storeBoardToLocalStorage(
-      name,
-      JSON.stringify({ ...unit.board, name }, null, 2),
-      unit.board.description,
-    );
+    // The host's library first. Where the host keeps one — the native app keeps
+    // it on disk — writing to local storage instead would scatter a composition
+    // across two stores and leave the units unfindable on the next load.
+    const saved = await saveSavedBoardViaPlatform(name, unit.board);
+    if (!saved) {
+      storeBoardToLocalStorage(
+        name,
+        JSON.stringify({ ...unit.board, name }, null, 2),
+        unit.board.description,
+      );
+    }
     written += 1;
   }
   return written;

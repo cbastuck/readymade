@@ -52,7 +52,13 @@ async function tryResumeLastBoard(): Promise<BoardDescriptor | undefined> {
 type View =
   | { type: "start" }
   | { type: "loading" }
-  | { type: "playground"; board: BoardDescriptor | null };
+  // `source` is where the board was read from, when it came from a file: a
+  // composition resolves its units against it, and saving writes back there.
+  | {
+      type: "playground";
+      board: BoardDescriptor | null;
+      source?: string;
+    };
 
 /** Top-left logo for the cloud view, matching the playground's. */
 function CloudLogo({ onClick }: { onClick: () => void }) {
@@ -158,8 +164,11 @@ function MeanderShell() {
     navigate("/", { replace: true });
   };
 
-  const onRestoreBoard = (board: BoardDescriptor | null | undefined) => {
-    setView({ type: "playground", board: board ?? null });
+  const onRestoreBoard = (
+    board: BoardDescriptor | null | undefined,
+    source?: string,
+  ) => {
+    setView({ type: "playground", board: board ?? null, source });
     navigate("/playground", { replace: true });
   };
 
@@ -197,6 +206,7 @@ function MeanderShell() {
       <MeanderPlayground
         key={playgroundKey}
         initialBoard={view.board}
+        boardFilePath={view.source}
         onLogo={onShowStartPage}
         shareToInject={share.shareToInject}
         onShareConsumed={share.onShareConsumed}

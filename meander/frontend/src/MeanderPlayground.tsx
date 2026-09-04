@@ -31,6 +31,8 @@ const isBuiltInRemote = (url?: string) =>
 
 type Props = {
   initialBoard?: BoardDescriptor | null;
+  /** Where `initialBoard` was read from, when it came from a file. */
+  boardFilePath?: string;
   onLogo: () => void;
   /** A captured share to inject at the board's pipeline head (run once). */
   shareToInject?: SharePayload | null;
@@ -39,6 +41,7 @@ type Props = {
 };
 export default function MeanderPlayground({
   initialBoard = null,
+  boardFilePath,
   onLogo,
   shareToInject = null,
   onShareConsumed,
@@ -182,6 +185,7 @@ export default function MeanderPlayground({
     <Playground
       boardName={boardName}
       boardDescriptor={initialBoard}
+      boardSource={boardFilePath}
       availableRuntimeEngines={availableRuntimeEngines}
       onUpdateAvailableRuntimeEngines={syncAvailableRuntimeEngines}
       onSaveBoard={onSaveBoard}

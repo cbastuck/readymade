@@ -3,8 +3,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 
-import { serveBoards } from "../../hkp-frontend/vite-plugins/serveBoards";
-
 import { readBuildVersion } from "./buildVersion";
 
 const hkpFrontendRoot = path.resolve(import.meta.dirname, "../../hkp-frontend");
@@ -21,9 +19,7 @@ export default defineConfig({
       allow: [".", hkpFrontendRoot],
     },
   },
-  // The playground lives here too, so the boards it can open must be
-  // reachable the same way they are from hkp-frontend's own dev server.
-  plugins: [svgr(), react(), serveBoards(path.join(hkpFrontendRoot, "boards"))],
+  plugins: [svgr(), react()],
   resolve: {
     // hkp-frontend has its own node_modules; without deduping, its files pull in
     // a second copy of React (and react-router-dom), which breaks hooks with

@@ -69,6 +69,13 @@ export interface PlatformCapabilities {
    */
   loadSavedBoard?: (name: string) => Promise<BoardDescriptor | null>;
   /**
+   * Puts a board into the host's library under a name. The counterpart of
+   * `loadSavedBoard`, and needed for the same reason: saving a composition
+   * writes several documents, and they must all land in the store the host
+   * will later look in.
+   */
+  saveSavedBoard?: (name: string, board: BoardDescriptor) => Promise<void>;
+  /**
    * Platform-specific login. Resolves to a raw OIDC id_token JWT on success, or
    * null if the user cancelled. Provided by hosts where the standard Auth0 web
    * redirect flow can't run (e.g. the native Readymade app, which uses a
@@ -169,6 +176,25 @@ export function loadSavedBoardViaPlatform(
   return activeCapabilities.loadSavedBoard
     ? activeCapabilities.loadSavedBoard(name)
     : Promise.resolve(null);
+}
+
+/** Non-React accessor for `readFile`; null-free callers get an empty string. */
+export function readFileViaPlatform(uri: string): Promise<string | null> {
+  return activeCapabilities.readFile
+    ? activeCapabilities.readFile(uri)
+    : Promise.resolve(null);
+}
+
+/** Non-React accessor for `saveSavedBoard`. Resolves false when unsupported. */
+export async function saveSavedBoardViaPlatform(
+  name: string,
+  board: BoardDescriptor,
+): Promise<boolean> {
+  if (!activeCapabilities.saveSavedBoard) {
+    return false;
+  }
+  await activeCapabilities.saveSavedBoard(name, board);
+  return true;
 }
 
 export function mintTokenViaPlatform(
