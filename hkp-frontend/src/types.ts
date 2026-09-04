@@ -68,6 +68,14 @@ export type RuntimeDescriptor = RuntimeClass & {
   user?: User | null;
   boardName?: string;
   customActions?: Array<RuntimeCustomAction>;
+  /**
+   * Which unit contributed this runtime, and what that unit calls it. Written
+   * by the projection when a board is assembled from units, absent on a runtime
+   * the board itself declares — which is what tells a save where to put it.
+   * See `runtime/board/units`.
+   */
+  unit?: string;
+  unitRuntimeId?: string;
 };
 
 export type OnResult = (
@@ -532,6 +540,14 @@ export type BoardDescriptor = {
   boardName?: string;
   description?: string;
   facade?: import("./facade/types").FacadeDescriptor;
+  /**
+   * What this board says about being a unit — the topics it imports and
+   * exports — and which units it is assembled from. Both are part of the
+   * document and travel with it wherever a board does, since linking happens
+   * downstream of every path a board arrives by. See `runtime/board/units`.
+   */
+  unit?: import("./runtime/board/units").UnitDeclaration;
+  units?: Array<import("./runtime/board/units").UnitEntry>;
 };
 
 export function isRuntimeDescriptorConfig(data: any): data is RuntimeDescriptor & { services: any[] } {

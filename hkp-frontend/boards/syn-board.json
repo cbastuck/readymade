@@ -1,0 +1,19 @@
+{
+  "boardName": "SYN",
+  "description": "The SYN app, as a composition: the booking unit and the hotels unit, linked into one board.\n\nIt declares almost nothing itself. Each unit is an ordinary board that runs alone unchanged — open 'SYN Booking' on its own and it works, with a warning that nothing here exports the topic it imports, which is what running alone means. Loaded together they satisfy each other, and an import nothing exports becomes an error, because by listing a unit this document asserted the set is complete.\n\nLinking qualifies exactly one thing: the runtime id. Booking's 'intake' becomes 'booking.intake', hotels' becomes 'hotels.intake', and the service uuids inside them are untouched — both units call a service 'after-intake', and in different runtimes that has always been legal. Each unit's runtimes keep the unit's own board name, so a unit's mount addresses and its unnamed databases are the same composed as they are alone.\n\nBoth units run against the same hkp-node and so share its queue. The 'runtimes' bindings below are where to retarget that: give a unit's runtime a url and it moves, without editing the unit.\n\nA 'uri' says where a document is, not what it is called, and is relative to wherever this composition was loaded from — a sibling file on disk, a document beside a share link, or a saved board of the same base name.",
+  "units": [
+    {
+      "uri": "syn-booking-unit-board.json",
+      "as": "booking"
+    },
+    {
+      "uri": "syn-hotels-unit-board.json",
+      "as": "hotels",
+      "params": {
+        "requestsTopic": "booking.ready"
+      }
+    }
+  ],
+  "runtimes": [],
+  "services": {}
+}

@@ -5,13 +5,7 @@ import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeDescriptor } from "./types";
 import { PanelRenderer } from "./panels/PanelRenderer";
 import { FacadeEditor } from "./editor/FacadeEditor";
-import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
-import { createBoardLink } from "hkp-frontend/src/views/playground/BoardLink";
-import {
-  isLocalhostUrl,
-  resolveTemplateVarsInObject,
-} from "hkp-frontend/src/templateVars";
-import { OverviewToggleButton } from "hkp-frontend/src/overview/OverviewContext";
+import { useFacadeView } from "./FacadeViewContext";
 
 type FacadeRendererProps = {
   facade: FacadeDescriptor;
@@ -44,7 +38,9 @@ export default function FacadeRenderer({
   facadeStateRef.current = facadeState;
 
   useEffect(() => {
-    if (!facade.init?.length) { return; }
+    if (!facade.init?.length) {
+      return;
+    }
     executeActions({
       actions: facade.init,
       value: undefined,
@@ -54,22 +50,25 @@ export default function FacadeRenderer({
     });
   }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const storageKey = `hkp-facade-runtime-${boardName}`;
-  const [showRuntime, setShowRuntime] = useState(
-    () => localStorage.getItem(storageKey) === "true",
-  );
-  const facadeStorageKey = `hkp-facade-visible-${boardName}`;
-  const [showFacade, setShowFacade] = useState(
-    () => localStorage.getItem(facadeStorageKey) !== "false",
-  );
-  const [showEditor, setShowEditor] = useState(false);
+  // Which halves are on screen is chosen from the toolbar, above this view.
+  // Without a provider the facade is all there is, which is what a host that
+  // offers no such controls means by mounting none.
+  const view = useFacadeView();
+  const showEditor = view?.editorOpen ?? false;
   const [draftFacade, setDraftFacade] = useState<FacadeDescriptor>(facade);
+
+  // A facade with no panels in it is not something to look at, so the board
+  // takes the space whatever the chosen layout says — the editor is open on a
+  // board that has no facade yet, and the facade half arrives with its first
+  // panel.
+  const anyPanels = draftFacade.panels.length > 0;
+  const showFacade = anyPanels && (view ? view.showFacade : true);
+  const showRuntime = !anyPanels || (view ? view.showRuntime : false);
 
   // Reset the draft whenever a different board is loaded.
   useEffect(() => {
     setDraftFacade(facade);
   }, [boardName]);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // ── vertical (runtime) splitter ──────────────────────────────────────────
   const DEFAULT_RUNTIME_HEIGHT = Math.round(window.innerHeight * 0.4);
@@ -79,20 +78,31 @@ export default function FacadeRenderer({
       parseInt(localStorage.getItem(runtimeHeightKey) ?? "", 10) ||
       DEFAULT_RUNTIME_HEIGHT,
   );
-  const runtimeDragState = useRef<{ startY: number; startHeight: number } | null>(null);
+  const runtimeDragState = useRef<{
+    startY: number;
+    startHeight: number;
+  } | null>(null);
   const runtimeHeightRef = useRef(runtimeHeight);
   runtimeHeightRef.current = runtimeHeight;
 
   const onDividerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    runtimeDragState.current = { startY: e.clientY, startHeight: runtimeHeight };
+    runtimeDragState.current = {
+      startY: e.clientY,
+      startHeight: runtimeHeight,
+    };
 
     const onMouseMove = (ev: MouseEvent) => {
-      if (!runtimeDragState.current) { return; }
+      if (!runtimeDragState.current) {
+        return;
+      }
       const delta = runtimeDragState.current.startY - ev.clientY;
       const next = Math.max(
         80,
-        Math.min(window.innerHeight - 120, runtimeDragState.current.startHeight + delta),
+        Math.min(
+          window.innerHeight - 120,
+          runtimeDragState.current.startHeight + delta,
+        ),
       );
       setRuntimeHeight(next);
     };
@@ -114,7 +124,9 @@ export default function FacadeRenderer({
       parseInt(localStorage.getItem(editorWidthKey) ?? "", 10) ||
       DEFAULT_EDITOR_WIDTH,
   );
-  const editorDragState = useRef<{ startX: number; startWidth: number } | null>(null);
+  const editorDragState = useRef<{ startX: number; startWidth: number } | null>(
+    null,
+  );
   const editorWidthRef = useRef(editorWidth);
   editorWidthRef.current = editorWidth;
 
@@ -123,10 +135,18 @@ export default function FacadeRenderer({
     editorDragState.current = { startX: e.clientX, startWidth: editorWidth };
 
     const onMouseMove = (ev: MouseEvent) => {
-      if (!editorDragState.current) { return; }
+      if (!editorDragState.current) {
+        return;
+      }
       // Divider is on the left edge of the editor panel, so dragging left widens it.
       const delta = editorDragState.current.startX - ev.clientX;
-      const next = Math.max(200, Math.min(window.innerWidth - 200, editorDragState.current.startWidth + delta));
+      const next = Math.max(
+        200,
+        Math.min(
+          window.innerWidth - 200,
+          editorDragState.current.startWidth + delta,
+        ),
+      );
       setEditorWidth(next);
     };
     const onMouseUp = () => {
@@ -139,287 +159,132 @@ export default function FacadeRenderer({
     window.addEventListener("mouseup", onMouseUp);
   };
 
-  const setRuntimeVisible = (visible: boolean) => {
-    localStorage.setItem(storageKey, String(visible));
-    setShowRuntime(visible);
-  };
-
-  const setFacadeVisible = (visible: boolean) => {
-    localStorage.setItem(facadeStorageKey, String(visible));
-    setShowFacade(visible);
-  };
-
-  // The two halves are collapsed independently, but collapsing both would leave
-  // an empty view, so hiding one reveals the other.
-  const toggleRuntime = () => {
-    const next = !showRuntime;
-    setRuntimeVisible(next);
-    if (!next && !showFacade) {
-      setFacadeVisible(true);
-    }
-  };
-
-  const toggleFacade = () => {
-    const next = !showFacade;
-    setFacadeVisible(next);
-    if (!next && !showRuntime) {
-      setRuntimeVisible(true);
-    }
-  };
-
-  const openShareQR = async () => {
-    const data = await boardContext.serializeBoard();
-    if (!data) {
-      return;
-    }
-
-    // Exclude runtimes whose URL resolves to localhost — those are specific to
-    // the originator's machine and will fail on the partner's. Runtimes at a
-    // public or LAN address are kept because both parties can reach them.
-    const partnerRuntimeIds = new Set(
-      data.runtimes
-        .filter((rt) => !isLocalhostUrl((rt as any).url))
-        .map((rt) => rt.id),
-    );
-    const partnerRuntimes = data.runtimes.filter((rt) =>
-      partnerRuntimeIds.has(rt.id),
-    );
-
-    // Swap peerName / targetPeer on peer-socket services so the partner
-    // board connects back to the originator rather than to itself.
-    const partnerServices: typeof data.services = {};
-    for (const [runtimeId, svcs] of Object.entries(data.services)) {
-      if (!partnerRuntimeIds.has(runtimeId)) {
-        continue;
-      }
-      partnerServices[runtimeId] = svcs.map((svc) => {
-        if (svc.serviceId !== "hookup.to/service/peer-socket") {
-          return svc;
-        }
-        const { peerName, targetPeer, ...rest } = svc.state as any;
-        return {
-          ...svc,
-          state: { ...rest, peerName: targetPeer, targetPeer: peerName },
-        };
-      });
-    }
-
-    // A mount reference typically names one of the very runtimes dropped above
-    // (a peer server on the originator's local runtime), so the source of the
-    // address is gone from the partner board by design — which is exactly why
-    // it must be baked in. The coordinator resolves against the whole board.
-    const resolved = resolveTemplateVarsInObject(
-      boardContext.coordinator.resolveMountsInBoard({
-        runtimes: partnerRuntimes,
-        services: partnerServices,
-        facade: draftFacade,
-      }),
-    );
-    const url = createBoardLink(JSON.stringify(resolved));
-    setShareUrl(url);
-  };
-
   const multiPanel = draftFacade.panels.length > 1;
 
   return (
     <FacadeStateContext.Provider
       value={{ state: facadeState, setState: setFacadeStateEntry }}
     >
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        background: "hsl(var(--background))",
-        overflow: "hidden",
-        fontFamily: "'Recursive', monospace",
-        paddingBottom: "36px",
-      }}
-    >
-      {/* Header */}
       <div
         style={{
           display: "flex",
-          alignItems: "center",
-          padding: "10px 16px",
-          borderBottom: "1px solid hsl(var(--border))",
-          background: "hsl(var(--card))",
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontWeight: 600, fontSize: 15 }}>{boardName}</span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-          <button
-            onClick={openShareQR}
-            style={{
-              padding: "4px 10px",
-              borderRadius: 6,
-              border: "1px solid hsl(var(--border))",
-              background: "transparent",
-              color: "hsl(var(--muted-foreground))",
-              cursor: "pointer",
-              fontSize: 11,
-              fontFamily: "monospace",
-            }}
-          >
-            QR
-          </button>
-          <button
-            onClick={() => setShowEditor((v) => !v)}
-            style={{
-              padding: "4px 10px",
-              borderRadius: 6,
-              border: "1px solid hsl(var(--border))",
-              background: showEditor ? "hsl(var(--accent))" : "transparent",
-              color: showEditor
-                ? "hsl(var(--accent-foreground))"
-                : "hsl(var(--muted-foreground))",
-              cursor: "pointer",
-              fontSize: 11,
-              fontFamily: "monospace",
-            }}
-          >
-            {showEditor ? "{ hide editor }" : "{ editor }"}
-          </button>
-          <button
-            onClick={toggleFacade}
-            style={{
-              padding: "4px 10px",
-              borderRadius: 6,
-              border: "1px solid hsl(var(--border))",
-              background: showFacade ? "hsl(var(--accent))" : "transparent",
-              color: showFacade
-                ? "hsl(var(--accent-foreground))"
-                : "hsl(var(--muted-foreground))",
-              cursor: "pointer",
-              fontSize: 11,
-              fontFamily: "monospace",
-            }}
-          >
-            {showFacade ? "{ hide facade }" : "{ show facade }"}
-          </button>
-          <button
-            onClick={toggleRuntime}
-            style={{
-              padding: "4px 10px",
-              borderRadius: 6,
-              border: "1px solid hsl(var(--border))",
-              background: showRuntime ? "hsl(var(--accent))" : "transparent",
-              color: showRuntime
-                ? "hsl(var(--accent-foreground))"
-                : "hsl(var(--muted-foreground))",
-              cursor: "pointer",
-              fontSize: 11,
-              fontFamily: "monospace",
-            }}
-          >
-            {showRuntime ? "{ hide board }" : "{ show board }"}
-          </button>
-          <OverviewToggleButton />
-        </div>
-      </div>
-
-      {/* Live panels + optional editor side-by-side */}
-      <div
-        style={{
-          flex: showFacade ? 1 : "0 0 0px",
-          minHeight: 0,
+          flexDirection: "column",
+          height: "100%",
+          background: "hsl(var(--background))",
           overflow: "hidden",
-          display: "flex",
-          flexDirection: "row",
+          fontFamily: "'Recursive', monospace",
+          paddingBottom: "36px",
         }}
       >
-        {/* Live facade */}
+        {/* The board, with the editor alongside it */}
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             overflow: "hidden",
             display: "flex",
-            flexDirection: multiPanel ? "row" : "column",
+            flexDirection: "row",
           }}
         >
-          {draftFacade.panels.map((panel, idx) => (
+          {/* Facade above board, in whichever proportion is on screen */}
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              minHeight: 0,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* Live facade — kept mounted while hidden so its widgets hold state */}
             <div
-              key={panel.id}
               style={{
-                flex: 1,
+                flex: showFacade ? 1 : "0 0 0px",
+                minHeight: 0,
                 overflow: "hidden",
                 display: "flex",
-                flexDirection: "column",
-                borderLeft:
-                  multiPanel && idx > 0
-                    ? "1px solid hsl(var(--border))"
-                    : undefined,
+                flexDirection: multiPanel ? "row" : "column",
               }}
             >
-              <PanelRenderer
-                panel={panel}
-                boardContext={boardContext}
-                showTitle={multiPanel}
-              />
+              {draftFacade.panels.map((panel, idx) => (
+                <div
+                  key={panel.id}
+                  style={{
+                    flex: 1,
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    borderLeft:
+                      multiPanel && idx > 0
+                        ? "1px solid hsl(var(--border))"
+                        : undefined,
+                  }}
+                >
+                  <PanelRenderer
+                    panel={panel}
+                    boardContext={boardContext}
+                    showTitle={multiPanel}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Horizontal splitter + editor panel */}
-        {showEditor && (
-          <>
+            {/* Draggable divider + runtime drawer — always mounted so service UIs stay alive */}
             <div
-              onMouseDown={onEditorDividerMouseDown}
+              onMouseDown={
+                showRuntime && showFacade ? onDividerMouseDown : undefined
+              }
               style={{
-                width: 6,
-                flexShrink: 0,
-                cursor: "ew-resize",
+                height: showRuntime ? 6 : 0,
+                cursor: showRuntime && showFacade ? "ns-resize" : undefined,
                 background: "hsl(var(--border))",
+                flexShrink: 0,
                 userSelect: "none",
               }}
             />
             <div
               style={{
-                width: editorWidth,
+                height: !showRuntime ? 0 : showFacade ? runtimeHeight : "auto",
+                flex: showRuntime && !showFacade ? 1 : undefined,
+                minHeight: 0,
+                background: "hsl(var(--muted))",
                 flexShrink: 0,
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
+                overflow: showRuntime ? "auto" : "hidden",
               }}
             >
-              <FacadeEditor facade={draftFacade} onChange={setDraftFacade} />
+              {runtimeContent}
             </div>
-          </>
-        )}
-      </div>
+          </div>
 
-      {/* Draggable divider + runtime drawer — always mounted so service UIs stay alive */}
-      <div
-        onMouseDown={showRuntime && showFacade ? onDividerMouseDown : undefined}
-        style={{
-          height: showRuntime ? 6 : 0,
-          cursor: showRuntime && showFacade ? "ns-resize" : undefined,
-          background: "hsl(var(--border))",
-          flexShrink: 0,
-          userSelect: "none",
-        }}
-      />
-      <div
-        style={{
-          height: !showRuntime ? 0 : showFacade ? runtimeHeight : "auto",
-          flex: showRuntime && !showFacade ? 1 : undefined,
-          minHeight: 0,
-          background: "hsl(var(--muted))",
-          flexShrink: 0,
-          overflow: showRuntime ? "auto" : "hidden",
-        }}
-      >
-        {runtimeContent}
+          {/* Horizontal splitter + editor panel */}
+          {showEditor && (
+            <>
+              <div
+                onMouseDown={onEditorDividerMouseDown}
+                style={{
+                  width: 6,
+                  flexShrink: 0,
+                  cursor: "ew-resize",
+                  background: "hsl(var(--border))",
+                  userSelect: "none",
+                }}
+              />
+              <div
+                style={{
+                  width: editorWidth,
+                  flexShrink: 0,
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <FacadeEditor facade={draftFacade} onChange={setDraftFacade} />
+              </div>
+            </>
+          )}
+        </div>
       </div>
-
-      <ShareQRCodeDialog
-        title="Share board"
-        isOpen={shareUrl !== null}
-        url={shareUrl}
-        onClose={() => setShareUrl(null)}
-      />
-    </div>
     </FacadeStateContext.Provider>
   );
 }

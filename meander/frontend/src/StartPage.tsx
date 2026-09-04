@@ -25,7 +25,14 @@ import { useBackendRemotes } from "./useBackendRemotes";
 import MeanderAppMenu from "./MeanderAppMenu";
 
 type Props = {
-  onRestoreBoard: (board: BoardDescriptor | null | undefined) => void;
+  /**
+   * Opens a board. `source` says where it was read from, when it came from a
+   * file — a composition resolves the units beside it against that.
+   */
+  onRestoreBoard: (
+    board: BoardDescriptor | null | undefined,
+    source?: string,
+  ) => void;
 };
 
 export default function StartPage({ onRestoreBoard }: Props) {
@@ -132,8 +139,15 @@ export default function StartPage({ onRestoreBoard }: Props) {
     await openSavedBoard(lastSessionName);
   };
 
-  // Imports a board file picked from disk: saves it under its boardName (a
-  // numbered suffix avoids clobbering an existing saved board) and opens it.
+  /**
+   * Opens a board file picked from disk.
+   *
+   * Deliberately *not* a copy into the library. The file stays where it is and
+   * the board remembers where it came from, which is what lets a composition
+   * resolve the units named beside it — and what makes saving a decision rather
+   * than a side effect of looking at something. Saving is what puts a board,
+   * and every unit it is made of, into the library.
+   */
   const handleImportBoard = async () => {
     const backend = await getBackend();
     const path = await backend.pickFile({ filters: ["*.hkpp", "*.json"] });
@@ -148,23 +162,7 @@ export default function StartPage({ onRestoreBoard }: Props) {
       window.alert(`"${path}" is not a valid board file.`);
       return;
     }
-    const fileName =
-      path
-        .split("/")
-        .pop()
-        ?.replace(/\.(hkpp|json)$/i, "") || "Imported board";
-    const name = board.boardName?.trim() || fileName;
-    const taken = new Set(await backend.fetchSavedBoards());
-    let unique = name;
-    for (let i = 2; taken.has(unique); i++) {
-      unique = `${name} ${i}`;
-    }
-    try {
-      await backend.saveBoard(unique, { ...board, boardName: unique });
-    } catch {
-      // Opening still works; the board just isn't on disk yet.
-    }
-    onRestoreBoard({ ...board, boardName: unique });
+    onRestoreBoard(board, path);
   };
 
   const handleCreateNamedBoard = async (name: string) => {

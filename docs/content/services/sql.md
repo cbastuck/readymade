@@ -29,14 +29,31 @@ questions.
 
 ### Which database a `sql` sees
 
-The database belongs to **the board, and the tenant that owns it**, and both
-come from the runtime rather than from configuration — so a board cannot widen
-its reach by asking. Two `sql` services on one board see the same tables without
-being told to; two boards never do, and two people never do.
+The **tenant** comes from the runtime rather than from configuration, so no
+board can reach another owner's tables by asking, and two people never share.
+That isolation is one file per owner-and-database rather than a tenant column,
+so it holds however a board writes its SQL: a statement that forgets its `WHERE`
+still cannot reach anything outside its file.
 
-That isolation is one file per board rather than a tenant column, so it holds
-however a board writes its SQL: a statement that forgets its `WHERE` still
-cannot reach anything that is not the board's.
+**Which file** inside that tenant is the board's to say. `database` names it —
+1–64 characters from `A–Z`, `a–z`, `0–9`, `-` and `_`, and not `shared`, which
+is where the [Queue](./queue.md) keeps messages between boards. Services naming
+the same file share its tables: within one board, which is the ordinary case, or
+deliberately across boards, which is occasionally the point.
+
+Left empty, the name is derived from the board's **title** — what every board
+did before the field existed. That is convenient and it is also the sharp edge:
+two boards that happen to share a title share their tables, and renaming a board
+switches it to a different, empty file while its data stays under the old
+title's name. A board that means to be alone with its data says so:
+
+```json
+"state": { "database": "syn-booking", "mode": "query", "statement": "…" }
+```
+
+A name that could mean somewhere else on disk is refused rather than quietly
+replaced with the derived one — a silent fallback would hide the mistake behind
+data that looks right until the day it doesn't.
 
 ---
 

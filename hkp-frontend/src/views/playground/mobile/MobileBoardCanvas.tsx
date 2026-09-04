@@ -20,6 +20,7 @@ import ServiceSheet from "./ServiceSheet";
 import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import MobileFacadeView from "./MobileFacadeView";
+import { narrowBoardContext } from "../../../facade/boardServices";
 
 // Presence of a `bridge` prop means this canvas renders a *cloud* board: browser
 // runtime results are forwarded to the coordinator over `bridge.ws`. When omitted
@@ -1305,12 +1306,23 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
     setView("facade");
   }, [loadedBoardName]);
 
+  // Which view is shown, if the board offers more than one. Declared with the
+  // other hooks, above the early return below: it must be called on every
+  // render, including those where there is no board context yet.
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+
   if (!boardContext) {
     return null;
   }
 
-  const { runtimes, registry, availableRuntimeEngines, facade, boardName } =
+  const { runtimes, registry, availableRuntimeEngines, facade: boardFacade, boardName } =
     boardContext;
+  // One view at a time, the same as the desktop: a composition's units each
+  // contribute one, and a board that is not a composition has only its own.
+  const views = boardContext.linkage?.views ?? [];
+  const activeView =
+    views.find((v) => v.id === activeViewId) ?? views[0] ?? null;
+  const facade = activeView?.facade ?? boardFacade;
   const showFacade = !!facade && view === "facade";
 
   const handleAddRuntime = (rtClass: RuntimeClass) => {
@@ -1372,11 +1384,42 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
       {facade && <ViewToggle view={view} onChange={setView} />}
 
       {showFacade ? (
-        <MobileFacadeView
-          facade={facade}
-          boardContext={boardContext}
-          boardName={boardName ?? ""}
-        />
+        <>
+          {views.length > 1 && (
+            <div
+              role="tablist"
+              style={{
+                display: "flex",
+                gap: 6,
+                padding: "6px 10px 0",
+                overflowX: "auto",
+                flexShrink: 0,
+              }}
+            >
+              {views.map((v) => (
+                <button
+                  key={v.id}
+                  role="tab"
+                  aria-selected={v.id === activeView?.id}
+                  className="hkp-view-tab hkp-view-tab--touch"
+                  style={{ whiteSpace: "nowrap" }}
+                  onClick={() => setActiveViewId(v.id)}
+                >
+                  {v.title}
+                </button>
+              ))}
+            </div>
+          )}
+          <MobileFacadeView
+            key={activeView?.id ?? "facade"}
+            facade={facade}
+            boardContext={narrowBoardContext(
+              boardContext,
+              activeView?.runtimeIds ?? [],
+            )}
+            boardName={boardName ?? ""}
+          />
+        </>
       ) : (
         <BoardList
           onServiceTap={(svc, rt) => {

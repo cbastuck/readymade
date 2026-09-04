@@ -9,6 +9,16 @@ import { isUserAuthenticated } from "../runtime/graphql/RuntimeGraphQLApi";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { BoardContextState } from "../BoardContext";
 import { redactSecrets, resolveSecrets } from "./secrets";
+import {
+  UnitOrigin,
+  chainUnitOrigins,
+  defaultUnitOrigin,
+  linkBoard,
+  reportUnitDiagnostics,
+} from "./linkUnits";
+import { BoardLinkage, unlinkProjection, UnitBoard } from "../runtime/board/units";
+import { getLocalBoard } from "../views/playground/common";
+import { loadSavedBoardViaPlatform } from "../platform/PlatformContext";
 import { toast } from "sonner";
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
@@ -91,11 +101,17 @@ export async function restoreBoard(
         boardServices[rt.id],
       );
       missingSecrets.push(...missing);
+      // A runtime contributed by a unit keeps that unit's board name, which the
+      // projection put there. It is not decoration: hkp-node derives a mount
+      // address from the board name and keys an unnamed database file on it, so
+      // letting the composition's name through here would rotate a unit's
+      // public endpoints and move its data to a different file the moment it is
+      // composed. See `runtime/board/units`.
       return api.restoreRuntime(
         { ...rt },
         services,
         currentUser,
-        restoredBoardName,
+        rt.boardName ?? restoredBoardName,
       );
     }),
   );
@@ -142,6 +158,51 @@ function reportMissingSecrets(missing: string[]): void {
   );
 }
 
+/**
+ * A board as it will run: its units resolved and projected into it.
+ *
+ * Always applied, not only to compositions — a unit opened on its own is a
+ * projection of one, and gets the same checks over what it declares. What it
+ * does *not* get is an error for an import nothing satisfies: nobody promised
+ * to satisfy it, which is what running alone means. See `core/linkUnits`.
+ */
+export async function linkBoardDocument(
+  board: BoardDescriptor | undefined,
+  origin?: UnitOrigin,
+): Promise<{ board: BoardDescriptor | undefined; linkage?: BoardLinkage }> {
+  if (!board) {
+    return { board };
+  }
+  // Saved boards are always in scope: a unit may be one whichever way the
+  // composition itself arrived. Anything the host knows is tried first.
+  // Both stores, because where a board was saved depends on the host: the
+  // native app keeps its library on disk behind its backend, the web keeps it
+  // in local storage. A unit saved in one and looked for in the other is
+  // reported missing while sitting in plain sight in the library.
+  const savedBoards = defaultUnitOrigin(
+    async (name) =>
+      (await loadSavedBoardViaPlatform(name)) ?? getLocalBoard(name) ?? null,
+  );
+  const from = origin ? chainUnitOrigins(origin, savedBoards) : savedBoards;
+  const projection = await linkBoard(board, from);
+  if (board.units?.length) {
+    // A composition that resolves to nothing is otherwise indistinguishable
+    // from an empty board, which is exactly how a link that never ran looks.
+    console.info(
+      `Board units: linked ${projection.units.length} of ${board.units.length} into ${projection.board.runtimes.length} runtimes` +
+        ` [${projection.board.runtimes.map((rt) => rt.id).join(", ")}]`,
+    );
+  }
+  reportUnitDiagnostics(projection.diagnostics, board);
+  return {
+    board: projection.board,
+    // Nothing to remember about a board that is only itself.
+    linkage: projection.units.length
+      ? { units: projection.units, views: projection.views }
+      : undefined,
+  };
+}
+
 export async function fetchBoard(
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
@@ -156,8 +217,15 @@ export async function fetchBoard(
   refs.setIsFetching(true);
   try {
     const board = await propsRef.fetchBoard();
-    refs.setFacade(board.facade);
-    const data = await restoreBoard(board, refs, waitForUserLogin);
+    // Units are resolved before anything is provisioned: what runs is the
+    // projection, and a board that declares no units is its own projection.
+    const { board: linked, linkage } = await linkBoardDocument(
+      board,
+      propsRef.unitOrigin?.(),
+    );
+    refs.setFacade(linked?.facade);
+    refs.setLinkage(linkage);
+    const data = await restoreBoard(linked, refs, waitForUserLogin);
 
     // In-flight cancellation (e.g. React strict-mode unmount/remount).
     // At this point runtimes are fully started so we must tear them down
@@ -254,6 +322,13 @@ export async function serializeBoard(
     type: rt.type,
     url: rt.url,
     bundles: rt.bundles,
+    // What a unit contributed keeps saying so, and keeps the board identity the
+    // projection gave it. This is the serialisation deploying and sharing want:
+    // the link *output*, the way a bundle is. Splitting it back into the
+    // documents it came from is a different question, and belongs to saving.
+    ...(rt.unit
+      ? { unit: rt.unit, unitRuntimeId: rt.unitRuntimeId, boardName: rt.boardName }
+      : {}),
     state: runtimeStates[rt.id] || {
       wrapServices: false,
       minimized: false,
@@ -274,7 +349,22 @@ export async function setBoardState(
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
   removeRuntime: (runtime: RuntimeDescriptor) => Promise<void>,
+  origin?: UnitOrigin,
 ) {
+  // Linking first, before anything is torn down: a board that arrives by drop,
+  // by applying edited source or over a share link goes through here rather
+  // than through `fetchBoard`, and it may be a composition. Resolving it can
+  // fail — a unit that is not where the composition says it is — and failing
+  // after the current runtimes were destroyed would leave nothing at all.
+  let linked: BoardDescriptor | undefined;
+  let linkage: BoardLinkage | undefined;
+  try {
+    ({ board: linked, linkage } = await linkBoardDocument(newState, origin));
+  } catch (err: any) {
+    refs.setErrorOnFetch(err);
+    return;
+  }
+
   // Destroy all existing runtimes (and their services) before loading the new
   // board — otherwise long-lived resources like SSE streams, setInterval timers
   // and AudioContexts keep running in the background after the board switches.
@@ -283,8 +373,10 @@ export async function setBoardState(
     await removeRuntime(runtime);
   }
 
-  refs.setFacade(newState.facade);
-  const data = await restoreBoard(newState, refs, waitForUserLogin);
+  refs.setErrorOnFetch(undefined);
+  refs.setFacade(linked?.facade);
+  refs.setLinkage(linkage);
+  const data = await restoreBoard(linked, refs, waitForUserLogin);
   if (data) {
     refs.setBoardNameState(data.boardName);
     refs.setRuntimes(data.runtimes);
@@ -327,4 +419,43 @@ export async function clearBoard(
   refs.setRegistry({});
   refs.setFacade(undefined);
   refs.setBoardNameState(newBoardNameArg || "");
+}
+
+/**
+ * The board as the documents it should be written back to.
+ *
+ * `serializeBoard` produces the link *output* — one flat board, which is what
+ * deploying, sharing and exporting want, the way a bundle is. Saving wants the
+ * opposite: the sources. A composition gets its own runtimes and the entries
+ * that pulled the rest in; each unit gets its own document back, carrying only
+ * what actually changed in it (see `unlinkProjection`).
+ *
+ * A board that was never assembled from units has one document, which is
+ * itself — so callers need no special case for the ordinary board.
+ */
+export type BoardDocuments = {
+  composition: UnitBoard;
+  units: Array<{ name: string; uri: string; board: UnitBoard }>;
+};
+
+export async function serializeBoardDocuments(
+  refs: BoardStateRefs,
+  linkage: BoardLinkage | undefined,
+): Promise<BoardDocuments | null> {
+  const serialized = await serializeBoard(refs);
+  if (!serialized) {
+    return null;
+  }
+  if (!linkage?.units.length) {
+    return { composition: serialized as UnitBoard, units: [] };
+  }
+  const { composition, units } = unlinkProjection(serialized, linkage.units);
+  return {
+    composition,
+    units: units.map((entry) => ({
+      name: entry.unit.name,
+      uri: entry.unit.uri,
+      board: entry.board,
+    })),
+  };
 }

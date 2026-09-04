@@ -33,7 +33,18 @@ export default function Board(props: Props) {
   ): RuntimeDescriptor | null => {
     const { runtimes = [] } = props.boardContext;
     const pos = runtimes.findIndex((rt) => rt.id === runtime.id);
-    return pos !== -1 ? runtimes[pos + 1] : null;
+    if (pos === -1) {
+      return null;
+    }
+    const next = runtimes[pos + 1] ?? null;
+    // The chain stops at a unit boundary. A unit occupies a contiguous block of
+    // runtimes, and units talk to each other over topics — so letting the last
+    // runtime of one drive the first of the next would be a wire nobody wrote,
+    // created by nothing more than the order they were linked in.
+    if (next && next.unit !== runtime.unit) {
+      return null;
+    }
+    return next;
   };
 
   const registerPendingBoardCallback = (context?: ProcessContext | null) => {

@@ -11,6 +11,20 @@ import { FacadeDescriptor } from "../../facade/types";
 import { BoardProviderHandle } from "../../BoardContext";
 
 import { generateRandomName } from "../../core/board";
+import { BoardDocuments } from "../../core/boardPersistence";
+import {
+  UnitOrigin,
+  nativeFileUnitOrigin,
+  urlUnitOrigin,
+} from "../../core/linkUnits";
+import {
+  readFileViaPlatform,
+  saveSavedBoardViaPlatform,
+} from "../../platform/PlatformContext";
+import {
+  UnitBoard,
+  unitBaseName,
+} from "../../runtime/board/units";
 
 import {
   defaultName,
@@ -39,6 +53,9 @@ import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import { restoreCoordinators, withCoordinatorEngines } from "../../common";
 import { AppCtx } from "../../AppContext";
 import { PlaygroundProps } from "./Playground.types";
+
+/** The two keys that make a board a unit, a composition, or both. */
+type UnitDocument = Pick<UnitBoard, "unit" | "units">;
 
 const restoredAvailableRuntimeEngines = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]",
@@ -73,6 +90,7 @@ export type PlaygroundControllerState = {
     isSuggestedName: boolean,
   ) => Promise<BoardDescriptor | null | undefined>;
   onChangeBoardname: (newName: string) => void;
+  unitOrigin: () => UnitOrigin | undefined;
 };
 
 export function usePlaygroundController(
@@ -93,6 +111,9 @@ export function usePlaygroundController(
       defaultName,
   );
   const [description, setDescription] = useState("");
+  // Where the current board was fetched from, when it came from a URL. Its
+  // units are relative to that, the same way any relative URL would be.
+  const boardSourceUrlRef = useRef<string | null>(null);
   const facadeRef = useRef<FacadeDescriptor | undefined>(undefined);
   const [initialFetched, setInitialFetched] = useState(false);
   const [acceptedSyncSenders, setAcceptedSyncSenders] =
@@ -148,22 +169,32 @@ export function usePlaygroundController(
         const name = loadedName || requestedBoardNameRef.current;
         const desc = descriptionRef.current;
         const saveName = loadedName || props.boardName || name;
-        const data = await boardProviderRef.current?.state.serializeBoard();
+        // A board assembled from units is written back as the documents it was
+        // assembled from, never as the one board it happens to be running as —
+        // saving the projection would flatten the composition permanently. An
+        // ordinary board is a composition of none and takes the same path.
+        const documents =
+          await boardProviderRef.current?.state.serializeBoardDocuments();
+        const data = documents?.composition;
 
         if (props.onSaveBoard && data) {
           props.onSaveBoard(saveName, {
             ...data,
             description: desc,
           });
+          await saveUnitDocuments(documents);
         } else {
           storeBoardToLocalStorage(
             name,
             JSON.stringify({ ...data, name, description: desc }),
             desc,
           );
+          const units = await saveUnitDocuments(documents);
           appContext?.pushNotification({
             type: "success",
-            message: `The Board '${saveName}' was saved.`,
+            message: units
+              ? `The Board '${saveName}' and ${units} unit${units === 1 ? "" : "s"} were saved.`
+              : `The Board '${saveName}' was saved.`,
           });
         }
       } else {
@@ -249,6 +280,7 @@ export function usePlaygroundController(
         }
       }
 
+      boardSourceUrlRef.current = null;
       const brd =
         props.match?.params?.board ||
         props.boardName ||
@@ -257,6 +289,7 @@ export function usePlaygroundController(
         if (params.template) {
           return createBoardFromTemplate(params.template, params);
         } else if (params.src) {
+          boardSourceUrlRef.current = params.src;
           return importBoard(params.src);
         } else if (params.fromLink) {
           return importFromLink(params.fromLink, params.vars);
@@ -301,7 +334,9 @@ export function usePlaygroundController(
       runtimes = [],
       services = {},
       registry = {},
-    } = initialBord;
+      unit,
+      units,
+    } = initialBord as PlaygroundState & UnitDocument;
 
     setAcceptedSyncSenders(accepted);
     setRejectedSyncSenders(rejected);
@@ -321,7 +356,37 @@ export function usePlaygroundController(
       services,
       registry,
       facade: facadeData,
+      // What the board says about being a unit, and which units it is made of,
+      // travel with it: linking happens after this and has nothing else to read
+      // them from. Dropping them here is indistinguishable from a board that
+      // declares neither — an empty composition, silently.
+      unit,
+      units,
     };
+  };
+
+  /**
+   * Where this board's units are to be found, given how the board arrived.
+   *
+   * A file and a URL are the same idea — the units are named relative to the
+   * composition — and differ only in who can read them: a URL is fetched, a
+   * path is read through the host, which is the only one that can.
+   */
+  const unitOrigin = () => {
+    const source = props.boardSource ?? boardSourceUrlRef.current;
+    if (!source) {
+      return undefined;
+    }
+    if (/^https?:\/\//i.test(source) || source.startsWith("/")) {
+      return urlUnitOrigin(source);
+    }
+    return nativeFileUnitOrigin(source, async (uri) => {
+      const contents = await readFileViaPlatform(uri);
+      if (contents === null) {
+        throw new Error(`Cannot read ${uri} on this platform`);
+      }
+      return contents;
+    });
   };
 
   const serializeBoard = async (
@@ -452,7 +517,12 @@ export function usePlaygroundController(
     desc: string,
     isSuggestedName: boolean,
   ) => {
-    const data = await boardProviderRef.current?.state.serializeBoard();
+    // Saving under a new name renames the composition; its units keep their own
+    // documents and are written back where they came from.
+    const documents =
+      await boardProviderRef.current?.state.serializeBoardDocuments();
+    await saveUnitDocuments(documents);
+    const data = documents?.composition;
     if (props.onSaveBoard && data) {
       props.onSaveBoard(name, { ...data, description: desc });
     } else {
@@ -469,6 +539,15 @@ export function usePlaygroundController(
         );
       }
     }
+
+    // The board is now called what it was saved as — on every host, not only
+    // where a route change happens to carry the new name. Without this the
+    // title keeps the name the board had before it was ever saved, and the next
+    // save dialog suggests that stale name back.
+    boardProviderRef.current?.state.setBoardName(name);
+    setRequestedBoardName(name);
+    requestedBoardNameRef.current = name;
+    props.onChangeBoardname?.(name);
 
     setDescription(desc);
     descriptionRef.current = desc;
@@ -525,5 +604,42 @@ export function usePlaygroundController(
     onAction,
     onSaveDialog,
     onChangeBoardname,
+    unitOrigin,
   };
+}
+
+/**
+ * Writes each unit of a composition back to the saved board it came from.
+ *
+ * Addressed the way it was resolved — by the base name of its `uri` — so a save
+ * lands where the next load will look. A unit read from a URL has no writable
+ * place to go back to and is skipped rather than being copied into local
+ * storage under a name nothing references.
+ */
+async function saveUnitDocuments(
+  documents: BoardDocuments | null | undefined,
+): Promise<number> {
+  if (!documents?.units.length) {
+    return 0;
+  }
+  let written = 0;
+  for (const unit of documents.units) {
+    // Named by the base name of the reference that found it, so the next load
+    // looks it up where this put it. The board keeps its own `boardName`: that
+    // is the unit's identity to a server, and the library key is not.
+    const name = unitBaseName(unit.uri);
+    // The host's library first. Where the host keeps one — the native app keeps
+    // it on disk — writing to local storage instead would scatter a composition
+    // across two stores and leave the units unfindable on the next load.
+    const saved = await saveSavedBoardViaPlatform(name, unit.board);
+    if (!saved) {
+      storeBoardToLocalStorage(
+        name,
+        JSON.stringify({ ...unit.board, name }, null, 2),
+        unit.board.description,
+      );
+    }
+    written += 1;
+  }
+  return written;
 }
