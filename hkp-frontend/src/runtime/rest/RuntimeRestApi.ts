@@ -215,10 +215,11 @@ function secretsFor(
 /**
  * Hands a running runtime the values for the references it holds.
  *
- * Provisioning carries these already; this covers the two moments it cannot —
- * a vault entry edited while a board runs, and attaching to a runtime that
- * restarted, where the services survived and the values did not. Sending
- * nothing is not an error: a board with no references has nothing to push.
+ * Provisioning carries these already; this covers the moments it cannot — a
+ * board being built a service at a time, a vault entry edited while a board
+ * runs, and attaching to a runtime that restarted, where the services survived
+ * and the values did not. Sending nothing is not an error: a board with no
+ * references has nothing to push.
  */
 export async function pushSecrets(
   runtime: RuntimeDescriptor,
@@ -231,7 +232,7 @@ export async function pushSecrets(
   }
   try {
     await fetch(`${runtime.url}/runtimes/${runtime.id}/secrets`, {
-      method: "PUT",
+      method: "POST",
       body: JSON.stringify(secrets),
       headers: { "content-type": "application/json", ...authHeaders(user) },
     });
@@ -488,6 +489,17 @@ export async function configureService(
   config: object,
 ): Promise<object> {
   const runtime = scope.descriptor;
+  // A configuration may name a secret the runtime has not been given: a runtime
+  // is created before it has services, and a field naming one can be filled in
+  // at any time after that. Sent before the configuration rather than after,
+  // because configuring a service is what can put it to use. Only what this
+  // configuration names — anything else a service holds arrived with the
+  // configuration that named it.
+  await pushSecrets(
+    runtime,
+    [{ state: config }],
+    (scope as RuntimeRestScope).authenticatedUser,
+  );
   const res = await fetch(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
     {

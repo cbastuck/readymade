@@ -155,7 +155,28 @@ Before a remote runtime is provisioned, ask: *runtime `node` at
 Grants are stored by the host (native vault store; website store is prio B),
 never in the board.
 
-### 5. The push: secrets ride in the create payload, into a no-read sink
+### 5. The push: with the create payload, and with the configuration that names one
+
+A value reaches a runtime at two moments, and both are needed. Provisioning is
+the obvious one. The other is **configure**: a runtime is created before it has
+any services — building a board adds them one at a time and fills their fields
+in afterwards — so a board that was never restored from JSON has no provisioning
+moment to carry anything. What a configuration names is sent immediately before
+it, since configuring a service is what can put it to use.
+
+Only what that configuration names. Anything else a service holds arrived with
+the configuration that named it, and the runtime keeps it; re-sending the rest
+on every configure would be sending values nothing asked for.
+
+That leaves one thing deliberately unhandled: a vault entry added or changed
+*after* a board is running does not reach the runtime by itself. **Accepted as
+it stands (2026-09-06)** — reload the board where it already exists, or
+reconfigure the service naming the secret while building one, and the value
+goes with that. Automatic propagation would belong where the vault changes
+rather than in every configure call, which is why it is not smeared across this
+path in the meantime.
+
+
 
 Provisioning is **one** call. `POST /runtimes` carries the services and their
 state, and `tenant.createRuntime(config)` (`hkp-node/src/server.ts:632`)
@@ -187,11 +208,13 @@ intact.
   needed.
 - **In memory, per (tenant, runtime), dies with the runtime.** hkp-node already
   namespaces by JWT `sub`.
-- `PUT /runtimes/:id/secrets` still exists, for the two cases create cannot
-  cover: a vault entry edited while a board runs, and re-push on
-  `attachRuntime` (`RuntimeRestApi.ts:234`) — a restarted runtime still has its
-  services but lost the map. Idempotent; push on every attach rather than
-  guessing.
+- `POST /runtimes/:id/secrets` carries the rest: the configuration that names
+  a secret, and a re-push on
+  `attachRuntime` — a restarted runtime still has its services but lost the
+  map. Idempotent, and it merges, so a partial push never strips the rest.
+  POST rather than PUT: it merges rather than replaces, and it is the verb the
+  server's CORS allowlist already permits — a lone PUT is one each runtime
+  implementation would have to remember to allow.
 
 Rejected: **a persistent vault on the runtime server.** That is where
 multi-tenancy gets genuinely hard — per-tenant key management, encryption at
@@ -326,7 +349,8 @@ Status as of 2026-09-04: ✅ done, ◐ partly done, ☐ not started.
 |---|------|-------|------|---|
 | 1 | `withSecrets(state, { to })` + audience check; stop resolving in `restoreBoard` | `hkp-frontend/src/core/secrets.ts`, `core/boardPersistence.ts` | S | ✅ |
 | 2 | Delete `redactSecrets` and its three call sites | `core/boardPersistence.ts`, `overview/shape.ts`, `overview/activity.ts` | S | ✅ |
-| 3 | `secrets` in the create payload + `PUT /runtimes/:id/secrets` + re-push on attach | `runtime/rest/RuntimeRestApi.ts` | S–M | ✅ |
+| 3 | `secrets` in the create payload + `POST /runtimes/:id/secrets` + push on configure and on attach | `runtime/rest/RuntimeRestApi.ts` | S–M | ✅ |
+| 3b | Push when a vault entry is added or changed while a board is running — *accepted as manual for now*: reload, or reconfigure the service | frontend + settings | S | — |
 | 4 | Runtime-side secret map (no read path) + resolver | hkp-node ✅ (`src/secrets.ts`, `SecretVault` on `RuntimeHost`), hkp-python ☐, hkp-rt ☐ | M ×3 | ◐ |
 | 4b | Nested pipelines reach the surrounding runtime's secrets | `runtime.ts` (`delegateSecrets`), `sub-service.ts`, `nested-pipeline.ts` | S | ✅ |
 | 5 | Port credential-taking services | done: `imap-email`, `text-generation`, `OpenAIPrompt`, `WorkflowBoardBuilder`. Left: `smtp-email`, `telegram-listener`, `telegram-sender`, `http-client`, `HttpRelayClient` | M | ◐ |
