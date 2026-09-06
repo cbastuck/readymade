@@ -218,7 +218,7 @@ Data HttpClient::process(Data data)
     std::string urlOrTemplate = j.value("url", m_impl->url);
     url = processInjaTemplate(urlOrTemplate, j);
   }
-  std::string method = j.contains("method") ? j["method"] : "get";
+  const std::string method = chooseRequestMethod(j, m_impl->method);
    
   try
   {

@@ -192,7 +192,6 @@ export default function HttpClientUI(props: ServiceUIProps) {
   );
 
   const onChangeBody = (value: string) => {
-    console.log("HttpClientUI.onChangeBody", value);
     setBody(value);
     props.service.configure({ body: value });
   };
@@ -270,6 +269,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
               onChange={(e) => onChangeBody(e.target.value)}
               placeholder="Request body content"
               disabled={method === "get"}
+              spellCheck={false}
             />
           </div>
         </div>

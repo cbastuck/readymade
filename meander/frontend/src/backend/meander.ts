@@ -55,6 +55,21 @@ export const meanderBackend: BackendAdapter = {
     if (!res.ok) throw new Error(`Failed to save board: ${res.statusText}`);
   },
 
+  async loadBoardSource(boardName: string): Promise<string> {
+    const res = await fetch(`hkp://boards/${encodePathSegment(boardName)}`);
+    if (!res.ok) throw new Error(`Failed to load board: ${res.statusText}`);
+    return res.text();
+  },
+
+  async saveBoardSource(name: string, source: string): Promise<void> {
+    const res = await fetch(`hkp://boards/${encodePathSegment(name)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: source,
+    });
+    if (!res.ok) throw new Error(`Failed to save board: ${res.statusText}`);
+  },
+
   async deleteBoard(name: string): Promise<void> {
     const res = await fetch(`hkp://boards/${encodePathSegment(name)}`, {
       method: "DELETE",

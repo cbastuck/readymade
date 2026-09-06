@@ -139,3 +139,32 @@ TEST_CASE("a method reads the same whichever case a board wrote it in",
     REQUIRE(req.body() == "hello");
   }
 }
+
+TEST_CASE("a configured method is the one the request uses", "[http-client]")
+{
+  // The board's method used to be stored and reported but never read, so every
+  // request went out as the default GET — and a body, which is only attached to
+  // a POST or a PUT, went nowhere with it.
+  HttpClient client("http-1");
+  client.configure(nlohmann::json{
+      {"url", "http://127.0.0.1:8080/hosted/x"},
+      {"method", "post"},
+      {"body", "{\"hi\": \"world\"}"},
+  });
+
+  const auto state = client.getState();
+  REQUIRE(state["method"] == "post");
+
+  // The precedence that was wrong: the input decides, and what the board
+  // configured is what a request with nothing to say about it uses.
+  REQUIRE(chooseRequestMethod(nlohmann::json::object(), state["method"]) == "post");
+  REQUIRE(chooseRequestMethod(nlohmann::json{{"method", "put"}}, state["method"]) == "put");
+  REQUIRE(chooseRequestMethod(nlohmann::json::object(), "") == "get");
+
+  const auto req = client.buildRequest(
+      chooseRequestMethod(nlohmann::json::object(), state["method"]), "/", "",
+      "127.0.0.1", 11, nlohmann::json::object());
+
+  REQUIRE(req.method() == boost::beast::http::verb::post);
+  REQUIRE(req.body() == "{\"hi\": \"world\"}");
+}

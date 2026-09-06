@@ -34,6 +34,11 @@ export interface BackendAdapter {
   loadBoard(boardName: string): Promise<BoardDescriptor>;
   saveBoard(name: string, payload: BoardDescriptor): Promise<void>;
   deleteBoard(name: string): Promise<void>;
+  // The stored board as text, unparsed, and the way back. Optional: hosts
+  // without them fall back to loadBoard/saveBoard, which cannot carry source
+  // that does not parse.
+  loadBoardSource?(boardName: string): Promise<string>;
+  saveBoardSource?(name: string, source: string): Promise<void>;
 
   // Remotes
   getRemotes(): Promise<Array<Remote>>;
