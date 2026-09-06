@@ -8,7 +8,7 @@ import {
 import { isUserAuthenticated } from "../runtime/graphql/RuntimeGraphQLApi";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { BoardContextState } from "../BoardContext";
-import { redactSecrets, resolveSecrets } from "./secrets";
+import { unavailableSecrets } from "./secrets";
 import { toast } from "sonner";
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
@@ -84,13 +84,12 @@ export async function restoreBoard(
         );
         return Promise.resolve(null);
       }
-      // Before any service is configured, and for every runtime alike: a
-      // reference is a property of the board, not of the runtime that happens
-      // to host the service holding it.
-      const { value: services, missing } = resolveSecrets(
-        boardServices[rt.id],
-      );
-      missingSecrets.push(...missing);
+      // Services are restored with their secret references intact. Nothing is
+      // substituted here: a resolved value in service state is a value that
+      // comes back out through `getState` and into the next saved board.
+      // Resolution happens where a secret is used — see `withSecrets`.
+      const services = boardServices[rt.id];
+      missingSecrets.push(...unavailableSecrets(services));
       return api.restoreRuntime(
         { ...rt },
         services,
@@ -121,11 +120,13 @@ export async function restoreBoard(
 }
 
 /**
- * Says which secrets a board asked for and did not get.
+ * Says which secrets a board asked for and the store does not hold.
  *
- * By name, and once for the whole board: the services that needed them are
- * loaded but unconfigured, and will each fail later with their own wording
- * about a missing credential. This is the only message that says why.
+ * By name, and once for the whole board: the services referencing them are
+ * loaded and will each fail later, when they try to use one, with their own
+ * wording about a credential that did not work. This is the only message that
+ * says why. It reports what is *unavailable* rather than what failed to
+ * resolve, because nothing is resolved at load any more.
  */
 function reportMissingSecrets(missing: string[]): void {
   const aliases = [...new Set(missing)];
@@ -221,12 +222,10 @@ export async function serializeBoard(
       const runtimeServices = currentServices[runtimeId];
       const serviceConfigs = await Promise.all(
         runtimeServices.map(async (svc) => {
-          // A service reports what it was configured with. Where that was a
-          // resolved secret, the board gets the reference back rather than
-          // the value — see redactSecrets.
-          const config = redactSecrets(
-            api && scope ? await api.getServiceConfig(scope, svc) : {},
-          );
+          // A service reports what it was configured with, which is what the
+          // board gets. A secret is a reference in that state and stays one:
+          // it was never substituted, so there is nothing here to put back.
+          const config = api && scope ? await api.getServiceConfig(scope, svc) : {};
           const runtimeState = {
             ...runtime.state,
             ...scope?.serializeState?.(),

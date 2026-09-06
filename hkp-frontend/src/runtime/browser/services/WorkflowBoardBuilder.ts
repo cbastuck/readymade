@@ -2,6 +2,7 @@ import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import WorkflowBoardBuilderUI from "./WorkflowBoardBuilderUI";
 import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
+import { withSecrets } from "hkp-frontend/src/core/secrets";
 import { buildWorkflowSystemPrompt } from "./workflow-prompt/SystemPromptCatalog";
 import {
   DEFAULT_GENERATED_BOARD,
@@ -22,6 +23,8 @@ type State = {
   isEditorOpen: boolean;
   busy: boolean;
   lastError: string;
+  /** A reference to each provider's key, never a key. */
+  apiKeys: Partial<Record<Provider, string>>;
 };
 
 const DEFAULT_MODELS: Record<Provider, string> = {
@@ -30,8 +33,14 @@ const DEFAULT_MODELS: Record<Provider, string> = {
   gemini: "gemini-2.0-flash",
 };
 
+/** Where each provider's key is allowed to go, and what a request is sent to. */
+const PROVIDER_ENDPOINT: Record<Provider, string> = {
+  claude: "https://api.anthropic.com/v1/messages",
+  openai: "https://api.openai.com/v1/chat/completions",
+  gemini: "https://generativelanguage.googleapis.com/v1beta/models",
+};
+
 export class WorkflowBoardBuilder extends ServiceBase<State> {
-  private apiKeys: Partial<Record<Provider, string>> = {};
 
   constructor(
     app: AppInstance,
@@ -48,6 +57,7 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
       isEditorOpen: false,
       busy: false,
       lastError: "",
+      apiKeys: {},
     });
   }
 
@@ -99,8 +109,13 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
       this.app.notify(this, { isEditorOpen: this.state.isEditorOpen });
     }
 
-    if (needsUpdate(config?.apiKey, this.apiKeys[this.state.provider])) {
-      this.apiKeys[this.state.provider] = config.apiKey;
+    // A reference to the key, per provider. Held as state so it survives a
+    // reload with the board, and resolved only when a request is made.
+    if (needsUpdate(config?.apiKey, this.state.apiKeys[this.state.provider])) {
+      this.state.apiKeys = {
+        ...this.state.apiKeys,
+        [this.state.provider]: config.apiKey,
+      };
     }
 
     if (config?.generateFromDescription) {
@@ -171,7 +186,12 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
     const inputBoardSource = this.state.inputBoardSource;
     const provider = this.state.provider;
     const model = this.state.model;
-    const apiKey = this.apiKeys[provider];
+    const endpoint = PROVIDER_ENDPOINT[provider];
+    const {
+      value: apiKey,
+      missing,
+      refused,
+    } = withSecrets(this.state.apiKeys[provider] ?? "", { to: endpoint });
 
     this.state.isEditorOpen = false;
     this.app.notify(this, { isEditorOpen: this.state.isEditorOpen });
@@ -181,7 +201,16 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
     }
 
     if (!apiKey) {
-      throw new Error(`No API key configured for provider: ${provider}`);
+      if (refused.length) {
+        throw new Error(
+          `The key for ${provider} may not be sent to ${refused[0].to}`,
+        );
+      }
+      throw new Error(
+        missing.length
+          ? `No value stored for ${missing.join(", ")}`
+          : `No API key configured for provider: ${provider}`,
+      );
     }
 
     this.state.busy = true;
@@ -223,14 +252,28 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
     const boardSource = overrideBoardSource ?? this.state.generatedBoardSource;
     const provider = this.state.provider;
     const model = this.state.model;
-    const apiKey = this.apiKeys[provider];
+    const endpoint = PROVIDER_ENDPOINT[provider];
+    const {
+      value: apiKey,
+      missing,
+      refused,
+    } = withSecrets(this.state.apiKeys[provider] ?? "", { to: endpoint });
 
     if (!boardSource?.trim()) {
       throw new Error("No board JSON available to describe");
     }
 
     if (!apiKey) {
-      throw new Error(`No API key configured for provider: ${provider}`);
+      if (refused.length) {
+        throw new Error(
+          `The key for ${provider} may not be sent to ${refused[0].to}`,
+        );
+      }
+      throw new Error(
+        missing.length
+          ? `No value stored for ${missing.join(", ")}`
+          : `No API key configured for provider: ${provider}`,
+      );
     }
 
     this.state.busy = true;

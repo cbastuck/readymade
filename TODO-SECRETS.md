@@ -320,17 +320,20 @@ landing those before sharing is opened any wider.
 
 Prio A is all four runtimes. Prio B is the website vault and the coordinator's.
 
-| # | Work | Where | Size |
-|---|------|-------|------|
-| 1 | `withSecrets(state, { to })` + audience check; `resolveSecrets` becomes its internals; stop resolving in `restoreBoard` | `hkp-frontend/src/core/secrets.ts`, `core/boardPersistence.ts` | S |
-| 2 | Delete `redactSecrets` and its three call sites | `core/boardPersistence.ts:227`, `overview/shape.ts:66`, `overview/activity.ts:70` | S |
-| 3 | `secrets` in the create payload + `PUT /runtimes/:id/secrets` + re-push on attach | `runtime/rest/RuntimeRestApi.ts` (`createRuntimeRequest:529`, `restoreRuntime:234`) | S–M |
-| 4 | Runtime-side secret map (no read path) + `withSecrets` equivalent | hkp-node, hkp-python, hkp-rt | M ×3 |
-| 5 | Port credential-taking services to `withSecrets` | `imap-email`, `smtp-email`, `telegram-listener`, `telegram-sender`, `text-generation`, `http-client`, and the browser equivalents — needs a full pass, that list is from a grep | M |
-| 6 | Delete the `password: "" / passwordConfigured` masking convention and its "empty means no change" trap | `imap-email.ts:142`, `smtp-email.ts:116` | S |
-| 7 | Audience on vault entries + TOFU prompt | `meander/backend/vault.h`, `hkp-frontend/src/vault.ts` | M |
-| 8 | Provisioning consent + grant store, keyed (board, runtime, url, alias set) | frontend + native store | M |
-| 9 | Fold `SecretField`'s ad-hoc `uservault.<uuid>.<key>` keys into the same aliases | `components/shared/SecretField.tsx`, `OpenAIPromptUI`, `WorkflowBoardBuilderUI` | S |
+Status as of 2026-09-04: ✅ done, ◐ partly done, ☐ not started.
+
+| # | Work | Where | Size | |
+|---|------|-------|------|---|
+| 1 | `withSecrets(state, { to })` + audience check; stop resolving in `restoreBoard` | `hkp-frontend/src/core/secrets.ts`, `core/boardPersistence.ts` | S | ✅ |
+| 2 | Delete `redactSecrets` and its three call sites | `core/boardPersistence.ts`, `overview/shape.ts`, `overview/activity.ts` | S | ✅ |
+| 3 | `secrets` in the create payload + `PUT /runtimes/:id/secrets` + re-push on attach | `runtime/rest/RuntimeRestApi.ts` | S–M | ✅ |
+| 4 | Runtime-side secret map (no read path) + resolver | hkp-node ✅ (`src/secrets.ts`, `SecretVault` on `RuntimeHost`), hkp-python ☐, hkp-rt ☐ | M ×3 | ◐ |
+| 4b | Nested pipelines reach the surrounding runtime's secrets | `runtime.ts` (`delegateSecrets`), `sub-service.ts`, `nested-pipeline.ts` | S | ✅ |
+| 5 | Port credential-taking services | done: `imap-email`, `text-generation`, `OpenAIPrompt`, `WorkflowBoardBuilder`. Left: `smtp-email`, `telegram-listener`, `telegram-sender`, `http-client`, `HttpRelayClient` | M | ◐ |
+| 6 | Delete the write-only masking conventions and their "empty means no change" trap | `imap-email` ✅, `text-generation` ✅, `smtp-email` ☐ | S | ◐ |
+| 7 | Audience on vault entries + TOFU prompt | `meander/backend/vault.h`, `hkp-frontend/src/vault.ts` — the *check* is implemented on both sides; no store supplies audiences yet | M | ◐ |
+| 8 | Provisioning consent + grant store, keyed (board, runtime, url, alias set) | frontend + native store | M | ☐ |
+| 9 | Fold `SecretField`'s ad-hoc `uservault.<uuid>.<key>` keys into the same aliases | `SecretField` ✅ (now writes the vault and emits a reference), `HttpRelayClient`'s `authVaultKey` ☐ | S | ◐ |
 | B1 | `secrets.php` — per-tenant server-side store, write-only reads, board-scoped short-lived release (B-a) | hkp-website | M |
 | B2 | Coordinator vault + encryption at rest; push into coordinator-provisioned runtimes (B-b) | hkp-node coordinator | M |
 | B3 | Cloud-board secret form driven by `referencedSecrets`; "needs configuration" board state (B-b) | frontend + coordinator | S–M |
@@ -339,6 +342,25 @@ The browser runtime needs no push and no consent prompt — the vault is in the
 same process — so it is the cheapest place to prove the `withSecrets` shape.
 hkp-node is the reference implementation for the remote half; Python and C++
 port from it.
+
+---
+
+### Nesting, and how a nested runtime gets secrets
+
+A nested runtime is provisioned by nobody: no create payload reaches it, so its
+own vault is always empty. Rather than push values down at provisioning time —
+which would copy them, and would miss anything pushed later — a nested runtime
+**delegates**: `HostedRuntime.delegateSecrets` points `secrets()` at a function,
+and the service hosting the pipeline points that at its own host. Each level
+asks outward until it reaches the runtime that was actually given something, so
+nesting composes to any depth and a value pushed while a board is running is
+visible inside a pipeline immediately.
+
+There turned out to be **two** nesting implementations, not the one
+`nested-pipeline.ts` claims: `SubService` holds a raw `HostedRuntime` (and
+`Iterator`, `http-server` inherit that), while `communication-dispatcher` uses
+`NestedPipeline`. Both now delegate. Worth consolidating; until then, a third
+implementation would need the same two lines.
 
 ---
 

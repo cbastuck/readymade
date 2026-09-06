@@ -1,168 +1,227 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  redactSecrets,
+  destinationHost,
   referencedSecrets,
-  resolveSecrets,
   secretReference,
   secretStore,
   setSecretStore,
+  unavailableSecrets,
+  withSecrets,
 } from "../core/secrets";
 
 /**
- * What a board is allowed to contain.
+ * What a board is allowed to contain, and what it takes to get a value out.
  *
  * A board names the secret it needs; the value belongs to whoever is running
- * the board. The two passes here are inverses, and the second one exists
- * because services do not agree on whether to hide what they were given.
+ * the board and is produced only for one use, at the moment of that use. There
+ * is no inverse pass: nothing ever writes a value into the state a board is
+ * saved from.
  */
 
-function storeOf(entries: Record<string, string>) {
+function storeOf(
+  entries: Record<string, string | { value: string; audience: string[] }>,
+) {
+  const entry = (alias: string) => {
+    const found = entries[alias];
+    if (found === undefined) {
+      return null;
+    }
+    return typeof found === "string" ? { value: found, audience: [] } : found;
+  };
   return {
-    get: (alias: string) => entries[alias] ?? null,
+    get: (alias: string) => entry(alias)?.value ?? null,
+    audience: (alias: string) => entry(alias)?.audience ?? null,
     list: () => Object.keys(entries),
   };
 }
 
 afterEach(() => setSecretStore(null));
 
-describe("resolving on load", () => {
+describe("resolving for one use", () => {
   it("substitutes the value a board asked for by name", () => {
-    const { value, missing } = resolveSecrets(
-      { password: "{{secret.gmail}}" },
-      storeOf({ gmail: "abcd efgh ijkl mnop" }),
+    const { value, missing } = withSecrets(
+      { host: "imap.example.com", password: "{{secret.mail}}" },
+      { to: "imap.example.com" },
+      storeOf({ mail: "hunter2" }),
     );
 
-    expect(value).toEqual({ password: "abcd efgh ijkl mnop" });
+    expect(value).toEqual({ host: "imap.example.com", password: "hunter2" });
     expect(missing).toEqual([]);
   });
 
-  it("reaches a reference wherever it sits", () => {
-    // A credential is as likely to be one entry in a header map as it is to
-    // be a field of its own.
-    const { value } = resolveSecrets(
-      {
-        headers: { Authorization: "Bearer {{secret.baserow}}" },
-        pipeline: [{ state: { apiKey: "{{secret.hetzner}}" } }],
-      },
-      storeOf({ baserow: "brw-1", hetzner: "htz-2" }),
+  it("substitutes inside a larger string and anywhere in a structure", () => {
+    const { value } = withSecrets(
+      { headers: { Authorization: "Bearer {{secret.api}}" }, tags: ["{{secret.api}}"] },
+      { to: "https://api.example.com/v1/messages" },
+      storeOf({ api: "sk-1" }),
     );
 
     expect(value).toEqual({
-      headers: { Authorization: "Bearer brw-1" },
-      pipeline: [{ state: { apiKey: "htz-2" } }],
+      headers: { Authorization: "Bearer sk-1" },
+      tags: ["sk-1"],
     });
   });
 
-  it("leaves an unknown alias unset, and names it", () => {
-    // Not left as the literal text: a service handed "{{secret.gmail}}" would
-    // send it as a password and fail far away with an error naming nothing.
-    const { value, missing } = resolveSecrets(
-      { password: "{{secret.gmail}}" },
+  it("tolerates whitespace and treats dots as part of the alias", () => {
+    const { value } = withSecrets(
+      { a: "{{ secret.gmail.imap }}" },
+      { to: "imap.gmail.com" },
+      storeOf({ "gmail.imap": "v" }),
+    );
+
+    expect(value).toEqual({ a: "v" });
+  });
+
+  it("resolves an alias it does not hold to empty, and names it", () => {
+    const { value, missing } = withSecrets(
+      { password: "{{secret.absent}}" },
+      { to: "example.com" },
       storeOf({}),
     );
 
     expect(value).toEqual({ password: "" });
-    expect(missing).toEqual(["gmail"]);
+    expect(missing).toEqual(["absent"]);
   });
 
-  it("does not rebuild things that are not plain data", () => {
+  it("leaves values that are not plain JSON alone", () => {
     const bytes = new Uint8Array([1, 2, 3]);
-    const { value } = resolveSecrets({ bytes }, storeOf({}));
+    const { value } = withSecrets({ bytes }, { to: "example.com" }, storeOf({}));
 
     expect(value.bytes).toBe(bytes);
   });
 
-  it("lists what a board needs without resolving anything", () => {
-    expect(
-      referencedSecrets({
-        a: "{{secret.one}}",
-        b: ["{{ secret.two }}", "{{secret.one}}"],
-      }),
-    ).toEqual(["one", "two"]);
-  });
-});
+  it("uses the registered store when none is passed", () => {
+    setSecretStore(storeOf({ x: "value" }));
 
-describe("redacting on save", () => {
-  it("puts the reference back where the value ended up", () => {
-    // http-client reports `headers` exactly as configured. Without this, the
-    // token resolved on load would be written into the board on the next save.
-    const saved = redactSecrets(
-      { headers: { Authorization: "Bearer brw-1" } },
-      storeOf({ baserow: "brw-1" }),
-    );
-
-    expect(saved).toEqual({
-      headers: { Authorization: `Bearer ${secretReference("baserow")}` },
+    expect(secretStore().get("x")).toBe("value");
+    expect(withSecrets({ k: "{{secret.x}}" }, { to: "example.com" }).value).toEqual({
+      k: "value",
     });
   });
 
-  it("is the inverse of resolving", () => {
-    const store = storeOf({ gmail: "app-password", baserow: "brw-1" });
-    const board = {
-      imap: { password: "{{secret.gmail}}" },
-      http: { headers: { Authorization: "Bearer {{secret.baserow}}" } },
-    };
-
-    const { value: loaded } = resolveSecrets(board, store);
-    expect(redactSecrets(loaded, store)).toEqual(board);
-  });
-
-  it("matches a longer secret before one contained in it", () => {
-    const saved = redactSecrets(
-      { key: "tok-abcdef" },
-      storeOf({ short: "tok-abc", long: "tok-abcdef" }),
+  it("resolves to empty with no store registered", () => {
+    const { value, missing } = withSecrets(
+      { k: "{{secret.x}}" },
+      { to: "example.com" },
     );
-
-    expect(saved).toEqual({ key: secretReference("long") });
-  });
-
-  it("leaves a board alone when nothing is stored", () => {
-    const board = { headers: { Authorization: "Bearer public" } };
-    expect(redactSecrets(board, storeOf({}))).toEqual(board);
-  });
-});
-
-describe("the store a host registers", () => {
-  it("resolves nothing until something is registered", () => {
-    const { value, missing } = resolveSecrets({ k: "{{secret.x}}" });
 
     expect(value).toEqual({ k: "" });
     expect(missing).toEqual(["x"]);
   });
 
-  it("uses whatever the host registered", () => {
-    setSecretStore(storeOf({ x: "value" }));
-
-    expect(secretStore().get("x")).toBe("value");
-    expect(resolveSecrets({ k: "{{secret.x}}" }).value).toEqual({ k: "value" });
-  });
-});
-
-describe("what an alias may be called", () => {
-  it("accepts a dotted name", () => {
-    // `secret.` is a fixed prefix and `}}` terminates, so there is exactly one
-    // reading — and the app's older per-service vault writes dotted keys
-    // (`<serviceUuid>.<field>`) that must be nameable the same way.
-    const { value } = resolveSecrets(
-      { a: "{{secret.gmail.imap}}", b: "{{secret.alpaca.apiKey}}" },
-      storeOf({ "gmail.imap": "pw", "alpaca.apiKey": "sk-1" }),
+  it("ignores a reference with no alias", () => {
+    const { value, missing } = withSecrets(
+      { k: "{{secret.}}" },
+      { to: "example.com" },
+      storeOf({}),
     );
-
-    expect(value).toEqual({ a: "pw", b: "sk-1" });
-  });
-
-  it("round-trips a dotted name back to its reference", () => {
-    const store = storeOf({ "alpaca.apiKey": "sk-1" });
-    expect(redactSecrets({ k: "sk-1" }, store)).toEqual({
-      k: "{{secret.alpaca.apiKey}}",
-    });
-  });
-
-  it("leaves a reference with no alias alone", () => {
-    const { value, missing } = resolveSecrets({ k: "{{secret.}}" }, storeOf({}));
 
     expect(value).toEqual({ k: "{{secret.}}" });
     expect(missing).toEqual([]);
+  });
+});
+
+describe("a destination is required", () => {
+  it("refuses to resolve without one", () => {
+    const store = storeOf({ mail: "hunter2" });
+
+    expect(() =>
+      withSecrets({ p: "{{secret.mail}}" }, { to: "" }, store),
+    ).toThrow(/destination/);
+    expect(() =>
+      withSecrets({ p: "{{secret.mail}}" }, undefined as any, store),
+    ).toThrow(/destination/);
+  });
+
+  it("reads the host out of whatever shape the caller holds", () => {
+    expect(destinationHost("https://api.example.com/v1?q=1")).toBe("api.example.com");
+    expect(destinationHost("imap.example.com:993")).toBe("imap.example.com");
+    expect(destinationHost("API.Example.COM")).toBe("api.example.com");
+    expect(destinationHost("  example.com  ")).toBe("example.com");
+    expect(destinationHost("")).toBe(null);
+    expect(destinationHost(undefined)).toBe(null);
+  });
+});
+
+describe("audience", () => {
+  it("releases a secret to a host the store allows", () => {
+    const { value, refused } = withSecrets(
+      { h: "Bearer {{secret.slack}}" },
+      { to: "https://hooks.slack.com/services/x" },
+      storeOf({ slack: { value: "xoxb", audience: ["hooks.slack.com"] } }),
+    );
+
+    expect(value).toEqual({ h: "Bearer xoxb" });
+    expect(refused).toEqual([]);
+  });
+
+  it("withholds it from anywhere else, and says so", () => {
+    const { value, refused } = withSecrets(
+      { h: "Bearer {{secret.slack}}" },
+      { to: "https://evil.example/?p=1" },
+      storeOf({ slack: { value: "xoxb", audience: ["hooks.slack.com"] } }),
+    );
+
+    expect(value).toEqual({ h: "Bearer " });
+    expect(refused).toEqual([
+      { alias: "slack", to: "evil.example", audience: ["hooks.slack.com"] },
+    ]);
+  });
+
+  it("treats an entry with no audience as unconstrained", () => {
+    const { value, refused } = withSecrets(
+      { h: "{{secret.any}}" },
+      { to: "https://anywhere.example" },
+      storeOf({ any: { value: "v", audience: [] } }),
+    );
+
+    expect(value).toEqual({ h: "v" });
+    expect(refused).toEqual([]);
+  });
+
+  it("matches a subdomain wildcard but not the bare domain", () => {
+    const store = storeOf({ k: { value: "v", audience: ["*.example.com"] } });
+
+    expect(withSecrets({ k: "{{secret.k}}" }, { to: "api.example.com" }, store).value)
+      .toEqual({ k: "v" });
+    expect(withSecrets({ k: "{{secret.k}}" }, { to: "example.com" }, store).refused)
+      .toHaveLength(1);
+  });
+});
+
+describe("what a board carries", () => {
+  it("names every alias a board refers to, however nested", () => {
+    expect(
+      referencedSecrets({
+        a: "{{secret.one}}",
+        b: [{ c: "x {{secret.two}} y" }],
+        d: "{{secret.one}}",
+      }).sort(),
+    ).toEqual(["one", "two"]);
+  });
+
+  it("says which of them the store cannot supply", () => {
+    expect(
+      unavailableSecrets(
+        { a: "{{secret.held}}", b: "{{secret.absent}}" },
+        storeOf({ held: "v" }),
+      ),
+    ).toEqual(["absent"]);
+  });
+
+  it("round-trips a board unchanged, because nothing is ever substituted into it", () => {
+    const board = {
+      services: {
+        ui: [{ uuid: "a", state: { url: "https://api.example.com", key: "{{secret.api}}" } }],
+      },
+    };
+    const store = storeOf({ api: "sk-1" });
+
+    // What a service holds is what a board saves. Using the secret produces a
+    // separate value that never goes back into state.
+    const used = withSecrets(board, { to: "api.example.com" }, store);
+    expect(used.value).not.toEqual(board);
+    expect(board.services.ui[0].state.key).toBe(secretReference("api"));
   });
 });

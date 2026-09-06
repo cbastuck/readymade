@@ -16,7 +16,6 @@
  * so a tracker that did not register would see a silent board — registering for
  * every node is what makes the ones with no panel on screen report at all.
  */
-import { redactSecrets } from "hkp-frontend/src/core/secrets";
 import { RuntimeScope } from "hkp-frontend/src/types";
 import { OverviewEdge, OverviewNode } from "./graph";
 import { previewValue } from "./preview";
@@ -57,9 +56,7 @@ export type Pulse = {
 };
 
 /**
- * A value as the panel keeps it: described, rendered to a budget, and with any
- * configured secret it carried put back to its reference — data on its way
- * through a board is as likely to hold one as the configuration that sent it.
+ * A value as the panel keeps it: described and rendered to a budget.
  *
  * Nothing here holds on to the value itself: a pipeline pushing buffers would
  * otherwise be kept alive one frame at a time by the view watching it.
@@ -67,7 +64,7 @@ export type Pulse = {
 function capture(value: unknown, at: number): Payload {
   return {
     summary: describeResult(value),
-    preview: redactSecrets(previewValue(value)),
+    preview: previewValue(value),
     at,
   };
 }

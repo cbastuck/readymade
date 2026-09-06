@@ -6,9 +6,14 @@
  *     "password": "{{secret.gmail}}"
  *
  * The value lives outside the board — the native app's settings, an OS
- * keychain, whatever a host provides — and is substituted in on load. This is
- * what makes a board safe to share, download, or hand to a model: there is
- * nothing to redact, because the file never held the secret.
+ * keychain, whatever a host provides. This is what makes a board safe to share,
+ * download, or hand to a model: there is nothing to redact, because the file
+ * never held the secret.
+ *
+ * A reference is also what a *service* holds. It is never substituted into
+ * service state, so `getState` reports the reference unchanged and saving a
+ * board writes back what was configured. The value exists only inside the call
+ * that uses it, obtained through `withSecrets`.
  *
  * The store is deliberately an interface with no implementation here. Web and
  * native protect secrets very differently, and the part that must be identical
@@ -30,7 +35,13 @@ const REFERENCE = /\{\{\s*secret\.([A-Za-z0-9_.-]+)\s*\}\}/g;
 export type SecretStore = {
   /** The value behind an alias, or null when the store does not have it. */
   get(alias: string): string | null;
-  /** Every alias the store holds. Used to put values back on the way out. */
+  /**
+   * The hosts this secret may be sent to. Absent, or an empty list, means the
+   * secret is unconstrained — which is what an entry that predates audiences
+   * answers, and is why adding one is not a breaking change.
+   */
+  audience?(alias: string): string[] | null;
+  /** Every alias the store holds. */
   list(): string[];
 };
 
@@ -64,21 +75,78 @@ export function referencedSecrets(value: unknown): string[] {
   return [...found];
 }
 
-/**
- * Substitutes stored values for references, anywhere in a structure.
- *
- * An alias the store does not have becomes an empty string rather than being
- * left as the literal `{{secret.…}}`: a service handed that text would send it
- * as a password and fail somewhere far away with an authentication error that
- * names nothing. Empty is what "not configured" already looks like to every
- * service that takes a credential, and the missing aliases are returned so the
- * board can say which ones by name.
- */
-export function resolveSecrets<T>(
-  value: T,
+/** Aliases a value refers to that the store cannot supply. */
+export function unavailableSecrets(
+  value: unknown,
   from: SecretStore = store,
-): { value: T; missing: string[] } {
+): string[] {
+  return referencedSecrets(value).filter((alias) => from.get(alias) === null);
+}
+
+/** Where a secret is about to be sent. */
+export type SecretUse = {
+  /**
+   * The destination, as a URL or a `host[:port]`. Only the host is compared
+   * against an audience; the rest is accepted so that a caller can pass
+   * whatever it already has.
+   */
+  to: string;
+};
+
+export type SecretRefusal = {
+  alias: string;
+  /** The host that was asked for. */
+  to: string;
+  /** The hosts the store allows instead. */
+  audience: string[];
+};
+
+export type ResolvedSecrets<T> = {
+  /** The input with every reference replaced. */
+  value: T;
+  /** Aliases the store does not hold. */
+  missing: string[];
+  /** Aliases the store holds but may not send to this destination. */
+  refused: SecretRefusal[];
+};
+
+/**
+ * A value with its secret references resolved, for one use, at the moment of
+ * that use.
+ *
+ * The result is transient: it is what a service passes to the call it is
+ * making, and it must not be assigned back to the service's state or returned
+ * from `getState`. Keeping references in state and resolving here is what makes
+ * a board safe to save — there is never a resolved value in the state a board
+ * is serialized from.
+ *
+ * `to` is required, and a caller that cannot say where the value is going gets
+ * nothing. Every caller can: a secret is used by sending it somewhere, and the
+ * code sending it knows the address. Requiring it is what lets the store
+ * constrain a secret to a destination, and what stops a configuration from
+ * pointing an otherwise honest caller at somewhere else.
+ *
+ * An alias that is missing, or that may not go to this destination, resolves to
+ * an empty string rather than being left as the literal `{{secret.…}}`: a
+ * caller handed that text would send it as a credential and fail somewhere far
+ * away with an authentication error that names nothing. Empty is what "not
+ * configured" already looks like. Both cases are reported by name.
+ */
+export function withSecrets<T>(
+  value: T,
+  use: SecretUse,
+  from: SecretStore = store,
+): ResolvedSecrets<T> {
+  const host = destinationHost(use?.to);
+  if (!host) {
+    throw new Error(
+      "withSecrets requires a destination: pass { to } naming the host the secret is sent to",
+    );
+  }
+
   const missing = new Set<string>();
+  const refused = new Map<string, SecretRefusal>();
+
   const resolved = walk(value, (text) =>
     text.replace(REFERENCE, (_whole, alias: string) => {
       const secret = from.get(alias);
@@ -86,56 +154,72 @@ export function resolveSecrets<T>(
         missing.add(alias);
         return "";
       }
+      const audience = from.audience?.(alias) ?? null;
+      if (!permits(audience, host)) {
+        refused.set(alias, { alias, to: host, audience: audience ?? [] });
+        return "";
+      }
       return secret;
     }),
   );
-  return { value: resolved as T, missing: [...missing] };
+
+  return {
+    value: resolved as T,
+    missing: [...missing],
+    refused: [...refused.values()],
+  };
 }
 
 /**
- * Puts references back where values ended up — the inverse pass, for saving.
+ * The host part of a destination.
  *
- * Needed because a service is under no obligation to hide what it was given.
- * The ones that take a password mask it (`getState` answers `""`), and for
- * those this finds nothing to do. But a credential can also arrive as one
- * entry in a free-form map — an `Authorization` header on `http-client` — and
- * such a service reports its state in full, exactly as configured. Without
- * this pass, resolving a reference on load would write the resolved secret
- * into the board on the next save: the very leak the reference exists to
- * avoid, introduced by the mechanism meant to prevent it.
- *
- * Matching is on the value rather than on which field it came from, so it
- * holds wherever a secret ended up — nested in a map, joined into a larger
- * string like `Bearer <token>`, or in a field nobody thought to declare.
- *
- * That is also what is wrong with it, and this is a stopgap: a short or
- * ordinary secret would rewrite unrelated text, and the failure is silent.
- * It has exactly one caller in practice — `http-client`, which reports its
- * headers verbatim — and disappears once that service stops handing
- * credentials back, or once references are resolved runtime-side rather than
- * here. Recorded as G12b in TODO-WORKFLOW-PLATFORM.md.
+ * Callers hold destinations in whatever shape their own API uses — a request
+ * URL, a `host:port` pair, a bare hostname — and normalizing here is what keeps
+ * an audience a list of hosts rather than a list of spellings. Anything that
+ * does not yield a host answers `null`, which `withSecrets` treats as no
+ * destination at all.
  */
-export function redactSecrets<T>(value: T, from: SecretStore = store): T {
-  const entries = from
-    .list()
-    .map((alias) => ({ alias, secret: from.get(alias) ?? "" }))
-    .filter((entry) => entry.secret.length > 0)
-    // Longest first: one secret containing another must be matched as itself
-    // before the shorter one rewrites part of it.
-    .sort((a, b) => b.secret.length - a.secret.length);
-
-  if (!entries.length) {
-    return value;
+export function destinationHost(to: unknown): string | null {
+  if (typeof to !== "string") {
+    return null;
   }
-  return walk(value, (text) => {
-    let out = text;
-    for (const { alias, secret } of entries) {
-      if (out.includes(secret)) {
-        out = out.split(secret).join(secretReference(alias));
-      }
+  const trimmed = to.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const candidate = /^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(trimmed)
+    ? trimmed
+    : `hkp://${trimmed}`;
+  try {
+    const { hostname } = new URL(candidate);
+    return hostname ? hostname.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether an audience covers a host.
+ *
+ * An entry is either a host or a `*.` prefix standing for any subdomain of what
+ * follows it. The wildcard does not match the bare domain: `*.example.com`
+ * covers `api.example.com` and not `example.com`, so widening one to the other
+ * stays a deliberate act.
+ */
+function permits(audience: string[] | null, host: string): boolean {
+  if (!audience || !audience.length) {
+    return true;
+  }
+  return audience.some((entry) => {
+    const allowed = entry.trim().toLowerCase();
+    if (!allowed) {
+      return false;
     }
-    return out;
-  }) as T;
+    if (allowed.startsWith("*.")) {
+      return host.endsWith(allowed.slice(1));
+    }
+    return host === allowed;
+  });
 }
 
 /**

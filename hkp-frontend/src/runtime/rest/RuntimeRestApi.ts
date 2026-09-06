@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { referencedSecrets, secretStore } from "hkp-frontend/src/core/secrets";
 
 import {
   InstanceId,
@@ -183,9 +184,69 @@ function isSameRuntime(
  * A runtime whose services no longer match the board is not the board's runtime,
  * so it is left to be replaced.
  */
+/**
+ * The values a runtime needs, by alias, for the references its services carry.
+ *
+ * Only what this runtime's own services ask for. A board with one webhook must
+ * not put every credential the vault holds into a server it happens to use:
+ * what a runtime is given is what it could leak, so it is given the minimum
+ * that lets it run.
+ *
+ * Absent aliases are simply not sent. The service referencing one reports it
+ * as unavailable by name, which is a better failure than a runtime holding a
+ * credential nobody could account for.
+ */
+function secretsFor(
+  services: Array<{ state?: unknown }> | undefined,
+): Record<string, { value: string; audience?: string[] }> {
+  const store = secretStore();
+  const payload: Record<string, { value: string; audience?: string[] }> = {};
+  for (const alias of referencedSecrets(services ?? [])) {
+    const value = store.get(alias);
+    if (value === null) {
+      continue;
+    }
+    const audience = store.audience?.(alias) ?? null;
+    payload[alias] = audience?.length ? { value, audience } : { value };
+  }
+  return payload;
+}
+
+/**
+ * Hands a running runtime the values for the references it holds.
+ *
+ * Provisioning carries these already; this covers the two moments it cannot —
+ * a vault entry edited while a board runs, and attaching to a runtime that
+ * restarted, where the services survived and the values did not. Sending
+ * nothing is not an error: a board with no references has nothing to push.
+ */
+export async function pushSecrets(
+  runtime: RuntimeDescriptor,
+  services: Array<{ state?: unknown }> | undefined,
+  user: User | null,
+): Promise<void> {
+  const secrets = secretsFor(services);
+  if (!Object.keys(secrets).length) {
+    return;
+  }
+  try {
+    await fetch(`${runtime.url}/runtimes/${runtime.id}/secrets`, {
+      method: "PUT",
+      body: JSON.stringify(secrets),
+      headers: { "content-type": "application/json", ...authHeaders(user) },
+    });
+  } catch {
+    // A runtime that cannot be reached is reported by everything else the
+    // caller is doing; a failed push costs the credentials, and the services
+    // needing them say so themselves.
+  }
+}
+
 async function attachRuntime(
   runtime: RuntimeDescriptor,
-  services: Array<{ uuid: string; serviceId: string }>,
+  // State included: attaching re-pushes the values for the references it
+  // carries, which cannot be read off a uuid alone.
+  services: Array<{ uuid: string; serviceId: string; state?: unknown }>,
   user: User | null,
 ): Promise<RestoreRuntimeResult | null> {
   let res: Response;
@@ -222,6 +283,10 @@ async function attachRuntime(
   );
   scope.registry = registry;
   scope.services = existing.services;
+  // A runtime that restarted still has its services and no longer has their
+  // credentials, and nothing here can tell that apart from one that never
+  // stopped. Pushing again is idempotent, so it is done either way.
+  await pushSecrets(descriptor, services, user);
   return {
     runtime: descriptor,
     // The running services, not the board's: their state is what is live.
@@ -547,6 +612,10 @@ async function createRuntimeRequest(
       state: (s as any).state, // TODO:
     })),
     boardName: boardName || undefined,
+    // Values ride with the create payload because provisioning is one call:
+    // the services in it are configured before it returns, and a service that
+    // connects while being configured needs its credential by then.
+    secrets: secretsFor(services),
   };
   const runtimesUrl = `${runtime.url}/runtimes`;
   let res: Response;
