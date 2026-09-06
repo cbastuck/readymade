@@ -59,8 +59,25 @@ Listener::~Listener()
 
 unsigned short Listener::start()
 {
+    // A failed open/bind leaves the acceptor closed — the constructor has no
+    // way to report it other than that. Asking a closed acceptor for its
+    // endpoint throws, so answer "no port" and let the caller decide what a
+    // port it could not get means.
+    if (!acceptor_.is_open())
+    {
+      return 0;
+    }
+
     do_accept();
-    return acceptor_.local_endpoint().port();
+
+    beast::error_code ec;
+    const auto endpoint = acceptor_.local_endpoint(ec);
+    if (ec)
+    {
+      fail(ec, "Listener::start() local_endpoint");
+      return 0;
+    }
+    return endpoint.port();
 }
 
 bool Listener::stop() 
