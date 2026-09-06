@@ -6,16 +6,11 @@ import InputField from "hkp-frontend/src/components/shared/InputField";
 
 export default function TelegramSenderUI(props: ServiceUIProps) {
   const [botToken, setBotToken] = useState("");
-  // The server masks the bot token (write-only); this flag tells us one is stored.
-  const [botTokenConfigured, setBotTokenConfigured] = useState(false);
   const [chatId, setChatId] = useState("");
   const [error, setError] = useState("");
 
   const onUpdate = useCallback((state: any) => {
     if (state.botToken !== undefined) setBotToken(state.botToken);
-    if (state.botTokenConfigured !== undefined) {
-      setBotTokenConfigured(state.botTokenConfigured);
-    }
     if (state.chatId !== undefined) setChatId(state.chatId);
     if (state.error !== undefined) setError(state.error);
   }, []);
@@ -32,15 +27,15 @@ export default function TelegramSenderUI(props: ServiceUIProps) {
       genericUI={false}
     >
       <div className="flex flex-col">
+        {/* Not masked: this field holds the *name* of a secret, not a secret.
+            The value lives in the vault and is fetched when the API is called,
+            so hiding what is typed here would hide nothing and make a mistyped
+            alias impossible to spot. */}
         <InputField
-          label={botTokenConfigured ? "Bot Token (stored)" : "Bot Token"}
-          type="password"
+          label="Bot token secret"
           value={botToken}
           onChange={(v) => {
             setBotToken(v);
-            if (v) {
-              setBotTokenConfigured(true);
-            }
             configure({ botToken: v });
           }}
         />

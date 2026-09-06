@@ -120,8 +120,8 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
 
   // Describe the request the same way hkp-node's http-server-subservices does,
   // so a pipeline written for one runtime works on the other:
-  //   meta.method / meta.path / meta.query, plus meta.contentType and
-  //   meta.filename when the request carries a body.
+  //   meta.method / meta.path / meta.query / meta.headers, plus
+  //   meta.contentType and meta.filename when the request carries a body.
   // The body then arrives in exactly one form — decoded as `body` when its
   // content type says what the bytes mean, raw as MixedData binary otherwise.
   json meta;
@@ -131,6 +131,12 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
   meta["method"] = method;
   meta["path"]   = requestPath;
   meta["query"]  = query;
+  // A caller that has to prove who it is does so in a header — a shared secret,
+  // a signature, a bearer token — so a pipeline that cannot see them cannot
+  // check one. What a board does not name, it does not receive.
+  meta["headers"] =
+      session ? filterRequestHeaders(session->getRequestHeaders(), m_forwardHeaders)
+              : json::object();
 
   std::optional<json> decodedBody;
   BinaryData rawBody;
@@ -211,18 +217,45 @@ std::string HttpServerSubservices::getServiceId() const
 
 json HttpServerSubservices::configure(Data data)
 {
-  Service::configure(data); // handle bypass
-
   auto buf = getJSONFromData(data);
   if (!buf)
   {
-    return getState();
+    return Service::configure(data); // handle bypass
   }
 
+  const bool wasRunning = m_impl->running();
+
   unsigned short port = m_impl->port();
-  if (updateIfNeeded(port, (*buf)["port"]))
+  const bool portChanged = updateIfNeeded(port, (*buf)["port"]);
+  if (portChanged)
   {
     m_impl->setPort(port);
+  }
+
+  // An array is a decision, including an empty one. Anything else — absent,
+  // null, a string — leaves the default of forwarding all of them.
+  if (buf->contains("forwardHeaders"))
+  {
+    const auto& named = (*buf)["forwardHeaders"];
+    if (named.is_array())
+    {
+      std::vector<std::string> names;
+      for (const auto& entry : named)
+      {
+        if (entry.is_string())
+        {
+          auto name = entry.get<std::string>();
+          std::transform(name.begin(), name.end(), name.begin(),
+                         [](unsigned char c) { return std::tolower(c); });
+          names.push_back(name);
+        }
+      }
+      m_forwardHeaders = names;
+    }
+    else
+    {
+      m_forwardHeaders.reset();
+    }
   }
 
   if (updateIfNeeded(m_mode, (*buf)["mode"]))
@@ -293,6 +326,28 @@ json HttpServerSubservices::configure(Data data)
     }
   }
 
+  // Bypass last. Leaving bypass binds a port and publishes the address, so both
+  // have to be decided by the configuration this same call carries: a board
+  // being restored arrives as one configure holding the saved port and
+  // bypass:false together, and handling the bypass first would bind before the
+  // port was applied — the server would come up on an OS-assigned port and the
+  // board would advertise a different endpoint on every load.
+  Service::configure(data);
+
+  // The port is only read when the acceptor binds, so changing it on a running
+  // server takes a rebind — otherwise the state advertises a port nothing is
+  // listening on.
+  if (portChanged && wasRunning && m_impl->running())
+  {
+    stop();
+    if (!start())
+    {
+      std::cerr << "HttpServerSubservices::configure() Failed to rebind on port: "
+                << port << std::endl;
+      setBypass(true); // nothing is listening; say so rather than report online
+    }
+  }
+
   return getState();
 }
 
@@ -319,29 +374,29 @@ json HttpServerSubservices::getState() const
     // rewrites it (see the frontend's runtime/board/mount).
     {MOUNT_FIELD, m_url},
     {"status", isBypass() ? "offline" : "online"},
+    {"forwardHeaders", m_forwardHeaders ? json(*m_forwardHeaders) : json(nullptr)},
     {"pipeline", pipeline}
   });
 }
 
 bool HttpServerSubservices::onBypassChanged(bool bypass)
 {
+  // The return value is the bypass the service ends up in, which is a statement
+  // about the server: bypassed means nothing is listening. A start that fails
+  // — a port already taken is the usual way — therefore stays bypassed, rather
+  // than reporting a service that is online with no server behind it.
   if (bypass)
   {
-    if (!stop())
-    {
-      std::cerr << "Failed to stop HTTP server on port: " << m_impl->port() << std::endl;
-      return false;
-    }
+    stop(); // no-op when nothing is listening, which is the state asked for
+    return true;
   }
-  else
+
+  if (!start())
   {
-    if (!start())
-    {
-      std::cerr << "Failed to start HTTP server on port: " << m_impl->port() << std::endl;
-      return false;
-    }
+    std::cerr << "Failed to start HTTP server on port: " << m_impl->port() << std::endl;
+    return true;
   }
-  return bypass;
+  return false;
 }
 
 Data HttpServerSubservices::process(Data data)
@@ -366,7 +421,10 @@ Data HttpServerSubservices::process(Data data)
 
 bool HttpServerSubservices::start()
 {
-  if (!isBypass())
+  // Guarded on what is actually listening rather than on the bypass flag, so a
+  // rebind — stop and start again on a changed port, with bypass unchanged
+  // throughout — is not mistaken for a second start.
+  if (m_impl->running())
   {
     std::cout << "HttpServerSubservices::start() HTTP server is already running on port: " << m_impl->port() << std::endl;
     return false;
@@ -393,7 +451,7 @@ bool HttpServerSubservices::start()
 
 bool HttpServerSubservices::stop()
 {
-  if (isBypass())
+  if (!m_impl->running())
   {
     std::cout << "HttpServerSubservices::stop() HTTP server is not running" << std::endl;
     return false;

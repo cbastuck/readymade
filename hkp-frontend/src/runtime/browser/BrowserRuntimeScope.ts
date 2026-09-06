@@ -1,6 +1,8 @@
 import {
   AppImpl,
   InstanceId,
+  LogEntry,
+  LogLevel,
   ProcessContext,
   RuntimeApi,
   RuntimeDescriptor,
@@ -29,6 +31,65 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   authenticatedUser: User | null = null;
   isDisposing: boolean = false;
   state: { [key: string]: any } = {};
+  /**
+   * The run each service is currently being called in, keyed by service uuid.
+   *
+   * Kept per service rather than one value for the whole scope, because this
+   * runtime's pass awaits: two calls can be in flight at once and a single
+   * ambient value would hand one call's run to the other. Keyed this way the
+   * only case that stays ambiguous is one service being called twice at once,
+   * which is the case that genuinely is.
+   */
+  private serviceContexts = new Map<string, ProcessContext>();
+  private logTargets = new Set<(entry: LogEntry) => void>();
+  /**
+   * Whether entries may carry their `data` payload. Off unless a board turns it
+   * on: `data` is the one free-form field and so the only place a service can
+   * record something it did not mean to.
+   */
+  private logData = false;
+
+  registerLogTarget(target: (entry: LogEntry) => void): () => void {
+    this.logTargets.add(target);
+    return () => {
+      this.logTargets.delete(target);
+    };
+  }
+
+  setLogData(enabled: boolean) {
+    this.logData = enabled;
+  }
+
+  emitLog(entry: LogEntry) {
+    for (const target of this.logTargets) {
+      target(entry);
+    }
+  }
+
+  log(svc: InstanceId, level: LogLevel, event: string, data?: unknown) {
+    const context = this.serviceContexts.get(svc.uuid);
+    // Nothing to attribute an entry to means nothing worth recording: an entry
+    // that names no run cannot be found again.
+    if (!context?.runId || this.logTargets.size === 0) {
+      return;
+    }
+
+    const entry: LogEntry = {
+      runId: context.runId,
+      ts: new Date().toISOString(),
+      runtimeId: this.descriptor.id,
+      serviceUuid: svc.uuid,
+      level,
+      event,
+    };
+    if (context.parentRunId) {
+      entry.parentRunId = context.parentRunId;
+    }
+    if (this.logData && data !== undefined) {
+      entry.data = data;
+    }
+    this.emitLog(entry);
+  }
 
   constructor(runtime: RuntimeDescriptor, registry: BrowserRegistry) {
     this.descriptor = runtime;
@@ -168,6 +229,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       if (svc && !svc.bypass) {
         try {
           onServiceProcess(this.app, svc, params);
+          if (context) {
+            this.serviceContexts.set(svc.uuid, context);
+          }
           result = await svc.process(params);
           onServiceResult(this.app, svc, result);
           params = result;
@@ -177,6 +241,8 @@ export default class BrowserRuntimeScope implements RuntimeScope {
               svc.serviceName
             } caused error: ${JSON.stringify(err.message)}`,
           );
+        } finally {
+          this.serviceContexts.delete(svc.uuid);
         }
       }
     }

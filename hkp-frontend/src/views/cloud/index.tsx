@@ -9,7 +9,14 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import useSWR from "swr";
-import { ArrowRight, Cloud, CloudOff, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  Cloud,
+  CloudOff,
+  Plus,
+  ScrollText,
+} from "lucide-react";
 
 import BoardProvider, {
   BoardProviderHandle,
@@ -27,6 +34,7 @@ import {
 import { useAppContext } from "../../AppContext";
 import {
   BoardDescriptor,
+  LogLevel,
   RuntimeClass,
   isRuntimeBrowserClassType,
 } from "../../types";
@@ -34,11 +42,13 @@ import {
   CoordinatorBoardInfo,
   listCoordinatorBoards,
   registerCoordinatorBoard,
+  setCoordinatorBoardLogging,
   stopCoordinatorBoard,
 } from "./coordinatorClient";
 import { toast } from "sonner";
 import CoordinatorsMenu from "./CoordinatorsMenu";
 import CloudBoard from "./Board";
+import NestedNavProvider from "../../runtime/ui/NestedNavigation";
 import Sidebar from "../playground/Sidebar";
 import { useCoordinatorBridge } from "./useCoordinatorBridge";
 import { CoordinatorSnapshotStore } from "./coordinatorSnapshot";
@@ -47,10 +57,18 @@ import {
   createBridgeRuntimeApi,
 } from "./bridgeRuntimeApi";
 import { createBoardCoordinator } from "hkp-frontend/src/core/coordinator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 import ManageCoordinatorsDialog from "./ManageCoordinatorsDialog";
 import NewBoardDialog from "./NewBoardDialog";
 import CloudLoginGate from "./CloudLoginGate";
 import { useCloudLogin } from "../../auth/useCloudLogin";
+import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -59,6 +77,76 @@ type AllCoordinatorBoards = {
   boards: CoordinatorBoardInfo[];
   error: boolean;
 };
+
+/**
+ * How much of a run a board keeps, least severe first.
+ *
+ * A level is the floor, not a category: choosing one keeps it and everything
+ * above it. `debug` is therefore everything there is — the flow itself (every
+ * service call and return) as well as what runs report about themselves — which
+ * is what the name says.
+ */
+const LOG_LEVEL_CHOICES: Array<{ value: LogLevel; label: string }> = [
+  { value: "debug", label: "All" },
+  { value: "info", label: "Events" },
+  { value: "warn", label: "Warnings" },
+  { value: "error", label: "Errors" },
+];
+
+/** Picks how much of a run the deployed board keeps, from the header. */
+function LogLevelMenu({
+  level,
+  onPick,
+}: {
+  level: LogLevel;
+  onPick: (level: LogLevel) => void;
+}) {
+  const theme = useTheme();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title="What to keep. All records every service call and return — the most useful for debugging, and by far the most of it."
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            border: "none",
+            background: "none",
+            padding: "2px 4px",
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: "var(--hkp-accent, #3b5bff)",
+            cursor: "pointer",
+          }}
+        >
+          {LOG_LEVEL_CHOICES.find((choice) => choice.value === level)?.label}
+          <ChevronDown size={12} strokeWidth={2} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="font-menu"
+        // The primitive leaves corners square; the menus already in this bar
+        // are rounded, and the theme is what says by how much.
+        style={{ borderRadius: theme.borderRadius }}
+      >
+        <DropdownMenuRadioGroup
+          value={level}
+          onValueChange={(value) => onPick(value as LogLevel)}
+        >
+          {LOG_LEVEL_CHOICES.map((choice) => (
+            <DropdownMenuRadioItem key={choice.value} value={choice.value}>
+              {choice.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 // ── Landing (shown when no board is open) ─────────────────────────────────────
 
@@ -282,9 +370,8 @@ function CloudBoardInner({
   const hydratedRef = useRef<string | null>(null);
   useEffect(() => {
     const hydrate = () => {
-      const config = bridgeAccess.snapshot.getConfig() as
-        | BoardDescriptor
-        | null;
+      const config =
+        bridgeAccess.snapshot.getConfig() as BoardDescriptor | null;
       if (!config || hydratedRef.current === board.boardName) {
         return;
       }
@@ -448,16 +535,14 @@ export default function CloudBoards({
     );
   }, [coordinators, user]);
 
-  const {
-    data: allCoordinatorBoards = [],
-    isLoading: isLoadingAllBoards,
-  } = useSWR(
-    user
-      ? `all-boards:${user.userId}:${coordinators.map((c) => c.url).join(",")}`
-      : null,
-    allBoardsFetcher,
-    { revalidateOnFocus: false },
-  );
+  const { data: allCoordinatorBoards = [], isLoading: isLoadingAllBoards } =
+    useSWR(
+      user
+        ? `all-boards:${user.userId}:${coordinators.map((c) => c.url).join(",")}`
+        : null,
+      allBoardsFetcher,
+      { revalidateOnFocus: false },
+    );
 
   const onSelectCoordinator = (coordinator: CoordinatorDescriptor) => {
     setSelectedCoordinator(coordinator);
@@ -565,7 +650,9 @@ export default function CloudBoards({
     if (!target) {
       return;
     }
-    const coordinator = coordinators.find((c) => c.url === target.coordinatorUrl);
+    const coordinator = coordinators.find(
+      (c) => c.url === target.coordinatorUrl,
+    );
     if (!coordinator) {
       return;
     }
@@ -694,6 +781,66 @@ export default function CloudBoards({
     () => bridgeAccess.snapshot.getStatus(),
   );
   const boardStatus = liveStatus ?? openBoard?.status;
+
+  /**
+   * Whether this board is recording what its services log.
+   *
+   * Read from the board's own config rather than kept only here, so that what
+   * the toggle shows is what the coordinator will actually do — including after
+   * a reload, and for a board somebody else switched on.
+   */
+  const loggingOn = (openBoard?.config?.runtimes ?? []).some(
+    (runtime: { state?: Record<string, unknown> }) =>
+      runtime.state?.logging === true,
+  );
+
+  /**
+   * How much this board records — the least severe level it keeps.
+   *
+   * `debug` is what keeps the flow itself (every service call and return), and
+   * so what makes the log answer "where did this stop"; anything above keeps
+   * only what a run reported about itself.
+   */
+  const logLevel =
+    ((openBoard?.config?.runtimes ?? []).find(
+      (runtime: { state?: Record<string, unknown> }) => runtime.state?.logLevel,
+    )?.state?.logLevel as LogLevel | undefined) ?? "info";
+
+  /**
+   * Turn logging on or off for the deployed board.
+   *
+   * Applied to the runtimes that are already running, so it takes effect
+   * without restarting anything — which is the point: it is a setting you reach
+   * for while looking into something, not one worth rebuilding a board over.
+   */
+  const applyLogging = async (enabled: boolean, level: LogLevel) => {
+    const board = selectedBoard;
+    const coordinator = selectedCoordinator;
+    if (!board || !coordinator || !user) {
+      return;
+    }
+    try {
+      const result = await setCoordinatorBoardLogging(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        board.boardName,
+        enabled,
+        level,
+      );
+      if (result.unreachable.length > 0) {
+        // Partly applied is worth saying out loud: the rest of the board took
+        // it, and those runtimes did not.
+        toast.error(`Not applied to: ${result.unreachable.join(", ")}`);
+      }
+      await reloadBoards();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to change logging",
+      );
+    }
+  };
+
   // Shown whenever there are any, not only for a board that failed to start:
   // stopping reports the runtimes it could not release, and those are still
   // running somewhere with nothing tracking them.
@@ -765,6 +912,41 @@ export default function CloudBoards({
       >
         {isStopped ? "Start" : "Stop"}
       </button>
+      <button
+        type="button"
+        onClick={() => void applyLogging(!loggingOn, logLevel)}
+        title={
+          loggingOn
+            ? "Recording to this coordinator's disk. Entries can carry personal data."
+            : "Not recording anything"
+        }
+        style={{
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          border: "none",
+          background: "none",
+          padding: "2px 4px",
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: loggingOn
+            ? "var(--hkp-accent, #3b5bff)"
+            : "var(--text-dim, #6b7280)",
+          cursor: "pointer",
+        }}
+      >
+        <ScrollText size={14} strokeWidth={1.75} />
+        {loggingOn ? "Logging on" : "Logging off"}
+      </button>
+      {loggingOn && (
+        // Only while it is on: a level for a log nobody is keeping is a control
+        // that does nothing, and one more thing to read past in the header.
+        <LogLevelMenu
+          level={logLevel}
+          onPick={(level) => void applyLogging(true, level)}
+        />
+      )}
     </div>
   ) : null;
 
@@ -808,72 +990,81 @@ export default function CloudBoards({
           style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}
         >
           <Sidebar />
-          <div
-            ref={boardCanvasRef}
-            style={{
-              flex: 1,
-              overflow: "auto",
-              overscrollBehaviorX: "none",
-              display: "flex",
-              flexDirection: "column",
-              background:
-                "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
-            }}
-          >
-            {/* Keep the board mounted in background so WebSocket notification
+          {/* A cloud board nests exactly as a playground board does, so a
+              pipeline on one is opened the same way. Outside the canvas rather
+              than inside it: the levels cover the canvas, and a layer within a
+              scroll container would be sized to the content and scroll away
+              with it. */}
+          <NestedNavProvider rootLabel={mountedBoard?.boardName || "Board"}>
+            <div
+              ref={boardCanvasRef}
+              style={{
+                flex: 1,
+                overflow: "auto",
+                overscrollBehaviorX: "none",
+                display: "flex",
+                flexDirection: "column",
+                background:
+                  "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
+              }}
+            >
+              {/* Keep the board mounted in background so WebSocket notification
                 targets stay registered while the user browses the landing. */}
-            {mountedBoard && (
-              <div
-                style={{
-                  display:
-                    selectedCoordinator && selectedBoard ? "contents" : "none",
-                }}
-              >
-                {openBoardErrors.length > 0 && (
-                  <div className="m-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
-                    <div className="font-semibold">
-                      {boardStatus === "stopped"
-                        ? "This board stopped, but not everything let go."
-                        : "This board didn’t fully start — runtime output won’t flow."}
+              {mountedBoard && (
+                <div
+                  style={{
+                    display:
+                      selectedCoordinator && selectedBoard
+                        ? "contents"
+                        : "none",
+                  }}
+                >
+                  {openBoardErrors.length > 0 && (
+                    <div className="m-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                      <div className="font-semibold">
+                        {boardStatus === "stopped"
+                          ? "This board stopped, but not everything let go."
+                          : "This board didn’t fully start — runtime output won’t flow."}
+                      </div>
+                      <ul className="mt-1 list-disc pl-5 break-words">
+                        {openBoardErrors.map((e, i) => (
+                          <li key={i}>{e}</li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul className="mt-1 list-disc pl-5 break-words">
-                      {openBoardErrors.map((e, i) => (
-                        <li key={i}>{e}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <CloudBoardInner
-                  board={mountedBoard}
-                  bridgeWsUrl={
-                    selectedCoordinator
-                      ? selectedCoordinator.url
-                          .replace(/^http(s?):\/\//, "ws$1://")
-                          .replace(/\/coordinator\/?$/, "") +
-                        "/coordinator/bridge"
-                      : null
-                  }
-                  userId={user?.userId ?? null}
-                  idToken={user?.idToken ?? null}
-                  bridgeAccess={bridgeAccess}
-                  onHydrate={(config) =>
-                    boardProviderRef.current?.setBoardState(config)
-                  }
+                  )}
+                  <CloudBoardInner
+                    board={mountedBoard}
+                    bridgeWsUrl={
+                      selectedCoordinator
+                        ? selectedCoordinator.url
+                            .replace(/^http(s?):\/\//, "ws$1://")
+                            .replace(/\/coordinator\/?$/, "") +
+                          "/coordinator/bridge"
+                        : null
+                    }
+                    userId={user?.userId ?? null}
+                    idToken={user?.idToken ?? null}
+                    bridgeAccess={bridgeAccess}
+                    onHydrate={(config) =>
+                      boardProviderRef.current?.setBoardState(config)
+                    }
+                  />
+                </div>
+              )}
+              {!(selectedCoordinator && selectedBoard) && (
+                <CloudBoardsLanding
+                  user={user}
+                  coordinators={coordinators}
+                  allCoordinatorBoards={allCoordinatorBoards}
+                  isLoading={isLoadingAllBoards}
+                  onSelectBoard={onSelectBoardFromLanding}
+                  onNewBoard={onNewBoard}
+                  onManageCoordinators={() => setIsManageCoordinatorsOpen(true)}
                 />
-              </div>
-            )}
-            {!(selectedCoordinator && selectedBoard) && (
-              <CloudBoardsLanding
-                user={user}
-                coordinators={coordinators}
-                allCoordinatorBoards={allCoordinatorBoards}
-                isLoading={isLoadingAllBoards}
-                onSelectBoard={onSelectBoardFromLanding}
-                onNewBoard={onNewBoard}
-                onManageCoordinators={() => setIsManageCoordinatorsOpen(true)}
-              />
-            )}
-          </div>
+              )}
+            </div>
+          </NestedNavProvider>
         </div>
       </div>
 

@@ -14,7 +14,6 @@ import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import { FileJson, FileText } from "lucide-react";
 import { OpenAIModel } from "./OpenAIPrompt";
 import SecretField from "hkp-frontend/src/components/shared/SecretField";
-import { secretId } from "hkp-frontend/src/vault";
 
 export default function OpenAIPromptUI(props: ServiceUIProps) {
   const [prompt, setPrompt] = useState("");
@@ -138,8 +137,7 @@ export default function OpenAIPromptUI(props: ServiceUIProps) {
           <SecretField
             className="mr-3"
             label="Api-Key"
-            value={secretId("uservault", props.service, "apiKey")}
-            fallbackValue={apiKey}
+            alias={`${props.service.uuid}.apiKey`}
             onChange={onChangeApiKey}
           />
           <SelectorField

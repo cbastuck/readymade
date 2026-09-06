@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+#include <map>
+
 #include <optional>
 
 #include <boost/beast.hpp>
@@ -88,6 +91,32 @@ public:
   {
     auto it = parser_->get().find(name);
     return (it != parser_->get().end()) ? std::string(it->value()) : "";
+  }
+
+  // Every request header, by lower-cased name — HTTP header names compare that
+  // way, and a pipeline matching on one should not have to know how the caller
+  // capitalised it. A header sent more than once is joined the way a single
+  // header carrying a list would have been.
+  std::map<std::string, std::string> getRequestHeaders() const
+  {
+    std::map<std::string, std::string> headers;
+    for (const auto& field : parser_->get())
+    {
+      auto name = std::string(field.name_string());
+      std::transform(name.begin(), name.end(), name.begin(),
+                     [](unsigned char c) { return std::tolower(c); });
+      const auto value = std::string(field.value());
+      auto existing = headers.find(name);
+      if (existing == headers.end())
+      {
+        headers.emplace(name, value);
+      }
+      else
+      {
+        existing->second += ", " + value;
+      }
+    }
+    return headers;
   }
 
   void sendHtmlResponse(const std::string& html);

@@ -76,7 +76,7 @@ export default function EditorDialog({
         aria-describedby={description ? descriptionId : undefined}
       >
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-16">
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="h-6 pt-2">{title}</DialogTitle>
           {description && (
             <DialogDescription id={descriptionId} className="sr-only">
               {description}

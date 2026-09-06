@@ -1,5 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
+/** The app's UI family. Themes that don't name their own font fall back to it,
+ *  and the font presets layer their own family on top of it. */
+export const UI_FONT_STACK = "'DM Sans', system-ui, sans-serif";
+
 const defaultTheme = {
   textColor: "",
   backgroundColor: "white",
@@ -55,7 +59,7 @@ const playgroundTheme = {
   popoverBackgroundColor: "",
   serviceBorderWidth: 1,
   serviceContentPaddingBottom: 0,
-  fontFamily: "'DM Sans', system-ui, sans-serif",
+  fontFamily: UI_FONT_STACK,
   serviceBoxShadow: "var(--shadow-card, 0 1px 2px oklch(0.4 0.01 280 / 0.05), 0 3px 12px oklch(0.4 0.01 280 / 0.07))",
   runtimeBoxShadow: "var(--shadow-runtime, 0 2px 8px oklch(0.4 0.02 280 / 0.07), 0 8px 28px oklch(0.4 0.02 280 / 0.05))",
 };
@@ -75,7 +79,7 @@ const mobileTheme = {
   popoverBackgroundColor: "#ffffff",
   serviceBorderWidth: 1.5,
   serviceContentPaddingBottom: 0,
-  fontFamily: "'DM Sans', system-ui, sans-serif",
+  fontFamily: UI_FONT_STACK,
   serviceBoxShadow: "0 1px 3px rgba(0,0,0,0.06)",
   runtimeBoxShadow: "0 1px 3px rgba(0,0,0,0.06)",
 };
@@ -172,21 +176,36 @@ export const FONT_PRESETS: FontPreset[] = [
   {
     id: "character",
     label: "Character",
-    family: "'Space Grotesk', 'DM Sans', system-ui, sans-serif",
+    family: `'Space Grotesk', ${UI_FONT_STACK}`,
     webfont: SPACE_GROTESK,
   },
   {
     id: "swiss",
     label: "Swiss",
-    family: "'Archivo', 'DM Sans', system-ui, sans-serif",
+    family: `'Archivo', ${UI_FONT_STACK}`,
     webfont: ARCHIVO,
   },
 ];
 
-type AppearanceState = { accentId: string; fontId: string };
+export type DensityPreset = { id: string; label: string };
+
+// Compactness of service cards — a size axis independent of the colour theme.
+// "comfortable" leaves every theme at its own defaults; "compact" swaps a
+// handful of size tokens (`--hkp-svc-*` in index.css) by putting
+// `data-density="compact"` on <html>, the same mechanism accent and font use.
+export const DENSITY_PRESETS: DensityPreset[] = [
+  { id: "comfortable", label: "Comfortable" },
+  { id: "compact", label: "Compact" },
+];
+
+type AppearanceState = { accentId: string; fontId: string; densityId: string };
 
 const APPEARANCE_STORAGE_KEY = "hkp-appearance";
-const DEFAULT_APPEARANCE: AppearanceState = { accentId: "lagoon", fontId: "theme" };
+const DEFAULT_APPEARANCE: AppearanceState = {
+  accentId: "lagoon",
+  fontId: "theme",
+  densityId: "compact",
+};
 
 function restoreAppearance(): AppearanceState {
   try {
@@ -198,6 +217,8 @@ function restoreAppearance(): AppearanceState {
     return {
       accentId: typeof parsed.accentId === "string" ? parsed.accentId : DEFAULT_APPEARANCE.accentId,
       fontId: typeof parsed.fontId === "string" ? parsed.fontId : DEFAULT_APPEARANCE.fontId,
+      densityId:
+        typeof parsed.densityId === "string" ? parsed.densityId : DEFAULT_APPEARANCE.densityId,
     };
   } catch {
     return DEFAULT_APPEARANCE;
@@ -261,6 +282,15 @@ function applyAppearance(appearance: AppearanceState) {
     ensureWebfontLoaded(font);
     root.style.setProperty("--hkp-start-font", font.family);
   }
+
+  const density = DENSITY_PRESETS.find((p) => p.id === appearance.densityId);
+  // `compact` is what the CSS keys on; `comfortable` carries the attribute too
+  // but no rule targets it, so the bare `:root` token values apply.
+  if (!density) {
+    root.removeAttribute("data-density");
+  } else {
+    root.setAttribute("data-density", density.id);
+  }
 }
 
 type ThemeControl = {
@@ -270,6 +300,8 @@ type ThemeControl = {
   setAccentId: (id: string) => void;
   fontId: string;
   setFontId: (id: string) => void;
+  densityId: string;
+  setDensityId: (id: string) => void;
 };
 
 export const ThemeCtx = createContext<ThemeContextState>(defaultTheme);
@@ -280,6 +312,8 @@ const ThemeControlCtx = createContext<ThemeControl>({
   setAccentId: () => {},
   fontId: DEFAULT_APPEARANCE.fontId,
   setFontId: () => {},
+  densityId: DEFAULT_APPEARANCE.densityId,
+  setDensityId: () => {},
 });
 
 export function ThemeProvider({ children, defaultThemeName = "default" }: { children: ReactNode; defaultThemeName?: ThemeName }) {
@@ -323,6 +357,8 @@ export function ThemeProvider({ children, defaultThemeName = "default" }: { chil
     setAccentId: (id) => setAppearance((prev) => ({ ...prev, accentId: id })),
     fontId: appearance.fontId,
     setFontId: (id) => setAppearance((prev) => ({ ...prev, fontId: id })),
+    densityId: appearance.densityId,
+    setDensityId: (id) => setAppearance((prev) => ({ ...prev, densityId: id })),
   };
 
   return (
@@ -334,6 +370,13 @@ export function ThemeProvider({ children, defaultThemeName = "default" }: { chil
 
 export function useTheme() {
   return useContext(ThemeCtx);
+}
+
+/** The family to render UI text in: whatever the active theme (and the user's
+ *  font preset) resolves to, falling back to the app's own stack for themes
+ *  that leave the choice to the document. */
+export function useUiFont() {
+  return useTheme().fontFamily || UI_FONT_STACK;
 }
 
 export function useThemeControl() {

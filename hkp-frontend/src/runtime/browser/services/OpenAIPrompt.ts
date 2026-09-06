@@ -1,5 +1,6 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
+import { withSecrets } from "hkp-frontend/src/core/secrets";
 
 import OpenAIPromptUI from "./OpenAIPromptUI";
 import {
@@ -25,10 +26,14 @@ type State = {
   prompt: string;
   temperature: number;
   seed: number;
+  /**
+   * A reference to the key, never the key. It is resolved once per request,
+   * against the endpoint the request is going to.
+   */
+  apiKey: string;
 };
 
 export class OpenAIPrompt extends ServiceBase<State> {
-  _apiKey: string = "";
   constructor(
     app: AppInstance,
     board: string,
@@ -70,6 +75,7 @@ export class OpenAIPrompt extends ServiceBase<State> {
       prompt: "",
       temperature: 0,
       seed: 0,
+      apiKey: "",
     });
   }
 
@@ -94,8 +100,8 @@ export class OpenAIPrompt extends ServiceBase<State> {
       }
     }
 
-    if (needsUpdate(apiKey, this._apiKey)) {
-      this._apiKey = apiKey;
+    if (needsUpdate(apiKey, this.state.apiKey)) {
+      this.state.apiKey = apiKey;
     }
 
     if (needsUpdate(voice, this.state.voice)) {
@@ -111,7 +117,7 @@ export class OpenAIPrompt extends ServiceBase<State> {
   };
 
   async process(params: any) {
-    if (!this._apiKey) {
+    if (!this.state.apiKey) {
       console.error("OpenAIPrompt - no API key provided");
       return null;
     }
@@ -164,12 +170,27 @@ export class OpenAIPrompt extends ServiceBase<State> {
         throw new Error(`OpenAIPrompt - unknown type: ${type}`);
       }
     };
+    // The key exists from here to the end of the request and nowhere else:
+    // resolved against the endpoint it is being sent to, and never written
+    // back into the state this service reports.
+    const { value: apiKey, missing, refused } = withSecrets(
+      this.state.apiKey,
+      { to: openAiModel.endpoint },
+    );
+    if (missing.length || refused.length) {
+      const reason = missing.length
+        ? `no value for ${missing.join(", ")}`
+        : `${refused[0].alias} may not be sent to ${refused[0].to}`;
+      console.error(`OpenAIPrompt - API key unavailable: ${reason}`);
+      return null;
+    }
+
     const resp = await fetch(openAiModel.endpoint, {
       method: "POST",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this._apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(getBody()),
     });

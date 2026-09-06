@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeWidgetSource, StatusIndicatorWidget } from "../../types";
-import { findService, resolvePath } from "../../findService";
+import { findService } from "../../boardServices";
+import { resolvePath } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 const DEFAULT_DOT_COLOR = "#6b7280";

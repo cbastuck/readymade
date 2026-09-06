@@ -8,7 +8,6 @@ import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import SecretField from "hkp-frontend/src/components/shared/SecretField";
 import { assureJSON } from "hkp-frontend/src/common";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
-import { secretId } from "hkp-frontend/src/vault";
 import Editor, {
   EditorHandle,
 } from "hkp-frontend/src/components/shared/Editor";
@@ -321,8 +320,7 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
 
         <SecretField
           label="API Key"
-          value={secretId("uservault", props.service, `apiKey.${provider}`)}
-          fallbackValue={apiKey}
+          alias={`${props.service.uuid}.apiKey.${provider}`}
           onChange={onChangeApiKey}
         />
 

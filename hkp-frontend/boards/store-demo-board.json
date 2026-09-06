@@ -1,0 +1,63 @@
+{
+  "boardName": "Store Demo",
+  "description": "Dump cheaply, process expensively: a webhook drops enquiries in, a timer picks up the batch.",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "intake",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Enquiry Webhook",
+        "state": {
+          "mode": "process_on_session",
+          "pipeline": [
+            {
+              "uuid": "dump",
+              "serviceId": "store",
+              "serviceName": "Dump",
+              "state": {
+                "mode": "put",
+                "keyFrom": "body.id"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "batch-clock",
+        "serviceId": "timer",
+        "serviceName": "Batch Clock",
+        "state": {
+          "periodic": true,
+          "periodicValue": 30,
+          "periodicUnit": "s",
+          "start": true
+        }
+      },
+      {
+        "uuid": "batch",
+        "serviceId": "store",
+        "serviceName": "Pending Enquiries",
+        "state": {
+          "mode": "list",
+          "limit": 10
+        }
+      },
+      {
+        "uuid": "waiting",
+        "serviceId": "monitor",
+        "serviceName": "Waiting To Process"
+      }
+    ]
+  }
+}

@@ -1,5 +1,9 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
+import {
+  THIS_DEVICE,
+  resolveCredential,
+} from "hkp-frontend/src/core/secrets";
 import EncryptUI from "./EncryptUI";
 
 /**
@@ -9,6 +13,12 @@ import EncryptUI from "./EncryptUI";
  * Input:  any — JSON-serialisable value or Blob/File
  * Output: base64 string — [12-byte IV][AES-256-GCM ciphertext]
  * Config: secret (string), method ("aes" — only option for now)
+ *
+ * The secret is a `{{secret.<alias>}}` reference resolved at the moment a key is
+ * derived from it, and never held as a value: it is not sent anywhere, so it
+ * resolves against `THIS_DEVICE`, and a secret whose audience is that one is
+ * refused everywhere on the network. What the service reports from its state is
+ * the reference it was configured with, which is what a saved board carries.
  *
  * Key derivation: SHA-256 of the UTF-8 encoded secret → 256-bit AES-GCM key.
  * A fresh 12-byte random IV is generated per encrypt call and prepended to
@@ -74,12 +84,22 @@ class Encrypt extends ServiceBase<State> {
       return null;
     }
 
+    // The passphrase exists from here to the end of this call and nowhere else.
+    const { value: secret, problem } = resolveCredential(
+      this.state.secret,
+      THIS_DEVICE,
+    );
+    if (problem) {
+      this.pushErrorNotification(`Encrypt: ${problem}`);
+      return null;
+    }
+
     const isBlob = params instanceof Blob || params instanceof File;
     const plaintext = isBlob
       ? JSON.stringify({ __blob: await blobToBase64(params) })
       : JSON.stringify(params);
 
-    const key = await deriveKey(this.state.secret, "encrypt");
+    const key = await deriveKey(secret, "encrypt");
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },

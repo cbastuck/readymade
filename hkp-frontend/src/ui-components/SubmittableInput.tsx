@@ -66,7 +66,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
 
     const isChangePending = useMemo(
       () => value !== internal,
-      [value, internal]
+      [value, internal],
     );
 
     useEffect(() => {
@@ -78,7 +78,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
 
     useEffect(
       () => onChangePending?.(isChangePending),
-      [onChangePending, isChangePending]
+      [onChangePending, isChangePending],
     );
 
     const onKeyDown = (ev: KeyboardEvent) => {
@@ -188,7 +188,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 export default SubmittableInput;

@@ -1,0 +1,65 @@
+{
+  "boardName": "Text Generation (Anthropic) Demo",
+  "description": "Extracts structured data from a message with a hosted model, on the Node runtime.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "prompt-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Enquiry",
+        "state": {
+          "recentInjection": "Hi, we would like 25 double rooms at the Adlon for the 14th to the 16th of March, breakfast included. One guest needs a step-free room."
+        }
+      }
+    ],
+    "node": [
+      {
+        "uuid": "llm-svc",
+        "serviceId": "text-generation",
+        "serviceName": "Extract Offer",
+        "state": {
+          "backend": "anthropic",
+          "model": "claude-sonnet-5",
+          "systemPrompt": "Extract the booking request. Leave a field out when the message does not state it — never guess.",
+          "maxTokens": 1024,
+          "jsonSchema": {
+            "type": "object",
+            "properties": {
+              "hotel": { "type": "string" },
+              "rooms": { "type": "integer" },
+              "roomType": { "type": "string" },
+              "arrival": { "type": "string", "description": "ISO date" },
+              "departure": { "type": "string", "description": "ISO date" },
+              "breakfastIncluded": { "type": "boolean" },
+              "specialRequests": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["hotel", "rooms"]
+          }
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "monitor",
+        "serviceName": "Extracted Fields"
+      }
+    ]
+  }
+}

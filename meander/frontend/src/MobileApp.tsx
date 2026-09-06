@@ -29,6 +29,7 @@ import { findDemoBoard } from "hkp-frontend/src/demoRegistry";
 import { useAppContext } from "hkp-frontend/src/AppContext";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
+import SecretConsentDialog from "./SecretConsentDialog";
 import RuntimeUserSync from "./RuntimeUserSync";
 import { useBackendRemotes } from "./useBackendRemotes";
 import {
@@ -311,6 +312,7 @@ export default function MobileApp() {
     <MeanderPlatformProvider>
       <HkpApp defaultThemeName="playground" clientId={AUTH0_CLIENT_ID}>
         <RuntimeUserSync />
+        <SecretConsentDialog />
         {session === null ? (
           <StartScreen onOpenSession={setSession} remotes={remotes} />
         ) : (

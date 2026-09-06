@@ -33,7 +33,6 @@ import SortDescriptor from "./services/Sort";
 import LimitDescriptor from "./services/Limit";
 import FlatMapDescriptor from "./services/FlatMap";
 import SmoothDescriptor from "./services/Smooth";
-import HttpRelayClientDescriptor from "./services/HttpRelayClient";
 import AudioInputDescriptor from "./services/AudioInput";
 import AudioOutputDescriptor from "./services/AudioOutput";
 import SoundDescriptor from "./services/Sound";
@@ -123,8 +122,6 @@ export function findServiceUI(
       return FlatMapDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/smooth":
       return SmoothDescriptor.createUI as unknown as ServiceUIComponent;
-    case "hookup.to/service/http-relay-client":
-      return HttpRelayClientDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/audio-input":
       return AudioInputDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/audio-output":

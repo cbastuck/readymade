@@ -92,9 +92,13 @@ export default function GithubSourceUI(props: ServiceUIProps) {
   const renderBasicAuth = () => {
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* Not masked: this field holds the *name* of a secret, not a secret.
+            The value lives in the vault and is fetched when a request is made,
+            so hiding what is typed here would hide nothing and make a mistyped
+            alias impossible to spot. A token pasted in outright still works,
+            and is what a board written that way carries. */}
         <InputField
           label="Token"
-          type="password"
           value={token || undefined}
           onChange={(t) => props.service.configure({ token: t })}
         />

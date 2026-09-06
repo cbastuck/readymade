@@ -177,9 +177,18 @@ http://<host>:<port>/hosted/<mountId>
 ```
 
 These endpoints are unauthenticated by design — they exist for outside callers holding no
-token — so the unguessable id is what gates access. Because the address is assigned at load
-time, a board that needs to point a client at one references the *service* rather than
-hard-coding an address, in that same field:
+token — so the unguessable id is what gates access. The id is **derived, not drawn**: an
+HMAC of the tenant, board, runtime and the mount's name (`mountName`, defaulting to the
+service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted per runtime at
+`~/.hkp/<node|python>/mount-secret`). The address therefore survives reloads, restarts and
+redeploys — an outside party configured with it by hand keeps working — while staying
+uncomputable without the key. Renaming a mount rotates that one address; rotating the
+secret rotates all of them. Nothing sensitive enters the board, which says only what the
+endpoint is *called*.
+
+Because the address is still assigned at load time rather than written into the board, a
+board that needs to point a client at one references the *service* rather than hard-coding
+an address, in that same field:
 
 ```json
 "__hkpMount": "hkp-mount://<runtimeId>/<serviceUuid>"
@@ -222,7 +231,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 
 | Widget type        | What it does                                                               |
 | ------------------ | -------------------------------------------------------------------------- |
-| `button`           | Sends a configure payload to a service on click                            |
+| `button`           | Sends a configure payload, or a `process` action, to a service on click    |
 | `text-input`       | Text field; `$$input` in the configure payload becomes the typed value     |
 | `knob`             | Rotary control; `{{value}}` in configure payload becomes the numeric value |
 | `level-meter`      | Vertical bar driven by a service notification                              |
@@ -231,6 +240,8 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `qr-code`          | Displays a QR code from a service notification                             |
 | `message-list`     | Scrolling message thread with optional inline composer                     |
 | `status-indicator` | Coloured dot driven by a service notification                              |
+| `text`             | Whatever a service is saying, as text — a reason, a summary, a count       |
+| `data-table`       | Rows from a service; an array replaces the table, an object appends a row  |
 | `file-pick`        | File chooser that sends the file to a service                              |
 
 Use `/new-board` for the full widget schema and board design workflow.

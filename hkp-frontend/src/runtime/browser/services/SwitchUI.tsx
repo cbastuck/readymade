@@ -131,6 +131,11 @@ export default function SwitchUI(props: ServiceUIProps) {
           findServiceUI={findServiceUI}
           getActualInstance={getActualInstance}
           defaultCollapsed={true}
+          // The trail names the Switch as well as the branch: which case this
+          // is means nothing without the service it is a case of.
+          levelLabel={`${service.serviceName} · ${
+            branch === "default" ? "default" : `case ${branch}`
+          }`}
         />
       </div>
     </div>

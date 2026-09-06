@@ -2,6 +2,7 @@ import { ButtonWidget } from "../../types";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { useFacadeState } from "../../FacadeStateContext";
 import { executeActions } from "../../executeActions";
+import { usePressFeedback } from "../../pressFeedback";
 import {
   StatusDot,
   statusColor,
@@ -12,15 +13,27 @@ export function ButtonRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<ButtonWidget>) {
-  const { setState } = useFacadeState();
+  const { state, setState } = useFacadeState();
   const indicatorValue = useNotificationValue(
     boardContext,
     widget.indicator?.source,
   );
+  const press = usePressFeedback();
   return (
     <button
+      {...press.handlers}
       onClick={() => {
-        executeActions({ action: widget.action, actions: widget.actions, value: undefined, boardContext, setState });
+        executeActions({
+          action: widget.action,
+          actions: widget.actions,
+          value: undefined,
+          boardContext,
+          setState,
+          // Without this a { "$state": … } reference in the payload travels as
+          // the reference object itself, and the service receives a shape it
+          // cannot read rather than the value a widget published.
+          state,
+        });
       }}
       style={{
         display: "inline-flex",
@@ -35,7 +48,7 @@ export function ButtonRenderer({
         fontSize: 13,
         fontWeight: 500,
         fontFamily: "monospace",
-        transition: "opacity 0.15s",
+        ...press.style,
       }}
     >
       {widget.indicator && (

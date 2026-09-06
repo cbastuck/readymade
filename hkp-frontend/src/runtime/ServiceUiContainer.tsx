@@ -47,8 +47,9 @@ export default function ServiceUiContainer(props: Props) {
     onCreateServiceUi,
   } = props;
 
-  const { themeName } = useThemeControl();
+  const { themeName, densityId } = useThemeControl();
   const isPlayground = themeName === "playground";
+  const compact = densityId === "compact";
 
   const boardContext = useBoardContext();
   const registry = boardContext?.registry[runtime.id] ?? [];
@@ -84,9 +85,9 @@ export default function ServiceUiContainer(props: Props) {
 
   return (
     <div
-      className={`overflow-y-hidden w-full pb-4 mt-3 p-4 ${className || ""} ${
-        wrapServices ? "flex-wrap" : ""
-      }`}
+      className={`overflow-y-hidden w-full pb-4 mt-3 ${
+        compact ? "p-2" : "p-4"
+      } ${className || ""} ${wrapServices ? "flex-wrap" : ""}`}
       onDragStart={() => {
         dragCountRef.current += 1;
         setIsDragging(true);
@@ -111,7 +112,7 @@ export default function ServiceUiContainer(props: Props) {
               flexDirection: "row",
               position: "relative",
               zIndex: services.length - pos,
-              paddingBottom: 10,
+              paddingBottom: compact ? 5 : 10,
               // The card inside refuses to shrink (flexShrink: 0), so a
               // shrinking wrapper makes cards overflow it unclipped and
               // overlap the next service; keep natural width and let the

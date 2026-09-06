@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { QrCodeWidget } from "../../types";
-import { findService, resolvePath } from "../../findService";
+import { findService } from "../../boardServices";
+import { resolvePath } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 export function QrCodeRenderer({

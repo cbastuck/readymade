@@ -192,6 +192,17 @@ Data App::processRuntime(const std::string& runtimeId, const Data& data)
   return rt->process(data);
 }
 
+Data App::processServiceAt(const std::string& runtimeId,
+                           const std::string& instanceId, const Data& data)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return false;
+  }
+  return rt->processAt(instanceId, data);
+}
+
 json App::getRegistry() const
 {
   auto r = json::array();
@@ -244,6 +255,18 @@ json App::rearrangeServices(const std::string& runtimeId, const std::vector<std:
   }
   auto success = rt->rearrangeServices(newOrder);
   return success ? jsonSerialise(rt->getConfiguration()) : nullptr;
+}
+
+json App::setRuntimeSecrets(const std::string& runtimeId,
+                            const std::map<std::string, SecretEntry>& entries)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return nullptr;
+  }
+  rt->setSecrets(entries);
+  return json{{"aliases", rt->secrets().aliases()}};
 }
 
 std::shared_ptr<Runtime> App::appendRuntime(const RuntimeConfiguration& config)

@@ -31,6 +31,10 @@ public:
   void setPort(unsigned short port) { m_port = port; }
   unsigned short port() const { return m_port; }
 
+  // Whether an acceptor is bound. The port is only read when it binds, so this
+  // also says whether a port change still has any effect to wait for.
+  bool running() const { return m_listener != nullptr; }
+
   boost::asio::io_context& getIOContext() { return m_ioc; }
 
 private:

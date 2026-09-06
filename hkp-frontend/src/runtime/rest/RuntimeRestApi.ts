@@ -1,4 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
+import { referencedSecrets, secretStore } from "hkp-frontend/src/core/secrets";
+import {
+  SecretRelease,
+  allowedSecrets,
+} from "hkp-frontend/src/core/secretConsent";
 
 import {
   InstanceId,
@@ -14,6 +19,7 @@ import {
 } from "hkp-frontend/src/types";
 import RuntimeRestScope from "./RuntimeRestScope";
 import { EngineState } from "hkp-frontend/src/BoardContext";
+import { startedRun } from "../processContext";
 
 // A runtime reports its notification WebSocket URL using its own externalIP,
 // which is 127.0.0.1 for an embedded runtime (correct only for a client on the
@@ -182,10 +188,87 @@ function isSameRuntime(
  * A runtime whose services no longer match the board is not the board's runtime,
  * so it is left to be replaced.
  */
+/**
+ * The values a runtime needs, by alias, for the references its services carry.
+ *
+ * Only what this runtime's own services ask for. A board with one webhook must
+ * not put every credential the vault holds into a server it happens to use:
+ * what a runtime is given is what it could leak, so it is given the minimum
+ * that lets it run.
+ *
+ * Absent aliases are simply not sent. The service referencing one reports it
+ * as unavailable by name, which is a better failure than a runtime holding a
+ * credential nobody could account for.
+ */
+async function secretsFor(
+  services: Array<{ state?: unknown }> | undefined,
+  release: Omit<SecretRelease, "aliases">,
+): Promise<Record<string, { value: string; audience?: string[] }>> {
+  const store = secretStore();
+  // Only aliases with something behind them are put to the person: being asked
+  // to approve a secret that does not exist is a question with no answer, and
+  // the service naming it reports it as unavailable either way.
+  const held = referencedSecrets(services ?? []).filter(
+    (alias) => store.get(alias) !== null,
+  );
+  const allowed = await allowedSecrets({ ...release, aliases: held });
+
+  const payload: Record<string, { value: string; audience?: string[] }> = {};
+  for (const alias of allowed) {
+    const value = store.get(alias);
+    if (value === null) {
+      continue;
+    }
+    const audience = store.audience?.(alias) ?? null;
+    payload[alias] = audience?.length ? { value, audience } : { value };
+  }
+  return payload;
+}
+
+/**
+ * Hands a running runtime the values for the references it holds.
+ *
+ * Provisioning carries these already; this covers the moments it cannot — a
+ * board being built a service at a time, a vault entry edited while a board
+ * runs, and attaching to a runtime that restarted, where the services survived
+ * and the values did not. Sending nothing is not an error: a board with no
+ * references has nothing to push.
+ */
+export async function pushSecrets(
+  runtime: RuntimeDescriptor,
+  services: Array<{ state?: unknown }> | undefined,
+  user: User | null,
+  boardName = "",
+): Promise<void> {
+  const secrets = await secretsFor(services, {
+    boardName,
+    runtimeId: runtime.id,
+    runtimeName: runtime.name,
+    url: runtime.url ?? "",
+  });
+  if (!Object.keys(secrets).length) {
+    return;
+  }
+  try {
+    await fetch(`${runtime.url}/runtimes/${runtime.id}/secrets`, {
+      method: "POST",
+      body: JSON.stringify(secrets),
+      headers: { "content-type": "application/json", ...authHeaders(user) },
+    });
+  } catch {
+    // A runtime that cannot be reached is reported by everything else the
+    // caller is doing; a failed push costs the credentials, and the services
+    // needing them say so themselves.
+  }
+}
+
 async function attachRuntime(
   runtime: RuntimeDescriptor,
-  services: Array<{ uuid: string; serviceId: string }>,
+  // State included: attaching re-pushes the values for the references it
+  // carries, which cannot be read off a uuid alone.
+  services: Array<{ uuid: string; serviceId: string; state?: unknown }>,
   user: User | null,
+  boardName = "",
 ): Promise<RestoreRuntimeResult | null> {
   let res: Response;
   try {
@@ -220,6 +303,12 @@ async function attachRuntime(
     user,
   );
   scope.registry = registry;
+  scope.services = existing.services;
+  scope.boardName = boardName;
+  // A runtime that restarted still has its services and no longer has their
+  // credentials, and nothing here can tell that apart from one that never
+  // stopped. Pushing again is idempotent, so it is done either way.
+  await pushSecrets(descriptor, services, user, boardName);
   return {
     runtime: descriptor,
     // The running services, not the board's: their state is what is live.
@@ -242,7 +331,7 @@ async function restoreRuntime(
     state: (s as any).state, // TODO:
   }));
 
-  const attached = await attachRuntime(runtime, svcs, user);
+  const attached = await attachRuntime(runtime, svcs, user, boardName);
   if (attached) {
     return attached;
   }
@@ -319,6 +408,7 @@ export async function attachRuntimes(
       user,
     );
     scope.registry = registry;
+    scope.services = cur.services;
     return {
       ...acc,
       runtimes: [...acc.runtimes, rt],
@@ -339,7 +429,7 @@ export async function processRuntime(
   const runtime = scope.descriptor;
 
   if (
-    !scope.sendMessageViaWebsocket(params, context || null, "processRuntime")
+    !scope.sendMessageViaWebsocket(params, startedRun(context), "processRuntime")
   ) {
     // if sending failed, we probably don't have a runtimeOutput, we send a REST request
     // TODO what if params is not an object?
@@ -420,6 +510,18 @@ export async function configureService(
   config: object,
 ): Promise<object> {
   const runtime = scope.descriptor;
+  // A configuration may name a secret the runtime has not been given: a runtime
+  // is created before it has services, and a field naming one can be filled in
+  // at any time after that. Sent before the configuration rather than after,
+  // because configuring a service is what can put it to use. Only what this
+  // configuration names — anything else a service holds arrived with the
+  // configuration that named it.
+  await pushSecrets(
+    runtime,
+    [{ state: config }],
+    (scope as RuntimeRestScope).authenticatedUser,
+    (scope as RuntimeRestScope).boardName,
+  );
   const res = await fetch(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
     {
@@ -458,13 +560,48 @@ export async function getServiceConfig(
   return state;
 }
 
+/**
+ * Runs the pipeline from `service` onward, that service included.
+ *
+ * The runtime-wide entry point (`processRuntime`) always starts at the first
+ * service, which is the wrong thing for anything that means "carry on from
+ * here" — replaying a captured value from the flow inspector, a panel pushing
+ * its buffer downstream. Both need the services before the target left alone.
+ */
 export async function processService(
-  _scope: RuntimeScope,
-  _service: InstanceId,
-  _params: any,
+  scope: RuntimeScope,
+  service: InstanceId,
+  params: any,
   _context?: ProcessContext | null,
 ): Promise<any> {
-  throw new Error("RemoteRuntime processService no implemented");
+  const runtime = scope.descriptor;
+  const res = await fetch(
+    `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}/process`,
+    {
+      method: "POST",
+      body: JSON.stringify(params ?? null),
+      headers: {
+        "content-type": "application/json",
+        ...authHeaders((scope as RuntimeRestScope).authenticatedUser),
+      },
+    },
+  );
+  if (!res.ok) {
+    throw new Error(
+      `Failed to process service ${service.uuid}: ${res.status} ${res.statusText}`,
+    );
+  }
+
+  // A pipeline that stopped answers with an empty body rather than JSON.
+  const body = await res.text();
+  if (!body) {
+    return null;
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    return body;
+  }
 }
 
 export async function rearrangeServices(
@@ -509,6 +646,15 @@ async function createRuntimeRequest(
       state: (s as any).state, // TODO:
     })),
     boardName: boardName || undefined,
+    // Values ride with the create payload because provisioning is one call:
+    // the services in it are configured before it returns, and a service that
+    // connects while being configured needs its credential by then.
+    secrets: await secretsFor(services, {
+      boardName: boardName ?? "",
+      runtimeId: runtime.id,
+      runtimeName: runtime.name,
+      url: runtime.url ?? "",
+    }),
   };
   const runtimesUrl = `${runtime.url}/runtimes`;
   let res: Response;
@@ -544,6 +690,8 @@ async function createRuntimeRequest(
     user ?? null,
   );
   scope.registry = normalizedRegistry;
+  scope.services = rt.services ?? [];
+  scope.boardName = boardName ?? "";
 
   return {
     runtime: rt,

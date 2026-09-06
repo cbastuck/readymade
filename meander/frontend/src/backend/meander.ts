@@ -12,6 +12,13 @@ import {
   PickerOptions,
   RuntimeSettings,
 } from "./types";
+import {
+  vaultAliases,
+  vaultDelete,
+  vaultSet,
+  vaultSetAudience,
+} from "hkp-frontend/src/vault";
+import { forgetGrant } from "hkp-frontend/src/grants";
 
 const encodePathSegment = (value: string) => encodeURIComponent(value);
 
@@ -50,6 +57,21 @@ export const meanderBackend: BackendAdapter = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`Failed to save board: ${res.statusText}`);
+  },
+
+  async loadBoardSource(boardName: string): Promise<string> {
+    const res = await fetch(`hkp://boards/${encodePathSegment(boardName)}`);
+    if (!res.ok) throw new Error(`Failed to load board: ${res.statusText}`);
+    return res.text();
+  },
+
+  async saveBoardSource(name: string, source: string): Promise<void> {
+    const res = await fetch(`hkp://boards/${encodePathSegment(name)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: source,
     });
     if (!res.ok) throw new Error(`Failed to save board: ${res.statusText}`);
   },
@@ -100,6 +122,81 @@ export const meanderBackend: BackendAdapter = {
     });
     if (!res.ok) throw new Error(`Failed to save settings: ${res.statusText}`);
     return res.json();
+  },
+
+  async listSecrets(): Promise<string[]> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.secretAliases) {
+      // An older app build: the injected vault is the only source of names.
+      return vaultAliases();
+    }
+    return (await saucer.exposed.secretAliases()) ?? [];
+  },
+
+  async setSecret(alias: string, value: string): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.setSecret) {
+      throw new Error("This build cannot store secrets");
+    }
+    await saucer.exposed.setSecret(alias, value);
+    // The injected copy is what boards resolve against, and it is only read at
+    // page creation — so the write has to land in both places or a secret just
+    // saved would not resolve until the app is restarted.
+    vaultSet(alias, value);
+  },
+
+  async deleteSecret(alias: string): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.deleteSecret) {
+      throw new Error("This build cannot store secrets");
+    }
+    await saucer.exposed.deleteSecret(alias);
+    vaultDelete(alias);
+  },
+
+  async listSecretAudiences(): Promise<Record<string, string[]>> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.secretAudiences) {
+      // An older app build: it holds values only, so nothing is constrained.
+      return {};
+    }
+    try {
+      const parsed = JSON.parse((await saucer.exposed.secretAudiences()) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  },
+
+  async setSecretAudience(alias: string, audience: string[]): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.setSecretAudience) {
+      throw new Error("This build cannot constrain secrets");
+    }
+    await saucer.exposed.setSecretAudience(alias, audience);
+    // Same reason the value is written twice: the injected copy is what boards
+    // resolve against and is only read at page creation, so a constraint saved
+    // here would not apply until the app is restarted.
+    vaultSetAudience(alias, audience);
+  },
+
+  async grantSecrets(key: string, aliases: string[]): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.grantSecrets) {
+      // An older app build with nowhere durable to write one. The grant holds
+      // for this session, which means being asked again next launch.
+      return;
+    }
+    await saucer.exposed.grantSecrets(key, aliases);
+  },
+
+  async revokeSecretGrant(key: string): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.revokeSecretGrant) {
+      throw new Error("This build cannot revoke a grant");
+    }
+    await saucer.exposed.revokeSecretGrant(key);
+    forgetGrant(key);
   },
 
   async mintProcessRuntimeToken(runtimeId: string): Promise<string | null> {

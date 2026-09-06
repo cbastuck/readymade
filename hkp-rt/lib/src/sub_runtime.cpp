@@ -149,6 +149,20 @@ void SubRuntime::sendData(Data data, MessagePurpose purpose,
   m_parent.sendData(std::move(data), purpose, sender, std::move(callback));
 }
 
+void SubRuntime::log(const Service& svc, LogLevel level,
+                     const std::string& event, const nlohmann::json& data)
+{
+  // A nested pipeline has no route out of its own, so the entry is built by
+  // whoever does have one. The parent names the run, which is the run this
+  // pipeline is running under.
+  m_parent.log(svc, level, event, data);
+}
+
+void SubRuntime::forwardLog(const LogEntry& entry)
+{
+  m_parent.forwardLog(entry);
+}
+
 void SubRuntime::notifyProcessFinished(const Service&, const Data&)
 {
   // Nested services aren't surfaced as top-level frames, so a SubRuntime sends

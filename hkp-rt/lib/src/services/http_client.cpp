@@ -16,6 +16,7 @@
 #include <boost/url/scheme.hpp>
 
 #include <cstdlib>
+#include <algorithm>
 #include <iostream>
 #include <string>
 
@@ -23,6 +24,8 @@
 #include "./root_certificates.h"
 #include "../common/inja.h"
 #include "../common/string_util.h"  
+#include <secrets.h>
+#include "../runtime_host.h"
 
 namespace beast = boost::beast; // from <boost/beast.hpp>
 namespace http = beast::http;   // from <boost/beast/http.hpp>
@@ -41,6 +44,72 @@ HttpClient::HttpClient(const std::string& instanceId)
 HttpClient::~HttpClient()
 {
   m_impl->ioc.stop();
+}
+
+/** A method name as the wire spells it, whatever a board wrote. */
+static std::string upperCased(const std::string& text)
+{
+  std::string out = text;
+  std::transform(out.begin(), out.end(), out.begin(),
+                 [](unsigned char c) { return std::toupper(c); });
+  return out;
+}
+
+/**
+ * The request both transports send.
+ *
+ * Built in one place because there are two of them — TLS and plain — and what
+ * a request carries is a property of the request, not of the socket under it.
+ * Held apart, the two drifted: the plain path sent neither the configured
+ * headers nor the body, so the same board behaved differently depending on
+ * whether its URL began `https` or `http`.
+ */
+http::request<http::string_body> HttpClient::buildRequest(
+    const std::string& method, const std::string& path,
+    const std::string& query, const std::string& host, int version,
+    const json& j)
+{
+  // One conversion, because there are two spellings in play: this service's own
+  // helper reads the lower-case names a board writes, and Beast's reads the
+  // upper-case ones on the wire. Using both on the same string made the verb
+  // right and the body decision wrong — a board saying "post" sent no body.
+  auto methodVerb = http::string_to_verb(upperCased(method));
+  if (methodVerb == http::verb::unknown)
+  {
+    methodVerb = m_impl->getMethodFromString(method);
+  }
+
+  http::request<http::string_body> req{methodVerb, path + "?" + query, version};
+  req.set(http::field::host, host);
+  req.set(http::field::user_agent, m_impl->userAgent);
+
+  // Headers are a free-form map, and a credential is as likely to be part of
+  // one — `Bearer <token>` — as to be a field of its own. Resolved against the
+  // address being called, so a header bound to one host cannot be sent to
+  // another by repointing this service. What comes back is used for this
+  // request and dropped; nothing resolved goes back into state.
+  auto headers = j.value("headers", m_impl->headers);
+  const auto credential = resolveCredential(
+      parentHost() ? &parentHost()->secrets() : nullptr, headers, host);
+  if (!credential.problem.empty())
+  {
+    throw std::runtime_error("http-client: " + credential.problem);
+  }
+  headers = credential.value.get<std::map<std::string, std::string>>();
+  for (const auto& header : headers)
+  {
+    req.set(header.first, processInjaTemplate(header.second, j));
+  }
+
+  auto body = j.value("body", m_impl->body);
+  if (!body.empty() &&
+      (methodVerb == http::verb::post || methodVerb == http::verb::put))
+  {
+    req.body() = body;
+    req.set(http::field::content_length, std::to_string(body.size()));
+    req.prepare_payload();
+  }
+  return req;
 }
 
 json HttpClient::configure(Data data)
@@ -149,7 +218,7 @@ Data HttpClient::process(Data data)
     std::string urlOrTemplate = j.value("url", m_impl->url);
     url = processInjaTemplate(urlOrTemplate, j);
   }
-  std::string method = j.contains("method") ? j["method"] : "get";
+  const std::string method = chooseRequestMethod(j, m_impl->method);
    
   try
   {
@@ -193,28 +262,8 @@ Data HttpClient::process(Data data)
       beast::get_lowest_layer(stream).connect(results); // Make the connection on the IP address we get from a lookup
       stream.handshake(ssl::stream_base::client); // Perform the SSL handshake
 
-      http::request<http::string_body> req{m_impl->getMethodFromString(method), path + "?" + query, version};
-      req.set(http::field::host, host);
-      req.set(http::field::user_agent, m_impl->userAgent);
-      auto headers = j.value("headers", m_impl->headers);
-      for (const auto& header : headers) 
-      {
-        req.set(header.first, processInjaTemplate(header.second, j));
-      }
+      auto req = buildRequest(method, path, query, host, version, j);
 
-      auto body = j.value("body", m_impl->body);
-      auto methodVerb = http::string_to_verb(method);
-      if (!body.empty() && (methodVerb == http::verb::post || methodVerb == http::verb::put))
-      {
-        req.body() = body;
-        req.set(http::field::content_length, std::to_string(body.size()));
-        req.prepare_payload();
-      }
-      if (methodVerb != http::verb::unknown)
-      {
-        req.method(methodVerb);
-      }
-      
       http::write(stream, req);
       http::read(stream, buffer, res);
       stream.shutdown(ec);   // Gracefully close the stream
@@ -226,9 +275,8 @@ Data HttpClient::process(Data data)
       beast::tcp_stream stream(ioc);
       auto const results = resolver.resolve(host, port);
       stream.connect(results);
-      http::request<http::string_body> req{m_impl->getMethodFromString(method), path + "?" + query, version};
-      req.set(http::field::host, host);
-      req.set(http::field::user_agent, m_impl->userAgent);
+      auto req = buildRequest(method, path, query, host, version, j);
+
       http::write(stream, req);
       beast::flat_buffer buffer;
       http::read(stream, buffer, res);
