@@ -14,6 +14,7 @@
 #include "./frontendServer.h"
 #include "./serviceRedirectHandler.h"
 #include "./vault.h"
+#include "./grants.h"
 
 #if USE_SAUCER_EMBEDDED
 #include "../embedded/saucer/embedded/all.hpp"
@@ -171,6 +172,7 @@ int real_main(int argc, char *argv[])
 {
   saucer::webview::register_scheme("hkp");
   Vault vault;
+  Grants grants;
 
   auto app = saucer::application::create({.id = "Readymade"});
   if (!app.has_value())
@@ -240,6 +242,13 @@ int real_main(int argc, char *argv[])
   });
   webview->inject(saucer::script{
     .code   = "window.__HKP_VAULT__ = " + vault.getAll().dump() + ";",
+    .run_at = saucer::script::time::creation,
+  });
+  // At creation, like the vault: a board can be provisioned as soon as one
+  // loads, and a grant that arrived later would be a question asked again for
+  // something already answered.
+  webview->inject(saucer::script{
+    .code   = "window.__HKP_GRANTS__ = " + grants.getAll().dump() + ";",
     .run_at = saucer::script::time::creation,
   });
   auto allowedOrigins = "*"; // allow all origins for CORS
@@ -425,6 +434,19 @@ int real_main(int argc, char *argv[])
     [&vault](const std::string& key, const std::vector<std::string>& audience) -> bool
   {
     return vault.setAudience(key, audience);
+  });
+
+  // Which board may hand which secrets to which runtime — the remembered
+  // answers to the consent prompt. Names only; no values pass through here.
+  webview->expose("grantSecrets",
+    [&grants](const std::string& key, const std::vector<std::string>& aliases) -> bool
+  {
+    return grants.grant(key, aliases);
+  });
+
+  webview->expose("revokeSecretGrant", [&grants](const std::string& key) -> bool
+  {
+    return grants.revoke(key);
   });
 
   // Fallback: open target="_blank" link clicks in the OS default browser.

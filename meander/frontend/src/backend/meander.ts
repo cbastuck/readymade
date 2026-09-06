@@ -18,6 +18,7 @@ import {
   vaultSet,
   vaultSetAudience,
 } from "hkp-frontend/src/vault";
+import { forgetGrant } from "hkp-frontend/src/grants";
 
 const encodePathSegment = (value: string) => encodeURIComponent(value);
 
@@ -177,6 +178,25 @@ export const meanderBackend: BackendAdapter = {
     // resolve against and is only read at page creation, so a constraint saved
     // here would not apply until the app is restarted.
     vaultSetAudience(alias, audience);
+  },
+
+  async grantSecrets(key: string, aliases: string[]): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.grantSecrets) {
+      // An older app build with nowhere durable to write one. The grant holds
+      // for this session, which means being asked again next launch.
+      return;
+    }
+    await saucer.exposed.grantSecrets(key, aliases);
+  },
+
+  async revokeSecretGrant(key: string): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.revokeSecretGrant) {
+      throw new Error("This build cannot revoke a grant");
+    }
+    await saucer.exposed.revokeSecretGrant(key);
+    forgetGrant(key);
   },
 
   async mintProcessRuntimeToken(runtimeId: string): Promise<string | null> {

@@ -3,6 +3,12 @@ import { createRoot } from "react-dom/client";
 
 import { setSecretStore } from "hkp-frontend/src/core/secrets";
 import { setVaultPersist, vaultSecretStore } from "hkp-frontend/src/vault";
+import {
+  hostGrantStore,
+  hostKeepsGrants,
+  setGrantPersist,
+} from "hkp-frontend/src/grants";
+import { setSecretConsent } from "hkp-frontend/src/core/secretConsent";
 
 import { getBackend } from "./backend";
 
@@ -26,6 +32,30 @@ setSecretStore(vaultSecretStore);
 // it learns into is a copy of what the host injected, so without this the
 // constraint would be forgotten at the next launch and re-learned from
 // whatever ran first that time.
+// Grants live with the vault rather than in browser storage: what a person has
+// agreed to should be somewhere they can look at, back up and undo, and should
+// not be writable by anything that runs in the page. The prompt itself is
+// registered by SecretConsentDialog, which is what turns the gate on at all.
+// Only where the host actually keeps them: a build with nowhere to write one
+// keeps the browser-storage fallback, which is worse but is not nothing.
+if (hostKeepsGrants()) {
+  setSecretConsent({ grants: hostGrantStore });
+}
+setGrantPersist({
+  grant: (key, aliases) => {
+    void getBackend()
+      .then((backend) => backend.grantSecrets?.(key, aliases))
+      .catch(() => {
+        // A host with no grant store. The answer holds for this session.
+      });
+  },
+  revoke: (key) => {
+    void getBackend()
+      .then((backend) => backend.revokeSecretGrant?.(key))
+      .catch(() => {});
+  },
+});
+
 setVaultPersist({
   setAudience: (alias, audience) => {
     void getBackend()

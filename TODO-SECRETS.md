@@ -467,6 +467,34 @@ With no prompt registered nothing is gated — that is a host with no way to ask
 and it is the behaviour that existed before — so registering the dialog is what
 turns the gate on.
 
+**Grants live in `~/.hkp/grants.json`**, beside the vault and written the same
+way: owner-only, and injected into the page at creation like `__HKP_VAULT__`,
+because provisioning starts as soon as a board loads and a grant arriving a
+moment later would be a question asked again for something already answered.
+The first implementation used `localStorage`, which was the wrong place on the
+native side and contradicted decision 4: not inspectable, not backed up, gone
+with site data, and writable by anything running in the page — and a grant is
+durable, so that would have been a durable escalation.
+
+**The website keeps using `localStorage`,** which is the right store there and
+needs no change: it is the default in `secretConsent.ts`, and the app swaps in
+the host store only when it has actually injected one. An absent injection and
+an empty one are deliberately different — a host with nowhere to write must keep
+its fallback rather than silently downgrade to session-only, which is what
+mobile would otherwise have done. It is the weaker position (site data is
+cleared more casually than a file in a home directory, and anything running in
+the page can write a grant), and it fails by asking again, which is the safe
+direction.
+
+The file is not a secret store; it is what stands between a board and the
+credentials it asked for, which is why it is written owner-only all the same.
+The settings tab lists what has been allowed and lets one be forgotten, which
+is the thing browser storage could not offer.
+
+The key is a JSON array, `["<board>","<runtimeId>","<origin>"]`, not joined
+text: a board may be called anything, and `Mail node` on runtime `x` must not
+collapse into the same key as `Mail` on runtime `node x`.
+
 What counts as in-process is `inProcessRuntime(url, runtimePort)`, and there are
 two addresses, not one. The obvious is loopback on the port the embedded runtime
 binds when it is exposed, which only the host can name. The one that was missed

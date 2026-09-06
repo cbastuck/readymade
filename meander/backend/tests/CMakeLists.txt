@@ -38,6 +38,7 @@ include(Catch)
 add_executable(readymade-backend-tests
   remoteRoute.test.cpp
   vault.test.cpp
+  grants.test.cpp
 )
 target_include_directories(readymade-backend-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(readymade-backend-tests PRIVATE Catch2::Catch2WithMain nlohmann_json::nlohmann_json)

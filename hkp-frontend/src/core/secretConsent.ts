@@ -109,12 +109,44 @@ export function inProcessRuntime(url: string, runtimePort?: number): boolean {
   return loopback && parsed.port === String(runtimePort);
 }
 
+/**
+ * The three things a grant is remembered against, as one key.
+ *
+ * A JSON array rather than joined text: a board may be called anything, a
+ * separator included, and two different triples must never collapse into one
+ * — a board named `Mail node` would otherwise share a key with a board named
+ * `Mail` on a runtime named `node`. It stays readable in the file the host
+ * writes, and parses back for a settings view that wants to show the parts.
+ */
 export function grantKey(request: SecretRelease): string {
-  return [
+  return JSON.stringify([
     request.boardName || "(unsaved)",
     request.runtimeId,
     releaseOrigin(request.url),
-  ].join(" ");
+  ]);
+}
+
+/** The board, runtime and origin a key was made from, for showing them. */
+export function readGrantKey(
+  key: string,
+): { boardName: string; runtimeId: string; origin: string } | null {
+  try {
+    const parts = JSON.parse(key);
+    if (!Array.isArray(parts) || parts.length !== 3) {
+      return null;
+    }
+    const [boardName, runtimeId, origin] = parts;
+    if (
+      typeof boardName !== "string" ||
+      typeof runtimeId !== "string" ||
+      typeof origin !== "string"
+    ) {
+      return null;
+    }
+    return { boardName, runtimeId, origin };
+  } catch {
+    return null;
+  }
 }
 
 const STORAGE_PREFIX = "hkp.secret-grants";

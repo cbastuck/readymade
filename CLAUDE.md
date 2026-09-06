@@ -179,8 +179,8 @@ http://<host>:<port>/hosted/<mountId>
 These endpoints are unauthenticated by design — they exist for outside callers holding no
 token — so the unguessable id is what gates access. The id is **derived, not drawn**: an
 HMAC of the tenant, board, runtime and the mount's name (`mountName`, defaulting to the
-service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted at
-`~/.hkp/node/mount-secret`). The address therefore survives reloads, restarts and
+service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted per runtime at
+`~/.hkp/<node|python>/mount-secret`). The address therefore survives reloads, restarts and
 redeploys — an outside party configured with it by hand keeps working — while staying
 uncomputable without the key. Renaming a mount rotates that one address; rotating the
 secret rotates all of them. Nothing sensitive enters the board, which says only what the

@@ -63,6 +63,12 @@ export interface BackendAdapter {
   listSecretAudiences?(): Promise<Record<string, string[]>>;
   setSecretAudience?(alias: string, audience: string[]): Promise<void>;
 
+  // Which board may hand which secrets to which runtime — the remembered
+  // answers to the consent prompt, keyed as core/secretConsent.ts says. Names
+  // only; no values pass through here.
+  grantSecrets?(key: string, aliases: string[]): Promise<void>;
+  revokeSecretGrant?(key: string): Promise<void>;
+
   // Mints a short-lived capability token from the embedded runtime, scoped to
   // processing `runtimeId` (POST /runtimes/<runtimeId>). Returns null if the
   // host can't mint. Absent on the plain-browser backend. One transport per
