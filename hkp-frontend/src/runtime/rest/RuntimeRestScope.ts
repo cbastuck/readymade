@@ -48,6 +48,14 @@ export default class RuntimeRestScope implements RuntimeScope {
    * next.
    */
   services: Array<ServiceDescriptor> = [];
+  /**
+   * The board this runtime belongs to.
+   *
+   * Carried because releasing a secret to this runtime is consented to per
+   * board (`core/secretConsent.ts`), and configuring a service — which can
+   * release one — happens long after the moment the board was named.
+   */
+  boardName = "";
 
   constructor(
     runtime: RuntimeDescriptor,

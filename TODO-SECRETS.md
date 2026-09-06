@@ -1,8 +1,9 @@
 # Secrets: resolved at point of use, bound to a destination
 
-Plan for a fresh session. Decisions were taken 2026-09-04 and supersede the
-options listed under **G12b** in TODO-WORKFLOW-PLATFORM.md. Nothing below is
-implemented yet.
+Decisions were taken 2026-09-04 and supersede the options listed under **G12b**
+in TODO-WORKFLOW-PLATFORM.md. Prio A is implemented across all four runtimes as
+of 2026-09-06; the work table at the end says what each item covers. Prio B —
+the website store and the coordinator's vault — is not started.
 
 Backwards compatibility is deliberately broken. It is cheap now — the framework
 has one maintainer and the demo boards are ours — and it stops being fixable
@@ -353,10 +354,10 @@ Status as of 2026-09-04: ✅ done, ◐ partly done, ☐ not started.
 | 3b | Push when a vault entry is added or changed while a board is running — *accepted as manual for now*: reload, or reconfigure the service | frontend + settings | S | — |
 | 4 | Runtime-side secret map (no read path) + resolver | **all four runtimes** ✅ — `hkp-node/src/secrets.ts`, `hkp-rt/lib/include/secrets.h`, `hkp-python/src/hkp/secrets.py`, browser `core/secrets.ts` | M ×3 | ✅ |
 | 4b | Nested pipelines reach the surrounding runtime's secrets | node (`delegateSecrets`), hkp-rt (`SubRuntime::secrets`), hkp-python (`delegate_secrets`) | S | ✅ |
-| 5 | Port credential-taking services | **all four runtimes complete** — node: `imap-email`, `smtp-email`, `telegram-*`, `text-generation`, `http-client`; hkp-rt and hkp-python: `http_client`, their only credential carrier; browser: `OpenAIPrompt`, `WorkflowBoardBuilder` (`HttpRelayClient` was deleted, 2026-09-06 — unused) | M | ✅ |
-| 6 | Delete the write-only masking conventions and their "empty means no change" trap | all of hkp-node ✅; `SmtpEmailUI` still renders a password field for a service that no longer masks | S | ◐ |
-| 7 | Audience on vault entries + TOFU prompt | `meander/backend/vault.h`, `hkp-frontend/src/vault.ts` — the *check* is implemented on both sides; no store supplies audiences yet | M | ◐ |
-| 8 | Provisioning consent + grant store, keyed (board, runtime, url, alias set) | frontend + native store | M | ☐ |
+| 5 | Port credential-taking services | **all four runtimes complete** — node: `imap-email`, `smtp-email`, `telegram-*`, `text-generation`, `http-client`; hkp-rt and hkp-python: `http_client`, their only credential carrier; browser: `OpenAIPrompt`, `WorkflowBoardBuilder`, `GithubSource`/`GithubSink`, `Encrypt`/`Decrypt`/`Sign` (`HttpRelayClient` was deleted, 2026-09-06 — unused) | M | ✅ |
+| 6 | Delete the write-only masking conventions and their "empty means no change" trap | all of hkp-node; the UIs that masked a field now holding a reference — `SmtpEmailUI`, `TelegramSenderUI`, `TelegramListenerUI` | S | ✅ |
+| 7 | Audience on vault entries + learning on first use | `meander/backend/vault.h`, `hkp-frontend/src/vault.ts`, `SecretsTab` | M | ✅ |
+| 8 | Provisioning consent + grant store, keyed (board, runtime, url, alias set) | `core/secretConsent.ts`, `SecretConsentDialog` | M | ✅ |
 | 9 | Fold `SecretField`'s ad-hoc `uservault.<uuid>.<key>` keys into the same aliases | done — `SecretField` writes the vault and emits a reference; `getVault`/`secretId` deleted with their last caller | S | ✅ |
 | B1 | `secrets.php` — per-tenant server-side store, write-only reads, board-scoped short-lived release (B-a) | hkp-website | M |
 | B2 | Coordinator vault + encryption at rest; push into coordinator-provisioned runtimes (B-b) | hkp-node coordinator | M |
@@ -366,6 +367,116 @@ The browser runtime needs no push and no consent prompt — the vault is in the
 same process — so it is the cheapest place to prove the `withSecrets` shape.
 hkp-node is the reference implementation for the remote half; Python and C++
 port from it.
+
+---
+
+### A destination for a secret that goes nowhere
+
+`Encrypt`, `Decrypt` and `Sign` broke the assumption behind decision 2 — that a
+service using a secret is by definition sending it somewhere. Their passphrase
+never leaves the process; there is no host to name. Dropping the requirement for
+them was not an option, because a caller that may omit `to` is a caller no
+audience can constrain, and that exemption would spread.
+
+They pass `THIS_DEVICE` (`"(this device)"`) instead. It is not a hostname and
+cannot be parsed as one, and it compares like any other audience entry, so:
+
+- a passphrase whose audience is `(this device)` is refused by every host, in
+  every runtime — the remote runtimes need no change to enforce it, because they
+  only have to *fail* to match a token they will never produce;
+- a credential bound to a host is refused for local key derivation, which is the
+  same rule read the other way;
+- a first local use records `(this device)`, so a passphrase that has only ever
+  been used locally cannot later be talked onto the network by a board.
+
+`resolveCredential(held, to)` now exists in the browser core as well, with the
+same shape the remote runtimes have. It was written for these five and is worth
+moving `OpenAIPrompt` and `WorkflowBoardBuilder` onto — they still hand-roll the
+four branches it exists to remove.
+
+The GitHub pair resolve in one place for a different reason: their token is not
+used by the service at all. `GithubSourceUI` holds it in React state and hands
+it to `GithubAPI`, so the seam is `GithubAPI.authorization()`, where every one of
+the five request builders now gets its header. Nothing upstream needs to know,
+and nothing upstream holds a value.
+
+Two things found on the way, both pre-existing:
+
+- **`GithubSink` serialized its token into boards** (it extends `ServiceBase`,
+  whose `getConfiguration` returns the whole state). That was leak 1, live.
+- **`GithubSource` serializes nothing at all** — it does not extend
+  `ServiceBase` and defines no `getConfiguration`, so its token and its
+  owner/repo/branch selection are lost on reload. Left as it is: now that a
+  reference is safe to save, giving it one is a change to what boards contain
+  and is worth deciding on its own.
+
+---
+
+### Audiences, and where one comes from (7)
+
+A vault entry is `{ "value": "…", "audience": ["imap.gmail.com"] }`; a bare
+string still reads as a value with no audience, so an existing vault keeps
+working and is rewritten in the long form the first time anything touches it.
+The audience travels with the value in the push payload, which is what gives it
+teeth — the constraint is checked in the runtime that actually sends the
+credential, not only in the browser that held it.
+
+An audience arrives one of two ways. It can be typed, in the settings tab, which
+now shows each secret's audience next to its name and lets it be edited: the
+audience is not itself a secret and is the part worth looking at. Or it is
+**recorded on first use**: `withSecrets` tells the store where it released an
+unconstrained secret, and the vault adopts that host. Every later use against
+anywhere else is refused, and widening it is a deliberate edit.
+
+Two limits worth stating rather than discovering:
+
+- **First use is trusted.** This protects a secret that has been used before,
+  not one whose very first use is the board that means to steal it. That is what
+  trust-on-first-use means, and it is why the settings tab shows unconstrained
+  entries as such rather than leaving them silent.
+- **Only a browser-runtime use teaches anything.** The learning happens where
+  `withSecrets` runs. For a credential used by a remote runtime — which is most
+  of them — the browser hands over the value and never sees the destination, so
+  nothing is learned and the audience has to be typed. Closing that would mean
+  a runtime reporting the destination it used back to the provisioner, which is
+  a new protocol across three runtimes and is not built. The push carrying the
+  audience is what makes typing one worth doing in the meantime.
+
+The vault also had a real bug, found by the first test written against it:
+`aliases()` iterated `readVault().items()`, and `items()` refers into the json
+rather than copying it, so the loop walked a container destroyed at the
+semicolon. It read whatever was there and segfaulted on a vault large enough.
+The two new listing methods would have inherited it.
+
+### Consent before values leave (8)
+
+`core/secretConsent.ts` sits in front of every release — the create payload, the
+push on attach, and the push that goes with a configuration — because all three
+compute what to send in one place. What it withholds never reaches the wire, and
+it withholds per alias rather than all-or-nothing: refusing one secret still
+lets the rest of the board run, and the services naming the refused one report
+it missing by name.
+
+The grant key is `(board, runtime id, origin, alias set)` as decided, with the
+origin taken from the URL so a port is part of it. The runtime *name* rides
+along for the prompt to say which runtime is being asked about, and is
+deliberately not in the key: a name is editable and two runtimes can share one,
+while the id is what the board actually addresses.
+
+With no prompt registered nothing is gated — that is a host with no way to ask,
+and it is the behaviour that existed before — so registering the dialog is what
+turns the gate on.
+
+What counts as in-process is `inProcessRuntime(url, runtimePort)`, and there are
+two addresses, not one. The obvious is loopback on the port the embedded runtime
+binds when it is exposed, which only the host can name. The one that was missed
+first time is the **`hkp:` scheme**: `hkp://remotes/<name>` is how a board
+normally addresses the embedded runtime, it is served in-process by the host's
+own scheme handler, and a name that is not the host's own is refused there
+rather than forwarded (`meander/backend/remoteRoute.h`) while every genuinely
+remote runtime is listed with its real URL. So the scheme alone settles it. The
+rule lives in the core rather than in the dialog so that a test can hold it;
+the host supplies only its port.
 
 ---
 

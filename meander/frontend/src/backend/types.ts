@@ -57,6 +57,11 @@ export interface BackendAdapter {
   listSecrets?(): Promise<string[]>;
   setSecret?(alias: string, value: string): Promise<void>;
   deleteSecret?(alias: string): Promise<void>;
+  // Where each alias may be sent, as alias -> hosts. Empty, or an alias that
+  // is absent, means unconstrained. Carries no values: the constraint can be
+  // shown and edited without reading the thing it constrains.
+  listSecretAudiences?(): Promise<Record<string, string[]>>;
+  setSecretAudience?(alias: string, audience: string[]): Promise<void>;
 
   // Mints a short-lived capability token from the embedded runtime, scoped to
   // processing `runtimeId` (POST /runtimes/<runtimeId>). Returns null if the

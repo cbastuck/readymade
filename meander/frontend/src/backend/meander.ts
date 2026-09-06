@@ -12,7 +12,12 @@ import {
   PickerOptions,
   RuntimeSettings,
 } from "./types";
-import { vaultAliases, vaultDelete, vaultSet } from "hkp-frontend/src/vault";
+import {
+  vaultAliases,
+  vaultDelete,
+  vaultSet,
+  vaultSetAudience,
+} from "hkp-frontend/src/vault";
 
 const encodePathSegment = (value: string) => encodeURIComponent(value);
 
@@ -146,6 +151,32 @@ export const meanderBackend: BackendAdapter = {
     }
     await saucer.exposed.deleteSecret(alias);
     vaultDelete(alias);
+  },
+
+  async listSecretAudiences(): Promise<Record<string, string[]>> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.secretAudiences) {
+      // An older app build: it holds values only, so nothing is constrained.
+      return {};
+    }
+    try {
+      const parsed = JSON.parse((await saucer.exposed.secretAudiences()) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  },
+
+  async setSecretAudience(alias: string, audience: string[]): Promise<void> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.setSecretAudience) {
+      throw new Error("This build cannot constrain secrets");
+    }
+    await saucer.exposed.setSecretAudience(alias, audience);
+    // Same reason the value is written twice: the injected copy is what boards
+    // resolve against and is only read at page creation, so a constraint saved
+    // here would not apply until the app is restarted.
+    vaultSetAudience(alias, audience);
   },
 
   async mintProcessRuntimeToken(runtimeId: string): Promise<string | null> {

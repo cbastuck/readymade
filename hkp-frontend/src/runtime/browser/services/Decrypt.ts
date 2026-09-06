@@ -1,5 +1,9 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
+import {
+  THIS_DEVICE,
+  resolveCredential,
+} from "hkp-frontend/src/core/secrets";
 import DecryptUI from "./DecryptUI";
 
 /**
@@ -9,6 +13,12 @@ import DecryptUI from "./DecryptUI";
  * Input:  base64 string — [12-byte IV][AES-256-GCM ciphertext] (produced by Encrypt)
  * Output: original value — JSON-deserialised object/string/number, or Blob
  * Config: secret (string), method ("aes")
+ *
+ * The secret is a `{{secret.<alias>}}` reference resolved at the moment a key is
+ * derived from it, and never held as a value: it is not sent anywhere, so it
+ * resolves against `THIS_DEVICE`, and a secret whose audience is that one is
+ * refused everywhere on the network. What the service reports from its state is
+ * the reference it was configured with, which is what a saved board carries.
  */
 
 const serviceId = "hookup.to/service/decrypt";
@@ -68,12 +78,22 @@ class Decrypt extends ServiceBase<State> {
       return null;
     }
 
+    // The passphrase exists from here to the end of this call and nowhere else.
+    const { value: secret, problem } = resolveCredential(
+      this.state.secret,
+      THIS_DEVICE,
+    );
+    if (problem) {
+      this.pushErrorNotification(`Decrypt: ${problem}`);
+      return null;
+    }
+
     try {
       const combined = Uint8Array.from(atob(params), (c) => c.charCodeAt(0));
       const iv = combined.slice(0, 12);
       const ciphertext = combined.slice(12);
 
-      const key = await deriveKey(this.state.secret, "decrypt");
+      const key = await deriveKey(secret, "decrypt");
       const plaintextBytes = await crypto.subtle.decrypt(
         { name: "AES-GCM", iv },
         key,

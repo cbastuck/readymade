@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
-import { KeyRound, Plus, X } from "lucide-react";
+import { Globe, KeyRound, Plus, X } from "lucide-react";
 
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { secretReference } from "hkp-frontend/src/core/secrets";
 
 import { getBackend } from "./backend";
+
+/** What a secret says about itself here: its name and where it may be sent. */
+type Entry = { alias: string; audience: string[] };
+
+/** An audience as typed: a comma or space separated list of hosts. */
+function parseAudience(text: string): string[] {
+  return text
+    .split(/[,\s]+/)
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 /**
  * The values behind the aliases a board refers to.
@@ -14,22 +25,38 @@ import { getBackend } from "./backend";
  * password: they can be set and replaced, never read back — the field is for
  * putting something in, and nothing in a settings dialog needs to show a
  * credential to the person who typed it.
+ *
+ * The audience is not a secret and is shown, because it is the part worth
+ * checking. It is what stops a board from taking a credential somewhere it has
+ * never been: a secret pinned to `imap.gmail.com` is refused everywhere else,
+ * in this app and in every runtime the value is pushed to.
  */
 export default function SecretsTab() {
-  const [aliases, setAliases] = useState<string[] | null>(null);
+  const [entries, setEntries] = useState<Entry[] | null>(null);
   const [supported, setSupported] = useState(true);
+  const [constrainable, setConstrainable] = useState(true);
   const [alias, setAlias] = useState("");
   const [value, setValue] = useState("");
+  const [audience, setAudience] = useState("");
   const [error, setError] = useState("");
+  // The alias whose audience is open for editing, and the text being edited.
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
   const refresh = async () => {
     const backend = await getBackend();
     if (!backend.listSecrets) {
       setSupported(false);
-      setAliases([]);
+      setEntries([]);
       return;
     }
-    setAliases((await backend.listSecrets()).sort());
+    const aliases = (await backend.listSecrets()).sort();
+    // An older app build holds values only. Say so rather than offering an
+    // edit that would fail: without a way to write one, every secret here is
+    // unconstrained and nothing in this tab can change that.
+    setConstrainable(!!backend.setSecretAudience);
+    const audiences = (await backend.listSecretAudiences?.()) ?? {};
+    setEntries(aliases.map((name) => ({ alias: name, audience: audiences[name] ?? [] })));
   };
 
   useEffect(() => {
@@ -52,12 +79,28 @@ export default function SecretsTab() {
     const backend = await getBackend();
     try {
       await backend.setSecret!(name, value);
+      const hosts = parseAudience(audience);
+      if (hosts.length) {
+        await backend.setSecretAudience?.(name, hosts);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       return;
     }
     setAlias("");
     setValue("");
+    setAudience("");
+    await refresh();
+  };
+
+  const saveAudience = async (name: string) => {
+    const backend = await getBackend();
+    try {
+      await backend.setSecretAudience!(name, parseAudience(editText));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+    setEditing(null);
     await refresh();
   };
 
@@ -67,7 +110,7 @@ export default function SecretsTab() {
     await refresh();
   };
 
-  if (aliases === null) {
+  if (entries === null) {
     return <div className="pt-2 text-sm text-slate-500">Loading…</div>;
   }
   if (!supported) {
@@ -86,29 +129,79 @@ export default function SecretsTab() {
         credentials, so it stays safe to save, share, or hand to the AI refiner.
       </span>
 
-      {aliases.length === 0 && (
+      {entries.length === 0 && (
         <span className="text-[0.8rem] italic text-slate-400">
           Nothing stored yet.
         </span>
       )}
-      {aliases.map((name) => (
+      {entries.map((entry) => (
         <div
-          key={name}
-          className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2"
+          key={entry.alias}
+          className="flex flex-col gap-2 rounded-md border border-slate-200 bg-white px-3 py-2"
         >
-          <div className="flex min-w-0 items-center gap-2">
-            <KeyRound size={14} className="shrink-0 text-slate-400" />
-            <code className="truncate font-mono text-slate-800">
-              {secretReference(name)}
-            </code>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <KeyRound size={14} className="shrink-0 text-slate-400" />
+              <code className="truncate font-mono text-slate-800">
+                {secretReference(entry.alias)}
+              </code>
+            </div>
+            <button
+              onClick={() => void remove(entry.alias)}
+              aria-label={`Remove ${entry.alias}`}
+              className="shrink-0 text-slate-400 hover:text-red-600"
+            >
+              <X size={15} />
+            </button>
           </div>
-          <button
-            onClick={() => void remove(name)}
-            aria-label={`Remove ${name}`}
-            className="shrink-0 text-slate-400 hover:text-red-600"
-          >
-            <X size={15} />
-          </button>
+
+          <div className="flex items-center gap-2 pl-[22px] text-[0.78rem]">
+            <Globe size={12} className="shrink-0 text-slate-400" />
+            {editing === entry.alias ? (
+              <>
+                <input
+                  value={editText}
+                  autoFocus
+                  onChange={(e) => setEditText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      void saveAudience(entry.alias);
+                    }
+                    if (e.key === "Escape") {
+                      setEditing(null);
+                    }
+                  }}
+                  placeholder="imap.gmail.com, *.example.com"
+                  className="flex-1 rounded-md border border-slate-200 px-2 py-1 font-mono outline-none focus:border-slate-400"
+                  style={{ fontSize: 16 }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void saveAudience(entry.alias)}
+                >
+                  Save
+                </Button>
+              </>
+            ) : (
+              <button
+                disabled={!constrainable}
+                onClick={() => {
+                  setEditing(entry.alias);
+                  setEditText(entry.audience.join(", "));
+                }}
+                className="min-w-0 flex-1 truncate text-left font-mono text-slate-600 hover:text-slate-900 disabled:cursor-default disabled:hover:text-slate-600"
+              >
+                {entry.audience.length ? (
+                  entry.audience.join(", ")
+                ) : (
+                  <span className="font-sans italic text-amber-700">
+                    any host — pinned to the first one it is sent to
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       ))}
 
@@ -143,6 +236,15 @@ export default function SecretsTab() {
             Save
           </Button>
         </div>
+        {constrainable && (
+          <input
+            value={audience}
+            onChange={(e) => setAudience(e.target.value)}
+            placeholder="hosts it may be sent to — blank to pin on first use"
+            className="rounded-md border border-slate-200 px-3 py-2 font-mono outline-none focus:border-slate-400"
+            style={{ fontSize: 16 }}
+          />
+        )}
         {error && <span className="text-[0.78rem] text-red-600">{error}</span>}
         {alias.trim() && !error && (
           <span className="text-[0.78rem] text-slate-500">

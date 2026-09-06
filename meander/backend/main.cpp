@@ -413,6 +413,20 @@ int real_main(int argc, char *argv[])
     return vault.aliases();
   });
 
+  // Where each secret may be sent, as a JSON object of alias to hosts. Carries
+  // no values, so a settings view can show and edit the constraint without
+  // asking for the thing it constrains.
+  webview->expose("secretAudiences", [&vault]() -> std::string
+  {
+    return vault.audiences().dump();
+  });
+
+  webview->expose("setSecretAudience",
+    [&vault](const std::string& key, const std::vector<std::string>& audience) -> bool
+  {
+    return vault.setAudience(key, audience);
+  });
+
   // Fallback: open target="_blank" link clicks in the OS default browser.
   webview->on<saucer::webview::event::navigate>(
     [](const saucer::navigation &nav) -> saucer::policy

@@ -2,6 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import restApi from "../RuntimeRestApi";
 import { setSecretStore } from "hkp-frontend/src/core/secrets";
+import {
+  SecretRelease,
+  resetSecretConsent,
+  setSecretConsent,
+} from "hkp-frontend/src/core/secretConsent";
 import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
 
 /**
@@ -187,5 +192,119 @@ describe("secrets reaching a remote runtime", () => {
     expect(
       fetchMock.mock.calls.filter(([url]) => String(url).includes("/secrets")),
     ).toHaveLength(0);
+  });
+});
+
+/**
+ * The gate in front of every one of those moments.
+ *
+ * A board chooses the services, the secrets they name and the server they run
+ * on, and a board is not necessarily one you wrote. Consent is asked for once
+ * per board, runtime and address; what it withholds never reaches the wire.
+ */
+describe("consent before the values leave", () => {
+  const provision = async (fetchMock: ReturnType<typeof mockFetch>) => {
+    await restApi.restoreRuntime(runtime, withSecret, null, "Board");
+    return sentTo(fetchMock, "/runtimes");
+  };
+
+  const okRuntime = () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      runtimes: [{ id: "node", name: "Node", services: [], outputUrl: "" }],
+      registry: [],
+    }),
+  });
+
+  const grants = () => {
+    const held: Record<string, string[]> = {};
+    return {
+      granted: (key: string) => held[key] ?? [],
+      grant: (key: string, aliases: string[]) => {
+        held[key] = [...new Set([...(held[key] ?? []), ...aliases])];
+      },
+    };
+  };
+
+  afterEach(() => resetSecretConsent());
+
+  it("names the board, the runtime and the address it is asking about", async () => {
+    setSecretStore(storeOf({ "gmail.imap": "hunter2" }));
+    const asked: SecretRelease[] = [];
+    setSecretConsent({
+      grants: grants(),
+      prompt: async (request) => {
+        asked.push(request);
+        return { allowed: request.aliases, remember: false };
+      },
+    });
+    await provision(mockFetch(okRuntime));
+
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toMatchObject({
+      boardName: "Board",
+      runtimeId: "node",
+      url: "http://127.0.0.1:8080",
+      aliases: ["gmail.imap"],
+    });
+  });
+
+  it("provisions with no secrets at all when it is refused", async () => {
+    setSecretStore(storeOf({ "gmail.imap": "hunter2" }));
+    setSecretConsent({
+      grants: grants(),
+      prompt: async () => ({ allowed: [], remember: false }),
+    });
+    const fetchMock = mockFetch(okRuntime);
+
+    expect((await provision(fetchMock)).secrets).toEqual({});
+  });
+
+  it("does not ask about an alias the vault does not hold", async () => {
+    setSecretStore(storeOf({}));
+    const prompt = vi.fn(async () => ({ allowed: [], remember: false }));
+    setSecretConsent({ grants: grants(), prompt });
+    await provision(mockFetch(okRuntime));
+
+    expect(prompt).not.toHaveBeenCalled();
+  });
+
+  it("gates the push that goes with a configuration too", async () => {
+    setSecretStore(storeOf({ "gmail.imap": "hunter2" }));
+    setSecretConsent({
+      grants: grants(),
+      prompt: async () => ({ allowed: [], remember: false }),
+    });
+    const fetchMock = mockFetch(okRuntime);
+
+    const { scope } = (await restApi.restoreRuntime(
+      runtime,
+      [],
+      null,
+      "Board",
+    ))!;
+    fetchMock.mockClear();
+    await restApi.configureService(scope, { uuid: "imap-1" } as any, {
+      password: "{{secret.gmail.imap}}",
+    });
+
+    expect(sentTo(fetchMock, "/secrets")).toBeUndefined();
+  });
+
+  it("carries the audience with the value, so the runtime holds the same constraint", async () => {
+    setSecretStore({
+      ...storeOf({ "gmail.imap": "hunter2" }),
+      audience: () => ["imap.gmail.com"],
+    });
+    setSecretConsent({
+      grants: grants(),
+      prompt: async (request) => ({ allowed: request.aliases, remember: false }),
+    });
+    const fetchMock = mockFetch(okRuntime);
+
+    expect((await provision(fetchMock)).secrets).toEqual({
+      "gmail.imap": { value: "hunter2", audience: ["imap.gmail.com"] },
+    });
   });
 });

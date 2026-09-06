@@ -41,6 +41,16 @@ export type SecretStore = {
    * answers, and is why adding one is not a breaking change.
    */
   audience?(alias: string): string[] | null;
+  /**
+   * Told where an unconstrained secret was released to, so that a store which
+   * wants to can adopt that as its audience. Called only for a release that
+   * succeeded, and only while the alias has no audience yet, so a store that
+   * implements it gets exactly one chance per secret to learn one.
+   *
+   * Optional: a store with no opinion about destinations leaves it out and
+   * every one of its secrets stays unconstrained.
+   */
+  learn?(alias: string, host: string): void;
   /** Every alias the store holds. */
   list(): string[];
 };
@@ -83,12 +93,27 @@ export function unavailableSecrets(
   return referencedSecrets(value).filter((alias) => from.get(alias) === null);
 }
 
+/**
+ * The destination of a secret that is never sent anywhere.
+ *
+ * Some credentials are used without leaving the process: a passphrase a key is
+ * derived from, a signing key an HMAC is computed with. There is no host to
+ * name, but `to` is required for a reason — a caller that could omit it would
+ * be a caller no audience constrains — so those say this instead.
+ *
+ * It behaves as an ordinary audience entry and deliberately matches no host, so
+ * a secret whose audience is this one is refused everywhere on the network. A
+ * secret learned here is a secret that stays here. It is not a hostname, and
+ * cannot be mistaken for one.
+ */
+export const THIS_DEVICE = "(this device)";
+
 /** Where a secret is about to be sent. */
 export type SecretUse = {
   /**
    * The destination, as a URL or a `host[:port]`. Only the host is compared
    * against an audience; the rest is accepted so that a caller can pass
-   * whatever it already has.
+   * whatever it already has. `THIS_DEVICE` for a use that sends it nowhere.
    */
   to: string;
 };
@@ -159,6 +184,11 @@ export function withSecrets<T>(
         refused.set(alias, { alias, to: host, audience: audience ?? [] });
         return "";
       }
+      if (!audience?.length) {
+        // Nothing has said where this one belongs, and it is going somewhere
+        // now. A store that records destinations takes this as the answer.
+        from.learn?.(alias, host);
+      }
       return secret;
     }),
   );
@@ -168,6 +198,50 @@ export function withSecrets<T>(
     missing: [...missing],
     refused: [...refused.values()],
   };
+}
+
+/**
+ * One credential, resolved for one use, or the reason there is none.
+ *
+ * The same shape the remote runtimes' `resolveCredential` answers with, and for
+ * the same reason: what a service holds is either a reference or a literal, and
+ * either may be absent, while the caller wants a value it can send or a
+ * sentence it can report. Separating those two outcomes here keeps every
+ * service that takes a credential from writing the same four branches.
+ *
+ * A literal passes through — a board may still say a value outright — and a
+ * reference with nothing behind it yields nothing rather than being sent as its
+ * own text. On any failure it resolves **nothing**, rather than handing back a
+ * half-filled structure a caller might send anyway.
+ *
+ * Takes a whole structure as readily as one string, because a credential is not
+ * always a field of its own: it can be one entry in a map of headers, or part
+ * of a larger string around it.
+ */
+export function resolveCredential<T>(
+  held: T,
+  to: string,
+  from: SecretStore = store,
+): { value: T; problem: string } {
+  if (!referencedSecrets(held).length) {
+    return { value: held, problem: "" };
+  }
+  const none = { value: undefined as unknown as T };
+
+  const { value, missing, refused } = withSecrets(held, { to }, from);
+  if (refused.length) {
+    return {
+      ...none,
+      problem:
+        refused[0].to === THIS_DEVICE
+          ? `${refused[0].alias} may only be sent to ${refused[0].audience.join(", ")}`
+          : `${refused[0].alias} may not be sent to ${refused[0].to}`,
+    };
+  }
+  if (missing.length) {
+    return { ...none, problem: `no value stored for ${missing.join(", ")}` };
+  }
+  return { value, problem: "" };
 }
 
 /**
@@ -186,6 +260,11 @@ export function destinationHost(to: unknown): string | null {
   const trimmed = to.trim();
   if (!trimmed) {
     return null;
+  }
+  // Not a host, and not parseable as one. It compares like any other audience
+  // entry, which is the whole of what a destination has to do here.
+  if (trimmed === THIS_DEVICE) {
+    return THIS_DEVICE;
   }
   const candidate = /^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(trimmed)
     ? trimmed

@@ -1,5 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
 import { referencedSecrets, secretStore } from "hkp-frontend/src/core/secrets";
+import {
+  SecretRelease,
+  allowedSecrets,
+} from "hkp-frontend/src/core/secretConsent";
 
 import {
   InstanceId,
@@ -196,12 +200,21 @@ function isSameRuntime(
  * as unavailable by name, which is a better failure than a runtime holding a
  * credential nobody could account for.
  */
-function secretsFor(
+async function secretsFor(
   services: Array<{ state?: unknown }> | undefined,
-): Record<string, { value: string; audience?: string[] }> {
+  release: Omit<SecretRelease, "aliases">,
+): Promise<Record<string, { value: string; audience?: string[] }>> {
   const store = secretStore();
+  // Only aliases with something behind them are put to the person: being asked
+  // to approve a secret that does not exist is a question with no answer, and
+  // the service naming it reports it as unavailable either way.
+  const held = referencedSecrets(services ?? []).filter(
+    (alias) => store.get(alias) !== null,
+  );
+  const allowed = await allowedSecrets({ ...release, aliases: held });
+
   const payload: Record<string, { value: string; audience?: string[] }> = {};
-  for (const alias of referencedSecrets(services ?? [])) {
+  for (const alias of allowed) {
     const value = store.get(alias);
     if (value === null) {
       continue;
@@ -225,8 +238,14 @@ export async function pushSecrets(
   runtime: RuntimeDescriptor,
   services: Array<{ state?: unknown }> | undefined,
   user: User | null,
+  boardName = "",
 ): Promise<void> {
-  const secrets = secretsFor(services);
+  const secrets = await secretsFor(services, {
+    boardName,
+    runtimeId: runtime.id,
+    runtimeName: runtime.name,
+    url: runtime.url ?? "",
+  });
   if (!Object.keys(secrets).length) {
     return;
   }
@@ -249,6 +268,7 @@ async function attachRuntime(
   // carries, which cannot be read off a uuid alone.
   services: Array<{ uuid: string; serviceId: string; state?: unknown }>,
   user: User | null,
+  boardName = "",
 ): Promise<RestoreRuntimeResult | null> {
   let res: Response;
   try {
@@ -284,10 +304,11 @@ async function attachRuntime(
   );
   scope.registry = registry;
   scope.services = existing.services;
+  scope.boardName = boardName;
   // A runtime that restarted still has its services and no longer has their
   // credentials, and nothing here can tell that apart from one that never
   // stopped. Pushing again is idempotent, so it is done either way.
-  await pushSecrets(descriptor, services, user);
+  await pushSecrets(descriptor, services, user, boardName);
   return {
     runtime: descriptor,
     // The running services, not the board's: their state is what is live.
@@ -310,7 +331,7 @@ async function restoreRuntime(
     state: (s as any).state, // TODO:
   }));
 
-  const attached = await attachRuntime(runtime, svcs, user);
+  const attached = await attachRuntime(runtime, svcs, user, boardName);
   if (attached) {
     return attached;
   }
@@ -499,6 +520,7 @@ export async function configureService(
     runtime,
     [{ state: config }],
     (scope as RuntimeRestScope).authenticatedUser,
+    (scope as RuntimeRestScope).boardName,
   );
   const res = await fetch(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
@@ -627,7 +649,12 @@ async function createRuntimeRequest(
     // Values ride with the create payload because provisioning is one call:
     // the services in it are configured before it returns, and a service that
     // connects while being configured needs its credential by then.
-    secrets: secretsFor(services),
+    secrets: await secretsFor(services, {
+      boardName: boardName ?? "",
+      runtimeId: runtime.id,
+      runtimeName: runtime.name,
+      url: runtime.url ?? "",
+    }),
   };
   const runtimesUrl = `${runtime.url}/runtimes`;
   let res: Response;
@@ -664,6 +691,7 @@ async function createRuntimeRequest(
   );
   scope.registry = normalizedRegistry;
   scope.services = rt.services ?? [];
+  scope.boardName = boardName ?? "";
 
   return {
     runtime: rt,
