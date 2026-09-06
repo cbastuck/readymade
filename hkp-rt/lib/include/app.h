@@ -48,6 +48,14 @@ public:
 
   json rearrangeServices(const std::string& runtimeId, const std::vector<std::string>& newOrder);
 
+  // Hand a running runtime values for the references its services hold.
+  //
+  // Answers with the aliases it then holds, and null when there is no such
+  // runtime. Naming them is all that can be asked: there is no route from here
+  // back to a value.
+  json setRuntimeSecrets(const std::string& runtimeId,
+                         const std::map<std::string, SecretEntry>& entries);
+
   std::shared_ptr<Service> createService(const std::string& serviceId);
   std::shared_ptr<Service> createService(const std::string& serviceId, const std::string& instanceId);
   const ServiceClass* findServiceClass(const std::string& serviceId) const;

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+
+#include <secrets.h>
 using json = nlohmann::json;
 
 namespace hkp {
@@ -107,6 +109,20 @@ struct RuntimeConfiguration
    * override for a deployment that must never write payloads.
    */
   bool logData = true;
+  /**
+   * Values for the `{{secret.<alias>}}` references this runtime's services
+   * carry, by alias.
+   *
+   * They ride with the create payload because provisioning is one call: the
+   * services in it are constructed *and* configured before it returns, and a
+   * service that opens a connection while being configured needs its
+   * credential by then. Sending them later would be too late for exactly the
+   * services that have one.
+   *
+   * They are unpacked into the runtime's vault and go no further — never into
+   * a service's state, never into a serialized runtime, never back out.
+   */
+  std::map<std::string, SecretEntry> secrets;
   std::vector<ServiceConfiguration> services;
 
   // readonly values 

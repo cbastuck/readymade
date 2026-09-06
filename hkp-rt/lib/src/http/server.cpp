@@ -167,6 +167,25 @@ struct Server::impl
     CROW_ROUTE(crow, "/runtimes/<string>")
         .methods("DELETE"_method)([this](const crow::request &req, std::string id) { return deleteRuntime(id); });
 
+    // Values for the references this runtime's services hold.
+    //
+    // Provisioning carries them already; this is for the moments it cannot
+    // cover — a board being built a service at a time, an entry edited while a
+    // board is running, and a re-push after a restart where the services
+    // survived but the vault did not. It merges, so a client sending one entry
+    // does not strip the rest.
+    //
+    // POST rather than PUT: it merges rather than replaces, and every other
+    // mutation this server takes is a POST — a lone PUT is a method each
+    // runtime implementation would have to remember to allow through CORS.
+    //
+    // There is deliberately no GET. The values go one way: in, and then only to
+    // a service resolving a reference for a call it is making. What is held can
+    // be *named* — the response says which aliases the runtime now has —
+    // because a client needs to show whether a credential is configured.
+    CROW_ROUTE(crow, "/runtimes/<string>/secrets")
+        .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return setSecrets(req, runtimeId); });
+
     CROW_ROUTE(crow, "/runtimes/<string>/rearrange")
         .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return rearrangeServices(req, runtimeId); });
 
@@ -236,6 +255,7 @@ struct Server::impl
   crow::response deleteService(const std::string& runtimeId, const std::string& instanceId);
   crow::response getRuntimeById(const std::string& id);
   crow::response rearrangeServices(const crow::request &req, const std::string& runtimeId);
+  crow::response setSecrets(const crow::request &req, const std::string& runtimeId);
   crow::response processRuntime(const crow::request &req, const std::string& runtimeId);
   crow::response processService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId);
   crow::response getRuntimeInputs(const crow::request &req, const std::string& runtimeId);
@@ -568,6 +588,30 @@ crow::response Server::impl::getRuntimeById(const std::string& id)
     return crow::response{crow::status::NOT_FOUND};
   }
   return makeJsonResponse(jsonSerialise(*rt));
+}
+
+crow::response Server::impl::setSecrets(const crow::request &req, const std::string& runtimeId)
+{
+  json body;
+  try
+  {
+    body = json::parse(req.body);
+  }
+  catch (const std::exception&)
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+  if (!body.is_object())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto held = app->setRuntimeSecrets(runtimeId, readSecretsPayload(body));
+  if (held.is_null())
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+  return makeJsonResponse(held);
 }
 
 crow::response Server::impl::rearrangeServices(const crow::request &req, const std::string& runtimeId)

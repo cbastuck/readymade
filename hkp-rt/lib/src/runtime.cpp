@@ -117,6 +117,9 @@ void Runtime::load(const RuntimeConfiguration& config)
   m_logData = config.logData;
   m_logging = config.logging;
   m_logLevel = levelFromString(config.logLevel);
+  // Before any service is built, because a service that opens a connection
+  // while being configured asks for its credential during construction.
+  m_vault.replace(config.secrets);
   auto services = config.services;
   for (auto &service : services)
   {

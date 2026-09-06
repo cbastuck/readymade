@@ -9,6 +9,8 @@
 
 #include <log_entry.h>
 
+#include <secrets.h>
+
 namespace hkp {
 
 class Service;
@@ -69,6 +71,19 @@ public:
   // so a host that surfaces a per-service processing indicator can bracket the
   // real duration.  Hosts without such an indicator may ignore it.
   virtual void notifyProcessFinished(const Service& svc, const Data& data) = 0;
+
+  // The runtime's secrets, for a service that has a credential to send.
+  //
+  // A service holds the reference it was configured with and asks here for the
+  // value, naming where it is about to send it. What comes back is used and
+  // dropped: assigning it to state would put it back on the path a board is
+  // saved from, which is the whole thing this arrangement exists to prevent.
+  //
+  // A nested pipeline answers with the secrets of the runtime around it. It is
+  // provisioned by nobody — no create payload reaches it — so its own would
+  // always be empty, and a credential service could only ever be used at the
+  // top level.
+  virtual SecretVault& secrets() = 0;
 
   // Instantiate a new SubRuntime from a JSON array of service-config objects.
   // ownerInParent is the service in this host that owns the new SubRuntime.

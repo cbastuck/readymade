@@ -44,3 +44,57 @@ TEST_CASE("destroying a server that was already stopped is safe",
   }
   SUCCEED("second stop completed without dereferencing a reset listener");
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Which request headers a pipeline is shown
+// ──────────────────────────────────────────────────────────────────────────────
+
+TEST_CASE("every header reaches a pipeline that has not said otherwise",
+          "[http-server][headers]")
+{
+  // A caller proving who it is does so in a header, so a pipeline that cannot
+  // see them cannot check one.
+  const std::map<std::string, std::string> carried{
+      {"authorization", "123"}, {"x-signature", "abc"}};
+
+  const auto shown = filterRequestHeaders(carried, std::nullopt);
+
+  REQUIRE(shown["authorization"] == "123");
+  REQUIRE(shown["x-signature"] == "abc");
+}
+
+TEST_CASE("a board that names headers receives only those",
+          "[http-server][headers]")
+{
+  const std::map<std::string, std::string> carried{
+      {"authorization", "123"}, {"x-signature", "abc"}};
+
+  const auto shown = filterRequestHeaders(
+      carried, std::vector<std::string>{"x-signature"});
+
+  REQUIRE(shown.size() == 1);
+  REQUIRE(shown["x-signature"] == "abc");
+}
+
+TEST_CASE("an empty list is a decision too, and forwards none",
+          "[http-server][headers]")
+{
+  const std::map<std::string, std::string> carried{{"authorization", "123"}};
+
+  REQUIRE(filterRequestHeaders(carried, std::vector<std::string>{}).empty());
+}
+
+TEST_CASE("the choice is reported, so a board saves it",
+          "[http-server][headers]")
+{
+  HttpServerSubservices server("http-1");
+
+  // Unset until a board says otherwise: everything is forwarded.
+  REQUIRE(server.getState()["forwardHeaders"].is_null());
+
+  server.configure(nlohmann::json{{"forwardHeaders", {"Authorization"}}});
+
+  // Lower-cased on the way in, as HTTP header names compare.
+  REQUIRE(server.getState()["forwardHeaders"] ==
+          nlohmann::json::array({"authorization"}));
+}

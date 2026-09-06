@@ -24,6 +24,13 @@ public:
   void setParentHost(RuntimeHost& host);
   void setParentRuntime(Runtime& runtime);
 
+  // The host this service is attached to, or null before it has one.
+  //
+  // A service that has a credential to send needs the runtime's secrets, and a
+  // service in a nested pipeline needs the ones the pipeline delegates to.
+  // Both come from here.
+  RuntimeHost* parentHost() const { return m_host; }
+
   Data next(Data data = Undefined(), bool immediately = true);
   void nextAsync(Data data = Undefined(), std::function<void(Data)> callback = nullptr);
   bool isConnected() const;

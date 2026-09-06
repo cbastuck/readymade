@@ -33,6 +33,7 @@ endfunction()
 
 add_executable(hkp-rt-runtime-tests
   runtime_validation.test.cpp
+  secrets.test.cpp
 )
 target_link_libraries(hkp-rt-runtime-tests PRIVATE hkp-rt-lib Catch2::Catch2WithMain)
 target_compile_features(hkp-rt-runtime-tests PRIVATE cxx_std_20)

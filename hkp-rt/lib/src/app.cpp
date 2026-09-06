@@ -257,6 +257,18 @@ json App::rearrangeServices(const std::string& runtimeId, const std::vector<std:
   return success ? jsonSerialise(rt->getConfiguration()) : nullptr;
 }
 
+json App::setRuntimeSecrets(const std::string& runtimeId,
+                            const std::map<std::string, SecretEntry>& entries)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return nullptr;
+  }
+  rt->setSecrets(entries);
+  return json{{"aliases", rt->secrets().aliases()}};
+}
+
 std::shared_ptr<Runtime> App::appendRuntime(const RuntimeConfiguration& config)
 {
   // Build and configure the runtime before it becomes visible to other threads.

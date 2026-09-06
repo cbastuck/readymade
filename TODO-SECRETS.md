@@ -351,13 +351,13 @@ Status as of 2026-09-04: ✅ done, ◐ partly done, ☐ not started.
 | 2 | Delete `redactSecrets` and its three call sites | `core/boardPersistence.ts`, `overview/shape.ts`, `overview/activity.ts` | S | ✅ |
 | 3 | `secrets` in the create payload + `POST /runtimes/:id/secrets` + push on configure and on attach | `runtime/rest/RuntimeRestApi.ts` | S–M | ✅ |
 | 3b | Push when a vault entry is added or changed while a board is running — *accepted as manual for now*: reload, or reconfigure the service | frontend + settings | S | — |
-| 4 | Runtime-side secret map (no read path) + resolver | hkp-node ✅ (`src/secrets.ts`, `SecretVault` on `RuntimeHost`), hkp-python ☐, hkp-rt ☐ | M ×3 | ◐ |
-| 4b | Nested pipelines reach the surrounding runtime's secrets | `runtime.ts` (`delegateSecrets`), `sub-service.ts`, `nested-pipeline.ts` | S | ✅ |
-| 5 | Port credential-taking services | done: `imap-email`, `text-generation`, `OpenAIPrompt`, `WorkflowBoardBuilder`. Left: `smtp-email`, `telegram-listener`, `telegram-sender`, `http-client`, `HttpRelayClient` | M | ◐ |
-| 6 | Delete the write-only masking conventions and their "empty means no change" trap | `imap-email` ✅, `text-generation` ✅, `smtp-email` ☐ | S | ◐ |
+| 4 | Runtime-side secret map (no read path) + resolver | **all four runtimes** ✅ — `hkp-node/src/secrets.ts`, `hkp-rt/lib/include/secrets.h`, `hkp-python/src/hkp/secrets.py`, browser `core/secrets.ts` | M ×3 | ✅ |
+| 4b | Nested pipelines reach the surrounding runtime's secrets | node (`delegateSecrets`), hkp-rt (`SubRuntime::secrets`), hkp-python (`delegate_secrets`) | S | ✅ |
+| 5 | Port credential-taking services | **all four runtimes complete** — node: `imap-email`, `smtp-email`, `telegram-*`, `text-generation`, `http-client`; hkp-rt and hkp-python: `http_client`, their only credential carrier; browser: `OpenAIPrompt`, `WorkflowBoardBuilder` (`HttpRelayClient` was deleted, 2026-09-06 — unused) | M | ✅ |
+| 6 | Delete the write-only masking conventions and their "empty means no change" trap | all of hkp-node ✅; `SmtpEmailUI` still renders a password field for a service that no longer masks | S | ◐ |
 | 7 | Audience on vault entries + TOFU prompt | `meander/backend/vault.h`, `hkp-frontend/src/vault.ts` — the *check* is implemented on both sides; no store supplies audiences yet | M | ◐ |
 | 8 | Provisioning consent + grant store, keyed (board, runtime, url, alias set) | frontend + native store | M | ☐ |
-| 9 | Fold `SecretField`'s ad-hoc `uservault.<uuid>.<key>` keys into the same aliases | `SecretField` ✅ (now writes the vault and emits a reference), `HttpRelayClient`'s `authVaultKey` ☐ | S | ◐ |
+| 9 | Fold `SecretField`'s ad-hoc `uservault.<uuid>.<key>` keys into the same aliases | done — `SecretField` writes the vault and emits a reference; `getVault`/`secretId` deleted with their last caller | S | ✅ |
 | B1 | `secrets.php` — per-tenant server-side store, write-only reads, board-scoped short-lived release (B-a) | hkp-website | M |
 | B2 | Coordinator vault + encryption at rest; push into coordinator-provisioned runtimes (B-b) | hkp-node coordinator | M |
 | B3 | Cloud-board secret form driven by `referencedSecrets`; "needs configuration" board state (B-b) | frontend + coordinator | S–M |
@@ -368,6 +368,38 @@ hkp-node is the reference implementation for the remote half; Python and C++
 port from it.
 
 ---
+
+### The port to hkp-rt and hkp-python
+
+Both were smaller than hkp-node, because **`http_client` is the only service in
+either that carries a credential** — their `text-generation` talks to a local
+server with no key, and neither has mail or messaging. Each got the same three
+pieces: a secrets module mirroring the shared contract, a vault on the runtime
+reached through the host, and a `POST /runtimes/<id>/secrets` route.
+
+Nesting is free in hkp-rt: `SubRuntime` already holds a `RuntimeHost& m_parent`,
+so `secrets()` returning `m_parent.secrets()` composes to any depth in one line.
+hkp-python needed the same `delegate_secrets` seam as node.
+
+Two things the port confirmed rather than assumed: **both servers allow exactly
+`GET, POST, DELETE, OPTIONS`** through CORS, so POST was the right verb in all
+three; and hkp-rt's `Service::m_host` was private, so a service could not reach
+its own runtime at all — `parentHost()` is the accessor that makes a credential
+service possible there.
+
+### One resolver, not one per service
+
+`resolveCredential(vault, held, to)` in `hkp-node/src/secrets.ts` is what every
+credential-taking service calls. It answers with a value or a sentence saying
+why there is none, which is the whole of what a service needs: a literal passes
+through (what a runtime configured from a file holds), a reference resolves, and
+a reference with no vault behind it yields nothing rather than being sent as its
+own text.
+
+It takes a whole structure as readily as one string, because a credential is not
+always a field of its own — `http-client` carries one inside an entry of a
+free-form header map. On any failure it resolves **nothing**, rather than
+handing back a half-filled structure a caller might send anyway.
 
 ### Nesting, and how a nested runtime gets secrets
 

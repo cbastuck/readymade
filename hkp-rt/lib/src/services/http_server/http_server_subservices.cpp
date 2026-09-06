@@ -120,8 +120,8 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
 
   // Describe the request the same way hkp-node's http-server-subservices does,
   // so a pipeline written for one runtime works on the other:
-  //   meta.method / meta.path / meta.query, plus meta.contentType and
-  //   meta.filename when the request carries a body.
+  //   meta.method / meta.path / meta.query / meta.headers, plus
+  //   meta.contentType and meta.filename when the request carries a body.
   // The body then arrives in exactly one form — decoded as `body` when its
   // content type says what the bytes mean, raw as MixedData binary otherwise.
   json meta;
@@ -131,6 +131,12 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
   meta["method"] = method;
   meta["path"]   = requestPath;
   meta["query"]  = query;
+  // A caller that has to prove who it is does so in a header — a shared secret,
+  // a signature, a bearer token — so a pipeline that cannot see them cannot
+  // check one. What a board does not name, it does not receive.
+  meta["headers"] =
+      session ? filterRequestHeaders(session->getRequestHeaders(), m_forwardHeaders)
+              : json::object();
 
   std::optional<json> decodedBody;
   BinaryData rawBody;
@@ -223,6 +229,32 @@ json HttpServerSubservices::configure(Data data)
   if (updateIfNeeded(port, (*buf)["port"]))
   {
     m_impl->setPort(port);
+  }
+
+  // An array is a decision, including an empty one. Anything else — absent,
+  // null, a string — leaves the default of forwarding all of them.
+  if (buf->contains("forwardHeaders"))
+  {
+    const auto& named = (*buf)["forwardHeaders"];
+    if (named.is_array())
+    {
+      std::vector<std::string> names;
+      for (const auto& entry : named)
+      {
+        if (entry.is_string())
+        {
+          auto name = entry.get<std::string>();
+          std::transform(name.begin(), name.end(), name.begin(),
+                         [](unsigned char c) { return std::tolower(c); });
+          names.push_back(name);
+        }
+      }
+      m_forwardHeaders = names;
+    }
+    else
+    {
+      m_forwardHeaders.reset();
+    }
   }
 
   if (updateIfNeeded(m_mode, (*buf)["mode"]))
@@ -319,6 +351,7 @@ json HttpServerSubservices::getState() const
     // rewrites it (see the frontend's runtime/board/mount).
     {MOUNT_FIELD, m_url},
     {"status", isBypass() ? "offline" : "online"},
+    {"forwardHeaders", m_forwardHeaders ? json(*m_forwardHeaders) : json(nullptr)},
     {"pipeline", pipeline}
   });
 }

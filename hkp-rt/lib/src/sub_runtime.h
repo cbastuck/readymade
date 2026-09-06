@@ -72,6 +72,12 @@ public:
                 const std::string& sender,
                 std::function<void(Data)> callback = nullptr) override;
   void notifyProcessFinished(const Service& svc, const Data& data) override;
+  // Straight out to the runtime around this one: nothing provisions a nested
+  // pipeline, so its own vault would always be empty. Asked for each time
+  // rather than copied, so a value pushed after a board is running reaches a
+  // nested service as immediately as a top-level one, and so that nesting
+  // composes to whichever runtime was actually given something.
+  SecretVault& secrets() override { return m_parent.secrets(); }
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override;
 

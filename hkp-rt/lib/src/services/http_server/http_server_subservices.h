@@ -1,5 +1,12 @@
 #pragma once
 
+#include <algorithm>
+#include <map>
+#include <string>
+
+#include <optional>
+#include <vector>
+
 #include <iostream>
 #include <vector>
 
@@ -25,6 +32,30 @@ namespace hkp {
 
 class Session;
 class HttpServerImpl;
+
+// The headers a pipeline is shown, out of the ones a request carried.
+//
+// `forward` unset forwards everything, which is what a board that has not
+// thought about it gets; a list forwards only what it names, and an empty list
+// forwards none. Names are compared lower-cased, as HTTP header names compare.
+//
+// Free rather than a member so the decision can be checked without standing up
+// a server and making a request to it.
+inline nlohmann::json filterRequestHeaders(
+    const std::map<std::string, std::string>& carried,
+    const std::optional<std::vector<std::string>>& forward)
+{
+  nlohmann::json headers = nlohmann::json::object();
+  for (const auto& [name, value] : carried)
+  {
+    if (forward && std::find(forward->begin(), forward->end(), name) == forward->end())
+    {
+      continue;
+    }
+    headers[name] = value;
+  }
+  return headers;
+}
 
 class HttpServerSubservices : public Service
 {
@@ -58,6 +89,15 @@ private:
 private:
   std::shared_ptr<HttpServerImpl> m_impl;
   std::string m_mode;
+  // Which of a request's headers the pipeline is shown; unset forwards all.
+  //
+  // Headers are where a caller puts a credential, and `meta` goes wherever the
+  // pipeline takes it — including into a board, if a service is wired to write
+  // it there. Naming the ones a board actually reads is how it stops carrying
+  // the ones it does not: an empty list forwards none, and no list at all
+  // forwards everything, which is what a board that has not thought about it
+  // gets.
+  std::optional<std::vector<std::string>> m_forwardHeaders;
   std::shared_ptr<SubRuntime> m_subservices;
   std::vector<json> m_subserviceConfig;
   // Reachable LAN address of the running server, published so facade widgets

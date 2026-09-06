@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/beast/http.hpp>
+
 #include <iostream>
 
 #include <types/types.h>
@@ -33,6 +35,12 @@ public:
   json configure(Data data) override;
   std::string getServiceId() const override;
   json getState() const override;
+  // The request both transports send; see the definition for why it is shared.
+  boost::beast::http::request<boost::beast::http::string_body> buildRequest(
+      const std::string& method, const std::string& path,
+      const std::string& query, const std::string& host, int version,
+      const nlohmann::json& j);
+
   Data process(Data data) override;
 
 private:
