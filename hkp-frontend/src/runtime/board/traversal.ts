@@ -65,3 +65,38 @@ export function collectServicesById(
 export function deepClone<T>(value: T): T {
   return structuredClone(value);
 }
+
+/**
+ * Applies `visit` to every string in a structure, rebuilding it as it goes.
+ *
+ * Shared by the substitution passes a board goes through on load — secret
+ * references and unit parameters — so that both agree on what counts as a
+ * value worth rewriting.
+ *
+ * Only plain objects and arrays are entered. A board's state can carry things
+ * that are not JSON — a Uint8Array, a class instance a service put there — and
+ * rebuilding one of those field by field would quietly change what it is.
+ */
+export function mapStrings<T>(value: T, visit: (text: string) => string): T {
+  return walkStrings(value, visit) as T;
+}
+
+function walkStrings(value: unknown, visit: (text: string) => string): unknown {
+  if (typeof value === "string") {
+    return visit(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => walkStrings(item, visit));
+  }
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  if (Object.getPrototypeOf(value) !== Object.prototype) {
+    return value;
+  }
+  const out: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    out[key] = walkStrings(entry, visit);
+  }
+  return out;
+}

@@ -1,10 +1,12 @@
 import { ReactNode } from "react";
 import {
+  PickedFile,
   PlatformCapabilities,
   PlatformProvider,
   RuntimeAccessSettings,
   RuntimeTokenRequest,
 } from "hkp-frontend/src/platform/PlatformContext";
+import { BoardDescriptor } from "hkp-frontend/src/types";
 import { getBackend } from "../backend";
 import { meanderLogin, type NativeLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
@@ -98,8 +100,55 @@ function withPersistedSession(
   };
 }
 
+
+/**
+ * The native file chooser, reading what was picked.
+ *
+ * `pickFile` hands back a path, and `readFile` takes one — so unlike a web file
+ * input, what comes back knows *where* it came from. That is what lets a picked
+ * composition resolve the units named beside it without anything else being
+ * chosen or saved first.
+ */
+const pickFilesNative = async (options?: {
+  filters?: string[];
+  multiple?: boolean;
+}): Promise<PickedFile[]> => {
+  const backend = await getBackend();
+  const uri = await backend.pickFile({ filters: options?.filters });
+  if (!uri) {
+    return [];
+  }
+  const source = await backend.readFile(uri);
+  return [{ name: uri.split("/").pop() ?? uri, source, uri }];
+};
+
+
+/**
+ * The host's board library, which on this platform is on disk rather than in
+ * local storage. A composition resolving its units by name has to look here.
+ */
+const loadSavedBoardNative = async (name: string) => {
+  const backend = await getBackend();
+  try {
+    return (await backend.loadBoard(name)) ?? null;
+  } catch {
+    // Not in the library is an answer, not a failure.
+    return null;
+  }
+};
+
+/** Puts a board into the host's library, which on this platform is on disk. */
+const saveSavedBoardNative = async (name: string, board: BoardDescriptor) => {
+  const backend = await getBackend();
+  await backend.saveBoard(name, board);
+};
+
 const capabilities: PlatformCapabilities = isNative
   ? {
+      pickFiles: pickFilesNative,
+      readFile: async (uri) => (await getBackend()).readFile(uri),
+      loadSavedBoard: loadSavedBoardNative,
+      saveSavedBoard: saveSavedBoardNative,
       saveRuntimeToDisk: async (json, _filename) => {
         const backend = await getBackend();
         const path = await backend.pickSavePath({ filters: ["*.json"] });
@@ -117,6 +166,8 @@ const capabilities: PlatformCapabilities = isNative
     }
   : isIOS || isAndroid
     ? {
+        loadSavedBoard: loadSavedBoardNative,
+        saveSavedBoard: saveSavedBoardNative,
         setRuntimeAllowedUser: setRuntimeAllowedUserNative,
         // Native Auth0 login via ASWebAuthenticationSession on iOS and browser
         // redirect capture on Android.

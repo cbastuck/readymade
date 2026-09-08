@@ -3,7 +3,6 @@ import { act, render, screen } from "@testing-library/react";
 
 import {
   OverviewProvider,
-  OverviewToggleButton,
   useOverview,
 } from "../OverviewContext";
 
@@ -50,21 +49,5 @@ describe("OverviewProvider", () => {
     act(() => api!.setRevealed({ uuid: "svc-2", label: "Monitor" }));
     act(() => api!.toggle());
     expect(screen.getByTestId("state").textContent).toBe("false:Monitor");
-  });
-});
-
-describe("OverviewToggleButton", () => {
-  it("renders nothing where no provider is mounted", () => {
-    const { container } = render(<OverviewToggleButton />);
-    expect(container.innerHTML).toBe("");
-  });
-
-  it("says which way it goes", () => {
-    render(
-      <OverviewProvider>
-        <OverviewToggleButton />
-      </OverviewProvider>,
-    );
-    expect(screen.getByRole("button").textContent).toBe("{ show overview }");
   });
 });

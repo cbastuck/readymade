@@ -81,6 +81,23 @@ a board bug that shows up the first time anyone presses it.
 
 ---
 
+
+### Which database it keeps conversations in
+
+The **tenant** comes from the runtime, never from configuration. **Which file**
+inside it is the board's to say, through `database` — the same field and the
+same rules as [SQL](./sql.md): 1–64 characters from `A–Z`, `a–z`, `0–9`, `-` and
+`_`, not `shared`, and refused rather than silently replaced when it is not one.
+
+Left empty, the file is derived from the board's title, which is what every
+board did before the field existed — and the reason two boards sharing a title
+also share their conversations, and a renamed board appears to have lost them.
+Name it, and neither happens.
+
+Set the same name on every `conversations` and `sql` service that should see the
+same tables; this service does not read a board-level setting, because there
+isn't one.
+
 ## Modes
 
 | Mode | What it does | Emits |

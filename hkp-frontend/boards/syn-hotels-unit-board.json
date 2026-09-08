@@ -1,0 +1,287 @@
+{
+  "boardName": "SYN Hotels",
+  "unit": {
+    "name": "hotels",
+    "exports": [
+      "booking.quotes"
+    ],
+    "imports": [
+      "booking.ready"
+    ],
+    "params": {
+      "requestsTopic": "booking.ready"
+    }
+  },
+  "description": "The hotels half of SYN, as a unit. It knows nothing about mail, conversations or guests — it takes completed booking requests off the topic 'booking.ready', finds hotels that match, and records what it found.\n\nBoth units run on the same hkp-node (127.0.0.1:8080) and so share one queue. That is the same locality rule conversations and sql already have: messages live with the runtime that took them in. Reaching a queue on another server is a job for the coordinator, which already holds a credential for every runtime of a board — a service inside a runtime holds none — and that is not built yet.\n\nThe two units keep separate databases even so: this one names 'syn-hotels' on its sql services, so its tables cannot land in whatever the booking unit's title happens to hash to.\n\nThe hotel directory is a mock, created and seeded by the Find service's own schema — a real one would be an http-client against a supplier API, and nothing else here would change.\n\nThe ack sits last, after the candidates are recorded. A crash before it leaves the claim to expire and the request to be handed out again, which is the guarantee: the same request twice is a nuisance, a request lost is a booking.",
+  "runtimes": [
+    {
+      "id": "intake",
+      "name": "1 · Requests in",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "review",
+      "name": "2 · What was found",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "intake": [
+      {
+        "uuid": "tick",
+        "serviceId": "timer",
+        "serviceName": "Every 15s",
+        "state": {
+          "periodic": true,
+          "periodicValue": 15,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": true
+        }
+      },
+      {
+        "uuid": "incoming",
+        "serviceId": "queue",
+        "serviceName": "Consume",
+        "state": {
+          "mode": "consume",
+          "topic": "{{param.requestsTopic}}",
+          "limit": 5,
+          "visibilitySeconds": 120,
+          "maxAttempts": 3
+        }
+      },
+      {
+        "uuid": "per-request",
+        "serviceId": "iterator",
+        "serviceName": "Each request",
+        "state": {
+          "itemsFrom": "messages",
+          "limit": 0,
+          "bypass": false,
+          "pipeline": [
+            {
+              "uuid": "as-criteria",
+              "serviceId": "map",
+              "serviceName": "As criteria",
+              "state": {
+                "mode": "replace",
+                "arrayMode": "single",
+                "sensingMode": false,
+                "template": {
+                  "messageId=": "params.id",
+                  "conversationId=": "params.payload.conversationId",
+                  "searchDistrict=": "params.payload.request.searchDistrict ? params.payload.request.searchDistrict : ''",
+                  "maximumPrice=": "params.payload.request.maximumPrice ? params.payload.request.maximumPrice : 100000",
+                  "numberOfBeds=": "params.payload.request.numberOfBeds ? params.payload.request.numberOfBeds : 1",
+                  "breakfast=": "params.payload.request.breakfast ? 1 : 0"
+                }
+              }
+            },
+            {
+              "uuid": "find",
+              "serviceId": "join",
+              "serviceName": "Find hotels",
+              "state": {
+                "as": "candidates",
+                "mode": "overwrite",
+                "bypass": false,
+                "pipeline": [
+                  {
+                    "uuid": "match-hotels",
+                    "serviceId": "sql",
+                    "serviceName": "Match",
+                    "state": {
+                      "mode": "query",
+                      "schema": "CREATE TABLE IF NOT EXISTS hotel (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, district TEXT NOT NULL, pricePerNight REAL NOT NULL, beds INTEGER NOT NULL, breakfast INTEGER NOT NULL, sauna INTEGER NOT NULL); INSERT OR IGNORE INTO hotel VALUES ('h1','Hotel Ostkreuz','ostkreuz@example.com','Ost Berlin',140,1,1,0), ('h2','Pension Rummelsburg','rummelsburg@example.com','Ost Berlin',95,2,1,1), ('h3','Hotel Friedrichshain','friedrichshain@example.com','Ost Berlin',185,2,1,1), ('h4','Hotel Charlottenburg','charlottenburg@example.com','West Berlin',150,1,1,0); CREATE TABLE IF NOT EXISTS enquiry (id INTEGER PRIMARY KEY AUTOINCREMENT, conversationId TEXT NOT NULL, hotelId TEXT NOT NULL, hotelName TEXT NOT NULL, hotelEmail TEXT NOT NULL, pricePerNight REAL NOT NULL, status TEXT NOT NULL, createdAt TEXT NOT NULL);",
+                      "statement": "SELECT * FROM hotel WHERE ($searchDistrict = '' OR district = $searchDistrict) AND pricePerNight <= $maximumPrice AND beds >= $numberOfBeds AND breakfast >= $breakfast ORDER BY pricePerNight ASC LIMIT 3",
+                      "database": "syn-hotels"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "uuid": "per-candidate",
+              "serviceId": "iterator",
+              "serviceName": "Each candidate",
+              "state": {
+                "itemsFrom": "candidates.rows",
+                "limit": 0,
+                "bypass": false,
+                "pipeline": [
+                  {
+                    "uuid": "keep-candidate",
+                    "serviceId": "sql",
+                    "serviceName": "Record",
+                    "state": {
+                      "mode": "run",
+                      "statement": "INSERT INTO enquiry (conversationId, hotelId, hotelName, hotelEmail, pricePerNight, status, createdAt) SELECT $conversationId, $id, $name, $email, $pricePerNight, 'matched', datetime('now') WHERE NOT EXISTS (SELECT 1 FROM enquiry WHERE conversationId = $conversationId AND hotelId = $id)",
+                      "database": "syn-hotels"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "uuid": "done",
+              "serviceId": "queue",
+              "serviceName": "Ack",
+              "state": {
+                "mode": "ack",
+                "topic": "{{param.requestsTopic}}",
+                "idFrom": "messageId"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "after-intake",
+        "serviceId": "stopper",
+        "serviceName": "Stop",
+        "state": {}
+      }
+    ],
+    "review": [
+      {
+        "uuid": "refresh",
+        "serviceId": "timer",
+        "serviceName": "Every 5s",
+        "state": {
+          "periodic": true,
+          "periodicValue": 5,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": true
+        }
+      },
+      {
+        "uuid": "enquiries",
+        "serviceId": "sql",
+        "serviceName": "Candidates",
+        "state": {
+          "mode": "query",
+          "statement": "SELECT * FROM enquiry ORDER BY id DESC LIMIT 50",
+          "database": "syn-hotels"
+        }
+      },
+      {
+        "uuid": "requests",
+        "serviceId": "queue",
+        "serviceName": "The topic",
+        "state": {
+          "mode": "list",
+          "topic": "{{param.requestsTopic}}",
+          "limit": 50
+        }
+      },
+      {
+        "uuid": "after-review",
+        "serviceId": "stopper",
+        "serviceName": "Stop",
+        "state": {}
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "panels": [
+      {
+        "id": "candidates",
+        "title": "Hotels found",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "enquiries",
+                "path": "rows"
+              },
+              "rowKey": "id",
+              "columns": [
+                "status",
+                "hotelName",
+                "hotelEmail",
+                "pricePerNight",
+                "conversationId",
+                "createdAt"
+              ],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Take one now",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "incoming",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "incoming",
+                    "path": "count"
+                  },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "incoming",
+                    "path": "error"
+                  },
+                  "tone": "error",
+                  "placeholder": "Ready"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "topic",
+        "title": "booking.ready",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "requests",
+                "path": "messages"
+              },
+              "rowKey": "id",
+              "columns": [
+                "status",
+                "attempts",
+                "payload.conversationId",
+                "publishedBy",
+                "publishedAt",
+                "error"
+              ],
+              "pageSize": 10
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

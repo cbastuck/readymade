@@ -10,6 +10,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      // Toasts are portalled next to the app, not inside whatever is on top of
+      // it. A modal layer disables pointer events on the body while it is open,
+      // which would leave a toast painting above that layer but deaf to clicks;
+      // saying so here keeps it dismissable wherever it is shown. Dialogs let
+      // that interaction through rather than treating it as a dismissal — see
+      // `dialog.tsx`.
+      style={{ pointerEvents: "auto" }}
       toastOptions={{
         classNames: {
           toast:

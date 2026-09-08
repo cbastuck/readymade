@@ -1,5 +1,7 @@
 import { createContext, useContext, ReactNode } from "react";
 
+import type { BoardDescriptor } from "../types";
+
 // Runtime-access settings the host persists (exposure + allow-list). Changes
 // take effect on the host's next start.
 export type RuntimeAccessSettings = {
@@ -19,8 +21,60 @@ export type RuntimeAccessSettings = {
  */
 export type RuntimeTokenRequest = { action: "processRuntime"; runtimeId: string };
 
+/** A file a platform chooser handed back. */
+export type PickedFile = {
+  /** Base name, as a web `File` would report it. */
+  name: string;
+  /** Its contents. */
+  source: string;
+  /** Where it was read from, when the platform knows — a path or `file://` URL. */
+  uri?: string;
+};
+
 export interface PlatformCapabilities {
   saveRuntimeToDisk?: (json: string, filename: string) => Promise<void>;
+  /**
+   * Opens the platform's own file chooser and reads what was picked.
+   *
+   * Provided by hosts where `<input type="file">` does not open a panel — the
+   * saucer webview is one — and by any host that can offer more than the web
+   * dialog can. Each entry carries the file's *name* and, where the platform
+   * knows it, the address it was read from: a composition resolves its units
+   * relative to that, which a browser can never supply.
+   *
+   * When absent, callers fall back to a web file input and to whatever the
+   * files themselves say.
+   */
+  pickFiles?: (options?: {
+    /** Extensions to offer, e.g. `["*.json", "*.hkpp"]`. */
+    filters?: string[];
+    multiple?: boolean;
+  }) => Promise<Array<PickedFile>>;
+  /**
+   * Reads a file the platform can address, by the `uri` a pick handed back or
+   * one resolved relative to it. Together with `pickFiles` this is what lets a
+   * composition reach the units named beside it: pick one file, read its
+   * neighbours. Absent in a browser, where a page is told nothing about the
+   * folder a file came from.
+   */
+  readFile?: (uri: string) => Promise<string>;
+  /**
+   * A board from the host's own library, by the name it was saved under.
+   *
+   * Where boards are saved is the platform's business: the web keeps them in
+   * local storage, the native app on disk behind its backend. Anything that
+   * resolves a board *by name* — a composition looking for its units — has to
+   * ask the same store the host saved it in, or it will look in an empty one
+   * and report the board missing while it sits in the library.
+   */
+  loadSavedBoard?: (name: string) => Promise<BoardDescriptor | null>;
+  /**
+   * Puts a board into the host's library under a name. The counterpart of
+   * `loadSavedBoard`, and needed for the same reason: saving a composition
+   * writes several documents, and they must all land in the store the host
+   * will later look in.
+   */
+  saveSavedBoard?: (name: string, board: BoardDescriptor) => Promise<void>;
   /**
    * Platform-specific login. Resolves to a raw OIDC id_token JWT on success, or
    * null if the user cancelled. Provided by hosts where the standard Auth0 web
@@ -112,6 +166,37 @@ export function usePlatform(): PlatformCapabilities {
 
 // Non-React accessor for the host's token minter. Resolves to null when no host
 // capability is present (plain web), mirroring PlatformCapabilities.mintToken.
+/**
+ * Non-React accessor for the host's board library. Resolves to null when the
+ * host keeps no library of its own, leaving the caller to its own store.
+ */
+export function loadSavedBoardViaPlatform(
+  name: string,
+): Promise<BoardDescriptor | null> {
+  return activeCapabilities.loadSavedBoard
+    ? activeCapabilities.loadSavedBoard(name)
+    : Promise.resolve(null);
+}
+
+/** Non-React accessor for `readFile`; null-free callers get an empty string. */
+export function readFileViaPlatform(uri: string): Promise<string | null> {
+  return activeCapabilities.readFile
+    ? activeCapabilities.readFile(uri)
+    : Promise.resolve(null);
+}
+
+/** Non-React accessor for `saveSavedBoard`. Resolves false when unsupported. */
+export async function saveSavedBoardViaPlatform(
+  name: string,
+  board: BoardDescriptor,
+): Promise<boolean> {
+  if (!activeCapabilities.saveSavedBoard) {
+    return false;
+  }
+  await activeCapabilities.saveSavedBoard(name, board);
+  return true;
+}
+
 export function mintTokenViaPlatform(
   request: RuntimeTokenRequest,
 ): Promise<string | null> {

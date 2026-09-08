@@ -1,43 +1,15 @@
 import path from "path";
-import fs from "fs";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 
-// Serve the /boards directory as static JSON files in dev mode.
-// In production the boards directory should be copied to the build output.
-const serveBoardsPlugin = {
-  name: "serve-boards",
-  configureServer(server: any) {
-    server.middlewares.use(
-      "/boards",
-      (req: any, res: any, next: () => void) => {
-        const filePath = path.resolve(
-          __dirname,
-          "boards",
-          req.url.replace(/^\//, ""),
-        );
-        if (
-          filePath.startsWith(path.resolve(__dirname, "boards")) &&
-          fs.existsSync(filePath) &&
-          fs.statSync(filePath).isFile()
-        ) {
-          res.setHeader("Content-Type", "application/json; charset=utf-8");
-          res.setHeader("Cache-Control", "no-store");
-          res.end(fs.readFileSync(filePath, "utf-8"));
-        } else {
-          next();
-        }
-      },
-    );
-  },
-};
+import { serveBoards } from "./vite-plugins/serveBoards";
 
 export default defineConfig({
   build: {
     outDir: "build",
   },
-  plugins: [svgr(), react(), serveBoardsPlugin],
+  plugins: [svgr(), react(), serveBoards(path.resolve(__dirname, "boards"))],
   server: {
     port: 5555,
   },

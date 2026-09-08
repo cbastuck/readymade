@@ -1,0 +1,239 @@
+{
+  "boardName": "Queue Demo",
+  "description": "Two sides of a queue, on one board so you can watch both.\n\nThe 'Producer' runtime publishes an enquiry to the topic 'demo.requests' whenever you press 'Send one'. The 'Consumer' runtime polls that topic every 5 seconds on its own clock, works through whatever it finds one message at a time, and acknowledges each one — so a message survives a runtime that stops between claiming and finishing.\n\nThe log table shows every message and what became of it: pending until someone claims it, claimed while a consumer holds it, done once acknowledged. Stop the consumer's timer and press 'Send one' a few times to watch messages queue up; start it again and watch them drain.\n\nOn a real workflow these two runtimes would be two boards — publishing and consuming are different jobs, running on different clocks. The queue is the same either way: it lives in the database shared by all of one owner's boards, so both sides see it without either knowing anything about the other.",
+  "runtimes": [
+    {
+      "id": "producer",
+      "name": "1 · Producer",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "consumer",
+      "name": "2 · Consumer",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "log",
+      "name": "3 · The log",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "producer": [
+      {
+        "uuid": "an-enquiry",
+        "serviceId": "map",
+        "serviceName": "An enquiry",
+        "state": {
+          "mode": "replace",
+          "arrayMode": "single",
+          "sensingMode": false,
+          "template": {
+            "district=": "params.district ? params.district : 'Ost Berlin'",
+            "nights=": "2",
+            "sentAt=": "now()"
+          }
+        }
+      },
+      {
+        "uuid": "hand-over",
+        "serviceId": "queue",
+        "serviceName": "Publish",
+        "state": {
+          "mode": "publish",
+          "topic": "demo.requests"
+        }
+      },
+      {
+        "uuid": "after-publish",
+        "serviceId": "stopper",
+        "serviceName": "Stop",
+        "state": {}
+      }
+    ],
+    "consumer": [
+      {
+        "uuid": "tick",
+        "serviceId": "timer",
+        "serviceName": "Every 5s",
+        "state": {
+          "periodic": true,
+          "periodicValue": 5,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": true
+        }
+      },
+      {
+        "uuid": "incoming",
+        "serviceId": "queue",
+        "serviceName": "Consume",
+        "state": {
+          "mode": "consume",
+          "topic": "demo.requests",
+          "limit": 5,
+          "visibilitySeconds": 60,
+          "maxAttempts": 3
+        }
+      },
+      {
+        "uuid": "per-message",
+        "serviceId": "iterator",
+        "serviceName": "Each message",
+        "state": {
+          "itemsFrom": "messages",
+          "limit": 0,
+          "bypass": false,
+          "pipeline": [
+            {
+              "uuid": "the-work",
+              "serviceId": "monitor",
+              "serviceName": "The work",
+              "state": {}
+            },
+            {
+              "uuid": "done",
+              "serviceId": "queue",
+              "serviceName": "Ack",
+              "state": {
+                "mode": "ack",
+                "topic": "demo.requests"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "after-consume",
+        "serviceId": "stopper",
+        "serviceName": "Stop",
+        "state": {}
+      }
+    ],
+    "log": [
+      {
+        "uuid": "refresh",
+        "serviceId": "timer",
+        "serviceName": "Every 2s",
+        "state": {
+          "periodic": true,
+          "periodicValue": 2,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": true
+        }
+      },
+      {
+        "uuid": "everything",
+        "serviceId": "queue",
+        "serviceName": "The log",
+        "state": {
+          "mode": "list",
+          "topic": "demo.requests",
+          "limit": 50
+        }
+      },
+      {
+        "uuid": "after-log",
+        "serviceId": "stopper",
+        "serviceName": "Stop",
+        "state": {}
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "queue",
+        "title": "Queue",
+        "layout": {
+          "direction": "column",
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "everything",
+                "path": "messages"
+              },
+              "rowKey": "id",
+              "columns": [
+                "status",
+                "attempts",
+                "payload.district",
+                "publishedBy",
+                "publishedAt",
+                "claimedAt",
+                "error"
+              ],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "items": [
+                {
+                  "type": "text-input",
+                  "label": "District",
+                  "placeholder": "Ost Berlin",
+                  "submitLabel": "Send one",
+                  "grow": true,
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "an-enquiry",
+                      "payload": {
+                        "district": "$$input"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Consume now",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "incoming",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "incoming",
+                    "path": "count"
+                  },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "incoming",
+                    "path": "error"
+                  },
+                  "tone": "error",
+                  "placeholder": "Ready"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

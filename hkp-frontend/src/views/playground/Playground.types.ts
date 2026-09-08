@@ -20,6 +20,12 @@ export type PlaygroundProps = WithRouterProps & {
   logoSlot?: React.ReactNode;
   menuItemFactory?: BoardMenuItemFactory;
   onChangeBoardname?: (newName: string) => void;
+  /**
+   * Where `boardDescriptor` was read from — a file URI or a URL. A composition
+   * resolves the units it names relative to this, so a board opened from a file
+   * finds its neighbours without anything having been copied first.
+   */
+  boardSource?: string;
   onSaveBoard?: (name: string, payload: BoardDescriptor) => void;
   onUpdateBoardState?: (newBoard: BoardDescriptor) => void;
   onNewBoard?: (ctx?: BoardContextState) => void;

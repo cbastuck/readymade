@@ -151,7 +151,10 @@ export default function SecretsTab() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pt-2 text-sm">
+    // Capped and scrolled here rather than left to the dialog: the tab grows
+    // with the number of secrets stored, and the dialog it sits in has no
+    // height of its own to give. Same treatment as the Remotes tab.
+    <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pt-2 pr-1 text-sm">
       <span className="text-[0.8rem] text-slate-500 leading-snug">
         Give a secret a name here, then refer to it from a board by that name
         instead of pasting the value in. A board written that way holds no

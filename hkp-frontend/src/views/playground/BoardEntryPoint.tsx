@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { BoardContextState } from "../../BoardContext";
+import { narrowBoardContext } from "../../facade/boardServices";
 import EmptyBoard from "./EmptyBoard";
 import { s, t } from "../../styles";
 
@@ -9,6 +11,11 @@ import Board from "./Board";
 
 import LoadIndicator from "./LoadIndicator";
 import FacadeRenderer from "../../facade/FacadeRenderer";
+import { useFacadeView } from "../../facade/FacadeViewContext";
+import { FacadeDescriptor } from "../../facade/types";
+
+/** What the editor starts from on a board that declares no facade yet. */
+const EMPTY_FACADE: FacadeDescriptor = { layout: "single", panels: [] };
 
 type Props = {
   className?: string;
@@ -31,8 +38,20 @@ export default function BoardEntryPoint({
   onChangeBoardname,
   emptySlot,
 }: Props) {
-  const facade = boardContext.facade;
   const boardName = boardContext.boardName || requestedBoardName || "";
+
+  // Units are not merged into one surface: each contributes a view, and the
+  // board is looked at through one of them at a time. A board that is not a
+  // composition has the single facade it always had.
+  const views = boardContext.linkage?.views ?? [];
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  // The tabs switch between facades, so they belong to the facade half and go
+  // with it. The choice is kept rather than reset: the tab comes back on the
+  // view it was left on.
+  const facadeView = useFacadeView();
+  const activeView =
+    views.find((view) => view.id === activeViewId) ?? views[0] ?? null;
+  const facade = activeView?.facade ?? boardContext.facade;
   const isPlaygroundEmpty =
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
@@ -93,7 +112,9 @@ export default function BoardEntryPoint({
     />
   );
 
-  if (facade) {
+  // The editor is where a facade is started, so it opens on a board that has
+  // none — with nothing in the facade half until it puts something there.
+  if (facade || facadeView?.editorOpen) {
     return (
       <div
         className={className}
@@ -107,9 +128,43 @@ export default function BoardEntryPoint({
           overflow: "hidden",
         }}
       >
+        {views.length > 1 && facadeView?.showFacade !== false && (
+          <div
+            role="tablist"
+            style={{
+              display: "flex",
+              gap: 4,
+              padding: "6px 8px 0",
+              flexWrap: "wrap",
+              flexShrink: 0,
+            }}
+          >
+            {views.map((view) => (
+              <button
+                key={view.id}
+                role="tab"
+                aria-selected={view.id === activeView?.id}
+                className="hkp-view-tab"
+                onClick={() => setActiveViewId(view.id)}
+              >
+                {view.title}
+              </button>
+            ))}
+          </div>
+        )}
         <FacadeRenderer
-          facade={facade}
-          boardContext={boardContext}
+          // A different view is a different surface: remounting lets it build
+          // its own facade state and run its own `facade.init`, which are keyed
+          // to the board name and would otherwise be inherited from whichever
+          // view was shown first.
+          key={activeView?.id ?? "facade"}
+          facade={facade ?? EMPTY_FACADE}
+          // A unit's view searches that unit's runtimes, so two units may use
+          // the same service uuid without their widgets finding each other's.
+          boardContext={narrowBoardContext(
+            boardContext,
+            activeView?.runtimeIds ?? [],
+          )}
           boardName={boardName}
           runtimeContent={boardContent}
         />

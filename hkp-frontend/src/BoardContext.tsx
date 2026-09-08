@@ -46,9 +46,13 @@ import {
   getRuntimeScopeApi,
 } from "./core/boardContextTypes";
 import { FacadeDescriptor } from "./facade/types";
+import { BoardLinkage } from "./runtime/board/units";
+import { UnitOrigin } from "./core/linkUnits";
 import {
   fetchBoard as fetchBoardOp,
   serializeBoard as serializeBoardOp,
+  serializeBoardDocuments as serializeBoardDocumentsOp,
+  BoardDocuments,
   setBoardState as setBoardStateOp,
   clearBoard as clearBoardOp,
 } from "./core/boardPersistence";
@@ -116,7 +120,21 @@ type BoardContextAPI = {
   onAction: (action: Action) => void;
 
   serializeBoard: () => Promise<BoardDescriptor | null>;
-  setBoardState: (newState: BoardDescriptor) => Promise<void>;
+  /**
+   * The board as the documents it came from, for saving. Identical to
+   * `serializeBoard` wrapped in one document unless the board was assembled
+   * from units. See `core/boardPersistence`.
+   */
+  serializeBoardDocuments: () => Promise<BoardDocuments | null>;
+  /**
+   * Loads a board that arrived whole — dropped, pasted as source, or restored
+   * from a link. `origin` says where its units may be found, when the way it
+   * arrived carries that; without one they are looked for among saved boards.
+   */
+  setBoardState: (
+    newState: BoardDescriptor,
+    origin?: UnitOrigin,
+  ) => Promise<void>;
   setBoardName: (name: string) => void;
 
   isRuntimeInScope: (runtime: RuntimeDescriptor) => boolean;
@@ -148,6 +166,12 @@ export type BoardContextState = BoardContextAPI &
 
     boardName?: string;
     facade?: FacadeDescriptor;
+    /**
+     * What linking this board produced: the units it was assembled from and the
+     * views they contribute. Absent on a board that declares no units — which
+     * is every board that is not a composition. See `runtime/board/units`.
+     */
+    linkage?: BoardLinkage;
 
     availableRuntimeEngines: Array<RuntimeClass>;
     runtimeApis: RuntimeApiMap;
@@ -162,6 +186,7 @@ export type BoardContextState = BoardContextAPI &
 type ProviderState = EngineState & {
   availableRuntimeEngines: Array<RuntimeClass>;
   facade?: FacadeDescriptor;
+  linkage?: BoardLinkage;
   isFetching: boolean;
   errorOnFetch?: Error;
 };
@@ -187,6 +212,10 @@ type ProviderStateAction =
   | {
       type: "setFacade";
       value: SetStateAction<FacadeDescriptor | undefined>;
+    }
+  | {
+      type: "setLinkage";
+      value: SetStateAction<BoardLinkage | undefined>;
     }
   | { type: "setIsFetching"; value: SetStateAction<boolean> }
   | {
@@ -235,6 +264,11 @@ function providerStateReducer(
       return {
         ...state,
         facade: resolveSetStateAction(state.facade, action.value),
+      };
+    case "setLinkage":
+      return {
+        ...state,
+        linkage: resolveSetStateAction(state.linkage, action.value),
       };
     case "setIsFetching":
       return {
@@ -294,6 +328,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       availableRuntimeEngines:
         availableRuntimeEnginesProp || restoreAvailableRuntimeEngines(),
       facade: undefined,
+      linkage: undefined,
       isFetching: false,
       errorOnFetch: undefined,
     });
@@ -304,6 +339,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       scopes,
       availableRuntimeEngines,
       facade,
+      linkage,
       isFetching,
       errorOnFetch,
     } = state;
@@ -358,6 +394,9 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const setFacade: Dispatch<SetStateAction<FacadeDescriptor | undefined>> = (
       value,
     ) => dispatch({ type: "setFacade", value });
+    const setLinkage: Dispatch<SetStateAction<BoardLinkage | undefined>> = (
+      value,
+    ) => dispatch({ type: "setLinkage", value });
     const setIsFetching: Dispatch<SetStateAction<boolean>> = (value) =>
       dispatch({ type: "setIsFetching", value });
     const setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>> = (
@@ -393,6 +432,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setIsFetching,
       setErrorOnFetch,
       setFacade,
+      setLinkage,
     });
 
     const waitForUserLogin = async () => {
@@ -477,8 +517,16 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     ) => setServiceNameOp(runtimeId, instanceId, newName, getRefs());
 
     const serializeBoard = () => serializeBoardOp(getRefs());
-    const setBoardState = (newState: BoardDescriptor) =>
-      setBoardStateOp(newState, getRefs(), waitForUserLogin, removeRuntime);
+    const serializeBoardDocuments = () =>
+      serializeBoardDocumentsOp(getRefs(), providerStateRef.current.linkage);
+    const setBoardState = (newState: BoardDescriptor, origin?: UnitOrigin) =>
+      setBoardStateOp(
+        newState,
+        getRefs(),
+        waitForUserLogin,
+        removeRuntime,
+        origin,
+      );
 
     const setBoardName = (name: string) => {
       setBoardNameState(name);
@@ -725,6 +773,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       coordinator,
       boardName,
       facade,
+      linkage,
       runtimes,
       services,
       registry,
@@ -757,6 +806,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       addAvailableRuntime,
       removeAvailableRuntime,
       serializeBoard,
+      serializeBoardDocuments,
       setBoardState,
     });
 

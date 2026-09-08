@@ -45,6 +45,7 @@ function Playground(props: PlaygroundProps) {
     onAction,
     onSaveDialog,
     onChangeBoardname,
+    unitOrigin,
   } = usePlaygroundController(props);
 
   // Only a name for a board that has none; generated once so it does not change
@@ -57,6 +58,7 @@ function Playground(props: PlaygroundProps) {
       user={currentUser}
       initialBoardName={requestedBoardName}
       fetchBoard={fetchBoard}
+      unitOrigin={unitOrigin}
       isRuntimeInScope={() => true}
       runtimeApis={runtimeApis}
       onRemoveRuntime={onRemoveRuntime}

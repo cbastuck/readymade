@@ -40,6 +40,7 @@ function MobilePlayground(props: MobilePlaygroundProps) {
     serializeBoard,
     onUpdateBoardState,
     onAction,
+    unitOrigin,
   } = usePlaygroundController(props);
 
   const suggestedName =
@@ -53,6 +54,7 @@ function MobilePlayground(props: MobilePlaygroundProps) {
       user={currentUser}
       initialBoardName={requestedBoardName}
       fetchBoard={fetchBoard}
+      unitOrigin={unitOrigin}
       isRuntimeInScope={() => true}
       runtimeApis={runtimeApis}
       onRemoveRuntime={onRemoveRuntime}

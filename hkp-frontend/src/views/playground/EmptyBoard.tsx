@@ -6,6 +6,11 @@ import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { isBoardDescriptor, isRuntimeDescriptorConfig } from "hkp-frontend/src/types";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import RuntimeMenu from "hkp-frontend/src/ui-components/toolbar/RuntimeMenu";
+import {
+  filesUnitOrigin,
+  isComposition,
+} from "hkp-frontend/src/core/linkUnits";
+import { UnitBoard } from "hkp-frontend/src/runtime/board/units";
 
 type Props = {
   boardName: string;
@@ -32,6 +37,28 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
     onDragEnd();
     ev.preventDefault();
     const files = getDraggedFiles(ev);
+
+    // Several files at once is how a composition arrives with its units: a page
+    // cannot reach the siblings of a single dropped file, so the set that was
+    // dropped is the origin its references resolve against.
+    if (files.length > 1) {
+      const documents = new Map<string, UnitBoard>();
+      for (const file of files) {
+        const src = await readFile(file, true);
+        const data = typeof src === "string" && JSON.parse(src);
+        if (data && isBoardDescriptor(data)) {
+          documents.set(file.name, data as UnitBoard);
+        }
+      }
+      const composition =
+        [...documents.values()].find((board) => isComposition(board)) ??
+        [...documents.values()][0];
+      if (composition) {
+        boardContext?.setBoardState(composition, filesUnitOrigin(documents));
+      }
+      return;
+    }
+
     if (files.length === 1) {
       const src = await readFile(files[0], true);
       const data = typeof src === "string" && JSON.parse(src);
