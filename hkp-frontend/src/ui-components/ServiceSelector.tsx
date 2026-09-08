@@ -21,9 +21,20 @@ type Props = {
   id: string;
   registry: ServiceRegistry;
   onAddService: (svc: ServiceClass) => void;
+  /** Sit in a row of small controls rather than lead a panel of its own. The
+   *  full-size trigger is 40px tall, which makes whatever shares its row jump
+   *  down when it appears. Styled inline: the height it overrides comes from a
+   *  class of the same specificity, where source order rather than the class
+   *  list would decide the winner. */
+  compact?: boolean;
 };
 
-export default function ServiceSelector({ id, registry, onAddService }: Props) {
+export default function ServiceSelector({
+  id,
+  registry,
+  onAddService,
+  compact = false,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const onSelect = (value: string) => {
@@ -43,10 +54,22 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
           role="combobox"
           aria-expanded={open}
           className="w-[200px] justify-between text-sm border-none bg-transparent hover:bg-[var(--hkp-accent-violet-dim)] hover:text-[var(--hkp-accent-violet)]"
+          style={
+            compact
+              ? {
+                  height: 22,
+                  width: 150,
+                  padding: "0 6px",
+                  fontSize: 12,
+                }
+              : undefined
+          }
           disabled={!registry || registry.length === 0}
         >
           Add Service
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown
+            className={`ml-2 shrink-0 opacity-50 ${compact ? "h-3 w-3" : "h-4 w-4"}`}
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0 h-[260px] opacity-100 font-menu">
@@ -58,9 +81,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          <CommandEmpty className="text-sm p-2">
-            No service found
-          </CommandEmpty>
+          <CommandEmpty className="text-sm p-2">No service found</CommandEmpty>
           <CommandList className="overflow-auto">
             {registry &&
               registry.map((s) => (

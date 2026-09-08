@@ -47,8 +47,9 @@ export default function RuntimeHeader({
 
   const { name, id: runtimeId } = runtime;
   const boardContext = useContext(BoardCtx);
-  const { themeName } = useThemeControl();
+  const { themeName, densityId } = useThemeControl();
   const isPlayground = themeName === "playground";
+  const compact = densityId === "compact";
 
   const runtimeTypeBadge = isRuntimeBrowserClassType(runtime.type)
     ? "browser"
@@ -285,7 +286,9 @@ export default function RuntimeHeader({
 
   return (
     <div
-      className="flex items-center gap-3 pl-2 cursor-move w-full overflow-clip py-2"
+      className={`flex items-center gap-3 pl-2 cursor-move w-full overflow-clip ${
+        compact ? "py-1" : "py-2"
+      }`}
       style={{ backgroundColor }}
     >
       <div className="flex items-end gap-3 px-2 mr-auto">

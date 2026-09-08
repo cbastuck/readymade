@@ -46,7 +46,7 @@ export default function InputText({
 
   const resolvedValue = synced ? value : propValue;
   const inSync = synced ? resolvedValue === propValue : true;
-  const fontSize = 11;
+  const fontSize = "var(--hkp-svc-font-sm, 11px)";
 
   return (
     <div
@@ -56,7 +56,7 @@ export default function InputText({
         flexDirection: "column",
         margin: "3px 0px",
         ...style,
-        minWidth: "350px",
+        minWidth: "var(--hkp-svc-row-min-width, 350px)",
       }}
     >
       <div style={{ width: "100%", textAlign: "left" }}>
@@ -68,7 +68,7 @@ export default function InputText({
           label={label}
           style={{
             ...labelStyle,
-            letterSpacing: 1,
+            letterSpacing: "var(--hkp-svc-label-tracking, 1px)",
             fontSize,
             width: "100%",
             textAlign: "left",

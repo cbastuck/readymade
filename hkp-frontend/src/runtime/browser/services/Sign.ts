@@ -1,5 +1,9 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
+import {
+  THIS_DEVICE,
+  resolveCredential,
+} from "hkp-frontend/src/core/secrets";
 import SignUI from "./SignUI";
 
 /**
@@ -13,6 +17,12 @@ import SignUI from "./SignUI";
  *
  * HmacSHA256p is a progressive mode: chunks are buffered and the HMAC over all
  * buffered data is produced when configure({ finalize: true }) is called.
+ *
+ * The secret is a `{{secret.<alias>}}` reference resolved at the moment a key is
+ * derived from it, and never held as a value: it is not sent anywhere, so it
+ * resolves against `THIS_DEVICE`, and a secret whose audience is that one is
+ * refused everywhere on the network. What the service reports from its state is
+ * the reference it was configured with, which is what a saved board carries.
  */
 
 const serviceId = "hookup.to/service/sign";
@@ -109,7 +119,11 @@ class Sign extends ServiceBase<State> {
       return null; // accumulates until finalize
     }
 
-    const sig = await hmac(hash, this.state.secret, data);
+    const secret = this.signingKey();
+    if (secret === null) {
+      return null;
+    }
+    const sig = await hmac(hash, secret, data);
     return encode(sig, this.state.encoding);
   }
 
@@ -123,8 +137,28 @@ class Sign extends ServiceBase<State> {
       offset += chunk.length;
     }
     this._progressiveChunks = [];
-    const sig = await hmac("SHA-256", this.state.secret, combined);
+    const secret = this.signingKey();
+    if (secret === null) {
+      return;
+    }
+    const sig = await hmac("SHA-256", secret, combined);
     this.app.next(this, encode(sig, this.state.encoding));
+  }
+
+  /**
+   * The key to sign with, for one signature, or null with the reason reported.
+   *
+   * Resolved per signature rather than once at configure time, so nothing here
+   * ever holds the value: the state this service reports stays the reference it
+   * was configured with.
+   */
+  private signingKey(): string | null {
+    const { value, problem } = resolveCredential(this.state.secret, THIS_DEVICE);
+    if (problem) {
+      this.pushErrorNotification(`Sign: ${problem}`);
+      return null;
+    }
+    return value;
   }
 
   private toBytes(params: any): Uint8Array {

@@ -13,6 +13,7 @@ import {
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
+import RuntimeRestScope from "./RuntimeRestScope";
 import RuntimeRestServiceUI from "./RuntimeRestServiceUI";
 import { findServiceUI } from "./UIRegistry";
 import EmptyRuntimePlaceholder from "hkp-frontend/src/ui-components/runtime-ui/EmptyRuntimePlaceholder";
@@ -79,6 +80,11 @@ export default function RuntimeRest({
     scope.onResult = onResult;
     scope.authenticatedUser = user;
   }
+
+  // The board's order is the pipeline's order, and this is the one place that
+  // sees it after every add, removal and rearrange. The scope needs it to say
+  // what follows a service when one emits (app.next).
+  (scope as RuntimeRestScope).services = services;
 
   scope.onConfig = (instanceId: string, config: object) => {
     setServicesWithConfig((prevState) =>

@@ -1,6 +1,6 @@
 import { FacadeWidgetAction, WidgetAction } from "./types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import { findService } from "./findService";
+import { findService, processService } from "./boardServices";
 import { applyInput } from "./applyInput";
 
 // Recursively replaces { "$state": "key" } objects with the corresponding
@@ -57,6 +57,11 @@ export function executeActions({
         configure[k] = applyInput(withState, value);
       }
       service.configure(configure);
+    } else if (act.type === "process") {
+      // Same substitution as a configure payload: what a board writes into one
+      // it can write into the other.
+      const withState = state ? resolveStateRefs(act.payload ?? {}, state) : (act.payload ?? {});
+      processService(boardContext, act.serviceUuid, applyInput(withState, value));
     } else if (act.type === "set-state") {
       setState(act.key, value);
     }

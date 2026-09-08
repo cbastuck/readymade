@@ -28,9 +28,11 @@ type Props = {
   menuItemFactory?: BoardMenuItemFactory;
   menuSlot?: ReactNode;
   logoSlot?: ReactNode;
-  /** Actions for the view that owns the board — deploying, for one. Passed in
-   *  rather than rendered here, because a view that only attaches to a board
-   *  has no business offering them. */
+  /** Actions for the view that owns the board — deploying and the overview.
+   *  Passed in rather than rendered here, because a view that only attaches to
+   *  a board has no business offering them. Shown under every theme: which
+   *  theme a board is being looked at in says nothing about what can be done
+   *  to it. */
   actionsSlot?: ReactNode;
   /** Where the board runs, shown centred between the board menu and the
    *  account controls. Centred by taking it out of the flow, so it stays put
@@ -205,9 +207,11 @@ export default function Toolbar({
               marginLeft: "auto",
               display: "flex",
               alignItems: "center",
+              gap: 4,
               paddingRight: 6,
             }}
           >
+            {actionsSlot}
             <AccountAvatar />
           </div>
           {menuSlot ?? (!hideNavigation && <AppMenu />)}

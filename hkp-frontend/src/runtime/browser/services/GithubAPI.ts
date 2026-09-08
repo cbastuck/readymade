@@ -1,12 +1,35 @@
+import { resolveCredential } from "hkp-frontend/src/core/secrets";
+
 import { RequestError } from "./helpers";
 import { encodeBlobBase64 } from "./helpers";
 
 const baseURL = "https://api.github.com";
 
+/**
+ * The authorization header for one GitHub request.
+ *
+ * Every call here is authenticated the same way and goes to the same host, so
+ * this is where a `{{secret.<alias>}}` token becomes a value — once, for one
+ * request, and never anywhere a service or a panel could hold on to it. A token
+ * bound to somewhere other than GitHub is refused rather than sent, which is
+ * the point of binding one at all: a board choosing the credential must not be
+ * able to choose the destination too.
+ *
+ * A plain token passes through unchanged, which is what a board that names one
+ * outright still holds.
+ */
+function authorization(token: string): string {
+  const { value, problem } = resolveCredential(token, baseURL);
+  if (problem) {
+    throw new Error(`GitHub: ${problem}`);
+  }
+  return "token " + value;
+}
+
 async function makeRequest(token: string, url: string): Promise<any> {
   const fullURL = `${baseURL}${url}`;
   const resp = await fetch(fullURL, {
-    headers: { Authorization: "token " + token },
+    headers: { Authorization: authorization(token) },
   });
   if (!resp.ok) {
     throw new RequestError(fullURL, resp.status);
@@ -118,7 +141,7 @@ export async function createTree(
     method: "POST",
     headers: {
       accept: "application/vnd.github.v3+json",
-      Authorization: "token " + token,
+      Authorization: authorization(token),
     },
     body: JSON.stringify({
       base_tree: parentSha,
@@ -148,7 +171,7 @@ export async function createBlob(
     method: "POST",
     headers: {
       accept: "application/vnd.github.v3+json",
-      Authorization: "token " + token,
+      Authorization: authorization(token),
     },
     body: JSON.stringify({
       content,
@@ -179,7 +202,7 @@ export async function createCommit(
     method: "POST",
     headers: {
       accept: "application/vnd.github.v3+json",
-      Authorization: "token " + token,
+      Authorization: authorization(token),
     },
     body: JSON.stringify({
       message,
@@ -204,7 +227,7 @@ export async function updateHead(
       method: "PATCH",
       headers: {
         accept: "application/vnd.github.v3+json",
-        Authorization: "token " + token,
+        Authorization: authorization(token),
       },
       body: JSON.stringify({
         sha: commit.sha,

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import BipolarMeter from "hkp-frontend/src/ui-components/BipolarMeter";
 import { BipolarMeterWidget } from "../../types";
-import { findService, resolvePath } from "../../findService";
+import { findService } from "../../boardServices";
+import { resolvePath } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 export function BipolarMeterRenderer({

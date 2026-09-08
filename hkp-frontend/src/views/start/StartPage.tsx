@@ -47,6 +47,7 @@ import { RowVM } from "./Row";
 import BoardDetails from "./BoardDetails";
 import RuntimeDetails from "./RuntimeDetails";
 import FolderPicker from "./FolderPicker";
+import EditorDialog from "hkp-frontend/src/ui-components/EditorDialog";
 
 export type { RuntimeEntry };
 export type { CoordinatorsController, RemotesController };
@@ -84,6 +85,14 @@ export interface StartPageProps {
   /** Deletes a saved board entirely; enables "Delete board" in the details
    *  column. The board list is refreshed afterwards. */
   onDeleteBoard?: (name: string) => void | Promise<void>;
+  /** Reads a saved board's stored JSON as text — the bytes as they are, not a
+   *  re-serialized board, so a board whose source keeps it from loading can
+   *  still be read. Together with saveBoardSource this enables "Edit source"
+   *  in the details column. */
+  loadBoardSource?: (name: string) => Promise<string>;
+  /** Writes a saved board's JSON back. The source is parsed as JSON before it
+   *  is handed over — what it says about the board is the host's business. */
+  saveBoardSource?: (name: string, source: string) => Promise<void>;
   /** Uploads a (already downscaled) board artwork image and returns its URL;
    *  enables "Upload image…" in the details column's artwork editor. */
   uploadBoardArt?: (boardName: string, image: Blob) => Promise<string>;
@@ -236,6 +245,8 @@ export default function StartPage(props: StartPageProps) {
     describeBoard,
     listBoardHistory,
     onDeleteBoard,
+    loadBoardSource,
+    saveBoardSource,
     uploadBoardArt,
     uploadBoardToCloud,
     forkBoard,
@@ -266,6 +277,15 @@ export default function StartPage(props: StartPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   // Board whose folder chooser is open, by name.
   const [assignBoard, setAssignBoard] = useState<string | null>(null);
+  // Board whose source editor is open, with the text it was opened on; null
+  // while the editor is closed.
+  const [sourceEdit, setSourceEdit] = useState<{
+    name: string;
+    source: string;
+  } | null>(null);
+  // Why the last save attempt did not go through (invalid JSON, or the host
+  // refusing); shown inside the editor, which stays open.
+  const [sourceError, setSourceError] = useState<string | null>(null);
   const [columnWidths, setColumnWidths] =
     useState<number[]>(restoreColumnWidths);
   const [sort, setSort] = useState<BoardSort>(restoreSort);
@@ -631,6 +651,54 @@ export default function StartPage(props: StartPageProps) {
     [tree, assignBoard],
   );
 
+  // ── Board source editing ────────────────────────────────────────────────────
+
+  const openSourceEditor = useCallback(
+    async (name: string) => {
+      if (!loadBoardSource) {
+        return;
+      }
+      // Rejecting propagates: the details panel reports the reason under the
+      // button rather than opening an editor on nothing.
+      const source = await loadBoardSource(name);
+      setSourceError(null);
+      setSourceEdit({ name, source });
+    },
+    [loadBoardSource],
+  );
+
+  const saveSourceEdit = useCallback(
+    (value: string | object) => {
+      if (!sourceEdit || !saveBoardSource) {
+        return;
+      }
+      const source =
+        typeof value === "string" ? value : JSON.stringify(value, null, 2);
+      try {
+        JSON.parse(source);
+      } catch (err) {
+        setSourceError(
+          `Not valid JSON — ${err instanceof Error ? err.message : "cannot be saved"}`,
+        );
+        return;
+      }
+      setSourceError(null);
+      void saveBoardSource(sourceEdit.name, source)
+        .then(() => {
+          setSourceEdit(null);
+          refreshSavedBoards();
+        })
+        .catch((err: unknown) => {
+          setSourceError(
+            err instanceof Error && err.message
+              ? `Could not save — ${err.message}`
+              : "Could not save the board source.",
+          );
+        });
+    },
+    [sourceEdit, saveBoardSource, refreshSavedBoards],
+  );
+
   const detailNode = detailBoard ? (
     <BoardDetails
       key={detailBoard.board.name}
@@ -656,6 +724,11 @@ export default function StartPage(props: StartPageProps) {
       pickImage={pickBoardArtImage}
       onOpen={
         detailBoard.board.action ? () => onOpen(detailBoard.board.action!) : undefined
+      }
+      onEditSource={
+        detailIsSaved && loadBoardSource && saveBoardSource
+          ? () => openSourceEditor(detailBoard.board.name)
+          : undefined
       }
       onUploadToCloud={
         detailIsSaved && uploadBoardToCloud
@@ -778,6 +851,25 @@ export default function StartPage(props: StartPageProps) {
           }
           onClose={() => setAssignBoard(null)}
         />
+      )}
+      {sourceEdit && (
+        <EditorDialog
+          title={`Source of “${sourceEdit.name}”`}
+          description="Edit the board's stored JSON and save it back."
+          value={sourceEdit.source}
+          isOpen={true}
+          onClose={() => {
+            setSourceEdit(null);
+            setSourceError(null);
+          }}
+          actions={[{ label: "Save", onAction: saveSourceEdit }]}
+        >
+          {sourceError ? (
+            <span style={{ color: "#e0355f" }}>{sourceError}</span>
+          ) : (
+            "Saving overwrites the saved board. Invalid JSON is refused."
+          )}
+        </EditorDialog>
       )}
     </div>
   );

@@ -99,6 +99,35 @@ inline std::optional<RuntimeConfiguration> validateRuntime(json config)
     garbageCollected != config.end() && garbageCollected->is_boolean() &&
     garbageCollected->get<bool>();
 
+  // Values for the references the services carry. Read out of the payload here
+  // and handed to the runtime's vault; they are never put back into any
+  // service's state, and never appear in a serialized runtime.
+  auto secrets = config.find("secrets");
+  if (secrets != config.end())
+  {
+    conf.secrets = readSecretsPayload(*secrets);
+  }
+
+  // Absent means off; see RuntimeConfiguration::logData.
+  auto state = config.find("state");
+  if (state != config.end() && state->is_object())
+  {
+    auto logging = state->find("logging");
+    conf.logging = logging != state->end() && logging->is_boolean() &&
+                   logging->get<bool>();
+    auto logLevel = state->find("logLevel");
+    if (logLevel != state->end() && logLevel->is_string())
+    {
+      const auto level = logLevel->get<std::string>();
+      if (level == "debug" || level == "info" || level == "warn" || level == "error")
+        conf.logLevel = level;
+    }
+    // Absent means allowed; see RuntimeConfiguration::logData.
+    auto logData = state->find("logData");
+    conf.logData = !(logData != state->end() && logData->is_boolean() &&
+                     !logData->get<bool>());
+  }
+
   auto services = config.find("services");
   if (services == config.end())
   {

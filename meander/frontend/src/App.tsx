@@ -18,6 +18,7 @@ import { VaultProvider } from "hkp-frontend/src/VaultContext";
 import { DEMO_BOARDS } from "./demoBoards";
 import { useShareFlow } from "./share/useShareFlow";
 import ShareOverlay from "./share/ShareOverlay";
+import SecretConsentDialog from "./SecretConsentDialog";
 
 function demoSlug(label: string): string {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -114,6 +115,9 @@ function App() {
       <MeanderPlatformProvider>
         <HkpApp defaultThemeName="playground" clientId={AUTH0_CLIENT_ID}>
           <MeanderShell />
+          {/* Outside the shell: a board is provisioned while a view is being
+              set up, and the question has to survive whatever is mounting. */}
+          <SecretConsentDialog />
         </HkpApp>
       </MeanderPlatformProvider>
     </VaultProvider>

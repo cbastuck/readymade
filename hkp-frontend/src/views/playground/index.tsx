@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { withRouter } from "../../common";
 
 import BoardProvider from "../../BoardContext";
@@ -45,6 +47,10 @@ function Playground(props: PlaygroundProps) {
     onChangeBoardname,
   } = usePlaygroundController(props);
 
+  // Only a name for a board that has none; generated once so it does not change
+  // under the save dialog while it is open.
+  const fallbackBoardName = useMemo(() => generateRandomName(), []);
+
   return (
     <BoardProvider
       ref={boardProviderRef}
@@ -78,7 +84,7 @@ function Playground(props: PlaygroundProps) {
         suggestedName={
           (props.match && props.match.params && props.match.params.board) ||
           props.boardName ||
-          generateRandomName()
+          fallbackBoardName
         }
         onSaveDialog={onSaveDialog}
         setIsSaveDialogVisible={setIsSaveDialogVisible}

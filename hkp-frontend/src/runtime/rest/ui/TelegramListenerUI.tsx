@@ -7,17 +7,12 @@ import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function TelegramListenerUI(props: ServiceUIProps) {
   const [botToken, setBotToken] = useState("");
-  // The server masks the bot token (write-only); this flag tells us one is stored.
-  const [botTokenConfigured, setBotTokenConfigured] = useState(false);
   const [allowedChatId, setAllowedChatId] = useState("");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
 
   const onUpdate = useCallback((state: any) => {
     if (state.botToken !== undefined) setBotToken(state.botToken);
-    if (state.botTokenConfigured !== undefined) {
-      setBotTokenConfigured(state.botTokenConfigured);
-    }
     if (state.allowedChatId !== undefined)
       setAllowedChatId(state.allowedChatId);
     if (state.running !== undefined) setRunning(state.running);
@@ -36,15 +31,15 @@ export default function TelegramListenerUI(props: ServiceUIProps) {
       genericUI={false}
     >
       <div className="flex flex-col">
+        {/* Not masked: this field holds the *name* of a secret, not a secret.
+            The value lives in the vault and is fetched when the API is called,
+            so hiding what is typed here would hide nothing and make a mistyped
+            alias impossible to spot. */}
         <InputField
-          label={botTokenConfigured ? "Bot Token (stored)" : "Bot Token"}
-          type="password"
+          label="Bot token secret"
           value={botToken}
           onChange={(v) => {
             setBotToken(v);
-            if (v) {
-              setBotTokenConfigured(true);
-            }
             configure({ botToken: v });
           }}
         />
@@ -62,7 +57,7 @@ export default function TelegramListenerUI(props: ServiceUIProps) {
           <Button
             className="hkp-svc-btn"
             onClick={() => configure({ connect: !running })}
-            disabled={!running && !botToken && !botTokenConfigured}
+            disabled={!running && !botToken}
           >
             {running ? "Disconnect" : "Connect"}
           </Button>

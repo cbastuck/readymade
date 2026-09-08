@@ -35,6 +35,7 @@ export function JsonInputRenderer({
       value,
       boardContext,
       setState,
+      state: facadeState,
     });
   };
 

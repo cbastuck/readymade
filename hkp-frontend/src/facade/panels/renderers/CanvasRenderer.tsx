@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CanvasWidget } from "../../types";
-import { findService } from "../../findService";
+import { findService } from "../../boardServices";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { update } from "hkp-frontend/src/runtime/browser/services/CanvasUI/canvasDraw";
 

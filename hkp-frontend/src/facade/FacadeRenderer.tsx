@@ -11,6 +11,7 @@ import {
   isLocalhostUrl,
   resolveTemplateVarsInObject,
 } from "hkp-frontend/src/templateVars";
+import { OverviewToggleButton } from "hkp-frontend/src/overview/OverviewContext";
 
 type FacadeRendererProps = {
   facade: FacadeDescriptor;
@@ -56,6 +57,10 @@ export default function FacadeRenderer({
   const storageKey = `hkp-facade-runtime-${boardName}`;
   const [showRuntime, setShowRuntime] = useState(
     () => localStorage.getItem(storageKey) === "true",
+  );
+  const facadeStorageKey = `hkp-facade-visible-${boardName}`;
+  const [showFacade, setShowFacade] = useState(
+    () => localStorage.getItem(facadeStorageKey) !== "false",
   );
   const [showEditor, setShowEditor] = useState(false);
   const [draftFacade, setDraftFacade] = useState<FacadeDescriptor>(facade);
@@ -134,12 +139,32 @@ export default function FacadeRenderer({
     window.addEventListener("mouseup", onMouseUp);
   };
 
+  const setRuntimeVisible = (visible: boolean) => {
+    localStorage.setItem(storageKey, String(visible));
+    setShowRuntime(visible);
+  };
+
+  const setFacadeVisible = (visible: boolean) => {
+    localStorage.setItem(facadeStorageKey, String(visible));
+    setShowFacade(visible);
+  };
+
+  // The two halves are collapsed independently, but collapsing both would leave
+  // an empty view, so hiding one reveals the other.
   const toggleRuntime = () => {
-    setShowRuntime((prev) => {
-      const next = !prev;
-      localStorage.setItem(storageKey, String(next));
-      return next;
-    });
+    const next = !showRuntime;
+    setRuntimeVisible(next);
+    if (!next && !showFacade) {
+      setFacadeVisible(true);
+    }
+  };
+
+  const toggleFacade = () => {
+    const next = !showFacade;
+    setFacadeVisible(next);
+    if (!next && !showRuntime) {
+      setRuntimeVisible(true);
+    }
   };
 
   const openShareQR = async () => {
@@ -257,6 +282,23 @@ export default function FacadeRenderer({
             {showEditor ? "{ hide editor }" : "{ editor }"}
           </button>
           <button
+            onClick={toggleFacade}
+            style={{
+              padding: "4px 10px",
+              borderRadius: 6,
+              border: "1px solid hsl(var(--border))",
+              background: showFacade ? "hsl(var(--accent))" : "transparent",
+              color: showFacade
+                ? "hsl(var(--accent-foreground))"
+                : "hsl(var(--muted-foreground))",
+              cursor: "pointer",
+              fontSize: 11,
+              fontFamily: "monospace",
+            }}
+          >
+            {showFacade ? "{ hide facade }" : "{ show facade }"}
+          </button>
+          <button
             onClick={toggleRuntime}
             style={{
               padding: "4px 10px",
@@ -273,11 +315,20 @@ export default function FacadeRenderer({
           >
             {showRuntime ? "{ hide board }" : "{ show board }"}
           </button>
+          <OverviewToggleButton />
         </div>
       </div>
 
       {/* Live panels + optional editor side-by-side */}
-      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "row" }}>
+      <div
+        style={{
+          flex: showFacade ? 1 : "0 0 0px",
+          minHeight: 0,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "row",
+        }}
+      >
         {/* Live facade */}
         <div
           style={{
@@ -340,10 +391,10 @@ export default function FacadeRenderer({
 
       {/* Draggable divider + runtime drawer — always mounted so service UIs stay alive */}
       <div
-        onMouseDown={showRuntime ? onDividerMouseDown : undefined}
+        onMouseDown={showRuntime && showFacade ? onDividerMouseDown : undefined}
         style={{
           height: showRuntime ? 6 : 0,
-          cursor: showRuntime ? "ns-resize" : undefined,
+          cursor: showRuntime && showFacade ? "ns-resize" : undefined,
           background: "hsl(var(--border))",
           flexShrink: 0,
           userSelect: "none",
@@ -351,10 +402,10 @@ export default function FacadeRenderer({
       />
       <div
         style={{
-          height: showRuntime ? runtimeHeight : 0,
+          height: !showRuntime ? 0 : showFacade ? runtimeHeight : "auto",
+          flex: showRuntime && !showFacade ? 1 : undefined,
           minHeight: 0,
           background: "hsl(var(--muted))",
-          overflowY: "auto",
           flexShrink: 0,
           overflow: showRuntime ? "auto" : "hidden",
         }}

@@ -37,6 +37,10 @@ namespace hkp
     // Fans a serialized notification frame out to every WebSocket connection
     // bound to `runtimeId` (skipping write-only clients). Thread-safe.
     void sendNotification(const std::string& runtimeId, const std::string& frame);
+    // Send a JSON text frame to the connections bound to a runtime. Used for
+    // messages a receiver dispatches on by `type` (a log entry), as opposed to
+    // the binary YAS frames a notification takes.
+    void sendText(const std::string& runtimeId, const std::string& text);
 
     // Updates the runtime's allow-listed user emails at runtime (thread-safe).
     // Used by hosts that learn the permitted identity after start (e.g. iOS on

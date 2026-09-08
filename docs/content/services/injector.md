@@ -10,6 +10,7 @@ Injects a configured static value into the pipeline, replacing or providing the 
 |---|---|
 | Browser | `hookup.to/service/injector` |
 | hkp-rt | `injector` |
+| hkp-node | `injector` |
 
 ---
 
@@ -35,7 +36,7 @@ bypassing the normal pipeline flow.
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `inject` | `any` | `undefined` | Value to store and emit. Setting this fires an immediate `app.next()` |
-| `injectBinary` | `string` | `undefined` | hkp-rt only: base64 payload to store and emit as `BinaryData` |
+| `injectBinary` | `string` | `undefined` | hkp-rt and hkp-node only: base64 payload to store and emit as binary |
 | `recentInjection` | `any` | `undefined` | Restore the last injected value on board load (set automatically) |
 | `plainText` | `boolean` | `false` | Treat the stored value as a plain string rather than parsed JSON |
 
@@ -80,6 +81,27 @@ Run the example config:
 ```bash
 ./build/hkp-rt/exe/hkp-rt 8887 127.0.0.1 hkp-rt/config/injector-example.json
 ```
+
+---
+
+## hkp-node specifics
+
+Same behaviour, and the same REST-vs-in-process differences as hkp-rt above:
+
+- `inject` and `injectBinary` push the injected value through the rest of
+  the pipeline immediately — the runtime runs the services after Injector
+  and reports the result over the runtime's websocket — rather than
+  waiting for the next call to reach the service.
+- `injectBinary` is decoded from base64 into a `Buffer`. hkp-node's
+  pipeline carries binary payloads as `Uint8Array` (the same shape
+  `http-server` and `document-extract` use), not as a distinct binary
+  type.
+- The reported state carries `recentInjectionSize` (byte count) instead
+  of `recentInjection` after a binary injection, for the same reason as
+  hkp-rt: a large payload is not echoed back to the UI.
+
+See the Node runtime in the demo board below for a working example
+(needs hkp-node running locally on port 8080).
 
 ---
 

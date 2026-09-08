@@ -10,8 +10,6 @@ export default function SmtpEmailUI(props: ServiceUIProps) {
   const [port, setPort] = useState("587");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  // The server masks the password (write-only); this flag tells us one is stored.
-  const [passwordConfigured, setPasswordConfigured] = useState(false);
   const [tls, setTls] = useState(true);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -23,9 +21,6 @@ export default function SmtpEmailUI(props: ServiceUIProps) {
     if (state.port !== undefined) setPort(String(state.port));
     if (state.username !== undefined) setUsername(state.username);
     if (state.password !== undefined) setPassword(state.password);
-    if (state.passwordConfigured !== undefined) {
-      setPasswordConfigured(state.passwordConfigured);
-    }
     if (state.tls !== undefined) setTls(state.tls);
     if (state.from !== undefined) setFrom(state.from);
     if (state.to !== undefined) setTo(state.to);
@@ -73,15 +68,15 @@ export default function SmtpEmailUI(props: ServiceUIProps) {
           }}
         />
 
+        {/* Not masked: this field holds the *name* of a secret, not a secret.
+            The value lives in the vault and is fetched when the message is
+            sent, so hiding what is typed here would hide nothing and make a
+            mistyped alias impossible to spot. */}
         <InputField
-          label={passwordConfigured ? "Password (stored)" : "Password"}
-          type="password"
+          label="Password secret"
           value={password}
           onChange={(v) => {
             setPassword(v);
-            if (v) {
-              setPasswordConfigured(true);
-            }
             configure({ password: v });
           }}
         />

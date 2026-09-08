@@ -15,6 +15,7 @@ import HttpClientUI from "./ui/HttpClientUI";
 import InjectorUI from "./ui/InjectorUI";
 import SkillRouterUI from "./ui/SkillRouterUI";
 import HoldUI from "./ui/HoldUI";
+import CommunicationDispatcherUI from "./ui/CommunicationDispatcherUI";
 
 export type ServiceLookup = {
   serviceId?: ServiceClass["serviceId"];
@@ -58,6 +59,8 @@ function findServiceUIByKey(
       return SkillRouterUI;
     case "hold":
       return HoldUI;
+    case "communication-dispatcher":
+      return CommunicationDispatcherUI;
     case "timer":
       return TimerUI;
     case "imap-email":

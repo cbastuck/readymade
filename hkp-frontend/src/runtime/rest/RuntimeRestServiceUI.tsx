@@ -12,6 +12,7 @@ import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import Switch from "hkp-frontend/src/ui-components/Switch";
 import SubServicePipelineUI from "../ui/SubServicePipelineUI";
 import { Size } from "hkp-frontend/src/common";
+import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 
 type Props = ServiceUIProps & {
   onNotification?: (notification: any) => void;
@@ -22,6 +23,8 @@ type Props = ServiceUIProps & {
 };
 export default function RuntimeRestServiceUI(props: Props) {
   const { service, onNotification } = props;
+  const { densityId } = useThemeControl();
+  const compact = densityId === "compact";
   const meta = service.state?.["__meta__"];
   const supportsSubservices =
     service.capabilities?.some(
@@ -43,7 +46,10 @@ export default function RuntimeRestServiceUI(props: Props) {
       <div
         key={service.uuid}
         id={service.uuid}
-        style={{ minWidth: 200, paddingBottom: 12 }}
+        style={{
+          minWidth: compact ? 150 : 200,
+          paddingBottom: compact ? 6 : 12,
+        }}
       >
         {Object.keys(properties).map((prop) => {
           const val = properties[prop];
@@ -64,7 +70,10 @@ export default function RuntimeRestServiceUI(props: Props) {
                   onChange={(_, { value }) => {
                     service.configure({ [prop]: value });
                   }}
-                  labelStyle={{ textTransform: "capitalize", letterSpacing: 1 }}
+                  labelStyle={{
+                    textTransform: "capitalize",
+                    letterSpacing: "var(--hkp-svc-label-tracking, 1px)",
+                  }}
                 />
               );
             }
@@ -116,7 +125,7 @@ export default function RuntimeRestServiceUI(props: Props) {
             return (
               <Switch
                 className="py-2"
-                labelClassName="tracking-[1px] text-base2"
+                labelClassName="hkp-svc-field-label text-base2"
                 key={prop}
                 title={prop}
                 checked={val}
@@ -137,17 +146,17 @@ export default function RuntimeRestServiceUI(props: Props) {
           // dials it, so it is taken far more often than it is typed.
           const isMount =
             prop === MOUNT_FIELD || prop.endsWith(`.${MOUNT_FIELD}`);
-
+          const valueWithType = renderValueWithType(val, type);
           return (
             <div
               className="flex items-end"
               key={`RuntimeRestServiceUI-${service.uuid}.${prop}`}
             >
               <SubmittableInput
-                labelClassName="tracking-[1px]"
+                labelClassName="hkp-svc-field-label"
                 fullWidth
                 title={prop}
-                value={renderValueWithType(val, type)}
+                value={valueWithType}
                 onSubmit={(value) => {
                   service.configure({
                     [prop]: type === "number" ? Number(value) : value,
@@ -155,6 +164,7 @@ export default function RuntimeRestServiceUI(props: Props) {
                 }}
                 type={type}
                 disabled={readonly}
+                isExpandable={true}
               />
               {(readonly || isMount) && (
                 <CopyButton value={String(val ?? "")} label={prop} />
@@ -170,7 +180,10 @@ export default function RuntimeRestServiceUI(props: Props) {
 
   const initialSize: Size | undefined =
     props.genericUI === false
-      ? (props.initialSize ?? { width: 250, height: undefined })
+      ? (props.initialSize ?? {
+          width: compact ? 200 : 250,
+          height: undefined,
+        })
       : props.initialSize;
 
   return (
@@ -183,7 +196,11 @@ export default function RuntimeRestServiceUI(props: Props) {
       initialSize={initialSize}
     >
       {props.genericUI === false ? (
-        <div key={service.uuid} id={service.uuid} style={{ paddingBottom: 12 }}>
+        <div
+          key={service.uuid}
+          id={service.uuid}
+          style={{ paddingBottom: compact ? 6 : 12 }}
+        >
           {props.children}
         </div>
       ) : (

@@ -83,6 +83,25 @@ export default function StartPage({ onRestoreBoard }: Props) {
     await (await getBackend()).deleteBoard(name);
   }, []);
 
+  // The board file's own text where the backend can hand it over — a board
+  // that fails to load is exactly the one worth reading unparsed.
+  const loadBoardSource = useCallback(async (name: string) => {
+    const backend = await getBackend();
+    if (backend.loadBoardSource) {
+      return backend.loadBoardSource(name);
+    }
+    return JSON.stringify(await backend.loadBoard(name), null, 2);
+  }, []);
+
+  const saveBoardSource = useCallback(async (name: string, source: string) => {
+    const backend = await getBackend();
+    if (backend.saveBoardSource) {
+      await backend.saveBoardSource(name, source);
+      return;
+    }
+    await backend.saveBoard(name, JSON.parse(source) as BoardDescriptor);
+  }, []);
+
   const uploadBoardArt = useCallback(
     async (name: string, image: Blob) =>
       (await getBackend()).uploadBoardArt(name, image),
@@ -281,6 +300,8 @@ export default function StartPage({ onRestoreBoard }: Props) {
       describeBoard={describeBoard}
       listBoardHistory={listBoardHistory}
       onDeleteBoard={deleteBoard}
+      loadBoardSource={loadBoardSource}
+      saveBoardSource={saveBoardSource}
       manageRemotes={remotes}
       withCloudBoards
       uploadBoardArt={uploadBoardArt}

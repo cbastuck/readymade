@@ -46,7 +46,19 @@ unsigned short HttpServerImpl::start()
   // — the log line, getState, the published url — reads back through port(),
   // and would otherwise keep reporting the 0 that was requested rather than the
   // port a client has to connect to.
-  m_port = m_listener->start();
+  const auto boundPort = m_listener->start();
+  if (boundPort == 0)
+  {
+    // Nothing is listening — a requested port that is taken is the usual
+    // reason. Unwind the io thread so a later start() is a clean attempt, and
+    // leave the requested port in place: it is what was asked for, and a caller
+    // reporting the failure has nothing else to name.
+    std::cerr << "HttpServerImpl::start() Failed to bind port: " << m_port << std::endl;
+    stop();
+    return 0;
+  }
+
+  m_port = boundPort;
   std::cout << "HttpServerImpl::start() Listening on port: " << m_port << std::endl;
   return m_port;
 }

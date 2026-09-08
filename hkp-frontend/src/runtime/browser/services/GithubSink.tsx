@@ -68,15 +68,28 @@ class GithubSink extends ServiceBase<State> {
     if (this.state.token) {
       const isBlob = params instanceof Blob;
       const data = isBlob ? params : JSON.stringify(params, null, 2);
-      return await commit(
-        this.state.token,
-        this.state.owner,
-        this.state.repo,
-        this.state.branch,
-        this.state.file.name,
-        data,
-        `${this.board} - ${moment().toISOString()}`
-      );
+      try {
+        // The token travels as whatever it was configured with — a
+        // `{{secret.<alias>}}` reference, or a value written out — and becomes
+        // a credential once, inside the request that carries it.
+        return await commit(
+          this.state.token,
+          this.state.owner,
+          this.state.repo,
+          this.state.branch,
+          this.state.file.name,
+          data,
+          `${this.board} - ${moment().toISOString()}`
+        );
+      } catch (err) {
+        // Reported rather than thrown: a commit that could not be made says so
+        // on the service, and stops the pipeline instead of handing the rest of
+        // it a result that does not exist.
+        this.pushErrorNotification(
+          err instanceof Error ? err.message : String(err),
+        );
+        return null;
+      }
     }
   }
 }

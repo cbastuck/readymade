@@ -14,7 +14,9 @@ vi.mock("hkp-frontend/src/components/Footer", () => ({
 }));
 
 vi.mock("../../components/SaveBoardDialog", () => ({
-  default: () => <div data-testid="save-board-dialog" />,
+  default: ({ suggestedName }: { suggestedName: string }) => (
+    <div data-testid="save-board-dialog" data-suggested-name={suggestedName} />
+  ),
 }));
 
 vi.mock("hkp-frontend/src/components/ShareQRCodeDialog", () => ({
@@ -167,5 +169,37 @@ describe("PlaygroundInner", () => {
     expect(entryPoint.getAttribute("data-loading")).toBe("true");
     expect(entryPoint.getAttribute("data-login-required")).toBe("true");
     expect(screen.queryByTestId("board-fetch-error")).toBeNull();
+  });
+
+  it("suggests the loaded board's name when saving", () => {
+    const context = createBoardContext({ boardName: "Animate" });
+
+    render(
+      <BoardCtx.Provider value={context}>
+        <PlaygroundInner {...createProps({ suggestedName: "Idea" })} />
+      </BoardCtx.Provider>,
+    );
+
+    expect(
+      screen
+        .getByTestId("save-board-dialog")
+        .getAttribute("data-suggested-name"),
+    ).toBe("Animate");
+  });
+
+  it("falls back to the suggested name for a board that has none", () => {
+    const context = createBoardContext({ boardName: undefined });
+
+    render(
+      <BoardCtx.Provider value={context}>
+        <PlaygroundInner {...createProps({ suggestedName: "Idea" })} />
+      </BoardCtx.Provider>,
+    );
+
+    expect(
+      screen
+        .getByTestId("save-board-dialog")
+        .getAttribute("data-suggested-name"),
+    ).toBe("Idea");
   });
 });

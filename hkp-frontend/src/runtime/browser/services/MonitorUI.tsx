@@ -127,7 +127,7 @@ export default function MonitorUI(props: ServiceUIProps) {
         } catch (_err) {
           data = message;
         }
-        service.app.next(service, data);
+        service.app.next(service, data, { replay: true });
       },
     },
     {

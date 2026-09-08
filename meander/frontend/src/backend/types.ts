@@ -34,6 +34,11 @@ export interface BackendAdapter {
   loadBoard(boardName: string): Promise<BoardDescriptor>;
   saveBoard(name: string, payload: BoardDescriptor): Promise<void>;
   deleteBoard(name: string): Promise<void>;
+  // The stored board as text, unparsed, and the way back. Optional: hosts
+  // without them fall back to loadBoard/saveBoard, which cannot carry source
+  // that does not parse.
+  loadBoardSource?(boardName: string): Promise<string>;
+  saveBoardSource?(name: string, source: string): Promise<void>;
 
   // Remotes
   getRemotes(): Promise<Array<Remote>>;
@@ -44,6 +49,25 @@ export interface BackendAdapter {
   // a settings store; callers should feature-detect.
   getRuntimeSettings?(): Promise<RuntimeSettings>;
   setRuntimeSettings?(settings: Partial<RuntimeSettings>): Promise<RuntimeSettings>;
+
+  // Secrets a board refers to by alias ({{secret.<alias>}}). Values are held
+  // by the host, never by a board — see hkp-frontend/src/core/secrets.ts.
+  // Optional: absent on hosts with no secret store, which callers feature-
+  // detect before offering to manage them.
+  listSecrets?(): Promise<string[]>;
+  setSecret?(alias: string, value: string): Promise<void>;
+  deleteSecret?(alias: string): Promise<void>;
+  // Where each alias may be sent, as alias -> hosts. Empty, or an alias that
+  // is absent, means unconstrained. Carries no values: the constraint can be
+  // shown and edited without reading the thing it constrains.
+  listSecretAudiences?(): Promise<Record<string, string[]>>;
+  setSecretAudience?(alias: string, audience: string[]): Promise<void>;
+
+  // Which board may hand which secrets to which runtime — the remembered
+  // answers to the consent prompt, keyed as core/secretConsent.ts says. Names
+  // only; no values pass through here.
+  grantSecrets?(key: string, aliases: string[]): Promise<void>;
+  revokeSecretGrant?(key: string): Promise<void>;
 
   // Mints a short-lived capability token from the embedded runtime, scoped to
   // processing `runtimeId` (POST /runtimes/<runtimeId>). Returns null if the

@@ -24,9 +24,12 @@ export default function DecryptUI(props: ServiceUIProps) {
           value={state.method ?? "aes"}
           onChange={({ value }) => service.configure({ method: value })}
         />
+        {/* Not masked: this field holds the *name* of a secret, not a secret.
+            The value lives in the vault and is fetched when a key is derived
+            from it, so hiding what is typed here would hide nothing and make a
+            mistyped alias impossible to spot. */}
         <InputField
           label="Secret"
-          type="password"
           value={state.secret ?? ""}
           onChange={(secret) => service.configure({ secret })}
         />

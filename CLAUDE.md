@@ -177,25 +177,44 @@ http://<host>:<port>/hosted/<mountId>
 ```
 
 These endpoints are unauthenticated by design — they exist for outside callers holding no
-token — so the unguessable id is what gates access. Because the address is assigned at load
-time, a board that needs to point a client at one references the *service* rather than
-hard-coding an address, in that same field:
+token — so the unguessable id is what gates access. The id is **derived, not drawn**: an
+HMAC of the tenant, board, runtime and the mount's name (`mountName`, defaulting to the
+service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted per runtime at
+`~/.hkp/<node|python>/mount-secret`). The address therefore survives reloads, restarts and
+redeploys — an outside party configured with it by hand keeps working — while staying
+uncomputable without the key. Renaming a mount rotates that one address; rotating the
+secret rotates all of them. Nothing sensitive enters the board, which says only what the
+endpoint is *called*.
+
+Because the address is still assigned at load time rather than written into the board, a
+board that needs to point a client at one references the *service* rather than hard-coding
+an address — in whatever field that service already calls its target:
 
 ```json
-"__hkpMount": "hkp-mount://<runtimeId>/<serviceUuid>"
+"url": "hkp-mount://<runtimeId>/<serviceUuid>"
 ```
 
-One field on both sides: **`__hkpMount` says where a mount is.** The owner publishes an
-`http(s)://` address there; a consumer points at the owner with a `hkp-mount://` reference
-there, and asks the board's coordinator to resolve it (`coordinator.resolveMount`). The
-vocabulary — field, scheme, parsing — lives in `hkp-frontend/src/runtime/board/mount.ts`;
-resolution needs a view of the whole board and therefore belongs to the coordinator.
-The scheme is what tells the two forms apart — a bare `<runtimeId>/<serviceUuid>` would be
-indistinguishable from a relative URL, and the hosts these boards run on resolve those
-against a base that differs between builds (`hkp://` packaged, `http://` in dev). Exporting
-a board substitutes the resolved address into the same field, so a receiving service reads
-it exactly as it always does. Resolution is lazy, because a board restores all its runtimes
-concurrently and the referenced runtime may not have published yet.
+**One job each.** The reference is what a person writes and what the board keeps;
+`__hkpMount` holds the address a mount currently has — published by the owner, written onto
+a consumer by the board's coordinator (`coordinator.resolveMount`), never authored. A
+consumer prefers `__hkpMount` when it holds an address and falls back to its own field,
+where a reference means "not resolved yet" rather than something to dial. Because they are
+separate fields, resolution never overwrites what was written, so a saved board keeps its
+reference.
+
+References are found by their **scheme**, wherever they appear in service state
+(`findMountRefs`) — a `hkp-mount://` value cannot be mistaken for anything else, the same
+reason `{{secret.…}}` is resolved wherever it occurs. A bare `<runtimeId>/<serviceUuid>`
+would not do: it is indistinguishable from a relative URL, and the hosts these boards run
+on resolve those against a base that differs between builds (`hkp://` packaged, `http://`
+in dev). Boards that put the reference in `__hkpMount` itself still work.
+
+The vocabulary — field, scheme, parsing, finding — lives in
+`hkp-frontend/src/runtime/board/mount.ts`; resolution needs a view of the whole board and
+therefore belongs to the coordinator. Exporting a board substitutes the resolved address
+into whatever field held the reference, so a receiving service reads it exactly as it
+always does. Resolution is lazy, because a board restores all its runtimes concurrently and
+the referenced runtime may not have published yet.
 
 The `__hkp` prefix marks a state property whose meaning is defined outside the service
 holding it — generic board machinery reads and rewrites it. Reserved: services must not use
@@ -222,7 +241,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 
 | Widget type        | What it does                                                               |
 | ------------------ | -------------------------------------------------------------------------- |
-| `button`           | Sends a configure payload to a service on click                            |
+| `button`           | Sends a configure payload, or a `process` action, to a service on click    |
 | `text-input`       | Text field; `$$input` in the configure payload becomes the typed value     |
 | `knob`             | Rotary control; `{{value}}` in configure payload becomes the numeric value |
 | `level-meter`      | Vertical bar driven by a service notification                              |
@@ -231,6 +250,8 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `qr-code`          | Displays a QR code from a service notification                             |
 | `message-list`     | Scrolling message thread with optional inline composer                     |
 | `status-indicator` | Coloured dot driven by a service notification                              |
+| `text`             | Whatever a service is saying, as text — a reason, a summary, a count       |
+| `data-table`       | Rows from a service; an array replaces the table, an object appends a row  |
 | `file-pick`        | File chooser that sends the file to a service                              |
 
 Use `/new-board` for the full widget schema and board design workflow.

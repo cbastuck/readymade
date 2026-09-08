@@ -46,7 +46,7 @@ UI panel), with these differences:
 
 | Property | Type | Description |
 |---|---|---|
-| `__hkpMount` | `string` | Endpoint to call, as an address or a `hkp-mount://<runtimeId>/<serviceUuid>` reference. Takes precedence over `url` |
+| `__hkpMount` | `string` | The resolved address of a mount, written by the board's coordinator. Takes precedence over `url`; not a field to author |
 | `path` | `string` | Appended to the target, so a mount can be called at a sub-path |
 | `timeoutMs` | `number` | Abort the request after this long (default `10000`) |
 
@@ -72,23 +72,33 @@ URL templating for the `url` case).
 
 A service that hosts an endpoint does not bind a port — its runtime assigns it a
 path and publishes the address. That address is not knowable when a board is
-written, so a client names the *service* instead:
+written, so a client names the *service* instead, in the field it already calls
+its target:
 
 ```json
 {
   "serviceId": "http-client",
   "state": {
-    "__hkpMount": "hkp-mount://endpoint-node/echo-server",
+    "url": "hkp-mount://endpoint-node/echo-server",
     "path": "/hello"
   }
 }
 ```
 
+The coordinator resolves that and configures the client's `__hkpMount` with the
+address, which then takes precedence. `url` is what a person writes and
+`__hkpMount` is what the run produced, so neither overwrites the other and the
+board keeps its reference when it is saved. A reference in either field means
+the owner has not published yet, and the client waits rather than calling
+anything. (Boards written before the split put the reference in `__hkpMount`;
+they still work.)
+
 Resolving that reference belongs to whoever coordinates the board — a runtime
 sees only its own services, while the reference names one somewhere else. The
 coordinator hands over the address once the owner publishes it, and until then
-the client waits rather than calling anything. See the mounts section of
-`CLAUDE.md`.
+the client waits rather than calling anything. See the **Mounts** concept page
+(`docs/content/concepts/mounts.md`) for why endpoints are assigned rather than
+chosen, and who resolves a reference.
 
 ---
 

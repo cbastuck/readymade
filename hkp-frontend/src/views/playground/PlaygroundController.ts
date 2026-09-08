@@ -140,10 +140,14 @@ export function usePlaygroundController(
     async (showDialog = true) => {
       if (showDialog) {
         setIsSaveDialogVisible(true);
-      } else if (requestedBoardNameRef.current) {
-        const name = requestedBoardNameRef.current;
+      } else if (
+        boardProviderRef.current?.state.boardName ||
+        requestedBoardNameRef.current
+      ) {
+        const loadedName = boardProviderRef.current?.state.boardName;
+        const name = loadedName || requestedBoardNameRef.current;
         const desc = descriptionRef.current;
-        const saveName = props.boardName || name;
+        const saveName = loadedName || props.boardName || name;
         const data = await boardProviderRef.current?.state.serializeBoard();
 
         if (props.onSaveBoard && data) {
@@ -277,13 +281,15 @@ export function usePlaygroundController(
       return boardProviderRef.current!.state;
     }
 
-    const initialBord = await getInitialPlayground();
+    // A descriptor handed in by the host (a demo opened from the start page, a
+    // restored session) is the board to load; only without one is the board
+    // derived from the route, the URL parameters or local storage. Either way
+    // it goes through the same path below, so its name, description and facade
+    // end up in the state the board is saved from.
+    const initialBord: Partial<PlaygroundState> | null =
+      props.boardDescriptor || (await getInitialPlayground());
     if (!initialBord) {
       return boardProviderRef.current!.state;
-    }
-
-    if (props.boardDescriptor) {
-      return props.boardDescriptor;
     }
 
     const {

@@ -333,7 +333,7 @@ export default function Sidebar() {
       <div
         className="hkp-sidebar"
         style={{
-          width: open ? 220 : 46,
+          width: open ? 220 : "fit-content",
           transition: "width 0.22s ease",
           flexShrink: 0,
           display: "flex",

@@ -46,8 +46,9 @@ export default function ServiceHeader({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 7,
-          padding: "10px 12px",
+          gap: "var(--hkp-svc-header-gap, 7px)",
+          padding:
+            "var(--hkp-svc-header-pad-y, 10px) var(--hkp-svc-header-pad-x, 12px)",
           borderBottom: "1px solid var(--border-mid, #d8d2ca)",
         }}
       >

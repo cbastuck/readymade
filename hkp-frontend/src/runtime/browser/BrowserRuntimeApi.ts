@@ -17,6 +17,7 @@ import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { extractServiceConfiguration } from "./services/helpers";
 import { defaultBundles } from "./registry/Default";
+import { startedRun } from "../processContext";
 
 export async function addRuntime(
   rtClass: RuntimeClass,
@@ -88,7 +89,7 @@ export function processRuntime(
   context?: ProcessContext | null,
 ) {
   const scope = scope_ as BrowserRuntimeScope;
-  return scope.next(svc, params, context, false);
+  return scope.next(svc, params, startedRun(context), false);
 }
 
 export async function addService(

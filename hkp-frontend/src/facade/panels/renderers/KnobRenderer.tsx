@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from "react";
 import Knob from "hkp-frontend/src/ui-components/Knob";
 import { KnobWidget } from "../../types";
-import { findService } from "../../findService";
+import { findService } from "../../boardServices";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 function applyValue(template: unknown, value: number): unknown {

@@ -29,6 +29,10 @@ interface Props {
    *  webviews that don't open a panel for file inputs (Readymade). */
   pickImage?: () => Promise<Blob | null>;
   onOpen?: () => void;
+  /** Opens the board's stored JSON in an editor; enables "Edit source" — the
+   *  way to repair a board whose source keeps it from loading. Rejecting
+   *  reports the reason under the button. */
+  onEditSource?: () => Promise<void> | void;
   /** Uploads the board to the user's cloud storage; enables the
    *  "Upload to cloud" action (hosts pass it for logged-in users only). */
   onUploadToCloud?: () => Promise<void>;
@@ -211,6 +215,7 @@ export default function BoardDetails({
   onUploadImage,
   pickImage,
   onOpen,
+  onEditSource,
   onUploadToCloud,
   onFork,
   loadHistory,
@@ -233,6 +238,10 @@ export default function BoardDetails({
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [forkState, setForkState] = useState<"idle" | "busy" | "error">("idle");
   const [forkError, setForkError] = useState<string | null>(null);
+  const [sourceState, setSourceState] = useState<"idle" | "busy" | "error">(
+    "idle",
+  );
+  const [sourceError, setSourceError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meta = stateMeta(board.state);
   const modified = formatModified(board.modified);
@@ -315,6 +324,21 @@ export default function BoardDetails({
     } catch (err) {
       setForkError(reasonOf(err));
       setForkState("error");
+    }
+  };
+
+  const editSource = async () => {
+    if (!onEditSource || sourceState === "busy") {
+      return;
+    }
+    setSourceState("busy");
+    setSourceError(null);
+    try {
+      await onEditSource();
+      setSourceState("idle");
+    } catch (err) {
+      setSourceError(reasonOf(err));
+      setSourceState("error");
     }
   };
 
@@ -662,6 +686,29 @@ export default function BoardDetails({
             >
               Open board
             </button>
+          )}
+          {onEditSource && (
+            <>
+              <button
+                className="st-btn st-btn-ghost"
+                style={{ justifyContent: "center" }}
+                disabled={sourceState === "busy"}
+                onClick={() => void editSource()}
+              >
+                {sourceState === "busy" ? "Loading source…" : "Edit source"}
+              </button>
+              {sourceState === "error" && sourceError && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#e0355f",
+                    textAlign: "center",
+                  }}
+                >
+                  {sourceError}
+                </div>
+              )}
+            </>
           )}
           {onFork && (
             <>

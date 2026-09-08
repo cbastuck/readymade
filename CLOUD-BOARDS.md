@@ -19,8 +19,8 @@ built this way, and what is still open).
 | Deployed | a coordinator | provisioned by it, kept alive with nobody watching | viewer, over the bridge |
 
 The two are the same board with a different owner — not two kinds of board.
-Moving between them is **deploying**, and there is no way back yet (see
-"Not built").
+Moving between them is **deploying**; the way back is to **fork** the deployed
+board into an editable copy (see "Forking a deployed board").
 
 ---
 
@@ -255,7 +255,6 @@ load regardless.
   coordinator side). Registering always deploys — which is also what Start does
   to a stopped board: the coordinator kept its config, so starting it is
   registering that config again.
-- **Fork a deployed board** back into the playground. It needs runtime ids
-  regenerated on copy, or the fork attaches to the live board's runtimes and
-  edits land on the deployed one. Until then, changing a deployed board means
-  changing it in a playground tab and deploying again.
+- **Editing a deployed board in place.** Changing one means changing it in a
+  playground tab and deploying again, or forking it — the fork is a copy, and
+  the deployed board keeps running until someone stops it.

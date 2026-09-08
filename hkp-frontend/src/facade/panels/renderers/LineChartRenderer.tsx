@@ -3,7 +3,8 @@ import LineChart, {
   SeriesPoint,
 } from "hkp-frontend/src/ui-components/LineChart";
 import { LineChartWidget } from "../../types";
-import { findService, resolvePath } from "../../findService";
+import { findService } from "../../boardServices";
+import { resolvePath } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 const DEFAULT_MAX_POINTS = 200;

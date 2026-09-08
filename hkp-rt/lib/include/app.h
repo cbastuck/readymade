@@ -40,9 +40,21 @@ public:
   json appendService(const std::string& runtimeId, const ServiceConfiguration& service);
   json removeService(const std::string& runtimeId, const std::string& instanceId);
   Data processRuntime(const std::string& runtimeId, const Data& data);
+  // Runs a runtime's pipeline starting at one service; see Runtime::processAt.
+  // Throws std::runtime_error when the runtime holds no such service.
+  Data processServiceAt(const std::string& runtimeId,
+                        const std::string& instanceId, const Data& data);
   json getRegistry() const;
 
   json rearrangeServices(const std::string& runtimeId, const std::vector<std::string>& newOrder);
+
+  // Hand a running runtime values for the references its services hold.
+  //
+  // Answers with the aliases it then holds, and null when there is no such
+  // runtime. Naming them is all that can be asked: there is no route from here
+  // back to a value.
+  json setRuntimeSecrets(const std::string& runtimeId,
+                         const std::map<std::string, SecretEntry>& entries);
 
   std::shared_ptr<Service> createService(const std::string& serviceId);
   std::shared_ptr<Service> createService(const std::string& serviceId, const std::string& instanceId);

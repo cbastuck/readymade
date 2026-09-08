@@ -118,6 +118,15 @@ public:
                 std::function<void(Data)>) override {}
 
   void notifyProcessFinished(const Service&, const Data&) override {}
+  // A host that keeps no secrets: what a service resolves against when the
+  // test is about something else.
+  SecretVault& secrets() override { return m_vault; }
+  SecretVault m_vault;
+  void log(const Service&, LogLevel, const std::string&,
+           const nlohmann::json& = nullptr) override {}
+
+  void forwardLog(const LogEntry&) override {}
+
 
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override {

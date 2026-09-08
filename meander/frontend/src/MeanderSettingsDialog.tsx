@@ -24,6 +24,7 @@ import {
 } from "hkp-frontend/src/types";
 import { isDiscoverySupported } from "hkp-frontend/src/runtime/discovery/DiscoveryApi";
 
+import SecretsTab from "./SecretsTab";
 import { getBackend } from "./backend";
 import { RuntimeSettings } from "./backend/types";
 import { useBackendRemotes } from "./useBackendRemotes";
@@ -65,6 +66,7 @@ export default function MeanderSettingsDialog({ open, onOpenChange }: Props) {
             {canManageRemotes && (
               <TabsTrigger value="remotes">Remotes</TabsTrigger>
             )}
+            <TabsTrigger value="secrets">Secrets</TabsTrigger>
             <TabsTrigger value="access">Access</TabsTrigger>
           </TabsList>
           <TabsContent value="about">
@@ -78,6 +80,9 @@ export default function MeanderSettingsDialog({ open, onOpenChange }: Props) {
               <RemotesTab />
             </TabsContent>
           )}
+          <TabsContent value="secrets">
+            <SecretsTab />
+          </TabsContent>
           <TabsContent value="access">
             <AccessTab />
           </TabsContent>

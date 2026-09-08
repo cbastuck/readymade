@@ -51,7 +51,6 @@ import OllamaHackerComposite from "../services/OllamaHackerComposite";
 // Emerging concepts
 import ChunkedFileProviderDescriptor from "../services/ChunkedFileProvider";
 import AsciiArtDescriptor from "../services/AsciiArt";
-import HttpRelayClientDescriptor from "../services/HttpRelayClient";
 
 // 3rd party APIs
 import SpotifyDescriptor from "../services/Spotify";
@@ -164,7 +163,6 @@ export const defaultRegistry: Array<ServiceModule> = [
   // emerging
   ChunkedFileProviderDescriptor,
   AsciiArtDescriptor,
-  HttpRelayClientDescriptor,
 
   PeerSocket,
   OllamaPrompt,

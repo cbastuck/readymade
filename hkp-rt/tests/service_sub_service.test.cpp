@@ -168,6 +168,10 @@ public:
   void notifyProcessFinished(const Service&, const Data& data) override {
     processFinished.push_back(data);
   }
+  // A host that keeps no secrets: what a service resolves against when the
+  // test is about something else.
+  SecretVault& secrets() override { return m_vault; }
+  SecretVault m_vault;
 
   size_t notificationsFrom(const std::string& sender) const {
     return static_cast<size_t>(std::count_if(
@@ -175,6 +179,11 @@ public:
         return s.sender == sender && s.purpose == MessagePurpose::NOTIFICATION;
       }));
   }
+  void log(const Service&, LogLevel, const std::string&,
+           const nlohmann::json& = nullptr) override {}
+
+  void forwardLog(const LogEntry&) override {}
+
 
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override {
@@ -903,4 +912,104 @@ TEST_CASE("Destroying the owner destroys the services its pipeline held",
   }
 
   REQUIRE(destroyed == std::vector<std::string>{ "nested-1" });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Secrets reach a nested pipeline
+// ──────────────────────────────────────────────────────────────────────────────
+
+namespace {
+
+// Resolves a reference when it runs, and reports what it got.
+class CredentialedService final : public Service {
+public:
+  explicit CredentialedService(const std::string& id)
+    : Service(id, "credentialed") {}
+
+  std::string getServiceId() const override { return "credentialed"; }
+
+  Data process(Data data) override {
+    auto* host = parentHost();
+    const auto out = resolveCredential(host ? &host->secrets() : nullptr,
+                                       json("{{secret.api}}"),
+                                       "api.example.com");
+    resolved = out.problem.empty() ? out.value.get<std::string>() : "";
+    problem = out.problem;
+    return data;
+  }
+
+  std::string resolved;
+  std::string problem;
+};
+
+} // namespace
+
+TEST_CASE("a service in a nested pipeline resolves against the runtime around it",
+          "[secrets][nesting]")
+{
+  // Nothing provisions a nested runtime — no create payload reaches it — so its
+  // own vault is always empty. Without reaching outward, a credential-taking
+  // service could only ever be used at the top level.
+  MockRuntimeHost host;
+  host.secrets().replace(readSecretsPayload({{"api", {{"value", "sk-1"}}}}));
+
+  auto anchor = std::make_shared<RecordingService>("anchor");
+  host.addService(anchor);
+
+  auto inner = std::make_shared<CredentialedService>("inner");
+  auto sr = makeSubRuntime(host, anchor.get(), {{"inner", inner}},
+                           json::array({{{"serviceId", "credentialed"},
+                                         {"instanceId", "inner"}}}));
+
+  sr->process(json{{"trace", json::array()}});
+
+  REQUIRE(inner->problem.empty());
+  REQUIRE(inner->resolved == "sk-1");
+}
+
+TEST_CASE("nesting composes: two levels down reaches the same secrets",
+          "[secrets][nesting]")
+{
+  MockRuntimeHost host;
+  host.secrets().replace(readSecretsPayload({{"api", {{"value", "sk-1"}}}}));
+
+  auto anchor = std::make_shared<RecordingService>("anchor");
+  host.addService(anchor);
+
+  auto outerAnchor = std::make_shared<RecordingService>("outer-anchor");
+  auto outer = makeSubRuntime(host, anchor.get(), {{"outer-anchor", outerAnchor}},
+                              json::array({{{"serviceId", "recording"},
+                                            {"instanceId", "outer-anchor"}}}));
+
+  auto deep = std::make_shared<CredentialedService>("deep");
+  auto innerRuntime = makeSubRuntime(*outer, outerAnchor.get(), {{"deep", deep}},
+                                     json::array({{{"serviceId", "credentialed"},
+                                                   {"instanceId", "deep"}}}));
+
+  innerRuntime->process(json{{"trace", json::array()}});
+
+  REQUIRE(deep->resolved == "sk-1");
+}
+
+TEST_CASE("a value pushed after a board is running reaches a nested service",
+          "[secrets][nesting]")
+{
+  // Asked for on each use rather than copied down when the pipeline was built.
+  MockRuntimeHost host;
+
+  auto anchor = std::make_shared<RecordingService>("anchor");
+  host.addService(anchor);
+
+  auto inner = std::make_shared<CredentialedService>("inner");
+  auto sr = makeSubRuntime(host, anchor.get(), {{"inner", inner}},
+                           json::array({{{"serviceId", "credentialed"},
+                                         {"instanceId", "inner"}}}));
+
+  sr->process(json{{"trace", json::array()}});
+  REQUIRE(inner->resolved.empty());
+
+  host.secrets().merge(readSecretsPayload({{"api", {{"value", "arrived"}}}}));
+  sr->process(json{{"trace", json::array()}});
+
+  REQUIRE(inner->resolved == "arrived");
 }
