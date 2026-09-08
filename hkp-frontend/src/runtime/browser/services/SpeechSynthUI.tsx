@@ -50,8 +50,12 @@ export default function SpeechSynthUI(props: ServiceUIProps) {
 
       // Prefer en-GB, fall back to any English, then all voices.
       let pool = all.filter((v) => v.lang === "en-GB");
-      if (pool.length === 0) pool = all.filter((v) => v.lang.startsWith("en"));
-      if (pool.length === 0) pool = all;
+      if (pool.length === 0) {
+        pool = all.filter((v) => v.lang.startsWith("en"));
+      }
+      if (pool.length === 0) {
+        pool = all;
+      }
 
       const defaultVoice = pool.find((v) => v.name === defaultVoiceName) ?? pool[0];
       props.service.configure({ voices: pool });

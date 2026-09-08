@@ -23,17 +23,33 @@ export default function AsciiArtUI(props: ServiceUIProps) {
   const [charset, setCharset] = useState(DEFAULT_CHARSET);
 
   const onInit = (state: any) => {
-    if (needsUpdate(state.cols, cols)) setCols(state.cols);
-    if (needsUpdate(state.rows, rows)) setRows(state.rows);
-    if (needsUpdate(state.invert, invert)) setInvert(state.invert);
-    if (needsUpdate(state.charset, charset)) setCharset(state.charset);
+    if (needsUpdate(state.cols, cols)) {
+      setCols(state.cols);
+    }
+    if (needsUpdate(state.rows, rows)) {
+      setRows(state.rows);
+    }
+    if (needsUpdate(state.invert, invert)) {
+      setInvert(state.invert);
+    }
+    if (needsUpdate(state.charset, charset)) {
+      setCharset(state.charset);
+    }
   };
 
   const onNotification = (params: any) => {
-    if (params?.cols !== undefined) setCols(params.cols);
-    if (params?.rows !== undefined) setRows(params.rows);
-    if (params?.invert !== undefined) setInvert(params.invert);
-    if (params?.charset !== undefined) setCharset(params.charset);
+    if (params?.cols !== undefined) {
+      setCols(params.cols);
+    }
+    if (params?.rows !== undefined) {
+      setRows(params.rows);
+    }
+    if (params?.invert !== undefined) {
+      setInvert(params.invert);
+    }
+    if (params?.charset !== undefined) {
+      setCharset(params.charset);
+    }
   };
 
   const updateCols = (val: number) => {

@@ -134,7 +134,9 @@ function applyWindow(
 function realFFT(signal: any) {
   const N = signal.length;
 
-  if ((N & (N - 1)) !== 0) throw new Error("Length must be a power of 2");
+  if ((N & (N - 1)) !== 0) {
+    throw new Error("Length must be a power of 2");
+  }
 
   // Initialize real and imaginary parts
   const real = signal.slice(); // copy of input

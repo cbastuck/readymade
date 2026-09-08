@@ -38,11 +38,15 @@ function shouldRenderPlaygroundFromUrl() {
 
 async function tryResumeLastBoard(): Promise<BoardDescriptor | undefined> {
   const lastBoardName = localStorage.getItem("lastActiveBoardName");
-  if (!lastBoardName) return undefined;
+  if (!lastBoardName) {
+    return undefined;
+  }
   const backend = await getBackend();
   try {
     const history = await backend.loadBoardHistory(lastBoardName);
-    if (history.length > 0) return history[0].snapshot;
+    if (history.length > 0) {
+      return history[0].snapshot;
+    }
   } catch {}
   try {
     return await backend.loadBoard(lastBoardName);
@@ -177,7 +181,9 @@ function MeanderShell() {
   };
 
   useEffect(() => {
-    if (view.type !== "loading") return;
+    if (view.type !== "loading") {
+      return;
+    }
     const demoParam = new URLSearchParams(window.location.search).get("demo");
     if (demoParam) {
       const board = findDemoBySlug(demoParam);

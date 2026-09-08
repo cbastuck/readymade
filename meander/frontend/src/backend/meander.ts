@@ -47,7 +47,9 @@ export const meanderBackend: BackendAdapter = {
 
   async loadBoard(boardName: string): Promise<BoardDescriptor> {
     const res = await fetch(`hkp://boards/${encodePathSegment(boardName)}`);
-    if (!res.ok) throw new Error(`Failed to load board: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load board: ${res.statusText}`);
+    }
     const board = await res.json();
     return board.boardName ? board : { ...board, boardName };
   },
@@ -58,12 +60,16 @@ export const meanderBackend: BackendAdapter = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error(`Failed to save board: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to save board: ${res.statusText}`);
+    }
   },
 
   async loadBoardSource(boardName: string): Promise<string> {
     const res = await fetch(`hkp://boards/${encodePathSegment(boardName)}`);
-    if (!res.ok) throw new Error(`Failed to load board: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load board: ${res.statusText}`);
+    }
     return res.text();
   },
 
@@ -73,14 +79,18 @@ export const meanderBackend: BackendAdapter = {
       headers: { "Content-Type": "application/json" },
       body: source,
     });
-    if (!res.ok) throw new Error(`Failed to save board: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to save board: ${res.statusText}`);
+    }
   },
 
   async deleteBoard(name: string): Promise<void> {
     const res = await fetch(`hkp://boards/${encodePathSegment(name)}`, {
       method: "DELETE",
     });
-    if (!res.ok) throw new Error(`Failed to delete board: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to delete board: ${res.statusText}`);
+    }
   },
 
   async getRemotes(): Promise<Array<Remote>> {
@@ -94,7 +104,9 @@ export const meanderBackend: BackendAdapter = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(remote),
     });
-    if (!res.ok) throw new Error(`Failed to save remote: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to save remote: ${res.statusText}`);
+    }
   },
 
   async deleteRemote(name: string): Promise<void> {
@@ -103,12 +115,16 @@ export const meanderBackend: BackendAdapter = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
-    if (!res.ok) throw new Error(`Failed to delete remote: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to delete remote: ${res.statusText}`);
+    }
   },
 
   async getRuntimeSettings(): Promise<RuntimeSettings> {
     const res = await fetch("hkp://settings");
-    if (!res.ok) throw new Error(`Failed to load settings: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load settings: ${res.statusText}`);
+    }
     return res.json();
   },
 
@@ -120,7 +136,9 @@ export const meanderBackend: BackendAdapter = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings),
     });
-    if (!res.ok) throw new Error(`Failed to save settings: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Failed to save settings: ${res.statusText}`);
+    }
     return res.json();
   },
 
@@ -216,7 +234,9 @@ export const meanderBackend: BackendAdapter = {
 
   async loadStartPageTree(): Promise<StartPageTree | null> {
     const res = await fetch("hkp://startpage");
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     try {
       return normalizeStartPageTree(await res.json());
     } catch {
@@ -230,8 +250,9 @@ export const meanderBackend: BackendAdapter = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(tree),
     });
-    if (!res.ok)
+    if (!res.ok) {
       throw new Error(`Failed to save start page tree: ${res.statusText}`);
+    }
   },
 
   async uploadBoardArt(boardName: string, image: Blob): Promise<string> {
@@ -255,7 +276,9 @@ export const meanderBackend: BackendAdapter = {
 
   async fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>> {
     const res = await fetch("hkp://history/");
-    if (!res.ok) return [];
+    if (!res.ok) {
+      return [];
+    }
     return res.json();
   },
 
@@ -268,13 +291,16 @@ export const meanderBackend: BackendAdapter = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(entry),
     });
-    if (!res.ok)
+    if (!res.ok) {
       throw new Error(`Failed to push board snapshot: ${res.statusText}`);
+    }
   },
 
   async loadBoardHistory(boardName: string): Promise<Array<BoardHistoryEntry>> {
     const res = await fetch(`hkp://history/${encodePathSegment(boardName)}`);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      return [];
+    }
     return res.json();
   },
 

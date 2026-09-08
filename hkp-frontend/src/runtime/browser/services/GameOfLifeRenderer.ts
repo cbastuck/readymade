@@ -25,9 +25,13 @@ const PAN_SMOOTHING = 0.04;
 
 // Color by object size bucket.
 function objectColor(cellCount: number): string {
-  if (cellCount >= 20) return "#0d47a1"; // large structures (gun, eater) — deep blue
-  if (cellCount >= 5) return "#1b5e20";  // mid-size (gliders in transit) — deep green
-  return "#b71c1c";                       // small debris / still-lifes — deep red
+  if (cellCount >= 20) {
+    return "#0d47a1"; // large structures (gun, eater) — deep blue
+  }
+  if (cellCount >= 5) {
+    return "#1b5e20"; // mid-size (gliders in transit) — deep green
+  }
+  return "#b71c1c"; // small debris / still-lifes — deep red
 }
 
 type State = {
@@ -70,7 +74,9 @@ class GameOfLifeRenderer extends ServiceBase<State> {
   }
 
   process(frame: GolFrame) {
-    if (!frame?.objects) return [];
+    if (!frame?.objects) {
+      return [];
+    }
 
     const { cellSize, canvasWidth, canvasHeight } = this.state;
     const { objects } = frame;
@@ -91,7 +97,9 @@ class GameOfLifeRenderer extends ServiceBase<State> {
       }
     }
 
-    if (totalCells === 0) return [];
+    if (totalCells === 0) {
+      return [];
+    }
 
     const comRow = sumRow / totalCells;
     const comCol = sumCol / totalCells;
@@ -131,7 +139,9 @@ class GameOfLifeRenderer extends ServiceBase<State> {
 
       for (let r = 0; r < obj.matrix.length; r++) {
         for (let c = 0; c < obj.matrix[r].length; c++) {
-          if (!obj.matrix[r][c]) continue;
+          if (!obj.matrix[r][c]) {
+            continue;
+          }
 
           const x = (obj.col + c - originCol) * cellSize;
           const y = (obj.row + r - originRow) * cellSize;

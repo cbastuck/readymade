@@ -109,7 +109,9 @@ export default function LoadBoardDialog({
       board = await loadBoard(entry.name);
     } else {
       const history = await (await getBackend()).loadBoardHistory(entry.name);
-      if (history.length === 0) return;
+      if (history.length === 0) {
+        return;
+      }
       board = history[0].snapshot;
     }
     boardContext?.setBoardState(board);

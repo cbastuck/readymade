@@ -27,9 +27,13 @@ export default function Content({ activePath, onNavigate }: Props) {
   // Intercept clicks on .md links inside rendered content
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     const target = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     const href = target.getAttribute('href') ?? '';
-    if (!href.endsWith('.md') || href.startsWith('http')) return;
+    if (!href.endsWith('.md') || href.startsWith('http')) {
+      return;
+    }
     e.preventDefault();
     const base = activePath ? activePath.replace(/[^/]+$/, '') : '';
     const resolved = (base + href).replace(/^\//, '');

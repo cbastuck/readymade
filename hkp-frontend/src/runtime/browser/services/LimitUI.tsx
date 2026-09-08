@@ -10,10 +10,14 @@ export default function LimitUI(props: ServiceUIProps) {
     <ServiceUI
       {...props}
       onInit={(state: any) => {
-        if (state.n !== undefined) setN(state.n);
+        if (state.n !== undefined) {
+          setN(state.n);
+        }
       }}
       onNotification={(n: any) => {
-        if (n.n !== undefined) setN(n.n);
+        if (n.n !== undefined) {
+          setN(n.n);
+        }
       }}
     >
       <div style={{ padding: 8, fontFamily: "monospace", fontSize: 12 }}>

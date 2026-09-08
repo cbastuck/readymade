@@ -40,7 +40,9 @@ export default function ShareAsQRDialog({
   const runtimeRef = useRef<RuntimeDescriptor | null>(null);
 
   useEffect(() => {
-    if (!isOpen || !runtimeSource) return;
+    if (!isOpen || !runtimeSource) {
+      return;
+    }
 
     let cancelled = false;
 
@@ -56,7 +58,9 @@ export default function ShareAsQRDialog({
         loadQRPipelineServices(),
         null,
       );
-      if (!result || cancelled) return;
+      if (!result || cancelled) {
+        return;
+      }
 
       const { scope, runtime } = result;
       scopeRef.current = scope;
@@ -81,7 +85,9 @@ export default function ShareAsQRDialog({
 
   // Clean up the transient runtime when the dialog closes.
   useEffect(() => {
-    if (isOpen) return;
+    if (isOpen) {
+      return;
+    }
     const scope = scopeRef.current;
     const runtime = runtimeRef.current;
     if (scope && runtime) {

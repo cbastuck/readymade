@@ -75,7 +75,9 @@ function docsApiPlugin() {
             return sendText(res, 403, 'Forbidden');
           }
           fs.readFile(abs, 'utf8', (err, data) => {
-            if (err) return sendText(res, 404, 'Not found');
+            if (err) {
+              return sendText(res, 404, 'Not found');
+            }
             sendText(res, 200, data);
           });
           return;

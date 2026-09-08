@@ -14,7 +14,9 @@ function ImagePickerUI(props: ServiceUIProps): JSX.Element {
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (!f) return;
+    if (!f) {
+      return;
+    }
     setFile(f);
     setPreview(URL.createObjectURL(f));
   };

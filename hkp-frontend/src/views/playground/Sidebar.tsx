@@ -45,8 +45,12 @@ function ChevronIcon({ open }: { open: boolean }) {
 function RuntimeTypeIcon({ type }: { type: string }) {
   const canonical = toCanonicalRuntimeClassType(type as any);
   const size = 14;
-  if (canonical === "graphql") return <GitBranch size={size} />;
-  if (canonical === "rest") return <Server size={size} />;
+  if (canonical === "graphql") {
+    return <GitBranch size={size} />;
+  }
+  if (canonical === "rest") {
+    return <Server size={size} />;
+  }
   return <Monitor size={size} />;
 }
 
@@ -224,12 +228,16 @@ export default function Sidebar() {
   const availableRuntimes = boardContext?.availableRuntimeEngines ?? [];
 
   const serviceGroups = useMemo(() => {
-    if (!boardContext) return [];
+    if (!boardContext) {
+      return [];
+    }
     const typeMap = new Map<string, ServiceClass[]>();
     for (const runtime of boardContext.runtimes) {
       const canonical = toCanonicalRuntimeClassType(runtime.type);
       const services = boardContext.registry[runtime.id] ?? [];
-      if (!typeMap.has(canonical)) typeMap.set(canonical, []);
+      if (!typeMap.has(canonical)) {
+        typeMap.set(canonical, []);
+      }
       const group = typeMap.get(canonical)!;
       for (const svc of services) {
         if (!group.some((s) => s.serviceId === svc.serviceId)) {
@@ -246,7 +254,9 @@ export default function Sidebar() {
   const hasRuntimes = (boardContext?.runtimes.length ?? 0) > 0;
 
   const addRuntime = (rtClass: RuntimeClass) => {
-    if (!boardContext) return;
+    if (!boardContext) {
+      return;
+    }
     boardContext.addRuntime({
       ...rtClass,
       name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
@@ -290,7 +300,9 @@ export default function Sidebar() {
   const query = search.trim().toLowerCase();
 
   const filteredGroups = useMemo(() => {
-    if (!query) return serviceGroups;
+    if (!query) {
+      return serviceGroups;
+    }
     return serviceGroups
       .map(({ type, services }) => ({
         type,

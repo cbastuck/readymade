@@ -146,7 +146,9 @@ export default function Knob({
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!dragRef.current) return;
+      if (!dragRef.current) {
+        return;
+      }
       const dy = dragRef.current.startY - e.clientY; // up = positive
       const range = max - min;
       const delta = (dy / 100) * range;

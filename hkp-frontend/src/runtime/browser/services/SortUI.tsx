@@ -15,12 +15,20 @@ export default function SortUI(props: ServiceUIProps) {
     <ServiceUI
       {...props}
       onInit={(state: any) => {
-        if (state.by !== undefined) setBy(state.by);
-        if (state.dir !== undefined) setDir(state.dir);
+        if (state.by !== undefined) {
+          setBy(state.by);
+        }
+        if (state.dir !== undefined) {
+          setDir(state.dir);
+        }
       }}
       onNotification={(n: any) => {
-        if (n.by !== undefined) setBy(n.by);
-        if (n.dir !== undefined) setDir(n.dir);
+        if (n.by !== undefined) {
+          setBy(n.by);
+        }
+        if (n.dir !== undefined) {
+          setDir(n.dir);
+        }
       }}
     >
       <div style={{ padding: 8, fontFamily: "monospace", fontSize: 12 }}>

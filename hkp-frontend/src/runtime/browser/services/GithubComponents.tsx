@@ -153,7 +153,9 @@ export function GithubObject(props: ObjectProps) {
   };
 
   const onRepoChanged = async (r: any) => {
-    if (!token || !owner) return;
+    if (!token || !owner) {
+      return;
+    }
     const b = await getBranches(token, owner, r);
     if (b && b.find((bItem: any) => bItem.name === branch)) {
       // same branch-name exists in new repo
@@ -173,7 +175,9 @@ export function GithubObject(props: ObjectProps) {
   };
 
   const onBranchChanged = async (b: string) => {
-    if (!token || !owner || !repo) return;
+    if (!token || !owner || !repo) {
+      return;
+    }
     setTree(b ? await getBranch(token, owner, repo, b) : null);
     onChange({ file: null });
   };

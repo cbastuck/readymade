@@ -10,10 +10,14 @@ export default function GameOfLifeRendererUI(props: ServiceUIProps) {
     <ServiceUI
       {...props}
       onInit={(state: any) => {
-        if (state.cellSize !== undefined) setCellSize(state.cellSize);
+        if (state.cellSize !== undefined) {
+          setCellSize(state.cellSize);
+        }
       }}
       onNotification={(n: any) => {
-        if (n.cellSize !== undefined) setCellSize(n.cellSize);
+        if (n.cellSize !== undefined) {
+          setCellSize(n.cellSize);
+        }
       }}
     >
       <div style={{ padding: "8px", fontFamily: "monospace", fontSize: "12px" }}>

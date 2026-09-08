@@ -139,7 +139,9 @@ export default function ServiceUI(props: ServiceUIProps) {
       return currentSegmentName;
     }
 
-    if (!segments) return undefined;
+    if (!segments) {
+      return undefined;
+    }
 
     for (const segment of segments) {
       if (segment && !segment.disabled) {

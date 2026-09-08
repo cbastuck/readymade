@@ -12,10 +12,14 @@ export default function FlatMapUI(props: ServiceUIProps) {
       {...props}
       initialSize={{ width: 300, height: undefined }}
       onInit={(state: any) => {
-        if (state.expression !== undefined) setExpression(state.expression);
+        if (state.expression !== undefined) {
+          setExpression(state.expression);
+        }
       }}
       onNotification={(n: any) => {
-        if (n.expression !== undefined) setExpression(n.expression);
+        if (n.expression !== undefined) {
+          setExpression(n.expression);
+        }
       }}
     >
       <div style={{ padding: 8 }}>

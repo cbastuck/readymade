@@ -17,15 +17,33 @@ export default function SmtpEmailUI(props: ServiceUIProps) {
   const [error, setError] = useState("");
 
   const onUpdate = useCallback((state: any) => {
-    if (state.host !== undefined) setHost(state.host);
-    if (state.port !== undefined) setPort(String(state.port));
-    if (state.username !== undefined) setUsername(state.username);
-    if (state.password !== undefined) setPassword(state.password);
-    if (state.tls !== undefined) setTls(state.tls);
-    if (state.from !== undefined) setFrom(state.from);
-    if (state.to !== undefined) setTo(state.to);
-    if (state.subject !== undefined) setSubject(state.subject);
-    if (state.error !== undefined) setError(state.error);
+    if (state.host !== undefined) {
+      setHost(state.host);
+    }
+    if (state.port !== undefined) {
+      setPort(String(state.port));
+    }
+    if (state.username !== undefined) {
+      setUsername(state.username);
+    }
+    if (state.password !== undefined) {
+      setPassword(state.password);
+    }
+    if (state.tls !== undefined) {
+      setTls(state.tls);
+    }
+    if (state.from !== undefined) {
+      setFrom(state.from);
+    }
+    if (state.to !== undefined) {
+      setTo(state.to);
+    }
+    if (state.subject !== undefined) {
+      setSubject(state.subject);
+    }
+    if (state.error !== undefined) {
+      setError(state.error);
+    }
   }, []);
 
   const configure = (patch: Record<string, unknown>) => {
@@ -55,7 +73,9 @@ export default function SmtpEmailUI(props: ServiceUIProps) {
           onChange={(v) => {
             setPort(v);
             const n = parseInt(v, 10);
-            if (!isNaN(n)) configure({ port: n });
+            if (!isNaN(n)) {
+              configure({ port: n });
+            }
           }}
         />
 

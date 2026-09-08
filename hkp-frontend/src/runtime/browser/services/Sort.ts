@@ -37,8 +37,12 @@ class Sort extends ServiceBase<State> {
     return [...params].sort((a, b) => {
       const av = a[by];
       const bv = b[by];
-      if (av < bv) return dir === "asc" ? -1 : 1;
-      if (av > bv) return dir === "asc" ? 1 : -1;
+      if (av < bv) {
+        return dir === "asc" ? -1 : 1;
+      }
+      if (av > bv) {
+        return dir === "asc" ? 1 : -1;
+      }
       return 0;
     });
   }

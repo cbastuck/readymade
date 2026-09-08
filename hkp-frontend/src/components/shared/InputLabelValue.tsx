@@ -46,7 +46,9 @@ export default function InputLabelValue({
           renamedLabelBuffer === null ? (editLabel ?? "") : renamedLabelBuffer
         }
         ref={(element) => {
-          if (element) element.focus();
+          if (element) {
+            element.focus();
+          }
         }}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           setRenamedLabelBuffer(e.target.value)

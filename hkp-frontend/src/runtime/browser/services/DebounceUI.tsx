@@ -15,12 +15,18 @@ export default function DebounceUI(props: ServiceUIProps) {
   const [remaining, setRemaining] = useState<number | null>(null);
 
   const update = (state: any) => {
-    if (needsUpdate(state.cooldown, cooldown)) setCooldown(state.cooldown);
+    if (needsUpdate(state.cooldown, cooldown)) {
+      setCooldown(state.cooldown);
+    }
     if (state.lastFired !== undefined) {
       setLastFired(state.lastFired);
-      if (state.remaining === null) setRemaining(null);
+      if (state.remaining === null) {
+        setRemaining(null);
+      }
     }
-    if (state.remaining !== undefined) setRemaining(state.remaining);
+    if (state.remaining !== undefined) {
+      setRemaining(state.remaining);
+    }
   };
 
   const lastFiredDisplay = lastFired

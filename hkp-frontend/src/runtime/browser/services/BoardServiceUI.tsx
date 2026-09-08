@@ -33,7 +33,9 @@ type BoardServiceInnerProps = {
 
 function BoardServiceInner({ renderContent }: BoardServiceInnerProps) {
   const boardContext = useBoardContext();
-  if (!boardContext) return null;
+  if (!boardContext) {
+    return null;
+  }
   return <>{renderContent(boardContext)}</>;
 }
 

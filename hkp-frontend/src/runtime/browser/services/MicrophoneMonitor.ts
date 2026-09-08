@@ -40,7 +40,9 @@ class MicrophoneMonitor extends ServiceBase<State> {
   }
 
   private async startCapture(): Promise<void> {
-    if (this.audioContext) return;
+    if (this.audioContext) {
+      return;
+    }
 
     if (!navigator.mediaDevices?.getUserMedia) {
       const msg = "Microphone requires a secure context (HTTPS or localhost)";

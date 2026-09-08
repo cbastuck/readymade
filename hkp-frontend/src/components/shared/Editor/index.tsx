@@ -127,16 +127,24 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
       editorRef.current && val !== undefined && editorRef.current.setValue(val),
     getSelectionText: () => {
       const editor = editorRef.current;
-      if (!editor) return null;
+      if (!editor) {
+        return null;
+      }
       const selection = editor.getSelection();
-      if (!selection || selection.isEmpty()) return null;
+      if (!selection || selection.isEmpty()) {
+        return null;
+      }
       return editor.getModel()?.getValueInRange(selection) ?? null;
     },
     replaceSelection: (text: string) => {
       const editor = editorRef.current;
-      if (!editor) return;
+      if (!editor) {
+        return;
+      }
       const selection = editor.getSelection();
-      if (!selection) return;
+      if (!selection) {
+        return;
+      }
       editor.executeEdits("replaceSelection", [{ range: selection, text }]);
       editor.focus();
     },

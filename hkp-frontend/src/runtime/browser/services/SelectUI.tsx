@@ -10,10 +10,14 @@ export default function SelectUI(props: ServiceUIProps) {
     <ServiceUI
       {...props}
       onInit={(state: any) => {
-        if (state.arrayIndex !== undefined) setArrayIndex(state.arrayIndex);
+        if (state.arrayIndex !== undefined) {
+          setArrayIndex(state.arrayIndex);
+        }
       }}
       onNotification={(n: any) => {
-        if (n.arrayIndex !== undefined) setArrayIndex(n.arrayIndex);
+        if (n.arrayIndex !== undefined) {
+          setArrayIndex(n.arrayIndex);
+        }
       }}
     >
       <div style={{ padding: 8, fontFamily: "monospace", fontSize: 12 }}>

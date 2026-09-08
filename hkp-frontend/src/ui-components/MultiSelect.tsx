@@ -150,7 +150,9 @@ const CommandEmpty = forwardRef<
 >(({ className, ...props }, forwardedRef) => {
   const render = useCommandState((state) => state.filtered.count === 0);
 
-  if (!render) return null;
+  if (!render) {
+    return null;
+  }
 
   return (
     <div
@@ -269,7 +271,9 @@ const MultipleSelector = React.forwardRef<
       };
 
       const exec = async () => {
-        if (!onSearch || !open) return;
+        if (!onSearch || !open) {
+          return;
+        }
 
         if (triggerSearchOnFocus) {
           await doSearch();
@@ -285,7 +289,9 @@ const MultipleSelector = React.forwardRef<
     }, [debouncedSearchTerm, groupBy, open, triggerSearchOnFocus]);
 
     const CreatableItem = () => {
-      if (!creatable) return undefined;
+      if (!creatable) {
+        return undefined;
+      }
       if (
         isOptionsExist(options, [{ value: inputValue, label: inputValue }]) ||
         selected.find((s) => s.value === inputValue)
@@ -330,7 +336,9 @@ const MultipleSelector = React.forwardRef<
     };
 
     const EmptyItem = React.useCallback(() => {
-      if (!emptyIndicator) return undefined;
+      if (!emptyIndicator) {
+        return undefined;
+      }
 
       // For async search that showing emptyIndicator
       if (onSearch && !creatable && Object.keys(options).length === 0) {

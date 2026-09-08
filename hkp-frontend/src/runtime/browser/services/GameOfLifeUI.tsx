@@ -11,12 +11,20 @@ export default function GameOfLifeUI(props: ServiceUIProps) {
     <ServiceUI
       {...props}
       onInit={(state: any) => {
-        if (state.generation !== undefined) setGeneration(state.generation);
-        if (state.cellSize !== undefined) setCellSize(state.cellSize);
+        if (state.generation !== undefined) {
+          setGeneration(state.generation);
+        }
+        if (state.cellSize !== undefined) {
+          setCellSize(state.cellSize);
+        }
       }}
       onNotification={(n: any) => {
-        if (n.generation !== undefined) setGeneration(n.generation);
-        if (n.cellSize !== undefined) setCellSize(n.cellSize);
+        if (n.generation !== undefined) {
+          setGeneration(n.generation);
+        }
+        if (n.cellSize !== undefined) {
+          setCellSize(n.cellSize);
+        }
       }}
     >
       <div style={{ padding: "8px", fontFamily: "monospace", fontSize: "12px" }}>

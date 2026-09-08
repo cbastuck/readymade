@@ -78,7 +78,9 @@ export default function AudioEditorUI(props: ServiceUIProps) {
     for (let x = 0; x < width; x++) {
       const sampleIndex = startSample + Math.floor(x * samplesPerPixel);
 
-      if (sampleIndex >= samples) break;
+      if (sampleIndex >= samples) {
+        break;
+      }
 
       // For better visualization when zoomed out, find min/max in range
       let min = 0;
@@ -155,7 +157,9 @@ export default function AudioEditorUI(props: ServiceUIProps) {
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) return;
+    if (!canvas || !container) {
+      return;
+    }
 
     const resizeObserver = new ResizeObserver(() => {
       const rect = container.getBoundingClientRect();
@@ -201,7 +205,9 @@ export default function AudioEditorUI(props: ServiceUIProps) {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas || audioData.length === 0) return;
+    if (!canvas || audioData.length === 0) {
+      return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -227,7 +233,9 @@ export default function AudioEditorUI(props: ServiceUIProps) {
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas || audioData.length === 0) return;
+    if (!canvas || audioData.length === 0) {
+      return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -316,7 +324,9 @@ export default function AudioEditorUI(props: ServiceUIProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle keyboard shortcuts when component is focused
-      if (!isFocused) return;
+      if (!isFocused) {
+        return;
+      }
 
       if (e.key === "ArrowLeft") {
         e.preventDefault();

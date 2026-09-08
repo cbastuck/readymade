@@ -534,12 +534,24 @@ function GifEncoderUI(props: ServiceUIProps) {
       gifBytes?: number;
     },
   ) => {
-    if (n.recording !== undefined) setRecording(!!n.recording);
-    if (n.delayMs !== undefined) setDelayMs(n.delayMs);
-    if (n.maxFrames !== undefined) setMaxFrames(n.maxFrames);
-    if (n.frames !== undefined) setFrames(n.frames);
-    if (n.gifUrl !== undefined) setGifUrl(n.gifUrl || null);
-    if (n.gifBytes !== undefined) setGifBytes(n.gifBytes || 0);
+    if (n.recording !== undefined) {
+      setRecording(!!n.recording);
+    }
+    if (n.delayMs !== undefined) {
+      setDelayMs(n.delayMs);
+    }
+    if (n.maxFrames !== undefined) {
+      setMaxFrames(n.maxFrames);
+    }
+    if (n.frames !== undefined) {
+      setFrames(n.frames);
+    }
+    if (n.gifUrl !== undefined) {
+      setGifUrl(n.gifUrl || null);
+    }
+    if (n.gifBytes !== undefined) {
+      setGifBytes(n.gifBytes || 0);
+    }
   };
 
   return (

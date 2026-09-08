@@ -105,7 +105,9 @@ export default function TemplateEditor({
 
   // Add a new property
   const addProperty = () => {
-    if (!newPropertyName.trim()) return;
+    if (!newPropertyName.trim()) {
+      return;
+    }
 
     const defaultValues: Record<ValueType, TemplateValue> = {
       string: "",
@@ -256,7 +258,9 @@ export default function TemplateEditor({
               onChange={(e) => setNewPropertyName(e.target.value)}
               className="w-[100px] h-8"
               onKeyDown={(e) => {
-                if (e.key === "Enter") addProperty();
+                if (e.key === "Enter") {
+                  addProperty();
+                }
                 if (e.key === "Escape") {
                   setAddingNew(false);
                   setNewPropertyName("");

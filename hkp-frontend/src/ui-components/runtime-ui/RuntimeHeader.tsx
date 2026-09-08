@@ -127,7 +127,9 @@ export default function RuntimeHeader({
             subSvcClass,
             runtime,
           ) as unknown as Promise<ServiceDescriptor | null>);
-          if (!newSvc) return;
+          if (!newSvc) {
+            return;
+          }
 
           const subServiceConfig = isRuntimeBrowserClassType(runtime.type)
             ? {
@@ -152,12 +154,16 @@ export default function RuntimeHeader({
   };
 
   const onShareAsQR = async () => {
-    if (!boardContext) return;
+    if (!boardContext) {
+      return;
+    }
     const scope = boardContext.scopes[runtimeId];
     const api =
       boardContext.runtimeApis[runtime.type] ||
       boardContext.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
-    if (!scope || !api) return;
+    if (!scope || !api) {
+      return;
+    }
 
     const currentServices = boardContext.services[runtimeId] || [];
     const servicesWithState = await Promise.all(
@@ -193,12 +199,16 @@ export default function RuntimeHeader({
   const builtCustomActions = (runtime.customActions ?? []).map((action) => ({
     name: action.name,
     onClick: async () => {
-      if (!boardContext) return;
+      if (!boardContext) {
+        return;
+      }
       const scope = boardContext.scopes[runtimeId];
       const api =
         boardContext.runtimeApis[runtime.type] ||
         boardContext.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
-      if (!scope || !api) return;
+      if (!scope || !api) {
+        return;
+      }
 
       const currentServices = boardContext.services[runtimeId] || [];
 
@@ -228,7 +238,9 @@ export default function RuntimeHeader({
       const targetRuntime = boardContext.runtimes?.find(
         (r) => r.id === action.targetRuntimeId,
       );
-      if (!targetRuntime) return;
+      if (!targetRuntime) {
+        return;
+      }
       const targetScope = boardContext.scopes[action.targetRuntimeId];
       const targetApi =
         boardContext.runtimeApis[targetRuntime.type] ||

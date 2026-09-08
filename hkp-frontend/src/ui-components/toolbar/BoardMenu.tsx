@@ -88,7 +88,9 @@ export default function BoardMenu({ menuItemFactory }: Props) {
   }, [boardContext]);
 
   const onRefineBoardWithAI = useCallback(async () => {
-    if (!boardContext || !board) return;
+    if (!boardContext || !board) {
+      return;
+    }
 
     const src = boardContext.errorOnFetch
       ? restoreBoardFromLocalStorage(board)
@@ -178,7 +180,9 @@ export default function BoardMenu({ menuItemFactory }: Props) {
     ],
   );
 
-  if (!board) return null;
+  if (!board) {
+    return null;
+  }
 
   return (
     <>

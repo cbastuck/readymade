@@ -48,11 +48,15 @@ export default function QrCodeUI(props: ServiceUIProps) {
   const onCompress = () => {
     setError(null);
     const editor = editorRef.current;
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
 
     const selected = editor.getSelectionText();
     const source = selected ?? editor.getValue() ?? "";
-    if (!source.trim()) return;
+    if (!source.trim()) {
+      return;
+    }
 
     try {
       // Validate it's parseable JSON before compressing
@@ -73,11 +77,15 @@ export default function QrCodeUI(props: ServiceUIProps) {
   const onDecompress = () => {
     setError(null);
     const editor = editorRef.current;
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
 
     const selected = editor.getSelectionText();
     const source = selected ?? editor.getValue() ?? "";
-    if (!source.trim()) return;
+    if (!source.trim()) {
+      return;
+    }
 
     try {
       const decompressed = decompressAndDecodeState(source.trim());

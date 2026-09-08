@@ -101,7 +101,9 @@ class GameOfLife extends ServiceBase<State> {
       const [r, c] = parseKey(key);
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
-          if (dr === 0 && dc === 0) continue;
+          if (dr === 0 && dc === 0) {
+            continue;
+          }
           const nk = `${r + dr},${c + dc}`;
           neighborCount.set(nk, (neighborCount.get(nk) ?? 0) + 1);
         }
@@ -126,7 +128,9 @@ class GameOfLife extends ServiceBase<State> {
     const objects: GolObject[] = [];
 
     for (const startKey of this.cells) {
-      if (visited.has(startKey)) continue;
+      if (visited.has(startKey)) {
+        continue;
+      }
 
       // Collect all cells in this component.
       const componentCells: [number, number][] = [];
@@ -140,7 +144,9 @@ class GameOfLife extends ServiceBase<State> {
 
         for (let dr = -1; dr <= 1; dr++) {
           for (let dc = -1; dc <= 1; dc++) {
-            if (dr === 0 && dc === 0) continue;
+            if (dr === 0 && dc === 0) {
+              continue;
+            }
             const nk = `${r + dr},${c + dc}`;
             if (this.cells.has(nk) && !visited.has(nk)) {
               visited.add(nk);
@@ -154,10 +160,18 @@ class GameOfLife extends ServiceBase<State> {
       let minRow = Infinity, minCol = Infinity;
       let maxRow = -Infinity, maxCol = -Infinity;
       for (const [r, c] of componentCells) {
-        if (r < minRow) minRow = r;
-        if (r > maxRow) maxRow = r;
-        if (c < minCol) minCol = c;
-        if (c > maxCol) maxCol = c;
+        if (r < minRow) {
+          minRow = r;
+        }
+        if (r > maxRow) {
+          maxRow = r;
+        }
+        if (c < minCol) {
+          minCol = c;
+        }
+        if (c > maxCol) {
+          maxCol = c;
+        }
       }
 
       // Allocate a zero-filled matrix sized to the bounding box.

@@ -12,10 +12,14 @@ export default function SmoothUI(props: ServiceUIProps) {
     <ServiceUI
       {...props}
       onInit={(state: any) => {
-        if (state.factor !== undefined) setFactor(state.factor);
+        if (state.factor !== undefined) {
+          setFactor(state.factor);
+        }
       }}
       onNotification={(n: any) => {
-        if (n.factor !== undefined) setFactor(n.factor);
+        if (n.factor !== undefined) {
+          setFactor(n.factor);
+        }
       }}
     >
       <div style={{ padding: 8, fontFamily: "monospace", fontSize: 12 }}>

@@ -796,7 +796,9 @@ function BoardList({
 }) {
   const boardContext = useBoardContext();
   const [reorderingRuntimes, setReorderingRuntimes] = useState(false);
-  if (!boardContext) return null;
+  if (!boardContext) {
+    return null;
+  }
   const { runtimes, services, scopes, registry, boardName } = boardContext;
 
   // Only meaningful with 2+ runtimes; a removal that drops to one exits the mode.
@@ -1333,7 +1335,9 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
   };
 
   const handleAddService = (svc: ServiceClass) => {
-    if (!addServiceRuntime) return;
+    if (!addServiceRuntime) {
+      return;
+    }
     const runtime = runtimes.find((rt) => rt.id === addServiceRuntime.id);
     if (runtime) {
       boardContext.addService(svc, runtime);

@@ -35,8 +35,12 @@ function AuthRedirect(props: AuthRedirectProps) {
 
   // Determine initial step from query params
   const getInitialStep = () => {
-    if (!queryParams) return "init";
-    if (queryParams.step !== undefined) return queryParams.step;
+    if (!queryParams) {
+      return "init";
+    }
+    if (queryParams.step !== undefined) {
+      return queryParams.step;
+    }
     return "init";
   };
 

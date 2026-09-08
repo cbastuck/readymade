@@ -17,11 +17,21 @@ export default function MicrophoneMonitorUI(props: ServiceUIProps) {
   const [_level, setLevel] = useState<number | null>(null);
 
   const update = (state: any) => {
-    if (needsUpdate(state.running, running)) setRunning(!!state.running);
-    if (needsUpdate(state.interval, interval)) setIntervalMs(state.interval);
-    if (state.status !== undefined) setStatus(state.status);
-    if (state.levelDb !== undefined) setLevelDb(state.levelDb);
-    if (state.level !== undefined) setLevel(state.level);
+    if (needsUpdate(state.running, running)) {
+      setRunning(!!state.running);
+    }
+    if (needsUpdate(state.interval, interval)) {
+      setIntervalMs(state.interval);
+    }
+    if (state.status !== undefined) {
+      setStatus(state.status);
+    }
+    if (state.levelDb !== undefined) {
+      setLevelDb(state.levelDb);
+    }
+    if (state.level !== undefined) {
+      setLevel(state.level);
+    }
   };
 
   // Map dB range [-60, 0] to [0, 100]%

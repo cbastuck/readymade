@@ -46,7 +46,9 @@ export default function RuntimeMenu({ triggerClassName, triggerStyle }: Props) {
   };
 
   const onAddRuntime = (rtClass: RuntimeClass) => {
-    if (!boardContext) return;
+    if (!boardContext) {
+      return;
+    }
     boardContext.addRuntime({
       ...rtClass,
       name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
@@ -69,7 +71,9 @@ export default function RuntimeMenu({ triggerClassName, triggerStyle }: Props) {
   };
 
   const onOpenChange = (newOpen: boolean) => {
-    if (!newOpen) setSearchTerm("");
+    if (!newOpen) {
+      setSearchTerm("");
+    }
     setOpen(newOpen);
   };
 

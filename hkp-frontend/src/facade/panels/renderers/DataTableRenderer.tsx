@@ -57,8 +57,12 @@ function columnLabel(column: string): string {
 }
 
 function formatCell(val: unknown): string {
-  if (val === undefined || val === null) return "";
-  if (typeof val === "object") return JSON.stringify(val);
+  if (val === undefined || val === null) {
+    return "";
+  }
+  if (typeof val === "object") {
+    return JSON.stringify(val);
+  }
   return String(val);
 }
 
@@ -69,7 +73,9 @@ function addRow(
   overflow: "drop-new" | "drop-oldest",
 ): Record<string, unknown>[] {
   if (prev.length >= maxRows) {
-    if (overflow === "drop-new") return prev;
+    if (overflow === "drop-new") {
+      return prev;
+    }
     return [...prev.slice(1), row];
   }
   return [...prev, row];
@@ -103,11 +109,17 @@ export function DataTableRenderer({
   );
 
   useEffect(() => {
-    if (!sourceService?.app) return;
+    if (!sourceService?.app) {
+      return;
+    }
     const handler = (notification: any) => {
-      if (notification?.__internal) return;
+      if (notification?.__internal) {
+        return;
+      }
       const update = extractRows(notification, widget.source.path);
-      if (!update) return;
+      if (!update) {
+        return;
+      }
 
       if (update.replace) {
         replaces.current = true;

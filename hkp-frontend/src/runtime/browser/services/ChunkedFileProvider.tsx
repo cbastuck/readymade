@@ -22,7 +22,9 @@ function ChunkedFileProviderUI(props: ServiceUIProps): JSX.Element {
   const [progress, setProgress] = useState<string>("");
 
   const onNotification = (params: any) => {
-    if (params?.progress !== undefined) setProgress(params.progress);
+    if (params?.progress !== undefined) {
+      setProgress(params.progress);
+    }
   };
 
   return (

@@ -86,7 +86,9 @@ class AsciiArt extends ServiceBase<State> {
           const lum =
             0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
           let idx = Math.round((lum / 255) * lastIdx);
-          if (invert) idx = lastIdx - idx;
+          if (invert) {
+            idx = lastIdx - idx;
+          }
           line += charset[idx];
         }
         lines.push(line);

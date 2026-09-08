@@ -10,9 +10,15 @@ export default function TelegramSenderUI(props: ServiceUIProps) {
   const [error, setError] = useState("");
 
   const onUpdate = useCallback((state: any) => {
-    if (state.botToken !== undefined) setBotToken(state.botToken);
-    if (state.chatId !== undefined) setChatId(state.chatId);
-    if (state.error !== undefined) setError(state.error);
+    if (state.botToken !== undefined) {
+      setBotToken(state.botToken);
+    }
+    if (state.chatId !== undefined) {
+      setChatId(state.chatId);
+    }
+    if (state.error !== undefined) {
+      setError(state.error);
+    }
   }, []);
 
   const configure = (patch: Record<string, unknown>) => {
