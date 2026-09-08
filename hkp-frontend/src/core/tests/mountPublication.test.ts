@@ -116,3 +116,101 @@ describe("pendingMountConfigures", () => {
     ).toEqual([]);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// One job each: the reference is authored, the address is a runtime fact.
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("the two fields", () => {
+  const split = () => ({
+    runtimes: [
+      { id: "endpoint-node", type: "rest" },
+      { id: "caller-node", type: "rest" },
+    ],
+    services: {
+      "endpoint-node": [
+        {
+          uuid: "echo-server",
+          state: { __hkpMount: "http://127.0.0.1:8080/hosted/abc123" },
+        },
+      ],
+      "caller-node": [
+        { uuid: "call", state: { url: "hkp-mount://endpoint-node/echo-server" } },
+      ],
+    },
+  });
+
+  it("resolves a reference written in the service's own field", () => {
+    const state = split();
+    const pending = pendingMountConfigures(
+      state,
+      createBoardCoordinator(() => state),
+      new Map(),
+      isRemote,
+    );
+    expect(pending).toEqual([
+      {
+        runtimeId: "caller-node",
+        serviceUuid: "call",
+        url: "http://127.0.0.1:8080/hosted/abc123",
+      },
+    ]);
+  });
+
+  it("hands over nothing once the consumer already reports the address", () => {
+    // The configure landed and the state came back. Re-sending it would be
+    // churn, and the `sent` map alone cannot say so after a reload.
+    const state = split();
+    (state.services["caller-node"][0].state as Record<string, unknown>)[
+      "__hkpMount"
+    ] = "http://127.0.0.1:8080/hosted/abc123";
+
+    expect(
+      pendingMountConfigures(
+        state,
+        createBoardCoordinator(() => state),
+        new Map(),
+        isRemote,
+      ),
+    ).toEqual([]);
+  });
+
+  it("hands over again when the address changes", () => {
+    // A runtime that restarted on another port is still the same mount, and a
+    // consumer holding the old address is calling nothing.
+    const state = split();
+    const sent = new Map([
+      [configureKey("caller-node", "call"), "http://127.0.0.1:9999/hosted/old"],
+    ]);
+
+    const pending = pendingMountConfigures(
+      state,
+      createBoardCoordinator(() => state),
+      sent,
+      isRemote,
+    );
+    expect(pending).toHaveLength(1);
+    expect(pending[0].url).toBe("http://127.0.0.1:8080/hosted/abc123");
+  });
+
+  it("finds a reference nested in a sub-pipeline", () => {
+    const state = split();
+    state.services["caller-node"][0].state = {
+      pipeline: [
+        {
+          instanceId: "inner",
+          state: { url: "hkp-mount://endpoint-node/echo-server" },
+        },
+      ],
+    } as never;
+
+    expect(
+      pendingMountConfigures(
+        state,
+        createBoardCoordinator(() => state),
+        new Map(),
+        isRemote,
+      ),
+    ).toHaveLength(1);
+  });
+});

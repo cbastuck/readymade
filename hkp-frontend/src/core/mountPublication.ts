@@ -19,7 +19,7 @@
  */
 
 import { BoardCoordinator } from "./coordinator";
-import { MOUNT_FIELD, parseMountRef } from "../runtime/board/mount";
+import { MOUNT_FIELD, findMountRefs } from "../runtime/board/mount";
 
 export type MountConfigure = {
   runtimeId: string;
@@ -43,8 +43,17 @@ export function configureKey(runtimeId: string, serviceUuid: string): string {
  * The services that hold an unresolved reference the coordinator can now
  * resolve, and the address each should be given.
  *
- * `sent` records what has already been handed over, so a state change unrelated
- * to mounts does not re-configure every consumer on the board.
+ * A reference is looked for **anywhere in a service's state**, because it is
+ * written in whatever field the service calls its target. The address goes back
+ * in `__hkpMount` — never over the field the reference was found in, which is
+ * what a person wrote and what the board saves.
+ *
+ * Runs on every board change rather than once at load: runtimes restore
+ * concurrently, so when a consumer appears its owner has usually published
+ * nothing yet; a mount can also appear much later, when a server is unbypassed
+ * by hand, and an address can change when a runtime is restarted. `sent` records
+ * the address last handed to each consumer, so an unrelated state change
+ * re-configures nobody while a *changed* address still gets through.
  */
 export function pendingMountConfigures(
   board: BoardView,
@@ -61,17 +70,29 @@ export function pendingMountConfigures(
     }
     for (const service of board.services[runtime.id] ?? []) {
       const state = service.state as Record<string, unknown> | undefined;
-      const value = state?.[MOUNT_FIELD];
-      if (typeof value !== "string" || !parseMountRef(value)) {
+      const refs = findMountRefs(state);
+      if (refs.length === 0) {
         continue;
       }
-      const url = coordinator.resolveMountUrl(value);
+      if (refs.length > 1) {
+        // One address field, so one mount per consumer. A service that needs
+        // two is a service that should host a pipeline instead.
+        console.warn(
+          `Service "${runtime.id}/${service.uuid}" names ${refs.length} mounts; only the first is resolved`,
+        );
+      }
+      const url = coordinator.resolveMountUrl(refs[0]);
       if (!url) {
         // The owner has not published yet. Normal while a board comes up; the
         // next state change tries again.
         continue;
       }
       if (sent.get(configureKey(runtime.id, service.uuid)) === url) {
+        continue;
+      }
+      // Already carrying this address — a board restored from a previous run,
+      // or a state read that came back after the configure landed.
+      if (state?.[MOUNT_FIELD] === url) {
         continue;
       }
       pending.push({ runtimeId: runtime.id, serviceUuid: service.uuid, url });

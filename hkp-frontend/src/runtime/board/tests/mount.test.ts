@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  findMountRefs,
   formatMountRef,
   parseMountEndpoint,
   parseMountRef,
@@ -178,5 +179,83 @@ describe("substituteMountsInBoard", () => {
     expect(out.services.ui[0].state.pipeline[0].state.__hkpMount).toBe(
       "http://192.168.1.5:8080/hosted/abc123",
     );
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Finding references
+//
+// A reference is written in whatever field a service already calls its target,
+// so it is recognised by its scheme rather than by the field holding it. That
+// is safe here in a way it is not for ids: `node` could be anything, while a
+// `hkp-mount://` value can only be one thing.
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("findMountRefs", () => {
+  it("finds a reference whatever field it sits in", () => {
+    expect(findMountRefs({ url: "hkp-mount://node/echo" })).toEqual([
+      "hkp-mount://node/echo",
+    ]);
+    expect(findMountRefs({ peerHost: "hkp-mount://node/peer" })).toEqual([
+      "hkp-mount://node/peer",
+    ]);
+  });
+
+  it("still finds one in the field addresses live in", () => {
+    // Boards written before the split put the reference there.
+    expect(findMountRefs({ __hkpMount: "hkp-mount://node/echo" })).toEqual([
+      "hkp-mount://node/echo",
+    ]);
+  });
+
+  it("descends into nested pipelines", () => {
+    const state = {
+      pipeline: [
+        { instanceId: "a", state: { url: "hkp-mount://node/echo" } },
+        { instanceId: "b", state: { url: "http://example.com" } },
+      ],
+    };
+    expect(findMountRefs(state)).toEqual(["hkp-mount://node/echo"]);
+  });
+
+  it("reports each reference once", () => {
+    const state = {
+      url: "hkp-mount://node/echo",
+      fallback: "hkp-mount://node/echo",
+    };
+    expect(findMountRefs(state)).toEqual(["hkp-mount://node/echo"]);
+  });
+
+  it("ignores addresses, blanks and anything that is not a reference", () => {
+    expect(
+      findMountRefs({
+        __hkpMount: "http://127.0.0.1:8080/hosted/abc",
+        url: "",
+        note: "hkp-mount://",
+        port: 8080,
+        on: true,
+        nothing: null,
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe("substituting on export", () => {
+  it("replaces a reference in the field that held it", () => {
+    // An exported board is a snapshot of one run, so the receiving service
+    // reads its own field exactly as it always does.
+    const board = {
+      services: {
+        node: [{ uuid: "call", state: { url: "hkp-mount://chat-node/peer-svc" } }],
+      },
+    };
+    const out: any = substituteMountsInBoard(board, () => "http://h:80/hosted/x");
+    expect(out.services.node[0].state.url).toBe("http://h:80/hosted/x");
+  });
+
+  it("leaves a reference it cannot resolve as it was", () => {
+    const board = { services: { node: [{ state: { url: "hkp-mount://gone/svc" } }] } };
+    const out: any = substituteMountsInBoard(board, () => null);
+    expect(out.services.node[0].state.url).toBe("hkp-mount://gone/svc");
   });
 });

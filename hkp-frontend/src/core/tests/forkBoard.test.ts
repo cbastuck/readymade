@@ -344,3 +344,57 @@ describe("naming the fork", () => {
     expect(first.board.runtimes[0].id).not.toBe(second.board.runtimes[0].id);
   });
 });
+
+describe("forking a mount reference in the service's own field", () => {
+  it("rewrites it wherever it sits", () => {
+    // A reference is recognised by its scheme, so a service naming its target
+    // in `url` is carried across like one naming it in `__hkpMount`.
+    const board: any = {
+      boardName: "b",
+      runtimes: [
+        { id: "owner", name: "Owner", type: "rest" },
+        { id: "caller", name: "Caller", type: "rest" },
+      ],
+      services: {
+        owner: [{ uuid: "echo", serviceId: "http-server-subservices" }],
+        caller: [
+          {
+            uuid: "call",
+            serviceId: "http-client",
+            state: { url: "hkp-mount://owner/echo" },
+          },
+        ],
+      },
+    };
+
+    const { board: forked, renamed } = forkBoard(board);
+    const caller = renamed.runtimes["caller"];
+    const owner = renamed.runtimes["owner"];
+    const echo = renamed.services["echo"];
+
+    expect((forked.services as any)[caller][0].state.url).toBe(
+      `hkp-mount://${owner}/${echo}`,
+    );
+  });
+
+  it("leaves an address alone", () => {
+    const board: any = {
+      boardName: "b",
+      runtimes: [{ id: "caller", name: "Caller", type: "rest" }],
+      services: {
+        caller: [
+          {
+            uuid: "call",
+            serviceId: "http-client",
+            state: { url: "http://example.com/hosted/abc" },
+          },
+        ],
+      },
+    };
+    const { board: forked, renamed } = forkBoard(board);
+    expect(
+      (forked.services as any)[renamed.runtimes["caller"]][0].state.url,
+    ).toBe("http://example.com/hosted/abc");
+  });
+});
+

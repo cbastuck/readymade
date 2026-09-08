@@ -7,14 +7,30 @@
  * therefore not knowable at board-design time, so a board names the *service*
  * and resolves the address when it connects.
  *
- * Both sides use one reserved state field:
+ * Two things, kept apart:
  *
- *   __hkpMount says where a mount is.
+ *   A reference — `hkp-mount://<runtimeId>/<serviceUuid>` — is what a *person*
+ *   writes, in whatever field the service already calls its target (`url`,
+ *   `peerHost`, …). It says which service to reach, and it is what a board
+ *   saves, shares and forks.
  *
- * A service that *owns* a mount publishes its address there, as an absolute
- * `http(s)://` URL. A service that *consumes* one points at the owner there,
- * as `hkp-mount://<runtimeId>/<serviceUuid>`, which resolves to the owner's
- * value. The two forms are told apart by scheme.
+ *   `__hkpMount` is a *runtime fact*: the address a mount currently has. An
+ *   owner publishes its own there; the board's coordinator writes the resolved
+ *   address onto a consumer there. Nobody authors it, and nothing about one run
+ *   belongs anywhere else.
+ *
+ * A consumer therefore prefers `__hkpMount` when it holds an address, and falls
+ * back to its own field — where a reference means "not resolved yet" rather
+ * than something to dial. Keeping the two in separate fields is what lets a
+ * board round-trip: resolution never overwrites what was written.
+ *
+ * References are found by their **scheme**, wherever they appear in a service's
+ * state, rather than by living in one agreed field. A `hkp-mount://` value
+ * cannot be mistaken for anything else, which is what makes that safe — the
+ * same reason `{{secret.…}}` is resolved wherever it occurs.
+ *
+ * For boards written before the split, a reference in `__hkpMount` itself still
+ * resolves: it is a string in service state like any other.
  *
  * The `__hkp` prefix marks a property whose meaning is defined outside the
  * service holding it: generic board machinery reads and rewrites it, so the
@@ -84,6 +100,39 @@ export function formatMountRef(ref: MountRef): string {
 }
 
 /**
+ * Every mount reference a value holds, in the order they were found and without
+ * duplicates.
+ *
+ * Walks the whole value rather than reading one field: a reference is legal in
+ * whatever field a service calls its target, and services nest — a sub-service
+ * pipeline carries its own services, each with their own state.
+ *
+ * Cheap enough to run on every board change, which is what callers do: the walk
+ * is proportional to the number of values in the state, and each string costs a
+ * prefix test.
+ */
+export function findMountRefs(value: unknown, into: string[] = []): string[] {
+  if (typeof value === "string") {
+    if (parseMountRef(value) && !into.includes(value)) {
+      into.push(value);
+    }
+    return into;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      findMountRefs(item, into);
+    }
+    return into;
+  }
+  if (value && typeof value === "object") {
+    for (const item of Object.values(value as Record<string, unknown>)) {
+      findMountRefs(item, into);
+    }
+  }
+  return into;
+}
+
+/**
  * Splits a published mount URL into the parts a client is configured with.
  * Returns null when the URL is absent or unparseable — which is the normal
  * state before the runtime that owns the mount has finished loading, not an
@@ -124,11 +173,12 @@ export function parseMountEndpoint(
  * for an endpoint that will never appear, so exports resolve it here — the same
  * contract template variables already follow.
  *
- * Because both forms live in the same field, this is an in-place substitution:
- * the receiving service reads the field exactly as it always does, and needs to
- * know nothing about export. References that cannot be resolved are left
- * untouched rather than blanked, so a board exported before its runtime came up
- * still describes what it wanted.
+ * Substituted in place, in whatever field held the reference: an exported board
+ * is a snapshot of one run rather than the authored source, and the receiving
+ * service then reads its own field exactly as it always does — it needs to know
+ * nothing about export. References that cannot be resolved are left untouched
+ * rather than blanked, so a board exported before its runtime came up still
+ * describes what it wanted.
  */
 export function substituteMountsInBoard<T>(
   board: T,
@@ -138,7 +188,13 @@ export function substituteMountsInBoard<T>(
 
   const walk = (node: unknown): void => {
     if (Array.isArray(node)) {
-      node.forEach(walk);
+      node.forEach((item, index) => {
+        if (typeof item === "string" && parseMountRef(item)) {
+          node[index] = resolveMountUrl(item) ?? item;
+          return;
+        }
+        walk(item);
+      });
       return;
     }
     if (!node || typeof node !== "object") {
@@ -146,16 +202,12 @@ export function substituteMountsInBoard<T>(
     }
 
     const obj = node as Record<string, unknown>;
-    const raw = obj[MOUNT_FIELD];
-    if (typeof raw === "string" && parseMountRef(raw)) {
-      const url = resolveMountUrl(raw);
-      if (url) {
-        obj[MOUNT_FIELD] = url;
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === "string" && parseMountRef(value)) {
+        obj[key] = resolveMountUrl(value) ?? value;
+        continue;
       }
-    }
-
-    // Services nest inside sub-service pipelines, so keep descending.
-    for (const value of Object.values(obj)) {
+      // Services nest inside sub-service pipelines, so keep descending.
       walk(value);
     }
   };

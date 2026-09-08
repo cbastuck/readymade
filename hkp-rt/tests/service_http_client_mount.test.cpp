@@ -47,6 +47,34 @@ TEST_CASE("HttpClient waits while its mount is still a reference",
   REQUIRE(isNull(client.process(json{{"triggerCount", 1}})));
 }
 
+TEST_CASE("HttpClient waits while a reference sits in the url it was given",
+          "[services][http-client][mount]") {
+  // The field a person writes is the one the service already calls its target.
+  // A reference there names a service whose address nobody has published, so
+  // there is nothing to dial — and dialling the reference itself, or falling
+  // through to some other url, would both call something the board did not ask
+  // for.
+  HttpClient client("http-client-1");
+  client.configure(json{{"url", "hkp-mount://endpoint-node/echo-server"}});
+
+  REQUIRE(isNull(client.process(json{{"triggerCount", 1}})));
+}
+
+TEST_CASE("an address handed over wins over the url that named it",
+          "[services][http-client][mount]") {
+  // What the coordinator resolved goes in the address field, leaving the url
+  // exactly as the board wrote it — so the board still says what it wanted.
+  HttpClient client("http-client-1");
+  client.configure(json{{"url", "hkp-mount://endpoint-node/echo-server"}});
+  client.configure(json{{"__hkpMount", "http://127.0.0.1:8080/hosted/abc"}});
+
+  const auto state = client.getState();
+  REQUIRE(state.value("url", std::string{}) ==
+          "hkp-mount://endpoint-node/echo-server");
+  REQUIRE(state.value("__hkpMount", std::string{}) ==
+          "http://127.0.0.1:8080/hosted/abc");
+}
+
 TEST_CASE("HttpClient reports its mount and path in state",
           "[services][http-client][mount]") {
   HttpClient client("http-client-1");

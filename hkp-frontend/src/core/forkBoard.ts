@@ -18,15 +18,19 @@ import { MOUNT_FIELD, formatMountRef, parseMountRef } from "../runtime/board/mou
  *   pipeline;
  * - fields that name a service or a runtime: `targetServiceUuid` (Configurator,
  *   ProcessRouter), `targetRuntime`, and the facade's `serviceUuid` widgets;
- * - `__hkpMount`, when it holds a `hkp-mount://<runtimeId>/<serviceUuid>`
- *   reference rather than an address.
+ * - any `hkp-mount://<runtimeId>/<serviceUuid>` reference, in whatever field
+ *   holds it.
  *
- * Rewriting is driven by *field name*, not by value: an id like `node` or
- * `mon-1` is an ordinary string that could appear anywhere in a board, and
- * replacing every occurrence of it would corrupt data that merely reads like an
- * id. The cost is that a service inventing its own way to name another service
- * is not carried across — see KNOWN_REFERENCE_FIELDS, which is where such a
- * field would be added.
+ * Ids are rewritten by *field name*, not by value: an id like `node` or `mon-1`
+ * is an ordinary string that could appear anywhere in a board, and replacing
+ * every occurrence of it would corrupt data that merely reads like an id. The
+ * cost is that a service inventing its own way to name another service is not
+ * carried across — see KNOWN_REFERENCE_FIELDS, which is where such a field
+ * would be added.
+ *
+ * Mount references are the exception, and are found by their **scheme**: a
+ * reference is written wherever a service names its target, and no other kind
+ * of value can be mistaken for one.
  */
 
 /** Fields whose value names a service instance. */
@@ -43,6 +47,8 @@ const RUNTIME_ID_FIELDS = new Set(["targetRuntime", "runtimeId"]);
 export const KNOWN_REFERENCE_FIELDS = {
   service: [...SERVICE_ID_FIELDS],
   runtime: [...RUNTIME_ID_FIELDS],
+  /** Where an *address* is published, for reference. Mount references are found
+   *  by scheme rather than by field, so nothing has to be registered here. */
   mount: MOUNT_FIELD,
 };
 
@@ -86,7 +92,18 @@ function rewrite(
   runtimes: Map<string, string>,
 ): Json {
   if (Array.isArray(value)) {
-    return value.map((entry) => rewrite(entry, services, runtimes));
+    return value.map((entry) => {
+      if (typeof entry === "string") {
+        const ref = parseMountRef(entry);
+        return ref
+          ? formatMountRef({
+              runtimeId: runtimes.get(ref.runtimeId) ?? ref.runtimeId,
+              serviceUuid: services.get(ref.serviceUuid) ?? ref.serviceUuid,
+            })
+          : entry;
+      }
+      return rewrite(entry, services, runtimes);
+    });
   }
   if (!isObject(value)) {
     return value;
@@ -102,17 +119,17 @@ function rewrite(
         next[key] = runtimes.get(child) ?? child;
         continue;
       }
-      if (key === MOUNT_FIELD) {
-        const ref = parseMountRef(child);
-        // An address rather than a reference is left alone: it may name
-        // something outside this board entirely, and a fork has no basis for
-        // deciding it meant the copy.
-        next[key] = ref
-          ? formatMountRef({
-              runtimeId: runtimes.get(ref.runtimeId) ?? ref.runtimeId,
-              serviceUuid: services.get(ref.serviceUuid) ?? ref.serviceUuid,
-            })
-          : child;
+      // A mount reference is recognised by its scheme rather than by the field
+      // holding it: it is written wherever a service names its target, and no
+      // other kind of value can be mistaken for one. An address rather than a
+      // reference is left alone — it may name something outside this board
+      // entirely, and a fork has no basis for deciding it meant the copy.
+      const ref = parseMountRef(child);
+      if (ref) {
+        next[key] = formatMountRef({
+          runtimeId: runtimes.get(ref.runtimeId) ?? ref.runtimeId,
+          serviceUuid: services.get(ref.serviceUuid) ?? ref.serviceUuid,
+        });
         continue;
       }
     }

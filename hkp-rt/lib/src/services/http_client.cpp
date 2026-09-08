@@ -191,21 +191,31 @@ Data HttpClient::process(Data data)
     return data;
   }
 
-  // A mount wins over a typed url: naming a service is the more specific
-  // instruction, and its address is not knowable when a board is written.
-  std::string mount = j.value(MOUNT_FIELD, m_impl->mount);
+  // A resolved mount address wins over a typed url: naming a service is the more
+  // specific instruction, and its address is not knowable when a board is
+  // written. The two fields have one job each — `url` is what a person wrote,
+  // `__hkpMount` is the address this run produced — so neither overwrites the
+  // other and a saved board keeps what it was given.
+  const std::string mount = j.value(MOUNT_FIELD, m_impl->mount);
+  const std::string configuredUrl = j.value("url", m_impl->url);
+  // A reference in either field names a service whose address nobody has
+  // published yet. Only the board's coordinator can turn one into an address,
+  // so stop and wait rather than dial the reference or fall through to a url
+  // the board did not ask to be called. Boards written before the split carry
+  // the reference in `__hkpMount`; both read the same way.
+  const std::string pending = isMountReference(mount)          ? mount
+                            : isMountReference(configuredUrl)  ? configuredUrl
+                                                               : std::string();
+  if (!pending.empty())
+  {
+    std::cerr << "HTTPClient service: waiting for " << pending
+              << " to publish an endpoint" << std::endl;
+    return Null();
+  }
+
   std::string url;
   if (!mount.empty())
   {
-    if (isMountReference(mount))
-    {
-      // Only the board's coordinator can turn a reference into an address, and
-      // it has not done so yet. Stop rather than fall back to url, which would
-      // silently call something the board did not ask for.
-      std::cerr << "HTTPClient service: waiting for " << mount
-                << " to publish an endpoint" << std::endl;
-      return Null();
-    }
     url = joinMountPath(mount, j.value("path", m_impl->path));
   }
   else
@@ -215,8 +225,7 @@ Data HttpClient::process(Data data)
       std::cerr << "HTTPClient service: JSON data does not contain required fields: " << j.dump() <<  std::endl;
       return data;
     }
-    std::string urlOrTemplate = j.value("url", m_impl->url);
-    url = processInjaTemplate(urlOrTemplate, j);
+    url = processInjaTemplate(configuredUrl, j);
   }
   const std::string method = chooseRequestMethod(j, m_impl->method);
    
