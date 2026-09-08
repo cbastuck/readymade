@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 import CommunicationDispatcherUI from "../ui/CommunicationDispatcherUI";
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
@@ -57,10 +57,9 @@ describe("editing one action's pipeline", () => {
     const configure = vi.fn().mockResolvedValue(undefined);
     render(<CommunicationDispatcherUI {...dispatcherProps(configure)} />);
 
-    // Reach the branch the way the editor does: through the stand-in service
-    // the UI hands to SubServicePipelineUI for that action.
-    const removeButtons = await screen.findAllByText("Remove");
-    removeButtons[1].click();
+    // Reach the branch the way the editor does: each action card carries its
+    // own remove control, named after the action it belongs to.
+    fireEvent.click(await screen.findByLabelText("Remove follow-up"));
 
     expect(configure).toHaveBeenCalledWith({ removeAction: "follow-up" });
   });
@@ -71,9 +70,11 @@ describe("editing one action's pipeline", () => {
 
     expect((await screen.findAllByText("extract")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("follow-up").length).toBeGreaterThan(0);
-    expect(
-      screen.getByDisplayValue("params.known.count > 0"),
-    ).toBeTruthy();
     expect(screen.getByText(/nothing read yet/)).toBeTruthy();
+
+    // An action's fields belong to its own card, so they are only on screen
+    // once that card is open.
+    fireEvent.click(screen.getByText("follow-up"));
+    expect(screen.getByDisplayValue("params.known.count > 0")).toBeTruthy();
   });
 });
