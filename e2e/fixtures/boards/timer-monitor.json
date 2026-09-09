@@ -1,0 +1,35 @@
+{
+  "boardName": "e2e-timer-monitor",
+  "description": "Smallest board that proves the engine runs: a Timer ticking into a Monitor, browser runtime only, no network.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "e2e-timer",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 1,
+          "periodicUnit": "s",
+          "running": true,
+          "start": true,
+          "immediate": true
+        }
+      },
+      {
+        "uuid": "e2e-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor",
+        "state": {}
+      }
+    ]
+  }
+}

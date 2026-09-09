@@ -23,8 +23,12 @@ import "setimmediate";
  */
 const AUTH0_CLIENT_ID = "x4iF0MBYfd25oLdJbATNe03dCDUtBs74";
 
+// The playground theme, as every host that mounts this shell asks for: the
+// website's pages, and the desktop and mobile apps. Naming it here too is what
+// makes running this app on its own the same playground the site hosts, rather
+// than the only place the legacy `default` theme is ever seen.
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <App clientId={AUTH0_CLIENT_ID}>
+  <App clientId={AUTH0_CLIENT_ID} defaultThemeName="playground">
     <Routes />
   </App>
 );
