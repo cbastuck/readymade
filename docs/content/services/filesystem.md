@@ -10,8 +10,8 @@ Reads from and writes to the local file system on an hkp-rt server.
 |---|---|
 | hkp-rt | `filesystem` |
 
-Not available in the browser runtime. Requires an hkp-rt instance with
-file system access (remote or realtime runtime).
+Not available in the browser runtime, which cannot reach the file system.
+Requires an hkp-rt runtime — standalone, or the one embedded in Readymade.
 
 ---
 

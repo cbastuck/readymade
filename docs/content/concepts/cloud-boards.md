@@ -217,6 +217,9 @@ posture because entries carry board data (`coordinator/logStore.ts`).
   quietly reverts on the next start. Runtimes that did not take it are reported
   rather than assumed.
 
+Runs, entries, levels and what each runtime actually does: **Logging**
+(`concepts/logging.md`).
+
 ---
 
 ## Getting back to an editor: fork
@@ -306,7 +309,8 @@ registers only when asked.
 
 ---
 
-See also: **Coordinator** (`concepts/coordinator.md`) and **Mounts**
-(`concepts/mounts.md`). The working reference with more operational detail is
-`CLOUD-BOARDS.md` at the repo root; `TODO-CLOUD-COORDINATOR.md` records why it
-is built this way and what is still open.
+See also: **Coordinator** (`concepts/coordinator.md`), **Mounts**
+(`concepts/mounts.md`) and **Logging** (`concepts/logging.md`). The working
+reference with more operational detail is `CLOUD-BOARDS.md` at the repo root;
+`TODO-CLOUD-COORDINATOR.md` records why it is built this way and what is still
+open.

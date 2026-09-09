@@ -27,6 +27,17 @@ An Ollama server must be running and accessible at the configured
 `endpoint` (default: `http://localhost:11434/api`). At least one model
 must be pulled (`ollama pull llama3` etc.).
 
+Because this service runs in the browser, the request comes from a web origin
+and Ollama rejects it unless that origin is allowed. Start the server with the
+origin permitted:
+
+```sh
+OLLAMA_ORIGINS='*' OLLAMA_HOST=localhost:11434 ollama serve
+```
+
+The symptom of forgetting is a request that fails with nothing useful in the
+response — the browser blocks it before Ollama ever answers.
+
 ---
 
 ## Configuration

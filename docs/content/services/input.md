@@ -64,16 +64,20 @@ string is emitted as a fallback.
 
 ## Typical use: pairing with Output
 
-The most common pattern is to place an **Output** service at the end of
-one runtime's pipeline to push data over a WebSocket, and an **Input**
-service at the start of another pipeline to receive it:
+Place an **Output** service at the end of one pipeline to push data over a
+WebSocket, and an **Input** service at the start of another to receive it:
 
 ```
-Browser Runtime A          Browser / Remote Runtime B
+Board A                    Board B (or anything else listening)
 ──────────────────         ────────────────────────────
 Timer → Map → Output ─WS─► Input → Process → Canvas
                     url="ws://localhost:9000/stream"
 ```
+
+This is for crossing *out* of a board — to a separate board, or to software that
+is not part of HKP at all. Runtimes **within one board** are already chained in
+board order, and passing data from one to the next needs no services; see the
+Architecture page.
 
 Output configuration on Runtime A:
 ```json

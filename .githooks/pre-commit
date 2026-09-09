@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#
+# Shared pre-commit hook for the superproject and the hkp-website submodule.
+# Installed by scripts/install-hooks.sh, which points core.hooksPath here in
+# both repositories — the two files it guards live one in each.
+set -euo pipefail
+
+HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "${HOOK_DIR}")"
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: node not found, skipping the version-sync check" >&2
+  exit 0
+fi
+
+node "${ROOT}/scripts/check-version-sync.mjs"

@@ -246,3 +246,10 @@ Current limitations, stated so a board author is not surprised by them:
 | Mount registry, id derivation | `hkp-node/src/mounts.ts`, `hkp-python/src/hkp/mounts.py` |
 | Resolution (hkp-node as coordinator) | `hkp-node/src/coordinator/session.ts` |
 | C++ vocabulary | `hkp-rt/lib/src/mount.h` |
+
+---
+
+See also: **Coordinator** (`concepts/coordinator.md`) for who resolves a
+reference, **Runtime** (`concepts/runtime.md`) for the host that assigns a
+mount, and **Units and compositions** (`concepts/units.md`) for what happens to
+a reference when a unit's runtime is renamed.

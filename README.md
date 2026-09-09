@@ -29,6 +29,19 @@ Note: vcpkg is vendored in `3rdparty/vcpkg` and is used by CMake during configur
 
 Each platform guide lists the additional toolchain it needs.
 
+## Git hooks (once per checkout)
+
+```bash
+./scripts/install-hooks.sh
+```
+
+Git hooks are not carried by a clone, so each checkout installs them once. This points
+both the superproject and the `hkp-website` submodule at the versioned hooks in
+`.githooks` — currently a pre-commit check that the app version in
+`hkp-frontend/package.json` and `hkp-website/src/pages/constants.ts` still agree. Run it
+again after `git submodule update --init` if the website submodule was not checked out
+the first time. Details are in `docs/content/repository.md`.
+
 ## Frontend dev server
 
 For UI iteration on the native shells, run their frontend in dev mode from `meander/frontend`:

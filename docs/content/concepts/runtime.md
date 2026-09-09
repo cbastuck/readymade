@@ -29,6 +29,65 @@ two runtimes it is meant to be the same *concept* with the same state contract �
 
 ---
 
+## Where a runtime comes from
+
+A board names runtimes; something has to be there to be named.
+
+### The browser runtime: nothing to run
+
+It is the tab. Adding one to a board takes no credentials, no address and no
+server, which is why it is the one a board starts with and the one every example
+assumes. A board may hold several; they run independently and share nothing, the
+same isolation any two runtimes have.
+
+What it does need is **permission**, for the services that reach hardware. A
+camera or microphone service triggers the browser's own permission prompt the
+first time it starts; denied, the service reports the failure in its panel and
+recovers when the permission is granted and the page reloaded — the rest of the
+board is untouched, because a permission belongs to the service asking, not to
+the board. In the packaged desktop app the same permissions are declared in the
+application bundle and granted once by the operating system.
+
+### The servers
+
+| Runtime | Started by | Listens on |
+|---|---|---|
+| hkp-node | `npx hkp-node`, a global install, or `docker run -p 8080:8080 cbastuck/hkp-node` | `PORT`, default 8080 |
+| hkp-python | `hkp-python` from its virtualenv | `PORT`, default 8080 |
+| hkp-rt | embedded in the Readymade app — it is already running when the app is | the app's `runtimePort`, off unless external access is enabled |
+
+hkp-node and hkp-python take the same environment, because they answer the same
+API: `PORT`, `HOST` (default `0.0.0.0`), `ALLOWED_ORIGINS`, and `EXTERNAL_HOST`.
+
+`EXTERNAL_HOST` is the one worth understanding, because it is not the address the
+server binds — it is the address the server *writes into what it hands back*: the
+`outputUrl` a client is told to open its socket on, and the mount addresses it
+publishes. It defaults to `127.0.0.1`, which is right until something on another
+machine has to reach it, and then a runtime that binds every interface still
+hands out an address only the host can dial. That is what makes a runtime look
+provisioned and unreachable at once, and setting it to the LAN address is the fix.
+
+### Adding one to a board
+
+In the app: the runtimes menu, **add an external runtime**, a name and a host URL
+(`http://localhost:8080`). The name is yours; the URL is what is dialled.
+
+A saved server and the board are deliberately separate things. The list of
+servers is the host's — kept by whoever is running the app, edited and deleted
+there — while the board carries the runtime's own descriptor, URL included. So
+removing a saved server does not break boards that used it: they still hold the
+address and reconnect on their own.
+
+`hkp://remotes/<name>` is the other way in, and it means something narrower than
+it looks: it addresses the runtime **the app itself hosts**, under the name that
+app runs as — every other remote is listed with its real URL. A name that is not
+the app's own therefore names nothing and is refused, rather than being quietly
+answered by whichever runtime happens to be embedded
+(`meander/backend/remoteRoute.h`). A board pinned to a runtime that is
+not running should fail visibly, not run somewhere else.
+
+---
+
 ## The chain
 
 Runtimes run **in board order**: the output of one is the input of the next.
@@ -212,9 +271,9 @@ port of its own — see `concepts/mounts.md`.
   right UI panel (`ServiceRegistry` per runtime id).
 - **State**: presentation and per-runtime settings, e.g. `color`,
   `wrapServices`, `minimized`, `logData` — `runtime.state` in the board.
-- **A URL**, for remote runtimes. `hkp://remotes/<name>` resolves against the
-  host's configured remotes; `HKP_RUNTIME_HOST` is substituted at load for
-  boards that cannot know the host when they are written.
+- **A URL**, for remote runtimes. `hkp://remotes/<name>` addresses the app's own
+  embedded runtime (above); `HKP_RUNTIME_HOST` is substituted at load for boards
+  that cannot know the host when they are written.
 - **Bundles**: optional plugin libraries a runtime loads (`bundles[]`).
 - **Custom actions**: host-level buttons a runtime can offer.
 
@@ -251,4 +310,5 @@ Implementations: `runtime/browser/services/BrowserSubService.tsx`,
 ---
 
 See also: **Board** (`concepts/board.md`), **Service** (`concepts/service.md`),
-**Mounts** (`concepts/mounts.md`).
+**Mounts** (`concepts/mounts.md`), **Units and compositions**
+(`concepts/units.md`) — the runtime is the axis a unit is projected along.

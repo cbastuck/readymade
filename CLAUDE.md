@@ -281,6 +281,23 @@ meander-ios/           iOS-specific native layer
 
 ---
 
+## Documentation
+
+| Where | What it holds |
+| ----- | ------------- |
+| `docs/content/concepts/` | How the system is put together and why — one page per idea (board, runtime, service, units, mounts, coordinator, cloud boards, logging) |
+| `docs/content/services/` | One page per service |
+| `docs/content/repository.md` | How the checkout is laid out: what is in the superproject, what is a submodule, and what follows from that when committing, building and testing |
+| `docs/content/testing.md` | What runs where: the per-area suites behind `run-all-tests.sh`, the Playwright suite in `e2e/` across three host profiles, and what CI actually covers |
+| `docs/content/targets.md` | Where a board runs: the web, desktop, iOS and Android targets, what each host adds, which features are compiled in per platform, and what each build produces |
+| `docs/content/vocabulary.md` | **The words this project uses about itself, and the file behind each one.** Read it when a term in a request ("the AppMenu", "a mount", "the consent dialog") has to become a file. Finer-grained than the concepts; every concept appears in it |
+
+The vocabulary is written by hand — never add or remove a term on your own
+initiative. `/vocabulary` checks its references against a changeset and repairs
+what a change invalidated; `node scripts/vocabulary.mjs` is the check on its own.
+
+---
+
 ## Claude skills (slash commands)
 
 | Command                | What it does                                                 |
@@ -289,6 +306,7 @@ meander-ios/           iOS-specific native layer
 | `/new-browser-service` | Scaffold a browser runtime service end-to-end                |
 | `/new-node-service`    | Scaffold a Node.js runtime service end-to-end                |
 | `/new-cpp-service`     | Scaffold a C++ hkp-rt service end-to-end                     |
+| `/vocabulary`          | Check the vocabulary's references against a changeset        |
 
 When implementing a service, always produce: service logic, service UI (if interactive),
 registry registration, tests, demo board, and docs page. The demo board filename

@@ -128,7 +128,12 @@ written down.
 
 ## Loading a board
 
-`restoreBoard()` in `hkp-frontend/src/core/boardPersistence.ts`:
+A board is **linked** first: if it lists `units`, those documents are resolved
+and projected into it, and what runs is the projection. A board that lists none
+is its own projection, so nothing else here has a special case for it. See
+**Units and compositions** (`concepts/units.md`).
+
+Then `restoreBoard()` in `hkp-frontend/src/core/boardPersistence.ts`:
 
 1. If any runtime needs authentication, wait for the user session to settle —
    remote runtimes authenticate every call with the user's id token, and
@@ -150,6 +155,10 @@ yet. "Not resolved yet" is a normal state, not an error.
 A service reports what it was configured with, so a board round-trips — and this
 is also why anything the machinery pushes into a service's state ends up in the
 saved file.
+
+A board assembled from units is written back as the documents it was assembled
+from, never as the one board it is running as; `serializeBoard` is the flat
+output that deploying, sharing and exporting want.
 
 ---
 
@@ -218,4 +227,6 @@ The role that owns the board is the **coordinator**
 
 See also: **Runtime** (`concepts/runtime.md`), **Service**
 (`concepts/service.md`), **Mounts** (`concepts/mounts.md`), **Coordinator**
-(`concepts/coordinator.md`), **Cloud boards** (`concepts/cloud-boards.md`).
+(`concepts/coordinator.md`), **Cloud boards** (`concepts/cloud-boards.md`),
+**Units and compositions** (`concepts/units.md`), **Logging**
+(`concepts/logging.md`).
