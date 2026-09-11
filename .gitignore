@@ -17,3 +17,9 @@ sign.local.env.sh
 __pycache__/
 
 cmake-output.log
+
+# Licence scope folders are generated on demand by
+# scripts/collect-licenses.py --emit-tree and are derivable from index.json,
+# which is the committed record.
+/licenses/*
+!/licenses/index.json
