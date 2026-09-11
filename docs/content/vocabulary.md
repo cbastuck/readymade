@@ -40,6 +40,7 @@ is the one worth being pedantic in.
 | **TopBar** | The *start page's* bar — title, version badge, logo. A different bar in a different view; not the Toolbar. | `hkp-frontend/src/views/start/TopBar.tsx` |
 | **AppMenu** | The application-level dropdown in the toolbar: account, dashboard, theme, log out. About the app, not the board. | `hkp-frontend/src/ui-components/toolbar/AppMenu.tsx` |
 | **BoardMenu** | The board-level dropdown beside it: save, load, and whatever else the host contributes through a `BoardMenuItemFactory`. About this board. | `hkp-frontend/src/ui-components/toolbar/BoardMenu.tsx`, `hkp-frontend/src/types.ts#BoardMenuItemFactory` |
+| **ShareMenu** | The third dropdown in the toolbar: the ways a board is handed to somebody else — a self-contained link, cloud access by email, a partner board QR. What distinguishes it from the BoardMenu beside it is direction: that one operates on the board you have open, this one gives it away. | `hkp-frontend/src/components/Toolbar/ShareMenu.tsx` |
 | **SaveBoardDialog** | Name and description on save, offering a suggested name. | `hkp-frontend/src/components/SaveBoardDialog.tsx` |
 | **Start page** | The Finder-style entry view: sources in columns, boards inside them, details on the right. | `hkp-frontend/src/views/start/StartPage.tsx`, `hkp-frontend/src/views/start/ColumnBrowser.tsx` |
 | **Source** | One column root on the start page — saved boards, demos, remotes, cloud boards. | `hkp-frontend/src/views/start/demosSource.ts`, `hkp-frontend/src/views/start/useCloudBoardsFolder.ts` |
@@ -56,10 +57,12 @@ is the one worth being pedantic in.
 | **Board** | The top-level container: a named JSON document holding runtimes, their services and an optional facade. → `concepts/board.md` | `hkp-frontend/src/types.ts#BoardDescriptor`, `hkp-frontend/src/core/boardPersistence.ts` |
 | **Board context** | The live board while it is open — its runtimes, scopes, services, facade and linkage — and the actions that change them. Everything on screen reads from here. | `hkp-frontend/src/BoardContext.tsx` |
 | **Facade** | The app-like surface of widgets drawn over a board, so somebody can use it without seeing services. → `concepts/board.md` | `hkp-frontend/src/facade/types.ts`, `hkp-frontend/src/facade/FacadeRenderer.tsx` |
-| **Widget** | One control or display in a facade — a button, knob, level meter, data table — addressing a service by `serviceUuid`. | `hkp-frontend/src/facade/types.ts#LayoutItem`, `hkp-frontend/src/facade/panels/` |
+| **Widget** | One control or display in a facade — a button, knob, level meter, data table — usually addressing a service by `serviceUuid`. | `hkp-frontend/src/facade/types.ts#LayoutItem`, `hkp-frontend/src/facade/panels/` |
 | **View mode** | Which half of a facade board is on screen: facade, split, or board. One three-state mode rather than two switches, so "at least one half is visible" is structural. | `hkp-frontend/src/facade/FacadeViewContext.tsx`, `hkp-frontend/src/facade/FacadeViewControls.tsx` |
 | **Overview** | The full-window 3D-ish view of a whole board — every runtime, service and nesting level at once, with live activity. | `hkp-frontend/src/overview/OverviewView.tsx`, `hkp-frontend/src/overview/OverviewContext.tsx` |
 | **Board JSON** | The serialised form of a board. What is saved, shared by link, exported and deployed. | `hkp-frontend/src/core/boardPersistence.ts#serializeBoard` |
+| **Partner board** | The board for the other side of a peer connection, derived from the open one: the same board with its `peer-socket` roles swapped and its machine-local runtimes dropped, handed over as a link or a QR code. Derived one way only, so the share menu and a facade's `partner-board-qr` button hand out the same board. | `hkp-frontend/src/core/partnerBoard.ts#createPartnerBoard`, `hkp-frontend/src/components/Toolbar/ShareMenu.tsx` |
+| **Board action** | A facade widget action naming no service, because its subject is the board — what it does is the host's to decide, and a host that cannot do it leaves the button inert. | `hkp-frontend/src/facade/types.ts#BoardAction`, `hkp-frontend/src/facade/FacadeBoardActions.tsx` |
 
 ---
 

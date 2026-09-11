@@ -1,4 +1,4 @@
-import { FormEvent, useContext, useEffect, useState } from "react";
+import { FormEvent, useContext, useEffect, useMemo, useState } from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
@@ -17,6 +17,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
+import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
+import {
+  createPartnerBoardLink,
+  hasPeerService,
+} from "hkp-frontend/src/core/partnerBoard";
 
 function ShareIcon() {
   return (
@@ -80,6 +85,9 @@ export default function ShareMenu() {
   const [cloudId, setCloudId] = useState<string | null>(null);
   const [shares, setShares] = useState<string[] | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
+
+  // The partner board's link, while its QR dialog is open.
+  const [partnerUrl, setPartnerUrl] = useState<string | null>(null);
 
   const boardName = boardContext?.boardName;
 
@@ -177,9 +185,7 @@ export default function ShareMenu() {
       // Stay open: the recipients list below is the confirmation, and the
       // next share or a revoke is one step away.
       setCloudId(id);
-      setShares((current) => [
-        ...new Set([...(current ?? []), ...emails]),
-      ]);
+      setShares((current) => [...new Set([...(current ?? []), ...emails])]);
       setEmailsRaw("");
     } catch (err) {
       setError(
@@ -188,6 +194,19 @@ export default function ShareMenu() {
     } finally {
       setBusy(false);
     }
+  };
+
+  // Only a board with a peer service has another side to hand to someone.
+  const peerBoard = useMemo(
+    () => hasPeerService(boardContext?.services ?? {}),
+    [boardContext?.services],
+  );
+
+  const openPartnerBoard = async () => {
+    if (!boardContext) {
+      return;
+    }
+    setPartnerUrl(await createPartnerBoardLink(boardContext));
   };
 
   return (
@@ -292,9 +311,50 @@ export default function ShareMenu() {
                   : "Log in to share by email"}
               </div>
             </DropdownMenuPrimitive.Item>
+
+            <DropdownMenuPrimitive.Item
+              className="hkp-board-menu-item"
+              disabled={!peerBoard}
+              style={{
+                ...menuItemStyle,
+                cursor: peerBoard ? "pointer" : "default",
+                opacity: peerBoard ? 1 : 0.4,
+              }}
+              onSelect={() => openPartnerBoard()}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--text, #1a1a1a)",
+                  lineHeight: 1.3,
+                }}
+              >
+                Partner board QR…
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-dim, #9ca3af)",
+                  marginTop: 1,
+                  lineHeight: 1.4,
+                }}
+              >
+                {peerBoard
+                  ? "A board that connects back to this one"
+                  : "No peer service on this board"}
+              </div>
+            </DropdownMenuPrimitive.Item>
           </DropdownMenuPrimitive.Content>
         </DropdownMenuPrimitive.Portal>
       </DropdownMenuPrimitive.Root>
+
+      <ShareQRCodeDialog
+        title="Partner board"
+        isOpen={partnerUrl !== null}
+        url={partnerUrl}
+        onClose={() => setPartnerUrl(null)}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={closeDialog}>
         <DialogContent className="max-w-md w-[90vw]">
@@ -345,12 +405,16 @@ export default function ShareMenu() {
                 Shared with
               </div>
               {shares === null && (
-                <div style={{ fontSize: 12.5, color: "var(--text-dim, #9ca3af)" }}>
+                <div
+                  style={{ fontSize: 12.5, color: "var(--text-dim, #9ca3af)" }}
+                >
                   Loading…
                 </div>
               )}
               {shares !== null && shares.length === 0 && (
-                <div style={{ fontSize: 12.5, color: "var(--text-dim, #9ca3af)" }}>
+                <div
+                  style={{ fontSize: 12.5, color: "var(--text-dim, #9ca3af)" }}
+                >
                   Nobody yet.
                 </div>
               )}

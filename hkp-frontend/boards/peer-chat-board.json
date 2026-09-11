@@ -6,17 +6,35 @@
       {
         "id": "chat",
         "layout": {
-          "type": "message-list",
+          "direction": "column",
           "grow": true,
-          "source": { "serviceUuid": "chat-monitor-svc" },
-          "composer": {
-            "placeholder": "Type a message…",
-            "submitLabel": "Send",
-            "action": {
-              "serviceUuid": "chat-input-svc",
-              "configure": { "inject": "$$input" }
+          "items": [
+            {
+              "direction": "row",
+              "justify": "flex-end",
+              "padding": 8,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Partner Board",
+                  "actions": [{ "type": "board", "action": "partner-board-qr" }]
+                }
+              ]
+            },
+            {
+              "type": "message-list",
+              "grow": true,
+              "source": { "serviceUuid": "chat-monitor-svc" },
+              "composer": {
+                "placeholder": "Type a message…",
+                "submitLabel": "Send",
+                "action": {
+                  "serviceUuid": "chat-input-svc",
+                  "configure": { "inject": "$$input" }
+                }
+              }
             }
-          }
+          ]
         }
       }
     ]

@@ -1,12 +1,20 @@
 import { FacadeWidgetAction, WidgetAction } from "./types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
+import { FacadeBoardActions } from "./FacadeBoardActions";
 import { findService, processService } from "./boardServices";
 import { applyInput } from "./applyInput";
 
 // Recursively replaces { "$state": "key" } objects with the corresponding
 // facade state value. Runs before $$input substitution so both can coexist.
-function resolveStateRefs(template: unknown, state: Record<string, unknown>): unknown {
-  if (template !== null && typeof template === "object" && !Array.isArray(template)) {
+function resolveStateRefs(
+  template: unknown,
+  state: Record<string, unknown>,
+): unknown {
+  if (
+    template !== null &&
+    typeof template === "object" &&
+    !Array.isArray(template)
+  ) {
     const obj = template as Record<string, unknown>;
     if ("$state" in obj && typeof obj["$state"] === "string") {
       return state[obj["$state"]];
@@ -30,19 +38,29 @@ export function executeActions({
   boardContext,
   setState,
   state,
+  boardActions,
 }: {
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
   value: unknown;
   boardContext: BoardContextState;
   setState: (key: string, value: unknown) => void;
+  // What the host showing this facade can do with the board itself. Absent for
+  // a host that offers none of it, which makes a board action do nothing.
+  boardActions?: FacadeBoardActions;
   // When provided, { "$state": "key" } references in configure payloads are
   // resolved against these values before $$input substitution runs.
   state?: Record<string, unknown>;
 }): void {
   const all: WidgetAction[] = [
     ...(action
-      ? [{ type: "configure" as const, serviceUuid: action.serviceUuid, configure: action.configure }]
+      ? [
+          {
+            type: "configure" as const,
+            serviceUuid: action.serviceUuid,
+            configure: action.configure,
+          },
+        ]
       : []),
     ...(actions ?? []),
   ];
@@ -50,7 +68,9 @@ export function executeActions({
   for (const act of all) {
     if (act.type === "configure") {
       const service = findService(boardContext, act.serviceUuid);
-      if (!service) { continue; }
+      if (!service) {
+        continue;
+      }
       const configure: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(act.configure)) {
         const withState = state ? resolveStateRefs(v, state) : v;
@@ -60,10 +80,20 @@ export function executeActions({
     } else if (act.type === "process") {
       // Same substitution as a configure payload: what a board writes into one
       // it can write into the other.
-      const withState = state ? resolveStateRefs(act.payload ?? {}, state) : (act.payload ?? {});
-      processService(boardContext, act.serviceUuid, applyInput(withState, value));
+      const withState = state
+        ? resolveStateRefs(act.payload ?? {}, state)
+        : (act.payload ?? {});
+      processService(
+        boardContext,
+        act.serviceUuid,
+        applyInput(withState, value),
+      );
     } else if (act.type === "set-state") {
       setState(act.key, value);
+    } else if (act.type === "board") {
+      if (act.action === "partner-board-qr") {
+        boardActions?.showPartnerBoardQr();
+      }
     }
   }
 }

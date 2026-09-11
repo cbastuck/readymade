@@ -37,7 +37,18 @@ export type ProcessAction = {
   payload?: Record<string, unknown>;
 };
 
-export type WidgetAction = ConfigureAction | SetStateAction | ProcessAction;
+// Asks the board for something, rather than a service on it — so it names no
+// service. What each action does, and whether the host showing the facade can
+// do it at all, is decided outside the board; see facade/FacadeBoardActions.
+export type BoardAction = {
+  type: "board";
+  // "partner-board-qr": shows a QR for the board that connects back to this
+  // one, for a board whose peers are two halves of the same design.
+  action: "partner-board-qr";
+};
+
+export type WidgetAction =
+  ConfigureAction | SetStateAction | ProcessAction | BoardAction;
 
 export type MessageListWidget = {
   type: "message-list";

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { BoardContextState } from "../../../BoardContext";
 import { FacadeStateContext } from "../../../facade/FacadeStateContext";
+import { FacadeBoardActionsProvider } from "../../../facade/FacadeBoardActions";
 import { executeActions } from "../../../facade/executeActions";
 import { PanelRenderer } from "../../../facade/panels/PanelRenderer";
 import { FacadeDescriptor } from "../../../facade/types";
@@ -56,36 +57,40 @@ export default function MobileFacadeView({
     <FacadeStateContext.Provider
       value={{ state: facadeState, setState: setFacadeStateEntry }}
     >
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          overflowX: "hidden",
-          WebkitOverflowScrolling: "touch",
-          display: "flex",
-          flexDirection: "column",
-          background: "hsl(var(--background))",
-          fontFamily: "'Recursive', monospace",
-        }}
-      >
-        {facade.panels.map((panel) => (
-          <div
-            key={panel.id}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              borderBottom: multiPanel ? "1px solid hsl(var(--border))" : undefined,
-            }}
-          >
-            <PanelRenderer
-              panel={panel}
-              boardContext={boardContext}
-              showTitle={multiPanel}
-            />
-          </div>
-        ))}
-      </div>
+      <FacadeBoardActionsProvider boardContext={boardContext}>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            overflowX: "hidden",
+            WebkitOverflowScrolling: "touch",
+            display: "flex",
+            flexDirection: "column",
+            background: "hsl(var(--background))",
+            fontFamily: "'Recursive', monospace",
+          }}
+        >
+          {facade.panels.map((panel) => (
+            <div
+              key={panel.id}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                borderBottom: multiPanel
+                  ? "1px solid hsl(var(--border))"
+                  : undefined,
+              }}
+            >
+              <PanelRenderer
+                panel={panel}
+                boardContext={boardContext}
+                showTitle={multiPanel}
+              />
+            </div>
+          ))}
+        </div>
+      </FacadeBoardActionsProvider>
     </FacadeStateContext.Provider>
   );
 }

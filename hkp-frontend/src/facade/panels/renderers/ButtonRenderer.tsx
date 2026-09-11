@@ -2,6 +2,7 @@ import { ButtonWidget } from "../../types";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { useFacadeState } from "../../FacadeStateContext";
 import { executeActions } from "../../executeActions";
+import { useFacadeBoardActions } from "../../FacadeBoardActions";
 import { usePressFeedback } from "../../pressFeedback";
 import {
   StatusDot,
@@ -19,6 +20,7 @@ export function ButtonRenderer({
     widget.indicator?.source,
   );
   const press = usePressFeedback();
+  const boardActions = useFacadeBoardActions();
   return (
     <button
       {...press.handlers}
@@ -29,6 +31,7 @@ export function ButtonRenderer({
           value: undefined,
           boardContext,
           setState,
+          boardActions,
           // Without this a { "$state": … } reference in the payload travels as
           // the reference object itself, and the service receives a shape it
           // cannot read rather than the value a widget published.

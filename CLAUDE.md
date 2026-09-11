@@ -241,7 +241,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 
 | Widget type        | What it does                                                               |
 | ------------------ | -------------------------------------------------------------------------- |
-| `button`           | Sends a configure payload, or a `process` action, to a service on click    |
+| `button`           | Sends a configure or `process` action to a service, or a board action      |
 | `text-input`       | Text field; `$$input` in the configure payload becomes the typed value     |
 | `knob`             | Rotary control; `{{value}}` in configure payload becomes the numeric value |
 | `level-meter`      | Vertical bar driven by a service notification                              |

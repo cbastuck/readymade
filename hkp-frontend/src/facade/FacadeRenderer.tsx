@@ -6,6 +6,7 @@ import { FacadeDescriptor } from "./types";
 import { PanelRenderer } from "./panels/PanelRenderer";
 import { FacadeEditor } from "./editor/FacadeEditor";
 import { useFacadeView } from "./FacadeViewContext";
+import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
 
 type FacadeRendererProps = {
   facade: FacadeDescriptor;
@@ -165,126 +166,135 @@ export default function FacadeRenderer({
     <FacadeStateContext.Provider
       value={{ state: facadeState, setState: setFacadeStateEntry }}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-          background: "hsl(var(--background))",
-          overflow: "hidden",
-          fontFamily: "'Recursive', monospace",
-          paddingBottom: "36px",
-        }}
-      >
-        {/* The board, with the editor alongside it */}
+      <FacadeBoardActionsProvider boardContext={boardContext}>
         <div
           style={{
-            flex: 1,
-            minHeight: 0,
-            overflow: "hidden",
             display: "flex",
-            flexDirection: "row",
+            flexDirection: "column",
+            height: "100%",
+            background: "hsl(var(--background))",
+            overflow: "hidden",
+            fontFamily: "'Recursive', monospace",
+            paddingBottom: "36px",
           }}
         >
-          {/* Facade above board, in whichever proportion is on screen */}
+          {/* The board, with the editor alongside it */}
           <div
             style={{
               flex: 1,
-              minWidth: 0,
               minHeight: 0,
               overflow: "hidden",
               display: "flex",
-              flexDirection: "column",
+              flexDirection: "row",
             }}
           >
-            {/* Live facade — kept mounted while hidden so its widgets hold state */}
+            {/* Facade above board, in whichever proportion is on screen */}
             <div
               style={{
-                flex: showFacade ? 1 : "0 0 0px",
+                flex: 1,
+                minWidth: 0,
                 minHeight: 0,
                 overflow: "hidden",
                 display: "flex",
-                flexDirection: multiPanel ? "row" : "column",
+                flexDirection: "column",
               }}
             >
-              {draftFacade.panels.map((panel, idx) => (
-                <div
-                  key={panel.id}
-                  style={{
-                    flex: 1,
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    borderLeft:
-                      multiPanel && idx > 0
-                        ? "1px solid hsl(var(--border))"
-                        : undefined,
-                  }}
-                >
-                  <PanelRenderer
-                    panel={panel}
-                    boardContext={boardContext}
-                    showTitle={multiPanel}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Draggable divider + runtime drawer — always mounted so service UIs stay alive */}
-            <div
-              onMouseDown={
-                showRuntime && showFacade ? onDividerMouseDown : undefined
-              }
-              style={{
-                height: showRuntime ? 6 : 0,
-                cursor: showRuntime && showFacade ? "ns-resize" : undefined,
-                background: "hsl(var(--border))",
-                flexShrink: 0,
-                userSelect: "none",
-              }}
-            />
-            <div
-              style={{
-                height: !showRuntime ? 0 : showFacade ? runtimeHeight : "auto",
-                flex: showRuntime && !showFacade ? 1 : undefined,
-                minHeight: 0,
-                background: "hsl(var(--muted))",
-                flexShrink: 0,
-                overflow: showRuntime ? "auto" : "hidden",
-              }}
-            >
-              {runtimeContent}
-            </div>
-          </div>
-
-          {/* Horizontal splitter + editor panel */}
-          {showEditor && (
-            <>
+              {/* Live facade — kept mounted while hidden so its widgets hold state */}
               <div
-                onMouseDown={onEditorDividerMouseDown}
                 style={{
-                  width: 6,
-                  flexShrink: 0,
-                  cursor: "ew-resize",
+                  flex: showFacade ? 1 : "0 0 0px",
+                  minHeight: 0,
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: multiPanel ? "row" : "column",
+                }}
+              >
+                {draftFacade.panels.map((panel, idx) => (
+                  <div
+                    key={panel.id}
+                    style={{
+                      flex: 1,
+                      overflow: "hidden",
+                      display: "flex",
+                      flexDirection: "column",
+                      borderLeft:
+                        multiPanel && idx > 0
+                          ? "1px solid hsl(var(--border))"
+                          : undefined,
+                    }}
+                  >
+                    <PanelRenderer
+                      panel={panel}
+                      boardContext={boardContext}
+                      showTitle={multiPanel}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Draggable divider + runtime drawer — always mounted so service UIs stay alive */}
+              <div
+                onMouseDown={
+                  showRuntime && showFacade ? onDividerMouseDown : undefined
+                }
+                style={{
+                  height: showRuntime ? 6 : 0,
+                  cursor: showRuntime && showFacade ? "ns-resize" : undefined,
                   background: "hsl(var(--border))",
+                  flexShrink: 0,
                   userSelect: "none",
                 }}
               />
               <div
                 style={{
-                  width: editorWidth,
+                  height: !showRuntime
+                    ? 0
+                    : showFacade
+                      ? runtimeHeight
+                      : "auto",
+                  flex: showRuntime && !showFacade ? 1 : undefined,
+                  minHeight: 0,
+                  background: "hsl(var(--muted))",
                   flexShrink: 0,
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
+                  overflow: showRuntime ? "auto" : "hidden",
                 }}
               >
-                <FacadeEditor facade={draftFacade} onChange={setDraftFacade} />
+                {runtimeContent}
               </div>
-            </>
-          )}
+            </div>
+
+            {/* Horizontal splitter + editor panel */}
+            {showEditor && (
+              <>
+                <div
+                  onMouseDown={onEditorDividerMouseDown}
+                  style={{
+                    width: 6,
+                    flexShrink: 0,
+                    cursor: "ew-resize",
+                    background: "hsl(var(--border))",
+                    userSelect: "none",
+                  }}
+                />
+                <div
+                  style={{
+                    width: editorWidth,
+                    flexShrink: 0,
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <FacadeEditor
+                    facade={draftFacade}
+                    onChange={setDraftFacade}
+                  />
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </FacadeBoardActionsProvider>
     </FacadeStateContext.Provider>
   );
 }

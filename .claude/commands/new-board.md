@@ -268,6 +268,25 @@ so booleans work):
 }
 ```
 
+A button may instead carry an `actions` array, which is where the things a button
+does that are not "configure one service" live. A **board action** names no service
+at all — its subject is the board, and what it does is decided by the host showing
+the facade, not by the board:
+
+```json
+{
+  "type": "button",
+  "label": "Invite partner…",
+  "actions": [{ "type": "board", "action": "partner-board-qr" }]
+}
+```
+
+`partner-board-qr` shows a QR for the board that connects back to this one: the same
+board with its `peer-socket` roles swapped and its machine-local runtimes dropped.
+Put it on a board whose two sides are halves of one design, as
+`peer-chat-board.json` does. A host that cannot open such a window leaves the button
+inert rather than failing, so the board still renders everywhere.
+
 **text-input** — text field that configures a service on submit. `$$input` is replaced with the typed value:
 
 ```json
