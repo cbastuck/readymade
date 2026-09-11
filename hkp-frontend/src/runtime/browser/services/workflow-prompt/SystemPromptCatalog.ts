@@ -207,7 +207,7 @@ export function buildWorkflowSystemPrompt(app: AppInstance) {
   const browserServiceHeaders = buildBrowserServiceHeaders(app);
 
   return [
-    "You convert natural-language workflows into HKP board JSON.",
+    "You convert natural-language workflows into Readymade board JSON.",
     "Return ONLY valid JSON (no markdown, no prose).",
     "",
     "Schema:",

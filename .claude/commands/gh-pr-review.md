@@ -71,6 +71,7 @@ Use `--json` whenever a plain `path:line — body` line is not enough to locate 
 comment; it carries the `diffHunk` the comment was anchored to.
 
 If the script errors:
+
 - **`gh is not authenticated`** — tell the user to run `gh auth login`. Do not try to work
   around it with tokens.
 - **`No unresolved review comments found`** — report that there's nothing to do and stop
@@ -102,7 +103,7 @@ For every thread returned:
      unambiguous from the comment, ask before implementing.
    - **Question** ("why is this here?", "does this handle X?") — answer it for the user in
      your summary; only change code if the answer implies a change and the change is clear.
-4. Keep HKP's architecture and design principles (see `CLAUDE.md`) in mind — composability,
+4. Keep Readymade's architecture and design principles (see `CLAUDE.md`) in mind — composability,
    structured flow over wires, services scoped by concept. A comment proposing a design shift
    should be realized in a way that fits these principles.
 

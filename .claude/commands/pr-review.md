@@ -51,6 +51,7 @@ enough to locate or understand a comment, re-run with `--json`:
 ```
 
 If the script errors:
+
 - **`CODEBERG_TOKEN is not set`** — tell the user; suggest they run the command themselves
   with `! ./pull_review_comments.sh $ARGUMENTS` so the token from their shell is picked up,
   or export it. Do not try to work around it.
@@ -74,7 +75,7 @@ For every comment returned:
      unambiguous from the comment, ask before implementing.
    - **Question** ("why is this here?", "does this handle X?") — answer it for the user in
      your summary; only change code if the answer implies a change and the change is clear.
-3. Keep HKP's architecture and design principles (see `CLAUDE.md`) in mind — composability,
+3. Keep Readymade's architecture and design principles (see `CLAUDE.md`) in mind — composability,
    structured flow over wires, services scoped by concept. A comment proposing a design shift
    should be realized in a way that fits these principles.
 

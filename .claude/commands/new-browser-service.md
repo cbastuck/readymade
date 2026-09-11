@@ -1,11 +1,11 @@
 ---
-description: Scaffold a new HKP browser runtime service end-to-end (service logic, UI, registration, demo board, docs)
+description: Scaffold a new Readymade browser runtime service end-to-end (service logic, UI, registration, demo board, docs)
 allowed-tools: Read, Write, Edit, Bash
 ---
 
 # New Browser Service
 
-You are implementing a new browser runtime service for the HKP platform.
+You are implementing a new browser runtime service for the Readymade platform.
 The user will describe what the service should do. Implement it end-to-end:
 service logic, service UI, registration, contract test, demo board, and documentation.
 Ask the user focused questions only where the design is genuinely ambiguous.
@@ -39,7 +39,7 @@ The demo board is automatically linked in the docs UI via naming convention — 
 
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
-import NameUI from "./NameUI";  // omit if no UI
+import NameUI from "./NameUI"; // omit if no UI
 
 const serviceId = "hookup.to/service/<slug>";
 const serviceName = "<Name>";
@@ -49,7 +49,12 @@ type State = {
 };
 
 class Name extends ServiceBase<State> {
-  constructor(app: AppInstance, board: string, descriptor: ServiceClass, id: string) {
+  constructor(
+    app: AppInstance,
+    board: string,
+    descriptor: ServiceClass,
+    id: string,
+  ) {
     super(app, board, descriptor, id, { myParam: "default" });
   }
 
@@ -70,13 +75,18 @@ class Name extends ServiceBase<State> {
 export default {
   serviceName,
   serviceId,
-  create: (app: AppInstance, board: string, descriptor: ServiceClass, id: string) =>
-    new Name(app, board, descriptor, id),
-  createUI: NameUI,  // omit if no UI
+  create: (
+    app: AppInstance,
+    board: string,
+    descriptor: ServiceClass,
+    id: string,
+  ) => new Name(app, board, descriptor, id),
+  createUI: NameUI, // omit if no UI
 };
 ```
 
 **Key rules:**
+
 - `configure()` must update `this.state` and call `this.app.notify(this, {...})` for each changed field so the UI stays in sync
 - `process()` return value is automatically passed to the next service — call `this.app.next(this, result)` explicitly only when you need to emit multiple values or skip the auto-next
 - `this.bypass` is handled by the base class — do not check it manually in `process()`
@@ -89,7 +99,7 @@ Extract the constants to a sibling file (`<name>-modes.ts`) to avoid a circular 
 ```typescript
 // <name>-modes.ts
 export const MODES = ["foo", "bar"] as const;
-export type Mode = typeof MODES[number];
+export type Mode = (typeof MODES)[number];
 ```
 
 Both `<Name>.ts` and `<Name>UI.tsx` import from `<name>-modes.ts` instead of each other.
@@ -99,6 +109,7 @@ Both `<Name>.ts` and `<Name>UI.tsx` import from `<name>-modes.ts` instead of eac
 ## Service UI (`<Name>UI.tsx`)
 
 Use existing UI as reference:
+
 - **Simple mode/option selector** → see `EncryptUI.tsx` (uses `SelectorField`)
 - **Complex form with many fields** → see `MapUI.tsx` (uses `RadioGroup`, `MappingTable`)
 
@@ -115,8 +126,12 @@ export default function NameUI(props: ServiceUIProps) {
   return (
     <ServiceUI
       {...props}
-      onInit={(s: any) => { if (s.myParam !== undefined) setMyParam(s.myParam); }}
-      onNotification={(n: any) => { if (n.myParam !== undefined) setMyParam(n.myParam); }}
+      onInit={(s: any) => {
+        if (s.myParam !== undefined) setMyParam(s.myParam);
+      }}
+      onNotification={(n: any) => {
+        if (n.myParam !== undefined) setMyParam(n.myParam);
+      }}
     >
       <div className="flex flex-col" style={{ minWidth: 220 }}>
         <SelectorField
@@ -135,12 +150,14 @@ export default function NameUI(props: ServiceUIProps) {
 ```
 
 Available shared components (in `hkp-frontend/src/components/shared/`):
+
 - `SelectorField` — labelled dropdown (keys=config values, values=display labels)
 - `InputField` — text input with label
 - `SecretField` — password input
 - `Slider` — numeric slider
 
 Available ui-components (in `hkp-frontend/src/ui-components/`):
+
 - `RadioGroup` — horizontal button group for a small fixed set of options
 - `Switch` — toggle
 - `NumberInput`, `Checkbox`, `CheckboxGroup`, `MultiSelect`
@@ -165,7 +182,7 @@ export const defaultRegistry: Array<ServiceModule> = [
 ```typescript
 const SERVICE_DESCRIPTOR_FILES = new Set([
   // ... existing ...
-  "Name.ts",  // or Name.tsx if it contains JSX
+  "Name.ts", // or Name.tsx if it contains JSX
 ]);
 ```
 
@@ -180,12 +197,33 @@ Show the service doing something useful: a source (Injector or Timer), the new s
 ```json
 {
   "boardName": "<Name> Demo",
-  "runtimes": [{ "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
   "services": {
     "ui": [
-      { "uuid": "injector-svc", "serviceId": "hookup.to/service/injector", "serviceName": "Source", "state": { "recentInjection": "example value", "plainText": true } },
-      { "uuid": "name-svc", "serviceId": "hookup.to/service/<slug>", "serviceName": "<Name>", "state": { "mode": "default-mode" } },
-      { "uuid": "monitor-svc", "serviceId": "hookup.to/service/monitor", "serviceName": "Output" }
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Source",
+        "state": { "recentInjection": "example value", "plainText": true }
+      },
+      {
+        "uuid": "name-svc",
+        "serviceId": "hookup.to/service/<slug>",
+        "serviceName": "<Name>",
+        "state": { "mode": "default-mode" }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Output"
+      }
     ]
   }
 }
@@ -206,8 +244,8 @@ One-line description (shown in the service index).
 
 ## Available in
 
-| Runtime | Service ID |
-|---|---|
+| Runtime | Service ID                 |
+| ------- | -------------------------- |
 | Browser | `hookup.to/service/<slug>` |
 
 ---
@@ -220,17 +258,17 @@ One-line description (shown in the service index).
 
 ## Configuration
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `mode` | `"a"` \| `"b"` | `"a"` | Operating mode |
+| Property | Type           | Default | Description    |
+| -------- | -------------- | ------- | -------------- |
+| `mode`   | `"a"` \| `"b"` | `"a"`   | Operating mode |
 
 ---
 
 ## Input / Output
 
-| | Shape |
-|---|---|
-| **Input** | [describe] |
+|            | Shape      |
+| ---------- | ---------- |
+| **Input**  | [describe] |
 | **Output** | [describe] |
 
 ---
@@ -247,14 +285,20 @@ The first line after `# <Name>` becomes the description shown in the services in
 ## Common patterns
 
 **JSON-serialize non-string inputs** (so any pipeline value can pass through):
+
 ```typescript
 const str = typeof input === "string" ? input : JSON.stringify(input);
 ```
 
 **Try-parse JSON output** (so structured data survives a text round-trip):
+
 ```typescript
 function tryParseJson(s: string): any {
-  try { return JSON.parse(s); } catch { return s; }
+  try {
+    return JSON.parse(s);
+  } catch {
+    return s;
+  }
 }
 ```
 

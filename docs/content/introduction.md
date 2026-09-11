@@ -1,6 +1,6 @@
 # Introduction
 
-HKP is a framework for building **interactive apps** out of small, composable
+Readymade is a framework for building **interactive apps** out of small, composable
 parts — apps that run across several machines at once, where you decide which
 part runs where.
 
@@ -40,13 +40,15 @@ when a runtime finishes, its result becomes the input of the next runtime on the
 board — including when that runtime is on another machine, which is handled for
 you and looks like nothing at all from inside the board.
 
-Every board has exactly one owner, the **coordinator**. Usually that is the app
-you are using; a board can also be handed to an external coordinator that keeps
-it running with nobody watching.
+Every board has exactly one owner, its **coordinator**. Usually that is the app
+you are using; a board can also be *deployed* — handed to a coordinator running
+elsewhere, which keeps it going with nobody watching, and which your app then
+attaches to rather than owns.
 
-**[Architecture](./architecture.md) explains all of this properly**, including
-why it is built this way and what does and does not cross between machines. It
-is the page to read next.
+**The concept pages explain all of this properly** — [Board](./concepts/board.md),
+[Runtime](./concepts/runtime.md) and [Service](./concepts/service.md), including
+why it is built this way and what does and does not cross between machines. They
+are what to read next.
 
 ---
 
@@ -107,6 +109,8 @@ types that travel are:
 | **FloatRingBuffer** | A contiguous block of float samples; audio is the usual reason for it |
 | **Mixed**         | Bytes and JSON metadata together, e.g. a file plus what it is        |
 | **Null**          | "Nothing to pass on" — stops the flow here                           |
+| **ControlFlow**   | An early return: skip the rest of this runtime, carry a result out    |
+| **Undefined**     | Not set yet — what a service sees when nothing has run before it      |
 
 These are the same everywhere. A buffer of samples produced by a service on one
 machine arrives as a buffer of samples on the next, without you converting
@@ -148,12 +152,12 @@ reachable from wherever it is opened.
 
 | Page                                   | What it covers                                                     |
 | -------------------------------------- | ------------------------------------------------------------------ |
-| **[Architecture](./architecture.md)**  | Boards, runtimes, services, coordinators — and the reasoning        |
-| **[Runtimes](./runtimes.md)**          | The four runtimes, what each is for, and how to choose              |
-| **Service reference**                  | Every service in depth — modes, settings, inputs and outputs        |
+| **[Concepts](./concepts/board.md)**    | Boards, runtimes, services, coordinators — and the reasoning        |
+| **[Runtime](./concepts/runtime.md)**   | Every runtime, what each is for, and how to choose between them     |
+| **[Service reference](./services/monitor.md)** | Every service in depth — modes, settings, inputs and outputs |
 | **[Guides](./llm/howto-workflow.md)**  | Worked examples built step by step                                  |
 
 The service reference is the sidebar's **services** section; each page documents
 one service's modes, every configuration property, the shape of its input and
 output, and worked examples. Which services a given runtime offers is covered in
-[Runtimes](./runtimes.md).
+[Runtime](./concepts/runtime.md).

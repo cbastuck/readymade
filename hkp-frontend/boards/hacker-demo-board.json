@@ -13,10 +13,25 @@
       },
       {
         "uuid": "hacker-svc",
-        "serviceId": "hookup.to/service/hacker/dangerous",
-        "serviceName": "Hacker",
+        "serviceId": "hookup.to/service/hacker/considered",
+        "serviceName": "Angle",
         "state": {
-          "buffer": "const t = params.triggerCount * 0.18;\nconst r = params.triggerCount * 1.8;\nconst hue = (params.triggerCount * 1.8) % 360;\nreturn { type: 'circle', x: Math.cos(t) * r + 300, y: Math.sin(t) * r + 200, radius: 4, color: 'hsl(' + hue + ', 80%, 55%)' };"
+          "buffer": "params.triggerCount * 0.18"
+        }
+      },
+      {
+        "uuid": "shape-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Shape",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "type": "circle",
+            "radius": 4,
+            "x=": "round(sin(params + 1.5707963) * params * 10 + 300)",
+            "y=": "round(sin(params) * params * 10 + 200)",
+            "color=": "concat('hsl(', round(params * 10) % 360, ', 80%, 55%)')"
+          }
         }
       },
       {

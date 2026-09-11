@@ -2,6 +2,8 @@
 
 How the code is laid out: one superproject, five submodules, and a rule about which is which.
 
+The source is at **[github.com/cbastuck/readymade](https://github.com/cbastuck/readymade)**.
+
 ---
 
 ## Two kinds of directory
@@ -139,6 +141,7 @@ carried by a clone, so this is a step each checkout takes once.
 
 | Concern | Where |
 |---|---|
+| The repository itself | [github.com/cbastuck/readymade](https://github.com/cbastuck/readymade) |
 | Which directories are submodules | `.gitmodules` |
 | What the desktop build compiles | `CMakeLists.txt` |
 | Running every suite | `run-all-tests.sh`, `run-all-cpp-tests.sh` |

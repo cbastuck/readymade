@@ -27,6 +27,62 @@ Not every service exists on every runtime. Where the same service id exists in
 two runtimes it is meant to be the same *concept* with the same state contract —
 `http-client` in node and hkp-rt share a UI panel for exactly that reason.
 
+### Choosing where a step runs is a real decision
+
+The same step can often be placed in more than one runtime, and where you put it
+decides three things that no amount of configuration can change afterwards:
+
+**Where the data goes.** A runtime is a physical place. A step in the browser
+runtime on your laptop keeps its data on your laptop; the same step in a runtime
+on a server puts that data on the server. This is not a privacy policy, it is
+which machine the bytes are on. A board that transcribes a recording locally and
+sends only the resulting text onwards is not promising that — it is what the
+board does.
+
+**What it can reach.** A runtime can touch only what its host can touch: the
+microphone and camera of the device in your hand, an audio interface plugged
+into it, files on that machine, a device on that network segment and nothing
+else. If a board needs a thing, it needs a runtime on the host that has it.
+
+**What it can afford.** Compute, memory, and the models installed. A phone can
+drive a small speech model; a workstation can run a large one; a cheap always-on
+box can do neither but never sleeps. Placement is how the work is matched to the
+hardware — which is why the same service ids exist on several runtimes, so
+moving a step is moving it in the list rather than rewriting it.
+
+
+### Choosing, in practice
+
+Four worked cases, to make those three axes concrete:
+
+**Transcribing a private recording.** The audio should not leave the device, and
+transcription needs a model. Put speech-to-text in a local runtime — hkp-rt
+embedded in Readymade, or hkp-python on your own machine — and let only the
+resulting text continue. The privacy property is structural: no step in the
+board sends audio anywhere.
+
+**A chat bot that answers while you sleep.** None of it can live in a browser,
+because there is no browser open. Messaging belongs in hkp-node on a server, and
+the board wants deploying so a coordinator keeps it running — see
+`concepts/cloud-boards.md`.
+
+**A live audio analyser with a UI.** Split it: capture and FFT in hkp-rt where
+the sample buffers are, the display in the browser runtime where the person is.
+What crosses between them is the analysis, not the audio.
+
+**A model too big for your laptop.** Put hkp-python on the machine that has the
+memory and leave everything else where it was. Only the prompt and the answer
+travel.
+
+The pattern in all four: put each step where its data should be and where its
+work can happen, and let the board carry the results between them.
+
+A consequence worth saying out loud: a board is portable in the sense that the
+document is complete and the same JSON opens anywhere — but "anywhere" means
+anywhere the runtimes it names can be reached. **A board built against a machine
+on your desk is a board about your desk.** When one that worked yesterday will
+not open, the runtime URL is the first thing to check.
+
 ---
 
 ## Where a runtime comes from
@@ -113,6 +169,45 @@ For a deployed board the same chaining is done by the coordinator
 (`routeResult()` / `nextRuntime()` in `hkp-node/src/coordinator/session.ts`),
 including the case where the next runtime is a browser runtime it must reach
 over the bridge.
+
+---
+
+## What crosses a runtime boundary
+
+Because a runtime is a physical place, it is worth being precise about what
+actually leaves one.
+
+In normal operation:
+
+| What crosses | When |
+|---|---|
+| **The result** a runtime hands to the next | every pass — this is the flow the board describes |
+| **Configuration**, and the state a service reports back | whenever a service is configured or reports; the coordinator keeps the last state of every service, which is how whole-board questions are answered |
+| **Log entries** | only while the board has logging switched on — see `concepts/logging.md` |
+
+Everything else — the intermediate values passing between the services inside
+one runtime — stays there. A runtime is a box that can be closed.
+
+**With one exception, and it is the useful one.** Attach a UI to a runtime and
+it starts reporting what each of its services is doing: not only what each
+produced, but the input each was handed. That is what makes the panels live
+(`onServiceProcess` sends `{__internal: {state: "call-process", data}}` before
+every call, `onServiceResult` after it), and it is exactly what is wanted while
+building.
+
+It also means that while something is attached, a runtime's internal traffic is
+leaving it. When nothing is attached, nothing is sent — this is not a filter
+applied afterwards: the browser drops a notification with no target
+(`hasCallbacks`), and a runtime server returns early when its socket set is
+empty (`sendJsonNotification`). So it is a property that can be planned around:
+keep a sensitive stage in a runtime nothing is attached to, and its intermediate
+data stays put.
+
+The caveat is deployment. **A deployed board's coordinator holds its own socket
+to every runtime it provisioned**, because that is how it stays in touch with
+them — so on a deployed board, assume there is always a listener. A step whose
+intermediate data must not leave its machine belongs on a board you own
+yourself.
 
 ---
 

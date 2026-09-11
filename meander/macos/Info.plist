@@ -45,7 +45,7 @@
             <key>UTTypeIdentifier</key>
             <string>com.readymadeit.hkpp</string>
             <key>UTTypeDescription</key>
-            <string>HKP Application File</string>
+            <string>Readymade Application File</string>
             <key>UTTypeConformsTo</key>
             <array>
                 <string>public.data</string>
@@ -65,7 +65,7 @@
     <array>
         <dict>
             <key>CFBundleTypeName</key>
-            <string>HKP Application</string>
+            <string>Readymade Application</string>
 
             <key>CFBundleTypeRole</key>
             <string>Editor</string>

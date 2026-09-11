@@ -68,10 +68,10 @@ const globalScope = {
     x && x.reduce ? x.reduce((acc, v) => acc + v, 0) : x,
   flatSum: (x: Array<any>) =>
     x && x.flat ? x.flat().reduce((acc: number, v: number) => acc + v, 0) : 0,
-  at: (arr: Array<any>, i: number) =>
-    arr[Math.abs(Math.round(i)) % arr.length],
+  at: (arr: Array<any>, i: number) => arr[Math.abs(Math.round(i)) % arr.length],
   now: () => Date.now(),
-  range: (n: number) => Array.from({ length: Math.max(0, Math.round(n)) }, (_, i) => i),
+  range: (n: number) =>
+    Array.from({ length: Math.max(0, Math.round(n)) }, (_, i) => i),
   avg: (x: Array<number>) =>
     x && x.reduce ? x.reduce((acc, v) => acc + v, 0) / x.length : x,
   arrayToAudioBuffer: (arr: Array<number>) => {
@@ -89,7 +89,10 @@ const globalScope = {
   // Lowercases and strips everything outside [a-z0-9_-], turning free-form
   // text into a canonical identifier — e.g. building a topic for a
   // case-sensitive ntfy fetch URL.
-  slug: (x: string | number) => String(x).toLowerCase().replace(/[^a-z0-9_-]/g, ""),
+  slug: (x: string | number) =>
+    String(x)
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, ""),
   uuid: {
     v4: uuidv4,
     v7: uuidv7,
@@ -124,7 +127,7 @@ export const globalScopeFunctions = Object.keys({
 export async function parseAndEvalExpression(
   exp: string,
   params: any,
-  app?: AppInstance
+  app?: AppInstance,
 ) {
   return evalExpression(parseExpression(exp), params, app);
 }
@@ -145,7 +148,7 @@ export function checkSyntax(statement: string | SyntaxError): true | string {
 export async function evalExpression(
   ast: Expression | SyntaxError,
   params: any,
-  app?: AppImpl
+  app?: AppImpl,
 ) {
   if (ast === "syntax-error") {
     throw new Error("evalExpression with syntax error");
@@ -167,16 +170,4 @@ export async function evalExpression(
     getServiceConfig,
     processRuntime,
   });
-}
-
-export function evilEval(buffer: string, params: any) {
-  const script = `
-    async function hkp(){
-      const { params, ...globals } = this;
-      ${buffer}
-    }
-    return hkp.bind({ ...this })();
-  `;
-  const f = Function(script);
-  return f.bind({ ...params, ...globalScope, params })(params);
 }

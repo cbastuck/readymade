@@ -21,20 +21,26 @@ void HttpServerImpl::setOnSessionOpenedCallback(std::function<void(std::shared_p
 
 unsigned short HttpServerImpl::start()
 {
-  m_thread = std::thread([this]() {
-    try
-    {
-      m_work_guard = std::make_shared<net::executor_work_guard<net::io_context::executor_type>>(net::make_work_guard(m_ioc));
-      m_ioc.restart(); // Ensure io_context is reset before running again (when stopping and starting again)
-      m_ioc.run();
-    }
-    catch (const std::exception& e)
-    {
-      std::cerr << "HTTP server thread exception: " << e.what() << std::endl;
-    }
-    std::cout << "HttpServerImpl::start() Stopped HTTP server thread" << std::endl;
-  });
-  
+  // A previous run has to be fully unwound before this one is set up: the io
+  // context is reused, and moving onto a thread that is still joinable
+  // terminates the process.
+  if (m_thread.joinable())
+  {
+    m_work_guard.reset();
+    m_ioc.stop();
+    m_thread.join();
+  }
+
+  // Both of these belong to the thread that owns the context rather than to the
+  // one that runs it. restart() clears the stopped flag a previous stop() set,
+  // and the work guard is what keeps run() from returning before there is
+  // anything to do; leaving either to the io thread races every stop() that
+  // follows — one arriving before the thread was scheduled resets a guard that
+  // is not there yet and stops a context the thread then restarts, and run()
+  // never returns.
+  m_ioc.restart();
+  m_work_guard = std::make_shared<net::executor_work_guard<net::io_context::executor_type>>(net::make_work_guard(m_ioc));
+
   std::cout << "HttpServerImpl::start() Starting HTTP server on port: "
             << (m_port == 0 ? std::string("0 (any free port)") : std::to_string(m_port))
             << std::endl;
@@ -50,15 +56,31 @@ unsigned short HttpServerImpl::start()
   if (boundPort == 0)
   {
     // Nothing is listening — a requested port that is taken is the usual
-    // reason. Unwind the io thread so a later start() is a clean attempt, and
-    // leave the requested port in place: it is what was asked for, and a caller
-    // reporting the failure has nothing else to name.
+    // reason. Unwind what was prepared above so a later start() is a clean
+    // attempt, and leave the requested port in place: it is what was asked
+    // for, and a caller reporting the failure has nothing else to name.
     std::cerr << "HttpServerImpl::start() Failed to bind port: " << m_port << std::endl;
     stop();
     return 0;
   }
 
   m_port = boundPort;
+
+  // Last, so that nothing above it can fail with a thread already running: the
+  // context is prepared and the acceptor is bound, and all that is left is to
+  // run it.
+  m_thread = std::thread([this]() {
+    try
+    {
+      m_ioc.run();
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "HTTP server thread exception: " << e.what() << std::endl;
+    }
+    std::cout << "HttpServerImpl::start() Stopped HTTP server thread" << std::endl;
+  });
+
   std::cout << "HttpServerImpl::start() Listening on port: " << m_port << std::endl;
   return m_port;
 }
@@ -69,7 +91,7 @@ bool HttpServerImpl::stop()
   // bypass toggle may already have stopped the server — this call would then be
   // the second, dereferencing the listener the first one reset. It is also the
   // state a server that never started is in, since it starts out bypassed.
-  if (!m_listener)
+  if (!m_listener && !m_thread.joinable())
   {
     return false;
   }
@@ -80,8 +102,11 @@ bool HttpServerImpl::stop()
     session.reset();
   }
   m_work_guard.reset();
-  m_listener->stop(); // Stop accepting new connections
-  m_listener.reset();
+  if (m_listener)
+  {
+    m_listener->stop(); // Stop accepting new connections
+    m_listener.reset();
+  }
   m_ioc.stop();
 
   if (!m_thread.joinable())

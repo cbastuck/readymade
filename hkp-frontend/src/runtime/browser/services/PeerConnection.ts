@@ -73,10 +73,10 @@ export function resolveActivePeerHost(
     host: isCustomServer
       ? (resolvedPeerHost ?? hostDescriptor?.host)
       : hostDescriptor?.host,
-    port: isCustomServer
-      ? (state.peerPort ?? undefined)
-      : hostDescriptor?.port,
-    path: isCustomServer ? (state.peerPath ?? "/") : (hostDescriptor?.path ?? "/"),
+    port: isCustomServer ? (state.peerPort ?? undefined) : hostDescriptor?.port,
+    path: isCustomServer
+      ? (state.peerPath ?? "/")
+      : (hostDescriptor?.path ?? "/"),
     secure: isCustomServer
       ? (state.peerSecure ?? false)
       : (hostDescriptor?.secure ?? false),
@@ -106,7 +106,7 @@ type PeerConnectionHandlers = {
  * PeersContext provider, which meant the connection only existed while the
  * service's UI panel was mounted — so it silently died on mobile, where panels
  * are mounted lazily. Keeping it here makes the service work headless, matching
- * the HKP contract that a service is the unit of behaviour, not its UI.
+ * the Readymade contract that a service is the unit of behaviour, not its UI.
  */
 export default class PeerConnection {
   private handlers: PeerConnectionHandlers;

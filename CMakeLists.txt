@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(hkp LANGUAGES CXX VERSION 1.0)
+project(Readymade LANGUAGES CXX VERSION 1.0)
 
 if(WIN32)
 	add_compile_definitions(NOMINMAX)

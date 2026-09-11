@@ -16,7 +16,7 @@ Reads key–value pairs from the browser's `localStorage` and emits them as an a
 
 Local Storage queries `window.localStorage`, optionally filtered to keys starting with a given prefix, and emits an array of `{ key, value }` objects. The cache is refreshed on each `process()` call and whenever `filter` is updated.
 
-This service is read-only — it does not write to localStorage. To write, use the [Hacker](./hacker.md) service (`dangerous` variant) or a Map with a side-effect expression.
+This service is read-only — it does not write to localStorage. To write, use the vault functions available in [Map](./map.md) and [Hacker](./hacker.md) expressions (`toVault`).
 
 ---
 

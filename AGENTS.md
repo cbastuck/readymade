@@ -1,8 +1,8 @@
-# HKP — Architecture & Philosophy
+# Readymade — Architecture & Philosophy
 
-HKP is a composable, distributed app framework for building **interactive apps** — things
+Readymade is a composable, distributed app framework for building **interactive apps** — things
 users open, configure, and use in real time — not automation pipelines. Think what Reaktor is for buolding
-synths, but HKP targets app of any domain, running across runtimes and machines. Services are the building
+synths, but Readymade targets app of any domain, running across runtimes and machines. Services are the building
 blocks; boards are the apps you build with them.
 
 ---
@@ -210,7 +210,7 @@ registry registration, tests, demo board, and docs page. The demo board filename
   boards into apps — like crafting. When designing a service, ask: can this be composed with
   others to make something more useful than the sum of its parts?
 - **Structured flow over wires.** Explicit wires are like `goto` — they work but make flows
-  hard to reason about. HKP has no wire UI; the ordered service list _is_ the flow. Express
+  hard to reason about. Readymade has no wire UI; the ordered service list _is_ the flow. Express
   branching and iteration through control-flow services: a Switch that pattern-matches and
   routes into sub-pipelines, a Filter that stops propagation on a failed predicate, a Looper
   that repeats sub-services until a predicate stops it.

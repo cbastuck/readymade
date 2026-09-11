@@ -18,7 +18,7 @@
       "outFiles": ["${workspaceFolder}/**/*.js"]
     },
     {
-      "name": "Python: hkp runtime server",
+      "name": "Python: Readymade runtime server",
       "type": "debugpy",
       "request": "launch",
       "python": "${workspaceFolder}/hkp-python/.venv/bin/python3",

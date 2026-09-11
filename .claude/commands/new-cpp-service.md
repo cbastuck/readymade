@@ -1,5 +1,5 @@
 ---
-description: Scaffold a new HKP C++ runtime service end-to-end (header, optional .cpp, registration, config example, docs)
+description: Scaffold a new hkp-rt C++ runtime service end-to-end (header, optional .cpp, registration, config example, docs)
 allowed-tools: Read, Write, Edit, Bash
 ---
 
@@ -93,6 +93,7 @@ private:
 ```
 
 **Key rules:**
+
 - `static std::string serviceId()` is required by the `Registry::TypeList` machinery — it must be a static method returning the string ID.
 - `configure()` must call `Service::configure(data)` and return its result — this handles bypass state and notifications.
 - `getState()` must call `Service::mergeStateWith({...})` so that base fields (bypass, instanceId, etc.) are always included.
@@ -133,6 +134,7 @@ bool supportsSubservices() const override { return true; }
 ```
 
 In `configure()`, handle the `"pipeline"` key exactly as `CacheSubservices` does:
+
 ```cpp
 if (j->contains("pipeline") && (*j)["pipeline"].is_array())
 {
@@ -145,6 +147,7 @@ if (j->contains("pipeline") && (*j)["pipeline"].is_array())
 ```
 
 In `getState()`:
+
 ```cpp
 json pipeline = json::array();
 if (m_subservices)
@@ -161,6 +164,7 @@ if (m_subservices)
 ```
 
 Required members:
+
 ```cpp
 std::shared_ptr<SubRuntime> m_subservices;
 std::vector<json> m_subserviceConfig;
@@ -241,8 +245,8 @@ One-line description (shown in the service index).
 ## Available in
 
 | Runtime | Service ID |
-|---|---|
-| hkp-rt | `<slug>` |
+| ------- | ---------- |
+| hkp-rt  | `<slug>`   |
 
 ---
 
@@ -254,9 +258,9 @@ One-line description (shown in the service index).
 
 ## Configuration
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `myParam` | `string` | `""` | Description |
+| Property  | Type     | Default | Description |
+| --------- | -------- | ------- | ----------- |
+| `myParam` | `string` | `""`    | Description |
 
 ---
 
@@ -268,9 +272,9 @@ One-line description (shown in the service index).
 
 ## Input / Output
 
-| | Shape |
-|---|---|
-| **Input** | [describe] |
+|            | Shape      |
+| ---------- | ---------- |
+| **Input**  | [describe] |
 | **Output** | [describe] |
 
 ---
@@ -291,6 +295,7 @@ One-line description (shown in the service index).
 ## Common patterns
 
 **Check and branch on data type:**
+
 ```cpp
 if (auto j = getJSONFromData(data); j)       { /* JSON */ }
 if (auto rb = getRingBufferFromData(data); rb) { /* FloatRingBuffer */ }
@@ -299,11 +304,13 @@ if (auto str = getStringFromData(data); str)  { /* std::string */ }
 ```
 
 **Send a notification to the frontend:**
+
 ```cpp
 sendNotification(json{{ "key", value }});
 ```
 
 **Null check before propagation:**
+
 ```cpp
 if (isNull(result)) return Null();
 return result;

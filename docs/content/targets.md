@@ -1,7 +1,141 @@
-# Targets
+# Architecture and Targets
 
-One board engine, four hosts. What each target *is*, what a board may assume on
-it, and what building it produces.
+One web app, four hosts. What the app *is*, how it reaches the machine it runs
+on, and what each target adds.
+
+---
+
+## The shape
+
+Readymade is a **web app that ships inside native applications**. Not a web app
+with a native version, and not a native app with some web views in it: there is
+one React app holding the board engine, the services and the whole interface,
+and each native target is a **host** that serves that app and answers a protocol
+it calls.
+
+```
+                  ┌────────────────────────────────────────┐
+                  │   board engine + UI  (React, one impl) │
+                  │   hkp-frontend  ·  meander/frontend    │
+                  └───────────────────┬────────────────────┘
+                                      │  PlatformCapabilities
+                                      │  (every member optional)
+      ┌───────────────┬───────────────┴───────────────┬───────────────┐
+      │               │                               │               │
+ browser tab    saucer webview                   WKWebView      Android WebView
+      —          + C++ backend                   + Swift app    + Kotlin app
+   nothing          DESKTOP                          iOS            ANDROID
+   below it   macOS · Windows · Linux            phones and tablets
+```
+
+This is a less usual arrangement than it looks, and it is worth being explicit
+about what it buys, because the obvious alternatives were the other way round:
+
+- **A native UI per platform, over a shared core.** Then the board editor — the
+  most intricate part of the product — exists three times, and a service's panel
+  has to be written three times to be usable everywhere.
+- **A web app per platform.** Then the engine forks, and a board saved on one
+  stops being the same document on another.
+
+Here the interface and the engine are written **once**, and what varies is a
+seam a few hundred lines wide. A service written today runs on the web, on a
+desktop, and on a phone without knowing which it is on. The cost is paid in one
+place: the app cannot call the operating system directly, so everything the
+machine can do that a browser cannot has to arrive through a protocol.
+
+The saving compounds on the desktop, where **one shell covers macOS, Windows and
+Linux**. The Readymade desktop app is a single C++ backend built three ways:
+saucer wraps whichever webview the system already has — WebView2 on Windows,
+WebKitGTK on Linux, WKWebView on macOS — so the same app runs on all three
+without a per-system interface. Counted by operating system rather than by host,
+one web app reaches five: those three, plus iOS and Android, plus any browser.
+
+---
+
+## How the app reaches its host
+
+Two surfaces, and keeping them apart matters because they are not equally
+available:
+
+```
+ the app calls                             answered by
+ ───────────────────────────────────────   ────────────────────────────────────────
+ fetch("hkp://boards/my-board")            desktop   SchemeHandler → Router   (C++)
+   the host's own data:                    iOS       WKURLSchemeHandler       (Swift)
+   boards, remotes, settings, history      Android   fetch() shim → JS bridge (Kotlin)
+                                           web       nobody — the call is never made
+
+ window.saucer.exposed.pickFile()          desktop   a bound C++ function
+   direct calls into the backend:          elsewhere absent — code checks first
+   file dialogs, the secret vault
+```
+
+**`hkp://` is a protocol, not a file path.** It looks like an HTTP request and
+is written like one — `GET hkp://boards/`, `POST hkp://settings` — but it never
+reaches a network. Each shell answers it in its own language: the desktop routes
+it through a C++ router, iOS registers a `WKURLSchemeHandler` on the `hkp`
+scheme, and Android has no scheme-handler API at all, so it **replaces
+`window.fetch`** in an init script and forwards anything starting with `hkp://`
+to a Kotlin object over the JS bridge.
+
+That difference is the argument for a protocol rather than direct bindings.
+Direct calls into native code exist on exactly one platform — saucer's
+`exposed`, on the desktop — while a fetch-shaped surface can be implemented on
+every webview, in any language, and stood in for by a fake in tests. It also
+gives the app one calling convention instead of one per host, which is why most
+of what the shells provide arrived as `hkp://` routes rather than as bindings.
+
+The scheme carries the app itself on iOS: the webview loads
+`hkp://app/index.html`, so the bundle and the host's data come through the same
+door. The desktop serves the built frontend from its own local server instead,
+and in development points at Vite (`MEANDER_USE_EMBEDDED_FRONTEND=OFF`).
+
+---
+
+## The runtime is addressed the same way, near or far
+
+The most useful consequence of the arrangement: **a board does not know whether
+the runtime it uses is on another machine or inside the app it is running in.**
+
+```
+ a board on the web
+     browser ──────── http + ws ────────▶ hkp-node on some host
+
+ the same board in the app
+     web app ── hkp://remotes/<name> ──▶ the shell ──▶ hkp-rt, in this process
+                                             │
+                                             ├── desktop      handed straight to the
+                                             │                in-process server, no socket
+                                             └── iOS/Android  forwarded over loopback,
+                                                              http://127.0.0.1:<port>
+```
+
+Both are the same REST + WebSocket protocol, so nothing above the seam changes.
+On the desktop the shell synthesises a request and hands it to the embedded
+runtime directly, so the call never becomes a socket at all. On iOS and Android
+the embedded runtime does listen on a loopback port, and the shell forwards to
+it — a proxy rather than a direct `fetch`, because a page served from a `hkp://`
+origin reaching `http://127.0.0.1` is a cross-origin request the webview would
+refuse.
+
+The address a board carries is `hkp://remotes/<name>`, which resolves to
+whatever this app embeds. A name that is not this app's own is refused rather
+than quietly served by whichever runtime is present — see
+`concepts/runtime.md`.
+
+---
+
+## The seam, precisely
+
+`PlatformCapabilities` (`hkp-frontend/src/platform/PlatformContext.tsx`) is
+where all of this meets the app, and **every member is optional**. That is the
+design rather than an oversight: on the web nothing supplies it, so a capability
+that is absent is a feature that does not appear, not an error to handle. The
+native shells fill it in through `MeanderPlatformProvider`.
+
+So the rule for anything new: if it needs the machine, it belongs behind this
+seam and reaches the host as an `hkp://` route — and the web target has to keep
+working with it missing.
 
 ---
 
@@ -35,15 +169,10 @@ Two things, and it is worth keeping them apart, because they fail differently.
 
 ### 1. Whether there is a platform host
 
-`PlatformCapabilities` (`hkp-frontend/src/platform/PlatformContext.tsx`) is the
-seam. **Every member is optional**, and that is the design: on the web nothing
-supplies it, so a capability that is not there is a feature that does not
-appear, not an error to handle. Saving a board to disk, picking a file, minting
-a scoped runtime token, restoring a session — each is present or absent, and the
-app is written to read that.
-
-The native shells fill it in through `MeanderPlatformProvider`, over two
-surfaces that are **not** both present everywhere:
+The seam is `PlatformCapabilities`, described above: saving a board to disk,
+picking a file, minting a scoped runtime token, restoring a session — each is
+present or absent, and the app is written to read that. What differs per target
+is which of the **two surfaces** is there to fill it in:
 
 - `fetch("hkp://…")` — the things the host stores (`hkp://boards/`,
   `hkp://remotes/`, `hkp://settings`). Served by all three shells; Android

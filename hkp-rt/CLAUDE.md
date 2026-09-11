@@ -38,16 +38,16 @@ docker build --platform linux/amd64 -f hkp-rt/Dockerfile.linux -t hkp/rt-base .
 
 All dependency management lives in the **root `CMakeLists.txt`** and **root `vcpkg.json`**:
 
-| Dep | How | Location |
-|-----|-----|----------|
-| Boost, OpenSSL, FFmpeg, fdk-aac | vcpkg | root `vcpkg.json` |
-| Inja (template engine) | CPM | fetched at configure time |
-| Saucer (GUI framework) | CPM | fetched at configure time (custom fork) |
-| minimp4 (MP4 demuxer) | CPM | fetched at configure time |
-| Crow HTTP | vendored header | `3rdparty/crow.h` |
-| avcpp (FFmpeg C++ wrapper) | local subdir | `3rdparty/avcpp/` |
-| inflect (TTS pipeline) | vendored subdir | `3rdparty/inflect/` |
-| vcpkg itself | local subdir | `3rdparty/vcpkg/` |
+| Dep                             | How             | Location                                |
+| ------------------------------- | --------------- | --------------------------------------- |
+| Boost, OpenSSL, FFmpeg, fdk-aac | vcpkg           | root `vcpkg.json`                       |
+| Inja (template engine)          | CPM             | fetched at configure time               |
+| Saucer (GUI framework)          | CPM             | fetched at configure time (custom fork) |
+| minimp4 (MP4 demuxer)           | CPM             | fetched at configure time               |
+| Crow HTTP                       | vendored header | `3rdparty/crow.h`                       |
+| avcpp (FFmpeg C++ wrapper)      | local subdir    | `3rdparty/avcpp/`                       |
+| inflect (TTS pipeline)          | vendored subdir | `3rdparty/inflect/`                     |
+| vcpkg itself                    | local subdir    | `3rdparty/vcpkg/`                       |
 
 ### Optional ML backends
 
@@ -55,11 +55,11 @@ Three independent options gate the in-process ML backends; each service keeps a
 server backend that is always available, so turning one off narrows what a board
 can run locally rather than removing the service.
 
-| Option | Default | Brings in | Serves |
-|--------|---------|-----------|--------|
-| `HKP_LLAMA_ENABLED` | ON (OFF on iOS/Android) | llama.cpp | `text-generation` local backend |
-| `HKP_SPEECH_ENABLED` | ON (OFF on iOS/Android) | sherpa-onnx (+ onnxruntime, espeak-ng, kaldi, openfst, piper-phonemize) | `speech-to-text` Whisper, `text-to-speech` Kokoro |
-| `HKP_INFLECT_ENABLED` | ON (OFF on iOS/Android) | `3rdparty/inflect` (+ onnxruntime, espeak-ng) | `text-to-speech` inflect backend |
+| Option                | Default                 | Brings in                                                               | Serves                                            |
+| --------------------- | ----------------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
+| `HKP_LLAMA_ENABLED`   | ON (OFF on iOS/Android) | llama.cpp                                                               | `text-generation` local backend                   |
+| `HKP_SPEECH_ENABLED`  | ON (OFF on iOS/Android) | sherpa-onnx (+ onnxruntime, espeak-ng, kaldi, openfst, piper-phonemize) | `speech-to-text` Whisper, `text-to-speech` Kokoro |
+| `HKP_INFLECT_ENABLED` | ON (OFF on iOS/Android) | `3rdparty/inflect` (+ onnxruntime, espeak-ng)                           | `text-to-speech` inflect backend                  |
 
 `HKP_INFLECT_ENABLED` reuses sherpa's onnxruntime and espeak-ng when
 `HKP_SPEECH_ENABLED` is on, so on a full desktop build it adds no third-party
@@ -107,7 +107,7 @@ Step 3 is necessary because cmake caches negative `find_package`/`find_library` 
 
 ## Architecture
 
-HKP is a modular **audio/data processing runtime** with a REST API and WebSocket interface.
+Readymade is a modular **audio/data processing runtime** with a REST API and WebSocket interface.
 
 ### Core Abstractions
 

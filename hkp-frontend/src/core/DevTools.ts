@@ -82,14 +82,14 @@ export function connectDevTools(context?: BoardContextState) {
   const setServiceConfig = async (
     runtimeId: Id,
     instanceId: Id,
-    config: any
+    config: any,
   ) => {
     const { api, rt, svc } = getServiceApi(runtimeId, instanceId);
     return api && rt && svc
       ? await api.configureService(
           context.scopes[rt.id],
           { uuid: svc.uuid },
-          config
+          config,
         )
       : undefined;
   };
@@ -128,7 +128,7 @@ export function connectDevTools(context?: BoardContextState) {
       context.scopes[rt.id],
       { uuid: svc.uuid },
       params,
-      null
+      null,
     );
   };
 
@@ -151,10 +151,10 @@ export function connectDevTools(context?: BoardContextState) {
 
   if (firstRun) {
     console.log(
-      `Welcome to Hkp \n The following APIs are supported:
+      `Welcome to Readymade \n The following APIs are supported:
       ${Object.keys(api)
         .map((x) => `\n- ${x}`)
-        .join("")}`
+        .join("")}`,
     );
     firstRun = false;
   }

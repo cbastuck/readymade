@@ -4,7 +4,6 @@ import MonitorDescriptor from "../services/Monitor";
 
 // Script
 import ConsideredHacker from "../services/ConsideredHacker";
-import DangerousHacker from "../services/DangerousHacker";
 
 // Data I/O
 import InputDescriptor from "../services/Input";
@@ -46,7 +45,6 @@ import StackDescriptor from "../services/Stack";
 
 // Flows and Composites
 import BoardService from "../services/BoardService";
-import OllamaHackerComposite from "../services/OllamaHackerComposite";
 
 // Emerging concepts
 import ChunkedFileProviderDescriptor from "../services/ChunkedFileProvider";
@@ -157,7 +155,6 @@ export const defaultRegistry: Array<ServiceModule> = [
   GithubSinkDescriptor,
 
   // Scripting
-  DangerousHacker,
   ConsideredHacker,
 
   // emerging
@@ -172,7 +169,6 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Flows and Composites
   BoardService,
-  OllamaHackerComposite,
   Analyzer,
   FFT,
   Delay,

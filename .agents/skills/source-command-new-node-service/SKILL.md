@@ -1,6 +1,6 @@
 ---
 name: "source-command-new-node-service"
-description: "Scaffold a new HKP node runtime service end-to-end (service logic, registration, test, demo board, docs)"
+description: "Scaffold a new hkp-node runtime service end-to-end (service logic, registration, test, demo board, docs)"
 ---
 
 # source-command-new-node-service
@@ -11,7 +11,7 @@ Use this skill when the user asks to run the migrated source command `new-node-s
 
 # New Node Service (hkp-node)
 
-You are implementing a new Node.js runtime service for the HKP platform.
+You are implementing a new Node.js runtime service for the Readymade platform.
 The user will describe what the service should do. Implement it end-to-end:
 service logic, registry registration, test, demo board, and documentation.
 Ask the user focused questions only where the design is genuinely ambiguous.
@@ -102,6 +102,7 @@ export class NameService implements HostedService {
 ```
 
 **Key differences from browser services:**
+
 - `configure()` **returns** the updated state as a `JsonRecord` — there is no `app.notify()`. Return value is what gets synced to the UI.
 - `process()` receives `notify` as a parameter — call it to push live state updates mid-processing without ending the call.
 - `setHost()` gives access to `RuntimeHost` — only implement this if the service needs to trigger downstream processing on its own (timer pattern, HTTP listener pattern).
@@ -118,7 +119,7 @@ Only implement `setHost` when the service drives the pipeline rather than just r
 ```typescript
 interface RuntimeHost {
   processFrom(
-    startAfterUuid: string,    // start pipeline after this service's position
+    startAfterUuid: string, // start pipeline after this service's position
     data: unknown,
     onNotification: (n: { payload: unknown; instanceId: string }) => void,
   ): unknown;
@@ -128,12 +129,11 @@ interface RuntimeHost {
 ```
 
 Usage pattern (e.g., a timer tick):
+
 ```typescript
 if (this._host) {
-  const result = this._host.processFrom(
-    this.uuid,
-    { tickCount },
-    (n) => this._host!.notify(n.payload, n.instanceId),
+  const result = this._host.processFrom(this.uuid, { tickCount }, (n) =>
+    this._host!.notify(n.payload, n.instanceId),
   );
   this._host.emitResult(result);
 }
@@ -144,11 +144,13 @@ if (this._host) {
 ## Registration (`hkp-node/src/server.ts`)
 
 1. Add the import with the other service imports:
+
 ```typescript
 import { NameService, nameDescriptor } from "./services/name";
 ```
 
 2. Add a factory entry to the `factories` Map (keep entries in alphabetical order within their category):
+
 ```typescript
 [
   nameDescriptor.serviceId,
@@ -291,8 +293,8 @@ One-line description (shown in the service index).
 ## Available in
 
 | Runtime | Service ID |
-|---|---|
-| Node.js | `<slug>` |
+| ------- | ---------- |
+| Node.js | `<slug>`   |
 
 ---
 
@@ -304,17 +306,17 @@ One-line description (shown in the service index).
 
 ## Configuration
 
-| Property | Type | Default | Description |
-|---|---|---|---|
+| Property  | Type     | Default     | Description |
+| --------- | -------- | ----------- | ----------- |
 | `myParam` | `string` | `"default"` | Description |
 
 ---
 
 ## Input / Output
 
-| | Shape |
-|---|---|
-| **Input** | [describe] |
+|            | Shape      |
+| ---------- | ---------- |
+| **Input**  | [describe] |
 | **Output** | [describe] |
 
 ---
@@ -329,6 +331,7 @@ One-line description (shown in the service index).
 ## Common patterns
 
 **Stop propagation** — return `null` to prevent the runtime from passing anything to the next service or runtime:
+
 ```typescript
 process(input: unknown, _notify: (p: unknown) => void): unknown {
   if (!isValid(input)) return null;
@@ -337,6 +340,7 @@ process(input: unknown, _notify: (p: unknown) => void): unknown {
 ```
 
 **Push live update to UI** — call `notify` at any point during processing; does not affect the return value:
+
 ```typescript
 process(input: unknown, notify: (p: unknown) => void): unknown {
   notify({ status: "processing", received: input });
@@ -347,6 +351,7 @@ process(input: unknown, notify: (p: unknown) => void): unknown {
 ```
 
 **Source service (drives the pipeline)** — implement `setHost`, schedule work, call `processFrom` + `emitResult`:
+
 ```typescript
 setHost(host: RuntimeHost): void {
   this._host = host;
@@ -365,6 +370,7 @@ destroy(): void {
 ```
 
 **Async processing** — `process` can be async; the runtime awaits the result:
+
 ```typescript
 async process(input: unknown, notify: (p: unknown) => void): Promise<unknown> {
   const result = await fetchSomething(input);

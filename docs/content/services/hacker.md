@@ -1,57 +1,54 @@
 # Hacker
 
-Executes arbitrary JavaScript against the current pipeline value, with two safety variants.
+Evaluates a single sandboxed expression against the current pipeline value.
 
 ---
 
 ## Available in
 
-| Runtime | Service IDs |
+| Runtime | Service ID |
 |---|---|
-| Browser | `hookup.to/service/hacker/considered`, `hookup.to/service/hacker/dangerous` |
+| Browser | `hookup.to/service/hacker/considered` |
 
 ---
 
 ## What it does
 
-Hacker lets you write a custom JavaScript function that is called on
-each pipeline value. The return value of the function becomes the next
-pipeline value. This is the escape hatch for any transformation that
-cannot be expressed with Map, Filter, or other declarative services.
+Hacker holds one expression, written in the same dialect
+[Map](./map.md) uses for its dynamic terms, and evaluates it on every
+pipeline value. The result of the expression becomes the next pipeline
+value. It is the escape hatch for a computation that does not fit a
+declarative service, while staying inside a sandbox: the expression is
+parsed into an AST and evaluated against a fixed scope, so it cannot
+reach `window`, `document`, `fetch` or any other browser global.
 
-Two variants exist with different security boundaries:
-
-| Variant | Security | Use case |
-|---|---|---|
-| `considered` | Sandboxed execution; no access to browser globals | Safe for shared boards; compute-only transforms |
-| `dangerous` | Full browser environment access | DOM access, `fetch`, `localStorage`, etc. |
+The service is named "Considered Hacker" in the service list.
 
 ---
 
-## Writing a Hacker function
+## Writing an expression
 
-The function receives `params` (the current pipeline value) and should
-return the transformed value. Returning `null` stops the pipeline.
+The incoming pipeline value is bound to `params`, and the built-in
+functions listed in [Map's expression scope](./map.md#expression-scope)
+are in scope:
 
-```javascript
-// Example: extract and reshape a nested field
-function process(params) {
-  const { data: { readings } } = params;
-  return readings.map(r => ({ t: r.timestamp, v: r.value }));
-}
+```
+round(sin(params.triggerCount * 0.05) * 220 + 300)
 ```
 
-Async functions are supported:
-
-```javascript
-async function process(params) {
-  const res = await fetch(`https://api.example.com/enrich?id=${params.id}`);
-  return res.json();
-}
+```
+concat('hsl(', (params.triggerCount * 37) % 360, ',70%,60%)')
 ```
 
-> **`dangerous` only** — `fetch` and other browser APIs are not
-> available in the `considered` variant.
+An expression is a single expression — not a function body. There are no
+statements, no variable declarations, and no object or array literals. To
+build an object, follow Hacker with a [Map](./map.md) whose template
+holds the structure and whose dynamic terms hold the computation —
+`boards/hacker-demo-board.json` does exactly that.
+
+Returning `null` stops the pipeline. When the expression throws or fails
+to parse, the service reports the error on its health indicator and
+emits `null`.
 
 ---
 
@@ -59,7 +56,8 @@ async function process(params) {
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `code` | `string` | `""` | The JavaScript source of the `process` function |
+| `buffer` | `string` | `""` | The expression to evaluate |
+| `size` | `[number, number]` | — | Editor size in pixels |
 
 ---
 
@@ -67,19 +65,15 @@ async function process(params) {
 
 | | Shape |
 |---|---|
-| **Input** | Any value, bound to `params` inside the function |
-| **Output** | The function's return value, or `null` to stop the pipeline |
+| **Input** | Any value, bound to `params` inside the expression |
+| **Output** | The expression's value, or `null` on error or to stop the pipeline |
 
 ---
 
-## Security notes
+## Notes
 
-- **`considered`**: runs in a restricted environment; cannot access
-  `window`, `document`, `fetch`, or any browser global. Safe to use
-  with untrusted code.
-- **`dangerous`**: runs in the full browser context. Only use with code
-  you trust. Grants access to the DOM, network, storage, and any other
-  browser capability.
-
-When in doubt, prefer `considered` and use Map + Filter for
-straightforward transforms.
+- Side effects are limited to what the scope offers — `toVault` writes a
+  value to the user vault, `print` logs to the console.
+- For straightforward reshaping prefer [Map](./map.md), and for
+  predicates prefer [Filter](./filter.md); Hacker is for the computation
+  in between.

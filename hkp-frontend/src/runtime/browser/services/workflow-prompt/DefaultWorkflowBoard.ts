@@ -2,7 +2,7 @@ import { BoardDescriptor } from "hkp-frontend/src/types";
 
 export const DEFAULT_WORKFLOW_DESCRIPTION = [
   "Hello world workflow:",
-  "Create a browser-only board that animates the text HKP in a circle on a canvas.",
+  "Create a browser-only board that animates the text Readymade in a circle on a canvas.",
   "Use a timer to drive animation updates, a map service to emit a text drawing template, and a canvas service to render it.",
 ].join("\n");
 

@@ -1,8 +1,8 @@
-# HKP — Architecture & Philosophy
+# Readymade — Architecture & Philosophy
 
-HKP is a composable, distributed app framework for building **interactive apps** — things
+Readymade is a composable, distributed app framework for building **interactive apps** — things
 users open, configure, and use in real time — not automation pipelines. Think what Reaktor is for buolding
-synths, but HKP targets app of any domain, running across runtimes and machines. Services are the building
+synths, but Readymade targets app of any domain, running across runtimes and machines. Services are the building
 blocks; boards are the apps you build with them.
 
 ---
@@ -25,9 +25,9 @@ of the whole board rather than one runtime (resolving a mount, baking references
 Coordinating a board and hosting a runtime are **separate roles**, even where one process
 plays both:
 
-| Board runs as        | Coordinator | Hosts browser runtimes | Hosts remote runtimes  |
-| -------------------- | ----------- | ---------------------- | ---------------------- |
-| Playground/Readymade | the browser | the browser            | the browser drives them |
+| Board runs as        | Coordinator | Hosts browser runtimes | Hosts remote runtimes    |
+| -------------------- | ----------- | ---------------------- | ------------------------ |
+| Playground/Readymade | the browser | the browser            | the browser drives them  |
 | Cloud board          | hkp-node    | a connected browser    | hkp-node provisions them |
 
 The browser playing both roles is the historical case, not the general one. A runtime host may
@@ -184,10 +184,10 @@ service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted
 redeploys — an outside party configured with it by hand keeps working — while staying
 uncomputable without the key. Renaming a mount rotates that one address; rotating the
 secret rotates all of them. Nothing sensitive enters the board, which says only what the
-endpoint is *called*.
+endpoint is _called_.
 
 Because the address is still assigned at load time rather than written into the board, a
-board that needs to point a client at one references the *service* rather than hard-coding
+board that needs to point a client at one references the _service_ rather than hard-coding
 an address — in whatever field that service already calls its target:
 
 ```json
@@ -283,14 +283,16 @@ meander-ios/           iOS-specific native layer
 
 ## Documentation
 
-| Where | What it holds |
-| ----- | ------------- |
-| `docs/content/concepts/` | How the system is put together and why — one page per idea (board, runtime, service, units, mounts, coordinator, cloud boards, logging) |
-| `docs/content/services/` | One page per service |
-| `docs/content/repository.md` | How the checkout is laid out: what is in the superproject, what is a submodule, and what follows from that when committing, building and testing |
-| `docs/content/testing.md` | What runs where: the per-area suites behind `run-all-tests.sh`, the Playwright suite in `e2e/` across three host profiles, and what CI actually covers |
-| `docs/content/targets.md` | Where a board runs: the web, desktop, iOS and Android targets, what each host adds, which features are compiled in per platform, and what each build produces |
-| `docs/content/vocabulary.md` | **The words this project uses about itself, and the file behind each one.** Read it when a term in a request ("the AppMenu", "a mount", "the consent dialog") has to become a file. Finer-grained than the concepts; every concept appears in it |
+| Where                          | What it holds                                                                                                                                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `docs/content/introduction.md` | The first-read narrative: what Readymade is, what people build with it, and the shape of a board                                                                                                                                                 |
+| `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, units, mounts, coordinator, cloud boards, logging)                                                                                                          |
+| `docs/content/services/`       | One page per service                                                                                                                                                                                                                             |
+| `docs/content/board-json.md`   | The serialisation format: what a board document contains, field by field, and what it deliberately does not                                                                                                                                      |
+| `docs/content/repository.md`   | How the checkout is laid out: what is in the superproject, what is a submodule, and what follows from that when committing, building and testing                                                                                                 |
+| `docs/content/testing.md`      | What runs where: the per-area suites behind `run-all-tests.sh`, the Playwright suite in `e2e/` across three host profiles, and what CI actually covers                                                                                           |
+| `docs/content/targets.md`      | Where a board runs: the web, desktop, iOS and Android targets, what each host adds, which features are compiled in per platform, and what each build produces                                                                                    |
+| `docs/content/vocabulary.md`   | **The words this project uses about itself, and the file behind each one.** Read it when a term in a request ("the AppMenu", "a mount", "the consent dialog") has to become a file. Finer-grained than the concepts; every concept appears in it |
 
 The vocabulary is written by hand — never add or remove a term on your own
 initiative. `/vocabulary` checks its references against a changeset and repairs
@@ -320,7 +322,7 @@ registry registration, tests, demo board, and docs page. The demo board filename
   boards into apps — like crafting. When designing a service, ask: can this be composed with
   others to make something more useful than the sum of its parts?
 - **Structured flow over wires.** Explicit wires are like `goto` — they work but make flows
-  hard to reason about. HKP has no wire UI; the ordered service list _is_ the flow. Express
+  hard to reason about. Readymade has no wire UI; the ordered service list _is_ the flow. Express
   branching and iteration through control-flow services: a Switch that pattern-matches and
   routes into sub-pipelines, a Filter that stops propagation on a failed predicate, a Looper
   that repeats sub-services until a predicate stops it.

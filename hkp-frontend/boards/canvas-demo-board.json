@@ -13,10 +13,35 @@
       },
       {
         "uuid": "shapes-svc",
-        "serviceId": "hookup.to/service/hacker/dangerous",
+        "serviceId": "hookup.to/service/map",
         "serviceName": "Shapes",
         "state": {
-          "buffer": "const hue = (params.triggerCount * 37) % 360;\nreturn [\n  { type: 'rect', x: 40, y: 40, width: 160, height: 100, color: `hsl(${hue},70%,60%)` },\n  { type: 'circle', x: 350, y: 200, radius: 80, color: `hsl(${(hue+120)%360},70%,60%)` },\n  { type: 'text', text: 'Canvas', x: '50%', y: '78%', color: `hsl(${(hue+240)%360},70%,40%)`, font: { size: '12%', weight: 'bold', family: 'monospace' } }\n];"
+          "mode": "replace",
+          "template": [
+            {
+              "type": "rect",
+              "x": 40,
+              "y": 40,
+              "width": 160,
+              "height": 100,
+              "color=": "concat('hsl(', (params.triggerCount * 37) % 360, ',70%,60%)')"
+            },
+            {
+              "type": "circle",
+              "x": 350,
+              "y": 200,
+              "radius": 80,
+              "color=": "concat('hsl(', (params.triggerCount * 37 + 120) % 360, ',70%,60%)')"
+            },
+            {
+              "type": "text",
+              "text": "Canvas",
+              "x": "50%",
+              "y": "78%",
+              "color=": "concat('hsl(', (params.triggerCount * 37 + 240) % 360, ',70%,40%)')",
+              "font": { "size": "12%", "weight": "bold", "family": "monospace" }
+            }
+          ]
         }
       },
       {

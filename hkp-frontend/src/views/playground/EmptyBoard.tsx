@@ -3,7 +3,10 @@ import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import { DragEvent, useContext, useState } from "react";
 import { getDraggedFiles, readFile } from "./common";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
-import { isBoardDescriptor, isRuntimeDescriptorConfig } from "hkp-frontend/src/types";
+import {
+  isBoardDescriptor,
+  isRuntimeDescriptorConfig,
+} from "hkp-frontend/src/types";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import RuntimeMenu from "hkp-frontend/src/ui-components/toolbar/RuntimeMenu";
 import {
@@ -165,7 +168,7 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
         <div style={{ width: "50%", margin: "10px auto" }}>
           <img
             src={Logo}
-            alt="HKP Logo"
+            alt="Readymade Logo"
             style={{ width: "100%", filter: "grayscale(1) opacity(0.45)" }}
           />
         </div>

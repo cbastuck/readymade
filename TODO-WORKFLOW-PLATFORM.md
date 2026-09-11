@@ -350,10 +350,10 @@ arbitrary JavaScript in the hkp-node process. Verified rather than assumed: a te
 file reads, `process.env` and process spawning all followed from the same one line.
 
 Two exposures, and they were not equally bad. **Configuration → code** is by design: a Map
-template *is* code, and it is gated by auth, which is fail-closed (`index.ts:293-343` —
+template _is_ code, and it is gated by auth, which is fail-closed (`index.ts:293-343` —
 a non-loopback bind with no Auth0 refuses to start, as does `ALLOWED_EMAILS` without it).
-The honest statement of that one is *anyone allow-listed can run code as the hkp-node user*.
-**Data → code** was not by design: `map`'s sensing mode built a template out of *input*, and
+The honest statement of that one is _anyone allow-listed can run code as the hkp-node user_.
+**Data → code** was not by design: `map`'s sensing mode built a template out of _input_, and
 a key ending in `=` became an expression — so a field named `pwned=` arriving from an
 unauthenticated mount, an email body or an HTTP response was compiled on the next pass.
 Demonstrated, then fixed separately in `map.ts` (`sensed()` strips the suffix).
@@ -381,7 +381,7 @@ the rest of the pipeline once per conversation, copying `store`'s `release`. Tha
 works, and it was the wrong place for it. Iteration buried in whichever service
 happened to need it first is invisible in the board, unavailable to the next
 service that produces a list, and against **structured flow over wires** — the
-ordered service list is supposed to *be* the flow. So `actionable` now answers
+ordered service list is supposed to _be_ the flow. So `actionable` now answers
 `{ conversations, count }` like any other query, and `iterator` runs a nested
 pipeline once per item.
 
@@ -415,7 +415,7 @@ direction.
 Building the SYN board hit the split-and-re-join gap head on: `read-thread` knows the
 conversation, `text-generation` replaces its input with an answer, and `put-artifact` then
 has nothing to file it under. `join` is the structural answer the earlier decision called
-for — a nested pipeline as a *detour*, with the input carried past it — and it works.
+for — a nested pipeline as a _detour_, with the input carried past it — and it works.
 
 It does not work here, and that was found by running the board rather than by reasoning
 about it. The notification dump is the whole story:
@@ -426,7 +426,7 @@ about it. The notification dump is the whole story:
     extract          -> {"text": …, "json": {…}}       ← the answer, afterwards
 
 **`text-generation` is asynchronous**: it returns `null` and pushes its result down the
-pipeline when it arrives. `join` merges what the nested pipeline *returns*, so it sees
+pipeline when it arrives. `join` merges what the nested pipeline _returns_, so it sees
 nothing. Checked, not assumed: `hold` cannot stand in either — it replaces its input and
 holds a single slot, so it cannot carry per-item state with several conversations in
 flight.
@@ -438,14 +438,14 @@ Two consequences, both shipped:
    advanced the conversation as though extraction had succeeded — worse than stopping,
    because downstream cannot tell it from a merge that worked.
 2. `text-generation` grows `carry: string[]` — input fields copied onto its answer. The
-   carrier rides *with* the data through the asynchronous gap, which is the only thing
+   carrier rides _with_ the data through the asynchronous gap, which is the only thing
    that works today. The board uses `carry: ["conversationId"]` and a flat nested
    pipeline: `read-thread → as-prompt → extract → put-artifact → transition`.
 
 `carry` is a per-service answer to a general problem, and that is the debt. The general
 fix (**G14b**) is for `join` to register a result target on its nested runtime and merge a
 late result with the input it remembered. That needs correlation, and correlation is what
-the runtime cannot currently supply: `emitResult` is called by the pushing service *after*
+the runtime cannot currently supply: `emitResult` is called by the pushing service _after_
 `processFrom` has returned, so the run context is gone by the time a parent could read it.
 Until the runtime names the run at emit time, an asynchronous re-join cannot be built —
 so `join` says so in its own header rather than failing quietly in somebody's board.
@@ -468,9 +468,9 @@ is the version somebody copies next.
 
 Two things this forced, both of which the old code had already predicted:
 
-- **Ambient run state had to stop being a field.** `withContext`'s own comment said it: *"Safe
+- **Ambient run state had to stop being a field.** `withContext`'s own comment said it: _"Safe
   as ambient state only because a pass is synchronous… A pass that awaited would need the
-  context threaded through the call instead."* Two runs started independently — a timer tick
+  context threaded through the call instead."_ Two runs started independently — a timer tick
   and an arriving message — now interleave across awaits, and a plain field would let the
   second overwrite the first mid-flight, misattributing every log entry after that point.
   `AsyncLocalStorage` gives each run its own view and restores the outer one leaving a nested
@@ -497,7 +497,7 @@ Found by running the SYN board, not by reading it: the drafting prompt said
 `SubService.rebuild()` builds its runtime with `boardName: ""`, and a `HostedRuntime`
 constructed without an owner defaults to the **anonymous** one. `applyScope()` corrects that
 at `setHost` — but a service's nested runtime is built in its constructor, so a pipeline two
-levels deep was told the scope its parent held *at that moment*: anonymous, and no board.
+levels deep was told the scope its parent held _at that moment_: anonymous, and no board.
 Nothing re-propagated afterwards.
 
 `conversations` inside a `join` inside an `iterator` is exactly that shape, so the SYN board's
@@ -1037,7 +1037,7 @@ The send action belongs on the dispatcher as a third action, gated on
 the existing demo board sends the same mail it always did — and `envelope` takes the
 recipient, subject, body and threading headers from the input.
 
-Keeping that behind a mode rather than letting the input win is the one place HKP's
+Keeping that behind a mode rather than letting the input win is the one place Readymade's
 input-decides-over-config rule is deliberately not applied. A `to` drifting down a
 pipeline must not be able to redirect mail that was addressed by configuration.
 
@@ -1052,13 +1052,13 @@ Three things came out of reading the service that were not in the request:
   `smtp-email → conversations(ingest)` wires up with nothing in between.
 - **`In-Reply-To` / `References` are load-bearing.** Not for the guest's client — for us.
   `threadOf` matches an incoming reply against messages it already has, so a reply sent
-  without those headers *and* not filed means the guest's answer opens a second
+  without those headers _and_ not filed means the guest's answer opens a second
   conversation. `tests/outbound-threading.test.ts` demonstrates that failure
   deliberately, beside the case that works.
 
 Two small additions in `conversations` fell out of it:
 
-- **`thread` reports `lastInbound`.** A reply goes to whoever wrote *in*, and the
+- **`thread` reports `lastInbound`.** A reply goes to whoever wrote _in_, and the
   restricted expression dialect has no way to search a list for that. Taking the last
   email is right only until we have sent one — then a board addresses its reply to its
   own sending address.

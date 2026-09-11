@@ -1,12 +1,12 @@
 ---
-description: Design and generate a complete HKP board JSON from a description — runtimes, services, wiring, and optional facade
+description: Design and generate a complete Readymade board JSON from a description — runtimes, services, wiring, and optional facade
 allowed-tools: Read, Write, Edit, Bash
 ---
 
 # New Board
 
-You are designing a complete HKP board from a description. A board is the top-level artifact
-in HKP — it declares runtimes, wires services through them, and optionally defines a facade
+You are designing a complete Readymade board from a description. A board is the top-level artifact
+in Readymade — it declares runtimes, wires services through them, and optionally defines a facade
 that gives users a polished app-like interface on top.
 
 Work through these steps in order. Ask focused questions only where the goal is genuinely
@@ -17,7 +17,8 @@ ambiguous.
 ## Step 1 — Understand the goal
 
 Before designing anything, establish:
-- What should the board *do* from the user's perspective?
+
+- What should the board _do_ from the user's perspective?
 - What data flows through it and in which direction?
 - Does it need real-time/streaming data, or is it event-driven?
 - Who is the audience — the builder themselves, or other (non-technical) users?
@@ -30,12 +31,12 @@ The last question determines whether a facade is needed.
 
 Pick the minimum set of runtimes that covers the domains involved:
 
-| If you need… | Use runtime |
-|---|---|
-| UI, browser APIs, WebRTC, camera, audio Web API | Browser |
-| Messaging (Telegram, SMTP, IMAP), HTTP server, file I/O | Node.js (hkp-node) |
-| Audio DSP (FFT, IFFT, WAV, ring buffers), high-performance C++ | hkp-rt |
-| AI/ML, Python-native open-source models | Python (hkp-python) |
+| If you need…                                                   | Use runtime         |
+| -------------------------------------------------------------- | ------------------- |
+| UI, browser APIs, WebRTC, camera, audio Web API                | Browser             |
+| Messaging (Telegram, SMTP, IMAP), HTTP server, file I/O        | Node.js (hkp-node)  |
+| Audio DSP (FFT, IFFT, WAV, ring buffers), high-performance C++ | hkp-rt              |
+| AI/ML, Python-native open-source models                        | Python (hkp-python) |
 
 Start with the fewest runtimes that work. A single browser runtime is almost always the
 right starting point — only add remote runtimes for capabilities that don't exist in the
@@ -54,6 +55,7 @@ and its first line after the `#` heading is a one-line description. Read the rel
 before picking services; don't guess at service IDs or state fields.
 
 **Service ID conventions:**
+
 - Browser services: `hookup.to/service/<slug>` (e.g. `hookup.to/service/timer`)
 - Node.js services: plain slug (e.g. `monitor`, `peer-server`, `smtp`)
 - hkp-rt services: plain slug (e.g. `wav-reader`, `websocket-writer`)
@@ -63,6 +65,7 @@ runtime (or triggers itself, like Timer). Each service's output is the next serv
 Return `null` from a service to stop propagation; return early to skip downstream services.
 
 **Useful services for common patterns:**
+
 - Source: `injector` (manual trigger), `timer` (periodic), `microphone-monitor`, `input`
 - Transform: `map`, `filter`, `select`, `smooth`, `delay`, `cache`, `debounce`
 - Control flow: `switch`, `if`, `filter`, `stopper`, `looper`
@@ -128,32 +131,77 @@ service type: `threshold-filter-svc` not `filter-1-svc`.
 ### Common board patterns
 
 **Single browser runtime** — everything in one process:
+
 ```json
 {
   "boardName": "My App",
-  "runtimes": [{ "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
   "services": {
     "ui": [
-      { "uuid": "source-svc", "serviceId": "hookup.to/service/injector", "serviceName": "Source", "state": {} },
-      { "uuid": "transform-svc", "serviceId": "hookup.to/service/map", "serviceName": "Transform", "state": {} },
-      { "uuid": "output-svc", "serviceId": "hookup.to/service/monitor", "serviceName": "Output" }
+      {
+        "uuid": "source-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Source",
+        "state": {}
+      },
+      {
+        "uuid": "transform-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Transform",
+        "state": {}
+      },
+      {
+        "uuid": "output-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Output"
+      }
     ]
   }
 }
 ```
 
 **Browser → Node → Browser** — node processes in the middle:
+
 ```json
 {
   "runtimes": [
-    { "id": "ui-in",  "name": "Browser", "type": "browser", "state": { "wrapServices": false } },
-    { "id": "node",   "name": "Node",    "type": "rest", "url": "http://127.0.0.1:8080", "state": { "wrapServices": false } },
-    { "id": "ui-out", "name": "Result",  "type": "browser", "state": { "wrapServices": false } }
+    {
+      "id": "ui-in",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "node",
+      "name": "Node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "ui-out",
+      "name": "Result",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
   ],
   "services": {
-    "ui-in":  [ /* trigger or input services */ ],
-    "node":   [ /* node services */ ],
-    "ui-out": [ /* display services */ ]
+    "ui-in": [
+      /* trigger or input services */
+    ],
+    "node": [
+      /* node services */
+    ],
+    "ui-out": [
+      /* display services */
+    ]
   }
 }
 ```
@@ -185,6 +233,7 @@ named controls and displays. Add it as a `"facade"` key in the board JSON.
 ### LayoutItem — container or widget
 
 A **container** groups children:
+
 ```json
 {
   "direction": "row | column",
@@ -206,66 +255,129 @@ remaining space in their parent container.
 **button** — sends a configure payload to a service. An optional `indicator` renders a live
 dot left of the label, driven by a service notification (values are matched via `String(value)`,
 so booleans work):
+
 ```json
-{ "type": "button", "label": "Start", "action": { "serviceUuid": "timer-svc", "configure": { "start": true } },
-  "indicator": { "source": { "serviceUuid": "mic-svc", "path": "isRecording" },
-                 "statusColors": { "true": "#ef4444", "false": "#6b7280" } } }
+{
+  "type": "button",
+  "label": "Start",
+  "action": { "serviceUuid": "timer-svc", "configure": { "start": true } },
+  "indicator": {
+    "source": { "serviceUuid": "mic-svc", "path": "isRecording" },
+    "statusColors": { "true": "#ef4444", "false": "#6b7280" }
+  }
+}
 ```
 
 **text-input** — text field that configures a service on submit. `$$input` is replaced with the typed value:
+
 ```json
-{ "type": "text-input", "label": "Topic", "placeholder": "my-topic", "submitLabel": "Set",
-  "action": { "serviceUuid": "notifier-svc", "configure": { "url": "https://ntfy.sh/$$input" } } }
+{
+  "type": "text-input",
+  "label": "Topic",
+  "placeholder": "my-topic",
+  "submitLabel": "Set",
+  "action": {
+    "serviceUuid": "notifier-svc",
+    "configure": { "url": "https://ntfy.sh/$$input" }
+  }
+}
 ```
 
 **knob** — rotary control with optional markers and live readout:
+
 ```json
-{ "type": "knob", "label": "Threshold", "min": -60, "max": 0, "defaultValue": -12, "unit": "dB",
-  "width": 130, "height": 110, "showValue": true,
-  "markers": [ { "value": -20, "text": "loud" } ],
-  "action": { "serviceUuid": "filter-svc", "configure": { "threshold": "{{value}}" } } }
+{
+  "type": "knob",
+  "label": "Threshold",
+  "min": -60,
+  "max": 0,
+  "defaultValue": -12,
+  "unit": "dB",
+  "width": 130,
+  "height": 110,
+  "showValue": true,
+  "markers": [{ "value": -20, "text": "loud" }],
+  "action": {
+    "serviceUuid": "filter-svc",
+    "configure": { "threshold": "{{value}}" }
+  }
+}
 ```
+
 `{{value}}` in the configure payload is replaced with the current numeric value. Works inside arrays too.
 
 **level-meter** — vertical bar driven by a service notification:
+
 ```json
-{ "type": "level-meter", "source": { "serviceUuid": "mic-svc", "path": "levelDb" },
-  "min": -60, "max": 0, "unit": "dB", "thresholdKnobServiceUuid": "knob-svc" }
+{
+  "type": "level-meter",
+  "source": { "serviceUuid": "mic-svc", "path": "levelDb" },
+  "min": -60,
+  "max": 0,
+  "unit": "dB",
+  "thresholdKnobServiceUuid": "knob-svc"
+}
 ```
 
 **canvas** — embeds the Canvas service's drawing surface:
+
 ```json
 { "type": "canvas", "serviceUuid": "canvas-svc" }
 ```
 
 **xy-pad** — embeds the XY Pad service:
+
 ```json
 { "type": "xy-pad", "serviceUuid": "xy-pad-svc", "width": 400 }
 ```
 
 **qr-code** — shows a QR code from a service notification:
+
 ```json
-{ "type": "qr-code", "caption": "Scan to connect", "source": { "serviceUuid": "qr-svc", "path": "url" } }
+{
+  "type": "qr-code",
+  "caption": "Scan to connect",
+  "source": { "serviceUuid": "qr-svc", "path": "url" }
+}
 ```
 
 **message-list** — scrolling message thread with optional inline composer:
+
 ```json
-{ "type": "message-list", "grow": true,
+{
+  "type": "message-list",
+  "grow": true,
   "source": { "serviceUuid": "monitor-svc" },
-  "composer": { "placeholder": "Type a message…", "submitLabel": "Send",
-    "action": { "serviceUuid": "input-svc", "configure": { "inject": "$$input" } } } }
+  "composer": {
+    "placeholder": "Type a message…",
+    "submitLabel": "Send",
+    "action": {
+      "serviceUuid": "input-svc",
+      "configure": { "inject": "$$input" }
+    }
+  }
+}
 ```
 
 **status-indicator** — shows a coloured dot based on service state:
+
 ```json
-{ "type": "status-indicator", "source": { "serviceUuid": "svc", "path": "status" },
-  "statusColors": { "ok": "green", "error": "red" } }
+{
+  "type": "status-indicator",
+  "source": { "serviceUuid": "svc", "path": "status" },
+  "statusColors": { "ok": "green", "error": "red" }
+}
 ```
 
 **file-pick** — file chooser that sends the file to a service:
+
 ```json
-{ "type": "file-pick", "label": "Choose file", "accept": ".wav,.mp3",
-  "action": { "serviceUuid": "file-svc" } }
+{
+  "type": "file-pick",
+  "label": "Choose file",
+  "accept": ".wav,.mp3",
+  "action": { "serviceUuid": "file-svc" }
+}
 ```
 
 ### Source object (for read widgets)

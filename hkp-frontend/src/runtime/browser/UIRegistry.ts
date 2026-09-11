@@ -66,7 +66,6 @@ export function findServiceUI(
     case "hookup.to/service/trigger-pad":
       return TriggerPadUI;
     case "hookup.to/service/hacker/considered":
-    case "hookup.to/service/hacker/dangerous":
       return HackerUI;
 
     case "hookup.to/service/output":

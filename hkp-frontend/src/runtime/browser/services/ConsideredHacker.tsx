@@ -10,11 +10,10 @@ const serviceId = "hookup.to/service/hacker/considered";
 const serviceName = "Considered Hacker";
 
 class ConsideredHacker extends Hacker {
-  buffer: any;
-
-  async process(params: any): Promise<any> {
-    const exp = parseExpression(this.buffer);
-    return evalExpression(exp, params);
+  process(params: any): any {
+    return this.baseProcess((buffer: string) =>
+      evalExpression(parseExpression(buffer), { params }, this.app),
+    );
   }
 }
 

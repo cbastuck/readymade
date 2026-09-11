@@ -75,7 +75,7 @@ Timer → Map → Output ─WS─► Input → Process → Canvas
 ```
 
 This is for crossing *out* of a board — to a separate board, or to software that
-is not part of HKP at all. Runtimes **within one board** are already chained in
+is not part of Readymade at all. Runtimes **within one board** are already chained in
 board order, and passing data from one to the next needs no services; see the
 Architecture page.
 
