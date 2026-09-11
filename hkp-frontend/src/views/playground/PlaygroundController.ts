@@ -106,8 +106,14 @@ export function usePlaygroundController(
   const [showShareBoardQRCodeURL, setShowShareBoardQRCodeURL] = useState<
     string | null
   >(null);
+  // The board's name before anything is loaded: the route names it where the
+  // host routes by board (the website playground), the prop where the host
+  // opens a board itself (Readymade's sessions). Without the prop a board
+  // opened by descriptor would fall back to the placeholder name and be saved
+  // and uploaded under that.
   const [requestedBoardName, setRequestedBoardName] = useState<string>(
     (props.match && props.match.params && props.match.params.board) ||
+      props.boardName ||
       defaultName,
   );
   const [description, setDescription] = useState("");
@@ -524,11 +530,14 @@ export function usePlaygroundController(
     await saveUnitDocuments(documents);
     const data = documents?.composition;
     if (props.onSaveBoard && data) {
-      props.onSaveBoard(name, { ...data, description: desc });
+      props.onSaveBoard(name, { ...data, boardName: name, description: desc });
     } else {
       storeBoardToLocalStorage(
         name,
-        JSON.stringify({ ...data, name, description: desc }),
+        // Saving under a name is what the board is called from here on — the
+        // document says so too, or opening it again restores the name it had
+        // before it was ever saved.
+        JSON.stringify({ ...data, boardName: name, description: desc }),
         desc,
       );
 

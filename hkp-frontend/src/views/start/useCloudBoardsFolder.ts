@@ -26,7 +26,10 @@ function statusLabel(status: CoordinatorBoardInfo["status"]): string {
   }
 }
 
-function boardNode(coordinatorUrl: string, board: CoordinatorBoardInfo): BoardNode {
+function boardNode(
+  coordinatorUrl: string,
+  board: CoordinatorBoardInfo,
+): BoardNode {
   return {
     type: "board",
     name: board.boardName,
@@ -39,8 +42,8 @@ function boardNode(coordinatorUrl: string, board: CoordinatorBoardInfo): BoardNo
 }
 
 /**
- * The "Cloud Boards" source: each configured coordinator is a sub-folder whose
- * children are the boards registered on it. Mirrors the Cloud Boards view
+ * The "Cloud Boards" source: each configured coordinator is a sub-folder
+ * whose children are the boards registered on it. Mirrors the Cloud Boards view
  * (coordinators → boards), so the start page surfaces the same thing without a
  * detour through "+ Create Board". Login-gated — coordinators are read from
  * localStorage but listing their boards needs the cloud login. Returns null
@@ -91,7 +94,10 @@ export function useCloudBoardsFolder(
       }
       setByCoordinator((prev) => ({
         ...prev,
-        [coordinator.url]: { boards: prev[coordinator.url]?.boards, loading: true },
+        [coordinator.url]: {
+          boards: prev[coordinator.url]?.boards,
+          loading: true,
+        },
       }));
       try {
         const boards = await listCoordinatorBoards(
@@ -100,7 +106,10 @@ export function useCloudBoardsFolder(
           user.idToken,
         );
         if (mountedRef.current) {
-          setByCoordinator((prev) => ({ ...prev, [coordinator.url]: { boards } }));
+          setByCoordinator((prev) => ({
+            ...prev,
+            [coordinator.url]: { boards },
+          }));
         }
       } catch {
         if (mountedRef.current) {
@@ -154,7 +163,7 @@ export function useCloudBoardsFolder(
           : state?.error
             ? "Unreachable — check the coordinator"
             : state
-              ? "No cloud boards yet"
+              ? "Nothing deployed here yet"
               : "Loading…",
         onRefresh: () => void fetchCoordinator(coordinator),
         refreshing: state?.loading ?? false,

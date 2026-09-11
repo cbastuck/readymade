@@ -193,6 +193,7 @@ export default function MobileBoardDetails({
   onAssignFolders,
   onRemoveFromFolder,
   onDelete,
+  onDeleteFromCloud,
   onRevokeShare,
   onLeaveShare,
   loadHistory,
@@ -207,12 +208,20 @@ export default function MobileBoardDetails({
   onAssignFolders?: () => void;
   onRemoveFromFolder?: () => void;
   onDelete?: () => void;
+  /** Deletes the board's uploaded copy from the cloud storage (owner side);
+   *  asked to confirm with a second tap. The local copy stays. */
+  onDeleteFromCloud?: () => Promise<void>;
   onRevokeShare?: (email: string) => Promise<void>;
   onLeaveShare?: () => Promise<void>;
   loadHistory?: () => Promise<BoardHistoryItem[]>;
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const [confirmingCloudDelete, setConfirmingCloudDelete] = useState(false);
+  const [cloudDeleteState, setCloudDeleteState] = useState<
+    "idle" | "busy" | "error"
+  >("idle");
+  const [cloudDeleteError, setCloudDeleteError] = useState<string | null>(null);
   const [shareBusy, setShareBusy] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [cloudState, setCloudState] = useState<"idle" | "busy" | "done" | "error">(
@@ -250,6 +259,22 @@ export default function MobileBoardDetails({
     } finally {
       setShareBusy(null);
       setConfirmingLeave(false);
+    }
+  };
+
+  const deleteFromCloud = async () => {
+    if (!onDeleteFromCloud || cloudDeleteState === "busy") {
+      return;
+    }
+    setCloudDeleteState("busy");
+    setCloudDeleteError(null);
+    try {
+      await onDeleteFromCloud();
+      setCloudDeleteState("idle");
+      setConfirmingCloudDelete(false);
+    } catch (err) {
+      setCloudDeleteError(reasonOf(err));
+      setCloudDeleteState("error");
     }
   };
 
@@ -485,6 +510,31 @@ export default function MobileBoardDetails({
             />
             {shareError && !board.sharedWith?.length && (
               <ErrorText>{shareError}</ErrorText>
+            )}
+          </>
+        )}
+        {onDeleteFromCloud && (
+          <>
+            <ActionButton
+              label={
+                cloudDeleteState === "busy"
+                  ? "Deleting…"
+                  : confirmingCloudDelete
+                    ? `Really delete “${board.name}” from the cloud?`
+                    : "Delete from cloud"
+              }
+              tone="danger"
+              disabled={cloudDeleteState === "busy"}
+              onClick={() => {
+                if (confirmingCloudDelete) {
+                  void deleteFromCloud();
+                } else {
+                  setConfirmingCloudDelete(true);
+                }
+              }}
+            />
+            {cloudDeleteState === "error" && cloudDeleteError && (
+              <ErrorText>Delete failed — {cloudDeleteError}</ErrorText>
             )}
           </>
         )}

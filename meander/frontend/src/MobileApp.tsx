@@ -75,6 +75,7 @@ function StartScreen({
     uploadBoardToCloud,
     onRevokeShare,
     onLeaveShare,
+    onDeleteCloudBoard,
     openCloudStored,
   } = useCloudBoardSources();
 
@@ -177,6 +178,7 @@ function StartScreen({
       myBoardsExtraFolders={uploadedFolders}
       onRevokeShare={onRevokeShare}
       onLeaveShare={onLeaveShare}
+      onDeleteCloudBoard={onDeleteCloudBoard}
       manageRemotes={remotes}
       withCloudBoards
       manageCoordinators={coordinators}

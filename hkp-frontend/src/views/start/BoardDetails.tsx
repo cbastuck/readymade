@@ -52,6 +52,9 @@ interface Props {
   onRemoveFromFolder?: () => void;
   /** Deletes the board entirely; asked to confirm with a second click. */
   onDelete?: () => void;
+  /** Deletes the board's uploaded copy from the cloud storage (owner side);
+   *  asked to confirm with a second click. The local copy stays. */
+  onDeleteFromCloud?: () => Promise<void>;
   /** Revokes a share recipient's access (owner side); renders the board's
    *  sharedWith list with a Revoke action per entry. */
   onRevokeShare?: (email: string) => Promise<void>;
@@ -223,11 +226,17 @@ export default function BoardDetails({
   onAssignFolders,
   onRemoveFromFolder,
   onDelete,
+  onDeleteFromCloud,
   onRevokeShare,
   onLeaveShare,
 }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const [confirmingCloudDelete, setConfirmingCloudDelete] = useState(false);
+  const [cloudDeleteState, setCloudDeleteState] = useState<
+    "idle" | "busy" | "error"
+  >("idle");
+  const [cloudDeleteError, setCloudDeleteError] = useState<string | null>(null);
   const [shareBusy, setShareBusy] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -307,6 +316,22 @@ export default function BoardDetails({
     } catch (err) {
       setCloudError(reasonOf(err));
       setCloudState("error");
+    }
+  };
+
+  const deleteFromCloud = async () => {
+    if (!onDeleteFromCloud || cloudDeleteState === "busy") {
+      return;
+    }
+    setCloudDeleteState("busy");
+    setCloudDeleteError(null);
+    try {
+      await onDeleteFromCloud();
+      setCloudDeleteState("idle");
+      setConfirmingCloudDelete(false);
+    } catch (err) {
+      setCloudDeleteError(reasonOf(err));
+      setCloudDeleteState("error");
     }
   };
 
@@ -801,6 +826,43 @@ export default function BoardDetails({
                   style={{ fontSize: 12, color: "#e0355f", textAlign: "center" }}
                 >
                   {shareError}
+                </div>
+              )}
+            </>
+          )}
+          {onDeleteFromCloud && (
+            <>
+              <button
+                className="st-btn st-btn-ghost"
+                style={{
+                  justifyContent: "center",
+                  color: "#e0355f",
+                  borderColor: confirmingCloudDelete ? "#e0355f" : undefined,
+                }}
+                disabled={cloudDeleteState === "busy"}
+                onClick={() => {
+                  if (confirmingCloudDelete) {
+                    void deleteFromCloud();
+                  } else {
+                    setConfirmingCloudDelete(true);
+                  }
+                }}
+              >
+                {cloudDeleteState === "busy"
+                  ? "Deleting…"
+                  : confirmingCloudDelete
+                    ? `Really delete “${board.name}” from the cloud?`
+                    : "Delete from cloud"}
+              </button>
+              {cloudDeleteState === "error" && cloudDeleteError && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#e0355f",
+                    textAlign: "center",
+                  }}
+                >
+                  Delete failed — {cloudDeleteError}
                 </div>
               )}
             </>

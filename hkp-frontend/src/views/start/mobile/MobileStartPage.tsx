@@ -213,6 +213,7 @@ export default function MobileStartPage(props: StartPageProps) {
     uploadBoardToCloud,
     onRevokeShare,
     onLeaveShare,
+    onDeleteCloudBoard,
     runtimes,
     manageRemotes,
     withCloud,
@@ -691,6 +692,11 @@ export default function MobileStartPage(props: StartPageProps) {
               onLeaveShare={
                 detail.board.cloudRole === "viewer" && onLeaveShare
                   ? () => onLeaveShare(detail.board)
+                  : undefined
+              }
+              onDeleteFromCloud={
+                detail.board.cloudRole === "owner" && onDeleteCloudBoard
+                  ? () => onDeleteCloudBoard(detail.board).then(pop)
                   : undefined
               }
               loadHistory={

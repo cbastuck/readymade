@@ -112,6 +112,10 @@ export interface StartPageProps {
   /** Removes the user from a board shared with them; applies to boards with
    *  cloudRole "viewer" (the Shared → With me source). */
   onLeaveShare?: (board: BoardNode) => Promise<void>;
+  /** Deletes one of the user's uploaded boards from the cloud storage;
+   *  applies to boards with cloudRole "owner" (My Boards → Uploaded, Shared →
+   *  From me). Enables "Delete from cloud" in the details column. */
+  onDeleteCloudBoard?: (board: BoardNode) => Promise<void>;
   /** Native image picker replacing the <input type="file"> flow — required in
    *  webviews without file-input support (Readymade desktop). */
   pickBoardArtImage?: () => Promise<Blob | null>;
@@ -252,6 +256,7 @@ export default function StartPage(props: StartPageProps) {
     forkBoard,
     onRevokeShare,
     onLeaveShare,
+    onDeleteCloudBoard,
     pickBoardArtImage,
     runtimes,
     manageRemotes,
@@ -748,6 +753,11 @@ export default function StartPage(props: StartPageProps) {
       onLeaveShare={
         detailBoard.board.cloudRole === "viewer" && onLeaveShare
           ? () => onLeaveShare(detailBoard.board)
+          : undefined
+      }
+      onDeleteFromCloud={
+        detailBoard.board.cloudRole === "owner" && onDeleteCloudBoard
+          ? () => onDeleteCloudBoard(detailBoard.board)
           : undefined
       }
       loadHistory={

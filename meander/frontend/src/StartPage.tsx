@@ -13,6 +13,7 @@ import {
   createEmptyBoard,
   initialsOf,
   splitBuildVersion,
+  useCloudBoardSources,
 } from "hkp-frontend/src/views/start";
 import { commitUrl } from "hkp-frontend/src/projectMeta";
 import { forkBoard } from "hkp-frontend/src/core/forkBoard";
@@ -48,6 +49,27 @@ export default function StartPage({ onRestoreBoard }: Props) {
     setLastSessionName(localStorage.getItem("lastActiveBoardName"));
     void isMeanderApp().then(setInApp);
   }, []);
+
+  // Boards live in the app's own store, not localStorage, so the upload action
+  // is given a reader that goes through the backend like everything else here.
+  const loadBoardForUpload = useCallback(
+    async (name: string) =>
+      (await (await getBackend()).loadBoard(name)) as unknown as Record<
+        string,
+        unknown
+      >,
+    [],
+  );
+
+  const {
+    sharedSource,
+    uploadedFolders,
+    uploadBoardToCloud,
+    onRevokeShare,
+    onLeaveShare,
+    onDeleteCloudBoard,
+    openCloudStored,
+  } = useCloudBoardSources({ loadBoard: loadBoardForUpload });
 
   // Persisted via hkp://startpage in the desktop app (startpage.json next to
   // the saved boards), localStorage in a plain browser.
@@ -262,6 +284,19 @@ export default function StartPage({ onRestoreBoard }: Props) {
           },
         });
         break;
+      case "cloud-stored":
+        // Opened, not imported: the board is handed straight to the session and
+        // nothing lands in the library until the user saves it themselves.
+        void openCloudStored(action)
+          .then((board) => {
+            if (board) {
+              onRestoreBoard(board.data as unknown as BoardDescriptor);
+            }
+          })
+          .catch((err: unknown) => {
+            console.error("Could not open the cloud board", err);
+          });
+        break;
       case "runtime":
         // Watch the runtime live in the attached remote view. Nothing here owns
         // it — the server records no attribution — so that view only ever reads
@@ -300,6 +335,12 @@ export default function StartPage({ onRestoreBoard }: Props) {
       onDeleteBoard={deleteBoard}
       loadBoardSource={loadBoardSource}
       saveBoardSource={saveBoardSource}
+      uploadBoardToCloud={uploadBoardToCloud}
+      extraSources={[sharedSource]}
+      myBoardsExtraFolders={uploadedFolders}
+      onRevokeShare={onRevokeShare}
+      onLeaveShare={onLeaveShare}
+      onDeleteCloudBoard={onDeleteCloudBoard}
       manageRemotes={remotes}
       withCloudBoards
       uploadBoardArt={uploadBoardArt}
