@@ -2,6 +2,7 @@ import InputField from "hkp-frontend/src/components/shared/InputField";
 import SelectorField, {
   OnChangeValue,
 } from "hkp-frontend/src/components/shared/SelectorField";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import { useMemo } from "react";
 import DeleteButton from "../../../ui-components/DeleteButton";
 
@@ -33,13 +34,15 @@ export default function HttpHeaders({
       "x-requested-with": "X-Requested-With",
       custom: "Custom",
     }),
-    []
+    [],
   );
 
   return (
     <div className="flex flex-col gap-1 py-2">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-left tracking-[4px]">Headers</h3>
+        <GroupLabel className="hkp-svc-field-label" size={4}>
+          Headers
+        </GroupLabel>
         <button
           onClick={onAddHeader}
           className="hkp-svc-btn px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"

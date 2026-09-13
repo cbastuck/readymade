@@ -6,7 +6,7 @@ import ServiceUI, {
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 import { State as ServiceState, InputMode } from "./Input";
-import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import PillRadioGroup from "hkp-frontend/src/ui-components/PillRadioGroup";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 
 type State = ServiceState;
@@ -46,7 +46,7 @@ export default function InputUI(props: ServiceUIProps) {
       initialSize={{ width: 480, height: undefined }}
     >
       <div className="flex flex-col gap-2">
-        <RadioGroup
+        <PillRadioGroup
           title="Input Mode"
           options={modeOptions}
           value={mode}
@@ -61,6 +61,7 @@ export default function InputUI(props: ServiceUIProps) {
           fullWidth
           minHeight
           title="URL"
+          labelClassName="hkp-svc-field-label"
           value={url}
           onSubmit={(newUrl) => service.configure({ url: newUrl })}
         />

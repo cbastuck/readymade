@@ -145,7 +145,11 @@ export default function MappingTable({
     <div className={`flex flex-col col-2 mt-2 gap-2 ${className}`}>
       <div className="flex h-min items-center">
         <div className="flex items-end gap-2">
-          <GroupLabel size={3} tooltip={tooltip}>
+          <GroupLabel
+            className="hkp-svc-field-label"
+            size={4}
+            tooltip={tooltip}
+          >
             {title}
           </GroupLabel>
           {titleTrailing}

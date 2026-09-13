@@ -244,7 +244,9 @@ export default function CameraUI(props: ServiceUIProps) {
         />
 
         <div className="mt-2">
-          <GroupLabel>Capture Resolution</GroupLabel>
+          <GroupLabel className="hkp-svc-field-label" size={4}>
+            Capture Resolution
+          </GroupLabel>
           <div className="flex w-full gap-4 px-4 py-2">
             <NumberInput
               className="w-full"
@@ -276,10 +278,18 @@ export default function CameraUI(props: ServiceUIProps) {
           </div>
         </div>
         <div className="flex gap-2 w-full">
-          <Button className="hkp-svc-btn w-full" disabled={recording} onClick={onSnapshot}>
+          <Button
+            className="hkp-svc-btn w-full"
+            disabled={recording}
+            onClick={onSnapshot}
+          >
             Capture Snapshot
           </Button>
-          <Button className="hkp-svc-btn w-full" disabled={!stream} onClick={onRecord}>
+          <Button
+            className="hkp-svc-btn w-full"
+            disabled={!stream}
+            onClick={onRecord}
+          >
             {recording ? "Stop Video" : "Capture Video"}
           </Button>
         </div>

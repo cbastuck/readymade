@@ -6,6 +6,7 @@ import SelectorField, {
 import { useCallback, useMemo, useState } from "react";
 import InputField from "hkp-frontend/src/components/shared/InputField";
 import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import HttpHeaders from "./HttpHeaders";
 
 export default function HttpClientUI(props: ServiceUIProps) {
@@ -216,7 +217,9 @@ export default function HttpClientUI(props: ServiceUIProps) {
             // assigned by a runtime and resolved by the board's coordinator, so
             // it is not the user's to type, and it takes precedence over URL.
             <div className="py-1 w-[25rem]">
-              <div className="text-xs uppercase tracking-wide">Mount</div>
+              <GroupLabel className="hkp-svc-field-label" size={4}>
+                Mount
+              </GroupLabel>
               <div className="flex items-start gap-1">
                 <div className="font-mono text-xs break-all flex-1">
                   {mount}
@@ -265,7 +268,9 @@ export default function HttpClientUI(props: ServiceUIProps) {
             />
           </div>
           <div className="flex flex-col gap-1 py-2">
-            <h3 className="font-medium text-left tracking-[4px]">Body</h3>
+            <GroupLabel className="hkp-svc-field-label" size={4}>
+              Body
+            </GroupLabel>
             <textarea
               className={`w-full  p-2 text-sm border border-gray-300 rounded bg-gray-50 font-mono ${
                 method === "get" ? "opacity-50 cursor-not-allowed" : ""

@@ -65,7 +65,7 @@ export default function SelectorField({
     >
       {label &&
         (useDefaultLabel ? (
-          <GroupLabel size={4} className="mb-1">
+          <GroupLabel size={4} className="hkp-svc-field-label mb-1">
             {label}
           </GroupLabel>
         ) : (
@@ -84,7 +84,7 @@ export default function SelectorField({
         }
       >
         <SelectTrigger
-          className={`w-full ${triggerClassName ?? "h-min rounded-none"}`}
+          className={`w-full text-left ${triggerClassName ?? "h-min rounded-none"}`}
         >
           <SelectValue className="font-menu" placeholder="Select ..." />
         </SelectTrigger>

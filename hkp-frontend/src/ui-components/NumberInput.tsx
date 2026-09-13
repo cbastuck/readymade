@@ -21,7 +21,9 @@ export default function NumberInput({
 }: Props) {
   return (
     <div className={`flex items-end gap-2 ${className}`}>
-      <PropertyLabel>{title}</PropertyLabel>
+      <PropertyLabel className="hkp-svc-field-label" size={4}>
+        {title}
+      </PropertyLabel>
       <InputCN
         className="w-[60px] border-0 border-none p-0 h-min text-lg"
         type="number"
@@ -29,7 +31,7 @@ export default function NumberInput({
         onChange={(ev) => onChange(Number(ev.target.value))}
         disabled={disabled}
       />
-      <div className="pl-2 tracking-widest text-base">{children}</div>
+      <div className="pl-2 tracking-[1px] text-xs">{children}</div>
     </div>
   );
 }
