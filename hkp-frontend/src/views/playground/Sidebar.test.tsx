@@ -108,9 +108,7 @@ describe("composed presets in the palette", () => {
     // A preset saved from a service carries that service's name in
     // `serviceName` — which for a sub-service is "SubService", and would put a
     // second card called "SubService" beside the primitive it came from.
-    savePreset(
-      parsePreset({ ...COMPOSED_PRESET, serviceName: "SubService" }),
-    );
+    savePreset(parsePreset({ ...COMPOSED_PRESET, serviceName: "SubService" }));
     renderSidebar(withSubService);
 
     expect(screen.getAllByText("SubService")).toHaveLength(1);
@@ -156,6 +154,32 @@ describe("composed presets in the palette", () => {
     renderSidebar(withSubService);
 
     expect(screen.queryByText("Telegram responder")).toBeNull();
+  });
+});
+
+describe("the runtimes / services splitter", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("keeps the height a drag left the runtimes pane at", () => {
+    renderSidebar(withTwoRuntimes);
+
+    const splitter = screen.getByRole("separator");
+    fireEvent.pointerDown(splitter, { clientY: 100 });
+    fireEvent.pointerMove(window, { clientY: 260 });
+    fireEvent.pointerUp(window);
+
+    // jsdom lays nothing out, so every height clamps to the minimum — what is
+    // under test is that the drag settles on one and writes it down.
+    expect(localStorage.getItem("hkp-sidebar-runtimes-height")).not.toBeNull();
+  });
+
+  it("gives the pane back its own sizing on a double-click", () => {
+    localStorage.setItem("hkp-sidebar-runtimes-height", "180");
+    renderSidebar(withTwoRuntimes);
+
+    fireEvent.doubleClick(screen.getByRole("separator"));
+
+    expect(localStorage.getItem("hkp-sidebar-runtimes-height")).toBeNull();
   });
 });
 

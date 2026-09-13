@@ -260,6 +260,124 @@ function ServiceGroup({
   );
 }
 
+/** Remembered height of the runtimes pane, in pixels. */
+const RUNTIMES_HEIGHT_KEY = "hkp-sidebar-runtimes-height";
+
+/** Enough of a pane to be worth having; below this the drag stops. */
+const MIN_RUNTIMES_HEIGHT = 44;
+const MIN_SERVICES_HEIGHT = 140;
+
+/**
+ * Drag handle between the runtimes pane and the services pane. Reports the
+ * runtimes height the pointer implies; clamping and persistence are the
+ * caller's business.
+ */
+function PaneSplitter({
+  onResize,
+  onCommit,
+  onReset,
+  heightOf,
+  boundsOf,
+}: {
+  onResize: (height: number) => void;
+  onCommit: () => void;
+  onReset: () => void;
+  /** The pane's height right now — a drag starts from what is on screen. */
+  heightOf: () => number;
+  /** How much room the two panes share, for the far end of the clamp. */
+  boundsOf: () => number;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  // While dragging, the whole document shows the resize cursor and stops
+  // selecting text — the pointer regularly leaves the handle itself.
+  useEffect(() => {
+    if (!dragging) {
+      return;
+    }
+    const { style } = document.body;
+    const cursor = style.cursor;
+    const select = style.userSelect;
+    style.cursor = "ns-resize";
+    style.userSelect = "none";
+    return () => {
+      style.cursor = cursor;
+      style.userSelect = select;
+    };
+  }, [dragging]);
+
+  const clamp = (height: number) =>
+    Math.max(
+      MIN_RUNTIMES_HEIGHT,
+      Math.min(
+        Math.max(MIN_RUNTIMES_HEIGHT, boundsOf() - MIN_SERVICES_HEIGHT),
+        height,
+      ),
+    );
+
+  const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startY = event.clientY;
+    const startHeight = heightOf();
+    setDragging(true);
+
+    const move = (e: PointerEvent) => {
+      onResize(clamp(startHeight + e.clientY - startY));
+    };
+    const stop = () => {
+      setDragging(false);
+      onCommit();
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const step =
+      event.key === "ArrowUp" ? -12 : event.key === "ArrowDown" ? 12 : 0;
+    if (!step) {
+      return;
+    }
+    event.preventDefault();
+    onResize(clamp(heightOf() + step));
+    onCommit();
+  };
+
+  const lit = dragging || hovered;
+  return (
+    <div
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Resize runtimes and services"
+      tabIndex={0}
+      onPointerDown={startDrag}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      onDoubleClick={onReset}
+      onKeyDown={onKeyDown}
+      title="Drag to resize — double-click to reset"
+      style={{
+        height: 7,
+        flexShrink: 0,
+        cursor: "ns-resize",
+        userSelect: "none",
+        // The hairline lights up on hover / while dragging; the hit area
+        // around it stays invisible.
+        background: `linear-gradient(180deg, transparent 3px, ${
+          lit ? "var(--hkp-accent)" : "var(--border-mid, #d1d5db)"
+        } 3px, ${
+          lit ? "var(--hkp-accent)" : "var(--border-mid, #d1d5db)"
+        } 4px, transparent 4px)`,
+      }}
+    />
+  );
+}
+
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
   const [search, setSearch] = useState("");
@@ -271,6 +389,18 @@ export default function Sidebar() {
   const subServicePresets = usePresetsForService(SUB_SERVICE_ID);
   const paletteRef = useRef<HTMLDivElement | null>(null);
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const runtimesRef = useRef<HTMLDivElement | null>(null);
+
+  // How tall the runtimes pane was left. Unset means it sizes itself to its
+  // cards, which is the right answer until someone says otherwise.
+  const [runtimesHeight, setRuntimesHeight] = useState<number | null>(() => {
+    const stored = parseInt(
+      localStorage.getItem(RUNTIMES_HEIGHT_KEY) ?? "",
+      10,
+    );
+    return stored > 0 ? stored : null;
+  });
 
   const availableRuntimes = boardContext?.availableRuntimeEngines ?? [];
 
@@ -307,9 +437,13 @@ export default function Sidebar() {
         continue;
       }
       for (const preset of subServicePresets) {
-        if (preset.runtimes?.length && !preset.runtimes.some(
-          (rt) => toCanonicalRuntimeClassType(rt as RuntimeClassType) === type,
-        )) {
+        if (
+          preset.runtimes?.length &&
+          !preset.runtimes.some(
+            (rt) =>
+              toCanonicalRuntimeClassType(rt as RuntimeClassType) === type,
+          )
+        ) {
           continue;
         }
         group.push({
@@ -353,8 +487,7 @@ export default function Sidebar() {
 
   // Reaching for a service should not begin with a scroll. Folding the other
   // groups away usually puts the right one on screen by itself, so this moves
-  // the palette only when the group is somewhere it cannot be seen — otherwise
-  // it would scroll the search field out of reach to fix nothing.
+  // the service list only when the group is somewhere it cannot be seen.
   useEffect(() => {
     if (!open || !selectedType) {
       return;
@@ -372,6 +505,23 @@ export default function Sidebar() {
       palette.scrollTo?.({ top, behavior: "smooth" });
     }
   }, [selectedType, open, serviceGroups]);
+
+  // A drag is remembered only once it ends: the pane follows the pointer, the
+  // stored height is what it was let go at.
+  const runtimesHeightRef = useRef(runtimesHeight);
+  runtimesHeightRef.current = runtimesHeight;
+
+  const commitRuntimesHeight = () => {
+    const height = runtimesHeightRef.current;
+    if (height !== null) {
+      localStorage.setItem(RUNTIMES_HEIGHT_KEY, String(Math.round(height)));
+    }
+  };
+
+  const resetRuntimesHeight = () => {
+    localStorage.removeItem(RUNTIMES_HEIGHT_KEY);
+    setRuntimesHeight(null);
+  };
 
   const addRuntime = (rtClass: RuntimeClass) => {
     if (!boardContext) {
@@ -533,31 +683,60 @@ export default function Sidebar() {
           <ChevronIcon open={open} />
         </button>
 
-        {/* Palette body */}
+        {/* Palette body: runtimes and services scroll independently, so the
+            runtimes stay reachable however long the service palette is. */}
         <div
-          ref={paletteRef}
+          ref={bodyRef}
           style={{
             display: open ? "flex" : "none",
             flexDirection: "column",
             flex: 1,
-            overflowY: "auto",
-            // Keep final palette items fully visible above the fixed footer.
-            paddingBottom:
-              "calc(12px + 36px + env(safe-area-inset-bottom, 0px))",
+            minHeight: 0,
+            overflow: "hidden",
           }}
         >
           {/* ── Runtimes ── */}
           <SectionLabel action={cogButton}>Runtimes</SectionLabel>
-          {availableRuntimes.length === 0 && (
-            <EmptyHint>No runtime servers configured</EmptyHint>
-          )}
-          {availableRuntimes.map((rtClass, i) => (
-            <RuntimeCard
-              key={`${rtClass.type}-${i}`}
-              rtClass={rtClass}
-              onAdd={() => addRuntime(rtClass)}
-            />
-          ))}
+          <div
+            ref={runtimesRef}
+            style={{
+              // Left alone it takes only the room it needs, gives it up first
+              // when the window is short, and never grows past a third of the
+              // sidebar. A height dragged onto it is kept instead, still
+              // leaving the services pane room to be a pane.
+              flex: runtimesHeight === null ? "0 1 auto" : "0 0 auto",
+              height: runtimesHeight ?? undefined,
+              minHeight: 0,
+              maxHeight:
+                runtimesHeight === null
+                  ? "33%"
+                  : `calc(100% - ${MIN_SERVICES_HEIGHT}px)`,
+              overflowY: "auto",
+            }}
+          >
+            {availableRuntimes.length === 0 && (
+              <EmptyHint>No runtime servers configured</EmptyHint>
+            )}
+            {availableRuntimes.map((rtClass, i) => (
+              <RuntimeCard
+                key={`${rtClass.type}-${i}`}
+                rtClass={rtClass}
+                onAdd={() => addRuntime(rtClass)}
+              />
+            ))}
+          </div>
+
+          <PaneSplitter
+            heightOf={() =>
+              runtimesHeight ??
+              runtimesRef.current?.getBoundingClientRect().height ??
+              0
+            }
+            boundsOf={() => bodyRef.current?.clientHeight ?? 0}
+            onResize={setRuntimesHeight}
+            onCommit={commitRuntimesHeight}
+            onReset={resetRuntimesHeight}
+          />
 
           {/* ── Services ── */}
           <SectionLabel>Services</SectionLabel>
@@ -565,18 +744,7 @@ export default function Sidebar() {
             <EmptyHint>Add a runtime to browse services</EmptyHint>
           )}
           {hasRuntimes && (
-            <div
-              style={{
-                padding: "2px 8px 6px",
-                // Searching is how the palette is used once it is long, so the
-                // field stays in place rather than scrolling away with the
-                // services it filters.
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-                background: "var(--bg-app, white)",
-              }}
-            >
+            <div style={{ padding: "2px 8px 6px", flexShrink: 0 }}>
               <div
                 style={{
                   display: "flex",
@@ -608,31 +776,43 @@ export default function Sidebar() {
               </div>
             </div>
           )}
-          {hasRuntimes && filteredGroups.length === 0 && query && (
-            <EmptyHint>{`No services match "${query}"`}</EmptyHint>
-          )}
-          {filteredGroups.map(({ type, services }) =>
-            serviceGroups.length > 1 ? (
-              <ServiceGroup
-                key={type}
-                type={type}
-                services={services}
-                open={isGroupOpen(type)}
-                selectedFor={
-                  type === selectedType ? selectedRuntime?.name : undefined
-                }
-                hiddenMatches={!!query && !isGroupOpen(type)}
-                containerRef={(el) => {
-                  groupRefs.current[type] = el;
-                }}
-                onToggle={() => toggleGroup(type)}
-              />
-            ) : (
-              services.map((svc) => (
-                <ServiceCard key={paletteKey(svc)} svc={svc} />
-              ))
-            ),
-          )}
+          <div
+            ref={paletteRef}
+            style={{
+              flex: "1 1 auto",
+              minHeight: 0,
+              overflowY: "auto",
+              // Keep final palette items fully visible above the fixed footer.
+              paddingBottom:
+                "calc(12px + 36px + env(safe-area-inset-bottom, 0px))",
+            }}
+          >
+            {hasRuntimes && filteredGroups.length === 0 && query && (
+              <EmptyHint>{`No services match "${query}"`}</EmptyHint>
+            )}
+            {filteredGroups.map(({ type, services }) =>
+              serviceGroups.length > 1 ? (
+                <ServiceGroup
+                  key={type}
+                  type={type}
+                  services={services}
+                  open={isGroupOpen(type)}
+                  selectedFor={
+                    type === selectedType ? selectedRuntime?.name : undefined
+                  }
+                  hiddenMatches={!!query && !isGroupOpen(type)}
+                  containerRef={(el) => {
+                    groupRefs.current[type] = el;
+                  }}
+                  onToggle={() => toggleGroup(type)}
+                />
+              ) : (
+                services.map((svc) => (
+                  <ServiceCard key={paletteKey(svc)} svc={svc} />
+                ))
+              ),
+            )}
+          </div>
         </div>
       </div>
 
