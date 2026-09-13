@@ -36,6 +36,8 @@ function SelectionReadout() {
   return <div data-testid="selected">{selection?.selectedRuntimeId ?? ""}</div>;
 }
 
+// The board holds another runtime ahead of this one, so the selection starts
+// somewhere else and touching this runtime is what moves it here.
 function renderRuntime(withProvider = true) {
   const subject = (
     <>
@@ -50,7 +52,13 @@ function renderRuntime(withProvider = true) {
     </>
   );
   return render(
-    withProvider ? <SelectionProvider>{subject}</SelectionProvider> : subject,
+    withProvider ? (
+      <SelectionProvider runtimeIds={["ui", "node"]}>
+        {subject}
+      </SelectionProvider>
+    ) : (
+      subject
+    ),
   );
 }
 

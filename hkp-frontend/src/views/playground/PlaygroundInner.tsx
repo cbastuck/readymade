@@ -33,7 +33,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
   }
 
   return (
-    <SelectionProvider>
+    <SelectionProvider runtimeIds={boardContext.runtimes.map((rt) => rt.id)}>
       <OverviewProvider>
         <FacadeViewProvider
           boardName={boardContext.boardName || props.requestedBoardName || ""}
