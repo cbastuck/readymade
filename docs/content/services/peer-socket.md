@@ -18,6 +18,8 @@ Peer Socket connects to the board's peer signalling infrastructure and registers
 
 When a message arrives from the target peer, it is pushed downstream via `app.next()` — independently of any upstream pipeline trigger.
 
+Both names default to a random identity, drawn from two different prefixes (`Host-…` for `peerName`, `Guest-…` for `targetPeer`) so that a socket left unconfigured never ends up addressing itself.
+
 ---
 
 ## Configuration
@@ -25,8 +27,8 @@ When a message arrives from the target peer, it is pushed downstream via `app.ne
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `mode` | `"Receive only"` \| `"Send only"` \| `"Receive and Send"` | `"Receive only"` | Whether the service sends, receives, or both |
-| `peerName` | `string` | Random `"NoNameN"` | Name this peer registers under |
-| `targetPeer` | `string` | Random `"NoNameN"` | Name of the peer to send to (in Send or Receive and Send modes) |
+| `peerName` | `string` | Random `"Host-xxxx"` | Name this peer registers under |
+| `targetPeer` | `string` | Random `"Guest-xxxx"` | Name of the peer to send to (in Send or Receive and Send modes) |
 | `extractIncomingData` | `boolean` | `false` | When `true`, only the `data` field of the incoming message is injected into the pipeline |
 | `peerPort` | `number \| null` | `null` | Port override for the peer server |
 | `peerHost` | `string \| null` | `null` | Host override for the peer server |

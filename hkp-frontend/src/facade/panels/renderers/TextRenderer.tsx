@@ -45,6 +45,13 @@ export function TextRenderer({
         lineHeight: 1.45,
       }}
     >
+      {widget.label ? (
+        // The caption stays muted whatever tone the value carries, so the value
+        // is what the eye lands on.
+        <span style={{ color: TONES.muted, marginRight: 4 }}>
+          {widget.label}
+        </span>
+      ) : null}
       {shown}
     </div>
   );

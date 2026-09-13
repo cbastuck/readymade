@@ -11,9 +11,36 @@
           "items": [
             {
               "direction": "row",
-              "justify": "flex-end",
+              "justify": "space-between",
+              "align": "center",
+              "gap": 12,
               "padding": 8,
               "items": [
+                {
+                  "direction": "column",
+                  "gap": 2,
+                  "items": [
+                    {
+                      "type": "text",
+                      "label": "You:",
+                      "source": {
+                        "serviceUuid": "chat-peer-svc",
+                        "path": "peerName"
+                      },
+                      "placeholder": "connecting…"
+                    },
+                    {
+                      "type": "text",
+                      "label": "Talking to:",
+                      "tone": "muted",
+                      "source": {
+                        "serviceUuid": "chat-peer-svc",
+                        "path": "targetPeer"
+                      },
+                      "placeholder": "nobody yet"
+                    }
+                  ]
+                },
                 {
                   "type": "button",
                   "label": "Partner Board",
