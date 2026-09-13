@@ -292,3 +292,49 @@ describe("Sidebar", () => {
     });
   });
 });
+
+describe("adding a runtime from the palette", () => {
+  // The palette is where a runtime is made, so it is also where the board
+  // stops being about the runtime that was selected before.
+  function renderWithEngine(addRuntime: ReturnType<typeof vi.fn>) {
+    const selectRuntime = vi.fn();
+    render(
+      <BoardCtx.Provider
+        value={boardContext({
+          runtimes: [{ id: "ui", name: "Browser Runtime 1", type: "browser" }],
+          availableRuntimeEngines: [{ name: "Browser Runtime", type: "browser" }],
+          addRuntime,
+        } as unknown as Partial<BoardContextState>)}
+      >
+        <FacadeViewProvider boardName="Demo">
+          <SelectionCtx.Provider
+            value={{ selectedRuntimeId: "ui", selectRuntime }}
+          >
+            <Sidebar />
+          </SelectionCtx.Provider>
+        </FacadeViewProvider>
+      </BoardCtx.Provider>,
+    );
+    return selectRuntime;
+  }
+
+  it("selects the runtime it just added", async () => {
+    const addRuntime = vi.fn().mockResolvedValue({ id: "ui-2" });
+    const selectRuntime = renderWithEngine(addRuntime);
+
+    fireEvent.click(screen.getByText("Browser Runtime"));
+
+    await vi.waitFor(() => expect(addRuntime).toHaveBeenCalled());
+    await vi.waitFor(() => expect(selectRuntime).toHaveBeenCalledWith("ui-2"));
+  });
+
+  it("leaves the selection where it is when nothing was added", async () => {
+    const addRuntime = vi.fn().mockResolvedValue(null);
+    const selectRuntime = renderWithEngine(addRuntime);
+
+    fireEvent.click(screen.getByText("Browser Runtime"));
+
+    await vi.waitFor(() => expect(addRuntime).toHaveBeenCalled());
+    expect(selectRuntime).not.toHaveBeenCalled();
+  });
+});

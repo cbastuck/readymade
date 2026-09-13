@@ -73,6 +73,17 @@ describe("Runtime selection", () => {
     expect(screen.getByTestId("runtime-ui").dataset.selected).toBe("true");
   });
 
+  // A webview that has just ended a native drag can withhold the pointerdown
+  // for the click that follows it. The click still lands, and still aims.
+  it("selects on a click that brought no pointerdown", () => {
+    renderRuntime();
+
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+
+    expect(screen.getByTestId("selected").textContent).toBe("node");
+    expect(screen.getByTestId("runtime-ui").dataset.selected).toBe("true");
+  });
+
   it("is inert where no selection is mounted", () => {
     renderRuntime(false);
     fireEvent.pointerDown(screen.getByTestId("runtime-ui"));
