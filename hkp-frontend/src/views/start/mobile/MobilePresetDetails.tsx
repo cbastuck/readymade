@@ -151,6 +151,9 @@ export default function MobilePresetDetails({ node }: { node: PresetNode }) {
       )}
 
       <MetaRow label="Service" value={preset.serviceId} />
+      {preset.tags?.length ? (
+        <MetaRow label="Tags" value={preset.tags.join(", ")} />
+      ) : null}
       {preset.runtimes?.length ? (
         <MetaRow label="Meant for" value={preset.runtimes.join(", ")} />
       ) : null}

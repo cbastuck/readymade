@@ -91,6 +91,17 @@ export type Preset = {
   version?: number;
   author?: string;
   homepage?: string;
+  /**
+   * What this preset *is*, for the browser that organises them.
+   *
+   * A preset is filed under the service it configures, which is the axis that
+   * decides where it can be applied. For most services that is enough — every
+   * `http-client` preset is a request to some API. It is not enough for
+   * `sub-service`, where the preset is a pipeline and the service says only
+   * that it is made of other services: a Telegram responder and a spectral
+   * analyser would sit in one undifferentiated bucket. Tags are the second
+   * axis, and the one that carries the meaning.
+   */
   tags?: string[];
   /**
    * The runtime classes this preset is meant for, when it matters — an API that
@@ -158,8 +169,34 @@ export function parsePreset(value: unknown): Preset {
     id: typeof raw.id === "string" && raw.id ? raw.id : slug(raw.name),
     name: raw.name,
     serviceId: raw.serviceId,
+    tags: normalizeTags(raw.tags),
     state,
   } as Preset;
+}
+
+/**
+ * Tags as written, minus the ways two of them can be the same tag.
+ *
+ * They come from files other people wrote and from a field someone typed into,
+ * so `Audio`, `audio ` and `audio` have to land in one place rather than three
+ * folders that look alike. Compared without case, kept in the spelling they
+ * first arrived in — the author's capitalisation is what a person reads.
+ */
+export function normalizeTags(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const seen = new Map<string, string>();
+  for (const entry of value) {
+    if (typeof entry !== "string") {
+      continue;
+    }
+    const tag = entry.trim();
+    if (tag && !seen.has(tag.toLowerCase())) {
+      seen.set(tag.toLowerCase(), tag);
+    }
+  }
+  return seen.size ? [...seen.values()] : undefined;
 }
 
 /** Reads a preset file's text: one preset, or `{ "presets": [ … ] }`. */

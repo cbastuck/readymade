@@ -7,7 +7,6 @@
   "version": 1,
   "description": "Calls the chat completions endpoint. A request object arriving on the input is sent as it is, so an upstream service can compose the messages; with nothing on the input the configured body is sent, which is what makes this runnable the moment a key exists. The reply comes back as JSON — the text is at choices[0].message.content.",
   "homepage": "https://platform.openai.com/docs/api-reference/chat",
-  "tags": ["ai", "llm", "text"],
   "runtimes": ["rest"],
   "secrets": {
     "openai": {

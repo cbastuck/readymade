@@ -16,7 +16,11 @@ import { Button } from "../primitives/button";
 import { Input } from "../primitives/input";
 import { ServiceDescriptor } from "hkp-frontend/src/types";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
-import { presetFromService, savePreset } from "hkp-frontend/src/core/presets";
+import {
+  normalizeTags,
+  presetFromService,
+  savePreset,
+} from "hkp-frontend/src/core/presets";
 
 export default function SavePresetDialog({
   service,
@@ -29,6 +33,7 @@ export default function SavePresetDialog({
 }) {
   const boardContext = useBoardContext();
   const [name, setName] = useState(service.serviceName ?? "");
+  const [tags, setTags] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -48,7 +53,9 @@ export default function SavePresetDialog({
       const state = await boardContext.readServiceState(runtime, {
         uuid: service.uuid,
       });
-      const preset = presetFromService(service, state, name.trim());
+      const preset = presetFromService(service, state, name.trim(), {
+        tags: normalizeTags(tags.split(",")),
+      });
       savePreset(preset);
       onOpenChange(false);
       toast.success(
@@ -92,9 +99,22 @@ export default function SavePresetDialog({
             Save
           </Button>
         </div>
+        <Input
+          value={tags}
+          placeholder="Tags — messaging, audio (comma separated)"
+          onChange={(e) => setTags(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              void save();
+            }
+          }}
+          style={{ fontSize: 16, height: 32 }}
+        />
         <div style={{ fontSize: 12, color: "var(--text-mid)" }}>
-          Secret references travel with it; the values never do. Export it from
-          the Presets source to share the file.
+          Tags are where it is filed under {service.serviceId} on the start
+          page — worth giving one to a sub-service, where the service alone says
+          nothing about what the preset does. Secret references travel with it;
+          the values never do.
         </div>
         {error && (
           <div style={{ fontSize: 12, color: "var(--hkp-error, #dc2626)" }}>

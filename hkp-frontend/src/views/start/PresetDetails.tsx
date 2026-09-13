@@ -11,7 +11,11 @@
 import { useState } from "react";
 
 import { PresetNode } from "./types";
-import { presetSecrets, serializePreset } from "hkp-frontend/src/core/presets";
+import {
+  normalizeTags,
+  presetSecrets,
+  serializePreset,
+} from "hkp-frontend/src/core/presets";
 import { unavailableSecrets } from "hkp-frontend/src/core/secrets";
 
 const PRESET_ART = "linear-gradient(160deg, #6b5bd6, #3d2fa8)";
@@ -56,6 +60,65 @@ function download(node: PresetNode): void {
   anchor.download = `${node.preset.id}.json`;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Where a preset is filed, and — when it is one this device keeps — the field
+ * that changes it.
+ *
+ * Tags are part of the file rather than a note beside it, so editing them here
+ * rewrites the preset: the filing is what travels when it is exported, and what
+ * someone else's copy is organised by too.
+ */
+function Tags({ node }: { node: PresetNode }) {
+  const tags = node.preset.tags ?? [];
+  const [draft, setDraft] = useState(tags.join(", "));
+
+  const commit = () => {
+    const next = normalizeTags(draft.split(",")) ?? [];
+    if (next.join("\u0000") !== tags.join("\u0000")) {
+      node.onRetag?.(next);
+    }
+  };
+
+  if (!node.onRetag) {
+    return tags.length ? (
+      <MetaRow label="Tags" value={tags.join(", ")} />
+    ) : null;
+  }
+
+  return (
+    <div style={{ width: "100%" }}>
+      <div
+        style={{
+          fontSize: 10.5,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "var(--st-mut)",
+          marginBottom: 3,
+        }}
+      >
+        Tags
+      </div>
+      <input
+        className="st-search"
+        style={{ width: "100%" }}
+        value={draft}
+        placeholder="messaging, audio — comma separated"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            commit();
+          }
+        }}
+      />
+      <div style={{ fontSize: 11, color: "#9a9fae", marginTop: 3 }}>
+        Where it is filed under {node.preset.serviceId}.
+      </div>
+    </div>
+  );
 }
 
 export default function PresetDetails({ node }: { node: PresetNode }) {
@@ -172,6 +235,7 @@ export default function PresetDetails({ node }: { node: PresetNode }) {
             <MetaRow label="Meant for" value={preset.runtimes.join(", ")} />
           ) : null}
           {preset.author && <MetaRow label="Author" value={preset.author} />}
+          <Tags node={node} />
         </div>
 
         {secrets.length > 0 && (

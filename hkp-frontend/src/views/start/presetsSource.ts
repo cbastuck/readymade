@@ -7,10 +7,24 @@
  * that is management (what exists, where it came from, what is in it, importing
  * one, deleting one) belongs to the same browser the boards are organised in.
  *
- * Two levels under the source: a folder per service that has a preset, then the
- * presets themselves. A service is named by its `serviceId`, because that is
- * the identity a preset is keyed by — the same string the service's menu is
- * reached from — rather than whatever a runtime happens to call it.
+ * Two axes, in the order that decides what can be done with a preset.
+ *
+ * **The service comes first.** It is what a preset is keyed by and what limits
+ * where it can go: an `http-client` preset is applicable to an `http-client`
+ * and to nothing else, and the service's own menu lists exactly that folder.
+ *
+ * **Tags come second**, in the column after it. For most services the service
+ * already says what its presets are — every `http-client` preset is a request
+ * to some API — and a tag is a finer cut of that. For `sub-service` it is the
+ * only thing that says anything at all: the preset is a whole pipeline, and
+ * "made of other services" is not a category. A Telegram responder, a spectral
+ * analyser and a geocoding lookup are all `sub-service` presets, and without a
+ * second axis they are one undifferentiated bucket that grows forever.
+ *
+ * A preset with tags lives in each of its tag folders, the way a board lives in
+ * each folder it is filed under; a preset with none sits in the service folder
+ * itself. So the column appears exactly where something has been said, and a
+ * service whose presets are untagged still reads as a plain list.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -18,6 +32,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Preset,
   removeSavedPreset,
+  savePreset,
   subscribePresets,
 } from "hkp-frontend/src/core/presets";
 import {
@@ -51,26 +66,65 @@ export function usePresetsFolder(
     removeSavedPreset(preset.serviceId, preset.id);
   }, []);
 
+  // Refiling a preset is rewriting the file, because its tags are part of it —
+  // which is what makes the filing travel with it when it is exported.
+  const retag = useCallback((preset: Preset, tags: string[]) => {
+    savePreset({ ...preset, tags: tags.length ? tags : undefined });
+  }, []);
+
   return useMemo<FolderNode>(() => {
     // generation is what re-reads the store; the value itself says nothing.
     void generation;
 
+    const node = (preset: Preset): PresetNode => {
+      const builtIn = isBuiltInPreset(preset);
+      return {
+        type: "preset",
+        name: preset.name,
+        preset,
+        builtIn,
+        // A shipped preset is part of the build: there is nothing on this
+        // device to delete, and nothing to rewrite its tags in.
+        onDelete: builtIn ? undefined : () => forget(preset),
+        onRetag: builtIn ? undefined : (tags) => retag(preset, tags),
+      };
+    };
+
     const services = servicesWithPresets().map<FolderNode>((serviceId) => {
       const presets = presetsForService(serviceId);
+
+      // Keyed without case, labelled by the first spelling that arrived: these
+      // tags come from files different people wrote, and "Messaging" and
+      // "messaging" are one tag rather than two folders that look alike.
+      const byTag = new Map<string, { label: string; presets: Preset[] }>();
+      const untagged: Preset[] = [];
+      for (const preset of presets) {
+        if (preset.tags?.length) {
+          for (const tag of preset.tags) {
+            const key = tag.toLowerCase();
+            const group = byTag.get(key) ?? { label: tag, presets: [] };
+            group.presets.push(preset);
+            byTag.set(key, group);
+          }
+        } else {
+          untagged.push(preset);
+        }
+      }
+
+      const tagFolders = [...byTag.values()]
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .map<FolderNode>((group) => ({
+          type: "folder",
+          name: group.label,
+          art: "linear-gradient(160deg, #8b7ce8, #5a49c4)",
+          children: group.presets.map(node),
+        }));
+
       return {
         type: "folder",
         name: serviceId,
         art: "linear-gradient(160deg, #6b5bd6, #3d2fa8)",
-        children: presets.map<PresetNode>((preset) => {
-          const builtIn = isBuiltInPreset(preset);
-          return {
-            type: "preset",
-            name: preset.name,
-            preset,
-            builtIn,
-            onDelete: builtIn ? undefined : () => forget(preset),
-          };
-        }),
+        children: [...tagFolders, ...untagged.map(node)],
         emptyHint: "No presets for this service",
       };
     });
@@ -85,5 +139,5 @@ export function usePresetsFolder(
         ? { label: "Import preset…", onClick: onImport }
         : undefined,
     };
-  }, [generation, forget, onImport]);
+  }, [generation, forget, retag, onImport]);
 }

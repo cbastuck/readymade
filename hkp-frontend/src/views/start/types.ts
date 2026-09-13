@@ -199,6 +199,12 @@ export interface PresetNode {
   builtIn: boolean;
   /** Absent on a built-in, which is what makes it undeletable. */
   onDelete?: () => void;
+  /**
+   * Refiles the preset under a different set of tags — which is rewriting the
+   * file, since its tags are part of it and travel with it when it is
+   * exported. Absent on a built-in, for the same reason `onDelete` is.
+   */
+  onRetag?: (tags: string[]) => void;
 }
 
 export type TreeNode = BoardNode | FolderNode | RuntimeNode | PresetNode;

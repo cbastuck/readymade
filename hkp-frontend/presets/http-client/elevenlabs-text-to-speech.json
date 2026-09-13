@@ -7,7 +7,6 @@
   "version": 1,
   "description": "Renders text as speech. The text is whatever reaches this service on its input, so anything upstream that produces a string drives it; with nothing on the input the configured body is sent instead. The response is audio/mpeg, which arrives as bytes — {meta, binary} — rather than a decoded body. The voice is the last segment of the path and the format is a query parameter.",
   "homepage": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert",
-  "tags": ["ai", "speech", "audio"],
   "runtimes": ["rest"],
   "secrets": {
     "elevenlabs": {
