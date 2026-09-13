@@ -1,5 +1,10 @@
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import { ServiceInstance } from "hkp-frontend/src/types";
+import {
+  RuntimeApi,
+  RuntimeClassType,
+  ServiceInstance,
+  toCanonicalRuntimeClassType,
+} from "hkp-frontend/src/types";
 
 /**
  * How a facade reaches a service on the board.
@@ -15,6 +20,22 @@ import { ServiceInstance } from "hkp-frontend/src/types";
  * each verb becomes a request to the runtime holding it. A widget is written
  * against neither.
  */
+
+/**
+ * The API for a runtime's class, by the same two-step lookup the board itself
+ * uses: a runtime may name its class in a board-specific spelling, which falls
+ * back to the canonical one the engines register under.
+ */
+function runtimeApiFor(
+  boardContext: BoardContextState,
+  type: RuntimeClassType | undefined,
+): RuntimeApi | null {
+  if (!type) {
+    return null;
+  }
+  const apis = boardContext.runtimeApis || {};
+  return apis[type] || apis[toCanonicalRuntimeClassType(type)] || null;
+}
 
 export function findService(
   boardContext: BoardContextState,
@@ -37,30 +58,22 @@ export function findService(
     }
     const runtime = boardContext.runtimes.find((rt) => rt.id === runtimeId);
     const scope = boardContext.scopes[runtimeId];
-    if (!runtime?.url || !scope) {
+    const api = runtimeApiFor(boardContext, runtime?.type);
+    if (!runtime?.url || !scope || !api) {
       continue;
     }
     return {
       uuid,
       app: (scope as any).app,
       state: desc.state,
+      // The runtime's own API rather than a request written here: configuring a
+      // remote service is more than the POST — the secrets a configuration
+      // names have to reach the runtime first, and the state it answers with is
+      // what the board then holds, which is what a service's panel renders. A
+      // hand-rolled fetch leaves the panel showing what the board was loaded
+      // with while the runtime has moved on.
       configure: async (config: any) => {
-        // The remote runtime authenticates this the same way it authenticates
-        // every other call, and resolves the runtime inside the token holder's
-        // own namespace — so the token is what makes the runtime reachable at
-        // all, not just an authorisation check.
-        const idToken = (scope as any).authenticatedUser?.idToken;
-        await fetch(
-          `${runtime.url}/runtimes/${runtime.id}/services/${uuid}`,
-          {
-            method: "POST",
-            body: JSON.stringify(config),
-            headers: {
-              "content-type": "application/json",
-              ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-            },
-          },
-        );
+        await api.configureService(scope, { uuid }, config);
       },
     } as unknown as ServiceInstance;
   }
