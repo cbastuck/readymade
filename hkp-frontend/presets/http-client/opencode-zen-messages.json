@@ -5,7 +5,7 @@
   "serviceId": "http-client",
   "serviceName": "OpenCode Zen Claude",
   "version": 1,
-  "description": "Calls a Claude model through OpenCode Zen. The gateway routes each model family to the endpoint that family speaks, and Claude's is the Anthropic messages API — a different path, a different key header and a different reply shape from the chat-completions preset: max_tokens is required and the text is at content[0].text. The configured body is sent when nothing reaches the input, so run it from the panel's Send button; starting the whole runtime passes an empty object, which replaces the body and names no model. Change the model by editing the body; https://opencode.ai/zen/v1/models lists the ids.",
+  "description": "Calls a Claude model through OpenCode Zen. The gateway routes each model family to the endpoint that family speaks, and Claude's is the Anthropic messages API — a different path, a different key header and a different reply shape from the chat-completions preset: max_tokens is required and the text is at content[0].text. The configured body is sent when nothing reaches the input, which is what the runtime's Run does. Change the model by editing the body; https://opencode.ai/zen/v1/models lists the ids.",
   "homepage": "https://opencode.ai/docs/zen/",
   "runtimes": [
     "rest"
