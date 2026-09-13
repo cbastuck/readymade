@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { IdToken, useAuth0 } from "@auth0/auth0-react";
+import { toast } from "sonner";
 
 import { usePlatform } from "../platform/PlatformContext";
 import { useAppContext } from "../AppContext";
@@ -31,10 +32,12 @@ export function useCanCloudLogin(): boolean {
  * - Otherwise fall back to the standard Auth0 single-page redirect flow.
  *
  * The web fallback needs an `<Auth0Provider>` ancestor, which is absent on the
- * origins `isWebLoginAvailable` rejects. Logging in is a no-op there rather
- * than a throw: every caller fires this from a click handler and discards the
- * promise, so throwing would only surface as an unhandled rejection. Use
- * `useCanCloudLogin` to avoid offering the action in the first place.
+ * origins `isWebLoginAvailable` rejects. Logging in there says so in a toast
+ * rather than throwing: every caller fires this from a click handler and
+ * discards the promise, so a throw would surface only as an unhandled
+ * rejection — a button that appears to do nothing, with the reason visible
+ * only to whoever thinks to open a console. Use `useCanCloudLogin` to avoid
+ * offering the action in the first place.
  */
 export function useCloudLogin(): () => Promise<void> {
   const platform = usePlatform();
@@ -51,10 +54,13 @@ export function useCloudLogin(): () => Promise<void> {
       return;
     }
     if (!canLogin) {
-      console.error(
-        `Cannot log in from ${location.origin}: it is not a registered Auth0 callback origin. ` +
-          `A board opened here is authorized by the capability token it carries, not by a session.`,
+      console.warn(
+        `Cannot log in from ${location.origin}: it is not a registered Auth0 callback origin.`,
       );
+      toast.warning("Signing in is not available here", {
+        description:
+          "This page is served from a local network address, which the sign-in provider will not redirect back to. A board opened from a shared link is already authorized by the link itself.",
+      });
       return;
     }
     await loginWithRedirect({
