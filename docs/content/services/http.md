@@ -30,7 +30,7 @@ equivalent of the browser's [Fetcher](./fetcher.md) service.
 
 | Property | Type | Description |
 |---|---|---|
-| `url` | `string` | Request URL |
+| `url` | `string` | Request URL, written in full — authority and path together |
 | `method` | `string` | HTTP method (`GET`, `POST`, `PUT`, `DELETE`, …) |
 | `headers` | `object` | Request headers as key-value pairs |
 | `body` | `string \| object` | Request body (for POST/PUT) |
@@ -48,8 +48,8 @@ remote runtimes, the same UI panel), with these differences:
 | Property | Type | Description |
 |---|---|---|
 | `__hkpMount` | `string` | The resolved address of a mount, written by the board's coordinator. Takes precedence over `url`; not a field to author |
-| `path` | `string` | Appended to the target, so a mount can be called at a sub-path |
-| `query` | `object` | Request parameters as a map, encoded onto the target. Appended to any the target already carries, so a `url` or `path` written with parameters of its own keeps them. Numbers and flags are sent as the text they read as |
+| `path` | `string` | The sub-path of a **mount**, and of nothing else. A `url` is a whole URL and carries its own path, so `path` is ignored when the target is one |
+| `query` | `object` | Request parameters as a map, encoded onto the target — every target, unlike `path`, because escaping is a service a map performs and a written URL cannot. Appended to any the target already carries, so a `url` or `path` written with parameters of its own keeps them. Numbers and flags are sent as the text they read as |
 | `timeoutMs` | `number` | Abort the request after this long (default `10000`) |
 
 - It takes its body from the pipeline rather than from a URL template; `body`
@@ -82,6 +82,10 @@ who can be called, and a credential in a header never reaches the page.
 
 Supported by every runtime's client (`__hkpMount` plus `path`; hkp-rt keeps its
 URL templating for the `url` case).
+
+This is what `path` is for. A mount's address is assigned by a runtime and
+resolved by the coordinator, so it is not the board's to write — which leaves a
+sub-path of it nowhere else to go. A typed `url` has somewhere: itself.
 
 A service that hosts an endpoint does not bind a port — its runtime assigns it a
 path and publishes the address. That address is not knowable when a board is

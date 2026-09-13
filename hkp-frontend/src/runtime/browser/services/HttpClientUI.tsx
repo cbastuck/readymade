@@ -40,6 +40,11 @@ export default function HttpClientUI(props: ServiceUIProps) {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
+  // A mount is the target whose address the board does not write: it is
+  // assigned by a runtime and resolved by the coordinator. Before resolution
+  // the reference sits in `url`; after it, the address is in `__hkpMount`.
+  const targetsMount = mount !== "" || url.startsWith(MOUNT_SCHEME);
+
   const update = (config: any) => {
     if (config?.url !== undefined && needsUpdate(config.url, url)) {
       setUrl(config.url);
@@ -134,11 +139,16 @@ export default function HttpClientUI(props: ServiceUIProps) {
           isExpandable
         />
 
-        <InputField
-          value={path}
-          label="Path"
-          onChange={(value) => configure({ path: value })}
-        />
+        {targetsMount ? (
+          // Only a mount target has a sub-path to name. A URL carries its own
+          // path, so a second field for one would be two places to write the
+          // same thing — and the service ignores it there.
+          <InputField
+            value={path}
+            label="Path"
+            onChange={(value) => configure({ path: value })}
+          />
+        ) : null}
 
         <PillRadioGroup
           title="Method"

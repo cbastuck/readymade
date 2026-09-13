@@ -121,12 +121,11 @@ describe("configure", () => {
 });
 
 describe("the address it calls", () => {
-  it("joins the path to the url and appends the parameters", async () => {
+  it("appends the parameters to the url", async () => {
     const { svc } = createService();
     fetchMock.mockResolvedValue(textResponse("zen"));
     svc.configure({
-      url: "https://api.example.com/",
-      path: "zen",
+      url: "https://api.example.com/zen",
       query: { q: "a b" },
     });
 
@@ -134,6 +133,20 @@ describe("the address it calls", () => {
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.com/zen?q=a+b");
+  });
+
+  it("ignores path when the target is a typed url", async () => {
+    // `path` is the sub-path of a mount. A url is a whole url and carries its
+    // own path, so appending a second one would call somewhere the board did
+    // not write.
+    const { svc } = createService();
+    fetchMock.mockResolvedValue(textResponse("zen"));
+    svc.configure({ url: "https://api.example.com/zen", path: "/ignored" });
+
+    svc.process(undefined);
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.com/zen");
   });
 
   it("keeps parameters the target already carries", async () => {

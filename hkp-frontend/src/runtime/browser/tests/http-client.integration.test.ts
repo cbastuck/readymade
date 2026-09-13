@@ -85,7 +85,7 @@ describe("http-client in a browser runtime", () => {
     await configureService(
       scope as any,
       { uuid: "request" } as any,
-      { url: "https://api.example.com", path: "/zen" },
+      { url: "https://api.example.com/zen" },
     );
 
     let respond: (response: Response) => void = () => {};

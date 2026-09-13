@@ -8,9 +8,11 @@ import InputField from "hkp-frontend/src/components/shared/InputField";
 import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
 import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import HttpHeaders from "./HttpHeaders";
+import { parseMountRef } from "hkp-frontend/src/runtime/board/mount";
 
 export default function HttpClientUI(props: ServiceUIProps) {
   const [url, setUrl] = useState<string>("");
+  const [path, setPath] = useState<string>("");
   const [mount, setMount] = useState<string>("");
   const [method, setMethod] = useState<string>("get");
 
@@ -47,6 +49,11 @@ export default function HttpClientUI(props: ServiceUIProps) {
 
   const onUpdate = useCallback(
     (message: any) => {
+      if (!message) {
+        // A service whose descriptor carries no state yet reports one of these
+        // on mount, before the runtime has been asked what it holds.
+        return;
+      }
       // A request's progress notification reports the address actually called —
       // the URL with the path and the parameters on it — which is not what this
       // field holds. Taking it would put the path into the URL, and the next
@@ -54,6 +61,9 @@ export default function HttpClientUI(props: ServiceUIProps) {
       const progress = message.requesting !== undefined;
       if (!progress && message.url !== undefined) {
         setUrl(message.url);
+      }
+      if (!progress && message.path !== undefined) {
+        setPath(message.path);
       }
       if (message.__hkpMount !== undefined) {
         setMount(message.__hkpMount);
@@ -88,6 +98,11 @@ export default function HttpClientUI(props: ServiceUIProps) {
     [userAgentOptions],
   );
 
+  // A mount is the target whose address the board does not write: it is
+  // assigned by a runtime and resolved by the coordinator. Before resolution
+  // the reference sits in `url`; after it, the address is in `__hkpMount`.
+  const targetsMount = mount !== "" || parseMountRef(url) !== null;
+
   const methodOptions = useMemo(
     () => ({
       get: "GET",
@@ -101,6 +116,11 @@ export default function HttpClientUI(props: ServiceUIProps) {
   const onChangeUrl = (value: string) => {
     setUrl(value);
     props.service.configure({ url: value });
+  };
+
+  const onChangePath = (value: string) => {
+    setPath(value);
+    props.service.configure({ path: value });
   };
 
   const onChangeMethod = (value: OnChangeValue) => {
@@ -149,10 +169,10 @@ export default function HttpClientUI(props: ServiceUIProps) {
   );
 
   const updateHeaderKey = useCallback(
-    (id: string, value: OnChangeValue) => {
+    (id: string, key: string) => {
       setHeaders((prevHeaders) => {
         const updatedHeaders = prevHeaders.map((h) =>
-          h.id === id ? { ...h, key: value.value } : h,
+          h.id === id ? { ...h, key } : h,
         );
         // Only configure if this header has a value
         const header = updatedHeaders.find((h) => h.id === id);
@@ -246,6 +266,16 @@ export default function HttpClientUI(props: ServiceUIProps) {
               />
             </div>
           </div>
+          {targetsMount && (
+            // Only a mount target has a sub-path to name. A URL carries its own
+            // path, so a second field for one would be two places to write the
+            // same thing — and the service ignores it there. A mount address is
+            // assigned by a runtime and is not this panel's to type, which
+            // leaves nowhere else for a sub-path to go.
+            <div className="py-1 w-[25rem]">
+              <InputField label="Path" value={path} onChange={onChangePath} />
+            </div>
+          )}
           <div className="w-[25rem]">
             <SelectorField
               value={userAgent}

@@ -19,7 +19,7 @@ import {
   RuntimeDescriptor,
   ServiceDescriptor,
   ServiceRegistry,
-  ServiceClass,
+  ServiceClassWithPreset,
   InstanceId,
   RuntimeApiMap,
   RuntimeScope,
@@ -75,6 +75,12 @@ import {
   arrangeServices as arrangeServicesOp,
   setServiceName as setServiceNameOp,
 } from "./core/serviceOperations";
+import {
+  ApplyPresetResult,
+  Preset,
+  applyPreset as applyPresetOp,
+  readServiceState as readServiceStateOp,
+} from "./core/presets";
 
 type BoardContextAPI = {
   addAvailableRuntime: (
@@ -91,13 +97,26 @@ type BoardContextAPI = {
   ) => Promise<void>;
   removeAllServices: (runtime: RuntimeDescriptor) => void;
 
+  /** `desc` may be a palette entry carrying the preset to configure it from. */
   addService: (
-    desc: ServiceClass,
+    desc: ServiceClassWithPreset,
     rt: RuntimeDescriptor,
     prototype?: ServiceInstance,
     insertAtIndex?: number,
   ) => void;
   removeService: (svc: InstanceId, rt: RuntimeDescriptor) => void;
+
+  /** Configures a service from a preset, replacing what it held (core/presets). */
+  applyPreset: (
+    preset: Preset,
+    rt: RuntimeDescriptor,
+    svc: InstanceId,
+  ) => Promise<ApplyPresetResult>;
+  /** A service's configuration as it stands, which is what a preset is made from. */
+  readServiceState: (
+    rt: RuntimeDescriptor,
+    svc: InstanceId,
+  ) => Promise<Record<string, any>>;
 
   arrangeService: (rt: RuntimeDescriptor, svcUuid: string, dst: number) => void;
   arrangeRuntime: (runtimeId: string, dst: number) => void;
@@ -496,13 +515,22 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setRuntimeNameOp(runtimeId, newName, getRefs());
 
     const addService = (
-      service: ServiceClass,
+      service: ServiceClassWithPreset,
       runtime: RuntimeDescriptor,
       prototype?: ServiceInstance,
       insertAtIndex?: number,
     ) => addServiceOp(service, runtime, getRefs(), prototype, insertAtIndex);
     const removeService = (service: InstanceId, runtime: RuntimeDescriptor) =>
       removeServiceOp(service, runtime, getRefs());
+    const applyPreset = (
+      preset: Preset,
+      runtime: RuntimeDescriptor,
+      service: InstanceId,
+    ) => applyPresetOp(preset, runtime, service, getRefs());
+    const readServiceState = (
+      runtime: RuntimeDescriptor,
+      service: InstanceId,
+    ) => readServiceStateOp(runtime, service, getRefs());
     const removeAllServices = (runtime: RuntimeDescriptor) =>
       removeAllServicesOp(runtime, getRefs());
     const arrangeServices = (
@@ -790,6 +818,8 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       arrangeService: arrangeServices,
       arrangeRuntime: arrangeRuntimes,
       removeService,
+      applyPreset,
+      readServiceState,
       removeRuntime,
       updateRuntime,
       removeAllServices,

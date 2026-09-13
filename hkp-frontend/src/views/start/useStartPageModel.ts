@@ -8,6 +8,7 @@ import { buildDemosFolder } from "./demosSource";
 import { useCloudFolder } from "./useCloudSource";
 import { useCloudBoardsFolder } from "./useCloudBoardsFolder";
 import { useRemotesFolder } from "./useRemotesFolder";
+import { usePresetsFolder } from "./presetsSource";
 import { StartPageStore } from "./store";
 import {
   BoardNode,
@@ -48,6 +49,9 @@ export interface StartPageModelOptions {
    *  their hosts join the Remotes source. Omit to read the stored ones
    *  read-only (Cloud Boards only). */
   coordinators?: CoordinatorsController;
+  /** Opens the host's preset import UI, offered as the Presets source's
+   *  action. Without one the source still lists what is there. */
+  onImportPreset?: () => void;
   /** Additional host-provided sources appended after the built-in ones. */
   extraSources?: FolderNode[];
   /** Virtual folders appended inside My Boards, after the user's own
@@ -86,6 +90,7 @@ export function useStartPageModel(
     withCloud,
     cloudBoards,
     coordinators,
+    onImportPreset,
     extraSources,
     myBoardsExtraFolders,
     excludeDemoTags,
@@ -128,6 +133,7 @@ export function useStartPageModel(
     coordinators,
   );
   const remotesFolder = useRemotesFolder(remotes, coordinators);
+  const presetsFolder = usePresetsFolder({ onImport: onImportPreset });
 
   const roots = useMemo<TreeNode[]>(() => {
     const list: TreeNode[] = [];
@@ -168,6 +174,7 @@ export function useStartPageModel(
     if (remotesFolder) {
       list.push(remotesFolder);
     }
+    list.push(presetsFolder);
     for (const source of extraSources ?? []) {
       list.push(source);
     }
@@ -182,6 +189,7 @@ export function useStartPageModel(
     cloudBoardsFolder,
     runtimes,
     remotesFolder,
+    presetsFolder,
     extraSources,
     myBoardsExtraFolders,
   ]);

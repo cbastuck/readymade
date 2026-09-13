@@ -35,6 +35,7 @@ import {
   FolderNode,
   NewsItem,
   RemotesController,
+  PresetNode,
   RuntimeNode,
   SavedBoardEntry,
   TreeNode,
@@ -46,6 +47,8 @@ import { ColumnVM } from "./Column";
 import { RowVM } from "./Row";
 import BoardDetails from "./BoardDetails";
 import RuntimeDetails from "./RuntimeDetails";
+import PresetDetails from "./PresetDetails";
+import PresetImport from "./PresetImport";
 import FolderPicker from "./FolderPicker";
 import EditorDialog from "hkp-frontend/src/ui-components/EditorDialog";
 
@@ -285,6 +288,7 @@ export default function StartPage(props: StartPageProps) {
   // Board whose source editor is open, with the text it was opened on; null
   // while the editor is closed. A source nothing can write back (a demo's) is
   // opened rather than saved — the editor offers "Open board" instead.
+  const [importingPreset, setImportingPreset] = useState(false);
   const [sourceEdit, setSourceEdit] = useState<{
     name: string;
     source: string;
@@ -312,6 +316,7 @@ export default function StartPage(props: StartPageProps) {
       withCloud,
       cloudBoards: withCloudBoards,
       coordinators: manageCoordinators,
+      onImportPreset: () => setImportingPreset(true),
       extraSources,
       myBoardsExtraFolders,
       excludeDemoTags,
@@ -396,6 +401,34 @@ export default function StartPage(props: StartPageProps) {
                   );
                 }
               : undefined,
+        };
+      }
+
+      if (node.type === "preset") {
+        // Terminal, like a runtime: a preset is applied to a service in the
+        // playground, not opened here. Selecting one shows what is in it.
+        return {
+          key: opts.key,
+          name: node.name,
+          art: "linear-gradient(160deg, #6b5bd6, #3d2fa8)",
+          iconColor: "#fff",
+          isBoard: true,
+          dot: false,
+          dotColor: "#6b5bd6",
+          sub:
+            opts.subOverride ??
+            (node.builtIn ? "Built in" : "Saved on this device"),
+          subColor: "#9a9fae",
+          badge: "",
+          selected: opts.selected,
+          onClick: opts.onClick,
+          onOpen: undefined,
+          onRemove: node.onDelete
+            ? (e) => {
+                e.stopPropagation();
+                node.onDelete!();
+              }
+            : undefined,
         };
       }
 
@@ -488,6 +521,7 @@ export default function StartPage(props: StartPageProps) {
     let detailSel:
       | { kind: "board"; board: BoardNode; parentPath?: string[] }
       | { kind: "runtime"; runtime: RuntimeNode }
+      | { kind: "preset"; preset: PresetNode }
       | null = null;
 
     while (true) {
@@ -553,6 +587,8 @@ export default function StartPage(props: StartPageProps) {
           };
         } else if (selected && selected.type === "runtime") {
           detailSel = { kind: "runtime", runtime: selected };
+        } else if (selected && selected.type === "preset") {
+          detailSel = { kind: "preset", preset: selected };
         }
         break;
       }
@@ -598,6 +634,7 @@ export default function StartPage(props: StartPageProps) {
 
   const detailBoard = detail?.kind === "board" ? detail : null;
   const detailRuntime = detail?.kind === "runtime" ? detail.runtime : null;
+  const detailPreset = detail?.kind === "preset" ? detail.preset : null;
 
   const [detailDescription, setDetailDescription] = useState<string | undefined>();
 
@@ -850,6 +887,11 @@ export default function StartPage(props: StartPageProps) {
       runtime={detailRuntime}
       onOpen={() => onOpen(runtimeAction(detailRuntime))}
     />
+  ) : detailPreset ? (
+    <PresetDetails
+      key={`${detailPreset.preset.serviceId}:${detailPreset.preset.id}`}
+      node={detailPreset}
+    />
   ) : undefined;
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -913,6 +955,9 @@ export default function StartPage(props: StartPageProps) {
           }
           onClose={() => setAssignBoard(null)}
         />
+      )}
+      {importingPreset && (
+        <PresetImport onClose={() => setImportingPreset(false)} />
       )}
       {sourceEdit && (
         <EditorDialog

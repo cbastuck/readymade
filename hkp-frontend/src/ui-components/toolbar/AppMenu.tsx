@@ -1,5 +1,5 @@
-import { useContext } from "react";
-import { LogIn, LogOut, Menu, Palette, User } from "lucide-react";
+import { useContext, useState } from "react";
+import { LogIn, LogOut, Menu, Settings, User } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,19 +10,16 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
+import SettingsDialog, {
+  APPEARANCE_TAB,
+} from "hkp-frontend/src/ui-components/SettingsDialog";
 import {
   useTheme,
   useThemeControl,
-  ThemeName,
 } from "hkp-frontend/src/ui-components/ThemeContext";
 
 export default function AppMenu() {
@@ -30,6 +27,7 @@ export default function AppMenu() {
   const context = useContext(AppCtx);
   const currentUser = context?.user;
   const navigate = useNavigate();
+  const [settingsTab, setSettingsTab] = useState<string | null>(null);
 
   const isLoggedIn = !!currentUser;
   const nickname = currentUser?.username;
@@ -53,57 +51,58 @@ export default function AppMenu() {
   };
 
   const theme = useTheme();
-  const { themeName, setThemeName } = useThemeControl();
+  const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild className="ml-auto">
-        <div className="px-4">
-          <Button
-            variant="ghost"
-            style={
-              isPlayground
-                ? {
-                    width: 30,
-                    height: 30,
-                    padding: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 6,
-                    color: "var(--text-dim)",
-                  }
-                : undefined
-            }
-          >
-            <Menu strokeWidth={1} />
-          </Button>
-        </div>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        className="w-56 mx-4 font-menu"
-        style={{ borderRadius: theme.borderRadius }}
-      >
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            className="text-base"
-            onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
-          >
-            {isLoggedIn ? (
-              <>
-                <MenuIcon icon={User} />
-                <span>{nickname}</span>
-              </>
-            ) : (
-              <>
-                <MenuIcon icon={LogIn} />
-                <span>Login</span>
-              </>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild className="ml-auto">
+          <div className="px-4">
+            <Button
+              variant="ghost"
+              style={
+                isPlayground
+                  ? {
+                      width: 30,
+                      height: 30,
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 6,
+                      color: "var(--text-dim)",
+                    }
+                  : undefined
+              }
+            >
+              <Menu strokeWidth={1} />
+            </Button>
+          </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          className="w-56 mx-4 font-menu"
+          style={{ borderRadius: theme.borderRadius }}
+        >
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              className="text-base"
+              onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
+            >
+              {isLoggedIn ? (
+                <>
+                  <MenuIcon icon={User} />
+                  <span>{nickname}</span>
+                </>
+              ) : (
+                <>
+                  <MenuIcon icon={LogIn} />
+                  <span>Login</span>
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
 
-          {/*
+            {/*
             <DropdownMenuItem
               className="text-base"
               disabled={!isLoggedIn}
@@ -114,41 +113,29 @@ export default function AppMenu() {
             </DropdownMenuItem>
             */}
 
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-base">
-              <MenuIcon icon={Palette} />
-              <span>Theme</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuRadioGroup
-                value={themeName}
-                onValueChange={(v) => setThemeName(v as ThemeName)}
-              >
-                <DropdownMenuRadioItem value="default">
-                  Default
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="sketch">
-                  Sketch
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="playground">
-                  Playground
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-        </DropdownMenuGroup>
+            <DropdownMenuItem
+              className="text-base"
+              onSelect={() => setSettingsTab(APPEARANCE_TAB)}
+            >
+              <MenuIcon icon={Settings} />
+              <span>Settings</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
 
-        <DropdownMenuSeparator />
+          <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          className="text-base"
-          disabled={!isLoggedIn}
-          onClick={onLogout}
-        >
-          <MenuIcon icon={LogOut} />
-          <span>Log out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem
+            className="text-base"
+            disabled={!isLoggedIn}
+            onClick={onLogout}
+          >
+            <MenuIcon icon={LogOut} />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <SettingsDialog tab={settingsTab} onChangeTab={setSettingsTab} />
+    </>
   );
 }

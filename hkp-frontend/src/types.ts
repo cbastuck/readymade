@@ -151,6 +151,33 @@ export type PeerJsHostDescriptor = {
 
 export type ServiceURI = string;
 
+/**
+ * The legacy prefix the browser's service ids carry.
+ *
+ * Backend runtimes name a service by a bare slug (`timer`, `http-client`); the
+ * browser's older ids spell the same service `hookup.to/service/timer`. The
+ * slug is the canonical form the runtimes are converging on, and the prefixed
+ * ids stay as **aliases**, indefinitely, so boards written against them keep
+ * loading.
+ */
+const LEGACY_SERVICE_PREFIX = "hookup.to/service/";
+
+/**
+ * A service id in the form two runtimes can be compared by.
+ *
+ * Anything asking "is this the same service?" across runtimes has to ask it of
+ * the canonical id, because the alias is never going away: a board saved on the
+ * browser says `hookup.to/service/timer` and one saved on hkp-node says
+ * `timer`, and they mean the same service. Use it to *match*, never to rewrite
+ * what a document says — a board and a preset keep the id they were authored
+ * with.
+ */
+export function toCanonicalServiceId(serviceId: ServiceURI): ServiceURI {
+  return serviceId.startsWith(LEGACY_SERVICE_PREFIX)
+    ? serviceId.slice(LEGACY_SERVICE_PREFIX.length)
+    : serviceId;
+}
+
 export type InitialServiceFrameState = {
   collapsed: boolean;
 };
@@ -186,6 +213,22 @@ export type ServiceClass = {
   version?: string;
   capabilities?: Array<string>;
   description?: string;
+};
+
+/**
+ * What the palette offers: a service to add, and optionally the preset to
+ * configure it from.
+ *
+ * A preset of `sub-service` is a pipeline — a building block made of other
+ * services — and there is no reason it should read as a lesser thing than a
+ * primitive: it is a card in the sidebar like any other, dragged onto a runtime
+ * like any other. What the card carries, beyond the service to create, is which
+ * preset to configure it from once it exists.
+ *
+ * Only a palette entry has one. A registry entry is a service and nothing more.
+ */
+export type ServiceClassWithPreset = ServiceClass & {
+  preset?: { id: string; serviceId: ServiceURI };
 };
 
 export type ServiceRegistry = Array<ServiceClass>;
