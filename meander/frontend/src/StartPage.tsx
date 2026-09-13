@@ -270,6 +270,12 @@ export default function StartPage({ onRestoreBoard }: Props) {
         }
         break;
       }
+      case "source":
+        // Board text with no file behind it (a demo read in the source
+        // editor): handed straight to the session, nothing is written until
+        // the user saves it.
+        onRestoreBoard(JSON.parse(action.source) as BoardDescriptor);
+        break;
       case "cloud":
         // Open the board in the Cloud Boards view — the same live coordinator
         // session the toolbar icon uses. The state signal tells it which board
