@@ -67,7 +67,11 @@ export default function Slider({
     const hasUnitSelector = units && units.length > 1 && onUnit;
     return (
       <div className={`flex flex-col ${className ?? ""}`}>
-        {title && <GroupLabel size={4}>{title}</GroupLabel>}
+        {title && (
+          <GroupLabel className="hkp-svc-field-label" size={4}>
+            {title}
+          </GroupLabel>
+        )}
         <div
           className="mx-2"
           style={{ display: "flex", alignItems: "center", gap: 8 }}
@@ -119,7 +123,11 @@ export default function Slider({
   return (
     <div className={`flex flex-col gap-2 h-full w-full ${className}`}>
       <div className="flex gap-2 items-end h-min">
-        {title && <PropertyLabel size={4}>{title}</PropertyLabel>}
+        {title && (
+          <PropertyLabel className="hkp-svc-field-label" size={4}>
+            {title}
+          </PropertyLabel>
+        )}
         <div className="flex gap-2 w-full">
           <SliderCN
             min={min}

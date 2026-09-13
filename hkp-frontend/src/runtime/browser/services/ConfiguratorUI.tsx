@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
-import ServiceUI, { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 import SubServicePipelineUI from "../../ui/SubServicePipelineUI";
 import { findServiceUI } from "../UIRegistry";
 import { Configurator } from "./Configurator";
@@ -33,7 +35,7 @@ function ConfiguratorUI(props: ServiceUIProps): JSX.Element {
       return;
     }
     updateState(notification);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getActualInstance = useCallback(
@@ -50,18 +52,21 @@ function ConfiguratorUI(props: ServiceUIProps): JSX.Element {
       <div className="flex flex-col gap-2 py-1">
         <SubmittableInput
           title="Target Service UUID"
+          labelClassName="hkp-svc-field-label"
           value={targetServiceUuid}
           placeholder="uuid of target service"
           onSubmit={(val) => service.configure({ targetServiceUuid: val })}
         />
         <SubmittableInput
           title="Target Runtime"
+          labelClassName="hkp-svc-field-label"
           value={targetRuntime}
           placeholder="runtime id (leave empty for same runtime)"
           onSubmit={(val) => service.configure({ targetRuntime: val })}
         />
         <Switch
           title="Pass Through"
+          labelClassName="hkp-svc-field-label"
           checked={passThrough}
           onCheckedChange={(val) => service.configure({ passThrough: val })}
         />

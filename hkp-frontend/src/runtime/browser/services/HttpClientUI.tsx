@@ -7,7 +7,7 @@ import ServiceUI, {
 import InputField from "hkp-frontend/src/components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
-import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import PillRadioGroup from "hkp-frontend/src/ui-components/PillRadioGroup";
 import Editor from "hkp-frontend/src/components/shared/Editor";
 import MappingTable, { Template } from "../../../components/MappingTable";
 import { MOUNT_SCHEME } from "hkp-frontend/src/runtime/board/mount";
@@ -44,7 +44,10 @@ export default function HttpClientUI(props: ServiceUIProps) {
     if (config?.url !== undefined && needsUpdate(config.url, url)) {
       setUrl(config.url);
     }
-    if (config?.__hkpMount !== undefined && needsUpdate(config.__hkpMount, mount)) {
+    if (
+      config?.__hkpMount !== undefined &&
+      needsUpdate(config.__hkpMount, mount)
+    ) {
       setMount(config.__hkpMount);
     }
     if (config?.path !== undefined && needsUpdate(config.path, path)) {
@@ -112,7 +115,9 @@ export default function HttpClientUI(props: ServiceUIProps) {
           // runtime and resolved by the board's coordinator, so it is not the
           // user's to type, and it takes precedence over URL.
           <div>
-            <GroupLabel>Mount</GroupLabel>
+            <GroupLabel className="hkp-svc-field-label" size={4}>
+              Mount
+            </GroupLabel>
             <div className="font-mono text-xs break-all">
               {mount}
               {mount.startsWith(MOUNT_SCHEME) && (
@@ -135,8 +140,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
           onChange={(value) => configure({ path: value })}
         />
 
-        <RadioGroup
-          id={props.service.uuid}
+        <PillRadioGroup
           title="Method"
           options={METHOD_LABELS}
           value={method}
@@ -158,7 +162,9 @@ export default function HttpClientUI(props: ServiceUIProps) {
         />
 
         <div className="flex flex-col gap-1">
-          <GroupLabel>Body</GroupLabel>
+          <GroupLabel className="hkp-svc-field-label" size={4}>
+            Body
+          </GroupLabel>
           <div className="h-[100px] w-full">
             <Editor
               value={body}

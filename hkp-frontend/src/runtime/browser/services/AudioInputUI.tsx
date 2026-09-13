@@ -6,7 +6,7 @@ import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import AudioDeviceSettings, { AudioInputDevice } from "./AudioDeviceSettings";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
-import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import PillRadioGroup from "hkp-frontend/src/ui-components/PillRadioGroup";
 import OneOfVisible from "hkp-frontend/src/ui-components/OneOfVisible";
 import NumberInput from "hkp-frontend/src/ui-components/NumberInput";
 import CustomDialog from "hkp-frontend/src/ui-components/CustomDialog";
@@ -60,8 +60,14 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
   };
 
   onNotification = (notification: any) => {
-    const { isRecording, timeslice, availableDevices, stream, format, pcmSampleRate } =
-      notification;
+    const {
+      isRecording,
+      timeslice,
+      availableDevices,
+      stream,
+      format,
+      pcmSampleRate,
+    } = notification;
 
     if (format !== undefined && formatValues.includes(format)) {
       this.setState({ format });
@@ -132,14 +138,14 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
           stream={this.state.stream}
         />
 
-        <RadioGroup
+        <PillRadioGroup
           title="Recording Mode"
           options={recordingModeOptions}
           value={recordingMode}
           onChange={(newMode) => this.setState({ recordingMode: newMode })}
         />
 
-        <RadioGroup
+        <PillRadioGroup
           title="Output Format"
           options={formatOptions}
           value={formatOptions[formatValues.indexOf(format)]}
@@ -183,7 +189,11 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
                 milliseconds
               </NumberInput>
             </div>
-            <Button className="hkp-svc-btn" variant="outline" onClick={this.onRecord}>
+            <Button
+              className="hkp-svc-btn"
+              variant="outline"
+              onClick={this.onRecord}
+            >
               {recording ? "Stop Recording" : "Start Sliced Recording"}
             </Button>
           </div>
