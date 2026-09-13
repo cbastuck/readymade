@@ -8,17 +8,22 @@
  * service of that kind.
  */
 
-import { ChangeEvent, useRef, useState } from "react";
+import { useState } from "react";
 
 import {
   Preset,
   loadPresetsFromFile,
   loadPresetsFromUrl,
+  parsePresetFile,
   savePreset,
 } from "hkp-frontend/src/core/presets";
+import {
+  PlatformCapabilities,
+  usePlatform,
+} from "hkp-frontend/src/platform/PlatformContext";
 
 export default function PresetImport({ onClose }: { onClose: () => void }) {
-  const fileInput = useRef<HTMLInputElement | null>(null);
+  const platform = usePlatform();
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -50,21 +55,55 @@ export default function PresetImport({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const onPickFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    // Cleared so picking the same file twice is two events rather than one.
-    event.target.value = "";
-    if (!file) {
-      return;
-    }
+  const onPickNatively = async (
+    pick: NonNullable<PlatformCapabilities["pickFiles"]>,
+  ) => {
     setBusy(true);
     try {
-      keep(await loadPresetsFromFile(file));
+      const picked = await pick({ filters: ["*.json"] });
+      for (const file of picked) {
+        keep(parsePresetFile(file.source));
+      }
     } catch (err) {
       report(err);
     } finally {
       setBusy(false);
     }
+  };
+
+  const onPickInBrowser = () => {
+    // Created for the pick rather than kept in the tree: nothing else here
+    // needs the element, and a fresh one means picking the same file twice is
+    // two events rather than one.
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) {
+        return;
+      }
+      setBusy(true);
+      try {
+        keep(await loadPresetsFromFile(file));
+      } catch (err) {
+        report(err);
+      } finally {
+        setBusy(false);
+      }
+    };
+    input.click();
+  };
+
+  // The host's own chooser wherever there is one: a web file input opens no
+  // panel in the saucer webview, where the button would otherwise do nothing.
+  const onPickFile = () => {
+    const pick = platform.pickFiles;
+    if (pick) {
+      void onPickNatively(pick);
+      return;
+    }
+    onPickInBrowser();
   };
 
   return (
@@ -133,7 +172,7 @@ export default function PresetImport({ onClose }: { onClose: () => void }) {
               }}
             />
             <button
-              className="st-btn"
+              className="st-btn st-btn-ghost"
               disabled={busy || !url.trim()}
               onClick={() => void onFetch()}
             >
@@ -142,20 +181,13 @@ export default function PresetImport({ onClose }: { onClose: () => void }) {
           </div>
 
           <button
-            className="st-btn"
+            className="st-btn st-btn-ghost"
             style={{ justifyContent: "center" }}
             disabled={busy}
-            onClick={() => fileInput.current?.click()}
+            onClick={onPickFile}
           >
             Choose a file…
           </button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="application/json,.json"
-            style={{ display: "none" }}
-            onChange={(e) => void onPickFile(e)}
-          />
 
           {error && (
             <div style={{ fontSize: 12.5, color: "#e0355f", lineHeight: 1.45 }}>
@@ -205,7 +237,7 @@ export default function PresetImport({ onClose }: { onClose: () => void }) {
             justifyContent: "flex-end",
           }}
         >
-          <button className="st-btn" onClick={onClose}>
+          <button className="st-btn st-btn-primary" onClick={onClose}>
             Done
           </button>
         </div>

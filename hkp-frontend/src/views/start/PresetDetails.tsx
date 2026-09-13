@@ -226,7 +226,7 @@ export default function PresetDetails({ node }: { node: PresetNode }) {
 
         {preset.homepage && (
           <a
-            className="st-btn"
+            className="st-btn st-btn-ghost"
             style={{ justifyContent: "center", width: "100%" }}
             href={preset.homepage}
             target="_blank"
@@ -238,7 +238,7 @@ export default function PresetDetails({ node }: { node: PresetNode }) {
 
         <div style={{ width: "100%" }}>
           <button
-            className="st-btn"
+            className="st-btn st-btn-ghost"
             style={{ justifyContent: "center", width: "100%" }}
             onClick={() => setShowState((v) => !v)}
           >
@@ -272,7 +272,7 @@ export default function PresetDetails({ node }: { node: PresetNode }) {
           }}
         >
           <button
-            className="st-btn"
+            className="st-btn st-btn-ghost"
             style={{ justifyContent: "center", width: "100%" }}
             onClick={() => download(node)}
           >
@@ -280,7 +280,7 @@ export default function PresetDetails({ node }: { node: PresetNode }) {
           </button>
           {node.onDelete && (
             <button
-              className="st-btn"
+              className="st-btn st-btn-ghost"
               style={{
                 justifyContent: "center",
                 width: "100%",

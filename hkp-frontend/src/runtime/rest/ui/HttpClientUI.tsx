@@ -47,6 +47,11 @@ export default function HttpClientUI(props: ServiceUIProps) {
 
   const onUpdate = useCallback(
     (message: any) => {
+      if (!message) {
+        // A service whose descriptor carries no state yet reports one of these
+        // on mount, before the runtime has been asked what it holds.
+        return;
+      }
       // A request's progress notification reports the address actually called —
       // the URL with the path and the parameters on it — which is not what this
       // field holds. Taking it would put the path into the URL, and the next
@@ -149,10 +154,10 @@ export default function HttpClientUI(props: ServiceUIProps) {
   );
 
   const updateHeaderKey = useCallback(
-    (id: string, value: OnChangeValue) => {
+    (id: string, key: string) => {
       setHeaders((prevHeaders) => {
         const updatedHeaders = prevHeaders.map((h) =>
-          h.id === id ? { ...h, key: value.value } : h,
+          h.id === id ? { ...h, key } : h,
         );
         // Only configure if this header has a value
         const header = updatedHeaders.find((h) => h.id === id);

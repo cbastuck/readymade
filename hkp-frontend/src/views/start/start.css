@@ -196,6 +196,7 @@
   border-radius: 10px;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
 }
 .hkp-start .st-btn-ghost {
   color: var(--st-ink);
