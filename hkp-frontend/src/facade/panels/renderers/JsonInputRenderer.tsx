@@ -29,7 +29,7 @@ export function JsonInputRenderer({
   });
 
   const submit = () => {
-    executeActions({
+    void executeActions({
       action: widget.action,
       actions: widget.actions,
       value,

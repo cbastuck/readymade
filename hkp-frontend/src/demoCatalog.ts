@@ -21,7 +21,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "Live stock trade feed via Alpaca WebSocket — enter your API key to watch real-time trades roll in.",
     icon: "📈",
-    tags: ["Live data", "WebSocket", "API key"],
+    tags: ["Live data", "WebSocket"],
   },
   {
     slug: "smooth",
@@ -100,7 +100,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "Two-way text chat between browser tabs over WebRTC — no server, no account.",
     icon: "💬",
-    tags: ["WebRTC", "P2P"],
+    tags: ["P2P"],
   },
   {
     slug: "p2p-sender",
@@ -108,7 +108,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "Inject text and push it to a peer over WebRTC — pair it with the P2P Receiver. Edit the board to send other data types.",
     icon: "📤",
-    tags: ["WebRTC", "P2P"],
+    tags: ["P2P"],
   },
   {
     slug: "p2p-receiver",
@@ -116,7 +116,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "Receives whatever the P2P Sender pushes over WebRTC and shows it in a live monitor — no server, no account.",
     icon: "📥",
-    tags: ["WebRTC", "P2P"],
+    tags: ["P2P"],
   },
   {
     slug: "drop-it-app",
@@ -140,7 +140,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "Archive your Spotify liked tracks to a GitHub repository as a JSON file.",
     icon: "🎵",
-    tags: ["API key"],
+    tags: ["Integration"],
   },
   {
     slug: "voice-notes",
@@ -148,7 +148,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "Speak and get the transcript — the browser records PCM audio, a local Whisper model in the Python runtime transcribes it, and the text flows back into a monitor.",
     icon: "🗣️",
-    tags: ["Audio", "AI/ML", "Needs Python"],
+    tags: ["Audio", "Needs Python"],
   },
   {
     slug: "encrypt-decrypt",
@@ -162,9 +162,17 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     slug: "http-client",
     label: "HTTP Client",
     description:
-      "A node service calling an endpoint hosted by another runtime. Neither board nor service knows the address: the endpoint names its owner, and the board's coordinator resolves it once the runtime assigns one.",
+      "Compose a request — URL, query parameters, headers, body — send it from the Node runtime and read the response. Nothing the browser could do itself: no CORS policy has a say, and a credential in a header never reaches the page.",
     icon: "🔌",
-    tags: ["hkp-node", "Mounts", "HTTP"],
+    tags: ["HTTP", "Needs Node"],
+  },
+  {
+    slug: "mounted-endpoint",
+    label: "Mounted Endpoint",
+    description:
+      "One runtime hosts an endpoint, another calls it. Neither board nor service knows the address: the endpoint names its owner, and the board's coordinator resolves it once the runtime assigns one.",
+    icon: "🔗",
+    tags: ["Mounts", "HTTP", "Needs Node"],
   },
 ];
 

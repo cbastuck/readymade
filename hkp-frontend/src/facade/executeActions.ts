@@ -31,7 +31,15 @@ function resolveStateRefs(
   return template;
 }
 
-export function executeActions({
+/**
+ * Runs a widget's actions, in the order they are written and one at a time.
+ *
+ * Order is the whole point of awaiting: a button that configures a service and
+ * then asks it to do its job means *that* configuration. Both legs cross to a
+ * remote runtime as separate requests, so issuing them together lets the work
+ * start against the settings the previous press left behind.
+ */
+export async function executeActions({
   action,
   actions,
   value,
@@ -51,7 +59,7 @@ export function executeActions({
   // When provided, { "$state": "key" } references in configure payloads are
   // resolved against these values before $$input substitution runs.
   state?: Record<string, unknown>;
-}): void {
+}): Promise<void> {
   const all: WidgetAction[] = [
     ...(action
       ? [
@@ -76,7 +84,7 @@ export function executeActions({
         const withState = state ? resolveStateRefs(v, state) : v;
         configure[k] = applyInput(withState, value);
       }
-      service.configure(configure);
+      await service.configure(configure);
     } else if (act.type === "process") {
       // Same substitution as a configure payload: what a board writes into one
       // it can write into the other.

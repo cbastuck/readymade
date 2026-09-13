@@ -28,7 +28,7 @@ export function TextRenderer({
   boardContext,
 }: WidgetRendererProps<TextWidget>) {
   const value = useNotificationValue(boardContext, widget.source);
-  const text = extractText(value, undefined);
+  const text = extractText(value, undefined, widget.pretty);
   const shown = text && text.trim() ? text : (widget.placeholder ?? "");
   const isPlaceholder = !(text && text.trim());
 

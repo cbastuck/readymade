@@ -21,6 +21,10 @@ import {
   HKP_DND_SERVICE_CLASS_TYPE,
 } from "../../components/DropTypes";
 import ManageRuntimesDialog from "../../ui-components/toolbar/ManageRuntimesDialog";
+import {
+  boardHasFacade,
+  useFacadeView,
+} from "../../facade/FacadeViewContext";
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -224,6 +228,7 @@ export default function Sidebar() {
   const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});
   const [showManageRuntimes, setShowManageRuntimes] = useState(false);
   const boardContext = useBoardContext();
+  const facadeView = useFacadeView();
 
   const availableRuntimes = boardContext?.availableRuntimeEngines ?? [];
 
@@ -314,6 +319,18 @@ export default function Sidebar() {
       }))
       .filter(({ services }) => services.length > 0);
   }, [serviceGroups, query]);
+
+  // The facade is what a board looks like to someone using it rather than
+  // building it, so on its own it gets the window: nothing here — runtimes to
+  // start, services to drag onto them — acts on what is then on screen. A host
+  // that mounts no view state (the cloud view) keeps the sidebar throughout.
+  if (
+    facadeView &&
+    !facadeView.showRuntime &&
+    (boardHasFacade(boardContext) || facadeView.editorOpen)
+  ) {
+    return null;
+  }
 
   const cogButton = (
     <button

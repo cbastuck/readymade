@@ -25,7 +25,7 @@ export function ButtonRenderer({
     <button
       {...press.handlers}
       onClick={() => {
-        executeActions({
+        void executeActions({
           action: widget.action,
           actions: widget.actions,
           value: undefined,
