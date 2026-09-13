@@ -456,7 +456,7 @@ export function attentionCount(node: TreeNode): number {
   if (node.type === "board") {
     return isAttentionState(node.state) ? 1 : 0;
   }
-  if (node.type === "runtime") {
+  if (node.type === "runtime" || node.type === "preset") {
     return 0;
   }
   return node.children.reduce((sum, child) => sum + attentionCount(child), 0);
@@ -539,8 +539,9 @@ export function searchBoards(roots: TreeNode[], query: string): SearchResult[] {
         walk(node.children, [...path, node.name]);
         continue;
       }
-      if (node.type === "runtime") {
-        // Live runtimes aren't part of board search (phase 1).
+      if (node.type === "runtime" || node.type === "preset") {
+        // Neither is a board: search answers with boards to open, and a preset
+        // is applied to a service rather than opened.
         continue;
       }
       const haystack = [node.name, ...(node.tags ?? []), ...path]

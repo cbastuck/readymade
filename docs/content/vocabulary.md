@@ -38,7 +38,7 @@ is the one worth being pedantic in.
 |---|---|---|
 | **Toolbar** | The bar above an open board: board menu, board name, status, view controls, share, app menu. | `hkp-frontend/src/components/Toolbar/index.tsx` |
 | **TopBar** | The *start page's* bar — title, version badge, logo. A different bar in a different view; not the Toolbar. | `hkp-frontend/src/views/start/TopBar.tsx` |
-| **AppMenu** | The application-level dropdown in the toolbar: account, dashboard, theme, log out. About the app, not the board. | `hkp-frontend/src/ui-components/toolbar/AppMenu.tsx` |
+| **AppMenu** | The application-level dropdown in the toolbar: account, dashboard, settings, log out. About the app, not the board. | `hkp-frontend/src/ui-components/toolbar/AppMenu.tsx`, `hkp-frontend/src/ui-components/SettingsDialog.tsx` |
 | **BoardMenu** | The board-level dropdown beside it: save, load, and whatever else the host contributes through a `BoardMenuItemFactory`. About this board. | `hkp-frontend/src/ui-components/toolbar/BoardMenu.tsx`, `hkp-frontend/src/types.ts#BoardMenuItemFactory` |
 | **ShareMenu** | The third dropdown in the toolbar: the ways a board is handed to somebody else — a self-contained link, cloud access by email, a partner board QR. What distinguishes it from the BoardMenu beside it is direction: that one operates on the board you have open, this one gives it away. | `hkp-frontend/src/components/Toolbar/ShareMenu.tsx` |
 | **SaveBoardDialog** | Name and description on save, offering a suggested name. | `hkp-frontend/src/components/SaveBoardDialog.tsx` |

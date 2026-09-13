@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from "react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, render, waitFor } from "@testing-library/react";
 
 import BoardProvider, {
@@ -7,6 +7,7 @@ import BoardProvider, {
   BoardContextState,
 } from "hkp-frontend/src/BoardContext";
 import { RuntimeApiMap, RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
+import { parsePreset, savePreset } from "hkp-frontend/src/core/presets";
 
 function ContextProbe({
   onChange,
@@ -73,6 +74,103 @@ function renderBoard(api: any, initialServices: ServiceDescriptor[] = []) {
 }
 
 describe("service operations integration", () => {
+  describe("addService from a palette preset", () => {
+    // A sub-service preset is offered in the sidebar as a card of its own, so
+    // dropping one has to produce the building block it names — configured,
+    // and called what the card was called — rather than an empty sub-service.
+    const COMPOSED = {
+      preset: "v1",
+      id: "telegram-responder",
+      name: "Telegram responder",
+      serviceId: "sub-service",
+      serviceName: "Telegram responder",
+      state: { pipeline: [{ serviceId: "timer", instanceId: "t", state: {} }] },
+    };
+
+    beforeEach(() => window.localStorage.clear());
+    afterEach(() => window.localStorage.clear());
+
+    it("creates the service under the preset's name and configures it from the preset", async () => {
+      savePreset(parsePreset(COMPOSED));
+      const api = makeApi({
+        addService: vi.fn(async (_scope: any, service: any) => ({
+          uuid: "svc-new",
+          serviceId: service.serviceId,
+          serviceName: service.serviceName,
+          // What a runtime answers a create with: the state of a service that
+          // has just been made, which is not yet the preset's.
+          state: { pipeline: [] },
+        })),
+        getServiceConfig: vi.fn(async () => COMPOSED.state),
+      });
+      const { getCtx } = renderBoard(api);
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+
+      await act(async () => {
+        await getCtx()!.addService(
+          {
+            serviceId: "sub-service",
+            serviceName: "Telegram responder",
+            preset: { id: "telegram-responder", serviceId: "sub-service" },
+          } as any,
+          runtime,
+        );
+      });
+
+      // Named at creation rather than renamed afterwards.
+      expect(api.addService.mock.calls[0][1].serviceName).toBe(
+        "Telegram responder",
+      );
+      // Configured with the preset, and before the board was told it exists —
+      // a panel reads a service's configuration once, when it first sees it.
+      const configured = api.configureService.mock.calls[0];
+      expect(configured[2]).toEqual(COMPOSED.state);
+      await waitFor(() => {
+        expect(getCtx()!.services[runtime.id]).toHaveLength(1);
+      });
+      expect(getCtx()!.services[runtime.id][0].serviceName).toBe(
+        "Telegram responder",
+      );
+      // The empty initial configure a plain add does is not also sent.
+      expect(api.configureService).toHaveBeenCalledTimes(1);
+    });
+
+    it("publishes the configured state, not the one the create answered with", async () => {
+      // A nested pipeline is rendered straight off the board's descriptor
+      // (SubServicePipelineUI reads `service.state.pipeline`), so publishing
+      // the create's answer shows an empty sub-service while its runtime holds
+      // the whole pipeline.
+      savePreset(parsePreset(COMPOSED));
+      const api = makeApi({
+        addService: vi.fn(async (_scope: any, service: any) => ({
+          uuid: "svc-new",
+          serviceId: service.serviceId,
+          serviceName: service.serviceName,
+          state: { pipeline: [] },
+        })),
+        getServiceConfig: vi.fn(async () => COMPOSED.state),
+      });
+      const { getCtx } = renderBoard(api);
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+
+      await act(async () => {
+        await getCtx()!.addService(
+          {
+            serviceId: "sub-service",
+            serviceName: "Telegram responder",
+            preset: { id: "telegram-responder", serviceId: "sub-service" },
+          } as any,
+          runtime,
+        );
+      });
+
+      await waitFor(() => {
+        expect(getCtx()!.services[runtime.id]).toHaveLength(1);
+      });
+      expect(getCtx()!.services[runtime.id][0].state).toEqual(COMPOSED.state);
+    });
+  });
+
   describe("addService", () => {
     it("appends a new service to the runtime", async () => {
       const api = makeApi();

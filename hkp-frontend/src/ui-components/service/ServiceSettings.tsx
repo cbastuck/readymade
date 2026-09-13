@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import {
   ChevronsDownUp,
   ChevronsUpDown,
@@ -19,6 +20,9 @@ import { CustomMenuEntry, ServiceDescriptor } from "hkp-frontend/src/types";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import MenuIcon from "../MenuIcon";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
+import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import PresetMenu from "./PresetMenu";
+import SavePresetDialog from "./SavePresetDialog";
 
 type Props = {
   service: ServiceDescriptor;
@@ -87,7 +91,22 @@ export default function ServiceSettings({
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
 
+  const [savePresetOpen, setSavePresetOpen] = useState(false);
+  const boardContext = useBoardContext();
+  // Presets are applied by recreating the instance on its runtime, so the entry
+  // appears only for a service the board can find one for. A panel rendered
+  // outside a board's runtimes — a nested pipeline's own list — has no runtime
+  // to name, and offering the action there would be offering one that fails.
+  const onBoard = useMemo(
+    () =>
+      Object.values(boardContext?.services ?? {}).some((list) =>
+        list.some((svc) => svc.uuid === service.uuid),
+      ),
+    [boardContext?.services, service.uuid],
+  );
+
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {isPlayground ? (
@@ -120,6 +139,13 @@ export default function ServiceSettings({
           <MenuIcon icon={FileCog} />
           <span>Configuration</span>
         </DropdownMenuItem>
+
+        {onBoard && (
+          <PresetMenu
+            service={service}
+            onSave={() => setSavePresetOpen(true)}
+          />
+        )}
 
         <DropdownMenuSeparator />
 
@@ -170,5 +196,13 @@ export default function ServiceSettings({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+    {savePresetOpen && (
+      <SavePresetDialog
+        service={service}
+        isOpen={savePresetOpen}
+        onOpenChange={setSavePresetOpen}
+      />
+    )}
+    </>
   );
 }

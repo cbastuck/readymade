@@ -18,8 +18,7 @@
         "serviceId": "http-client",
         "serviceName": "Request",
         "state": {
-          "url": "https://api.github.com",
-          "path": "/zen",
+          "url": "https://api.github.com/zen",
           "method": "get",
           "query": {},
           "headers": {},

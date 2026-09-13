@@ -1,7 +1,5 @@
 import InputField from "hkp-frontend/src/components/shared/InputField";
-import SelectorField, {
-  OnChangeValue,
-} from "hkp-frontend/src/components/shared/SelectorField";
+import AutocompleteInputField from "hkp-frontend/src/components/shared/AutocompleteInputField";
 import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import { useMemo } from "react";
 import DeleteButton from "../../../ui-components/DeleteButton";
@@ -10,7 +8,7 @@ type Props = {
   headers: { id: string; key: string; value: string }[];
   onAddHeader: () => void;
   onRemoveHeader: (id: string) => void;
-  onUpdateHeaderKey: (id: string, value: OnChangeValue) => void;
+  onUpdateHeaderKey: (id: string, key: string) => void;
   onUpdateHeaderValue: (id: string, value: string) => void;
 };
 export default function HttpHeaders({
@@ -20,19 +18,27 @@ export default function HttpHeaders({
   onUpdateHeaderKey,
   onUpdateHeaderValue,
 }: Props) {
-  const headerKeyOptions = useMemo(
+  /**
+   * Names worth offering, not the names allowed.
+   *
+   * A header name is open-ended — `xi-api-key`, `anthropic-version`, whatever
+   * an API asks for — so the field is one to type in, with these as
+   * suggestions. It was a fixed list once, and a name outside it could neither
+   * be typed nor displayed: a header a board really held showed as an empty
+   * box with a value beside it.
+   */
+  const suggestions = useMemo(
     () => ({
-      "content-type": "Content-Type",
-      authorization: "Authorization",
-      accept: "Accept",
-      "accept-language": "Accept-Language",
-      "cache-control": "Cache-Control",
-      cookie: "Cookie",
-      origin: "Origin",
-      referer: "Referer",
-      "x-api-key": "X-API-Key",
-      "x-requested-with": "X-Requested-With",
-      custom: "Custom",
+      "content-type": 1,
+      authorization: 1,
+      accept: 1,
+      "accept-language": 1,
+      "cache-control": 1,
+      cookie: 1,
+      origin: 1,
+      referer: 1,
+      "x-api-key": 1,
+      "x-requested-with": 1,
     }),
     [],
   );
@@ -55,15 +61,13 @@ export default function HttpHeaders({
         {headers.map((header) => (
           <div key={header.id} className="flex gap-2 items-center">
             <div className="w-40">
-              <SelectorField
+              <AutocompleteInputField
                 value={header.key}
-                label=""
-                options={headerKeyOptions}
-                onChange={(value) => onUpdateHeaderKey(header.id, value)}
-                labelStyle={{
-                  textTransform: "none",
-                  textAlign: "left",
-                }}
+                autoCompleteValueSuggestions={suggestions as any}
+                selectAllOnFocus={false}
+                onSubmit={(key) => onUpdateHeaderKey(header.id, key)}
+                onTab={(key) => onUpdateHeaderKey(header.id, key)}
+                onChangePending={() => {}}
               />
             </div>
             <div className="flex-1">
