@@ -43,7 +43,7 @@
                 },
                 {
                   "type": "button",
-                  "label": "Partner Board",
+                  "label": "Guest Board",
                   "actions": [{ "type": "board", "action": "partner-board-qr" }]
                 }
               ]
