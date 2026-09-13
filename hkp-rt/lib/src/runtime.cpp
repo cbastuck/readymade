@@ -744,19 +744,31 @@ void Runtime::onSessionBinaryData(Data data, MessageHeader header)
 void Runtime::onSessionJSONData(json msg)
 {
   auto data = msg["params"];
-  if (data.is_null())
-  {
-    std::cout << "Runtime::onSessionJSONData: received null data: " << msg.dump() << std::endl;
-    return;
-  }
   auto context = msg["context"];
   auto type = msg["type"].get<std::string>();
   if (type == "processRuntime")
   {
-    process(data, ProcessContext::fromJson(context));
+    // A null payload is a run with nothing on the input, not a malformed
+    // message: JSON has no undefined, so that is how the sender says it. The
+    // first service is handed Undefined, which is what it is given anywhere
+    // else nothing precedes it, and a service that answers an empty input with
+    // its own configuration behaves the same way here.
+    if (data.is_null())
+    {
+      process(Data(), ProcessContext::fromJson(context));
+    }
+    else
+    {
+      process(data, ProcessContext::fromJson(context));
+    }
   }
   else if (type == "resolveResult")
   {
+    if (data.is_null())
+    {
+      std::cout << "Runtime::onSessionJSONData: received null result: " << msg.dump() << std::endl;
+      return;
+    }
     std::cout << "Need to resolve the result: " << data << context << std::endl;
     auto requestId = ProcessContext::fromJson(context).requestId;
     auto callback = findAndRemovePendingCallback(requestId);

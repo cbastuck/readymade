@@ -59,7 +59,17 @@ export default function RuntimeHeader({
   const onChangeName = (newName: string) =>
     boardContext?.setRuntimeName(runtimeId, newName);
 
-  const runWithParams = (params: any = {}) => {
+  /**
+   * Runs the runtime from the top, with whatever the caller passes as the
+   * input to its first service.
+   *
+   * Nothing passed means nothing on the input, and that is not the same as an
+   * empty object. A service that answers an empty input with its own
+   * configuration — `http-client` sends its configured body — is handed `{}`
+   * as the payload instead, and sends that: a request whose body is `{}`,
+   * which is exactly the configuration the panel says it is not using.
+   */
+  const runWithParams = (params?: unknown) => {
     const scope = boardContext?.scopes[runtimeId];
     const api =
       boardContext?.runtimeApis[runtime.type] ||
