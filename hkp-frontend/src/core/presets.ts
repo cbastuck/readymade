@@ -56,6 +56,7 @@ import {
   RuntimeClassType,
   RuntimeDescriptor,
   ServiceDescriptor,
+  toCanonicalServiceId,
 } from "../types";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { referencedSecrets } from "./secrets";
@@ -85,7 +86,13 @@ export type Preset = {
   state: Record<string, any>;
 
   description?: string;
-  /** Names the instance when applied. Without one the service keeps its name. */
+  /**
+   * Names the instance when the preset is *applied* to a service that already
+   * exists. Without one the service keeps its name.
+   *
+   * Not what a palette card is called, nor what one creates: a card stands for
+   * the preset and is named after it.
+   */
   serviceName?: string;
   /** The author's revision of this preset. Not the format version. */
   version?: number;
@@ -295,7 +302,11 @@ export function presetFromService(
     id: slug(name),
     name,
     serviceId: service.serviceId,
-    serviceName: service.serviceName,
+    // The preset's name, not the name the service happened to carry. What was
+    // saved is "Telegram responder"; an instance of it created from the palette
+    // or configured from the menu should say so, rather than inheriting
+    // whatever the sub-service it came from was called.
+    serviceName: name,
     ...extra,
     state: kept,
   };
@@ -447,7 +458,13 @@ export async function applyPreset(
       `applyPreset() no service "${service.uuid}" on runtime "${runtime.id}"`,
     );
   }
-  if (existing.serviceId !== preset.serviceId) {
+  // Compared canonically: the legacy `hookup.to/service/` ids are aliases that
+  // stay, so a preset authored against one spelling of a service applies to the
+  // other. What the preset and the board each say is left as written.
+  if (
+    toCanonicalServiceId(existing.serviceId) !==
+    toCanonicalServiceId(preset.serviceId)
+  ) {
     throw new Error(
       `Preset "${preset.name}" configures ${preset.serviceId}, not ${existing.serviceId}`,
     );

@@ -64,7 +64,7 @@ A JSON document naming a service and carrying its state:
 | `name`        | yes      | What it is called in a menu                                                 |
 | `state`       | yes      | The service's **whole** configuration                                       |
 | `id`          | no       | Stable identity, unique per service. Derived from the name when absent      |
-| `serviceName` | no       | Names the instance when applied. Without one the service keeps its name     |
+| `serviceName` | no       | Names the instance when applied, and the palette card that offers it. Defaults to the preset's name when saved from a service |
 | `description` | no       | What it does, and what it expects on its input                              |
 | `version`     | no       | The author's revision of this preset. Not the format version                |
 | `author`, `homepage` | no | Who wrote it, and where the API is documented                          |
@@ -77,7 +77,10 @@ A file holds one preset, or several under `{"presets": [ … ]}`.
 ### It is keyed by service, not by runtime
 
 `http-client` exists on hkp-node and on hkp-rt with the same state contract, so
-one preset applies wherever the service is hosted. `runtimes` says which side a
+one preset applies wherever the service is hosted. Matching is by the
+**canonical** service id: the browser's legacy `hookup.to/service/*` ids are
+aliases of the bare slugs the runtimes are converging on, and they stay, so both
+spellings name one service everywhere a preset is filed, listed or applied. `runtimes` says which side a
 preset is *meant* for — an API that sets no CORS headers, or a call carrying a
 credential, wants a remote runtime rather than the browser — but it is advice
 printed next to the name, not a rule that stops anything.
@@ -212,12 +215,20 @@ the build, like everything else about it.
 It is a pipeline, captured. Applying one rebuilds that pipeline inside the
 sub-service, because applying any preset replaces the service's whole state.
 
-It is **not** portable across runtimes the way a simple preset is. The state
-names the nested services by their own serviceIds and carries their state, so it
-belongs to the registry it was built against — a browser sub-service preset
-expects the browser's services. This is the one place where the "keyed by
-service, not by runtime" rule stops paying: the service is the same, the
-contents are not. Say which runtime a composed preset is for in `runtimes`.
+It is less portable than a simple preset, for two reasons that are worth telling
+apart. The state names the nested services and carries their state, so a
+composed preset can only be applied where those services **exist** — that is
+real, and permanent, and `runtimes` is where to say which side it is meant for.
+
+The other reason is temporary: the browser's older service ids carry a
+`hookup.to/service/` prefix where the backend runtimes use a bare slug, so the
+same nested service is spelled two ways. The runtimes are converging on the bare
+slug, and the prefixed ids stay as aliases so existing boards keep loading.
+Anything asking *is this the same service* therefore asks it of the canonical id
+— which is what the Presets source files by, what a service's menu matches on,
+and what applying one checks — so a preset authored against either spelling
+applies to the other. Neither a board nor a preset is rewritten; they keep the
+id they were authored with.
 
 ---
 
@@ -228,6 +239,31 @@ per service that has one, and the presets themselves as the leaves — the same
 browser the boards are organised in, with a details column saying where a preset
 came from, what it needs, and what is in it, and the actions that belong to a
 file: export it, delete it. Importing one is the source's own action.
+
+**A composed preset is a building block, and sits in the palette.** A preset of
+`sub-service` is a pipeline someone built and kept — a service made of services
+— so the sidebar lists it beside the primitives, as a card of its own under its
+own name, dragged onto a runtime the same way. Dropping one creates the
+sub-service, names it after the preset and configures it from the preset, in
+that order: a panel reads a service's configuration once, when it first sees the
+instance, so the configure has to happen before the board is told the service
+exists.
+
+A card *is* the preset, so it carries the preset's name — not `serviceName`,
+which is the name a preset gives a service it is **applied** to, and which a
+preset captured from a service inherits from it (a second card called
+"SubService", beside the SubService primitive it came from).
+
+What is published to the board is the state the service holds after the
+configure, not the one its runtime answered the create with. A nested pipeline
+is rendered straight off the board's descriptor, so publishing the create's
+answer leaves a sub-service showing as empty while its runtime holds the whole
+pipeline — right in the configuration dialog, wrong on the board.
+
+A card appears only where the runtime has a `sub-service` to put it in, and only
+where the preset belongs — `runtimes` is how a composed preset says which side
+it was built for, since it names nested services that one registry has and
+another may not.
 
 **Picking one is the playground's job.** A service's menu has a *Presets*
 submenu listing what is available for that service and nothing else. The menu

@@ -12,7 +12,6 @@
  * so that is where it becomes a preset.
  */
 
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -26,26 +25,9 @@ import MenuIcon from "../MenuIcon";
 import { Bookmark, Save } from "lucide-react";
 import { ServiceDescriptor } from "hkp-frontend/src/types";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
-import { Preset, subscribePresets } from "hkp-frontend/src/core/presets";
-import { presetsForService } from "hkp-frontend/src/presetRegistry";
+import { Preset } from "hkp-frontend/src/core/presets";
 import { unavailableSecrets } from "hkp-frontend/src/core/secrets";
-
-/**
- * The presets for a service, kept current.
- *
- * They are stored on the device, and a preset imported on the start page has
- * to appear here without a reload — the store says when it changes.
- */
-export function usePresetsForService(serviceId: string): Preset[] {
-  const [presets, setPresets] = useState<Preset[]>(() =>
-    presetsForService(serviceId),
-  );
-  useEffect(() => {
-    setPresets(presetsForService(serviceId));
-    return subscribePresets(() => setPresets(presetsForService(serviceId)));
-  }, [serviceId]);
-  return presets;
-}
+import { usePresetsForService } from "./usePresetsForService";
 
 export default function PresetMenu({
   service,

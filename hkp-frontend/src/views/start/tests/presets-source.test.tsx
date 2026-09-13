@@ -163,6 +163,27 @@ describe("the Presets source", () => {
     expect(folders).toEqual(["Bots", "Chat"]);
   });
 
+  it("treats a legacy service id as the same service", () => {
+    // The browser's older ids spell a service `hookup.to/service/x`; the
+    // backend runtimes spell it `x`. Listing both would split one service's
+    // presets across two folders that look like different services.
+    savePreset(
+      parsePreset({
+        ...SAVED,
+        id: "legacy-spelling",
+        serviceId: "hookup.to/service/http-client",
+      }),
+    );
+    const { result } = renderHook(() => usePresetsFolder());
+
+    expect(services(result.current).map((entry) => entry.name)).not.toContain(
+      "hookup.to/service/http-client",
+    );
+    expect(
+      presetsOf(result.current, "http-client").map((node) => node.preset.id),
+    ).toContain("legacy-spelling");
+  });
+
   it("offers the import action only when the host can open one", () => {
     const withImport = renderHook(() =>
       usePresetsFolder({ onImport: () => {} }),

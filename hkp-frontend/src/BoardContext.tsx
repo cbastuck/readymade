@@ -19,7 +19,7 @@ import {
   RuntimeDescriptor,
   ServiceDescriptor,
   ServiceRegistry,
-  ServiceClass,
+  ServiceClassWithPreset,
   InstanceId,
   RuntimeApiMap,
   RuntimeScope,
@@ -97,8 +97,9 @@ type BoardContextAPI = {
   ) => Promise<void>;
   removeAllServices: (runtime: RuntimeDescriptor) => void;
 
+  /** `desc` may be a palette entry carrying the preset to configure it from. */
   addService: (
-    desc: ServiceClass,
+    desc: ServiceClassWithPreset,
     rt: RuntimeDescriptor,
     prototype?: ServiceInstance,
     insertAtIndex?: number,
@@ -514,7 +515,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setRuntimeNameOp(runtimeId, newName, getRefs());
 
     const addService = (
-      service: ServiceClass,
+      service: ServiceClassWithPreset,
       runtime: RuntimeDescriptor,
       prototype?: ServiceInstance,
       insertAtIndex?: number,

@@ -186,6 +186,9 @@ describe("making a preset from a service", () => {
       "Example API",
     );
     expect(preset.id).toBe("example-api");
+    // Named after the preset, so an instance created from it says what it is
+    // rather than inheriting the name of the service it was captured from.
+    expect(preset.serviceName).toBe("Example API");
     expect(preset.serviceId).toBe("http-client");
     expect(preset.state.__hkpMount).toBeUndefined();
     // The reference, not a value: nothing ever resolved one into service state.
@@ -296,6 +299,22 @@ describe("applying a preset", () => {
 
     expect(api.configureService.mock.calls[0][2].__hkpMount).toBe(
       "http://host:8080/hosted/abc",
+    );
+  });
+
+  it("applies across the legacy id of the same service", async () => {
+    // `hookup.to/service/…` is an alias that stays, so a preset authored on one
+    // runtime's spelling of a service applies on the other's.
+    const { refs, api } = makeRefs({});
+    const services = refs.servicesRef.current!.node;
+    services[0] = { ...services[0], serviceId: "hookup.to/service/http-client" };
+
+    await applyPreset(parsePreset(PRESET), RUNTIME, { uuid: "request" }, refs);
+
+    expect(api.configureService).toHaveBeenCalled();
+    // Created under the id the board holds, not the preset's spelling of it.
+    expect(api.addService.mock.calls[0][1].serviceId).toBe(
+      "hookup.to/service/http-client",
     );
   });
 

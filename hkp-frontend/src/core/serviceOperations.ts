@@ -1,16 +1,17 @@
 import {
-  ServiceClass,
+  ServiceClassWithPreset,
   RuntimeDescriptor,
   ServiceDescriptor,
   ServiceInstance,
   InstanceId,
   isRuntimeBrowserClassType,
 } from "../types";
+import { presetsForService } from "../presetRegistry";
 import { reorderService } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 
 export async function addService(
-  service: ServiceClass,
+  service: ServiceClassWithPreset,
   runtime: RuntimeDescriptor,
   refs: BoardStateRefs,
   prototype?: ServiceInstance,
@@ -22,7 +23,40 @@ export async function addService(
       `BoardContext.addService() runtime api is missing: ${runtime.type}`,
     );
   }
-  const svc = await api.addService(scope, service, prototype?.uuid);
+  // A palette entry standing for a preset is called what the preset is called,
+  // and so is what it creates: the service is named at creation rather than
+  // renamed into it afterwards.
+  const preset = service.preset
+    ? presetsForService(service.preset.serviceId).find(
+        (entry) => entry.id === service.preset!.id,
+      )
+    : undefined;
+  const created = await api.addService(
+    scope,
+    preset ? { ...service, serviceName: preset.name } : service,
+    prototype?.uuid,
+  );
+
+  // Configured before the board is told the service exists. A panel reads a
+  // service's configuration once, when it first sees the instance; published
+  // first, it would read the defaults and never hear this (see core/presets).
+  //
+  // The descriptor is then re-read, because it is not only a panel that reads
+  // the state: a board descriptor carries the state it was created with, and a
+  // nested pipeline is rendered straight off it (SubServicePipelineUI). Publish
+  // the one the create answered with and a sub-service configured from a preset
+  // shows as empty while its runtime holds the whole pipeline.
+  let svc = created;
+  if (created && preset) {
+    await api.configureService(scope, created, preset.state);
+    const state = await Promise.resolve(
+      api.getServiceConfig?.(scope, created),
+    ).catch(() => null);
+    if (state) {
+      svc = { ...created, state };
+    }
+  }
+
   if (svc) {
     const currentList = refs.servicesRef.current![runtime.id];
     if (insertAtIndex !== undefined) {
@@ -46,7 +80,7 @@ export async function addService(
       prototype,
       prototype.state || prototype,
     );
-  } else if (svc && isRuntimeBrowserClassType(runtime.type)) {
+  } else if (svc && !preset && isRuntimeBrowserClassType(runtime.type)) {
     // Initialise a freshly inserted browser service with an initial configure,
     // symmetric with restore (which configures every service on load). Without
     // it, a service that establishes a side effect in configure() — e.g.

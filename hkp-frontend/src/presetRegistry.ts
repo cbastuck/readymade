@@ -12,6 +12,7 @@
  */
 
 import { Preset, parsePreset, savedPresets } from "./core/presets";
+import { toCanonicalServiceId } from "./types";
 
 import elevenlabsTextToSpeech from "../presets/http-client/elevenlabs-text-to-speech.json";
 import openaiChatCompletions from "../presets/http-client/openai-chat-completions.json";
@@ -27,7 +28,10 @@ export function builtInPresets(): Preset[] {
 
 /** The shipped presets for one service, in the order they are listed. */
 export function builtInPresetsFor(serviceId: string): Preset[] {
-  return BUILT_IN.filter((preset) => preset.serviceId === serviceId);
+  const canonical = toCanonicalServiceId(serviceId);
+  return BUILT_IN.filter(
+    (preset) => toCanonicalServiceId(preset.serviceId) === canonical,
+  );
 }
 
 /**
@@ -40,25 +44,33 @@ export function builtInPresetsFor(serviceId: string): Preset[] {
  * this machine decided to keep.
  */
 export function presetsForService(serviceId: string): Preset[] {
-  const saved = savedPresets().filter(
-    (preset) => preset.serviceId === serviceId,
-  );
-  return [...saved, ...builtInPresetsFor(serviceId)];
+  const canonical = toCanonicalServiceId(serviceId);
+  const matches = (preset: Preset) =>
+    toCanonicalServiceId(preset.serviceId) === canonical;
+  return [...savedPresets().filter(matches), ...BUILT_IN.filter(matches)];
 }
 
 /** Whether a preset is one this build ships, and therefore not one to delete. */
 export function isBuiltInPreset(preset: Preset): boolean {
   return BUILT_IN.some(
     (entry) =>
-      entry.id === preset.id && entry.serviceId === preset.serviceId,
+      entry.id === preset.id &&
+      toCanonicalServiceId(entry.serviceId) ===
+        toCanonicalServiceId(preset.serviceId),
   );
 }
 
-/** Every service that has a preset, saved or shipped, in a stable order. */
+/**
+ * Every service that has a preset, saved or shipped, in a stable order.
+ *
+ * By canonical id: `hookup.to/service/timer` and `timer` are one service with
+ * two spellings, and listing both would put the same service in the browser
+ * twice, each holding half of its presets.
+ */
 export function servicesWithPresets(): string[] {
   const ids = new Set<string>();
   for (const preset of [...savedPresets(), ...BUILT_IN]) {
-    ids.add(preset.serviceId);
+    ids.add(toCanonicalServiceId(preset.serviceId));
   }
   return [...ids].sort();
 }

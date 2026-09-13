@@ -4,6 +4,7 @@ import {
   Server,
   GitBranch,
   Package,
+  Layers,
   GripVertical,
   Search,
   Settings,
@@ -11,11 +12,14 @@ import {
 import { useBoardContext } from "../../BoardContext";
 import {
   RuntimeClass,
-  ServiceClass,
+  RuntimeClassType,
+  ServiceClassWithPreset,
   toCanonicalRuntimeClassType,
+  toCanonicalServiceId,
   isRuntimeGraphQLClassType,
   isRuntimeRestClassType,
 } from "../../types";
+import { usePresetsForService } from "../../ui-components/service/usePresetsForService";
 import {
   HKP_DND_RUNTIME_CLASS_TYPE,
   HKP_DND_SERVICE_CLASS_TYPE,
@@ -23,6 +27,14 @@ import {
 import ManageRuntimesDialog from "../../ui-components/toolbar/ManageRuntimesDialog";
 import { boardHasFacade, useFacadeView } from "../../facade/FacadeViewContext";
 import { useSelection } from "../../selection/SelectionContext";
+
+/** The service a composed preset is a preset *of*, canonically. */
+const SUB_SERVICE_ID = "sub-service";
+
+/** Distinct per card: one service can appear once plus once per preset of it. */
+function paletteKey(svc: ServiceClassWithPreset): string {
+  return svc.preset ? `${svc.serviceId}:${svc.preset.id}` : svc.serviceId;
+}
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -99,7 +111,11 @@ function RuntimeCard({
   );
 }
 
-function ServiceCard({ svc }: { svc: ServiceClass }) {
+function ServiceCard({ svc }: { svc: ServiceClassWithPreset }) {
+  // A palette entry standing for a preset of a sub-service is a building block
+  // made of other services. It is dragged and dropped like any primitive; the
+  // icon is the only place it says what it is made of.
+  const composed = !!svc.preset;
   return (
     <div
       draggable
@@ -113,7 +129,7 @@ function ServiceCard({ svc }: { svc: ServiceClass }) {
         className="hkp-palette-card-icon"
         style={{ color: "var(--text-dim)" }}
       >
-        <Package size={13} />
+        {composed ? <Layers size={13} /> : <Package size={13} />}
       </div>
       <div className="hkp-palette-card-body">
         <div className="hkp-palette-card-name">{svc.serviceName}</div>
@@ -185,7 +201,7 @@ function ServiceGroup({
   onToggle,
 }: {
   type: string;
-  services: ServiceClass[];
+  services: ServiceClassWithPreset[];
   open: boolean;
   /** Name of the selected runtime, when it is one this group serves. */
   selectedFor?: string;
@@ -239,7 +255,7 @@ function ServiceGroup({
         </span>
       </button>
       {open &&
-        services.map((svc) => <ServiceCard key={svc.serviceId} svc={svc} />)}
+        services.map((svc) => <ServiceCard key={paletteKey(svc)} svc={svc} />)}
     </div>
   );
 }
@@ -252,6 +268,7 @@ export default function Sidebar() {
   const boardContext = useBoardContext();
   const facadeView = useFacadeView();
   const selection = useSelection();
+  const subServicePresets = usePresetsForService(SUB_SERVICE_ID);
   const paletteRef = useRef<HTMLDivElement | null>(null);
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -261,7 +278,7 @@ export default function Sidebar() {
     if (!boardContext) {
       return [];
     }
-    const typeMap = new Map<string, ServiceClass[]>();
+    const typeMap = new Map<string, ServiceClassWithPreset[]>();
     for (const runtime of boardContext.runtimes) {
       const canonical = toCanonicalRuntimeClassType(runtime.type);
       const services = boardContext.registry[runtime.id] ?? [];
@@ -275,11 +292,46 @@ export default function Sidebar() {
         }
       }
     }
+
+    // A sub-service preset is a pipeline someone built and kept, which is a
+    // building block in exactly the way a primitive is: it belongs in the
+    // palette rather than behind a menu on a service you have to add first.
+    // Offered only where the runtime has a sub-service to put it in, and only
+    // where the preset says it belongs — its nested services are named by ids
+    // that one runtime's registry has and another's may not.
+    for (const [type, group] of typeMap.entries()) {
+      const host = group.find(
+        (svc) => toCanonicalServiceId(svc.serviceId) === SUB_SERVICE_ID,
+      );
+      if (!host) {
+        continue;
+      }
+      for (const preset of subServicePresets) {
+        if (preset.runtimes?.length && !preset.runtimes.some(
+          (rt) => toCanonicalRuntimeClassType(rt as RuntimeClassType) === type,
+        )) {
+          continue;
+        }
+        group.push({
+          // The card is the preset, so it is called what the preset is called.
+          // `serviceName` is the name a preset gives a service it is *applied*
+          // to, and one captured from a service carries whatever that service
+          // was called — "SubService", beside the SubService primitive.
+          serviceId: host.serviceId,
+          serviceName: preset.name,
+          description: preset.description,
+          version: host.version,
+          capabilities: host.capabilities,
+          preset: { id: preset.id, serviceId: preset.serviceId },
+        });
+      }
+    }
+
     return Array.from(typeMap.entries()).map(([type, services]) => ({
       type,
       services,
     }));
-  }, [boardContext?.runtimes, boardContext?.registry]);
+  }, [boardContext?.runtimes, boardContext?.registry, subServicePresets]);
 
   const hasRuntimes = (boardContext?.runtimes.length ?? 0) > 0;
 
@@ -577,7 +629,7 @@ export default function Sidebar() {
               />
             ) : (
               services.map((svc) => (
-                <ServiceCard key={svc.serviceId} svc={svc} />
+                <ServiceCard key={paletteKey(svc)} svc={svc} />
               ))
             ),
           )}
