@@ -42,7 +42,7 @@ export default function FacadeRenderer({
     if (!facade.init?.length) {
       return;
     }
-    executeActions({
+    void executeActions({
       actions: facade.init,
       value: undefined,
       boardContext,

@@ -109,6 +109,10 @@ export type TextWidget = {
   tone?: "normal" | "muted" | "error";
   fontSize?: number;
   mono?: boolean;
+  // Indents an object value as JSON over several lines, for a value that is a
+  // structure to read rather than a phrase to mention — a response body, a map
+  // of headers. Strings are unaffected.
+  pretty?: boolean;
 };
 
 export type ButtonWidget = {

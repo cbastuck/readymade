@@ -46,7 +46,12 @@ export default function HttpClientUI(props: ServiceUIProps) {
 
   const onUpdate = useCallback(
     (message: any) => {
-      if (message.url !== undefined) {
+      // A request's progress notification reports the address actually called —
+      // the URL with the path and the parameters on it — which is not what this
+      // field holds. Taking it would put the path into the URL, and the next
+      // edit would configure it there for good.
+      const progress = message.requesting !== undefined;
+      if (!progress && message.url !== undefined) {
         setUrl(message.url);
       }
       if (message.__hkpMount !== undefined) {

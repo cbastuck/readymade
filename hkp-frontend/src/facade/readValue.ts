@@ -11,8 +11,17 @@ export function resolvePath(obj: any, path: string): any {
   return path.split(".").reduce((cur, key) => cur?.[key], obj);
 }
 
-/** The value at `path`, as something printable — objects fall back to JSON. */
-export function extractText(notification: any, path?: string): string | null {
+/**
+ * The value at `path`, as something printable — objects fall back to JSON.
+ *
+ * `pretty` indents that JSON, for a widget whose subject is a structure a person
+ * reads (a response body, a header map) rather than a value mentioned in a line.
+ */
+export function extractText(
+  notification: any,
+  path?: string,
+  pretty?: boolean,
+): string | null {
   if (notification == null) {
     return null;
   }
@@ -26,5 +35,5 @@ export function extractText(notification: any, path?: string): string | null {
   if (typeof val === "number" || typeof val === "boolean") {
     return String(val);
   }
-  return JSON.stringify(val);
+  return pretty ? JSON.stringify(val, null, 2) : JSON.stringify(val);
 }

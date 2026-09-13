@@ -183,7 +183,7 @@ something else.
 
 ## Worked example
 
-`http-client-demo-board.json`: one hkp-node runtime hosts an endpoint, another
+`mounted-endpoint-demo-board.json`: one hkp-node runtime hosts an endpoint, another
 calls it, and no address appears anywhere in the board.
 
 ```json

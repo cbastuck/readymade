@@ -97,4 +97,18 @@ describe("the text widget", () => {
 
     expect(await screen.findByText(/promptTokens/)).toBeTruthy();
   });
+
+  it("indents a structure a person is meant to read", async () => {
+    // A response body on one line is shown but not readable; `pretty` is for the
+    // widget whose subject is the structure itself.
+    renderText(
+      { source: { serviceUuid: "svc", path: "body" }, pretty: true },
+      { body: { login: "octocat", public_repos: 8 } },
+    );
+
+    const shown = await screen.findByText(/octocat/);
+    expect(shown.textContent).toBe(
+      JSON.stringify({ login: "octocat", public_repos: 8 }, null, 2),
+    );
+  });
 });

@@ -48,6 +48,7 @@ UI panel), with these differences:
 |---|---|---|
 | `__hkpMount` | `string` | The resolved address of a mount, written by the board's coordinator. Takes precedence over `url`; not a field to author |
 | `path` | `string` | Appended to the target, so a mount can be called at a sub-path |
+| `query` | `object` | Request parameters as a map, encoded onto the target. Appended to any the target already carries, so a `url` or `path` written with parameters of its own keeps them. Numbers and flags are sent as the text they read as |
 | `timeoutMs` | `number` | Abort the request after this long (default `10000`) |
 
 - It takes its body from the pipeline rather than from a URL template; `body`
@@ -55,8 +56,8 @@ UI panel), with these differences:
 - Its output is `{meta, body?, binary?}` — the same shape
   `http-server-subservices` produces for an incoming request, so a request
   received on one runtime can be forwarded from another unchanged. `meta`
-  carries `status`, `statusText`, `url` and `contentType`; the payload is
-  decoded into `body` when the content type says what the bytes mean, and kept
+  carries `status`, `statusText`, `url`, `headers` and `contentType`; the payload
+  is decoded into `body` when the content type says what the bytes mean, and kept
   in `binary` when it does not.
 - A failed request pushes nothing down the pipeline, rather than a fabricated
   result. A response with an error status *is* a result — the request completed,
@@ -64,6 +65,17 @@ UI panel), with these differences:
 - Because the runtime calls services without awaiting them, the response cannot
   be returned from `process`; it does not exist yet. The service stops the push
   and calls the rest of the pipeline itself when the response arrives.
+- While a request is in flight it says so (`requesting`), and every outcome names
+  the `method` and the `url` actually called, the `status` (`0` when there was no
+  response at all) and an `error` (empty when there was none) — so a panel shows
+  this request's outcome rather than the previous one's still standing.
+
+`http-client-demo-board.json` is that as an app: a facade that composes a
+request — URL, path, parameters, headers, a JSON body — and sends it with the
+verb you press, then reads the status, headers and body off what the Monitor
+behind it received. The requests leave from the runtime rather than the browser,
+which is the reason to call an API this way at all: no CORS policy has a say in
+who can be called, and a credential in a header never reaches the page.
 
 #### Calling an endpoint whose address is assigned at load time
 
