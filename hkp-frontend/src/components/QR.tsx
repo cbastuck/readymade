@@ -4,9 +4,13 @@ import QRCode from "qrcode";
 
 type Props = {
   url: string;
+  className?: string;
 };
 
-export default function QR({ url = window.location.href }: Props) {
+export default function QR({
+  url = window.location.href,
+  className,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -20,5 +24,7 @@ export default function QR({ url = window.location.href }: Props) {
     }
   }, [url]);
 
-  return <canvas ref={canvasRef} width="100%" height="100%" />;
+  return (
+    <canvas ref={canvasRef} className={className} width="100%" height="100%" />
+  );
 }
