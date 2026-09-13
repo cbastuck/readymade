@@ -30,6 +30,13 @@ const serviceName = "HTTP Uploader Token Injector";
 
 const UPLOADER_SERVICE_ID = "hookup.to/service/http-uploader";
 
+// How long to keep asking for a token before emitting the board without one,
+// and how long to wait between asks. Long enough to cover a runtime still being
+// provisioned on a cold board load, short enough that a runtime that is never
+// coming still yields a board rather than a hang.
+const MINT_WAIT_MS = 10_000;
+const MINT_RETRY_MS = 250;
+
 type State = Record<string, never>;
 
 class HttpUploaderTokenInjector extends ServiceBase<State> {
@@ -89,17 +96,41 @@ class HttpUploaderTokenInjector extends ServiceBase<State> {
     return result;
   }
 
+  /**
+   * Asks for a token, waiting for the target runtime to exist.
+   *
+   * A host only mints a grant for a runtime it is actually running, so that a
+   * token can never name an endpoint nothing answers on. A board restores all
+   * its runtimes concurrently, and this service runs in a browser runtime whose
+   * services are configured without a single network round-trip, while the
+   * runtime it mints for is provisioned over several — so on a first load the
+   * ask reliably arrives before the runtime it names.
+   *
+   * Retrying is what closes that gap. It costs a short delay in the emitted
+   * board, which is the QR appearing a moment later; giving up instead costs an
+   * unauthorized transfer, and one that only shows up on the far device.
+   */
   private async mintToken(
     mint: NonNullable<AppInstance["mintToken"]>,
     runtimeId: string,
   ): Promise<string | null> {
-    try {
-      return await mint({ action: "processRuntime", runtimeId });
-    } catch (err: any) {
-      // Leave the uploader without a token: the transfer will fail auth exactly
-      // as it did before, which is no worse than not injecting.
-      console.error("HttpUploaderTokenInjector: failed to mint token", err);
-      return null;
+    const deadline = Date.now() + MINT_WAIT_MS;
+    for (;;) {
+      try {
+        const token = await mint({ action: "processRuntime", runtimeId });
+        if (token) {
+          return token;
+        }
+      } catch (err: any) {
+        // Leave the uploader without a token: the transfer will fail auth
+        // exactly as it did before, which is no worse than not injecting.
+        console.error("HttpUploaderTokenInjector: failed to mint token", err);
+        return null;
+      }
+      if (Date.now() >= deadline) {
+        return null;
+      }
+      await new Promise((resolve) => setTimeout(resolve, MINT_RETRY_MS));
     }
   }
 }
