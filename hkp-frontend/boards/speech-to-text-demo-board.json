@@ -15,7 +15,7 @@
       "id": "python",
       "name": "Python",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "url": "http://127.0.0.1:9000",
       "state": {
         "wrapServices": false,
         "minimized": false
@@ -104,7 +104,17 @@
               "items": [
                 {
                   "type": "button",
-                  "label": "● Record",
+                  "label": "Record",
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "mic",
+                      "path": "isRecording"
+                    },
+                    "statusColors": {
+                      "true": "#ef4444",
+                      "false": "#6b7280"
+                    }
+                  },
                   "action": {
                     "serviceUuid": "mic",
                     "configure": {
