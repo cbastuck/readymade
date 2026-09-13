@@ -122,7 +122,7 @@ export default function RuntimeMenu({ triggerClassName, triggerStyle }: Props) {
             <CommandList className="overflow-auto">
               {localRuntimes.map((rt, idx) => (
                 <CommandItem
-                  className="text-base aria-selected:bg-[var(--hkp-accent-violet-dim)] aria-selected:text-[var(--hkp-accent)]"
+                  className="text-base aria-selected:bg-[var(--hkp-accent-secondary-dim)] aria-selected:text-[var(--hkp-accent-secondary)]"
                   key={`${rt.type}${rt.name}`}
                   value={`${rt.name}|${idx}`}
                   onSelect={(v) => {
@@ -136,7 +136,7 @@ export default function RuntimeMenu({ triggerClassName, triggerStyle }: Props) {
               ))}
               {remoteRuntimes.map((rt, idx) => (
                 <CommandItem
-                  className="text-base aria-selected:bg-[var(--hkp-accent-violet-dim)] aria-selected:text-[var(--hkp-accent)]"
+                  className="text-base aria-selected:bg-[var(--hkp-accent-secondary-dim)] aria-selected:text-[var(--hkp-accent-secondary)]"
                   key={`${rt.type}${rt.name}`}
                   value={`${rt.name}|${idx}`}
                   onSelect={(v) => {
@@ -152,7 +152,7 @@ export default function RuntimeMenu({ triggerClassName, triggerStyle }: Props) {
             <CommandSeparator />
             <CommandGroup>
               <CommandItem
-                className="flex gap-2 text-base aria-selected:bg-[var(--hkp-accent-violet-dim)] aria-selected:text-[var(--hkp-accent)]"
+                className="flex gap-2 text-base aria-selected:bg-[var(--hkp-accent-secondary-dim)] aria-selected:text-[var(--hkp-accent-secondary)]"
                 onSelect={() => {
                   setOpen(false);
                   setShowManageRuntimesDialog(true);

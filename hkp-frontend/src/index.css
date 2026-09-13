@@ -325,21 +325,34 @@ blockquote:after {
   --bg-board: oklch(0.966 0.007 62);
   --bg-app: oklch(0.99 0.003 62);
   --bg-card: #ffffff;
+
+  /* Runtime chrome: the container, its header strip and its border. These are
+     the accent worn very thin — the lightness and chroma below are the design,
+     the hue is taken from the accent further down so the frame around a board
+     belongs to whichever accent is chosen. The values here are the fallback for
+     browsers without relative colour syntax, and are the accent's own hue. */
   --bg-runtime: oklch(0.978 0.012 268);
   --runtime-border: oklch(0.87 0.022 268);
   --runtime-header-bg: oklch(0.948 0.028 268);
 
-  --hkp-accent: oklch(0.6 0.17 195);
-  --hkp-accent-dim: oklch(0.6 0.17 195 / 0.12);
-  --hkp-accent-violet: #7c3aed;
-  --hkp-accent-violet-dim: rgb(124 58 237 / 0.12);
+  /* Two accents, one hue family. The primary marks what a person acts on (a
+     service's own controls, drop targets, selection); the secondary marks the
+     structure around it (runtime names, breadcrumbs, view tabs, menus). They
+     are told apart by lightness and a short hue step, not by belonging to
+     different colours — an accent pair from opposite sides of the wheel reads
+     as two competing themes rather than one. Accent presets swap both
+     together and keep that relation (see ACCENT_PRESETS). */
+  --hkp-accent: #2784d5;
+  --hkp-accent-dim: rgb(39 132 213 / 0.12);
+  --hkp-accent-secondary: #3f5bb8;
+  --hkp-accent-secondary-dim: rgb(63 91 184 / 0.12);
 
   /* No --accent alias here: globals.css owns --accent as raw HSL channels
      for hsl(var(--accent)) tailwind utilities, and redefining it as a color
      at equal specificity made the winner load-order dependent. Tailwind's
      `accent` color maps to var(--hkp-accent, hsl(var(--accent))) instead. */
   --accent-dim: var(--hkp-accent-dim);
-  --accent-violet: var(--hkp-accent-violet);
+  --accent-secondary: var(--hkp-accent-secondary);
   --accent-amber: oklch(0.73 0.14 64);
   --accent-amber-dim: oklch(0.73 0.14 64 / 0.15);
 
@@ -370,10 +383,23 @@ blockquote:after {
 
 @supports (color: oklch(0 0 0)) {
   [data-theme="playground"] {
-    --hkp-accent: oklch(0.6 0.17 195);
-    --hkp-accent-dim: oklch(0.6 0.17 195 / 0.12);
-    --hkp-accent-violet: oklch(0.54 0.2 282);
-    --hkp-accent-violet-dim: oklch(0.54 0.2 282 / 0.12);
+    --hkp-accent: oklch(0.6 0.15 250);
+    --hkp-accent-dim: oklch(0.6 0.15 250 / 0.12);
+    --hkp-accent-secondary: oklch(0.5 0.15 268);
+    --hkp-accent-secondary-dim: oklch(0.5 0.15 268 / 0.12);
+  }
+}
+
+/* Runtime chrome follows the accent. Only the hue is taken from it: mixing the
+   accent into white instead would drag lightness and chroma along, and a tint
+   this pale has to hold its lightness to stay a background rather than become a
+   colour. `--bg-board` and `--bg-card` stay a fixed warm neutral on purpose —
+   the tinted runtimes read as tinted against a ground that is not. */
+@supports (color: oklch(from white l c h)) {
+  [data-theme="playground"] {
+    --bg-runtime: oklch(from var(--hkp-accent-secondary) 0.978 0.012 h);
+    --runtime-border: oklch(from var(--hkp-accent-secondary) 0.87 0.022 h);
+    --runtime-header-bg: oklch(from var(--hkp-accent-secondary) 0.948 0.028 h);
   }
 }
 
@@ -405,9 +431,9 @@ blockquote:after {
   transition: opacity 0.15s;
 }
 [data-theme="playground"] .hkp-add-runtime-btn:hover {
-  background: var(--hkp-accent-violet-dim);
-  color: var(--accent-violet);
-  border-color: var(--accent-violet);
+  background: var(--hkp-accent-secondary-dim);
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
 }
 
 /* Add Service dashed ghost button — appears at the end of the services row */
@@ -437,9 +463,9 @@ blockquote:after {
     background 0.15s;
 }
 [data-theme="playground"] .hkp-add-service-btn:hover {
-  border-color: var(--hkp-accent-violet);
-  color: var(--hkp-accent-violet);
-  background: var(--hkp-accent-violet-dim);
+  border-color: var(--hkp-accent-secondary);
+  color: var(--hkp-accent-secondary);
+  background: var(--hkp-accent-secondary-dim);
 }
 
 /* ── Palette sidebar cards ────────────────────────────────────────────────── */
@@ -474,7 +500,7 @@ blockquote:after {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--hkp-accent-violet, #7c3aed);
+  color: var(--hkp-accent-secondary, #3f5bb8);
 }
 [data-theme="playground"] .hkp-palette-card-body {
   flex: 1;
@@ -654,7 +680,7 @@ blockquote:after {
   box-shadow: none;
   font-size: 12px;
   white-space: nowrap;
-  color: var(--hkp-accent-violet);
+  color: var(--hkp-accent-secondary);
   cursor: pointer;
 }
 .hkp-crumb-link:hover:not(:disabled) {
@@ -726,6 +752,16 @@ blockquote:after {
   outline-offset: -6px;
 }
 
+/* The runtime the playground is aimed at: the palette scrolls to its services,
+   and anything acting on "the runtime" acts on this one. An outline rather than
+   a border, because the border is set inline from the theme, and it keeps the
+   ring clear of the dashed drop-zone outline the wrapper draws. */
+[data-theme="playground"] .hkp-runtime-selected {
+  outline: 2px solid var(--hkp-accent, #0abcfb);
+  outline-offset: 2px;
+  border-radius: var(--r-runtime, 18px);
+}
+
 /* Runtime container: reset mx-2 margin so board padding controls spacing */
 [data-theme="playground"] .hkp-runtime-container {
   margin-left: 0 !important;
@@ -768,8 +804,8 @@ blockquote:after {
 }
 /* Board menu dropdown items */
 [data-theme="playground"] .hkp-board-menu-item[data-highlighted] {
-  background: var(--hkp-accent-violet-dim);
-  color: var(--hkp-accent-violet);
+  background: var(--hkp-accent-secondary-dim);
+  color: var(--hkp-accent-secondary);
 }
 [data-theme="playground"]
   .hkp-board-menu-item[data-highlighted][data-disabled] {
@@ -835,7 +871,7 @@ blockquote:after {
   font-weight: 600 !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
-  color: var(--accent-violet) !important;
+  color: var(--accent-secondary) !important;
   font-family: "DM Sans", system-ui, sans-serif !important;
   padding: 0 !important;
   background: none !important;
@@ -850,8 +886,8 @@ blockquote:after {
   font-size: 10px;
   padding: 2px 7px;
   border-radius: 99px;
-  background: oklch(0.54 0.2 282 / 0.1);
-  color: var(--accent-violet);
+  background: var(--hkp-accent-secondary-dim);
+  color: var(--accent-secondary);
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -1134,12 +1170,12 @@ blockquote:after {
      inversion the selected state had. */
   background:
     linear-gradient(
-      var(--hkp-accent-violet-dim, rgb(124 58 237 / 0.12)),
-      var(--hkp-accent-violet-dim, rgb(124 58 237 / 0.12))
+      var(--hkp-accent-secondary-dim, rgb(63 91 184 / 0.12)),
+      var(--hkp-accent-secondary-dim, rgb(63 91 184 / 0.12))
     ),
     var(--bg-card, #fff);
-  border-color: var(--hkp-accent-violet, #7c3aed);
-  color: var(--hkp-accent-violet, #7c3aed);
+  border-color: var(--hkp-accent-secondary, #3f5bb8);
+  color: var(--hkp-accent-secondary, #3f5bb8);
 }
 .hkp-view-tab:active {
   transform: translateY(1px);
@@ -1148,8 +1184,8 @@ blockquote:after {
    selected tab while its unselected neighbours stayed solid — which reads as
    the selected one being the empty one, the opposite of what it means. */
 .hkp-view-tab[aria-selected="true"] {
-  background: var(--hkp-accent-violet, #7c3aed);
-  border-color: var(--hkp-accent-violet, #7c3aed);
+  background: var(--hkp-accent-secondary, #3f5bb8);
+  border-color: var(--hkp-accent-secondary, #3f5bb8);
   color: #fff;
   font-weight: 500;
 }

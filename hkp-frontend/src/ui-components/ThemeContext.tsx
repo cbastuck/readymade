@@ -44,18 +44,21 @@ const sketchTheme = {
   runtimeBoxShadow: "6px 6px 0px rgba(0,0,0,0.07)",
 };
 
+// Colours here reach the DOM as inline styles, so anything spelled as a literal
+// is beyond the reach of the CSS tokens and stays put when the accent changes.
+// Each one names its token instead and keeps the literal only as the fallback.
 const playgroundTheme = {
-  textColor: "oklch(0.2 0.01 62)",
-  backgroundColor: "oklch(0.99 0.003 62)",
-  borderColor: "oklch(0.87 0.022 268)",
+  textColor: "var(--text, oklch(0.2 0.01 62))",
+  backgroundColor: "var(--bg-app, oklch(0.99 0.003 62))",
+  borderColor: "var(--runtime-border, oklch(0.87 0.022 268))",
   borderRadius: "var(--r-runtime, 18px)" as string | number,
   serviceBorderRadius: "var(--r-card, 14px)" as string | number,
-  accentColor: "oklch(0.6 0.17 196)",
+  accentColor: "var(--hkp-accent, oklch(0.6 0.15 250))",
   buttonBackgroundColor: "transparent",
-  runtimeBackgroundColor: "oklch(0.978 0.012 268)",
+  runtimeBackgroundColor: "var(--bg-runtime, oklch(0.978 0.012 268))",
   runtimeBackgroundImage: "",
-  serviceBackgroundColor: "#ffffff",
-  dropBarColor: "oklch(0.6 0.17 196)",
+  serviceBackgroundColor: "var(--bg-card, #ffffff)",
+  dropBarColor: "var(--hkp-accent, oklch(0.6 0.15 250))",
   popoverBackgroundColor: "",
   serviceBorderWidth: 1,
   serviceContentPaddingBottom: 0,
@@ -90,22 +93,32 @@ export type ThemeContextState = typeof defaultTheme;
 
 // ── Appearance (user-controlled accent + font, app-wide) ─────────────────────
 //
-// The editor uses two accent colors (a teal `--hkp-accent` and a violet
-// `--hkp-accent-violet`). Presets keep the two harmonized: picking one swaps
-// both plus their dim variants via CSS variables on <html>, so every theme and
-// the start page follow.
+// The editor uses two accent colors: `--hkp-accent` for what a person acts on
+// and `--hkp-accent-secondary` for the structure around it. A preset is a pair,
+// and every pair is drawn from one hue family — two accents far apart on the
+// wheel each read as a primary and fight for the eye, so the teal and the
+// violet get a preset each rather than sharing one. Picking a preset swaps both
+// plus their dim variants via CSS variables on <html>, so every theme and the
+// start page follow.
 
 export type AccentPreset = {
   id: string;
   label: string;
-  /** Primary accent (teal role). */
+  /** Accent for what a person acts on: service controls, selection, drops. */
   accent: string;
-  /** Secondary accent (violet role). */
+  /** Accent for the structure around it: runtime chrome, tabs, menus, trails. */
   accentSecondary: string;
 };
 
+// Each pair stays within roughly 20 degrees of hue, the secondary darker than
+// the primary. `indigo` restates the values index.css already holds, since
+// picking the default clears the overrides rather than setting them; its
+// secondary sits on the hue the runtime frame has always been tinted with, so
+// the default board looks the way it did before the frame followed the accent.
 export const ACCENT_PRESETS: AccentPreset[] = [
-  { id: "lagoon", label: "Lagoon", accent: "oklch(0.6 0.17 195)", accentSecondary: "#7c3aed" },
+  { id: "indigo", label: "Indigo", accent: "#2784d5", accentSecondary: "#3f5bb8" },
+  { id: "lagoon", label: "Lagoon", accent: "oklch(0.6 0.17 195)", accentSecondary: "#0a6d8e" },
+  { id: "iris", label: "Iris", accent: "#774cd5", accentSecondary: "#8632b6" },
   { id: "cobalt", label: "Cobalt", accent: "#3b5bff", accentSecondary: "#6a3bff" },
   { id: "meadow", label: "Meadow", accent: "#17b877", accentSecondary: "#0a8a72" },
   { id: "ember", label: "Ember", accent: "#f2a417", accentSecondary: "#c76a00" },
@@ -202,7 +215,7 @@ type AppearanceState = { accentId: string; fontId: string; densityId: string };
 
 const APPEARANCE_STORAGE_KEY = "hkp-appearance";
 const DEFAULT_APPEARANCE: AppearanceState = {
-  accentId: "lagoon",
+  accentId: "indigo",
   fontId: "theme",
   densityId: "compact",
 };
@@ -260,17 +273,17 @@ function applyAppearance(appearance: AppearanceState) {
   if (!accent || accent.id === DEFAULT_APPEARANCE.accentId) {
     root.style.removeProperty("--hkp-accent");
     root.style.removeProperty("--hkp-accent-dim");
-    root.style.removeProperty("--hkp-accent-violet");
-    root.style.removeProperty("--hkp-accent-violet-dim");
+    root.style.removeProperty("--hkp-accent-secondary");
+    root.style.removeProperty("--hkp-accent-secondary-dim");
   } else {
     root.style.setProperty("--hkp-accent", accent.accent);
     root.style.setProperty(
       "--hkp-accent-dim",
       `color-mix(in srgb, ${accent.accent} 12%, transparent)`,
     );
-    root.style.setProperty("--hkp-accent-violet", accent.accentSecondary);
+    root.style.setProperty("--hkp-accent-secondary", accent.accentSecondary);
     root.style.setProperty(
-      "--hkp-accent-violet-dim",
+      "--hkp-accent-secondary-dim",
       `color-mix(in srgb, ${accent.accentSecondary} 12%, transparent)`,
     );
   }

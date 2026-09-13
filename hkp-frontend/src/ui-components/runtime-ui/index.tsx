@@ -35,6 +35,8 @@ type Props = {
   wrapServices?: boolean;
   columnServices?: boolean;
   isExpanded?: boolean;
+  /** Whether this is the runtime the playground is currently aimed at. */
+  selected?: boolean;
   style?: CSSProperties;
   outputs?: ReactElement;
   inputs?: ReactElement;
@@ -64,6 +66,7 @@ export default function RuntimeUI({
   style: passedStyled,
   children,
   isExpanded = true,
+  selected = false,
   outputs,
   inputs,
   initialServiceFrameState,
@@ -95,11 +98,17 @@ export default function RuntimeUI({
   const horizontalLayoutWrapped =
     "flex sm:flex-wrap flex-col sm:flex-row items-start";
   const columnLayout = "flex flex-col";
-  const layout = columnServices ? columnLayout : (wrapServices ? horizontalLayoutWrapped : horizontalLayout);
+  const layout = columnServices
+    ? columnLayout
+    : wrapServices
+      ? horizontalLayoutWrapped
+      : horizontalLayout;
   return (
     <div
       style={{ ...style, boxShadow: theme.runtimeBoxShadow }}
-      className="hkp-runtime-container select-none mt-1 mb-2 mx-2"
+      className={`hkp-runtime-container select-none mt-1 mb-2 mx-2${
+        selected ? " hkp-runtime-selected" : ""
+      }`}
     >
       <DragSource
         className="hkp-runtime-header bg-[#FFFFFF8F] border-b border-gray-300"

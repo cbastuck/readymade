@@ -53,7 +53,7 @@ export default function ServiceSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between text-sm border-none bg-transparent hover:bg-[var(--hkp-accent-violet-dim)] hover:text-[var(--hkp-accent-violet)]"
+          className="w-[200px] justify-between text-sm border-none bg-transparent hover:bg-[var(--hkp-accent-secondary-dim)] hover:text-[var(--hkp-accent-secondary)]"
           style={
             compact
               ? {
@@ -86,7 +86,7 @@ export default function ServiceSelector({
             {registry &&
               registry.map((s) => (
                 <CommandItem
-                  className="text-sm aria-selected:bg-[var(--hkp-accent-violet-dim)] aria-selected:text-[var(--hkp-accent-violet)]"
+                  className="text-sm aria-selected:bg-[var(--hkp-accent-secondary-dim)] aria-selected:text-[var(--hkp-accent-secondary)]"
                   key={s.serviceId}
                   value={s.serviceId}
                   onSelect={(currentValue) => {

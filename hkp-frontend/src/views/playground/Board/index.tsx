@@ -171,7 +171,7 @@ export default function Board(props: Props) {
               justifyContent: "flex-start",
               borderRadius: 8,
               backgroundColor: isDraggingRuntimeOver
-                ? "var(--hkp-accent-violet-dim)"
+                ? "var(--hkp-accent-secondary-dim)"
                 : undefined,
               transition: "background-color 0.15s",
             }}
@@ -187,7 +187,7 @@ export default function Board(props: Props) {
               <span
                 style={{
                   fontSize: 11.5,
-                  color: "var(--hkp-accent-violet)",
+                  color: "var(--hkp-accent-secondary)",
                 }}
               >
                 Drop to add runtime
