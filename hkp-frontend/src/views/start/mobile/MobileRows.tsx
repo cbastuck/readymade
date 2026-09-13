@@ -3,7 +3,7 @@ import { useRef, useState, type ReactNode, type TouchEvent } from "react";
 import { M } from "../../playground/mobile/tokens";
 import MobileIcon from "../../playground/mobile/MobileIcon";
 import { artFor, attentionCount, isAttentionState, stateMeta } from "../model";
-import { BoardNode, FolderNode, RuntimeNode } from "../types";
+import { BoardNode, FolderNode, PresetNode, RuntimeNode } from "../types";
 
 const ROW_ACTION_WIDTH = 92;
 
@@ -369,6 +369,44 @@ export function FolderRow({
 
 /** Runtime row: a live runtime on a remote server, reached by drilling into the
  *  Remotes source. Terminal like a board row — tapping opens its details. */
+export function PresetRow({
+  preset,
+  onTap,
+}: {
+  preset: PresetNode;
+  onTap: () => void;
+}) {
+  return (
+    <SwipeRow
+      actionLabel="Delete"
+      onTap={onTap}
+      onAction={preset.onDelete}
+    >
+      <RowShell>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: "linear-gradient(160deg, #6b5bd6, #3d2fa8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <MobileIcon name="package" size={19} color="#fff" />
+        </div>
+        <RowText
+          name={preset.name}
+          sub={preset.builtIn ? "Built in" : "Saved on this device"}
+        />
+        <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
+      </RowShell>
+    </SwipeRow>
+  );
+}
+
 export function RuntimeRow({
   runtime,
   onTap,

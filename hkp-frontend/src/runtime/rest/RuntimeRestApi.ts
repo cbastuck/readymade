@@ -449,7 +449,18 @@ export async function processRuntime(
   }
 }
 
-export async function addService(scope: RuntimeScope, service: ServiceClass) {
+export async function addService(
+  scope: RuntimeScope,
+  service: ServiceClass,
+  /**
+   * The uuid to create the service under, when the caller has one to keep — a
+   * preset recreating an instance in place, a service moved from another
+   * runtime. Facade widgets reference a service by uuid and a mount address is
+   * derived from one, so a caller that holds one is saying those must survive.
+   * Without it the runtime names the instance, as adding a new service does.
+   */
+  instanceId?: string,
+) {
   const runtime = scope.descriptor;
   const restScope = scope as RuntimeRestScope;
   const scopeRegistry = restScope.registry || [];
@@ -458,7 +469,11 @@ export async function addService(scope: RuntimeScope, service: ServiceClass) {
     service;
   const payload = {
     ...descriptor,
-    uuid: uuidv4(),
+    // The registry entry supplies the contract; the caller supplies the name,
+    // when it has one to ask for — a preset naming the instance it configures.
+    // Without this the runtime stores its registry's name and answers with it.
+    serviceName: service.serviceName || descriptor.serviceName,
+    uuid: instanceId || uuidv4(),
   };
   const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/services`, {
     method: "POST",
@@ -475,6 +490,7 @@ export async function addService(scope: RuntimeScope, service: ServiceClass) {
   const config = await res.json();
   const createdService = {
     ...descriptor,
+    serviceName: payload.serviceName,
     state: config,
     uuid: payload.uuid,
   };

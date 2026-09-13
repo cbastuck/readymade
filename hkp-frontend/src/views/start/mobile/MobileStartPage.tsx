@@ -29,11 +29,13 @@ import {
   CoordinatorsController,
   FolderNode,
   NewsItem,
+  PresetNode,
   RuntimeNode,
 } from "../types";
-import { BoardRow, FolderRow, RuntimeRow } from "./MobileRows";
+import { BoardRow, FolderRow, PresetRow, RuntimeRow } from "./MobileRows";
 import MobileBoardDetails from "./MobileBoardDetails";
 import MobileRuntimeDetails from "./MobileRuntimeDetails";
+import MobilePresetDetails from "./MobilePresetDetails";
 import ManageRemotesSheet from "./ManageRemotesSheet";
 import NameSheet from "./NameSheet";
 import AssignFoldersSheet from "./AssignFoldersSheet";
@@ -180,7 +182,8 @@ function runtimeAction(runtime: RuntimeNode): BoardAction {
  *  remote server (reached through the Remotes source). */
 type DetailSelection =
   | { kind: "board"; board: BoardNode; parentPath?: string[] }
-  | { kind: "runtime"; runtime: RuntimeNode };
+  | { kind: "runtime"; runtime: RuntimeNode }
+  | { kind: "preset"; preset: PresetNode };
 
 interface ResolvedNav {
   /** Folder chain from root; pages[0] is the (virtual) root. */
@@ -315,6 +318,9 @@ export default function MobileStartPage(props: StartPageProps) {
           parentPath: node.persisted ? parent?.userPath : undefined,
         };
         break;
+      } else if (node.type === "preset") {
+        detail = { kind: "preset", preset: node };
+        break;
       } else {
         detail = { kind: "runtime", runtime: node };
         break;
@@ -406,7 +412,9 @@ export default function MobileStartPage(props: StartPageProps) {
   const headerTitle = detail
     ? detail.kind === "board"
       ? detail.board.name
-      : detail.runtime.name
+      : detail.kind === "preset"
+        ? detail.preset.name
+        : detail.runtime.name
     : currentFolder
       ? currentFolder.name
       : title;
@@ -627,7 +635,14 @@ export default function MobileStartPage(props: StartPageProps) {
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {detail?.kind === "runtime" ? (
+        {detail?.kind === "preset" ? (
+          <Slide id={`preset-${detail.preset.preset.id}`}>
+            <MobilePresetDetails
+              key={`${detail.preset.preset.serviceId}:${detail.preset.preset.id}`}
+              node={detail.preset}
+            />
+          </Slide>
+        ) : detail?.kind === "runtime" ? (
           <Slide id={`runtime-${detail.runtime.id}`}>
             <MobileRuntimeDetails
               key={detail.runtime.id}
@@ -980,6 +995,12 @@ export default function MobileStartPage(props: StartPageProps) {
                             )
                         : undefined
                     }
+                  />
+                ) : node.type === "preset" ? (
+                  <PresetRow
+                    key={`${node.name}-${index}`}
+                    preset={node}
+                    onTap={() => push(node.name)}
                   />
                 ) : (
                   <RuntimeRow

@@ -12,6 +12,7 @@
 
 import { RuntimeClass } from "hkp-frontend/src/types";
 import { CoordinatorDescriptor } from "hkp-frontend/src/common";
+import { Preset } from "hkp-frontend/src/core/presets";
 
 // ── Persisted model ───────────────────────────────────────────────────────────
 
@@ -182,7 +183,25 @@ export interface FolderNode {
   action?: { label: string; onClick: () => void };
 }
 
-export type TreeNode = BoardNode | FolderNode | RuntimeNode;
+/**
+ * A preset in the Presets source, reached by drilling Presets → <service> →
+ * <preset>. Like a runtime it is a terminal row rather than something to open:
+ * a preset is applied to a service in the playground, not opened here. This is
+ * where the file itself is looked at, exported and — unless the build ships it
+ * — deleted.
+ */
+export interface PresetNode {
+  type: "preset";
+  /** The preset's name, which is what the row shows. */
+  name: string;
+  preset: Preset;
+  /** Shipped presets are part of the build and cannot be deleted. */
+  builtIn: boolean;
+  /** Absent on a built-in, which is what makes it undeletable. */
+  onDelete?: () => void;
+}
+
+export type TreeNode = BoardNode | FolderNode | RuntimeNode | PresetNode;
 
 /** Host-backed store of remote runtime engines for the manage-remotes UI
  *  (list / discover / add / remove) and the Remotes source. Where the entries

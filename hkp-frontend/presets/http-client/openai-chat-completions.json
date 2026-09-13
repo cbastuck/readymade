@@ -1,0 +1,31 @@
+{
+  "preset": "v1",
+  "id": "openai-chat-completions",
+  "name": "OpenAI — Chat completions",
+  "serviceId": "http-client",
+  "serviceName": "OpenAI Chat",
+  "version": 1,
+  "description": "Calls the chat completions endpoint. A request object arriving on the input is sent as it is, so an upstream service can compose the messages; with nothing on the input the configured body is sent, which is what makes this runnable the moment a key exists. The reply comes back as JSON — the text is at choices[0].message.content.",
+  "homepage": "https://platform.openai.com/docs/api-reference/chat",
+  "tags": ["ai", "llm", "text"],
+  "runtimes": ["rest"],
+  "secrets": {
+    "openai": {
+      "label": "OpenAI API key",
+      "url": "https://platform.openai.com/api-keys"
+    }
+  },
+  "state": {
+    "url": "https://api.openai.com",
+    "path": "/v1/chat/completions",
+    "method": "post",
+    "query": {},
+    "headers": {
+      "authorization": "Bearer {{secret.openai}}",
+      "content-type": "application/json"
+    },
+    "userAgent": "",
+    "body": "{\"model\": \"gpt-4o-mini\", \"messages\": [{\"role\": \"user\", \"content\": \"In one sentence: what is a composable app framework?\"}]}",
+    "timeoutMs": 60000
+  }
+}
