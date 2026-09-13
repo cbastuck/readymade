@@ -18,22 +18,23 @@ import { OverviewProvider } from "../../overview/OverviewContext";
 import OverviewView from "../../overview/OverviewView";
 import OverviewToolbarButton from "../../overview/OverviewToolbarButton";
 import { FacadeViewProvider } from "../../facade/FacadeViewContext";
-import { SelectionProvider } from "../../selection/SelectionContext";
+import {
+  SelectionProvider,
+  useSelection,
+} from "../../selection/SelectionContext";
 import FacadeViewControls from "../../facade/FacadeViewControls";
 
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
-  const [isRtClassDragOver, setIsRtClassDragOver] = useState(false);
-  const boardCanvasRef = useBlockSwipeNavigation<HTMLDivElement>();
 
   if (!boardContext) {
     return null;
   }
 
   return (
-    <SelectionProvider>
+    <SelectionProvider runtimeIds={boardContext.runtimes.map((rt) => rt.id)}>
       <OverviewProvider>
         <FacadeViewProvider
           boardName={boardContext.boardName || props.requestedBoardName || ""}
@@ -85,72 +86,14 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
             else, so the trail out of them sits above the board rather than
             above the whole window. */}
               <NestedNavProvider rootLabel={boardContext.boardName || "Board"}>
-                <div
-                  className={
-                    isRtClassDragOver
-                      ? "hkp-board-runtime-drop-active"
-                      : undefined
-                  }
-                  ref={boardCanvasRef}
-                  style={{
-                    flex: 1,
-                    overflow: "auto",
-                    overscrollBehaviorX: "none",
-                    display: "flex",
-                    flexDirection: "column",
-                    ...(isPlayground
-                      ? {
-                          background:
-                            "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
-                        }
-                      : {}),
-                  }}
-                  onDragOver={(ev) => {
-                    if (
-                      ev.dataTransfer.types.includes(HKP_DND_RUNTIME_CLASS_TYPE)
-                    ) {
-                      setIsRtClassDragOver(true);
-                      ev.preventDefault();
-                    }
-                  }}
-                  onDragLeave={() => setIsRtClassDragOver(false)}
-                  onDrop={(ev) => {
-                    const data = ev.dataTransfer.getData(
-                      HKP_DND_RUNTIME_CLASS_TYPE,
-                    );
-                    if (data) {
-                      setIsRtClassDragOver(false);
-                      const rtClass: RuntimeClass = JSON.parse(data);
-                      boardContext.addRuntime({
-                        ...rtClass,
-                        name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
-                      });
-                      ev.preventDefault();
-                    }
-                  }}
-                >
-                  {boardContext.errorOnFetch ? (
-                    <BoardFetchError
-                      boardName={
-                        boardContext.boardName || props.requestedBoardName || ""
-                      }
-                      error={boardContext.errorOnFetch}
-                      boardContext={boardContext}
-                    />
-                  ) : (
-                    <BoardEntryPoint
-                      isLoading={
-                        boardContext.isFetching || !!boardContext.awaitUserLogin
-                      }
-                      showLoginRequired={!!boardContext.awaitUserLogin}
-                      boardContext={boardContext}
-                      requestedBoardName={props.requestedBoardName}
-                      description={props.description}
-                      onChangeBoardname={props.onChangeBoardname}
-                      emptySlot={props.emptySlot}
-                    />
-                  )}
-                </div>
+                <BoardCanvas
+                  boardContext={boardContext}
+                  isPlayground={isPlayground}
+                  requestedBoardName={props.requestedBoardName}
+                  description={props.description}
+                  onChangeBoardname={props.onChangeBoardname}
+                  emptySlot={props.emptySlot}
+                />
 
                 {/* Covers the window rather than taking a pane, and reads the levels
               from here so clicking a node can open the one it sits on. */}
@@ -164,5 +107,96 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
         </FacadeViewProvider>
       </OverviewProvider>
     </SelectionProvider>
+  );
+}
+
+/**
+ * The board itself, and what can be dropped onto it.
+ *
+ * Its own component rather than part of PlaygroundInner because the selection
+ * is provided there: a runtime dropped here becomes the selected one, and only
+ * something mounted inside the provider can say so.
+ */
+function BoardCanvas({
+  boardContext,
+  isPlayground,
+  requestedBoardName,
+  description,
+  onChangeBoardname,
+  emptySlot,
+}: {
+  boardContext: NonNullable<ReturnType<typeof useBoardContext>>;
+  isPlayground: boolean;
+  requestedBoardName?: string;
+  description: string;
+  onChangeBoardname: (newName: string) => void;
+  emptySlot?: React.ReactNode;
+}) {
+  const selection = useSelection();
+  const [isRtClassDragOver, setIsRtClassDragOver] = useState(false);
+  const boardCanvasRef = useBlockSwipeNavigation<HTMLDivElement>();
+
+  return (
+    <div
+      className={isRtClassDragOver ? "hkp-board-runtime-drop-active" : undefined}
+      ref={boardCanvasRef}
+      style={{
+        flex: 1,
+        overflow: "auto",
+        overscrollBehaviorX: "none",
+        display: "flex",
+        flexDirection: "column",
+        ...(isPlayground
+          ? {
+              background:
+                "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
+            }
+          : {}),
+      }}
+      onDragOver={(ev) => {
+        if (ev.dataTransfer.types.includes(HKP_DND_RUNTIME_CLASS_TYPE)) {
+          setIsRtClassDragOver(true);
+          ev.preventDefault();
+        }
+      }}
+      onDragLeave={() => setIsRtClassDragOver(false)}
+      onDrop={async (ev) => {
+        const data = ev.dataTransfer.getData(HKP_DND_RUNTIME_CLASS_TYPE);
+        if (data) {
+          setIsRtClassDragOver(false);
+          const rtClass: RuntimeClass = JSON.parse(data);
+          ev.preventDefault();
+          // Dropping a runtime is how a person says which one they mean, and
+          // it is the last thing they did — so the selection follows it here
+          // rather than waiting for a click that a webview may still be
+          // swallowing after the drag that put it there.
+          const added = await boardContext.addRuntime({
+            ...rtClass,
+            name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
+          });
+          if (added) {
+            selection?.selectRuntime(added.id);
+          }
+        }
+      }}
+    >
+      {boardContext.errorOnFetch ? (
+        <BoardFetchError
+          boardName={boardContext.boardName || requestedBoardName || ""}
+          error={boardContext.errorOnFetch}
+          boardContext={boardContext}
+        />
+      ) : (
+        <BoardEntryPoint
+          isLoading={boardContext.isFetching || !!boardContext.awaitUserLogin}
+          showLoginRequired={!!boardContext.awaitUserLogin}
+          boardContext={boardContext}
+          requestedBoardName={requestedBoardName}
+          description={description}
+          onChangeBoardname={onChangeBoardname}
+          emptySlot={emptySlot}
+        />
+      )}
+    </div>
   );
 }

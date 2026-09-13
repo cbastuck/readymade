@@ -36,6 +36,8 @@ function SelectionReadout() {
   return <div data-testid="selected">{selection?.selectedRuntimeId ?? ""}</div>;
 }
 
+// The board holds another runtime ahead of this one, so the selection starts
+// somewhere else and touching this runtime is what moves it here.
 function renderRuntime(withProvider = true) {
   const subject = (
     <>
@@ -50,7 +52,13 @@ function renderRuntime(withProvider = true) {
     </>
   );
   return render(
-    withProvider ? <SelectionProvider>{subject}</SelectionProvider> : subject,
+    withProvider ? (
+      <SelectionProvider runtimeIds={["ui", "node"]}>
+        {subject}
+      </SelectionProvider>
+    ) : (
+      subject
+    ),
   );
 }
 
@@ -60,6 +68,17 @@ describe("Runtime selection", () => {
     expect(screen.getByTestId("runtime-ui").dataset.selected).toBe("false");
 
     fireEvent.pointerDown(screen.getByTestId("runtime-ui"));
+
+    expect(screen.getByTestId("selected").textContent).toBe("node");
+    expect(screen.getByTestId("runtime-ui").dataset.selected).toBe("true");
+  });
+
+  // A webview that has just ended a native drag can withhold the pointerdown
+  // for the click that follows it. The click still lands, and still aims.
+  it("selects on a click that brought no pointerdown", () => {
+    renderRuntime();
+
+    fireEvent.click(screen.getByTestId("runtime-ui"));
 
     expect(screen.getByTestId("selected").textContent).toBe("node");
     expect(screen.getByTestId("runtime-ui").dataset.selected).toBe("true");

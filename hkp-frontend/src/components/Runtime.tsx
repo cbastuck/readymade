@@ -319,6 +319,11 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
       // button, a service panel, a text field — without taking the interaction
       // away from whatever was actually clicked.
       onPointerDownCapture={() => selection?.selectRuntime(runtimeId)}
+      // The same aim, from the event after it: a webview that has just ended a
+      // native drag can withhold the next pointerdown while still delivering
+      // the click, which would cost that click its selection. Selecting the
+      // runtime twice is selecting it once.
+      onClickCapture={() => selection?.selectRuntime(runtimeId)}
       onDragOver={(ev) => {
         if (ev.dataTransfer.types.includes(HKP_DND_SERVICE_CLASS_TYPE)) {
           setIsSvcClassDragOver(true);
