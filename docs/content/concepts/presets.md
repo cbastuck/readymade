@@ -198,8 +198,9 @@ Tags work the way the folders in the board browser work: a preset with tags
 lives in each of its tag folders, and a preset with none sits in the service
 folder itself — the way an unfiled board sits at the root of its source. So the
 column appears exactly where someone has said something, and a service whose
-presets are untagged still reads as a plain list. That is why the two presets
-this build ships carry no tags: two of them are a list, not a filing problem.
+presets are untagged still reads as a plain list. That is why the presets this
+build ships carry no tags: a handful of `http-client` requests is a list, not a
+filing problem.
 
 Tags are compared without case — `Messaging` and `messaging` are one tag, not
 two folders that look alike — and kept in the spelling they first arrived in.

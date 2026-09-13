@@ -16,8 +16,15 @@ import { toCanonicalServiceId } from "./types";
 
 import elevenlabsTextToSpeech from "../presets/http-client/elevenlabs-text-to-speech.json";
 import openaiChatCompletions from "../presets/http-client/openai-chat-completions.json";
+import opencodeZenChatCompletions from "../presets/http-client/opencode-zen-chat-completions.json";
+import opencodeZenMessages from "../presets/http-client/opencode-zen-messages.json";
 
-const FILES: unknown[] = [elevenlabsTextToSpeech, openaiChatCompletions];
+const FILES: unknown[] = [
+  elevenlabsTextToSpeech,
+  openaiChatCompletions,
+  opencodeZenChatCompletions,
+  opencodeZenMessages,
+];
 
 const BUILT_IN: Preset[] = FILES.map(parsePreset);
 

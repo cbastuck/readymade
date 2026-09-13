@@ -1,0 +1,32 @@
+{
+  "preset": "v1",
+  "id": "opencode-zen-chat-completions",
+  "name": "OpenCode Zen — Chat completions",
+  "serviceId": "http-client",
+  "serviceName": "OpenCode Zen",
+  "version": 1,
+  "description": "Calls OpenCode Zen, a gateway that serves many providers' models behind one key. This is its OpenAI-compatible endpoint: a request object arriving on the input is sent as it is, so an upstream service can compose the messages, and with nothing on the input the configured body is sent instead — which is what a panel's Send button does. Running the whole runtime counts as input, because the pipeline starts with an empty object, and an empty object names no model. The reply is JSON with the text at choices[0].message.content. Change the model by editing the body; https://opencode.ai/zen/v1/models lists the ids, of which the ones ending in -free are refused outside the OpenCode client. Claude models are not served here — they have their own endpoint, which the OpenCode Zen — Claude messages preset configures.",
+  "homepage": "https://opencode.ai/docs/zen/",
+  "runtimes": [
+    "rest"
+  ],
+  "secrets": {
+    "opencode": {
+      "label": "OpenCode Zen API key",
+      "url": "https://opencode.ai/auth"
+    }
+  },
+  "state": {
+    "url": "https://opencode.ai",
+    "path": "/zen/v1/chat/completions",
+    "method": "post",
+    "query": {},
+    "headers": {
+      "authorization": "Bearer {{secret.opencode}}",
+      "content-type": "application/json"
+    },
+    "userAgent": "",
+    "body": "{\"model\": \"deepseek-v4-flash\", \"messages\": [{\"role\": \"user\", \"content\": \"In one sentence: what is a composable app framework?\"}]}",
+    "timeoutMs": 60000
+  }
+}
