@@ -1,10 +1,56 @@
 /* Start page — scoped under .hkp-start so nothing leaks into the playground. */
 
+/* The accent pair, as the start page sees it. Spelled with fallbacks because
+   index.css is not loaded on every host that renders this page — the website
+   pulls in globals.css only — so with the default preset chosen there is no
+   `--hkp-accent` to read and these literals are what renders. They are the
+   default preset's own colours, so the page looks the same either way; a preset
+   the user picks arrives as an inline property on <html> and wins over both.
+
+   On :root rather than under .hkp-start because the mobile start page draws
+   news outside that class; a custom property paints nothing by being declared,
+   so nothing leaks into the playground by living here. */
+:root {
+  --st-accent-1: var(--hkp-accent, #2784d5);
+  --st-accent-2: var(--hkp-accent-secondary, #3f5bb8);
+}
+
 .hkp-start {
-  --st-accent: var(--hkp-accent, #3b5bff);
+  --st-accent: var(--st-accent-1);
   --st-ink: #14161c;
   --st-mut: #9a9fae;
   --st-line: #e6e8ee;
+}
+
+/* News banner fields: one accent rotated a few degrees each way, which is what
+   keeps the three apart on mobile, where all the cards are on screen at once.
+   Lightness is fixed rather than taken from the accent — the carousel writes
+   white on these, and an accent as pale as Ember's would not hold it. The
+   literals are what browsers without relative colour syntax get. */
+:root {
+  --st-news-a: linear-gradient(120deg, #0f766e, #17b877);
+  --st-news-b: linear-gradient(120deg, #8a5a00, #f2a417);
+  --st-news-c: linear-gradient(120deg, #3b5bff, #6a3bff);
+}
+
+@supports (color: oklch(from white l c h)) {
+  :root {
+    --st-news-a: linear-gradient(
+      120deg,
+      oklch(from var(--st-accent-1) 0.5 c calc(h - 14)),
+      oklch(from var(--st-accent-2) 0.36 c calc(h - 14))
+    );
+    --st-news-b: linear-gradient(
+      120deg,
+      oklch(from var(--st-accent-1) 0.5 c h),
+      oklch(from var(--st-accent-2) 0.36 c h)
+    );
+    --st-news-c: linear-gradient(
+      120deg,
+      oklch(from var(--st-accent-1) 0.5 c calc(h + 14)),
+      oklch(from var(--st-accent-2) 0.36 c calc(h + 14))
+    );
+  }
 }
 
 .hkp-start ::selection {

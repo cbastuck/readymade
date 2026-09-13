@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
+// For the news banner tokens. The rules in here are scoped to .hkp-start, which
+// this page does not use, so only the custom properties reach it.
+import "../start.css";
+
 import { openInBrowser } from "../../../runtime/browser/services/helpers";
 import { M } from "../../playground/mobile/tokens";
 import MobileIcon from "../../playground/mobile/MobileIcon";
