@@ -167,6 +167,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["HTTP", "Needs Node"],
   },
   {
+    slug: "http-client-browser",
+    label: "HTTP Client (Browser)",
+    description:
+      "The same request composer with nothing to install: the browser makes the call itself. Works wherever the API allows this origin — and the request, headers and all, is in the page.",
+    icon: "🔌",
+    tags: ["HTTP"],
+  },
+  {
     slug: "mounted-endpoint",
     label: "Mounted Endpoint",
     description:

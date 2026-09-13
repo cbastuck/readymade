@@ -1,0 +1,355 @@
+{
+  "boardName": "HTTP Client (Browser)",
+  "description": "Compose a request and send it: URL, path, query parameters, headers, and a JSON body, with the verb you press deciding the method. The same board as the HTTP Client demo, with the request made by the browser itself — no runtime to run, and nothing to install. What the page pays for that is the browser's rules: a call only goes through when the API allows this origin, and a credential in a header is in the page. The response comes back into the pipeline as {meta, body} — the Monitor holds it, and the Response panel reads the status, the headers and the body off it.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "request",
+        "serviceId": "http-client",
+        "serviceName": "Request",
+        "state": {
+          "url": "https://api.github.com",
+          "path": "/zen",
+          "method": "get",
+          "query": {},
+          "headers": {},
+          "timeoutMs": 10000
+        }
+      },
+      {
+        "uuid": "response",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Response"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "state": {
+      "body": {}
+    },
+    "panels": [
+      {
+        "id": "request",
+        "title": "Request",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 14,
+          "items": [
+            {
+              "type": "text-input",
+              "label": "URL",
+              "placeholder": "https://api.github.com",
+              "submitLabel": "Set",
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "request",
+                  "configure": {
+                    "url": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Path",
+              "placeholder": "/zen",
+              "submitLabel": "Set",
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "request",
+                  "configure": {
+                    "path": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "json-input",
+              "label": "Query parameters",
+              "mode": "object",
+              "submitLabel": "Apply parameters",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "request",
+                  "configure": {
+                    "query": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "json-input",
+              "label": "Headers",
+              "mode": "object",
+              "submitLabel": "Apply headers",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "request",
+                  "configure": {
+                    "headers": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "json-input",
+              "label": "JSON body — sent with POST, PUT and PATCH",
+              "mode": "object",
+              "submitLabel": "Apply body",
+              "actions": [
+                {
+                  "type": "set-state",
+                  "key": "body"
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 6,
+              "wrap": true,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "GET",
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "request",
+                      "path": "requesting"
+                    },
+                    "statusColors": {
+                      "true": "#f59e0b",
+                      "false": "#22c55e"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "request",
+                      "configure": {
+                        "method": "get"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "request",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "POST",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "request",
+                      "configure": {
+                        "method": "post"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "request",
+                      "payload": {
+                        "$state": "body"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "PUT",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "request",
+                      "configure": {
+                        "method": "put"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "request",
+                      "payload": {
+                        "$state": "body"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "PATCH",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "request",
+                      "configure": {
+                        "method": "patch"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "request",
+                      "payload": {
+                        "$state": "body"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "DELETE",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "request",
+                      "configure": {
+                        "method": "delete"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "request",
+                      "payload": {}
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "response",
+        "title": "Response",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 14,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 8,
+              "align": "center",
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "request",
+                    "path": "requesting"
+                  },
+                  "statusColors": {
+                    "true": "#f59e0b",
+                    "false": "#22c55e"
+                  }
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "request",
+                    "path": "method"
+                  },
+                  "mono": true,
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "request",
+                    "path": "url"
+                  },
+                  "mono": true,
+                  "placeholder": "nothing sent yet",
+                  "grow": true
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Status",
+                  "source": {
+                    "serviceUuid": "request",
+                    "path": "status"
+                  },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "response",
+                    "path": "meta.statusText"
+                  },
+                  "tone": "muted"
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "response",
+                    "path": "meta.contentType"
+                  },
+                  "tone": "muted"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "source": {
+                "serviceUuid": "request",
+                "path": "error"
+              },
+              "tone": "error",
+              "placeholder": ""
+            },
+            {
+              "type": "text",
+              "label": "Body",
+              "source": {
+                "serviceUuid": "response",
+                "path": "body"
+              },
+              "mono": true,
+              "pretty": true,
+              "placeholder": "Press a verb to send the request."
+            },
+            {
+              "type": "text",
+              "label": "Headers",
+              "source": {
+                "serviceUuid": "response",
+                "path": "meta.headers"
+              },
+              "mono": true,
+              "pretty": true,
+              "fontSize": 11,
+              "tone": "muted",
+              "placeholder": ""
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

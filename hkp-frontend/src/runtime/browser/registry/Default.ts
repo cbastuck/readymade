@@ -10,6 +10,7 @@ import InputDescriptor from "../services/Input";
 import WebsocketClientDescriptor from "../services/WebsocketClient";
 import OutputDescriptor from "../services/Output";
 import FetcherDesriptor from "../services/Fetcher";
+import HttpClientDescriptor from "../services/HttpClient";
 import InjectorDescriptor from "../services/Injector";
 
 // Data analysis
@@ -115,6 +116,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   OutputDescriptor,
   InjectorDescriptor,
   FetcherDesriptor,
+  HttpClientDescriptor,
 
   // Actor
   CanvasDescriptor,

@@ -19,6 +19,7 @@ import GithubSourceUI from "./services/GithubSourceUI";
 import OutputUI from "./services/OutputUI";
 import FilterUI from "./services/FilterUI";
 import FetcherUI from "./services/FetcherUI";
+import HttpClientUI from "./services/HttpClientUI";
 import OllamaPromptUI from "./services/OllamaPromptUI";
 import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
 import ConfiguratorUI from "./services/ConfiguratorUI";
@@ -72,6 +73,8 @@ export function findServiceUI(
       return OutputUI;
     case "hookup.to/service/fetcher":
       return FetcherUI;
+    case "http-client":
+      return HttpClientUI;
     case "hookup.to/service/injector":
       return InjectorUI;
     case "hookup.to/service/map":
