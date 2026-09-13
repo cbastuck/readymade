@@ -55,6 +55,10 @@ export type BoardState =
 export type BoardAction =
   | { kind: "saved"; name: string }
   | { kind: "demo"; slug: string }
+  /** Open a board from JSON text that is not stored anywhere — a demo's
+   *  source, possibly edited in the source editor. The host opens it without
+   *  writing anything; `name` is what to call the session. */
+  | { kind: "source"; name: string; source: string }
   | { kind: "cloud"; coordinatorUrl: string; boardName: string }
   | { kind: "cloud-stored"; id: string; name: string }
   /** Watch a runtime running on a remote server. Carries the server by the name

@@ -33,6 +33,10 @@ interface Props {
    *  way to repair a board whose source keeps it from loading. Rejecting
    *  reports the reason under the button. */
   onEditSource?: () => Promise<void> | void;
+  /** Opens the board's source in the same editor without a way to write it
+   *  back; enables "Show source" for boards nothing owns the file of (a demo).
+   *  Ignored when onEditSource is set. */
+  onShowSource?: () => Promise<void> | void;
   /** Uploads the board to the user's cloud storage; enables the
    *  "Upload to cloud" action (hosts pass it for logged-in users only). */
   onUploadToCloud?: () => Promise<void>;
@@ -219,6 +223,7 @@ export default function BoardDetails({
   pickImage,
   onOpen,
   onEditSource,
+  onShowSource,
   onUploadToCloud,
   onFork,
   loadHistory,
@@ -352,14 +357,18 @@ export default function BoardDetails({
     }
   };
 
-  const editSource = async () => {
-    if (!onEditSource || sourceState === "busy") {
+  // Editing and showing the source are the same button on the same editor;
+  // what differs is whether the board's file can be written back.
+  const sourceHandler = onEditSource ?? onShowSource;
+
+  const openSource = async () => {
+    if (!sourceHandler || sourceState === "busy") {
       return;
     }
     setSourceState("busy");
     setSourceError(null);
     try {
-      await onEditSource();
+      await sourceHandler();
       setSourceState("idle");
     } catch (err) {
       setSourceError(reasonOf(err));
@@ -712,15 +721,19 @@ export default function BoardDetails({
               Open board
             </button>
           )}
-          {onEditSource && (
+          {sourceHandler && (
             <>
               <button
                 className="st-btn st-btn-ghost"
                 style={{ justifyContent: "center" }}
                 disabled={sourceState === "busy"}
-                onClick={() => void editSource()}
+                onClick={() => void openSource()}
               >
-                {sourceState === "busy" ? "Loading source…" : "Edit source"}
+                {sourceState === "busy"
+                  ? "Loading source…"
+                  : onEditSource
+                    ? "Edit source"
+                    : "Show source"}
               </button>
               {sourceState === "error" && sourceError && (
                 <div

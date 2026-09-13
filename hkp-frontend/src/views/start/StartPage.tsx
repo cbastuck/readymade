@@ -283,10 +283,12 @@ export default function StartPage(props: StartPageProps) {
   // Board whose folder chooser is open, by name.
   const [assignBoard, setAssignBoard] = useState<string | null>(null);
   // Board whose source editor is open, with the text it was opened on; null
-  // while the editor is closed.
+  // while the editor is closed. A source nothing can write back (a demo's) is
+  // opened rather than saved — the editor offers "Open board" instead.
   const [sourceEdit, setSourceEdit] = useState<{
     name: string;
     source: string;
+    writable: boolean;
   } | null>(null);
   // Why the last save attempt did not go through (invalid JSON, or the host
   // refusing); shown inside the editor, which stays open.
@@ -667,10 +669,27 @@ export default function StartPage(props: StartPageProps) {
       // button rather than opening an editor on nothing.
       const source = await loadBoardSource(name);
       setSourceError(null);
-      setSourceEdit({ name, source });
+      setSourceEdit({ name, source, writable: true });
     },
     [loadBoardSource],
   );
+
+  // A demo's source is the bundled board itself — read it here rather than
+  // through the host, which has no file for it. The registry pulls in every
+  // demo board, so it is loaded on demand instead of with the start page.
+  const openDemoSource = useCallback(async (slug: string, name: string) => {
+    const { findDemoBoard } = await import("../../demoRegistry");
+    const board = findDemoBoard(slug);
+    if (!board) {
+      throw new Error(`No demo board named "${slug}".`);
+    }
+    setSourceError(null);
+    setSourceEdit({
+      name,
+      source: JSON.stringify(board, null, 2),
+      writable: false,
+    });
+  }, []);
 
   const saveSourceEdit = useCallback(
     (value: string | object) => {
@@ -704,6 +723,30 @@ export default function StartPage(props: StartPageProps) {
     [sourceEdit, saveBoardSource, refreshSavedBoards],
   );
 
+  // Hands the edited text to the host as a board of its own. Nothing is
+  // written: the edits live only in the session that opens.
+  const openSourceEdit = useCallback(
+    (value: string | object) => {
+      if (!sourceEdit) {
+        return;
+      }
+      const source =
+        typeof value === "string" ? value : JSON.stringify(value, null, 2);
+      try {
+        JSON.parse(source);
+      } catch (err) {
+        setSourceError(
+          `Not valid JSON — ${err instanceof Error ? err.message : "cannot be opened"}`,
+        );
+        return;
+      }
+      setSourceError(null);
+      setSourceEdit(null);
+      onOpen({ kind: "source", name: sourceEdit.name, source });
+    },
+    [sourceEdit, onOpen],
+  );
+
   const detailNode = detailBoard ? (
     <BoardDetails
       key={detailBoard.board.name}
@@ -733,6 +776,15 @@ export default function StartPage(props: StartPageProps) {
       onEditSource={
         detailIsSaved && loadBoardSource && saveBoardSource
           ? () => openSourceEditor(detailBoard.board.name)
+          : undefined
+      }
+      onShowSource={
+        detailBoard.board.action?.kind === "demo"
+          ? () =>
+              openDemoSource(
+                (detailBoard.board.action as { slug: string }).slug,
+                detailBoard.board.name,
+              )
           : undefined
       }
       onUploadToCloud={
@@ -865,19 +917,29 @@ export default function StartPage(props: StartPageProps) {
       {sourceEdit && (
         <EditorDialog
           title={`Source of “${sourceEdit.name}”`}
-          description="Edit the board's stored JSON and save it back."
+          description={
+            sourceEdit.writable
+              ? "Edit the board's stored JSON and save it back."
+              : "Read the board's JSON and open it with whatever it says now."
+          }
           value={sourceEdit.source}
           isOpen={true}
           onClose={() => {
             setSourceEdit(null);
             setSourceError(null);
           }}
-          actions={[{ label: "Save", onAction: saveSourceEdit }]}
+          actions={
+            sourceEdit.writable
+              ? [{ label: "Save", onAction: saveSourceEdit }]
+              : [{ label: "Open board", onAction: openSourceEdit }]
+          }
         >
           {sourceError ? (
             <span style={{ color: "#e0355f" }}>{sourceError}</span>
-          ) : (
+          ) : sourceEdit.writable ? (
             "Saving overwrites the saved board. Invalid JSON is refused."
+          ) : (
+            "This board is not stored anywhere, so there is nothing to save to. Open board runs the source as it stands here; save it from the board to keep it."
           )}
         </EditorDialog>
       )}

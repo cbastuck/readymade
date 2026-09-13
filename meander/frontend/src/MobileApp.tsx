@@ -129,6 +129,15 @@ function StartScreen({
         }
         break;
       }
+      case "source":
+        // Board text with no file behind it (a demo read in the source
+        // editor): handed straight to the session, nothing is written until
+        // the user saves it.
+        onOpenSession({
+          name: action.name,
+          descriptor: JSON.parse(action.source) as BoardDescriptor,
+        });
+        break;
       case "cloud-stored":
         // Fetch the stored board and open it directly as a descriptor —
         // nothing is written locally until the user saves it themselves.
