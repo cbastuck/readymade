@@ -113,7 +113,7 @@ export default function CloudBoard({ boardContext, boardName, description, bridg
           gap: 8,
           borderRadius: 8,
           backgroundColor: isDraggingRuntimeOver
-            ? "var(--hkp-accent-violet-dim)"
+            ? "var(--hkp-accent-secondary-dim)"
             : undefined,
           transition: "background-color 0.15s",
         }}
@@ -126,7 +126,7 @@ export default function CloudBoard({ boardContext, boardName, description, bridg
       >
         <RuntimeMenu />
         {isDraggingRuntimeOver && (
-          <span style={{ fontSize: 11.5, color: "var(--hkp-accent-violet)" }}>
+          <span style={{ fontSize: 11.5, color: "var(--hkp-accent-secondary)" }}>
             Drop to add runtime
           </span>
         )}

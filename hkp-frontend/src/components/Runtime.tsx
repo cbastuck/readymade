@@ -22,6 +22,7 @@ import {
   InitialServiceFrameState,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
+import { useSelection } from "../selection/SelectionContext";
 
 import RuntimeUI from "hkp-frontend/src/ui-components/runtime-ui";
 import { usePlatform } from "../platform/PlatformContext";
@@ -71,6 +72,7 @@ export type RuntimeHandle = {
 
 const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
   const platform = usePlatform();
+  const selection = useSelection();
   const {
     style,
     runtime,
@@ -308,9 +310,15 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
     }, 60000);
   };
 
+  const selected = selection?.selectedRuntimeId === runtimeId;
+
   return (
     <div
       className={isSvcClassDragOver ? "hkp-runtime-svc-drop-active" : undefined}
+      // Capture, so that touching a runtime anywhere selects it — a header
+      // button, a service panel, a text field — without taking the interaction
+      // away from whatever was actually clicked.
+      onPointerDownCapture={() => selection?.selectRuntime(runtimeId)}
       onDragOver={(ev) => {
         if (ev.dataTransfer.types.includes(HKP_DND_SERVICE_CLASS_TYPE)) {
           setIsSvcClassDragOver(true);
@@ -352,6 +360,7 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
           wrapServices={effectiveWrapServices}
           runtime={runtime}
           registry={registry}
+          selected={selected}
           inputs={props.inputs}
           outputs={props.outputs}
           onExpand={onExpand}

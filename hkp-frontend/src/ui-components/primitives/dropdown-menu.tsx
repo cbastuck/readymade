@@ -25,7 +25,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center rounded-none px-2 py-1.5 text-sm outline-none focus:bg-[var(--hkp-accent-violet-dim)] focus:text-[var(--hkp-accent-violet)] data-[state=open]:bg-[var(--hkp-accent-violet-dim)] data-[state=open]:text-[var(--hkp-accent-violet)]",
+      "flex cursor-default select-none items-center rounded-none px-2 py-1.5 text-sm outline-none focus:bg-[var(--hkp-accent-secondary-dim)] focus:text-[var(--hkp-accent-secondary)] data-[state=open]:bg-[var(--hkp-accent-secondary-dim)] data-[state=open]:text-[var(--hkp-accent-secondary)]",
       inset && "pl-8",
       className,
     )}
@@ -86,7 +86,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-none px-2 py-1.5 text-sm outline-none transition-colors focus:bg-[var(--hkp-accent-violet-dim)] focus:text-[var(--hkp-accent-violet)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-none px-2 py-1.5 text-sm outline-none transition-colors focus:bg-[var(--hkp-accent-secondary-dim)] focus:text-[var(--hkp-accent-secondary)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       inset && "pl-8",
       className,
     )}
@@ -102,7 +102,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-none py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-[var(--hkp-accent-violet-dim)] focus:text-[var(--hkp-accent-violet)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-none py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-[var(--hkp-accent-secondary-dim)] focus:text-[var(--hkp-accent-secondary)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,
     )}
     checked={checked}
@@ -126,7 +126,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-none py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-[var(--hkp-accent-violet-dim)] focus:text-[var(--hkp-accent-violet)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-none py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-[var(--hkp-accent-secondary-dim)] focus:text-[var(--hkp-accent-secondary)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,
     )}
     {...props}

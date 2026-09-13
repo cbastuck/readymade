@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Monitor,
   Server,
@@ -21,10 +21,8 @@ import {
   HKP_DND_SERVICE_CLASS_TYPE,
 } from "../../components/DropTypes";
 import ManageRuntimesDialog from "../../ui-components/toolbar/ManageRuntimesDialog";
-import {
-  boardHasFacade,
-  useFacadeView,
-} from "../../facade/FacadeViewContext";
+import { boardHasFacade, useFacadeView } from "../../facade/FacadeViewContext";
+import { useSelection } from "../../selection/SelectionContext";
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -181,19 +179,34 @@ function ServiceGroup({
   type,
   services,
   open,
+  selectedFor,
+  hiddenMatches,
+  containerRef,
   onToggle,
 }: {
   type: string;
   services: ServiceClass[];
   open: boolean;
+  /** Name of the selected runtime, when it is one this group serves. */
+  selectedFor?: string;
+  /** Folded away while a search is running, with matches inside it. */
+  hiddenMatches?: boolean;
+  containerRef?: (el: HTMLDivElement | null) => void;
   onToggle: () => void;
 }) {
   const label = RUNTIME_TYPE_LABELS[type] ?? type;
   return (
-    <div>
+    <div ref={containerRef}>
       <button
         type="button"
         onClick={onToggle}
+        title={
+          hiddenMatches
+            ? `${services.length} more in ${label}`
+            : selectedFor
+              ? `Services for ${selectedFor}`
+              : undefined
+        }
         style={{
           display: "flex",
           alignItems: "center",
@@ -203,7 +216,7 @@ function ServiceGroup({
           background: "none",
           border: "none",
           cursor: "pointer",
-          color: "var(--text-dim)",
+          color: selectedFor ? "var(--hkp-accent)" : "var(--text-dim)",
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: "0.04em",
@@ -212,7 +225,16 @@ function ServiceGroup({
       >
         <ChevronIcon open={open} />
         {label}
-        <span style={{ marginLeft: "auto", fontWeight: 400, opacity: 0.6 }}>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontWeight: 400,
+            // A search reaches the whole palette, so a group folded away for
+            // not being the selected one still says what it is holding.
+            opacity: hiddenMatches ? 1 : 0.6,
+            color: hiddenMatches ? "var(--hkp-accent)" : undefined,
+          }}
+        >
           {services.length}
         </span>
       </button>
@@ -229,6 +251,9 @@ export default function Sidebar() {
   const [showManageRuntimes, setShowManageRuntimes] = useState(false);
   const boardContext = useBoardContext();
   const facadeView = useFacadeView();
+  const selection = useSelection();
+  const paletteRef = useRef<HTMLDivElement | null>(null);
+  const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const availableRuntimes = boardContext?.availableRuntimeEngines ?? [];
 
@@ -257,6 +282,44 @@ export default function Sidebar() {
   }, [boardContext?.runtimes, boardContext?.registry]);
 
   const hasRuntimes = (boardContext?.runtimes.length ?? 0) > 0;
+
+  // The runtime the board canvas is aimed at, if it is still on the board: what
+  // it can run decides which part of the palette is worth looking at.
+  const selectedRuntime = boardContext?.runtimes.find(
+    (rt) => rt.id === selection?.selectedRuntimeId,
+  );
+  const selectedType = selectedRuntime
+    ? toCanonicalRuntimeClassType(selectedRuntime.type)
+    : null;
+
+  // A new selection re-decides which groups are open — the one holding its
+  // services, and no other — so whatever was opened or folded by hand for the
+  // runtime before it is let go rather than carried over.
+  useEffect(() => {
+    setGroupOpen({});
+  }, [selectedType]);
+
+  // Reaching for a service should not begin with a scroll. Folding the other
+  // groups away usually puts the right one on screen by itself, so this moves
+  // the palette only when the group is somewhere it cannot be seen — otherwise
+  // it would scroll the search field out of reach to fix nothing.
+  useEffect(() => {
+    if (!open || !selectedType) {
+      return;
+    }
+    const palette = paletteRef.current;
+    const group = groupRefs.current[selectedType];
+    if (!palette || !group) {
+      return;
+    }
+    const top = group.offsetTop - palette.offsetTop;
+    const onScreen =
+      top >= palette.scrollTop &&
+      top < palette.scrollTop + palette.clientHeight;
+    if (!onScreen) {
+      palette.scrollTo?.({ top, behavior: "smooth" });
+    }
+  }, [selectedType, open, serviceGroups]);
 
   const addRuntime = (rtClass: RuntimeClass) => {
     if (!boardContext) {
@@ -296,12 +359,6 @@ export default function Sidebar() {
       isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type),
   );
 
-  const toggleGroup = (type: string) => {
-    setGroupOpen((prev) => ({ ...prev, [type]: !(prev[type] ?? true) }));
-  };
-
-  const isGroupOpen = (type: string) => groupOpen[type] ?? true;
-
   const query = search.trim().toLowerCase();
 
   const filteredGroups = useMemo(() => {
@@ -319,6 +376,23 @@ export default function Sidebar() {
       }))
       .filter(({ services }) => services.length > 0);
   }, [serviceGroups, query]);
+
+  // A selected runtime folds the groups it cannot run down to their headers:
+  // what is left is the palette for that runtime, with the search field a row
+  // away rather than a scroll away. A search that finds nothing in the selected
+  // group unfolds the rest, so looking for a service never ends in a palette
+  // that shows none of what it found.
+  const searchMissesSelection =
+    !!query && !filteredGroups.some(({ type }) => type === selectedType);
+  const groupOpenByDefault = (type: string) =>
+    !selectedType || searchMissesSelection || type === selectedType;
+
+  const isGroupOpen = (type: string) =>
+    groupOpen[type] ?? groupOpenByDefault(type);
+
+  const toggleGroup = (type: string) => {
+    setGroupOpen((prev) => ({ ...prev, [type]: !isGroupOpen(type) }));
+  };
 
   // The facade is what a board looks like to someone using it rather than
   // building it, so on its own it gets the window: nothing here — runtimes to
@@ -409,6 +483,7 @@ export default function Sidebar() {
 
         {/* Palette body */}
         <div
+          ref={paletteRef}
           style={{
             display: open ? "flex" : "none",
             flexDirection: "column",
@@ -438,7 +513,18 @@ export default function Sidebar() {
             <EmptyHint>Add a runtime to browse services</EmptyHint>
           )}
           {hasRuntimes && (
-            <div style={{ padding: "2px 8px 6px" }}>
+            <div
+              style={{
+                padding: "2px 8px 6px",
+                // Searching is how the palette is used once it is long, so the
+                // field stays in place rather than scrolling away with the
+                // services it filters.
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                background: "var(--bg-app, white)",
+              }}
+            >
               <div
                 style={{
                   display: "flex",
@@ -479,7 +565,14 @@ export default function Sidebar() {
                 key={type}
                 type={type}
                 services={services}
-                open={!!query || isGroupOpen(type)}
+                open={isGroupOpen(type)}
+                selectedFor={
+                  type === selectedType ? selectedRuntime?.name : undefined
+                }
+                hiddenMatches={!!query && !isGroupOpen(type)}
+                containerRef={(el) => {
+                  groupRefs.current[type] = el;
+                }}
                 onToggle={() => toggleGroup(type)}
               />
             ) : (
