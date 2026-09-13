@@ -7,9 +7,7 @@
   "version": 1,
   "description": "Calls OpenCode Zen, a gateway that serves many providers' models behind one key. This is its OpenAI-compatible endpoint: a request object arriving on the input is sent as it is, so an upstream service can compose the messages, and with nothing on the input the configured body is sent instead — which is what the runtime's Run does. The reply is JSON with the text at choices[0].message.content. Change the model by editing the body; https://opencode.ai/zen/v1/models lists the ids, of which the ones ending in -free are refused outside the OpenCode client. Claude models are not served here — they have their own endpoint, which the OpenCode Zen — Claude messages preset configures.",
   "homepage": "https://opencode.ai/docs/zen/",
-  "runtimes": [
-    "rest"
-  ],
+  "runtimes": ["rest"],
   "secrets": {
     "opencode": {
       "label": "OpenCode Zen API key",
@@ -17,8 +15,7 @@
     }
   },
   "state": {
-    "url": "https://opencode.ai",
-    "path": "/zen/v1/chat/completions",
+    "url": "https://opencode.ai/zen/v1/chat/completions",
     "method": "post",
     "query": {},
     "headers": {

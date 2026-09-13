@@ -15,8 +15,7 @@
     }
   },
   "state": {
-    "url": "https://api.openai.com",
-    "path": "/v1/chat/completions",
+    "url": "https://api.openai.com/v1/chat/completions",
     "method": "post",
     "query": {},
     "headers": {

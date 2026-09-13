@@ -230,19 +230,23 @@ class HttpClient extends ServiceBase<State> {
   private targetUrl(): string | null {
     const mount = this.state.__hkpMount;
     if (mount) {
-      return parseMountRef(mount) ? null : this.requestUrl(mount);
+      return parseMountRef(mount) ? null : this.withQuery(this.join(mount));
     }
     if (!this.state.url || parseMountRef(this.state.url)) {
       return null;
     }
-    return this.requestUrl(this.state.url);
+    return this.withQuery(this.state.url);
   }
 
-  /** The address to call: the path joined to the base, then the parameters. */
-  private requestUrl(base: string): string {
-    return this.withQuery(this.join(base));
-  }
-
+  /**
+   * Joins the configured sub-path onto a mount address.
+   *
+   * Only a mount address. A URL is a URL — it carries its own path, and the
+   * field that holds one is the place to write it. `path` exists for the
+   * target whose address is not the board's to write: a mount is assigned by
+   * a runtime and resolved by the coordinator, so naming a sub-path of it
+   * needs a field of its own.
+   */
   private join(base: string): string {
     if (!this.state.path) {
       return base;

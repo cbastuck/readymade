@@ -80,7 +80,9 @@ describe("applying a preset in a browser runtime", () => {
     await applyPreset(preset, runtime, { uuid: "request" }, refs);
 
     const state = await getServiceConfig(scope as any, { uuid: "request" });
-    expect(state.url).toBe("https://api.elevenlabs.io");
+    expect(state.url).toBe(
+      "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
+    );
     expect(state.method).toBe("post");
     // The point of replace: the header from the previous API is gone, rather
     // than riding along on every ElevenLabs request.
@@ -133,7 +135,7 @@ describe("applying a preset in a browser runtime", () => {
     const after = scope.findServiceInstance("request")[0];
     expect(after).not.toBe(before);
     expect((await after!.getConfiguration!()).url).toBe(
-      "https://api.elevenlabs.io",
+      "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
     );
   });
 
