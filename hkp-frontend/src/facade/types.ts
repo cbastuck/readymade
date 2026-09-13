@@ -101,6 +101,9 @@ export type StatusIndicatorWidget = {
 export type TextWidget = {
   type: "text";
   source: FacadeWidgetSource;
+  // Static caption rendered, muted, before the value — what the value is, where
+  // the value alone would not say (e.g. "You:" in front of a peer name).
+  label?: string;
   // Shown, muted, while the source has nothing to say.
   placeholder?: string;
   tone?: "normal" | "muted" | "error";

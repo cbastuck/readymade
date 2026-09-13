@@ -27,6 +27,18 @@ type State = {
   peerDiscovery: boolean;
 };
 
+/**
+ * A fresh identity for one end of a socket.
+ *
+ * The two ends carry different prefixes because a socket whose `targetPeer`
+ * equals its own `peerName` addresses itself and connects to nothing — drawing
+ * both from one prefix makes that a matter of luck. The suffix is wide enough
+ * that two people registering against the same signalling server do not land on
+ * an id it would refuse as already taken.
+ */
+const peerIdentity = (prefix: string) =>
+  `${prefix}-${Math.random().toString(36).slice(2, 6)}`;
+
 /** How long to keep waiting for a referenced Peer Server's runtime to publish
  *  its endpoint before giving up on the connection attempt. */
 const MOUNT_RESOLVE_TIMEOUT_MS = 15000;
@@ -49,8 +61,8 @@ class PeerSocket extends ServiceBase<State> {
   ) {
     super(app, board, descriptor, id, {
       mode: "Receive only",
-      peerName: `NoName${Math.floor(Math.random() * 100)}`,
-      targetPeer: `NoName${Math.floor(Math.random() * 100)}`,
+      peerName: peerIdentity("Host"),
+      targetPeer: peerIdentity("Guest"),
       extractIncomingData: false,
       peerPort: null,
       peerPath: null,
