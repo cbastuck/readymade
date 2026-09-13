@@ -22,16 +22,38 @@ type Props = {
   redirectUri?: string;
 };
 
+/**
+ * Whether the browser-side Auth0 flow can run at all on this origin.
+ *
+ * A LAN address is not a registered callback URL of any Auth0 application —
+ * they are assigned per host, and the set of a machine's LAN addresses is not
+ * known in advance — so the redirect would be rejected. The webapp is served on
+ * one whenever a second device has to reach it (the phone side of a QR-shared
+ * board), and there the session is not what authorizes the visitor anyway: a
+ * scoped capability token carried in the board is.
+ *
+ * Exported because a login control that cannot work must not be offered. The
+ * provider below renders nothing around its children in that case, so calling
+ * into the Auth0 SDK there throws "You forgot to wrap your component in
+ * <Auth0Provider>" — a failure far from its cause.
+ */
+export function isWebLoginAvailable(): boolean {
+  if (typeof location === "undefined") {
+    return false;
+  }
+  return !(
+    location.href.startsWith("http://192.168.") ||
+    location.href.startsWith("http://10.0.")
+  );
+}
+
 export default function AuthProvider({
   children,
   domain = "hookitapp.eu.auth0.com",
   clientId,
   redirectUri = `${location.protocol}//${location.host}/authRedirect`,
 }: Props) {
-  const disableAuth =
-    location.href.startsWith("http://192.168.") ||
-    location.href.startsWith("http://10.0.");
-  if (disableAuth) {
+  if (!isWebLoginAvailable()) {
     return children;
   }
   return (

@@ -1,7 +1,10 @@
 import { User } from "lucide-react";
 
 import { useAppContext } from "hkp-frontend/src/AppContext";
-import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
+import {
+  useCanCloudLogin,
+  useCloudLogin,
+} from "hkp-frontend/src/auth/useCloudLogin";
 import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
 import { initialsOf } from "hkp-frontend/src/views/start";
 
@@ -14,14 +17,23 @@ import { initialsOf } from "hkp-frontend/src/views/start";
  * out. Clicking logs in (signed out) or logs out (signed in) via the
  * platform-agnostic cloud hooks, so it behaves the same in the website and the
  * native Readymade webview.
+ *
+ * Nothing is rendered when nobody is signed in and this host cannot sign anyone
+ * in — the webapp served on a LAN address, which is how a second device reaches
+ * a shared board. There the visitor is authorized by the board's own capability
+ * token, so a login control would be an invitation to a dead end.
  */
 export default function AccountAvatar() {
   const { user } = useAppContext();
   const cloudLogin = useCloudLogin();
   const cloudLogout = useCloudLogout();
+  const canLogin = useCanCloudLogin();
 
   const initials = initialsOf(user?.username);
   const isLoggedIn = !!user;
+  if (!isLoggedIn && !canLogin) {
+    return null;
+  }
   const title = isLoggedIn
     ? `Log out${user?.username ? ` (${user.username})` : ""}`
     : "Log in";

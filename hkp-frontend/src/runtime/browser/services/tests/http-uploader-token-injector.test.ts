@@ -6,11 +6,12 @@
  *    and writes it into the uploader's authToken state
  *  - Passes the board through untouched when the host can't mint (plain web)
  *  - Never mutates the input board (clones)
+ *  - Retries while the target runtime is still being provisioned, then gives up
  *  - Leaves authToken unset when minting fails/returns null (graceful)
  *  - Reuses one token across multiple uploaders targeting the same runtime
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import HttpUploaderTokenInjectorDescriptor from "../HttpUploaderTokenInjector";
 
 type MintToken = (request: {
@@ -48,6 +49,10 @@ function boardWithUploader(url = "HKP_RUNTIME_URL/runtimes/upload-server") {
 
 const uploaderOf = (board: any) => board.services["phone-ui"][1];
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("HttpUploaderTokenInjector", () => {
   it("mints a token scoped to the uploader's runtime and injects it", async () => {
     const mint = vi.fn(async () => "tok-123");
@@ -82,11 +87,37 @@ describe("HttpUploaderTokenInjector", () => {
     expect(uploaderOf(input).state.authToken).toBeUndefined();
   });
 
-  it("leaves authToken unset when minting returns null", async () => {
-    const { service } = createInjector(async () => null);
+  it("retries until the target runtime has been provisioned", async () => {
+    // A board restores its runtimes concurrently, so the host has nothing to
+    // mint for until the upload runtime finishes provisioning. The first asks
+    // come back empty; the injector must not settle for that.
+    const mint = vi
+      .fn<MintToken>()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue("tok-late");
+    const { service } = createInjector(mint);
 
-    const out = await service.process(boardWithUploader());
+    vi.useFakeTimers();
+    const pending = service.process(boardWithUploader());
+    await vi.advanceTimersByTimeAsync(1000);
 
+    const out = await pending;
+    expect(mint).toHaveBeenCalledTimes(3);
+    expect(uploaderOf(out).state.authToken).toBe("tok-late");
+  });
+
+  it("leaves authToken unset when minting never succeeds", async () => {
+    const mint = vi.fn<MintToken>(async () => null);
+    const { service } = createInjector(mint);
+
+    vi.useFakeTimers();
+    const pending = service.process(boardWithUploader());
+    // Past the retry budget: a runtime that is never coming must still yield a
+    // board rather than hang the pipeline behind it.
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    const out = await pending;
     expect(uploaderOf(out).state.authToken).toBeUndefined();
   });
 
