@@ -11,9 +11,10 @@ HTTP services: an outgoing client and an incoming server.
 | hkp-rt | `http-client`, `http-server`, `http-server-subservices` |
 | hkp-node | `http-client`, `http-server-subservices` |
 | hkp-python | `http-client`, `http-server-subservices` |
+| Browser | `http-client` |
 
-For browser-side HTTP, use [Fetcher](./fetcher.md) (outgoing) and
-[Output](./output.md) (POST egress).
+The browser also has [Fetcher](./fetcher.md), the older outgoing service with a
+contract of its own, and [Output](./output.md) for POST egress.
 
 ---
 
@@ -39,10 +40,10 @@ equivalent of the browser's [Fetcher](./fetcher.md) service.
 - **Input**: any value; may be merged into the request body
 - **Output**: HTTP response body, parsed as JSON if the Content-Type is `application/json`, otherwise a string
 
-### On hkp-node and hkp-python
+### On hkp-node, hkp-python and the browser
 
-These two implementations share the configuration above (and therefore the same
-UI panel), with these differences:
+These implementations share the configuration above (and therefore, on the
+remote runtimes, the same UI panel), with these differences:
 
 | Property | Type | Description |
 |---|---|---|
@@ -111,6 +112,27 @@ coordinator hands over the address once the owner publishes it, and until then
 the client waits rather than calling anything. See the **Mounts** concept page
 (`docs/content/concepts/mounts.md`) for why endpoints are assigned rather than
 chosen, and who resolves a reference.
+
+### In the browser
+
+Same service id, same state, same response shape — so a board moves a request
+between the browser and a runtime by moving the service, and the facade over it
+does not change. `http-client-browser-demo-board.json` is exactly that: the demo
+board above with its one runtime taken away.
+
+What changes is not the contract but who makes the call. In the browser the page
+does, which is the whole reason to choose it — there is no runtime to install,
+start or reach — and the whole reason not to:
+
+- The call goes through only where the API allows this origin. A blocked one
+  fails as a bare network error, because the browser does not tell the page why.
+- A credential in a header is in the page, and travels from the user's machine
+  rather than from a server.
+- `meta.headers` carries what the response *exposes*: everything, same-origin;
+  cross-origin, the CORS-safelisted headers plus whatever the server named in
+  `Access-Control-Expose-Headers`.
+- `userAgent` is kept, so a board written on another runtime round-trips, but
+  not sent: the browser reserves that header for itself.
 
 ---
 

@@ -23,6 +23,12 @@ Use Fetcher to poll an API on each Timer tick, to load remote data when
 triggered by a button press, or to chain HTTP requests with Map
 transformations.
 
+The browser also has `http-client` (see [HTTP](./http.md)), the same client the
+other runtimes provide. Fetcher keeps its own contract — expression bodies,
+`%variable%` substitution, the response body as the pipeline value — while
+`http-client` is the one to reach for when a board should read the same on
+whichever runtime makes the request, or move between them unchanged.
+
 ---
 
 ## Configuration
