@@ -89,7 +89,8 @@ type BoardContextAPI = {
   ) => Array<RuntimeClass>;
   removeAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
 
-  addRuntime: (rtClass: RuntimeClass) => void;
+  /** Resolves with the runtime it put on the board, or null if none was. */
+  addRuntime: (rtClass: RuntimeClass) => Promise<RuntimeDescriptor | null>;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
   updateRuntime: (
     runtimeId: string,

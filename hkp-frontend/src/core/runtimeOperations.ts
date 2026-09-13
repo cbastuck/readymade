@@ -38,12 +38,20 @@ export function isRuntimeInScopeDefault(
   return !!ownedRuntimes.find((runtimeId: string) => runtimeId === runtime.id);
 }
 
+/**
+ * Puts a runtime on the board, and hands back the one it created.
+ *
+ * The descriptor is the caller's only way to name what it just made: the id is
+ * minted in here (or by the runtime server), so a caller that wants to act on
+ * the new runtime — the playground aims its selection at it — has nothing to
+ * go on otherwise. Null means nothing was added, and the error was reported.
+ */
 export async function addRuntime(
   rtClass: RuntimeClass,
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
   onError?: (err: Error) => void,
-): Promise<void> {
+): Promise<RuntimeDescriptor | null> {
   const propsRef = refs.propsRef.current!;
   const api = propsRef.runtimeApis?.[rtClass.type];
   if (!api) {
@@ -81,12 +89,14 @@ export async function addRuntime(
         ...prev,
         [runtime.id]: scope,
       }));
+      return runtimeWithUser;
     }
   } catch (err: any) {
     console.error("BoardContext.addRuntime", err, err.stack);
     onError?.(err);
     await waitForUserLogin();
   }
+  return null;
 }
 
 export async function removeRuntime(

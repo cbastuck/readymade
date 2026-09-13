@@ -523,14 +523,19 @@ export default function Sidebar() {
     setRuntimesHeight(null);
   };
 
-  const addRuntime = (rtClass: RuntimeClass) => {
+  // A runtime someone just put on the board is the one they are working on, so
+  // the palette moves to its services rather than making them say so again.
+  const addRuntime = async (rtClass: RuntimeClass) => {
     if (!boardContext) {
       return;
     }
-    boardContext.addRuntime({
+    const added = await boardContext.addRuntime({
       ...rtClass,
       name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
     });
+    if (added) {
+      selection?.selectRuntime(added.id);
+    }
   };
 
   const persistRemoteRuntimes = (allEngines: RuntimeClass[]) => {
