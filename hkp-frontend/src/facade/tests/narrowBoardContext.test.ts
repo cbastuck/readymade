@@ -18,6 +18,9 @@ const boardContext = {
     "hotels.review": { app: {}, authenticatedUser: null },
   },
   registry: { "booking.review": [], "hotels.review": [] },
+  // A service on a remote runtime is reached through its runtime's API, so a
+  // context without one has nothing to resolve a uuid to.
+  runtimeApis: { rest: { configureService: async () => ({}) } },
 } as unknown as BoardContextState;
 
 describe("narrowBoardContext", () => {
