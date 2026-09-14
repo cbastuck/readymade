@@ -230,11 +230,18 @@ export async function processRuntime(
     ? `instanceId: "${service.uuid}"`
     : "instanceId: null";
   const requestId = `requestId: "${context?.requestId || null}"`;
+  // No input is `null` here, not an absent value: `params` is a nullable String
+  // in the schema, and JSON.stringify(undefined) is the JS value undefined,
+  // which lands in the query as the bare word `undefined` — a syntax error
+  // where a String was expected, so the run never happens at all.
+  const encodedParams = params === undefined || params === null
+    ? "null"
+    : encodeAny(params);
   const payload = `query processRuntime {
     runtimeById(runtimeId: "${runtime.id}") {
       process(
         input: {
-          params: ${encodeAny(params)}, 
+          params: ${encodedParams}, 
           ${serviceInput},
           ${requestId}
         }

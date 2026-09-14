@@ -749,18 +749,10 @@ void Runtime::onSessionJSONData(json msg)
   if (type == "processRuntime")
   {
     // A null payload is a run with nothing on the input, not a malformed
-    // message: JSON has no undefined, so that is how the sender says it. The
+    // message: JSON has no undefined, so that is how a sender says it. The
     // first service is handed Undefined, which is what it is given anywhere
-    // else nothing precedes it, and a service that answers an empty input with
-    // its own configuration behaves the same way here.
-    if (data.is_null())
-    {
-      process(Data(), ProcessContext::fromJson(context));
-    }
-    else
-    {
-      process(data, ProcessContext::fromJson(context));
-    }
+    // else nothing precedes it.
+    process(data.is_null() ? Data() : Data(data), ProcessContext::fromJson(context));
   }
   else if (type == "resolveResult")
   {
