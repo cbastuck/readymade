@@ -428,18 +428,29 @@ export async function processRuntime(
   const scope = scope_ as RuntimeRestScope;
   const runtime = scope.descriptor;
 
+  // No input is `null` on the wire, whichever transport carries it. JSON has
+  // no undefined: over the socket the key would be dropped from the frame and
+  // over REST the body would be empty, and a runtime reads both as "no payload
+  // was sent" — a malformed call — rather than as "run with nothing on the
+  // input", which is what a plain Run means and what a service like
+  // `http-client` answers with its own configured body.
+  const payload = params ?? null;
+
   if (
-    !scope.sendMessageViaWebsocket(params, startedRun(context), "processRuntime")
+    !scope.sendMessageViaWebsocket(
+      payload,
+      startedRun(context),
+      "processRuntime",
+    )
   ) {
     // if sending failed, we probably don't have a runtimeOutput, we send a REST request
-    // TODO what if params is not an object?
     const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...authHeaders(scope.authenticatedUser),
       },
-      body: JSON.stringify(params),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       throw new Error(

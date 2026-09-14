@@ -58,10 +58,11 @@ export async function addService(
   }
 
   if (svc) {
+    const added = svc;
     const currentList = refs.servicesRef.current![runtime.id];
     if (insertAtIndex !== undefined) {
       const newList = [...currentList];
-      newList.splice(insertAtIndex, 0, svc);
+      newList.splice(insertAtIndex, 0, added);
       refs.setServices((prev) => ({ ...prev, [runtime.id]: newList }));
       const rearranged = await api.rearrangeServices(scope, newList);
       if (rearranged) {
@@ -70,7 +71,7 @@ export async function addService(
     } else {
       refs.setServices((prev) => ({
         ...prev,
-        [runtime.id]: prev[runtime.id].concat(svc),
+        [runtime.id]: prev[runtime.id].concat(added),
       }));
     }
   }

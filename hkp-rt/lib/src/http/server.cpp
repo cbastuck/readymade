@@ -655,6 +655,12 @@ static std::optional<Data> buildInputData(const crow::request& req,
       try
       {
         auto body = json::parse(req.body);
+        // `null` is a payload: it says run with nothing on the input, which is
+        // how a caller writes "no input" in a format that has no undefined.
+        // Undefined is what the first service is handed, the same as over the
+        // socket. A body that is absent entirely is still refused, above.
+        if (body.is_null())
+          return Data();
         if (!body.is_object())
           return std::nullopt;
         return Data(std::move(body));

@@ -51,11 +51,11 @@ export function makeNull(): Null {
 export type Data = FloatRingBuffer | Null | TextData;
 
 export function isFloatRingBuffer(data: any): data is FloatRingBuffer {
-  return data.type === FloatRingBufferSymbol;
+  return data?.type === FloatRingBufferSymbol;
 }
 
 export function isNull(data: any): data is Null {
-  return data.type === NullSymbol;
+  return data?.type === NullSymbol;
 }
 
 export function isData(data: any): data is Data {
