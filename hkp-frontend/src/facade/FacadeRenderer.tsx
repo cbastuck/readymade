@@ -1,9 +1,16 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { FacadeStateContext } from "./FacadeStateContext";
 import { executeActions } from "./executeActions";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeDescriptor } from "./types";
 import { PanelRenderer } from "./panels/PanelRenderer";
+import { PanelSplitter, usePanelWidths } from "./panels/PanelSplitter";
 import { FacadeEditor } from "./editor/FacadeEditor";
 import { useFacadeView } from "./FacadeViewContext";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
@@ -162,6 +169,16 @@ export default function FacadeRenderer({
 
   const multiPanel = draftFacade.panels.length > 1;
 
+  // ── column splitters ─────────────────────────────────────────────────────
+  // Even columns are a guess — the panels hold different things, and which of
+  // them deserves the room is the reader's to say.
+  const panelWidths = usePanelWidths(boardName, draftFacade.panels.length);
+  const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const panelPixels = useCallback(
+    () => panelRefs.current.map((node) => node?.getBoundingClientRect().width ?? 0),
+    [],
+  );
+
   return (
     <FacadeStateContext.Provider
       value={{ state: facadeState, setState: setFacadeStateEntry }}
@@ -210,25 +227,42 @@ export default function FacadeRenderer({
                 }}
               >
                 {draftFacade.panels.map((panel, idx) => (
-                  <div
-                    key={panel.id}
-                    style={{
-                      flex: 1,
-                      overflow: "hidden",
-                      display: "flex",
-                      flexDirection: "column",
-                      borderLeft:
-                        multiPanel && idx > 0
-                          ? "1px solid hsl(var(--border))"
-                          : undefined,
-                    }}
-                  >
-                    <PanelRenderer
-                      panel={panel}
-                      boardContext={boardContext}
-                      showTitle={multiPanel}
-                    />
-                  </div>
+                  <Fragment key={panel.id}>
+                    {/* The divider carries the line between two columns, so
+                        the panel itself no longer draws one. */}
+                    {multiPanel && idx > 0 && (
+                      <PanelSplitter
+                        index={idx - 1}
+                        widths={panelWidths}
+                        widthsOf={panelPixels}
+                        label={`${draftFacade.panels[idx - 1].title ?? "panel"} and ${panel.title ?? "panel"}`}
+                      />
+                    )}
+                    <div
+                      ref={(node) => {
+                        panelRefs.current[idx] = node;
+                      }}
+                      style={{
+                        // Weight rather than width: the columns keep their
+                        // proportion when the window changes size.
+                        flexGrow: panelWidths.weightOf(idx),
+                        flexShrink: 1,
+                        flexBasis: 0,
+                        // Without this a panel refuses to shrink past its
+                        // content, and the weights stop meaning anything.
+                        minWidth: 0,
+                        overflow: "hidden",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <PanelRenderer
+                        panel={panel}
+                        boardContext={boardContext}
+                        showTitle={multiPanel}
+                      />
+                    </div>
+                  </Fragment>
                 ))}
               </div>
 

@@ -1,0 +1,360 @@
+{
+  "boardName": "RSS Aggregator",
+  "description": "Any number of RSS or Atom feeds read as one list, newest first, with Hacker News among them. Subscribe to a feed by pasting its URL; the feeds are fetched together and one slow or broken one costs its own rows and nothing else. Saving an article puts it in a SQL reading list that outlives the feed page it came from.",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "Reader",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "feeds",
+        "serviceId": "rss",
+        "serviceName": "Feeds",
+        "state": {
+          "feeds": [
+            {
+              "url": "https://hnrss.org/frontpage",
+              "name": "Hacker News"
+            },
+            {
+              "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+              "name": "BBC World"
+            },
+            {
+              "url": "https://lwn.net/headlines/rss",
+              "name": "LWN"
+            },
+            {
+              "url": "https://www.theverge.com/rss/index.xml",
+              "name": "The Verge"
+            }
+          ],
+          "limit": 60,
+          "summaryChars": 220
+        }
+      },
+      {
+        "uuid": "end-refresh",
+        "serviceId": "stopper",
+        "serviceName": "End of the read",
+        "state": {}
+      },
+      {
+        "uuid": "keep-article",
+        "serviceId": "sql",
+        "serviceName": "Save an article",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "rss-reader",
+          "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);",
+          "statement": "INSERT INTO article (link, title, feed, author, summary, published)\nSELECT $link, $title, $feed, $author, $summary, $published\n WHERE $intent = 'keep' AND $link <> ''\n    ON CONFLICT(link) DO NOTHING"
+        }
+      },
+      {
+        "uuid": "drop-article",
+        "serviceId": "sql",
+        "serviceName": "Remove an article",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "rss-reader",
+          "statement": "DELETE FROM article\n WHERE $intent = 'drop'\n   AND link = $link"
+        }
+      },
+      {
+        "uuid": "kept-articles",
+        "serviceId": "sql",
+        "serviceName": "Reading list",
+        "state": {
+          "mode": "query",
+          "database": "rss-reader",
+          "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);",
+          "statement": "SELECT link, title, feed, published, saved\n  FROM article\n ORDER BY saved DESC\n LIMIT 100"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "feeds",
+        "payload": {}
+      },
+      {
+        "type": "process",
+        "serviceUuid": "keep-article",
+        "payload": {
+          "intent": "none",
+          "link": ""
+        }
+      }
+    ],
+    "panels": [
+      {
+        "id": "articles",
+        "title": "Latest",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Refresh",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "feeds",
+                      "payload": {}
+                    }
+                  ],
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "feeds",
+                      "path": "fetching"
+                    },
+                    "statusColors": {
+                      "true": "#f59e0b",
+                      "false": "#22c55e"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "label": "Articles",
+                  "source": {
+                    "serviceUuid": "feeds",
+                    "path": "count"
+                  },
+                  "placeholder": "\u2014",
+                  "grow": true
+                },
+                {
+                  "type": "text",
+                  "source": {
+                    "serviceUuid": "feeds",
+                    "path": "error"
+                  },
+                  "tone": "error"
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "feeds",
+                "path": "items"
+              },
+              "gap": 12,
+              "template": {
+                "direction": "column",
+                "gap": 2,
+                "items": [
+                  {
+                    "direction": "row",
+                    "gap": 8,
+                    "align": "flex-start",
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.title}}",
+                        "href": "{{item.link}}",
+                        "fontSize": 14,
+                        "grow": true
+                      },
+                      {
+                        "type": "button",
+                        "label": "Save",
+                        "actions": [
+                          {
+                            "type": "process",
+                            "serviceUuid": "keep-article",
+                            "payload": {
+                              "intent": "keep",
+                              "link": "{{item.link}}",
+                              "title": "{{item.title}}",
+                              "feed": "{{item.feed}}",
+                              "author": "{{item.author}}",
+                              "summary": "{{item.summary}}",
+                              "published": "{{item.published}}"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.feed}} \u00b7 {{item.publishedLabel}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.summary}}",
+                    "tone": "muted",
+                    "fontSize": 12
+                  }
+                ]
+              }
+            }
+          ],
+          "paddingX": 16,
+          "paddingY": 12
+        }
+      },
+      {
+        "id": "library",
+        "title": "Feeds & reading list",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Paste any RSS or Atom URL to add it to the merged list. Feeds are fetched from the Node runtime, which is what makes arbitrary ones readable at all \u2014 almost no publisher sends the CORS header a browser would need.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text-input",
+              "label": "Subscribe",
+              "placeholder": "https://example.com/feed.xml",
+              "submitLabel": "Add feed",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "feeds",
+                  "configure": {
+                    "addFeed": "$$input"
+                  }
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "feeds",
+                  "payload": {}
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "feeds",
+                "path": "feeds"
+              },
+              "gap": 4,
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "center",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.url}}",
+                    "fontSize": 11,
+                    "wrap": true,
+                    "grow": true
+                  },
+                  {
+                    "type": "button",
+                    "label": "Unsubscribe",
+                    "confirm": "Stop reading {{item.url}}?",
+                    "actions": [
+                      {
+                        "type": "configure",
+                        "serviceUuid": "feeds",
+                        "configure": {
+                          "removeFeed": "{{item.url}}"
+                        }
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "feeds",
+                        "payload": {}
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "direction": "column",
+              "collapsible": true,
+              "title": "Reading list",
+              "summary": {
+                "serviceUuid": "kept-articles",
+                "path": "count"
+              },
+              "open": true,
+              "gap": 6,
+              "items": [
+                {
+                  "type": "repeat",
+                  "source": {
+                    "serviceUuid": "kept-articles",
+                    "path": "rows"
+                  },
+                  "gap": 6,
+                  "template": {
+                    "direction": "row",
+                    "gap": 8,
+                    "align": "flex-start",
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.title}}",
+                        "href": "{{item.link}}",
+                        "fontSize": 12,
+                        "grow": true
+                      },
+                      {
+                        "type": "button",
+                        "label": "Remove",
+                        "actions": [
+                          {
+                            "type": "process",
+                            "serviceUuid": "keep-article",
+                            "payload": {
+                              "intent": "drop",
+                              "link": "{{item.link}}"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Reading list problem",
+              "source": {
+                "serviceUuid": "kept-articles",
+                "path": "error"
+              },
+              "tone": "error"
+            }
+          ],
+          "paddingX": 16,
+          "paddingY": 12
+        }
+      }
+    ]
+  }
+}

@@ -16,6 +16,7 @@ import InjectorUI from "./ui/InjectorUI";
 import SkillRouterUI from "./ui/SkillRouterUI";
 import HoldUI from "./ui/HoldUI";
 import CommunicationDispatcherUI from "./ui/CommunicationDispatcherUI";
+import RssUI from "./ui/RssUI";
 
 export type ServiceLookup = {
   serviceId?: ServiceClass["serviceId"];
@@ -71,6 +72,8 @@ function findServiceUIByKey(
       return TelegramSenderUI;
     case "smtp-email":
       return SmtpEmailUI;
+    case "rss":
+      return RssUI;
   }
   return null;
 }

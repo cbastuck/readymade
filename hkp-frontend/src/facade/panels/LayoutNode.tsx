@@ -1,3 +1,5 @@
+import { CSSProperties } from "react";
+
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { LayoutItem, LayoutContainer, LayoutWidget, KnobWidget, RepeatWidget, FacadeStateRef } from "../types";
 import { PanelContext, widgetRegistry } from "./widgetRegistry";
@@ -30,6 +32,36 @@ export function collectKnobDefaults(
     const knob = item as KnobWidget;
     acc[knob.id ?? knob.action.serviceUuid] = knob.defaultValue;
   }
+}
+
+/**
+ * A container's padding, as the four sides.
+ *
+ * `padding` is both axes; `paddingX` and `paddingY` override one of them, so a
+ * column can be inset from a panel's edges without its first widget being
+ * pushed down from the title above it.
+ *
+ * Resolved to longhands rather than mixed with the shorthand: React warns when
+ * a style object carries both `padding` and a `paddingLeft` it covers, and
+ * which one wins would depend on key order.
+ */
+function paddingOf(item: LayoutContainer): CSSProperties {
+  const { padding, paddingX, paddingY } = item;
+  if (
+    padding === undefined &&
+    paddingX === undefined &&
+    paddingY === undefined
+  ) {
+    return {};
+  }
+  const x = paddingX ?? padding;
+  const y = paddingY ?? padding;
+  return {
+    paddingLeft: x,
+    paddingRight: x,
+    paddingTop: y,
+    paddingBottom: y,
+  };
 }
 
 export function LayoutNode({
@@ -101,7 +133,7 @@ export function LayoutNode({
           display: "flex",
           flexDirection: item.direction,
           gap: item.gap,
-          padding: item.padding,
+          ...paddingOf(item),
           alignItems: item.align,
           justifyContent: item.justify,
           flexWrap: item.wrap ? "wrap" : undefined,

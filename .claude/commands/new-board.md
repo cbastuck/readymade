@@ -239,6 +239,8 @@ A **container** groups children:
   "direction": "row | column",
   "gap": 12,
   "padding": 16,
+  "paddingX": 16,
+  "paddingY": 12,
   "align": "center",
   "justify": "center",
   "fill": true,
@@ -246,6 +248,12 @@ A **container** groups children:
   "items": [ ...LayoutItem[] ]
 }
 ```
+
+`padding` is both axes; `paddingX` and `paddingY` override one of them. A panel's own root
+container is where this usually matters — a facade draws no margin of its own, so a column
+whose layout says nothing sits flush against the panel edge and, in a `columns` facade, against
+the divider between it and its neighbour. `paddingX` alone gives it room at the sides without
+pushing its first widget down from the panel's title.
 
 A container can **fold**, which is how a panel keeps controls that are occasionally needed from
 pushing the ones that always are off the bottom of the screen:
@@ -476,6 +484,17 @@ and scrolls sideways instead of breaking lines; pair it with `lineHeight` near 0
 character cell comes out square and the picture is not stretched down the panel. `pretty`
 indents an object value as JSON. Omit `source` entirely for a fixed line of prose: the
 `placeholder` is then the whole text.
+
+`href` makes the text a link, for a value that names something to open rather than something to
+read — a headline, a document, a result. It opens in a new tab, and takes an item reference like
+any other value, which is what gives each row of a `repeat` its own destination:
+
+```json
+{ "type": "text", "placeholder": "{{item.title}}", "href": "{{item.link}}", "grow": true }
+```
+
+Nothing is linked where there is nothing to click, so a widget whose source has not answered yet
+shows its placeholder as plain text rather than as a link that goes nowhere.
 
 **file-pick** — file chooser that sends the file to a service:
 
