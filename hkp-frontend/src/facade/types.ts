@@ -23,6 +23,15 @@ export type SetStateAction = {
   type: "set-state";
   // Facade state key to write. The widget's current value ($$input equivalent) is stored.
   key: string;
+  // What to write instead, for a widget whose own value is not the thing being
+  // published — a button standing for one item of a repeat, which is how a
+  // board offers a choice between things it did not know at design time. It
+  // takes an item reference like any other value, so the item decides it.
+  //
+  // Written rather than read from the widget because a button has no value: a
+  // list of things to pick from could otherwise only be rendered, never picked
+  // from.
+  value?: unknown;
 };
 
 // Asks a service to do its job with a payload, running the pipeline from that
