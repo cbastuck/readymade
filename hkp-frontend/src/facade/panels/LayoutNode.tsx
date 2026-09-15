@@ -2,6 +2,7 @@ import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { LayoutItem, LayoutContainer, LayoutWidget, KnobWidget, RepeatWidget, FacadeStateRef } from "../types";
 import { PanelContext, widgetRegistry } from "./widgetRegistry";
 import { useFacadeState } from "../FacadeStateContext";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 export function isContainer(item: LayoutItem): item is LayoutContainer | LayoutWidget {
   return "items" in item && (!("type" in item) || (item as any).type !== "repeat");
@@ -31,7 +32,8 @@ function interpolateTemplate(template: unknown, item: unknown): unknown {
   return template;
 }
 
-// Walk the layout tree and collect initial knob values keyed by action.serviceUuid.
+// Walk the layout tree and collect initial knob values, keyed the way
+// KnobRenderer reads them back: by the knob's id, or its service uuid.
 export function collectKnobDefaults(
   item: LayoutItem,
   acc: Record<string, number>,
@@ -44,7 +46,7 @@ export function collectKnobDefaults(
   }
   if (item.type === "knob") {
     const knob = item as KnobWidget;
-    acc[knob.action.serviceUuid] = knob.defaultValue;
+    acc[knob.id ?? knob.action.serviceUuid] = knob.defaultValue;
   }
 }
 
@@ -96,7 +98,7 @@ export function LayoutNode({
   }
 
   if (isContainer(item)) {
-    return (
+    const contents = (
       <div
         style={{
           display: "flex",
@@ -122,6 +124,15 @@ export function LayoutNode({
           />
         ))}
       </div>
+    );
+
+    if (!item.collapsible) {
+      return contents;
+    }
+    return (
+      <CollapsibleSection container={item} boardContext={boardContext}>
+        {contents}
+      </CollapsibleSection>
     );
   }
 

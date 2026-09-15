@@ -81,6 +81,11 @@ export function remapFacadeUuids(
           ...widget,
           serviceUuid: remap(widget.serviceUuid),
         };
+      case "camera":
+        return {
+          ...widget,
+          serviceUuid: remap(widget.serviceUuid),
+        };
       case "xy-pad":
         return {
           ...widget,
@@ -128,7 +133,18 @@ export function remapFacadeUuids(
 
   const remapLayoutItem = (item: LayoutItem): LayoutItem => {
     if (isContainer(item)) {
-      return { ...item, items: item.items.map(remapLayoutItem) };
+      // A collapsible container's `summary` names a service the same way a
+      // widget's `source` does, so it is remapped the same way. A facade state
+      // reference names no service and is left alone.
+      const summary =
+        item.summary && "serviceUuid" in item.summary
+          ? { ...item.summary, serviceUuid: remap(item.summary.serviceUuid) }
+          : item.summary;
+      return {
+        ...item,
+        ...(item.summary ? { summary } : {}),
+        items: item.items.map(remapLayoutItem),
+      };
     }
     return remapWidget(item);
   };

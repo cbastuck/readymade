@@ -5,7 +5,10 @@
       "id": "ui",
       "name": "UI",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     }
   ],
   "services": {
@@ -46,6 +49,134 @@
           "mode": "ascii",
           "width": 550,
           "height": 500
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "cam",
+        "title": "ASCII Cam",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 14,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 14,
+              "align": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "camera",
+                  "serviceUuid": "camera-svc",
+                  "width": 320,
+                  "height": 200,
+                  "previewWidth": 132
+                },
+                {
+                  "type": "knob",
+                  "id": "cols",
+                  "label": "Columns",
+                  "min": 20,
+                  "max": 160,
+                  "defaultValue": 100,
+                  "width": 92,
+                  "height": 92,
+                  "action": {
+                    "serviceUuid": "ascii-art-svc",
+                    "configure": {
+                      "cols": "{{value}}"
+                    }
+                  }
+                },
+                {
+                  "type": "knob",
+                  "id": "rows",
+                  "label": "Rows",
+                  "min": 10,
+                  "max": 120,
+                  "defaultValue": 60,
+                  "width": 92,
+                  "height": 92,
+                  "action": {
+                    "serviceUuid": "ascii-art-svc",
+                    "configure": {
+                      "rows": "{{value}}"
+                    }
+                  }
+                },
+                {
+                  "direction": "column",
+                  "gap": 6,
+                  "items": [
+                    {
+                      "type": "button",
+                      "label": "Dark on light",
+                      "action": {
+                        "serviceUuid": "ascii-art-svc",
+                        "configure": {
+                          "invert": false
+                        }
+                      }
+                    },
+                    {
+                      "type": "button",
+                      "label": "Light on dark",
+                      "action": {
+                        "serviceUuid": "ascii-art-svc",
+                        "configure": {
+                          "invert": true
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "direction": "column",
+                  "gap": 6,
+                  "items": [
+                    {
+                      "type": "button",
+                      "label": "Freeze",
+                      "action": {
+                        "serviceUuid": "timer-svc",
+                        "configure": {
+                          "stop": true
+                        }
+                      }
+                    },
+                    {
+                      "type": "button",
+                      "label": "Run",
+                      "action": {
+                        "serviceUuid": "timer-svc",
+                        "configure": {
+                          "start": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "grow": true,
+              "source": {
+                "serviceUuid": "monitor-svc",
+                "path": "ascii"
+              },
+              "mono": true,
+              "wrap": false,
+              "fontSize": 11,
+              "lineHeight": 0.62,
+              "placeholder": "Allow the camera, and the picture arrives here as characters."
+            }
+          ]
         }
       }
     ]

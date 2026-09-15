@@ -24,12 +24,16 @@ export function KnobRenderer({
     [boardContext.scopes, boardContext.services, widget.action.serviceUuid],
   );
 
-  const value =
-    panelContext.knobValues[widget.action.serviceUuid] ?? widget.defaultValue;
+  // A panel holds knob positions under this key. Two knobs driving the same
+  // service — cols and rows of one image, say — are one service uuid and two
+  // positions, so the key is the knob's own id where it has one.
+  const knobKey = widget.id ?? widget.action.serviceUuid;
+
+  const value = panelContext.knobValues[knobKey] ?? widget.defaultValue;
 
   const handleChange = useCallback(
     (v: number) => {
-      panelContext.onKnobChange(widget.action.serviceUuid, v);
+      panelContext.onKnobChange(knobKey, v);
       if (!service) {
         return;
       }
@@ -39,7 +43,7 @@ export function KnobRenderer({
       }
       service.configure(configure);
     },
-    [service, widget.action.configure, widget.action.serviceUuid, panelContext],
+    [service, widget.action.configure, knobKey, panelContext],
   );
 
   const unit = widget.unit ?? "";

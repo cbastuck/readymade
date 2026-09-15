@@ -247,6 +247,26 @@ A **container** groups children:
 }
 ```
 
+A container can **fold**, which is how a panel keeps controls that are occasionally needed from
+pushing the ones that always are off the bottom of the screen:
+
+```json
+{
+  "direction": "column",
+  "collapsible": true,
+  "title": "Headers",
+  "summary": { "serviceUuid": "request-svc", "path": "headers" },
+  "open": false,
+  "items": [ ...LayoutItem[] ]
+}
+```
+
+`title` is required — a row that does not say what it hides is worse than the space it saved.
+`summary` reads a service notification the way a widget's `source` does, or a facade state key
+(`{ "$state": "body" }`), and shows a count beside the title: an object or array reports its
+size, anything else its text. Give every fold one, so a setting made and then hidden still
+announces itself.
+
 A **widget leaf** has a `type` field. All widgets may also carry `"grow": true` to fill
 remaining space in their parent container.
 
@@ -325,6 +345,10 @@ inert rather than failing, so the board still renders everywhere.
 
 `{{value}}` in the configure payload is replaced with the current numeric value. Works inside arrays too.
 
+A panel holds each knob's position under its `id`, falling back to the service uuid. Two knobs
+driving the same service — the columns and rows of one image, say — therefore need an `id` each,
+or they share one position and jump on the first drag.
+
 **level-meter** — vertical bar driven by a service notification:
 
 ```json
@@ -343,6 +367,23 @@ inert rather than failing, so the board still renders everywhere.
 ```json
 { "type": "canvas", "serviceUuid": "canvas-svc" }
 ```
+
+**camera** — live camera, feeding frames to a Camera service:
+
+```json
+{
+  "type": "camera",
+  "serviceUuid": "camera-svc",
+  "width": 320,
+  "height": 200,
+  "previewWidth": 132
+}
+```
+
+`width`/`height` are the captured frame — what the pipeline receives — and `previewWidth` only
+how large it is drawn here; `preview: false` captures without drawing it at all. A board whose
+camera runs in a facade **needs** this widget: the Camera service captures through a video element
+something on screen handed it, and a facade view draws no service panels.
 
 **xy-pad** — embeds the XY Pad service:
 
@@ -387,6 +428,30 @@ inert rather than failing, so the board still renders everywhere.
   "statusColors": { "ok": "green", "error": "red" }
 }
 ```
+
+**text** — whatever a service is saying, as text:
+
+```json
+{
+  "type": "text",
+  "label": "Cipher",
+  "source": { "serviceUuid": "monitor-svc", "path": "ascii" },
+  "mono": true,
+  "copyable": true,
+  "pretty": true,
+  "wrap": false,
+  "lineHeight": 0.62,
+  "fontSize": 11,
+  "placeholder": "Nothing yet."
+}
+```
+
+`copyable` puts a copy button beside the value, for a value whose point is being taken somewhere
+else. `wrap: false` keeps the value's own columns — ASCII art, a table a service drew itself —
+and scrolls sideways instead of breaking lines; pair it with `lineHeight` near 0.62 so a
+character cell comes out square and the picture is not stretched down the panel. `pretty`
+indents an object value as JSON. Omit `source` entirely for a fixed line of prose: the
+`placeholder` is then the whole text.
 
 **file-pick** — file chooser that sends the file to a service:
 

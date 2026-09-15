@@ -1,6 +1,6 @@
 {
   "boardName": "HTTP Client",
-  "description": "Compose a request and send it: URL, path, query parameters, headers, and a JSON body, with the verb you press deciding the method. The request leaves from the Node runtime rather than the browser, so no CORS policy has a say in who you can call and a credential in a header never reaches the page. The response comes back into the pipeline as {meta, body} — the Monitor holds it, and the Response panel reads the status, the headers and the body off it. Needs hkp-node running locally on port 8080.",
+  "description": "Compose a request and send it: URL, path, query parameters, headers, and a JSON body, with the verb you press deciding the method. The request leaves from the Node runtime rather than the browser, so no CORS policy has a say in who you can call and a credential in a header never reaches the page. The response comes back into the pipeline as {meta, body} \u2014 the Monitor holds it, and the Response panel reads the status, the headers and the body off it. Needs hkp-node running locally on port 8080.",
   "runtimes": [
     {
       "id": "node",
@@ -50,7 +50,7 @@
             {
               "type": "text-input",
               "label": "URL",
-              "placeholder": "https://api.github.com",
+              "placeholder": "https://api.github.com/zen",
               "submitLabel": "Set",
               "width": "100%",
               "actions": [
@@ -64,60 +64,85 @@
               ]
             },
             {
-              "type": "text-input",
-              "label": "Path",
-              "placeholder": "/zen",
-              "submitLabel": "Set",
-              "width": "100%",
-              "actions": [
+              "direction": "column",
+              "gap": 2,
+              "items": [
                 {
-                  "type": "configure",
-                  "serviceUuid": "request",
-                  "configure": {
-                    "path": "$$input"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "json-input",
-              "label": "Query parameters",
-              "mode": "object",
-              "submitLabel": "Apply parameters",
-              "actions": [
+                  "direction": "column",
+                  "collapsible": true,
+                  "title": "Query parameters",
+                  "summary": {
+                    "serviceUuid": "request",
+                    "path": "query"
+                  },
+                  "items": [
+                    {
+                      "type": "json-input",
+                      "mode": "object",
+                      "submitLabel": "Apply parameters",
+                      "actions": [
+                        {
+                          "type": "configure",
+                          "serviceUuid": "request",
+                          "configure": {
+                            "query": "$$input"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
                 {
-                  "type": "configure",
-                  "serviceUuid": "request",
-                  "configure": {
-                    "query": "$$input"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "json-input",
-              "label": "Headers",
-              "mode": "object",
-              "submitLabel": "Apply headers",
-              "actions": [
+                  "direction": "column",
+                  "collapsible": true,
+                  "title": "Headers",
+                  "summary": {
+                    "serviceUuid": "request",
+                    "path": "headers"
+                  },
+                  "items": [
+                    {
+                      "type": "json-input",
+                      "mode": "object",
+                      "submitLabel": "Apply headers",
+                      "actions": [
+                        {
+                          "type": "configure",
+                          "serviceUuid": "request",
+                          "configure": {
+                            "headers": "$$input"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
                 {
-                  "type": "configure",
-                  "serviceUuid": "request",
-                  "configure": {
-                    "headers": "$$input"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "json-input",
-              "label": "JSON body — sent with POST, PUT and PATCH",
-              "mode": "object",
-              "submitLabel": "Apply body",
-              "actions": [
-                {
-                  "type": "set-state",
-                  "key": "body"
+                  "direction": "column",
+                  "collapsible": true,
+                  "title": "JSON body",
+                  "summary": {
+                    "$state": "body"
+                  },
+                  "items": [
+                    {
+                      "type": "text",
+                      "tone": "muted",
+                      "fontSize": 11,
+                      "placeholder": "Sent with POST, PUT and PATCH. GET and DELETE ignore it."
+                    },
+                    {
+                      "type": "json-input",
+                      "mode": "object",
+                      "submitLabel": "Apply body",
+                      "actions": [
+                        {
+                          "type": "set-state",
+                          "key": "body"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             },
@@ -129,16 +154,6 @@
                 {
                   "type": "button",
                   "label": "GET",
-                  "indicator": {
-                    "source": {
-                      "serviceUuid": "request",
-                      "path": "requesting"
-                    },
-                    "statusColors": {
-                      "true": "#f59e0b",
-                      "false": "#22c55e"
-                    }
-                  },
                   "actions": [
                     {
                       "type": "configure",
@@ -152,7 +167,17 @@
                       "serviceUuid": "request",
                       "payload": {}
                     }
-                  ]
+                  ],
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "request",
+                      "path": "requesting"
+                    },
+                    "statusColors": {
+                      "true": "#f59e0b",
+                      "false": "#22c55e"
+                    }
+                  }
                 },
                 {
                   "type": "button",
@@ -268,7 +293,7 @@
                     "path": "method"
                   },
                   "mono": true,
-                  "placeholder": "—"
+                  "placeholder": "\u2014"
                 },
                 {
                   "type": "text",
@@ -294,7 +319,7 @@
                     "serviceUuid": "request",
                     "path": "status"
                   },
-                  "placeholder": "—"
+                  "placeholder": "\u2014"
                 },
                 {
                   "type": "text",

@@ -14,7 +14,7 @@ Converts an image (Blob) into a text grid of ASCII characters representing its l
 
 ## What it does
 
-ASCII Art receives an image `Blob` from the pipeline, draws it onto an off-screen canvas scaled to the configured grid dimensions, samples the luminance of each pixel, and maps each luminance value to a character from the configured character set. The resulting string grid is emitted downstream.
+ASCII Art receives an image `Blob` from the pipeline, draws it onto an off-screen canvas scaled to the configured grid dimensions, samples the luminance of each pixel, and maps each luminance value to a character from the configured character set. The resulting string grid is emitted downstream as `ascii` on the incoming object; the `Blob` itself is dropped, since it cannot be serialised and is not needed further down.
 
 A typical use is to pipe Camera output through ASCII Art to produce a live ASCII-art webcam feed.
 
@@ -41,9 +41,11 @@ Characters are indexed by normalised luminance: the first character in the strin
 | | Shape |
 |---|---|
 | **Input** | Object with a `Blob` at the key specified by `imageKey`, e.g. `{ image: <Blob> }` |
-| **Output** | String — each row of characters joined by newlines |
+| **Output** | The incoming object minus the `Blob`, plus `ascii` — a string with each row of characters joined by newlines |
 
 If the input does not contain a `Blob` at `imageKey`, the original value is passed through unchanged.
+
+A consumer that wants the characters on their own — rather than an object carrying them — can follow ASCII Art with a Map whose template is `{ "=": "params.ascii" }`.
 
 ---
 
@@ -53,4 +55,4 @@ If the input does not contain a `Blob` at `imageKey`, the original value is pass
 Camera → ASCII Art → Monitor
 ```
 
-Configure Camera to emit `{ image: <Blob> }`, then ASCII Art converts it to a string and Monitor displays it.
+Configure Camera to emit `{ image: <Blob> }`, then ASCII Art converts it and Monitor displays it. Monitor in `ascii` mode reads the `ascii` key itself, so nothing is needed between the two; `boards/ascii-cam-board.json` is that pipeline with a Timer driving it.

@@ -182,6 +182,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     icon: "🔗",
     tags: ["Mounts", "HTTP", "Needs Node"],
   },
+  {
+    slug: "uuid-generator",
+    label: "UUID Generator",
+    description:
+      "A fresh identifier, v4 or v1, ready to copy — or one a second for as long as you leave it running. The website you would otherwise have open in a tab, as three services.",
+    icon: "🆔",
+    tags: ["Utility"],
+  },
 ];
 
 export const ALL_DEMO_TAGS = Array.from(

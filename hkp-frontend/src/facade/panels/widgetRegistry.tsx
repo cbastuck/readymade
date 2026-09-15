@@ -9,6 +9,7 @@ import { QrCodeRenderer } from "./renderers/QrCodeRenderer";
 import { FilePickRenderer } from "./renderers/FilePickRenderer";
 import { MessageListRenderer } from "./renderers/MessageListRenderer";
 import { CanvasRenderer } from "./renderers/CanvasRenderer";
+import { CameraRenderer } from "./renderers/CameraRenderer";
 import { XYPadRenderer } from "./renderers/XYPadRenderer";
 import { DataTableRenderer } from "./renderers/DataTableRenderer";
 import { BipolarMeterRenderer } from "./renderers/BipolarMeterRenderer";
@@ -40,6 +41,7 @@ export const widgetRegistry: Record<
   "file-pick": FilePickRenderer,
   "message-list": MessageListRenderer,
   canvas: CanvasRenderer,
+  camera: CameraRenderer,
   "xy-pad": XYPadRenderer,
   "data-table": DataTableRenderer,
   "bipolar-meter": BipolarMeterRenderer,
