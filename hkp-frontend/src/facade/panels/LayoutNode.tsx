@@ -3,6 +3,8 @@ import { LayoutItem, LayoutContainer, LayoutWidget, KnobWidget, RepeatWidget, Fa
 import { PanelContext, widgetRegistry } from "./widgetRegistry";
 import { useFacadeState } from "../FacadeStateContext";
 import { CollapsibleSection } from "./CollapsibleSection";
+import { useNotificationValue } from "./renderers/StatusIndicatorRenderer";
+import { interpolateTemplate } from "../itemTemplate";
 
 export function isContainer(item: LayoutItem): item is LayoutContainer | LayoutWidget {
   return "items" in item && (!("type" in item) || (item as any).type !== "repeat");
@@ -10,26 +12,6 @@ export function isContainer(item: LayoutItem): item is LayoutContainer | LayoutW
 
 function isStateRef(value: unknown): value is FacadeStateRef {
   return typeof value === "object" && value !== null && "$state" in value;
-}
-
-// Recursively replaces "{{item}}" in string values with the current item.
-function interpolateTemplate(template: unknown, item: unknown): unknown {
-  if (typeof template === "string") {
-    if (template === "{{item}}") { return item; }
-    if (typeof item === "string") { return template.replace(/\{\{item\}\}/g, item); }
-    return template;
-  }
-  if (Array.isArray(template)) {
-    return template.map((v) => interpolateTemplate(v, item));
-  }
-  if (template !== null && typeof template === "object") {
-    const result: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(template)) {
-      result[k] = interpolateTemplate(v, item);
-    }
-    return result;
-  }
-  return template;
 }
 
 // Walk the layout tree and collect initial knob values, keyed the way
@@ -61,11 +43,26 @@ export function LayoutNode({
 }) {
   const { state: facadeState } = useFacadeState();
 
+  // Asked for unconditionally, because a hook cannot be: a node that is not a
+  // repeat, or a repeat taking its items from the board, passes no source and
+  // the hook watches nothing.
+  const repeatSource =
+    "type" in item && item.type === "repeat"
+      ? (item as RepeatWidget).source
+      : undefined;
+  const sourcedItems = useNotificationValue(boardContext, repeatSource);
+
   if ("type" in item && item.type === "repeat") {
     const repeat = item as RepeatWidget;
-    const rawItems = isStateRef(repeat.items)
-      ? facadeState[(repeat.items as FacadeStateRef)["$state"]]
-      : repeat.items;
+    // `items` wins where a board wrote one, so a source is what a repeat falls
+    // back to rather than something that can quietly override what was written.
+    const rawItems =
+      repeat.items !== undefined
+        ? isStateRef(repeat.items)
+          ? facadeState[(repeat.items as FacadeStateRef)["$state"]]
+          : repeat.items
+        // The source's path is already walked by the hook that read it.
+        : sourcedItems;
     const items = Array.isArray(rawItems) ? rawItems : [];
     const containerStyle = repeat.columns != null
       ? {

@@ -68,6 +68,11 @@ export type TextInputWidget = {
   type: "text-input";
   label?: string;
   placeholder?: string;
+  // What the field starts out holding, for a board that has a sensible answer
+  // and would rather work on first load than wait to be told. Unlike a
+  // placeholder this is a real value: it is what submitting sends. Pair it with
+  // the same value in the facade's initial state where other widgets read it.
+  defaultValue?: string;
   submitLabel?: string;
   secret?: boolean;
   vaultKey?: string;
@@ -134,6 +139,18 @@ export type TextWidget = {
 export type ButtonWidget = {
   type: "button";
   label: string;
+  // Asks before doing it. The text is the question a person answers, so it
+  // names what will happen ("Cancel your booking on court 2 at 12:00?") rather
+  // than asking whether they are sure. Nothing runs unless they agree.
+  //
+  // Consent belongs to the action rather than to a dialog widget of its own:
+  // a button already holds what it will do, and this is a property of doing it.
+  confirm?: string;
+  // A button that is present but not offering anything — a slot already taken,
+  // a step not yet reachable. It still says what it is, which is why it stays
+  // on the page instead of being left out: the gap would say less than the
+  // disabled control does.
+  disabled?: boolean;
   // Optional live dot rendered left of the label, driven by a service
   // notification (e.g. a microphone's isRecording flag).
   indicator?: {
@@ -300,12 +317,30 @@ export type DataTableWidget = {
 // A state reference used in widget props to read from facade state.
 export type FacadeStateRef = { $state: string };
 
-// Renders one child widget per item in an array. Items can be a static array
-// or a facade state reference. "{{item}}" in template string values is replaced
-// with each item.
+// Renders one child widget per item in an array — a set of controls a board
+// cannot write out by hand because it does not know, at design time, how many
+// there will be.
+//
+// Where the items come from is the widget's one real choice. A static array is
+// a fixed set spelled out in the board; a facade state reference is a set some
+// other widget published; a `source` is a set a *service* is reporting, read
+// exactly as every display widget reads one. The last is what lets a query
+// result become a grid of controls rather than a table to look at — the rows a
+// service returns are laid out as widgets, in the order it returned them.
+//
+// "{{item}}" in template string values is replaced with the current item, and
+// "{{item.field}}" with a field of it (dotted paths allowed). A value that is
+// exactly one of those sentinels is substituted whole, so a number stays a
+// number and an object stays an object — which is what lets an item decide a
+// payload's values and not merely a label's text.
 export type RepeatWidget = {
   type: "repeat";
-  items: unknown[] | FacadeStateRef;
+  // Absent when `source` says where the items come from.
+  items?: unknown[] | FacadeStateRef;
+  // Items from what a service is saying. Read like any other widget's source,
+  // so a path may name the array inside a larger notification
+  // ("rows" for a query's { rows, count }). Ignored when `items` is present.
+  source?: FacadeWidgetSource;
   template: LayoutItem;
   // When set, items are laid out in a CSS grid with this many columns.
   // When absent, items stack in a flex column (or row if direction is set).
@@ -313,6 +348,52 @@ export type RepeatWidget = {
   direction?: "row" | "column";
   gap?: number;
   wrap?: boolean;
+};
+
+// A day as a calendar: the hours down the side, one column per thing being
+// booked — a court, a room, a machine.
+//
+// The widget owns the calendar's *geometry and appearance*: the time gutter, the
+// column headings, the hour lines, and what each state looks like. The board owns
+// every cell's *meaning* — what it says, whose it is, and whether it is on offer.
+// That split is what keeps the rules in the one place that can enforce them: a
+// query that already knows who holds what can decide each cell, and the calendar
+// never has to work anything out.
+//
+// It is the counterpart to `repeat`, not a special case of it. A repeat is the
+// answer where the items are a list and the shape of one is the board's to
+// describe; a calendar is the answer where the arrangement itself carries the
+// meaning — an hour is a position, and a person reads the day by looking down a
+// column.
+export type CalendarWidget = {
+  type: "calendar";
+  // The cells, from a service. One row per cell, each naming its position:
+  //   column  1-based index of the column it sits in
+  //   hour    the hour it starts at
+  //   state   "free" | "mine" | "taken" | "blocked" — how it is drawn, and
+  //           whether it can be tapped ("free" and "mine" can be)
+  //   label   what it says; omitted, a sensible default for the state is used
+  // Any other field travels too, and can be read by the action's payload.
+  source: FacadeWidgetSource;
+  // Column headings, left to right. Defaults to numbering whatever columns the
+  // rows mention, which is rarely what a person wants to read.
+  columns?: string[];
+  // The day's extent. Defaults to the hours the rows actually mention, so a
+  // query that returns the day already bounded needs neither.
+  fromHour?: number;
+  toHour?: number;
+  // Height of one hour's row, in pixels. Default 34.
+  rowHeight?: number;
+  // The field every row carries naming the day being drawn, shown above the
+  // grid. Default "day"; set to "" for a calendar that should not caption itself.
+  dayField?: string;
+  // What a tap sends, interpolated with the cell as "{{item.…}}" — the same
+  // vocabulary a repeat's template uses.
+  action?: FacadeWidgetAction;
+  actions?: WidgetAction[];
+  // Asks before acting, interpolated with the cell. An empty result asks
+  // nothing, which is how a cell that is merely being looked at stays silent.
+  confirm?: string;
 };
 
 export type FacadeWidget =
@@ -333,7 +414,8 @@ export type FacadeWidget =
   | CameraWidget
   | XYPadWidget
   | DataTableWidget
-  | RepeatWidget;
+  | RepeatWidget
+  | CalendarWidget;
 
 // ---------------------------------------------------------------------------
 // Layout tree — panels declare their structure declaratively.

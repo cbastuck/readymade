@@ -288,6 +288,25 @@ so booleans work):
 }
 ```
 
+`confirm` makes the button ask before it acts, in the facade's own dialog. Use it where the
+action is not one to take on a single tap — it spends money, sends something, or gives
+something away. Word it as what will happen, not as *are you sure*:
+
+```json
+{
+  "type": "button",
+  "label": "free",
+  "confirm": "Book court 2 at 12:00 on 2026-09-17?",
+  "disabled": false,
+  "actions": [{ "type": "process", "serviceUuid": "book-svc", "payload": { "court": 2 } }]
+}
+```
+
+`disabled` renders the button present but not offering anything — a slot already taken, a
+step not yet reachable. Prefer it to leaving the button out when the gap would say less
+than the dimmed control does. Both fields are ordinary values, so inside a `repeat` they
+can come from the item.
+
 A button may instead carry an `actions` array, which is where the things a button
 does that are not "configure one service" live. A **board action** names no service
 at all — its subject is the board, and what it does is decided by the host showing
@@ -321,6 +340,11 @@ inert rather than failing, so the board still renders everywhere.
   }
 }
 ```
+
+`defaultValue` gives the field a real starting value (not a placeholder — it is what submitting
+sends). Reach for it whenever a board would otherwise come up inert waiting to be told something
+it could have assumed: seed the same value in the facade's `state` so widgets reading
+`{ "$state": … }` agree with what the field shows.
 
 **knob** — rotary control with optional markers and live readout:
 
@@ -463,6 +487,100 @@ indents an object value as JSON. Omit `source` entirely for a fixed line of pros
   "action": { "serviceUuid": "file-svc" }
 }
 ```
+
+**calendar** — a day as a calendar: the hours down the side, one column per thing being booked
+(a court, a room, a machine). Reach for this instead of building a grid out of `repeat` and
+buttons whenever the *arrangement* is what carries the meaning — a person reads a timetable by
+looking down a column, which only works if the hours line up and every row is the same height:
+
+```json
+{
+  "type": "calendar",
+  "source": { "serviceUuid": "day-grid", "path": "rows" },
+  "columns": ["Court 1", "Court 2", "Court 3"],
+  "fromHour": 7,
+  "toHour": 21,
+  "rowHeight": 32,
+  "confirm": "{{item.prompt}}",
+  "actions": [{
+    "type": "process",
+    "serviceUuid": "book-svc",
+    "payload": {
+      "state": "{{item.state}}",
+      "court": "{{item.column}}",
+      "hour": "{{item.hour}}"
+    }
+  }]
+}
+```
+
+Each row is one cell and names its own position and meaning:
+
+| Field | What it is |
+|---|---|
+| `column` | 1-based index of the column it sits in |
+| `hour` | the hour it starts at |
+| `state` | `free` \| `mine` \| `taken` \| `blocked` — how it is drawn, and whether it can be tapped (`free` and `mine` can be) |
+| `label` | what it says; omitted, a default for the state is used (`free` → "+", `mine` → "You") |
+| anything else | travels with the cell, readable by the payload as `{{item.…}}` |
+
+`columns` names the headings; `fromHour`/`toHour` default to the hours the rows mention, and any
+hour in between with no row is still drawn, so the axis never has gaps. `dayField` (default
+`"day"`) names the field the calendar captions itself with.
+
+**A free hour is drawn as a control**, with a solid border and a `+`; `blocked` is the only state
+drawn as a faded outline. That contrast is the one a person actually needs — an empty outline for
+both makes a bookable day look identical to a day with nothing on offer, and nothing on the
+calendar then looks clickable at all.
+
+**The widget draws; the query decides.** It works out nothing about availability — each cell
+arrives already knowing whether it is on offer, because the query that answered knows who holds
+what and a layout cannot. A `blocked` cell is the shape this takes in practice: an hour that is
+free but not yours to take, which keeps its place in the column and simply stops offering
+itself.
+
+**repeat** — renders one copy of a template per item, for a set of controls the board cannot
+write out by hand because it does not know how many there will be. Items come from one of
+three places: a static array, a facade state key, or — with `source` — **whatever a service
+is saying**, which is what turns a query result into a grid of controls rather than a table
+to look at:
+
+```json
+{
+  "type": "repeat",
+  "source": { "serviceUuid": "day-grid", "path": "rows" },
+  "columns": 4,
+  "gap": 6,
+  "template": {
+    "type": "button",
+    "label": "{{item.label}}",
+    "confirm": "{{item.prompt}}",
+    "disabled": "{{item.locked}}",
+    "actions": [{
+      "type": "process",
+      "serviceUuid": "book-svc",
+      "payload": { "court": "{{item.court}}", "hour": "{{item.hour}}" }
+    }]
+  }
+}
+```
+
+`{{item}}` is the item itself and `{{item.field}}` a field of it (dotted paths allowed). A
+value that is **exactly** one of those becomes that value whole, so a number stays a number
+and an object stays an object — which is what lets the item decide a payload's values and
+not merely a label's text. A reference inside a longer string is printed into it
+(`"Court {{item.court}} at {{item.hour}}:00"`).
+
+`columns` lays the items out in a CSS grid; without it they stack in a flex column, or a row
+if `direction` is set. `items` wins where a board wrote one, so a `source` is a fallback
+rather than something that can override what was written.
+
+**Have the service return the items already decided.** One query that emits them carrying their
+own labels, their own payloads and whether they are on offer beats a facade trying to work any of
+that out — there are no conditionals in a layout, and the service is where the rules already live.
+
+For a timetable specifically, reach for **calendar** rather than a `repeat` with a column count:
+a repeat of buttons can carry the same information and still not read as a calendar.
 
 ### Source object (for read widgets)
 

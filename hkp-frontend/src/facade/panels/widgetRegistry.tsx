@@ -16,6 +16,7 @@ import { BipolarMeterRenderer } from "./renderers/BipolarMeterRenderer";
 import { LineChartRenderer } from "./renderers/LineChartRenderer";
 import { StatusIndicatorRenderer } from "./renderers/StatusIndicatorRenderer";
 import { TextRenderer } from "./renderers/TextRenderer";
+import { CalendarRenderer } from "./renderers/CalendarRenderer";
 
 export type PanelContext = {
   knobValues: Record<string, number>;
@@ -48,4 +49,5 @@ export const widgetRegistry: Record<
   "line-chart": LineChartRenderer,
   "status-indicator": StatusIndicatorRenderer,
   text: TextRenderer,
+  calendar: CalendarRenderer,
 };

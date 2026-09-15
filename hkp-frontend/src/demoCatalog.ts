@@ -190,6 +190,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     icon: "🆔",
     tags: ["Utility"],
   },
+  {
+    slug: "court-booking",
+    label: "Court Booking",
+    description:
+      "Three tennis courts as an hourly timetable: tap a free hour to take it, tap your own to give it back. Both club rules — no double booking, one hour per member per day — are unique indexes, so the database refuses what the grid would not offer.",
+    icon: "🎾",
+    tags: ["Needs Node", "SQL"],
+  },
 ];
 
 export const ALL_DEMO_TAGS = Array.from(
