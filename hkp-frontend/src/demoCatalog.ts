@@ -198,6 +198,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     icon: "🎾",
     tags: ["Needs Node", "SQL"],
   },
+  {
+    slug: "rss-aggregator",
+    label: "RSS Aggregator",
+    description:
+      "Any number of RSS or Atom feeds read as one list, newest first, with Hacker News among them. Paste a URL to subscribe; save an article and it goes into a SQL reading list that outlives the feed page it came from.",
+    icon: "📰",
+    tags: ["Needs Node", "SQL"],
+  },
 ];
 
 export const ALL_DEMO_TAGS = Array.from(

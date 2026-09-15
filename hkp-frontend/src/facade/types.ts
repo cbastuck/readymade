@@ -134,6 +134,16 @@ export type TextWidget = {
   // structure to read rather than a phrase to mention — a response body, a map
   // of headers. Strings are unaffected.
   pretty?: boolean;
+  // Makes the text a link to somewhere else, for a value that names something
+  // to open rather than something to read — a headline, a document, a result.
+  // Opens in a new tab, since the facade is the app and the target is not.
+  //
+  // An option on this widget rather than a widget of its own: what is rendered
+  // is still whatever a service is saying, and a board that turns out not to
+  // have an address to open drops one field instead of changing widgets. It
+  // takes an item reference like any other value, which is what lets a repeat
+  // over a list of things give each one its own destination.
+  href?: string;
 };
 
 export type ButtonWidget = {
@@ -441,7 +451,17 @@ export type LayoutContainer = {
   // state key; an object or array reports its size, anything else its text.
   summary?: FacadeWidgetSource | FacadeStateRef;
   gap?: number;
+  // Room inside the container, on both axes.
   padding?: number;
+  // Room on one axis only, overriding `padding` there — so a column can have
+  // room at its sides without pushing its first widget down from the panel's
+  // title, and a row can be inset from the edge without gaining height.
+  //
+  // Two fields rather than four sides: the pair is what a layout actually asks
+  // for, and a board that needs one side alone is describing a gap between two
+  // things, which is what `gap` is for.
+  paddingX?: number;
+  paddingY?: number;
   align?: string; // alignItems
   justify?: string; // justifyContent
   wrap?: boolean;
