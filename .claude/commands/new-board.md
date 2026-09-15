@@ -316,7 +316,28 @@ than the dimmed control does. Both fields are ordinary values, so inside a `repe
 can come from the item.
 
 A button may instead carry an `actions` array, which is where the things a button
-does that are not "configure one service" live. A **board action** names no service
+does that are not "configure one service" live. A **set-state action** with a written
+`value` is how a button *picks* something rather than acting on it — the choice goes into
+facade state, where the panel's other widgets read it:
+
+```json
+{
+  "type": "button",
+  "label": "{{item.label}}",
+  "actions": [
+    { "type": "set-state", "key": "poll", "value": "{{item.name}}" },
+    { "type": "process", "serviceUuid": "open-poll", "payload": { "poll": "{{item.name}}" } }
+  ]
+}
+```
+
+Written rather than read off the widget, because a button has no value of its own: a
+`repeat` over a list of things could otherwise be rendered and never picked from. Pass the
+choice to the actions beside it as the item reference, not as `{ "$state": … }` — the state
+lands after the pass they run in, so a reference there would still send the *previous*
+choice.
+
+A **board action** names no service
 at all — its subject is the board, and what it does is decided by the host showing
 the facade, not by the board:
 

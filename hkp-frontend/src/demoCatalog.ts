@@ -206,6 +206,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     icon: "📰",
     tags: ["Needs Node", "SQL"],
   },
+  {
+    slug: "meeting-poll",
+    label: "Meeting Poll",
+    description:
+      "Dates for a meeting, answered by everyone coming: the organiser puts times up, each person says which ones work \u2014 none, one or all of them. Who may propose a date and who may answer at all are triggers and indexes, so the database turns down what the page would not offer, and says why.",
+    icon: "🗳️",
+    tags: ["Needs Node", "SQL"],
+  },
 ];
 
 export const ALL_DEMO_TAGS = Array.from(

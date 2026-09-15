@@ -142,6 +142,27 @@ already have been set up by an earlier run.
 Any one `sql` service on the board can carry the schema; the rest see the tables
 it created.
 
+### Rules belong in it
+
+A constraint is worth more than the `WHERE` clause that would have avoided
+breaking it: a statement that declines to act is indistinguishable from one that
+had nothing to do, while a refused one says so. Anything that goes wrong is
+reported as `{ error }`, so a facade reading that field shows the reason without
+the board restating the rule:
+
+```sql
+CREATE TRIGGER IF NOT EXISTS the_organiser_puts_up_the_dates
+BEFORE INSERT ON option
+WHEN NEW.proposedBy IS NOT (SELECT organiser FROM poll WHERE name = NEW.poll)
+BEGIN
+  SELECT RAISE(ABORT, 'only the person who called the meeting can put up a date');
+END;
+```
+
+A unique index does the same for the rules it can state, and it holds where a
+check in the board cannot: two people acting at once are two statements, and
+only one of them can be first.
+
 ---
 
 ## Configuration

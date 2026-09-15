@@ -97,7 +97,10 @@ export async function executeActions({
         applyInput(withState, value),
       );
     } else if (act.type === "set-state") {
-      setState(act.key, value);
+      // A written value wins over the widget's own, and `undefined` written on
+      // purpose is still a value — which is why the field's presence decides
+      // rather than its content.
+      setState(act.key, "value" in act ? act.value : value);
     } else if (act.type === "board") {
       if (act.action === "partner-board-qr") {
         boardActions?.showPartnerBoardQr();
