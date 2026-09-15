@@ -26,6 +26,7 @@ import httpClientBoard from "../boards/http-client-demo-board.json";
 import httpClientBrowserBoard from "../boards/http-client-browser-demo-board.json";
 import mountedEndpointBoard from "../boards/mounted-endpoint-demo-board.json";
 import uuidGeneratorBoard from "../boards/uuid-generator-demo-board.json";
+import courtBookingBoard from "../boards/court-booking-demo-board.json";
 
 const REGISTRY: Record<string, BoardDescriptor> = {
   "alpaca-markets": alpacaBoard as unknown as BoardDescriptor,
@@ -54,6 +55,7 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   "http-client-browser": httpClientBrowserBoard as unknown as BoardDescriptor,
   "mounted-endpoint": mountedEndpointBoard as unknown as BoardDescriptor,
   "uuid-generator": uuidGeneratorBoard as unknown as BoardDescriptor,
+  "court-booking": courtBookingBoard as unknown as BoardDescriptor,
 };
 
 export function findDemoBoard(slug: string): BoardDescriptor | undefined {

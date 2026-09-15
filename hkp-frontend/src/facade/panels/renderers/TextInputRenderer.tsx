@@ -12,7 +12,7 @@ export function TextInputRenderer({
   boardContext,
 }: WidgetRendererProps<TextInputWidget>) {
   const submitPress = usePressFeedback("primary");
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(widget.defaultValue ?? "");
   const [vaultResolved, setVaultResolved] = useState<string | null>(null);
   const autoSubmitted = useRef(false);
   const { getSecret } = useVault();

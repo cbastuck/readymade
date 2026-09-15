@@ -1,0 +1,207 @@
+{
+  "boardName": "Court Booking",
+  "description": "Three courts as an hourly calendar from 07:00 to 22:00, one hour per member per day. Both club rules are unique indexes rather than board logic, so the database refuses a double booking even when two members tap the same slot at once. One query returns the day as cells that already know what they are; the calendar widget draws them.",
+  "runtimes": [
+    {
+      "id": "club",
+      "name": "Club",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "club": [
+      {
+        "uuid": "give-back",
+        "serviceId": "sql",
+        "serviceName": "Give an hour back",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "tennis",
+          "schema": "CREATE TABLE IF NOT EXISTS booking (\n  id       INTEGER PRIMARY KEY,\n  court    INTEGER NOT NULL,\n  day      TEXT    NOT NULL,\n  hour     INTEGER NOT NULL,\n  member   TEXT    NOT NULL,\n  created  TEXT    NOT NULL DEFAULT (datetime('now'))\n);\n-- A court-hour belongs to one member.\nCREATE UNIQUE INDEX IF NOT EXISTS one_per_slot\n  ON booking(court, day, hour);\n-- A member holds one hour a day, across all three courts.\nCREATE UNIQUE INDEX IF NOT EXISTS one_per_member_day\n  ON booking(member, day);",
+          "statement": "DELETE FROM booking\n WHERE $state = 'mine'\n   AND day    = date('now','localtime', $dayOffset || ' days')\n   AND court  = $court\n   AND hour   = $hour\n   AND member = $member"
+        }
+      },
+      {
+        "uuid": "take-hour",
+        "serviceId": "sql",
+        "serviceName": "Take an hour",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "tennis",
+          "statement": "INSERT INTO booking (court, day, hour, member)\nSELECT $court, date('now','localtime', $dayOffset || ' days'), $hour, $member\n WHERE $state = 'free'\n   AND $member <> ''\n   AND $dayOffset BETWEEN 0 AND 7\n   AND $court BETWEEN 1 AND 3\n   AND $hour BETWEEN 7 AND 21\n   AND NOT EXISTS (\n     SELECT 1 FROM booking taken\n      WHERE taken.day = date('now','localtime', $dayOffset || ' days') AND taken.court = $court AND taken.hour = $hour\n   )\n   AND NOT EXISTS (\n     SELECT 1 FROM booking already\n      WHERE already.day = date('now','localtime', $dayOffset || ' days') AND already.member = $member\n   )"
+        }
+      },
+      {
+        "uuid": "day-grid",
+        "serviceId": "sql",
+        "serviceName": "The day",
+        "state": {
+          "mode": "query",
+          "database": "tennis",
+          "schema": "CREATE TABLE IF NOT EXISTS booking (\n  id       INTEGER PRIMARY KEY,\n  court    INTEGER NOT NULL,\n  day      TEXT    NOT NULL,\n  hour     INTEGER NOT NULL,\n  member   TEXT    NOT NULL,\n  created  TEXT    NOT NULL DEFAULT (datetime('now'))\n);\n-- A court-hour belongs to one member.\nCREATE UNIQUE INDEX IF NOT EXISTS one_per_slot\n  ON booking(court, day, hour);\n-- A member holds one hour a day, across all three courts.\nCREATE UNIQUE INDEX IF NOT EXISTS one_per_member_day\n  ON booking(member, day);",
+          "statement": "WITH\n  hours(hour)   AS (VALUES (7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17),(18),(19),(20),(21)),\n  courts(court) AS (VALUES (1),(2),(3)),\n  shown(day)    AS (SELECT date('now','localtime', $dayOffset || ' days')),\n  held(n)       AS (SELECT count(*) FROM booking, shown\n                     WHERE booking.day = shown.day AND booking.member = $member)\nSELECT\n  shown.day    AS day,\n  $dayOffset   AS dayOffset,\n  courts.court AS column,\n  hours.hour   AS hour,\n  CASE\n    WHEN b.member = $member   THEN 'mine'\n    WHEN b.member IS NOT NULL THEN 'taken'\n    WHEN b.member IS NULL AND held.n = 0 AND $member <> ''               THEN 'free'\n    ELSE 'blocked'\n  END AS state,\n  CASE\n    WHEN b.member = $member   THEN 'You'\n    WHEN b.member IS NOT NULL THEN b.member\n    ELSE ''\n  END AS label,\n  CASE\n    WHEN b.member = $member\n      THEN 'Give back your hour on court ' || courts.court || ' at ' || printf('%02d:00', hours.hour) || ' on ' || shown.day || '?'\n    WHEN b.member IS NULL AND held.n = 0 AND $member <> ''\n      THEN 'Book court ' || courts.court || ' at ' || printf('%02d:00', hours.hour) || ' on ' || shown.day || '?'\n    ELSE ''\n  END AS prompt\nFROM hours\nCROSS JOIN courts\nCROSS JOIN shown\nCROSS JOIN held\nLEFT JOIN booking b\n       ON b.day   = shown.day\n      AND b.court = courts.court\n      AND b.hour  = hours.hour\nORDER BY hours.hour, courts.court"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "state": {
+      "member": "you@club.example"
+    },
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "give-back",
+        "payload": {
+          "state": "none",
+          "dayOffset": 0,
+          "member": {
+            "$state": "member"
+          }
+        }
+      }
+    ],
+    "panels": [
+      {
+        "id": "booking",
+        "title": "Court booking",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Tap a + to take that hour. Change who you are booking as to see the same day from another member's side.",
+              "tone": "muted"
+            },
+            {
+              "type": "text-input",
+              "label": "Booking as",
+              "placeholder": "member@example.com",
+              "submitLabel": "Use this email",
+              "actions": [
+                {
+                  "type": "set-state",
+                  "key": "member"
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "give-back",
+                  "payload": {
+                    "state": "none",
+                    "dayOffset": 0,
+                    "member": "$$input"
+                  }
+                }
+              ],
+              "defaultValue": "you@club.example"
+            },
+            {
+              "type": "repeat",
+              "items": [
+                {
+                  "off": 0,
+                  "label": "Today"
+                },
+                {
+                  "off": 1,
+                  "label": "+1"
+                },
+                {
+                  "off": 2,
+                  "label": "+2"
+                },
+                {
+                  "off": 3,
+                  "label": "+3"
+                },
+                {
+                  "off": 4,
+                  "label": "+4"
+                },
+                {
+                  "off": 5,
+                  "label": "+5"
+                },
+                {
+                  "off": 6,
+                  "label": "+6"
+                },
+                {
+                  "off": 7,
+                  "label": "+7"
+                }
+              ],
+              "columns": 8,
+              "gap": 6,
+              "template": {
+                "type": "button",
+                "label": "{{item.label}}",
+                "actions": [
+                  {
+                    "type": "process",
+                    "serviceUuid": "give-back",
+                    "payload": {
+                      "state": "none",
+                      "dayOffset": "{{item.off}}",
+                      "member": {
+                        "$state": "member"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "calendar",
+              "source": {
+                "serviceUuid": "day-grid",
+                "path": "rows"
+              },
+              "columns": [
+                "Court 1",
+                "Court 2",
+                "Court 3"
+              ],
+              "fromHour": 7,
+              "toHour": 21,
+              "rowHeight": 32,
+              "confirm": "{{item.prompt}}",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "give-back",
+                  "payload": {
+                    "state": "{{item.state}}",
+                    "dayOffset": "{{item.dayOffset}}",
+                    "court": "{{item.column}}",
+                    "hour": "{{item.hour}}",
+                    "member": {
+                      "$state": "member"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Problem",
+              "source": {
+                "serviceUuid": "take-hour",
+                "path": "error"
+              },
+              "tone": "error"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

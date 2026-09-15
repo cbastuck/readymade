@@ -67,6 +67,37 @@ data that looks right until the day it doesn't.
 
 ---
 
+## What travels onward
+
+By default the result travels: a service asked a question hands on its answer,
+and the next service reads rows.
+
+`emit: "input"` passes the **input through untouched** instead. The statement
+still runs and still reports what it did — it simply stays out of the way of the
+flow. That is what lets several statements act on **one request** in turn:
+
+```json
+[
+  { "uuid": "give-back", "state": { "mode": "run",   "emit": "input", "statement": "DELETE FROM booking WHERE $intent = 'cancel' AND …" } },
+  { "uuid": "take",      "state": { "mode": "run",   "emit": "input", "statement": "INSERT INTO booking … WHERE $intent = 'book' AND …" } },
+  { "uuid": "the-day",   "state": { "mode": "query",                  "statement": "SELECT … FROM booking WHERE day = $day" } }
+]
+```
+
+One process call on `give-back` runs all three in the runtime's order. Each names
+its parameters out of the same request, and the last one re-reads what the first
+two changed — so the board gets the state *after* the change without a second
+call, and without a refresh that could race the write.
+
+Without it the second statement would be handed the first one's
+`{ changes, lastInsertRowid }`, find none of the names it asked for, and bind
+them all to `NULL`.
+
+**Reporting is not passing on.** The statement's own result is notified either
+way, so a service's panel shows what it did whatever the board does with it.
+
+---
+
 ## Parameters come from the input
 
 A board writes **no parameter list**. The statement names what it needs, and
@@ -118,6 +149,7 @@ it created.
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `mode` | `string` | `"query"` | One of the three above |
+| `emit` | `string` | `"result"` | `"result"` passes the answer on, `"input"` passes the request through |
 | `statement` | `string` | `""` | The SQL to run |
 | `schema` | `string` | `""` | `CREATE TABLE …` applied once per board |
 | `lastCount` | `number` | — | Read-only: rows returned, or rows changed |
