@@ -106,6 +106,57 @@ describe("FacadeChrome", () => {
     expect(bar().style.visibility).toBe("hidden");
   });
 
+  it("brings it out on Escape too, so the board is reachable by keyboard", () => {
+    storeMode("facade");
+    renderChrome(withFacade);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(bar().style.visibility).toBe("visible");
+  });
+
+  it("claims the presses it acts on, so a native shell does not beep", () => {
+    storeMode("facade");
+    renderChrome(withFacade);
+
+    // fireEvent hands back what dispatchEvent did: false once the default
+    // was prevented, which is the signal a native shell reads as handled.
+    const claimed = () => !fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(claimed()).toBe(true);
+    expect(bar().style.visibility).toBe("visible");
+    expect(claimed()).toBe(true);
+    expect(bar().style.visibility).toBe("hidden");
+
+    // Passed over rather than claimed: this one belongs to the dialog.
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    document.body.appendChild(dialog);
+    expect(claimed()).toBe(false);
+    dialog.remove();
+  });
+
+  it("leaves Escape to a dialog or menu that is already open", () => {
+    storeMode("facade");
+    renderChrome(withFacade);
+
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    document.body.appendChild(dialog);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(bar().style.visibility).toBe("hidden");
+
+    // Once it has closed, the next press reaches the chrome.
+    dialog.remove();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(bar().style.visibility).toBe("visible");
+  });
+
+  it("ignores the Escape that ends an input method's composition", () => {
+    storeMode("facade");
+    renderChrome(withFacade);
+    fireEvent.keyDown(document, { key: "Escape", isComposing: true });
+    expect(bar().style.visibility).toBe("hidden");
+  });
+
   it("stays out for a pointer on the bar itself", () => {
     storeMode("facade");
     renderChrome(withFacade);

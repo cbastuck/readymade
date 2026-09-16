@@ -27,14 +27,19 @@
  * edge, so a control that does end up underneath is dimmed rather than hidden
  * and the mark stays readable over whatever lands there.
  *
- * What puts it away again is a pointer or a focus landing outside it, or
- * Escape — not the pointer leaving its bounds. Nearly everything in that bar
- * opens a menu, and those menus are portalled to the document rather than
- * drawn inside the bar, so a pointer on its way to a menu item is a pointer
- * outside the bar: dismissing on exit would retract it out from under the
- * menu it just opened. Reading a portalled menu as part of the bar makes one
- * rule that holds for a mouse and for a finger alike, which is also the rule
- * a touch host would have needed on its own.
+ * What puts it away again is a pointer or a focus landing outside it — not
+ * the pointer leaving its bounds. Nearly everything in that bar opens a menu,
+ * and those menus are portalled to the document rather than drawn inside the
+ * bar, so a pointer on its way to a menu item is a pointer outside the bar:
+ * dismissing on exit would retract it out from under the menu it just opened.
+ * Reading a portalled menu as part of the bar makes one rule that holds for a
+ * mouse and for a finger alike, which is also the rule a touch host would
+ * have needed on its own.
+ *
+ * Escape works in both directions. A key that only put the bar away would
+ * leave the way back to the board resting on finding a small mark in a
+ * corner, and both directions are the same act: what Escape dismisses is
+ * whichever of the two states is currently in the way.
  */
 import { ReactNode, useEffect, useRef, useState } from "react";
 
@@ -88,6 +93,18 @@ function isInsideChrome(bar: HTMLElement | null, target: EventTarget | null) {
 }
 
 /**
+ * Whether something on screen is already going to act on Escape.
+ *
+ * An open dialog or menu closes on this key, and a person pressing it means
+ * that one thing rather than the chrome behind it.
+ */
+function escapeIsSpokenFor() {
+  return !!document.querySelector(
+    "[data-radix-popper-content-wrapper],[data-radix-portal],[role='dialog'],[role='menu']",
+  );
+}
+
+/**
  * Wraps the window's top bar so it can retract while the facade is the app.
  *
  * A host that mounts no facade view provider, or a board that is not in that
@@ -117,21 +134,50 @@ export default function FacadeChrome({ children }: { children: ReactNode }) {
         setRevealed(false);
       }
     };
-    const onKeyDown = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") {
-        setRevealed(false);
-      }
-    };
     // Captured, so a handler that stops the event on its way up — a facade
     // widget, a service panel — cannot leave the bar standing.
     document.addEventListener("pointerdown", dismiss, true);
     document.addEventListener("focusin", dismiss, true);
-    document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("pointerdown", dismiss, true);
       document.removeEventListener("focusin", dismiss, true);
-      document.removeEventListener("keydown", onKeyDown);
     };
+  }, [retracted, revealed]);
+
+  // Escape works in both directions, so the chrome has a way in and out that
+  // does not depend on finding a small mark in a corner — which is the state
+  // a person is in when they have been using the facade and now want the
+  // board. It reads as a dismissal either way: what it puts away is the
+  // retracted state itself.
+  useEffect(() => {
+    if (!retracted) {
+      return;
+    }
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape" || ev.isComposing) {
+        return;
+      }
+      if (revealed) {
+        // Said to be handled, or the host beeps: a key event that reaches a
+        // native shell with its default intact is one nothing claimed, and
+        // macOS answers that with the no-responder sound. Only the presses
+        // actually acted on are claimed — the ones passed over below belong
+        // to whatever else is listening.
+        ev.preventDefault();
+        setRevealed(false);
+        return;
+      }
+      // Something on the facade is already holding this key — a dialog, a
+      // menu, a select. That has the first claim on it, and a second press
+      // once it has closed reaches here.
+      if (escapeIsSpokenFor()) {
+        return;
+      }
+      ev.preventDefault();
+      setRevealed(true);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [retracted, revealed]);
 
   if (!retracted) {
