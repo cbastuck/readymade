@@ -209,3 +209,44 @@ describe("a button that asks first", () => {
     expect(processed).toEqual([{ uuid: "grid", payload: {} }]);
   });
 });
+
+/**
+ * Alternating backgrounds, so a list of items reads as separate things.
+ *
+ * A repeat whose template is more than one line — a title, a byline, a summary —
+ * runs together on screen: nothing says where one item ends and the next begins
+ * except a gap that looks like the gaps inside an item. A band behind every
+ * second one is what separates them, and it belongs to the repeat rather than
+ * the template because which of the two colours an item sits on is a fact about
+ * its position in the list, not about the item.
+ */
+describe("striped items", () => {
+  const striped = {
+    type: "repeat",
+    items: [{ label: "one" }, { label: "two" }, { label: "three" }],
+    stripe: { even: "rgb(10, 10, 10)", odd: "rgb(20, 20, 20)", padding: 8, radius: 6 },
+    template: { type: "text", placeholder: "{{item.label}}" },
+  } as unknown as LayoutItem;
+
+  it("alternates the two colours, starting with even", () => {
+    const { container } = renderNode(striped);
+    const bands = Array.from(container.firstElementChild!.children) as HTMLElement[];
+    expect(bands.map((band) => band.style.background)).toEqual([
+      "rgb(10, 10, 10)",
+      "rgb(20, 20, 20)",
+      "rgb(10, 10, 10)",
+    ]);
+    expect(bands[0].style.padding).toBe("8px");
+    expect(bands[0].style.borderRadius).toBe("6px");
+  });
+
+  it("wraps nothing extra around an unstriped repeat", () => {
+    const { container } = renderNode({
+      type: "repeat",
+      items: [{ label: "one" }],
+      template: { type: "text", placeholder: "{{item.label}}" },
+    } as unknown as LayoutItem);
+    const first = container.firstElementChild!.firstElementChild as HTMLElement;
+    expect(first.style.background).toBe("");
+  });
+});

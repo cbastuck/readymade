@@ -23,6 +23,7 @@ import {
   useSelection,
 } from "../../selection/SelectionContext";
 import FacadeViewControls from "../../facade/FacadeViewControls";
+import FacadeChrome, { useChromeRetracted } from "../../facade/FacadeChrome";
 
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -41,23 +42,32 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
         >
           <div
             className="w-full h-full flex flex-col"
-            style={{ width: "100%", background: "var(--bg-app, #fafafa)" }}
+            style={{
+              width: "100%",
+              background: "var(--bg-app, #fafafa)",
+              // What the retracted bar and its logo are placed against: while
+              // the facade is the app they are painted over it rather than
+              // taking a row of their own.
+              position: "relative",
+            }}
           >
-            <Toolbar
-              isCompact={props.compact}
-              menuItemFactory={props.menuItemFactory}
-              hideNavigation={props.hideNavigation}
-              menuSlot={props.menuSlot}
-              logoSlot={props.logoSlot}
-              actionsSlot={
-                <>
-                  <FacadeViewControls />
-                  <OverviewToolbarButton />
-                  <DeployMenu />
-                </>
-              }
-              includeNavigationLinks={!props.hideNavigation}
-            />
+            <FacadeChrome>
+              <Toolbar
+                isCompact={props.compact}
+                menuItemFactory={props.menuItemFactory}
+                hideNavigation={props.hideNavigation}
+                menuSlot={props.menuSlot}
+                logoSlot={props.logoSlot}
+                actionsSlot={
+                  <>
+                    <FacadeViewControls />
+                    <OverviewToolbarButton />
+                    <DeployMenu />
+                  </>
+                }
+                includeNavigationLinks={!props.hideNavigation}
+              />
+            </FacadeChrome>
 
             <ShareQRCodeDialog
               isOpen={props.showShareBoardQRCodeURL !== null}
@@ -101,13 +111,25 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
               </NestedNavProvider>
             </div>
 
-            <Footer />
+            <ChromeFooter />
             {props.children || null}
           </div>
         </FacadeViewProvider>
       </OverviewProvider>
     </SelectionProvider>
   );
+}
+
+/**
+ * The copyright strip, unless the facade is the app.
+ *
+ * Its own component because the state that decides this is provided by this
+ * file's own render, and only something mounted inside that provider can read
+ * it. Retracting the bar and leaving the footer would trade one strip of
+ * chrome for another.
+ */
+function ChromeFooter() {
+  return useChromeRetracted() ? null : <Footer />;
 }
 
 /**
@@ -138,7 +160,9 @@ function BoardCanvas({
 
   return (
     <div
-      className={isRtClassDragOver ? "hkp-board-runtime-drop-active" : undefined}
+      className={
+        isRtClassDragOver ? "hkp-board-runtime-drop-active" : undefined
+      }
       ref={boardCanvasRef}
       style={{
         flex: 1,

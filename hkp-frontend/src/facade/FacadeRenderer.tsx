@@ -9,6 +9,7 @@ import { FacadeNotices } from "./FacadeNotices";
 import { FacadeTabBar } from "./FacadeTabBar";
 import { currentFace, defaultFaceId, resolveFaces } from "./tabs";
 import { useFacadeView } from "./FacadeViewContext";
+import { useChromeRetracted } from "./FacadeChrome";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
 
 type FacadeRendererProps = {
@@ -24,6 +25,13 @@ export default function FacadeRenderer({
   boardName,
   runtimeContent,
 }: FacadeRendererProps) {
+  // The copyright strip is fixed to the bottom of the window and paints over
+  // whatever is under it, so the facade keeps clear of it — except where the
+  // chrome has retracted and there is no strip to keep clear of, which is the
+  // one state where those pixels are the difference between a facade that
+  // fills the window and one that stops just short of it.
+  const footerClearance = useChromeRetracted() ? 0 : 36;
+
   // ── facade state store ───────────────────────────────────────────────────
   const [facadeState, setFacadeStateRaw] = useState<Record<string, unknown>>(
     () => facade.state ?? {},
@@ -183,7 +191,10 @@ export default function FacadeRenderer({
     >
       <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}
-        <FacadeNotices notices={draftFacade.notices} boardContext={boardContext} />
+        <FacadeNotices
+          notices={draftFacade.notices}
+          boardContext={boardContext}
+        />
         <div
           style={{
             display: "flex",
@@ -192,7 +203,7 @@ export default function FacadeRenderer({
             background: "hsl(var(--background))",
             overflow: "hidden",
             fontFamily: "'Recursive', monospace",
-            paddingBottom: "36px",
+            paddingBottom: footerClearance,
           }}
         >
           {/* The board, with the editor alongside it */}

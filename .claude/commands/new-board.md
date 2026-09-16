@@ -683,6 +683,20 @@ not merely a label's text. A reference inside a longer string is printed into it
 if `direction` is set. `items` wins where a board wrote one, so a `source` is a fallback
 rather than something that can override what was written.
 
+`stripe` puts alternating backgrounds behind the items, for a list whose template is more
+than one line and would otherwise run together — where one article ends and the next begins
+is not something a gap can say when the item has gaps of its own:
+
+```json
+"gap": 0,
+"stripe": { "even": "rgba(127,127,127,0.10)", "odd": "rgba(127,127,127,0.03)", "padding": 10, "radius": 6 }
+```
+
+`even` is the first item and every second one after it. Use translucent colours: they tint
+whatever the panel is drawn on and so hold up in a light and a dark theme alike, where a
+fixed colour can only suit one of them. The bands are meant to touch, so set `gap` to 0 and
+let `padding` do the spacing.
+
 **Have the service return the items already decided.** One query that emits them carrying their
 own labels, their own payloads and whether they are on offer beats a facade trying to work any of
 that out — there are no conditionals in a layout, and the service is where the rules already live.

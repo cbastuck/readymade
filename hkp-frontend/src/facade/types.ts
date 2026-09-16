@@ -367,6 +367,26 @@ export type RepeatWidget = {
   direction?: "row" | "column";
   gap?: number;
   wrap?: boolean;
+  // Alternating backgrounds behind the items, so a list reads as a set of
+  // separate things rather than one run of text. `even` is the first item and
+  // every second one after it; `odd` the ones between. Either may be left out,
+  // which tints only the other.
+  //
+  // Translucent colours (rgba) are what a facade wants here: they tint whatever
+  // the panel is drawn on, and so hold up in a light and a dark theme alike,
+  // where a fixed colour can only suit one of them.
+  //
+  // `padding` is room inside a band — without it the colour hugs the text —
+  // and `radius` rounds its corners. Bands are meant to touch, so a striped
+  // repeat usually sets `gap` to 0 and spaces its items with this padding.
+  stripe?: RepeatStripe;
+};
+
+export type RepeatStripe = {
+  even?: string;
+  odd?: string;
+  padding?: number;
+  radius?: number;
 };
 
 // A day as a calendar: the hours down the side, one column per thing being

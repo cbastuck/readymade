@@ -152,7 +152,7 @@
                 "serviceUuid": "feeds",
                 "path": "items"
               },
-              "gap": 12,
+              "gap": 0,
               "template": {
                 "direction": "column",
                 "gap": 2,
@@ -203,6 +203,12 @@
                     "fontSize": 12
                   }
                 ]
+              },
+              "stripe": {
+                "even": "rgba(127,127,127,0.10)",
+                "odd": "rgba(127,127,127,0.03)",
+                "padding": 10,
+                "radius": 6
               }
             }
           ],

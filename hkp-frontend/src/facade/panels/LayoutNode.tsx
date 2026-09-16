@@ -109,17 +109,38 @@ export function LayoutNode({
           flexWrap: (repeat.wrap ? "wrap" : undefined) as "wrap" | undefined,
         };
 
+    const stripe = repeat.stripe;
+
     return (
       <div style={containerStyle}>
         {items.map((it, i) => {
           const resolved = interpolateTemplate(repeat.template, it) as LayoutItem;
-          return (
+          const node = (
             <LayoutNode
               key={i}
               item={resolved}
               boardContext={boardContext}
               panelContext={panelContext}
             />
+          );
+          if (!stripe) {
+            return node;
+          }
+          // The band is a wrapper rather than something pushed into the
+          // template: the template describes one item, and which of two
+          // colours it sits on is a fact about its position in the list.
+          return (
+            <div
+              key={i}
+              style={{
+                background: i % 2 === 0 ? stripe.even : stripe.odd,
+                padding: stripe.padding,
+                borderRadius: stripe.radius,
+                minWidth: 0,
+              }}
+            >
+              {node}
+            </div>
           );
         })}
       </div>
