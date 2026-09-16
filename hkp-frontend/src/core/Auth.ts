@@ -36,3 +36,23 @@ export function processToken(incomingToken: string) {
     ...rest,
   };
 }
+
+/**
+ * Every claim in an id_token, without judging whether the token is still valid.
+ *
+ * `processToken` is the session path and refuses an expired token, because a
+ * session must not be restored from one. Showing an account is the other case:
+ * what the token says about a person stays true after it expires, and a page
+ * that renders nothing but a decoding error is a worse answer than the identity
+ * plus the fact that the session has run out.
+ */
+export function claimsOf(idToken?: string): JwtPayload & Record<string, any> {
+  if (!idToken) {
+    return {};
+  }
+  try {
+    return jwtDecode<JwtPayload & Record<string, any>>(idToken);
+  } catch {
+    return {};
+  }
+}

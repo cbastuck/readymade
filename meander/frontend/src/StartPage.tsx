@@ -19,7 +19,7 @@ import { commitUrl } from "hkp-frontend/src/projectMeta";
 import { forkBoard } from "hkp-frontend/src/core/forkBoard";
 import { listCoordinatorBoards } from "hkp-frontend/src/views/cloud/coordinatorClient";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
-import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
+import { useUserProfile } from "hkp-frontend/src/core/userProfile";
 import { getBackend } from "./backend";
 import { isMeanderApp } from "./isMeanderApp";
 import { useBackendRemotes } from "./useBackendRemotes";
@@ -39,8 +39,11 @@ type Props = {
 export default function StartPage({ onRestoreBoard }: Props) {
   const { user } = useAppContext();
   const cloudLogin = useCloudLogin();
-  const cloudLogout = useCloudLogout();
   const navigate = useNavigate();
+  // The display name someone set on the account page, so the avatar here and
+  // the one in the playground's toolbar show the same initials.
+  const profile = useUserProfile(user?.userId);
+  const accountName = profile.displayName || user?.username;
   const remotes = useBackendRemotes();
   const [lastSessionName, setLastSessionName] = useState<string | null>(null);
   const [inApp, setInApp] = useState(false);
@@ -356,15 +359,13 @@ export default function StartPage({ onRestoreBoard }: Props) {
       badge={currentVersion.version}
       badgeDetail={currentVersion.hash}
       badgeDetailHref={commitUrl(currentVersion.hash)}
-      initials={initialsOf(user?.username)}
+      initials={initialsOf(accountName)}
       avatarTitle={
-        user
-          ? user.username
-            ? `Log out (${user.username})`
-            : "Log out"
-          : "Log in"
+        user ? (accountName ? `Account (${accountName})` : "Account") : "Log in"
       }
-      onAvatarClick={() => void (user ? cloudLogout() : cloudLogin())}
+      onAvatarClick={() =>
+        user ? navigate("/profile") : void cloudLogin()
+      }
       menuSlot={<MeanderAppMenu />}
     />
   );
