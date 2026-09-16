@@ -211,3 +211,79 @@ describe("what a cell's state decides", () => {
     expect(processed).toEqual([]);
   });
 });
+
+/**
+ * Ruled hours.
+ *
+ * Three columns wide, the hard thing is not finding a free cell but staying on
+ * the right hour while crossing to it. A band behind every second hour is what
+ * a wide table has always done about that, and it runs the full width of the
+ * row — the time gutter included — because the gutter is where the eye starts.
+ *
+ * The cells keep the colours their states give them, so the stripe is what
+ * shows *between* them. What is pinned here is that adding one does not move
+ * anything: the space between two hours becomes padding inside the bands, which
+ * is what lets them touch without the rows growing.
+ */
+describe("striped hours", () => {
+  /** The hour rows, in order — the band is the row itself. */
+  function hourRows(container: HTMLElement): HTMLElement[] {
+    return Array.from(
+      container.querySelectorAll<HTMLElement>("div[style*='grid-template-columns']"),
+      // The headings share the row template; only hours carry a clock.
+    ).filter((row) => /\d\d:00/.test(row.textContent ?? ""));
+  }
+
+  it("alternates the two colours down the hours, starting with the first", () => {
+    const { container } = show({
+      fromHour: 9,
+      toHour: 12,
+      stripe: { even: "rgb(10, 10, 10)", odd: "rgb(20, 20, 20)" },
+    });
+    expect(hourRows(container).map((row) => row.style.background)).toEqual([
+      "rgb(10, 10, 10)",
+      "rgb(20, 20, 20)",
+      "rgb(10, 10, 10)",
+      "rgb(20, 20, 20)",
+    ]);
+  });
+
+  it("keeps the rows where they were, moving the gap inside the band", () => {
+    const { container } = show({ stripe: { even: "rgb(10, 10, 10)" } });
+    const row = hourRows(container)[0];
+    expect(row.style.paddingTop).toBe("2px");
+    expect(row.style.paddingBottom).toBe("2px");
+    expect((row.parentElement as HTMLElement).style.gap).toBe("0");
+  });
+
+  it("lets the band through a free hour, and keeps the filled states filled", () => {
+    show({ stripe: { even: "rgb(10, 10, 10)" } });
+    const by = (said: string) =>
+      screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("aria-label")?.includes(said))[0];
+    // Free is the state that stops painting over the row it sits on; the states
+    // a person reads as not-free keep the filling that says so.
+    expect(by("free").style.backgroundColor).toBe("transparent");
+    expect(by("taken").style.backgroundColor).toBe("hsl(var(--muted))");
+    expect(by("booked by you").style.backgroundColor).toBe(
+      "var(--hkp-accent, hsl(var(--primary)))",
+    );
+  });
+
+  it("paints a free hour itself where there is no band to show through", () => {
+    show();
+    const free = screen
+      .getAllByRole("button")
+      .filter((b) => b.getAttribute("aria-label")?.includes("free"))[0];
+    expect(free.style.backgroundColor).toBe("hsl(var(--card))");
+  });
+
+  it("rules nothing, and keeps its own spacing, without a stripe", () => {
+    const { container } = show();
+    const row = hourRows(container)[0];
+    expect(row.style.background).toBe("");
+    expect(row.style.paddingTop).toBe("");
+    expect((row.parentElement as HTMLElement).style.gap).toBe("4px");
+  });
+});

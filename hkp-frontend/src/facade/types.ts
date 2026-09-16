@@ -368,13 +368,7 @@ export type RepeatWidget = {
   gap?: number;
   wrap?: boolean;
   // Alternating backgrounds behind the items, so a list reads as a set of
-  // separate things rather than one run of text. `even` is the first item and
-  // every second one after it; `odd` the ones between. Either may be left out,
-  // which tints only the other.
-  //
-  // Translucent colours (rgba) are what a facade wants here: they tint whatever
-  // the panel is drawn on, and so hold up in a light and a dark theme alike,
-  // where a fixed colour can only suit one of them.
+  // separate things rather than one run of text.
   //
   // `padding` is room inside a band — without it the colour hugs the text —
   // and `radius` rounds its corners. Bands are meant to touch, so a striped
@@ -382,9 +376,19 @@ export type RepeatWidget = {
   stripe?: RepeatStripe;
 };
 
-export type RepeatStripe = {
+// The two colours of a zebra: `even` is the first row and every second one
+// after it, `odd` the ones between. Either may be left out, which tints only
+// the other.
+//
+// Translucent colours (rgba) are what a facade wants here: they tint whatever
+// they are drawn on, and so hold up in a light and a dark theme alike, where a
+// fixed colour can only suit one of them.
+export type StripeColors = {
   even?: string;
   odd?: string;
+};
+
+export type RepeatStripe = StripeColors & {
   padding?: number;
   radius?: number;
 };
@@ -423,6 +427,14 @@ export type CalendarWidget = {
   toHour?: number;
   // Height of one hour's row, in pixels. Default 34.
   rowHeight?: number;
+  // Alternating backgrounds behind the hours, the way a wide table is ruled:
+  // what a person does with three columns of cells is read *across* one hour,
+  // and a band is what keeps that line from drifting into the next.
+  //
+  // It runs the width of the row, and a free hour goes transparent so the band
+  // reaches across it rather than stopping at every cell. The states that are
+  // filled — taken, and yours — keep the colours that say so.
+  stripe?: StripeColors;
   // The field every row carries naming the day being drawn, shown above the
   // grid. Default "day"; set to "" for a calendar that should not caption itself.
   dayField?: string;

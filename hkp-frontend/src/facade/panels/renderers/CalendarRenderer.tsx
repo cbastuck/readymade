@@ -39,6 +39,9 @@ type Cell = {
 /** Cells that can be acted on. The rest are there to be read. */
 const TAPPABLE = new Set(["free", "mine"]);
 
+/** The space between two cells, across a row and down a column alike. */
+const ROW_GAP = 4;
+
 /**
  * What a cell says when the row did not say.
  *
@@ -87,7 +90,20 @@ function spoken(state: string, label: string): string {
   }
 }
 
-function cellColors(state: string): {
+/**
+ * How a cell is drawn.
+ *
+ * `striped` is the calendar saying its rows are ruled, which changes exactly
+ * one thing: a free hour stops painting its own background and lets the band
+ * through, so the stripe reaches across the row instead of stopping at every
+ * cell. The states that are filled stay filled — what a person needs at a
+ * glance is free from not-free, and that contrast is the filling, not the
+ * colour.
+ */
+function cellColors(
+  state: string,
+  striped: boolean,
+): {
   background: string;
   color: string;
   border: string;
@@ -123,7 +139,7 @@ function cellColors(state: string): {
       // Free: a control, and drawn like one. It is the only thing on the
       // calendar a person is being invited to do something with.
       return {
-        background: "hsl(var(--card))",
+        background: striped ? "transparent" : "hsl(var(--card))",
         color: "hsl(var(--muted-foreground))",
         border: "hsl(var(--border))",
         borderStyle: "solid",
@@ -134,16 +150,18 @@ function cellColors(state: string): {
 function Slot({
   cell,
   height,
+  striped,
   onPick,
 }: {
   cell: Cell | undefined;
   height: number;
+  striped: boolean;
   onPick: (cell: Cell) => void;
 }) {
   const [hover, setHover] = useState(false);
   const state = cell?.state ?? "blocked";
   const tappable = !!cell && TAPPABLE.has(state);
-  const colors = cellColors(state);
+  const colors = cellColors(state, striped);
   const label =
     cell?.label === undefined || cell.label === null || cell.label === ""
       ? (DEFAULT_LABEL[state] ?? "")
@@ -175,8 +193,11 @@ function Slot({
           tappable && hover
             ? "var(--hkp-accent, hsl(var(--primary)))"
             : colors.border,
+        // Over a band, hovering keeps the cell clear and answers with the ring
+        // below instead: filling it would hide the stripe, and fill it with the
+        // colour that means taken.
         backgroundColor:
-          tappable && hover && state === "free"
+          tappable && hover && state === "free" && !striped
             ? "hsl(var(--muted))"
             : colors.background,
         color: colors.color,
@@ -299,6 +320,7 @@ export function CalendarRenderer({
   }
 
   const rowHeight = widget.rowHeight ?? 34;
+  const stripe = widget.stripe;
   const dayField = widget.dayField ?? "day";
   const day = dayField ? cells[0]?.[dayField] : undefined;
   const headings = Array.from(
@@ -358,15 +380,27 @@ export function CalendarRenderer({
             ))}
           </div>
 
-          <div style={{ display: "grid", gap: 4 }}>
-            {hours.map((hour) => (
+          {/* Striped, the bands have to touch, so the space between two hours
+              moves inside them: the gap becomes padding, which leaves the
+              geometry exactly as it was and the colour unbroken. Only the
+              vertical half of it — room at the sides would shift the cells out
+              from under the headings. */}
+          <div style={{ display: "grid", gap: stripe ? 0 : ROW_GAP }}>
+            {hours.map((hour, row) => (
               <div
                 key={hour}
                 style={{
                   display: "grid",
                   gridTemplateColumns: template,
-                  gap: 4,
+                  gap: ROW_GAP,
                   alignItems: "center",
+                  ...(stripe
+                    ? {
+                        background: row % 2 === 0 ? stripe.even : stripe.odd,
+                        paddingTop: ROW_GAP / 2,
+                        paddingBottom: ROW_GAP / 2,
+                      }
+                    : {}),
                 }}
               >
                 <div
@@ -387,6 +421,7 @@ export function CalendarRenderer({
                     key={i}
                     cell={byPosition.get(`${hour}:${i + 1}`)}
                     height={rowHeight}
+                    striped={!!stripe}
                     onPick={pick}
                   />
                 ))}

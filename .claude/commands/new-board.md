@@ -636,6 +636,12 @@ Each row is one cell and names its own position and meaning:
 hour in between with no row is still drawn, so the axis never has gaps. `dayField` (default
 `"day"`) names the field the calendar captions itself with.
 
+`stripe` rules the hours the way a wide table is ruled — `{ "even": "rgba(127,127,127,0.10)",
+"odd": "rgba(127,127,127,0.03)" }` — because a day three columns wide is read *across* one hour,
+and a band is what keeps that line from drifting into the next. It runs the full width of the
+row, gutter included, and a free hour draws no background of its own so the band reaches across
+it; `taken` and `mine` keep the colours that say what they are.
+
 **A free hour is drawn as a control**, with a solid border and a `+`; `blocked` is the only state
 drawn as a faded outline. That contrast is the one a person actually needs — an empty outline for
 both makes a bookable day look identical to a day with nothing on offer, and nothing on the
@@ -695,7 +701,7 @@ is not something a gap can say when the item has gaps of its own:
 `even` is the first item and every second one after it. Use translucent colours: they tint
 whatever the panel is drawn on and so hold up in a light and a dark theme alike, where a
 fixed colour can only suit one of them. The bands are meant to touch, so set `gap` to 0 and
-let `padding` do the spacing.
+let `padding` do the spacing. A `calendar` takes the same `even`/`odd` pair for its hours.
 
 **Have the service return the items already decided.** One query that emits them carrying their
 own labels, their own payloads and whether they are on offer beats a facade trying to work any of
