@@ -230,6 +230,63 @@ named controls and displays. Add it as a `"facade"` key in the board JSON.
 
 `layout` is `"single"` (one panel fills the view) or `"columns"` (panels side-by-side).
 
+### Tabs — one board, more than one job
+
+Most boards are used by two people who are not the same person, or by the same person at
+two moments: the feeds are subscribed to once and read every day; a poll's dates are put
+up by whoever called the meeting and answered by everyone else. Controls for the other job
+are not neutral — they are in the way, and they invite a change nobody meant to make.
+
+```json
+{
+  "layout": "columns",
+  "panels": [ /* declared once, as always */ ],
+  "tabs": [
+    { "id": "read",  "title": "Read",  "panels": ["articles", "saved"] },
+    { "id": "feeds", "title": "Feeds", "panels": ["library"] }
+  ],
+  "defaultTab": "read"
+}
+```
+
+A tab is a view over the panels the facade already has: it names panel ids, and a panel is
+still declared once in `panels`. Two panels in one tab sit side by side exactly as a
+`columns` facade's panels do.
+
+- **`defaultTab` is the tab for the many, not the few.** Boards open on using, not on
+  setting up. It is not remembered between visits, so this is what every reader gets.
+- **A panel no tab names stays on screen**, above the tab bar, whichever tab is chosen —
+  for the one status strip a board always wants read.
+- Switching tabs hides a panel rather than discarding it: a half-typed field and a table's
+  rows are still there when it comes back.
+
+### Notices — say it, do not reserve room for it
+
+A row kept free for a problem the board usually does not have spends layout on nothing, and
+on the rare occasion it fills it speaks from wherever it happens to sit — which on a long
+panel is past the bottom of the screen. Declare a notice instead and it arrives as a toast,
+where the rest of the app's notifications arrive:
+
+```json
+"notices": [
+  { "source": { "serviceUuid": "take-hour", "path": "error" } },
+  {
+    "source": { "serviceUuid": "feeds", "path": "error" },
+    "tone": "info",
+    "message": "Could not read that feed — {{value}}"
+  }
+]
+```
+
+A notice reads a service the way a widget's `source` does and fires whenever that value
+arrives with something in it — so a service reporting `error: ""` on every good run can be
+watched all day without saying a word. `tone` is `"error"` by default; `message` wraps the
+value, with `{{value}}` standing for it.
+
+It never seeds from what a service already holds: a failure from before the board was open
+is not news. Point one at every service that can refuse what a person asked for — the
+writes especially, since a refused write is otherwise silent.
+
 ### LayoutItem — container or widget
 
 A **container** groups children:
@@ -660,3 +717,5 @@ import myBoard from "../../../hkp-frontend/boards/my-board.json";
 - [ ] Remote runtimes have a `url` field
 - [ ] UUIDs are descriptive and end in `-svc`
 - [ ] The board does something useful with a fresh load (no manual steps required to see it work, or clear first-run instructions in the facade)
+- [ ] Controls for setting the board up are behind their own tab, and `defaultTab` names the one people use
+- [ ] Every service that can refuse a request has a notice on it, and no panel keeps a row free for an error

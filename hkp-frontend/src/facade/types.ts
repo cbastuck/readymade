@@ -500,6 +500,55 @@ export type FacadePanel = {
   layout: LayoutItem;
 };
 
+// One face of a facade: the panels a person sees while it is chosen.
+//
+// A board's controls are rarely all for the same person, or for the same
+// moment. Subscribing to a feed is done once and reading it is done every day;
+// a poll's dates are put up by whoever called the meeting and answered by
+// everybody else. A panel that belongs to the other job is not neutral — it is
+// in the way, and it invites a change nobody meant to make.
+//
+// A tab is a *view over the panels a facade already has*, not a second place to
+// hold them: a panel is declared once, in `panels`, and a tab says when it is
+// looked at. So a facade gains tabs by adding a list of names, and everything
+// that addresses a panel — the editor, the column widths, a widget's service —
+// goes on working.
+export type FacadeTab = {
+  id: string;
+  title: string;
+  // The panels this tab shows, by panel id, left to right. A panel no tab names
+  // is not hidden: it sits above the tab bar, on screen whichever tab is
+  // chosen, which is what a board means by a status strip it always wants read.
+  panels: string[];
+};
+
+// Something worth interrupting somebody about, raised as a toast rather than
+// drawn into the panel.
+//
+// A panel that reserves a row for a problem it usually does not have spends
+// layout on nothing, and on the one occasion there is something to say, says it
+// wherever that row happens to sit — which may be past the bottom of the
+// screen. A notice costs no layout at all, appears where the app's other
+// notifications appear, and leaves on its own.
+//
+// It reads a service the way a widget's `source` does, and fires whenever the
+// value it names arrives with something in it. That is the whole condition, and
+// it is what makes the declaration honest: a service reporting `error: ""` on a
+// good run says nothing, and the same service reporting a reason says it.
+//
+// Unlike a widget it never seeds from the service's current state. A widget
+// showing what a service already holds is showing the truth; a toast for a
+// failure that happened before this board was open is news about nothing.
+export type FacadeNotice = {
+  source: FacadeWidgetSource;
+  // How it is shown. "error" by default — what a board has to say unprompted is
+  // usually that something did not work.
+  tone?: "info" | "success" | "error";
+  // What it says, with "{{value}}" standing for the value that raised it.
+  // Absent, the value itself is the message.
+  message?: string;
+};
+
 export type FacadeDescriptor = {
   // "single" renders one panel full-size; "columns" renders panels side-by-side.
   layout: "single" | "columns";
@@ -510,4 +559,16 @@ export type FacadeDescriptor = {
   // { "$state": "key" } references in configure payloads resolve against the
   // current facade state, so services can be seeded from state on load.
   init?: WidgetAction[];
+  // Groups the panels into faces, one of which is on screen at a time. Absent,
+  // every panel is on screen at once, which is what a facade with one audience
+  // means.
+  tabs?: FacadeTab[];
+  // The tab a board opens on, by id. Defaults to the first one.
+  //
+  // Not remembered between visits: which face a board opens as is the board's
+  // to say, and the answer is the tab everybody uses rather than the one
+  // somebody was last in when they set the thing up.
+  defaultTab?: string;
+  // Toasts raised from what services say, instead of rows kept free for them.
+  notices?: FacadeNotice[];
 };

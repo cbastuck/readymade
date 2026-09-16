@@ -160,7 +160,7 @@
           "items": [
             {
               "type": "text",
-              "placeholder": "Answer every date that works for you — none, one or all of them. Change who you are to answer as somebody else: it is the same poll seen from another desk.",
+              "placeholder": "Answer every date that works for you — none, one or all of them. Change who you are to answer as somebody else: it is the same poll seen from another desk. Putting dates up and closing the meeting are on Organise.",
               "tone": "muted",
               "fontSize": 12
             },
@@ -272,15 +272,6 @@
                   }
                 ]
               }
-            },
-            {
-              "type": "text",
-              "label": "Problem",
-              "source": {
-                "serviceUuid": "say-yes",
-                "path": "error"
-              },
-              "tone": "error"
             }
           ]
         }
@@ -402,15 +393,6 @@
               }
             },
             {
-              "type": "text",
-              "label": "Problem",
-              "source": {
-                "serviceUuid": "put-up-date",
-                "path": "error"
-              },
-              "tone": "error"
-            },
-            {
               "direction": "column",
               "collapsible": true,
               "title": "Other meetings",
@@ -479,6 +461,85 @@
               ]
             }
           ]
+        }
+      }
+    ],
+    "tabs": [
+      {
+        "id": "answer",
+        "title": "Vote",
+        "panels": [
+          "vote"
+        ]
+      },
+      {
+        "id": "organise",
+        "title": "Organise",
+        "panels": [
+          "meeting"
+        ]
+      }
+    ],
+    "defaultTab": "answer",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "open-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "first-run",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "put-up-date",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "withdraw-date",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "say-yes",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "take-it-back",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "close-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-dates",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-meetings",
+          "path": "error"
         }
       }
     ]

@@ -70,38 +70,18 @@
     ],
     "panels": [
       {
-        "id": "booking",
-        "title": "Court booking",
+        "id": "book",
+        "title": "Book a court",
         "layout": {
           "direction": "column",
           "gap": 14,
+          "paddingX": 16,
+          "paddingY": 12,
           "items": [
             {
               "type": "text",
-              "placeholder": "Tap a + to take that hour. Change who you are booking as to see the same day from another member's side.",
+              "placeholder": "Tap a free hour to take it, or one of yours to give it back. Who you are booking as is on the other tab — the same day looks different from another member's side.",
               "tone": "muted"
-            },
-            {
-              "type": "text-input",
-              "label": "Booking as",
-              "placeholder": "member@example.com",
-              "submitLabel": "Use this email",
-              "actions": [
-                {
-                  "type": "set-state",
-                  "key": "member"
-                },
-                {
-                  "type": "process",
-                  "serviceUuid": "give-back",
-                  "payload": {
-                    "state": "none",
-                    "dayOffset": 0,
-                    "member": "$$input"
-                  }
-                }
-              ],
-              "defaultValue": "you@club.example"
             },
             {
               "type": "repeat",
@@ -189,17 +169,85 @@
                   }
                 }
               ]
-            },
-            {
-              "type": "text",
-              "label": "Problem",
-              "source": {
-                "serviceUuid": "take-hour",
-                "path": "error"
-              },
-              "tone": "error"
             }
           ]
+        }
+      },
+      {
+        "id": "member",
+        "title": "Who you are",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Every hour is booked in somebody's name, and the day is drawn from that person's side: their bookings are the ones marked yours, and the only ones they can give back. Set once, then go back to the court.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text-input",
+              "label": "Booking as",
+              "placeholder": "member@example.com",
+              "submitLabel": "Use this email",
+              "actions": [
+                {
+                  "type": "set-state",
+                  "key": "member"
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "give-back",
+                  "payload": {
+                    "state": "none",
+                    "dayOffset": 0,
+                    "member": "$$input"
+                  }
+                }
+              ],
+              "defaultValue": "you@club.example"
+            }
+          ]
+        }
+      }
+    ],
+    "tabs": [
+      {
+        "id": "court",
+        "title": "Court",
+        "panels": [
+          "book"
+        ]
+      },
+      {
+        "id": "who",
+        "title": "Who you are",
+        "panels": [
+          "member"
+        ]
+      }
+    ],
+    "defaultTab": "court",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "take-hour",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "give-back",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "day-grid",
+          "path": "error"
         }
       }
     ]

@@ -141,16 +141,8 @@
                     "serviceUuid": "feeds",
                     "path": "count"
                   },
-                  "placeholder": "\u2014",
+                  "placeholder": "—",
                   "grow": true
-                },
-                {
-                  "type": "text",
-                  "source": {
-                    "serviceUuid": "feeds",
-                    "path": "error"
-                  },
-                  "tone": "error"
                 }
               ]
             },
@@ -200,7 +192,7 @@
                   },
                   {
                     "type": "text",
-                    "placeholder": "{{item.feed}} \u00b7 {{item.publishedLabel}}",
+                    "placeholder": "{{item.feed}} · {{item.publishedLabel}}",
                     "tone": "muted",
                     "fontSize": 11
                   },
@@ -219,15 +211,74 @@
         }
       },
       {
+        "id": "saved",
+        "title": "Reading list",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "label": "Kept",
+              "source": {
+                "serviceUuid": "kept-articles",
+                "path": "count"
+              },
+              "placeholder": "0",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "kept-articles",
+                "path": "rows"
+              },
+              "gap": 6,
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "flex-start",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.title}}",
+                    "href": "{{item.link}}",
+                    "fontSize": 12,
+                    "grow": true
+                  },
+                  {
+                    "type": "button",
+                    "label": "Remove",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "keep-article",
+                        "payload": {
+                          "intent": "drop",
+                          "link": "{{item.link}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
         "id": "library",
-        "title": "Feeds & reading list",
+        "title": "Feeds",
         "layout": {
           "direction": "column",
           "gap": 14,
           "items": [
             {
               "type": "text",
-              "placeholder": "Paste any RSS or Atom URL to add it to the merged list. Feeds are fetched from the Node runtime, which is what makes arbitrary ones readable at all \u2014 almost no publisher sends the CORS header a browser would need.",
+              "placeholder": "Paste any RSS or Atom URL to add it to the merged list. Feeds are fetched from the Node runtime, which is what makes arbitrary ones readable at all — almost no publisher sends the CORS header a browser would need.",
               "tone": "muted",
               "fontSize": 12
             },
@@ -291,68 +342,54 @@
                   }
                 ]
               }
-            },
-            {
-              "direction": "column",
-              "collapsible": true,
-              "title": "Reading list",
-              "summary": {
-                "serviceUuid": "kept-articles",
-                "path": "count"
-              },
-              "open": true,
-              "gap": 6,
-              "items": [
-                {
-                  "type": "repeat",
-                  "source": {
-                    "serviceUuid": "kept-articles",
-                    "path": "rows"
-                  },
-                  "gap": 6,
-                  "template": {
-                    "direction": "row",
-                    "gap": 8,
-                    "align": "flex-start",
-                    "items": [
-                      {
-                        "type": "text",
-                        "placeholder": "{{item.title}}",
-                        "href": "{{item.link}}",
-                        "fontSize": 12,
-                        "grow": true
-                      },
-                      {
-                        "type": "button",
-                        "label": "Remove",
-                        "actions": [
-                          {
-                            "type": "process",
-                            "serviceUuid": "keep-article",
-                            "payload": {
-                              "intent": "drop",
-                              "link": "{{item.link}}"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "label": "Reading list problem",
-              "source": {
-                "serviceUuid": "kept-articles",
-                "path": "error"
-              },
-              "tone": "error"
             }
           ],
           "paddingX": 16,
           "paddingY": 12
+        }
+      }
+    ],
+    "tabs": [
+      {
+        "id": "read",
+        "title": "Read",
+        "panels": [
+          "articles",
+          "saved"
+        ]
+      },
+      {
+        "id": "feeds",
+        "title": "Feeds",
+        "panels": [
+          "library"
+        ]
+      }
+    ],
+    "defaultTab": "read",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "feeds",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "keep-article",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "drop-article",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "kept-articles",
+          "path": "error"
         }
       }
     ]

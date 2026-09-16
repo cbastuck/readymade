@@ -161,8 +161,27 @@ describe("the meeting panel", () => {
     expect(screen.getByText("Roadmap review")).toBeTruthy();
   });
 
-  it("shows the reason the database gave for turning a date down", () => {
+  it("keeps no row free for a reason — it is a notice now", () => {
     renderPanel("meeting");
-    expect(screen.getByText("the poll is closed")).toBeTruthy();
+    expect(screen.queryByText("the poll is closed")).toBeNull();
+    // Every service that writes to the poll is watched, so a refusal reaches
+    // whoever caused it wherever they are on the board.
+    const watched = board.facade.notices.map((n) => n.source.serviceUuid);
+    expect(watched).toContain("put-up-date");
+    expect(watched).toContain("say-yes");
+    expect(board.facade.notices.every((n) => n.source.path === "error")).toBe(true);
+  });
+});
+
+describe("the poll's tabs", () => {
+  it("opens on answering, with putting dates up a tab away", () => {
+    const tabs = board.facade.tabs;
+    expect(board.facade.defaultTab).toBe("answer");
+    expect(tabs.find((t) => t.id === "answer")?.panels).toEqual(["vote"]);
+    expect(tabs.find((t) => t.id === "organise")?.panels).toEqual(["meeting"]);
+    // Every panel the facade declares is claimed by a tab: nothing is left
+    // sitting above the bar by accident.
+    const claimed = tabs.flatMap((t) => t.panels);
+    expect(board.facade.panels.map((p) => p.id).sort()).toEqual(claimed.sort());
   });
 });
