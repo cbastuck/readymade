@@ -232,7 +232,7 @@ definitions live in `hkp-frontend/src/facade/types.ts`.
 ```json
 {
   "layout": "single | columns",
-  "panels": [{ "id": "string", "title": "optional", "layout": { ...LayoutItem } }]
+  "panels": [{ "id": "string", "title": "optional", "width": "70%", "layout": { ...LayoutItem } }]
 }
 ```
 
@@ -265,6 +265,9 @@ Two things a facade declares beside its panels, both about **what is on screen a
   "notices": [{ "source": { "serviceUuid": "take-hour", "path": "error" }, "tone": "error" }]
 }
 ```
+
+A panel's `width` is its share of the row it shares with other panels ("70%", or the bare
+number) — a starting point the divider between them still overrides, remembered per board.
 
 **Tabs** group the panels into faces, one at a time, because a board's controls rarely all
 belong to the same person or the same moment — subscribing to a feed is done once, reading

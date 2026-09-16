@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * The width a facade's columns are left at.
@@ -15,6 +15,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * a fixed size while the other absorbs everything. They are remembered per
  * board, because the answer is about a particular facade's columns and not a
  * preference that should follow someone to the next board.
+ *
+ * Where the reader has not said anything, the *board* may: a panel can declare
+ * the share of the row it wants, because which column matters is usually known
+ * at design time — a reading list beside the articles is the smaller half of
+ * that pair on anybody's screen. It is a starting point and nothing more. The
+ * divider still moves, what a person leaves it at still outlives the session,
+ * and double-clicking goes back to what the board asked for rather than to an
+ * even split, which is the answer the board already said was wrong.
  */
 
 /** Enough of a column to be worth having; below this the drag stops. */
@@ -60,15 +68,64 @@ export type PanelWidths = {
   weightOf: (index: number) => number;
   /** All weights, as the splitter's arithmetic needs them. */
   weights: () => number[];
-  /** null divides the columns evenly again. */
+  /** null goes back to what the board asked for. */
   setWeights: (next: number[] | null) => void;
   /** Writes what is on screen down, at the end of a drag. */
   commit: () => void;
-  /** Back to even columns, forgetting what was stored. */
+  /** Back to the board's own shares, forgetting what was stored. */
   reset: () => void;
 };
 
-export function usePanelWidths(boardName: string, count: number): PanelWidths {
+/**
+ * The share of the row a panel asks for, as a weight.
+ *
+ * Read off a percentage ("70%") or a bare number, which mean the same thing:
+ * these are *proportions*, not sizes. A column of a facade has no pixel width to
+ * declare — the row is divided between the panels in it, and what a board knows
+ * at design time is which of them deserves more of whatever room there turns out
+ * to be.
+ */
+export function panelShare(width: number | string | undefined): number | undefined {
+  const value = typeof width === "string" ? parseFloat(width) : width;
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : undefined;
+}
+
+/**
+ * What the columns start at: the shares the board declared, or an even split.
+ *
+ * A panel that declares nothing among panels that do takes an average share.
+ * Weights are relative, so leaving it at 1 beside a neighbour asking for 70
+ * would read as a mistake in the board rather than as a column — and a row
+ * where only some panels have an opinion is a board half-way through being
+ * written, not one asking for a sliver.
+ */
+function declaredWeights(
+  count: number,
+  shares: (number | undefined)[] | undefined,
+): number[] {
+  const given = (shares ?? []).filter((share): share is number => !!share);
+  if (!given.length) {
+    return Array.from({ length: count }, () => 1);
+  }
+  const mean = given.reduce((total, share) => total + share, 0) / given.length;
+  return Array.from({ length: count }, (_, index) => shares?.[index] ?? mean);
+}
+
+export function usePanelWidths(
+  boardName: string,
+  count: number,
+  /** Each panel's declared share of the row, in panel order. */
+  shares?: (number | undefined)[],
+): PanelWidths {
+  // Rebuilt only when the board's answer actually changes: the caller derives
+  // this from its panels and hands over a new array on every render.
+  const declared = useMemo(
+    () => declaredWeights(count, shares),
+    [count, (shares ?? []).join(",")], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   const [weights, setWeightsState] = useState<number[] | null>(() =>
     readWeights(boardName, count),
   );
@@ -96,8 +153,8 @@ export function usePanelWidths(boardName: string, count: number): PanelWidths {
   }, [boardName, count, setWeights]);
 
   return {
-    weightOf: (index) => weights?.[index] ?? 1,
-    weights: () => ref.current ?? Array.from({ length: count }, () => 1),
+    weightOf: (index) => weights?.[index] ?? declared[index] ?? 1,
+    weights: () => ref.current ?? declared,
     setWeights,
     commit: () => {
       const value = ref.current;
@@ -249,7 +306,7 @@ export function PanelSplitter({
       onPointerLeave={() => setHovered(false)}
       onDoubleClick={widths.reset}
       onKeyDown={onKeyDown}
-      title="Drag to resize — double-click to even them up"
+      title="Drag to resize — double-click to put it back"
       style={{
         width: 7,
         flexShrink: 0,

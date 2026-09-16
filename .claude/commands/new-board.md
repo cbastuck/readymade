@@ -251,7 +251,18 @@ are not neutral — they are in the way, and they invite a change nobody meant t
 
 A tab is a view over the panels the facade already has: it names panel ids, and a panel is
 still declared once in `panels`. Two panels in one tab sit side by side exactly as a
-`columns` facade's panels do.
+`columns` facade's panels do — and a panel can say how much of that row it wants:
+
+```json
+{ "id": "articles", "title": "Latest", "width": "70%", "layout": { ...LayoutItem } }
+```
+
+`width` is a **share of the row, not a size** ("70%", or the bare number that means the
+same). Declare one on each panel that shares a row when you know which of them matters —
+an even split is otherwise what every facade opens as. It is only a starting point: the
+divider still moves, what a reader leaves it at is what that board opens as next time, and
+double-clicking the divider puts the board's own split back. Ignored on mobile, where
+panels stack.
 
 - **`defaultTab` is the tab for the many, not the few.** Boards open on using, not on
   setting up. It is not remembered between visits, so this is what every reader gets.
@@ -718,4 +729,5 @@ import myBoard from "../../../hkp-frontend/boards/my-board.json";
 - [ ] UUIDs are descriptive and end in `-svc`
 - [ ] The board does something useful with a fresh load (no manual steps required to see it work, or clear first-run instructions in the facade)
 - [ ] Controls for setting the board up are behind their own tab, and `defaultTab` names the one people use
+- [ ] Panels sharing a row declare a `width` share where one of them plainly matters more
 - [ ] Every service that can refuse a request has a notice on it, and no panel keeps a row free for an error

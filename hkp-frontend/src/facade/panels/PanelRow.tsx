@@ -3,7 +3,7 @@ import { Fragment, useCallback, useRef } from "react";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadePanel } from "../types";
 import { PanelRenderer } from "./PanelRenderer";
-import { PanelSplitter, usePanelWidths } from "./PanelSplitter";
+import { PanelSplitter, panelShare, usePanelWidths } from "./PanelSplitter";
 
 /**
  * A set of panels shown side by side, with the dividers that share the width
@@ -34,8 +34,13 @@ export function PanelRow({
   const multiPanel = panels.length > 1;
 
   // Even columns are a guess — the panels hold different things, and which of
-  // them deserves the room is the reader's to say.
-  const panelWidths = usePanelWidths(widthsKey, panels.length);
+  // them deserves the room is the reader's to say, starting from whatever the
+  // board itself asked for.
+  const panelWidths = usePanelWidths(
+    widthsKey,
+    panels.length,
+    panels.map((panel) => panelShare(panel.width)),
+  );
   const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
   const panelPixels = useCallback(
     () => panelRefs.current.map((node) => node?.getBoundingClientRect().width ?? 0),

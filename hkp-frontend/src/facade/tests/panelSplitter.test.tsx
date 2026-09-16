@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
-import { PanelSplitter, usePanelWidths } from "../panels/PanelSplitter";
+import {
+  PanelSplitter,
+  panelShare,
+  usePanelWidths,
+} from "../panels/PanelSplitter";
 
 /**
  * Dragging the divider between two facade columns.
@@ -135,33 +139,47 @@ describe("the facade column splitter", () => {
 // ── What gets remembered ────────────────────────────────────────────────────
 
 /** Renders the hook's answer for a board, as text. */
-function Widths({ board, count }: { board: string; count: number }) {
-  const widths = usePanelWidths(board, count);
+function Widths({
+  board,
+  count,
+  shares,
+}: {
+  board: string;
+  count: number;
+  shares?: (number | undefined)[];
+}) {
+  const widths = usePanelWidths(board, count, shares);
   return (
     <button
       onClick={() => {
         widths.setWeights([3, 1]);
         widths.commit();
       }}
+      onDoubleClick={widths.reset}
     >
       {Array.from({ length: count }, (_, i) => widths.weightOf(i)).join(",")}
     </button>
   );
 }
 
+/** A mounted hook, scoped to its own render so two can be compared. */
+function widthsFor(
+  board: string,
+  count: number,
+  shares?: (number | undefined)[],
+) {
+  const view = render(<Widths board={board} count={count} shares={shares} />);
+  const button = view.getByRole("button");
+  return {
+    shown: () => button.textContent,
+    choose: () => fireEvent.click(button),
+    putBack: () => fireEvent.dblClick(button),
+    unmount: view.unmount,
+  };
+}
+
 describe("remembered column widths", () => {
   beforeEach(() => localStorage.clear());
-
-  /** A mounted hook, scoped to its own render so two can be compared. */
-  function widthsFor(board: string, count: number) {
-    const view = render(<Widths board={board} count={count} />);
-    const button = view.getByRole("button");
-    return {
-      shown: () => button.textContent,
-      choose: () => fireEvent.click(button),
-      unmount: view.unmount,
-    };
-  }
 
   it("divides evenly until someone says otherwise", () => {
     expect(widthsFor("Reader", 2).shown()).toBe("1,1");
@@ -199,5 +217,58 @@ describe("remembered column widths", () => {
     const three = widthsFor("Reader", 3);
     expect(three.shown()).toBe("1,1,1");
     three.unmount();
+  });
+});
+
+// ── What the board asked for ────────────────────────────────────────────────
+
+describe("declared column shares", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("reads a share off a percentage or a bare number, and ignores nonsense", () => {
+    expect(panelShare("70%")).toBe(70);
+    expect(panelShare(30)).toBe(30);
+    expect(panelShare(undefined)).toBeUndefined();
+    expect(panelShare("auto")).toBeUndefined();
+    // A column of no width is not a column; an even split says more.
+    expect(panelShare(0)).toBeUndefined();
+    expect(panelShare("-20%")).toBeUndefined();
+  });
+
+  it("opens at the split the board declared", () => {
+    const reader = widthsFor("Reader", 2, [70, 30]);
+    expect(reader.shown()).toBe("70,30");
+    reader.unmount();
+  });
+
+  it("gives a panel with no opinion an average share, not a sliver", () => {
+    // Relative weights: 1 beside 70 would read as a mistake in the board.
+    const reader = widthsFor("Reader", 3, [70, undefined, 30]);
+    expect(reader.shown()).toBe("70,50,30");
+    reader.unmount();
+  });
+
+  it("lets the reader overrule the board, and remembers that instead", () => {
+    const reader = widthsFor("Reader", 2, [70, 30]);
+    reader.choose();
+    expect(reader.shown()).toBe("3,1");
+    reader.unmount();
+
+    const again = widthsFor("Reader", 2, [70, 30]);
+    expect(again.shown()).toBe("3,1");
+    again.unmount();
+  });
+
+  it("puts the board's own split back on a double-click", () => {
+    const reader = widthsFor("Reader", 2, [70, 30]);
+    reader.choose();
+    reader.putBack();
+    expect(reader.shown()).toBe("70,30");
+    reader.unmount();
+
+    // Forgotten, not merely overridden: a fresh mount starts there too.
+    const again = widthsFor("Reader", 2, [70, 30]);
+    expect(again.shown()).toBe("70,30");
+    again.unmount();
   });
 });

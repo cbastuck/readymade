@@ -498,6 +498,18 @@ export type FacadePanel = {
   id: string;
   title?: string;
   layout: LayoutItem;
+  // The share of the row this panel asks for, beside the panels it shares one
+  // with: "70%", or the bare number that means the same thing. Which column
+  // matters is usually known when the board is written — a reading list beside
+  // the articles is the smaller half of that pair on anybody's screen — and an
+  // even split is otherwise what every facade opens as.
+  //
+  // A share rather than a size, because the row is divided between the panels
+  // in it and the window is whatever size it is. It is a starting point: the
+  // divider still moves, and what a person leaves it at is what that board
+  // opens as next time. Ignored where the panels do not share a row at all —
+  // the mobile view stacks them.
+  width?: number | string;
 };
 
 // One face of a facade: the panels a person sees while it is chosen.
