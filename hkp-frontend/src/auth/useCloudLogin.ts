@@ -47,9 +47,19 @@ export function useCloudLogin(): () => Promise<void> {
 
   return useCallback(async () => {
     if (platform.login) {
-      const idToken = await platform.login();
-      if (idToken) {
-        await updateToken({ __raw: idToken } as IdToken);
+      // A platform login runs outside this window — a browser, a native sheet —
+      // and can fail for reasons only it knows. Said in a toast for the same
+      // reason as below: the promise is discarded by every caller.
+      try {
+        const idToken = await platform.login();
+        if (idToken) {
+          await updateToken({ __raw: idToken } as IdToken);
+        }
+      } catch (err) {
+        console.error("Sign-in failed", err);
+        toast.error("Signing in failed", {
+          description: err instanceof Error ? err.message : String(err),
+        });
       }
       return;
     }

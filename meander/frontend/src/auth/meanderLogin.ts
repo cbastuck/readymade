@@ -1,30 +1,27 @@
-import { openInBrowser } from "hkp-frontend/src/runtime/browser/services/helpers";
+import {
+  canReceiveServiceRedirect,
+  openInBrowser,
+  serviceRedirectUri,
+} from "hkp-frontend/src/runtime/browser/services/helpers";
 import {
   registerRedirect,
   unregisterRedirect,
 } from "hkp-frontend/src/MessageDispatcher";
 
 import { randomUrlSafe, s256Challenge } from "./pkce";
+import { clearSignedOut, wasSignedOut } from "./session";
 
 // The native Readymade app can't use Auth0's in-page web redirect, so it runs the
-// RFC 8252 native flow: open the Auth0 login in the browser (via the existing
+// RFC 8252 native flow: open the Auth0 login in the OS browser (via the existing
 // openInBrowser bridge), capture the redirect through the /serviceRedirect relay
-// (postMessage → MessageDispatcher), then exchange the code for tokens here.
+// — the app's own loopback HTTP server, which postMessages the parameters into
+// the webview for MessageDispatcher — then exchange the code for tokens here.
 // PKCE means this is a public client with no secret, so the token exchange is
 // safe to run in the webview via fetch (the same way auth0-spa-js does).
 export const AUTH0_DOMAIN = "hookitapp.eu.auth0.com";
 // Configured as a Native application in Auth0. The id_token's `aud` is this
 // client id, which is what hkp-node verifies against (AUTH0_AUDIENCE).
 export const AUTH0_CLIENT_ID = "gpk8IFPKfaOTQUzpDRO7vBajOnB72rkM";
-
-/**
- * Redirect target the native popup intercepts and relays back. Must be listed in
- * the Auth0 application's Allowed Callback URLs. Logged on use so the exact value
- * to register is easy to find.
- */
-function redirectUri(): string {
-  return `${window.location.origin}/serviceRedirect`;
-}
 
 /** Resolve when the OAuth redirect for `state` is relayed back, or reject on timeout. */
 function waitForRedirect(
@@ -55,30 +52,48 @@ export type NativeLogin = {
  * null if the user cancelled (no code returned).
  */
 export async function meanderLogin(): Promise<NativeLogin | null> {
+  if (!canReceiveServiceRedirect()) {
+    throw new Error(
+      "Another Readymade instance is running and holds this app's login " +
+        "callback port. Quit it and try again.",
+    );
+  }
+
   const verifier = randomUrlSafe(32);
   const challenge = await s256Challenge(verifier);
   const state = randomUrlSafe(16);
-  const redirect = redirectUri();
+  // Answered by the app's own loopback server, which relays it back. Must be
+  // listed in the Auth0 application's Allowed Callback URLs.
+  const redirect = serviceRedirectUri();
 
   console.log(
     `[Readymade-login] Using redirect_uri ${redirect} — ensure it is an Allowed Callback URL in Auth0.`,
   );
 
+  const params: Record<string, string> = {
+    response_type: "code",
+    client_id: AUTH0_CLIENT_ID,
+    redirect_uri: redirect,
+    // offline_access asks for a refresh token, without which the session ends
+    // when the id_token does — hours, against the days the session at Auth0
+    // lasts. Asking is not getting: whether one is issued depends on how the
+    // Auth0 application is configured, which the token exchange reports below.
+    scope: "openid profile email offline_access",
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+    state,
+  };
+  if (wasSignedOut()) {
+    // Signing out could not end the session in the browser, so Auth0 would hand
+    // this login the same account with nothing asked. This makes it ask — the
+    // form still comes up filled in by the browser, which is the point of
+    // running the login there; what it restores is the ability to answer with a
+    // different account.
+    params.prompt = "login";
+  }
+
   const authorizeUrl =
-    `https://${AUTH0_DOMAIN}/authorize?` +
-    new URLSearchParams({
-      response_type: "code",
-      client_id: AUTH0_CLIENT_ID,
-      redirect_uri: redirect,
-      // offline_access asks for a refresh token, without which the session ends
-      // when the id_token does — hours, against the days the session at Auth0
-      // lasts. Asking is not getting: whether one is issued depends on how the
-      // Auth0 application is configured, which the token exchange reports below.
-      scope: "openid profile email offline_access",
-      code_challenge: challenge,
-      code_challenge_method: "S256",
-      state,
-    }).toString();
+    `https://${AUTH0_DOMAIN}/authorize?` + new URLSearchParams(params).toString();
 
   // Register the listener before opening the browser to avoid a race where the
   // redirect arrives before we're listening.
@@ -128,7 +143,13 @@ export async function meanderLogin(): Promise<NativeLogin | null> {
         }`,
   );
 
-  return token.id_token
-    ? { idToken: token.id_token, refreshToken: token.refresh_token }
-    : null;
+  if (!token.id_token) {
+    return null;
+  }
+
+  // Only now: an abandoned login leaves the old account signed in at Auth0, so
+  // the next attempt still has to ask.
+  clearSignedOut();
+
+  return { idToken: token.id_token, refreshToken: token.refresh_token };
 }

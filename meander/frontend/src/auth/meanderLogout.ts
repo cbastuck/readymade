@@ -1,23 +1,22 @@
-import { openInBrowser } from "hkp-frontend/src/runtime/browser/services/helpers";
-
-import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from "./meanderLogin";
-import { clearSession } from "./session";
+import { clearSession, markSignedOut } from "./session";
 
 /**
- * Ends a native login properly: the stored token *and* the Auth0 session.
+ * Ends a native login, without leaving the app.
  *
- * The native flow signs in through the system browser, so that is where Auth0's
- * SSO cookie lives. Dropping only the local token leaves it in place, and the
- * next login skips the credentials form and offers consent for the same account
- * — logout appears to work while making it impossible to sign in as anyone else.
+ * Signing out happens here and nowhere else: no window, no browser, nothing for
+ * the user to dismiss. That is a choice about where it happens rather than what
+ * it can reach — Auth0's session belongs to whichever browser the login ran in,
+ * and neither a fetch from the webview nor a webview of our own carries that
+ * browser's cookies, so no amount of loading `/v2/logout` from inside the app
+ * would end it. Sending the user out to the browser to do it is the only thing
+ * that would, at the cost of handing them a stray tab and a provider's page.
  *
- * No `returnTo` is sent: it would have to be registered in the Auth0
- * application's Allowed Logout URLs, and there is nothing to come back to. The
- * browser lands on Auth0's own confirmation page instead.
+ * What is left behind is a session at Auth0 that would sign the same account
+ * back in unasked, so the sign-out is recorded and the next login asks who is
+ * signing in (see `wasSignedOut`). Signing in as somebody else stays possible;
+ * it just costs a form the browser fills in.
  */
 export async function meanderLogout(): Promise<void> {
   clearSession();
-  openInBrowser(
-    `https://${AUTH0_DOMAIN}/v2/logout?client_id=${encodeURIComponent(AUTH0_CLIENT_ID)}`,
-  );
+  markSignedOut();
 }

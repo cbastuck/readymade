@@ -218,6 +218,8 @@ export class Debouncer {
  * In the Readymade desktop app, delegates to the native C++ bridge
  * (`saucer.exposed.openInBrowser`) because WebKit suppresses window.open()
  * when the UIDelegate doesn't implement createWebViewWithConfiguration:…
+ * The bridge hands the URL to the OS browser, so a login opened this way finds
+ * the passwords and provider sessions that live there.
  */
 export function openInBrowser(url: string): void {
   const saucer = (window as any).saucer;
@@ -226,6 +228,43 @@ export function openInBrowser(url: string): void {
   } else {
     window.open(url, "_blank");
   }
+}
+
+/**
+ * Where an OAuth provider should send the user back to, for a flow that hands
+ * the login to a browser window this page does not control.
+ *
+ * In the desktop app that is another application, and the webview's own origin
+ * means nothing to it (`saucer://embedded` in release builds), so the callback
+ * goes to the app's loopback HTTP server, which relays the parameters back in.
+ * On the web the page serves /serviceRedirect itself, and the popup posts them
+ * to its opener.
+ *
+ * `webOrigin` overrides the origin used outside the desktop app, for providers
+ * that require a literal loopback address. Whatever this returns must be
+ * registered with the provider as an allowed callback URL. Ask
+ * `canReceiveServiceRedirect` before starting a flow: the address exists even
+ * when nothing here can answer at it.
+ */
+export function serviceRedirectUri(webOrigin?: string): string {
+  const frontendPort = (window as any).__MEANDER_CONFIG__?.frontendPort;
+  if (typeof frontendPort === "number") {
+    return `http://127.0.0.1:${frontendPort}/serviceRedirect`;
+  }
+  return `${webOrigin ?? window.location.origin}/serviceRedirect`;
+}
+
+/**
+ * Whether a callback sent to `serviceRedirectUri` would reach this window.
+ *
+ * False when a second instance of the desktop app is running: the ports are
+ * fixed, so the instance that started first holds the server the callback is
+ * addressed to, and the login completes in that window instead. Worth asking
+ * before handing the user to a browser, because the flow would otherwise wait
+ * for something that has already arrived somewhere else.
+ */
+export function canReceiveServiceRedirect(): boolean {
+  return (window as any).__MEANDER_CONFIG__?.ownsFrontendPort !== false;
 }
 
 export function sleep(t: number): Promise<void> {
