@@ -12,7 +12,6 @@
 #include "types/data.h"
 #include "./schemeHandler.h"
 #include "./frontendServer.h"
-#include "./serviceRedirectHandler.h"
 #include "./vault.h"
 #include "./grants.h"
 
@@ -64,6 +63,54 @@ static void openUrlInSystemBrowser(const std::string &url)
   if (pid == 0) { execvp("xdg-open", const_cast<char **>(args)); _exit(1); }
   if (pid > 0)  { waitpid(pid, nullptr, 0); }
 #endif
+}
+
+// Whether a TCP port can still be bound on `address` — false when something is
+// already listening there, which for this app's fixed ports means another
+// instance of it. Probed with SO_REUSEADDR set, like the servers themselves, so
+// a port left in TIME_WAIT still reads as available.
+static bool isPortAvailable(const std::string &address, uint16_t port)
+{
+#ifdef _WIN32
+  WSADATA wsaData;
+  if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+  {
+    return true; // Can't tell; let the server report the real error.
+  }
+  SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  const auto invalid = (sock == INVALID_SOCKET);
+#else
+  int sock = socket(AF_INET, SOCK_STREAM, 0);
+  const auto invalid = (sock < 0);
+#endif
+  if (invalid)
+  {
+#ifdef _WIN32
+    WSACleanup();
+#endif
+    return true;
+  }
+
+  int reuse = 1;
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&reuse), sizeof(reuse));
+
+  sockaddr_in addr{};
+  addr.sin_family = AF_INET;
+  addr.sin_port   = htons(port);
+  if (inet_pton(AF_INET, address.c_str(), &addr.sin_addr) != 1)
+  {
+    addr.sin_addr.s_addr = INADDR_ANY;
+  }
+
+  const bool available = bind(sock, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0;
+
+#ifdef _WIN32
+  closesocket(sock);
+  WSACleanup();
+#else
+  close(sock);
+#endif
+  return available;
 }
 
 // Determine the primary LAN IP by connecting a UDP socket to a well-known
@@ -215,6 +262,29 @@ int real_main(int argc, char *argv[])
 
   auto lanIP = getLanIP();
 
+  // The app's ports are fixed, so a second instance finds them taken. Probed up
+  // front rather than left to the servers, because a bound port is not merely a
+  // server that failed to start: the instance holding it is the one answering,
+  // and what it answers with goes to its window, not this one. An OAuth callback
+  // is the case that matters — it would complete a login in the other window.
+  const bool ownsFrontendPort = isPortAvailable("0.0.0.0", FRONTEND_HTTP_PORT);
+  const bool ownsRuntimePort  = isPortAvailable(bindAddress, RUNTIME_API_PORT);
+  if (!ownsFrontendPort)
+  {
+    std::cerr << "[startup] Port " << FRONTEND_HTTP_PORT
+              << " is already in use — another Readymade instance is most likely "
+                 "running. This window still works, but it cannot serve the web "
+                 "app to other devices, and a login started here would be "
+                 "completed in the other window instead." << std::endl;
+  }
+  if (!ownsRuntimePort)
+  {
+    std::cerr << "[startup] Port " << RUNTIME_API_PORT
+              << " is already in use — another Readymade instance is most likely "
+                 "running. This window still works, but its runtime answers no "
+                 "requests from outside it." << std::endl;
+  }
+
   // Inject runtime config into the webview as a global variable so the
   // hkp-frontend can resolve HKP_WEBAPP_URL / HKP_RUNTIME_URL without any
   // fetch calls. Runs before the page's own scripts (time::creation).
@@ -228,6 +298,9 @@ int real_main(int argc, char *argv[])
   auto configJson = nlohmann::json{
     {"lanIp",               lanIP},
     {"frontendPort",        FRONTEND_HTTP_PORT},
+    // False when another instance holds the port: the web app is still served
+    // there, but by that instance, so nothing addressed to this one arrives.
+    {"ownsFrontendPort",    ownsFrontendPort},
     {"apiPort",             settings.getAllowExternalAccess() ? RUNTIME_API_PORT : 0},
     // The actual bound port and exposure flag, surfaced for the Settings/About
     // tab so it can show the runtime URL in both localhost-only and LAN modes.
@@ -275,16 +348,50 @@ int real_main(int argc, char *argv[])
   auto server = std::make_shared<hkp::Server>(hkpApp, "meander-cpp", allowedOrigins, "", std::move(authConfig));
   auto t = std::make_shared<std::thread>([server, lanIP, bindAddress]()
   {
-    server->start(lanIP, RUNTIME_API_PORT, bindAddress);
+    // Thrown from a thread, a failure to bind would otherwise terminate the
+    // whole app — the window included, which has no need of this server to run
+    // a board in the browser runtime.
+    try
+    {
+      server->start(lanIP, RUNTIME_API_PORT, bindAddress);
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << "[startup] Runtime server on port " << RUNTIME_API_PORT
+                << " did not start: " << e.what() << std::endl;
+    }
   });
-  std::cout << "Frontend available at: http://" << lanIP << ":" << FRONTEND_HTTP_PORT << "/" << std::endl;
+  if (ownsFrontendPort)
+  {
+    std::cout << "Frontend available at: http://" << lanIP << ":" << FRONTEND_HTTP_PORT << "/" << std::endl;
+  }
 
   // Frontend HTTP server — serves the hkp-frontend SPA to devices on the LAN
-  // so phones can load the webapp without requiring the dev server.
+  // so phones can load the webapp without requiring the dev server, and answers
+  // the OAuth callback the OS browser delivers to /serviceRedirect.
   auto frontendServer = std::make_shared<FrontendServer>();
+
+  // Login runs in the OS browser (see openInBrowser below), so the provider
+  // redirects to this server rather than to the webview, which it cannot reach.
+  // Relaying the parameters as a postMessage puts them where the in-page flow
+  // is already listening for them — MessageDispatcher, keyed by `state`.
+  frontendServer->setRedirectRelay([&webview](const std::string &paramsJson)
+  {
+    static_cast<saucer::webview *>(&webview.value())->execute(
+      "window.postMessage(" + nlohmann::json(paramsJson).dump() + ", '*')");
+  });
+
   auto frontendThread = std::make_shared<std::thread>([frontendServer]()
   {
-    frontendServer->start("0.0.0.0", FRONTEND_HTTP_PORT);
+    try
+    {
+      frontendServer->start("0.0.0.0", FRONTEND_HTTP_PORT);
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << "[startup] Frontend server on port " << FRONTEND_HTTP_PORT
+                << " did not start: " << e.what() << std::endl;
+    }
   });
 
   auto numLoadedPlugins = hkpApp->scanForPlugins(settings.getBundlesPath());
@@ -314,19 +421,21 @@ int real_main(int argc, char *argv[])
 
   std::cout << "Launched Readymade" << std::endl;
 
-  // Popup support.
+  // Opening a link elsewhere.
   //
   // WebKit ignores window.open() when the WKUIDelegate doesn't implement
   // createWebViewWithConfiguration:…  The frontend detects Meander via
   // __MEANDER_CONFIG__ and calls saucer.exposed.openInBrowser() directly.
   // The navigate handler below is kept as a fallback for target="_blank" clicks.
-  // OAuth-specific relay logic lives in ServiceRedirectHandler / serviceRedirectHandler.cpp.
-
-  ServiceRedirectHandler redirectHandler(&webview.value(), loop.application());
-
-  webview->expose("openInBrowser", [&redirectHandler](const std::string &url)
+  //
+  // This hands the URL to the OS browser rather than to a webview of our own.
+  // For a login that matters: the browser is where the user's passwords and
+  // provider sessions are, and an embedded webview has neither (several
+  // providers refuse to log in inside one at all). What the provider then
+  // redirects to is the frontend server's /serviceRedirect, relayed above.
+  webview->expose("openInBrowser", [](const std::string &url)
   {
-    redirectHandler.open(url);
+    openUrlInSystemBrowser(url);
   });
 
   auto desktop = saucer::modules::desktop{loop.application()};

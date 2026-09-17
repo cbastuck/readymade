@@ -1,6 +1,9 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TextWidget } from "../../types";
 import { extractText } from "../../readValue";
+import { copyToClipboard } from "hkp-frontend/src/clipboard";
 import { WidgetRendererProps } from "../widgetRegistry";
+import { usePressFeedback } from "../../pressFeedback";
 import { useNotificationValue } from "./StatusIndicatorRenderer";
 
 /**
@@ -15,6 +18,14 @@ import { useNotificationValue } from "./StatusIndicatorRenderer";
  * service already holds on load rather than staying blank until the next
  * notification — which for an error is the difference between seeing the reason
  * and seeing nothing at all.
+ *
+ * Two things a value can be beyond prose, and each is one option rather than a
+ * widget of its own: a value whose point is to be taken somewhere else is
+ * `copyable`, and a value laid out in characters — ASCII art, a table a service
+ * drew itself — sets `wrap: false` so its columns survive a narrow panel.
+ *
+ * With no source it is a fixed line of prose, which is the same widget with
+ * nothing ever arriving to replace the placeholder.
  */
 
 const TONES: Record<NonNullable<TextWidget["tone"]>, string> = {
@@ -22,6 +33,50 @@ const TONES: Record<NonNullable<TextWidget["tone"]>, string> = {
   muted: "hsl(var(--muted-foreground))",
   error: "#ef4444",
 };
+
+function CopyButton({ value }: { value: string }) {
+  const press = usePressFeedback("neutral", !value);
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const copy = useCallback(async () => {
+    if (!(await copyToClipboard(value))) {
+      return;
+    }
+    setCopied(true);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(false), 1200);
+  }, [value]);
+
+  return (
+    <button
+      {...press.handlers}
+      onClick={copy}
+      disabled={!value}
+      style={{
+        padding: "4px 10px",
+        borderRadius: 6,
+        // Longhand: the press feedback sets backgroundColor and borderColor,
+        // and React warns when a shorthand is mixed with the value it covers.
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: "hsl(var(--border))",
+        backgroundColor: "hsl(var(--muted))",
+        color: "hsl(var(--foreground))",
+        cursor: value ? "pointer" : "default",
+        opacity: value ? 1 : 0.5,
+        fontSize: 11,
+        fontWeight: 500,
+        flexShrink: 0,
+        ...press.style,
+      }}
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
 
 export function TextRenderer({
   widget,
@@ -31,18 +86,23 @@ export function TextRenderer({
   const text = extractText(value, undefined, widget.pretty);
   const shown = text && text.trim() ? text : (widget.placeholder ?? "");
   const isPlaceholder = !(text && text.trim());
+  const wraps = widget.wrap !== false;
 
-  return (
+  const body = (
     <div
       style={{
         color: isPlaceholder ? TONES.muted : TONES[widget.tone ?? "normal"],
         fontSize: widget.fontSize ?? 13,
         fontFamily: widget.mono ? "var(--font-mono, monospace)" : undefined,
         // A message is prose, not a cell: it wraps, and keeps the line breaks a
-        // service put in it.
-        whiteSpace: "pre-wrap",
-        overflowWrap: "anywhere",
-        lineHeight: 1.45,
+        // service put in it. A value that is laid out in characters does not
+        // wrap — a broken line there is a wrong line — and scrolls instead.
+        whiteSpace: wraps ? "pre-wrap" : "pre",
+        overflowWrap: wraps ? "anywhere" : undefined,
+        overflowX: wraps ? undefined : "auto",
+        lineHeight: widget.lineHeight ?? 1.45,
+        minWidth: 0,
+        flex: widget.copyable ? 1 : undefined,
       }}
     >
       {widget.label ? (
@@ -53,6 +113,26 @@ export function TextRenderer({
         </span>
       ) : null}
       {shown}
+    </div>
+  );
+
+  if (!widget.copyable) {
+    return body;
+  }
+
+  return (
+    // inline-flex so the button sits beside a short value rather than at the
+    // far edge of the panel; the value still takes the width it needs.
+    <div
+      style={{
+        display: "inline-flex",
+        maxWidth: "100%",
+        alignItems: "flex-start",
+        gap: 8,
+      }}
+    >
+      {body}
+      <CopyButton value={isPlaceholder ? "" : (text ?? "")} />
     </div>
   );
 }

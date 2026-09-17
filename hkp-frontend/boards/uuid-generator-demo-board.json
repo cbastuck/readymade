@@ -20,8 +20,6 @@
           "periodic": true,
           "periodicValue": 1,
           "periodicUnit": "s",
-          "running": true,
-          "start": true,
           "immediate": true
         }
       },
@@ -38,6 +36,130 @@
         "uuid": "monitor-svc",
         "serviceId": "hookup.to/service/monitor",
         "serviceName": "Monitor"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "uuid",
+        "title": "UUID",
+        "layout": {
+          "direction": "column",
+          "gap": 16,
+          "padding": 18,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 8,
+              "align": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Generate v4",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "uuid-svc",
+                      "configure": {
+                        "method": "v4"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "uuid-svc",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Generate v1",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "uuid-svc",
+                      "configure": {
+                        "method": "v1"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "uuid-svc",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "label": "Version",
+                  "source": {
+                    "serviceUuid": "uuid-svc",
+                    "path": "method"
+                  },
+                  "tone": "muted"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "source": {
+                "serviceUuid": "uuid-svc",
+                "path": "uuid"
+              },
+              "mono": true,
+              "copyable": true,
+              "fontSize": 18,
+              "placeholder": "Press a button."
+            },
+            {
+              "type": "text",
+              "tone": "muted",
+              "fontSize": 11,
+              "placeholder": "v4 is random. v1 is built from the time and the machine, so it sorts by when it was made \u2014 and says something about where."
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "align": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "One a second",
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "timer-svc",
+                      "path": "running"
+                    },
+                    "statusColors": {
+                      "true": "#22c55e",
+                      "false": "#6b7280"
+                    }
+                  },
+                  "action": {
+                    "serviceUuid": "timer-svc",
+                    "configure": {
+                      "start": true
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "Stop",
+                  "action": {
+                    "serviceUuid": "timer-svc",
+                    "configure": {
+                      "stop": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

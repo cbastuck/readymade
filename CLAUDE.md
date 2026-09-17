@@ -246,6 +246,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `knob`             | Rotary control; `{{value}}` in configure payload becomes the numeric value |
 | `level-meter`      | Vertical bar driven by a service notification                              |
 | `canvas`           | Embeds a Canvas service's drawing surface                                  |
+| `camera`           | Live camera; the frame it captures goes down the pipeline                   |
 | `xy-pad`           | Embeds an XY Pad service                                                   |
 | `qr-code`          | Displays a QR code from a service notification                             |
 | `message-list`     | Scrolling message thread with optional inline composer                     |

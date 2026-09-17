@@ -34,7 +34,10 @@ export type SetStateAction = {
 export type ProcessAction = {
   type: "process";
   serviceUuid: string;
-  payload?: Record<string, unknown>;
+  // Whatever the service takes, which is not always an object: a service whose
+  // input is one value — a cipher to decrypt, a line to speak — is handed that
+  // value, so the payload may be the bare "$$input" sentinel.
+  payload?: unknown;
 };
 
 // Asks the board for something, rather than a service on it — so it names no
@@ -100,7 +103,20 @@ export type StatusIndicatorWidget = {
 // the service already holds rather than waiting for the next notification.
 export type TextWidget = {
   type: "text";
-  source: FacadeWidgetSource;
+  // Absent for a line that says the same thing whatever the board is doing —
+  // a note on what a control is for. The `placeholder` is then the whole text,
+  // since there is never a value to replace it.
+  source?: FacadeWidgetSource;
+  // Offers the value for the clipboard, for a value whose point is being taken
+  // somewhere else rather than read.
+  copyable?: boolean;
+  // false keeps the value's own columns: lines are not broken to fit, and the
+  // block scrolls sideways instead. For a value laid out in characters, where a
+  // wrapped line is a wrong line.
+  wrap?: boolean;
+  // Line spacing, for a value whose lines belong together as a block rather
+  // than reading as prose.
+  lineHeight?: number;
   // Static caption rendered, muted, before the value — what the value is, where
   // the value alone would not say (e.g. "You:" in front of a peer name).
   label?: string;
@@ -170,6 +186,11 @@ export type BipolarMeterWidget = {
 
 export type KnobWidget = {
   type: "knob";
+  // Distinguishes this knob from another one driving the same service — a
+  // panel holds each knob's position under this key. Defaults to the service
+  // uuid, which is also what `level-meter` names in
+  // `thresholdKnobServiceUuid`, so two knobs on one service need ids.
+  id?: string;
   label?: string;
   min: number;
   max: number;
@@ -202,6 +223,30 @@ export type LayoutWidget = LayoutContainer & { type: "layout" };
 export type CanvasWidget = {
   type: "canvas";
   serviceUuid: string;
+};
+
+// The camera, as a thing on the board's surface rather than in its workings.
+//
+// Like `canvas` and `xy-pad` this is a service's own surface embedded in a
+// panel, and for the same reason: the Camera service captures through whatever
+// mounted a video element and handed it a screenshooter, so without this a
+// facade view — which draws no service panels — is a board whose camera never
+// starts.
+export type CameraWidget = {
+  type: "camera";
+  serviceUuid: string;
+  // Capture size in pixels. What the pipeline receives, which is not what is
+  // shown here. Defaults to 320 × 200, matching the service panel.
+  width?: number;
+  height?: number;
+  // The live preview. false still captures — the picture is simply not drawn
+  // here, for a panel whose real display is further down the pipeline.
+  preview?: boolean;
+  // Width the preview is drawn at; its height follows the frame's proportions.
+  previewWidth?: number;
+  // Flips the preview left-to-right, the way a mirror does. The captured frame
+  // is untouched. Defaults to true.
+  mirror?: boolean;
 };
 
 export type XYPadWidget = {
@@ -285,6 +330,7 @@ export type FacadeWidget =
   | LineChartWidget
   | LayoutWidget
   | CanvasWidget
+  | CameraWidget
   | XYPadWidget
   | DataTableWidget
   | RepeatWidget;
@@ -296,6 +342,22 @@ export type FacadeWidget =
 
 export type LayoutContainer = {
   direction: "row" | "column";
+  // Folds the container behind a header row, for a group that is occasionally
+  // needed and the rest of the time in the way — the headers and query
+  // parameters of a request most people send without either. What it costs a
+  // panel when closed is one row, which is what lets the controls below it
+  // stay on screen.
+  collapsible?: boolean;
+  // The header's text. A fold needs one: a row that does not say what it hides
+  // is worse than the space it saved.
+  title?: string;
+  // Open on first render. Closed by default, which is the point of folding.
+  open?: boolean;
+  // A live count beside the title, so a closed group still says how much is in
+  // it — the difference between "no headers" and "two headers you forgot".
+  // Reads a service notification the way a widget's `source` does, or a facade
+  // state key; an object or array reports its size, anything else its text.
+  summary?: FacadeWidgetSource | FacadeStateRef;
   gap?: number;
   padding?: number;
   align?: string; // alignItems

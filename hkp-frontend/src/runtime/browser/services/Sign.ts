@@ -62,7 +62,11 @@ function encode(buffer: ArrayBuffer, encoding: Encoding): string {
   return encoding === "base64" ? toBase64(buffer) : toHex(buffer);
 }
 
-async function hmac(hash: string, secret: string, data: Uint8Array): Promise<ArrayBuffer> {
+async function hmac(
+  hash: string,
+  secret: string,
+  data: Uint8Array<ArrayBuffer>,
+): Promise<ArrayBuffer> {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -74,7 +78,7 @@ async function hmac(hash: string, secret: string, data: Uint8Array): Promise<Arr
 }
 
 class Sign extends ServiceBase<State> {
-  private _progressiveChunks: Uint8Array[] = [];
+  private _progressiveChunks: Uint8Array<ArrayBuffer>[] = [];
 
   constructor(app: AppInstance, board: string, descriptor: ServiceClass, id: string) {
     super(app, board, descriptor, id, {
@@ -161,7 +165,7 @@ class Sign extends ServiceBase<State> {
     return value;
   }
 
-  private toBytes(params: any): Uint8Array {
+  private toBytes(params: any): Uint8Array<ArrayBuffer> {
     const msg = typeof params === "string" ? params : JSON.stringify(params);
     return new TextEncoder().encode(msg);
   }
