@@ -327,9 +327,7 @@ export default function MobileApp() {
       <HkpApp defaultThemeName="playground" clientId={AUTH0_CLIENT_ID}>
         <RuntimeUserSync />
         <SecretConsentDialog />
-        {showAccount ? (
-          <MobileAccountPage onBack={() => setShowAccount(false)} />
-        ) : session === null ? (
+        {session === null ? (
           <StartScreen
             onOpenSession={setSession}
             onShowAccount={() => setShowAccount(true)}
@@ -352,6 +350,12 @@ export default function MobileApp() {
               onConsumed={handleShareConsumed}
             />
           </MobilePlaygroundWithRouter>
+        )}
+        {/* Over whatever is showing, never instead of it: a board underneath
+            is live state, and unmounting it to show an account would discard
+            edits nobody agreed to lose. */}
+        {showAccount && (
+          <MobileAccountPage onBack={() => setShowAccount(false)} />
         )}
         {pendingShare && (
           <ShareBoardPicker

@@ -18,8 +18,12 @@ export default function MobileAccountPage({ onBack }: Props) {
   return (
     <div
       style={{
-        position: "absolute",
+        // Fixed and above the host: this is raised over whatever is showing —
+        // a start page, a running board — and must cover it whole without
+        // depending on an ancestor to position against.
+        position: "fixed",
         inset: 0,
+        zIndex: 60,
         display: "flex",
         flexDirection: "column",
         background: M.bg,

@@ -8,7 +8,6 @@ import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "hkp-frontend/src/router";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import CloudBoards from "hkp-frontend/src/views/cloud";
-import Profile from "hkp-frontend/src/views/profile";
 import Remotes from "hkp-frontend/src/views/remotes";
 import { useBackendRemotes } from "./useBackendRemotes";
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
@@ -203,20 +202,6 @@ function MeanderShell() {
     // Same logo affordance as the playground: without a slot the Toolbar
     // renders a mark that looks clickable but goes nowhere.
     content = <CloudBoards logoSlot={<CloudLogo onClick={onShowStartPage} />} />;
-  } else if (location.pathname.startsWith("/profile")) {
-    // Where the avatar goes, in the toolbar and on the start page alike. A
-    // route rather than a dialog, because the shell decides what is showing
-    // from the route and a view that bypasses it renders over one that still
-    // thinks it is on screen.
-    //
-    // Leaving goes back to whatever the avatar was clicked from — the board
-    // when one is open, the start page otherwise. The logo is the only way
-    // back, so it must not always mean "home".
-    const onLeave =
-      view.type === "playground"
-        ? () => navigate("/playground", { replace: true })
-        : onShowStartPage;
-    content = <Profile logoSlot={<CloudLogo onClick={onLeave} />} />;
   } else if (location.pathname.startsWith("/remotes")) {
     content = (
       <RemoteRuntimeView
