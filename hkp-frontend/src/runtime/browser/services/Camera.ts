@@ -48,7 +48,10 @@ class Camera extends ServiceBase<State> {
     setImmediate(() => this.app.next(this, blob));
   }
 
-  registerScreenshooter(shooter: Screenshooter) {
+  // null when whatever was showing the camera goes away: a stale shooter holds
+  // a video element that is no longer on screen, and captures a blank frame
+  // rather than failing.
+  registerScreenshooter(shooter: Screenshooter | null) {
     this._shooter = shooter;
   }
 

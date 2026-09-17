@@ -1,5 +1,7 @@
 #include "frontendServer.h"
 
+#include "redirectParams.h"
+
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -14,11 +16,58 @@
   #include <boost/asio/ip/tcp.hpp>
 #endif
 
+namespace
+{
+
+/** Wraps a message in the minimal page the browser tab is left showing. */
+std::string redirectPage(const std::string& body)
+{
+  return
+    "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+    "<title>Readymade</title><style>"
+    "body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;"
+    "font:16px/1.5 system-ui,-apple-system,sans-serif;color:#1a1a1a;background:#fafaf9}"
+    "@media(prefers-color-scheme:dark){body{color:#ededed;background:#141414}}"
+    "p{margin:0;padding:0 24px;text-align:center}"
+    "</style></head><body>" + body + "</body></html>";
+}
+
+/** Shown once the callback has been handed to the app. */
+const std::string kDonePage =
+  redirectPage("<p>You can close this tab and return to Readymade.</p>");
+
+/**
+ * Served when the callback carried no query string, which means its parameters
+ * are in the hash fragment — implicit-flow responses put them there, and a
+ * browser keeps a fragment to itself. The page posts it back so the app sees a
+ * callback either way.
+ */
+const std::string kFragmentPage = redirectPage(
+  "<p>You can close this tab and return to Readymade.</p>"
+  "<script>fetch(location.pathname,{method:'POST',body:location.hash.slice(1)});</script>");
+
+} // namespace
+
 // ─── Impl ────────────────────────────────────────────────────────────────────
 
 struct FrontendServer::Impl
 {
   crow::SimpleApp crow;
+
+  // Set before the server starts, read on the server thread; see
+  // FrontendServer::setRedirectRelay.
+  FrontendServer::RedirectRelay redirectRelay;
+
+  /** Hands a callback's parameters to the app, if there are any and anyone to take them. */
+  void relayRedirect(const nlohmann::json& params) const
+  {
+    if (params.empty() || !redirectRelay)
+    {
+      return;
+    }
+    redirectRelay(params.dump());
+  }
 
 #if USE_SAUCER_EMBEDDED
   // ── Embedded (release) ───────────────────────────────────────────────────
@@ -142,6 +191,36 @@ FrontendServer::FrontendServer()
 {
   m_impl->init();
 
+  // The OAuth callback. Answered here rather than served, because the SPA the
+  // catch-all would return is running in the app's webview already — this
+  // request comes from the OS browser, which only has to hand over what the
+  // provider gave it and say so. See backend/redirectParams.h.
+  CROW_ROUTE(m_impl->crow, "/serviceRedirect")
+    .methods(crow::HTTPMethod::GET, crow::HTTPMethod::POST)(
+    [this](const crow::request& req) -> crow::response
+    {
+      if (!readymade::isLoopbackPeer(req.remote_ip_address))
+      {
+        return crow::response(403, "Forbidden");
+      }
+
+      if (req.method == crow::HTTPMethod::POST)
+      {
+        m_impl->relayRedirect(readymade::parseParamString(req.body));
+        return crow::response(204);
+      }
+
+      const auto params = readymade::parseRedirectParams(req.raw_url);
+      if (params.empty())
+      {
+        return crow::response("html", kFragmentPage);
+      }
+
+      m_impl->relayRedirect(params);
+      return crow::response("html", kDonePage);
+    }
+  );
+
   CROW_CATCHALL_ROUTE(m_impl->crow)(
     [this](const crow::request& req) -> crow::response
     {
@@ -157,6 +236,11 @@ FrontendServer::FrontendServer()
 FrontendServer::~FrontendServer()
 {
   stop();
+}
+
+void FrontendServer::setRedirectRelay(RedirectRelay relay)
+{
+  m_impl->redirectRelay = std::move(relay);
 }
 
 void FrontendServer::start(const std::string& bindAddress, uint16_t port)

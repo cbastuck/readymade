@@ -55,7 +55,7 @@ function encode(buffer: ArrayBuffer, encoding: Encoding): string {
 }
 
 class Hash extends ServiceBase<State> {
-  private _progressiveChunks: Uint8Array[] = [];
+  private _progressiveChunks: Uint8Array<ArrayBuffer>[] = [];
 
   constructor(app: AppInstance, board: string, descriptor: ServiceClass, id: string) {
     super(app, board, descriptor, id, {
@@ -113,8 +113,10 @@ class Hash extends ServiceBase<State> {
     this.app.next(this, encode(digest, this.state.encoding));
   }
 
-  private toBytes(params: any): Uint8Array {
-    if (params instanceof Uint8Array) { return params; }
+  private toBytes(params: any): Uint8Array<ArrayBuffer> {
+    // WebCrypto rejects views over a SharedArrayBuffer; the bytes reaching a
+    // service are always over a plain ArrayBuffer, which the narrowing loses.
+    if (params instanceof Uint8Array) { return params as Uint8Array<ArrayBuffer>; }
     if (params instanceof ArrayBuffer) { return new Uint8Array(params); }
     const msg = typeof params === "string" ? params : JSON.stringify(params);
     return new TextEncoder().encode(msg);

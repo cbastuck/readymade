@@ -11,6 +11,11 @@ import Button from "hkp-frontend/src/ui-components/Button";
 import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
+import {
+  captureFrame,
+  startVideoStream,
+  stopVideoStream,
+} from "./camera/videoCapture";
 
 export default function CameraUI(props: ServiceUIProps) {
   const [mirror, setMirror] = useState<boolean>(true);
@@ -53,17 +58,7 @@ export default function CameraUI(props: ServiceUIProps) {
   }, []);
 
   const stopVideoWithStream = (s: MediaStream | null) => {
-    if (s) {
-      if (s.getTracks) {
-        s.getTracks().forEach((track) => track.stop());
-      }
-      if (s.getVideoTracks) {
-        s.getVideoTracks().forEach((track) => track.stop());
-      }
-      if (videoElementRef.current) {
-        videoElementRef.current.srcObject = null;
-      }
-    }
+    stopVideoStream(s, videoElementRef.current);
   };
 
   const onInit = (initialState: any) => {
@@ -103,33 +98,15 @@ export default function CameraUI(props: ServiceUIProps) {
     setCurrentDevice(videoDevices[0]);
   };
 
-  const initVideo = async (
-    videoElement: HTMLVideoElement,
-    deviceId?: string,
-  ): Promise<MediaStream> => {
-    const constraints: MediaStreamConstraints = !deviceId
-      ? { video: true }
-      : { video: { deviceId } };
-    const s = await navigator.mediaDevices.getUserMedia(constraints);
-
-    videoElement.srcObject = s;
-    videoElement.play();
-    return s;
-  };
-
   const startVideo = async (
     videoElement: HTMLVideoElement,
     deviceId?: string,
   ) => {
-    if (navigator.mediaDevices) {
-      const s = await initVideo(videoElement, deviceId);
-      setStream(s);
-      streamRef.current = s;
-      if (!devices.length) {
-        await enumerateDevices();
-      }
-    } else {
-      throw new Error("Can not initialize video");
+    const s = await startVideoStream(videoElement, deviceId);
+    setStream(s);
+    streamRef.current = s;
+    if (!devices.length) {
+      await enumerateDevices();
     }
   };
 
@@ -161,22 +138,14 @@ export default function CameraUI(props: ServiceUIProps) {
     }
   };
 
-  const triggerScreenshot = () => {
-    return new Promise<Blob | null>((resolve) => {
-      const w = widthRef.current;
-      const h = heightRef.current;
-      if (!canvasRef.current) {
-        canvasRef.current = document.createElement("canvas");
-      }
-      canvasRef.current.width = w;
-      canvasRef.current.height = h;
-      const ctx = canvasRef.current.getContext("2d");
-      if (ctx && videoElementRef.current) {
-        ctx.drawImage(videoElementRef.current, 0, 0, w, h);
-        canvasRef.current.toBlob(resolve, captureFormatRef.current);
-      }
-    });
-  };
+  const triggerScreenshot = () =>
+    captureFrame(
+      videoElementRef.current,
+      canvasRef,
+      widthRef.current,
+      heightRef.current,
+      captureFormatRef.current,
+    );
 
   const onRecord = () => {
     const s = streamRef.current;

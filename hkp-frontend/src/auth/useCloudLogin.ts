@@ -29,7 +29,12 @@ export function useCanCloudLogin(): boolean {
  * - When the platform provides its own `login` (e.g. the native Readymade app,
  *   which can't use Auth0's web redirect), run it and feed the resulting raw
  *   id_token into the app session via `updateToken`.
- * - Otherwise fall back to the standard Auth0 single-page redirect flow.
+ * - Otherwise sign in through an Auth0 popup, and only fall back to the
+ *   single-page redirect when the browser refuses to open one. A redirect
+ *   navigates the page away, and a board is built in memory: the user comes
+ *   back signed in to an empty playground, having lost the thing they signed in
+ *   to keep. The popup leaves the page running and the SDK's state updates in
+ *   place when it closes.
  *
  * The web fallback needs an `<Auth0Provider>` ancestor, which is absent on the
  * origins `isWebLoginAvailable` rejects. Logging in there says so in a toast
@@ -41,15 +46,25 @@ export function useCanCloudLogin(): boolean {
  */
 export function useCloudLogin(): () => Promise<void> {
   const platform = usePlatform();
-  const { loginWithRedirect } = useAuth0();
+  const { loginWithPopup, loginWithRedirect } = useAuth0();
   const { updateToken } = useAppContext();
   const canLogin = useCanCloudLogin();
 
   return useCallback(async () => {
     if (platform.login) {
-      const idToken = await platform.login();
-      if (idToken) {
-        await updateToken({ __raw: idToken } as IdToken);
+      // A platform login runs outside this window — a browser, a native sheet —
+      // and can fail for reasons only it knows. Said in a toast for the same
+      // reason as below: the promise is discarded by every caller.
+      try {
+        const idToken = await platform.login();
+        if (idToken) {
+          await updateToken({ __raw: idToken } as IdToken);
+        }
+      } catch (err) {
+        console.error("Sign-in failed", err);
+        toast.error("Signing in failed", {
+          description: err instanceof Error ? err.message : String(err),
+        });
       }
       return;
     }
@@ -63,8 +78,37 @@ export function useCloudLogin(): () => Promise<void> {
       });
       return;
     }
-    await loginWithRedirect({
-      appState: { returnTo: window.location.href },
-    });
-  }, [platform, canLogin, loginWithRedirect, updateToken]);
+    try {
+      await loginWithPopup();
+    } catch (err) {
+      // Codes from auth0-spa-js: the user closed the popup, let it sit until it
+      // timed out, or never got one because the browser blocked it.
+      const code = (err as { error?: string })?.error;
+      if (code === "cancelled" || code === "timeout") {
+        return;
+      }
+      if (code === "popup_open") {
+        // Redirecting is the only way left to sign in, and it costs whatever is
+        // on the page — so it is offered rather than done, with the cheaper fix
+        // named first.
+        toast.warning("Your browser blocked the sign-in window", {
+          description:
+            "Allow pop-ups for this site and try again, or sign in on a new page — which will discard an unsaved board.",
+          action: {
+            label: "Sign in on a new page",
+            onClick: () => {
+              void loginWithRedirect({
+                appState: { returnTo: window.location.href },
+              });
+            },
+          },
+        });
+        return;
+      }
+      console.error("Sign-in failed", err);
+      toast.error("Signing in failed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [platform, canLogin, loginWithPopup, loginWithRedirect, updateToken]);
 }

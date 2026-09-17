@@ -5,13 +5,19 @@
       "id": "4a788e80-c4db-4e91-ac39-4a0c84c15916",
       "name": "Encrypt",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     },
     {
       "id": "345aa722-f010-48fc-830a-ac7f9dd722c2",
       "name": "Decrypt",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     }
   ],
   "services": {
@@ -32,7 +38,9 @@
         "state": {
           "secret": "abcd",
           "method": "aes",
-          "methods": ["aes"]
+          "methods": [
+            "aes"
+          ]
         }
       },
       {
@@ -50,7 +58,9 @@
         "state": {
           "secret": "abcd",
           "method": "aes",
-          "methods": ["aes"]
+          "methods": [
+            "aes"
+          ]
         }
       },
       {
@@ -58,6 +68,117 @@
         "serviceId": "hookup.to/service/monitor",
         "serviceName": "Monitor",
         "state": {}
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "panels": [
+      {
+        "id": "encrypt",
+        "title": "Encrypt",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 14,
+          "items": [
+            {
+              "type": "text-input",
+              "label": "Passphrase",
+              "placeholder": "the secret both sides share",
+              "submitLabel": "Set",
+              "secret": true,
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "38f832ce-b98e-4064-af0f-0c5e3582ad76",
+                  "configure": {
+                    "secret": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Plain text",
+              "placeholder": "something worth keeping to yourself",
+              "submitLabel": "Encrypt",
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "38f832ce-b98e-4064-af0f-0c5e3582ad76",
+                  "payload": "$$input"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Cipher",
+              "source": {
+                "serviceUuid": "ea0ab30f-8d0e-4bef-bb2e-91d390a64cab"
+              },
+              "mono": true,
+              "copyable": true,
+              "fontSize": 12,
+              "placeholder": "Set a passphrase, type something, press Encrypt."
+            }
+          ]
+        }
+      },
+      {
+        "id": "decrypt",
+        "title": "Decrypt",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 14,
+          "items": [
+            {
+              "type": "text-input",
+              "label": "Passphrase",
+              "placeholder": "the same secret",
+              "submitLabel": "Set",
+              "secret": true,
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "ec0cdb4d-f554-4673-8921-5d6bf3bacaf7",
+                  "configure": {
+                    "secret": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Cipher",
+              "placeholder": "paste a base64 cipher",
+              "submitLabel": "Decrypt",
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "ec0cdb4d-f554-4673-8921-5d6bf3bacaf7",
+                  "payload": "$$input"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Plain text",
+              "source": {
+                "serviceUuid": "5c5b5876-83d8-4b32-a39b-71941803cddd"
+              },
+              "mono": true,
+              "copyable": true,
+              "fontSize": 12,
+              "placeholder": "Paste a cipher, press Decrypt. Anything encrypted on the left lands here too."
+            }
+          ]
+        }
       }
     ]
   }

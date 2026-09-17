@@ -248,7 +248,7 @@ function appendSubBlocks(writer: ByteWriter, data: Uint8Array) {
   writer.writeByte(0);
 }
 
-function encodeGif(frames: GifFrame[], delayMs: number): Uint8Array {
+function encodeGif(frames: GifFrame[], delayMs: number): Uint8Array<ArrayBuffer> {
   if (frames.length === 0) {
     return new Uint8Array();
   }

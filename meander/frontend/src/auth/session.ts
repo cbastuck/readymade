@@ -79,6 +79,48 @@ export function hasStoredSession(): boolean {
   return read() !== null;
 }
 
+/**
+ * Whether the user last ended their session deliberately.
+ *
+ * Signing out cannot reach the session at the identity provider: login runs in
+ * the OS browser, so the SSO cookie is in another application's cookie jar,
+ * where nothing this app does can touch it. Recorded here instead, and read at
+ * the next sign-in, which then asks who is signing in rather than being handed
+ * the same account with nothing asked — otherwise signing out would leave no
+ * trace at all and signing in as somebody else would be impossible from inside
+ * the app.
+ */
+const SIGNED_OUT_KEY = "readymade-signed-out";
+
+export function markSignedOut(): void {
+  try {
+    localStorage.setItem(SIGNED_OUT_KEY, "1");
+  } catch {
+    // The next sign-in just won't ask. Nothing else depends on this.
+  }
+}
+
+export function wasSignedOut(): boolean {
+  try {
+    return localStorage.getItem(SIGNED_OUT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Forgets a recorded sign-out. Called once a sign-in has actually completed, not
+ * when one is started: an attempt that is abandoned leaves the same account
+ * signed in at the provider, so the question still needs asking next time.
+ */
+export function clearSignedOut(): void {
+  try {
+    localStorage.removeItem(SIGNED_OUT_KEY);
+  } catch {
+    // Nothing to do.
+  }
+}
+
 export function clearSession(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);

@@ -4,6 +4,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
 import { AppCtx } from "hkp-frontend/src/AppContext";
+import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import {
   DropdownMenu,
@@ -23,7 +24,12 @@ import {
 } from "hkp-frontend/src/ui-components/ThemeContext";
 
 export default function AppMenu() {
-  const { loginWithRedirect, logout } = useAuth0();
+  const { logout } = useAuth0();
+  // The shared trigger rather than a redirect of its own: it signs in through a
+  // popup where a redirect would discard the board on the page, and it defers to
+  // a host that owns its own login (the native app, whose webview a redirect
+  // would navigate away from).
+  const cloudLogin = useCloudLogin();
   const context = useContext(AppCtx);
   const currentUser = context?.user;
   const navigate = useNavigate();
@@ -34,11 +40,7 @@ export default function AppMenu() {
 
   const onLogin = async () => {
     if (!isLoggedIn) {
-      await loginWithRedirect({
-        appState: {
-          returnTo: window.location.href,
-        },
-      });
+      await cloudLogin();
     }
   };
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { SpotifyOAuth } from "./SpotifyComponents";
+import { SpotifyOAuth, spotifyRedirectUri } from "./SpotifyComponents";
 
 import { s, t } from "../../../styles";
 import Button from "hkp-frontend/src/ui-components/Button";
@@ -11,12 +11,10 @@ import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
 const loginStateId = "spotify-login";
 
-const redirectURI =
-  window.location.protocol === "http:"
-    ? `http://127.0.0.1:${window.location.port}/serviceRedirect`
-    : `${window.location.origin}/serviceRedirect`;
-
 export default function SpotifyUI(props: ServiceUIProps) {
+  // Shown so it can be copied into the Spotify dashboard, which only redirects
+  // to an address registered there.
+  const redirectURI = spotifyRedirectUri();
   const [token, setToken] = useState<string | null>(null);
   const [clientID, setClientID] = useState<string>(
     "e91207fc5f2e4a5db1ca562954e4c23e",
@@ -105,7 +103,6 @@ export default function SpotifyUI(props: ServiceUIProps) {
           </div>
           <SpotifyOAuth
             clientID={clientID || undefined}
-            redirectURI={redirectURI}
             onToken={(t: string) => {
               service.configure({ token: t });
             }}
