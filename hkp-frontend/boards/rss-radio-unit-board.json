@@ -34,6 +34,15 @@
       "state": {
         "wrapServices": false
       }
+    },
+    {
+      "id": "playlist",
+      "name": "Playlist",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
     }
   ],
   "services": {
@@ -248,6 +257,19 @@
           "mountName": "episodes",
           "pipeline": []
         }
+      }
+    ],
+    "playlist": [
+      {
+        "uuid": "pl-tick",
+        "serviceId": "timer",
+        "serviceName": "Every minute",
+        "state": {
+          "periodic": true,
+          "periodicValue": 60,
+          "periodicUnit": "s",
+          "running": true
+        }
       },
       {
         "uuid": "pl-base",
@@ -277,24 +299,12 @@
         "state": {}
       },
       {
-        "uuid": "m3u-base",
-        "serviceId": "map",
-        "serviceName": "Where the audio lives",
-        "state": {
-          "mode": "replace",
-          "template": {
-            "base": "{{param.audioBase}}"
-          }
-        }
-      },
-      {
         "uuid": "m3u-doc",
         "serviceId": "sql",
         "serviceName": "The programme as a playlist",
         "state": {
           "mode": "query",
-          "database": "{{param.database}}",
-          "statement": "SELECT '#EXTM3U' || char(10)\n    || IFNULL(group_concat(entry, char(10) ORDER BY sortKey DESC), '')\n    || char(10) AS playlist\n  FROM (\n    SELECT '#EXTINF:-1,' || replace(replace(IFNULL(title, ''), char(13), ' '), char(10), ' ') || char(10)\n        || IFNULL($base, '') || '/' || slug || '.mp3' AS entry,\n           rendered AS sortKey\n      FROM episode\n     WHERE rendered IS NOT NULL\n     ORDER BY rendered DESC\n     LIMIT 100\n  )"
+          "statement": "SELECT '#EXTM3U' || char(10)\n    || IFNULL(group_concat(entry, char(10) ORDER BY sortKey), '')\n    || char(10) AS playlist\n  FROM (\n    SELECT '#EXTINF:-1,' || replace(replace(IFNULL(json_extract(value, '$.title'), ''), char(13), ' '), char(10), ' ') || char(10)\n        || IFNULL(json_extract(value, '$.url'), '') AS entry,\n           key AS sortKey\n      FROM json_each($rows)\n  )"
         }
       },
       {

@@ -255,6 +255,14 @@ Available on hkp-node and hkp-python.
 | `process_on_data` | answered with the last value stored, verbatim | stored; the nested pipeline is not used |
 | `process_on_both` | run the nested pipeline | runs the nested pipeline, and its result carries on down the chain |
 
+"Verbatim" is the whole of `process_on_data`: the services after the endpoint
+still run when a request is served — that is where a board reacts to having
+served one — but what they produce is theirs, not the answer. So a runtime may
+publish **more than one document**: two endpoints in one chain, each answering
+what reached it. A board that wants a request never to run a tail chain at all
+puts a [Stopper](./stopper.md) after the endpoint — but note that this changes
+nothing about the answer.
+
 `process_on_both` gives the nested pipeline two entry points. It is still a
 single ordered list, and what one entry point produces is gone by the time the
 other arrives — see [Hold](./hold.md), which keeps a producer's latest value
