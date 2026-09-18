@@ -278,13 +278,15 @@ export function reportUnitDiagnostics(
  */
 export function filesUnitOrigin(
   documents: Map<string, UnitBoard>,
+  /** How to say where these came from, where it was not a file picker. */
+  describe = "the files that were opened",
 ): UnitOrigin {
   const byBaseName = new Map<string, UnitBoard>();
   for (const [name, board] of documents) {
     byBaseName.set(unitBaseName(name), board);
   }
   return {
-    describe: () => "the files that were opened",
+    describe: () => describe,
     load: async (ref) =>
       documents.get(ref.value) ??
       byBaseName.get(unitBaseName(ref.value)) ??

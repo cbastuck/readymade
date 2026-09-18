@@ -437,18 +437,22 @@ export type BoardDocuments = {
   units: Array<{ name: string; uri: string; board: UnitBoard }>;
 };
 
-export async function serializeBoardDocuments(
-  refs: BoardStateRefs,
+/**
+ * A projection split back into the documents it was assembled from.
+ *
+ * Pure and synchronous: it reads only what the board already is, so it can be
+ * used where asking every service for its configuration would be too much —
+ * notably on every infrastructure change. A board that was never assembled from
+ * units is one document, which is itself.
+ */
+export function unlinkBoardDocuments(
+  board: BoardDescriptor,
   linkage: BoardLinkage | undefined,
-): Promise<BoardDocuments | null> {
-  const serialized = await serializeBoard(refs);
-  if (!serialized) {
-    return null;
-  }
+): BoardDocuments {
   if (!linkage?.units.length) {
-    return { composition: serialized as UnitBoard, units: [] };
+    return { composition: board as UnitBoard, units: [] };
   }
-  const { composition, units } = unlinkProjection(serialized, linkage.units);
+  const { composition, units } = unlinkProjection(board, linkage.units);
   return {
     composition,
     units: units.map((entry) => ({
@@ -457,4 +461,15 @@ export async function serializeBoardDocuments(
       board: entry.board,
     })),
   };
+}
+
+export async function serializeBoardDocuments(
+  refs: BoardStateRefs,
+  linkage: BoardLinkage | undefined,
+): Promise<BoardDocuments | null> {
+  const serialized = await serializeBoard(refs);
+  if (!serialized) {
+    return null;
+  }
+  return unlinkBoardDocuments(serialized, linkage);
 }

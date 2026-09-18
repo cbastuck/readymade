@@ -15,6 +15,7 @@ import {
 } from "../types";
 import { FacadeDescriptor } from "../facade/types";
 import { BoardLinkage } from "../runtime/board/units";
+import { BoardDocuments } from "./boardPersistence";
 import { UnitOrigin } from "./linkUnits";
 import { BoardContextState, EngineState } from "../BoardContext";
 import { BoardCoordinator } from "./coordinator";
@@ -73,7 +74,19 @@ export type Props = {
   serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
   onUpdateBoardState?: (updated: BoardDescriptor) => void;
   onLoad?: (context: BoardContextState) => void;
-  onBoardInfrastructureChange?: (board: BoardDescriptor) => void;
+  /**
+   * The board's infrastructure changed: runtimes, services, name or facade.
+   *
+   * `board` is the projection — the flat board, which is what a coordinator
+   * registers. `documents` is the same board as the sources it was assembled
+   * from, which is what anything storing the board for later must keep: a
+   * composition re-read as a projection declares no units, so the facades its
+   * units contribute are lost the next time it is opened.
+   */
+  onBoardInfrastructureChange?: (
+    board: BoardDescriptor,
+    documents: BoardDocuments,
+  ) => void;
 };
 
 export type BoardStateRefs = {
