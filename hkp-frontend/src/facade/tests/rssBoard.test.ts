@@ -78,20 +78,26 @@ describe("the RSS aggregator board", () => {
     }
   });
 
-  it("passes the request through each statement, ending in the query", () => {
+  it("passes the request through every statement that changes rows", () => {
     const statements = services.filter((svc) => svc.serviceId === "sql");
 
     // Each statement that changes rows steps out of the way of the request, so
     // the ones after it are handed the article and not its own { changes }.
-    for (const svc of statements.slice(0, -1)) {
+    for (const svc of statements) {
       const state = (svc as any).state;
-      expect([svc.uuid, state.mode, state.emit]).toEqual([
-        svc.uuid,
-        "run",
-        "input",
-      ]);
+      if (state.mode === "run") {
+        expect([svc.uuid, state.emit]).toEqual([svc.uuid, "input"]);
+      }
     }
-    expect((statements[statements.length - 1] as any).state.mode).toBe("query");
+
+    // The reading list is read back in the same pass that changed it, so the
+    // list a person sees is the state after their own tap.
+    const reading = statements.findIndex((svc) => svc.uuid === "kept-articles");
+    const changing = statements
+      .map((svc, index) => ((svc as any).state.mode === "run" ? index : -1))
+      .filter((index) => index >= 0);
+    expect((statements[reading] as any).state.mode).toBe("query");
+    expect(Math.max(...changing)).toBeLessThan(reading);
   });
 
   it("gives the reading list one entry point, at the head of the statements", () => {
@@ -115,13 +121,36 @@ describe("the RSS aggregator board", () => {
 
   it("shares one database across the statements, named rather than derived", () => {
     // Left empty the name comes from the board's title, which two boards can
-    // share; naming it keeps this board alone with its reading list.
+    // share; naming it keeps this board alone with its reading list. The name
+    // is a unit parameter, so what a statement holds is the reference and what
+    // it runs with is the default — one name either way.
     const names = new Set(
       services
         .filter((svc) => svc.serviceId === "sql")
         .map((svc) => (svc as any).state.database),
     );
-    expect([...names]).toEqual(["rss-reader"]);
+    expect([...names]).toEqual(["{{param.database}}"]);
+    expect((board as any).unit.params.database).toBe("rss-reader");
+  });
+
+  it("publishes the list as a feed, rebuilt by the act of changing it", () => {
+    // The services that build and serve the document sit after the ones that
+    // save and remove, so a save rebuilds the feed in its own pass — there is
+    // nothing to schedule and nothing to invalidate.
+    const feedServices = ["feed-about", "feed-doc", "feed-wrap", "feed-serve"];
+    const changing = order.indexOf("drop-article");
+
+    for (const uuid of feedServices) {
+      expect(order.indexOf(uuid)).toBeGreaterThan(changing);
+    }
+
+    const serve = services.find((svc) => svc.uuid === "feed-serve") as any;
+    // Serving the last document it was handed, which is what makes the board
+    // able to answer a subscriber without rebuilding anything per request.
+    expect(serve.state.mode).toBe("process_on_data");
+    // And it is last, because an endpoint in that mode answers with whatever
+    // its chain returns.
+    expect(order[order.length - 1]).toBe("feed-serve");
   });
 
   it("fetches on load, so it reads as a reader and not as a form", () => {

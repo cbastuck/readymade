@@ -132,6 +132,57 @@ call.
 
 ---
 
+## A feed on this board
+
+A feed one unit publishes and another reads has no address until the board
+loads, so it is named the way every other endpoint is:
+
+```json
+{ "feeds": [{ "url": "hkp-mount://reader.node/feed-serve", "name": "Reading list" }] }
+```
+
+The board's coordinator resolves the reference and hands the address over; until
+it does, that feed reports `Waiting for …` in `errors` and the round carries on
+with whatever else is subscribed. One address per service, so one feed of a list
+may be a reference — the rest are URLs, which is what they are anyway.
+
+## Publishing one
+
+There is no service for this, and there does not need to be one: a feed is a
+document, and the statement that reads the rows can build it.
+
+```
+sql (the document) → map (an envelope) → http-server-subservices (process_on_data)
+```
+
+- **`sql`** concatenates the rows into one document —
+  `group_concat(item, '' ORDER BY …)` does the joining that a Map cannot, since
+  the expression dialect has no reduce over an array.
+- **`map`** wraps it as
+  `{ meta: { status: 200, contentType: "application/rss+xml" }, body: … }`, which
+  is what makes the answer XML rather than JSON describing it.
+- **`http-server-subservices`** in `process_on_data` mode holds the last document
+  it was handed and serves that to every caller.
+
+Two things to get right, both of which are silent when wrong:
+
+- **Escape every interpolated field.** A `&` in a link — almost every feed URL
+  has one — is not XML. `CDATA` covers the text fields with a single `replace`
+  of `]]>`; a `replace` chain covers the URLs.
+- **`||` propagates NULL**, so one absent column removes the whole item from the
+  document rather than producing an empty element. `IFNULL` anything nullable.
+
+An endpoint in `process_on_data` mode answers with what **its chain** returns,
+so it has to be the last service in one. A pipeline that stops before reaching
+it — an `iterator` with nothing to iterate — leaves it holding the previous
+document, which is why the boards that publish this way give the publishing side
+a clock of its own.
+
+See `rss-radio-board.json` for both halves: a reading list published as a feed,
+and a second board reading it as one.
+
+---
+
 ## Reading a feed without a parser
 
 The feed is read by a scanner over the markup rather than by a general XML

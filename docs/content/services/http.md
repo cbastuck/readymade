@@ -40,6 +40,26 @@ equivalent of the browser's [Fetcher](./fetcher.md) service.
 - **Input**: any value; may be merged into the request body
 - **Output**: HTTP response body, parsed as JSON if the Content-Type is `application/json`, otherwise a string
 
+#### A request that says where it is going
+
+`path` and `method` are configuration, which is right for a service calling one
+endpoint over and over. Where a board calls a *different* address per item — an
+episode written to its own path, a record fetched by its own id — the input may
+say so, in the same envelope the response comes back in:
+
+```json
+{
+  "meta": { "method": "put", "path": "/episodes/one.mp3", "contentType": "audio/mpeg" },
+  "binary": "…the bytes…"
+}
+```
+
+What the input leaves unsaid stays as configured, so a board that names neither
+is unaffected. `path` is a sub-path of a mount, exactly as the configured field
+is: a typed URL carries its own path and is not rewritten from a distance.
+
+On hkp-node.
+
 ### On hkp-node, hkp-python and the browser
 
 These implementations share the configuration above (and therefore, on the
@@ -186,6 +206,44 @@ rewriting an HTTP contract from a distance. It also means a runtime that serves
 an endpoint can be made terminal with a [Stopper](./stopper.md) — ending the
 chain so it does not drive the runtime that calls it — while still answering its
 callers normally.
+
+### What a handler may answer with
+
+An answer is JSON unless the handler says otherwise, which is what every board
+got before there was a way to say anything else. To say otherwise, return the
+request envelope read backwards — `meta` beside `body` or `binary`:
+
+```json
+{
+  "meta": { "status": 200, "contentType": "application/rss+xml" },
+  "body": "<?xml version=\"1.0\"?><rss version=\"2.0\">…</rss>"
+}
+```
+
+| Field | Means |
+|---|---|
+| `meta.status` | the response status, **and what marks this as an answer** |
+| `meta.contentType` | the `content-type` header |
+| `meta.headers` | any other headers, by name |
+| `binary` | the bytes to send |
+| `body` | a string, sent as text; anything else, sent as JSON |
+
+**The status is what distinguishes an answer from a request.** A request and a
+response are the same shape, so a pipeline that passes its input through returns
+a request — and reading any `meta` as an answer would silently reply with the
+caller's own content type. A request carries no status; a response always does.
+It is also what [http-client](#http-client) reports a response as, so a board
+that proxies one endpoint to another passes what it got straight back.
+
+Raw bytes on their own are sent as `application/octet-stream`, because there is
+no JSON encoding of them anybody wanted.
+
+**Byte answers are seekable.** A `Range` header is honoured against the bytes
+the handler produced, and answered `206` with a `content-range`. That is what a
+player dragging a scrubber sends, and a server that ignores it re-sends the whole
+file each time.
+
+Available on hkp-node and hkp-python.
 
 ### Where the nested pipeline is entered from
 

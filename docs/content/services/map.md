@@ -185,3 +185,31 @@ Alongside the `=`-suffix convention, the hkp-rt Map also renders **Inja** (a C++
 ```
 
 Note the difference in scope: an Inja template addresses the incoming data directly (`{{ value }}`), while an expression addresses it through `params` (`"angle=": "params.value * 0.1"`). Inja's own filters and functions apply inside `{{ }}`; the built-in table above applies inside expressions.
+
+---
+
+## An address a board mentions
+
+A `hkp-mount://<runtimeId>/<serviceUuid>` value anywhere in what a template
+produces becomes the address it names, once the board's coordinator has
+resolved it:
+
+```json
+{ "template": { "audioBase": "hkp-mount://library.files/listen" } }
+```
+
+This is for a board that has to **mention** an endpoint — an enclosure URL in a
+feed, a link somebody is handed, an address written into a document — as against
+dialling one, which `http-client` does with the same reference in the field it
+calls. The address is assigned when the board loads, so it cannot be written
+down in advance.
+
+It applies to what the template *produced*, so a reference an expression
+returned is covered as well as one written as a static value.
+
+An unresolved reference is **left as it stands**: the owner has not published
+yet, and a value that still says `hkp-mount://…` is visibly not an address,
+where an empty string would look like a field nobody filled in. One address per
+service, so one reference per Map.
+
+Available on hkp-node and hkp-python.

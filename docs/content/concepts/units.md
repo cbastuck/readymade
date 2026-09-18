@@ -129,6 +129,10 @@ See **Queue** (`services/queue.md`) for the service itself.
 own `params` are the defaults — running alone is running with those — and a
 composition overrides them per instance.
 
+Substitution happens whether a board was opened alone or included by something
+else, which is what makes "test a unit on its own" a real case rather than the
+one that does not work.
+
 A reference with no value is **left as it stands**, not blanked. Unlike a secret,
 where an empty string is what every service already reads as "not configured", a
 parameter is usually a topic, a database or a URL, and emptying one produces a

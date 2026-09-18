@@ -1,0 +1,232 @@
+{
+  "boardName": "Radio Library",
+  "description": "A folder of audio, served. Whatever is written into the volume this names is readable over one address: ask the address itself for a listing, or a path under it for the file, with the content type its extension means and range requests answered so a player can seek.\n\nThe listing is JSON, because a store answers callers rather than browsers \u2014 the panel here turns it into something to click, and a player wants the feed the Radio publishes rather than either. A file opened on its own does play in a browser: it is an audio/mpeg response, which is all a browser needs.\n\nIt is the public half of the library and nothing else: the Storage services here are read-only, which is what makes an unauthenticated endpoint safe to hand out. Writing happens through a different instance, inside the board that renders \u2014 see the Radio unit.\n\nStorage names a place on the board rather than a place on a disk: what actually holds the bytes is its nested pipeline, `filesystem` here. Swapping that for something speaking S3 changes nothing outside this service.\n\nTwo boards share a volume by naming the same one, the way two boards share a database. Needs hkp-node on port 8080.",
+  "unit": {
+    "name": "library",
+    "params": {
+      "volume": "radio"
+    }
+  },
+  "runtimes": [
+    {
+      "id": "files",
+      "name": "Library",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "files": [
+      {
+        "uuid": "listen",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Listen",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_session",
+          "mountName": "listen",
+          "pipeline": [
+            {
+              "instanceId": "episodes",
+              "serviceId": "storage",
+              "serviceName": "Episodes",
+              "state": {
+                "readOnly": true,
+                "prefix": "episodes",
+                "pipeline": [
+                  {
+                    "instanceId": "files",
+                    "serviceId": "filesystem",
+                    "serviceName": "Files",
+                    "state": {
+                      "volume": "{{param.volume}}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "end",
+        "serviceId": "stopper",
+        "serviceName": "End of the call",
+        "state": {}
+      },
+      {
+        "uuid": "browse",
+        "serviceId": "storage",
+        "serviceName": "What is there",
+        "state": {
+          "readOnly": true,
+          "prefix": "episodes",
+          "pipeline": [
+            {
+              "instanceId": "files",
+              "serviceId": "filesystem",
+              "serviceName": "Files",
+              "state": {
+                "volume": "{{param.volume}}"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "pick",
+        "serviceId": "map",
+        "serviceName": "Just the files",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "=": "params.body.files"
+          }
+        }
+      },
+      {
+        "uuid": "link",
+        "serviceId": "map",
+        "serviceName": "Where each one plays",
+        "state": {
+          "mode": "replace",
+          "arrayMode": "array",
+          "template": {
+            "path=": "params.path",
+            "kb=": "round(params.size / 1024)",
+            "base": "hkp-mount://files/listen"
+          }
+        }
+      },
+      {
+        "uuid": "shown",
+        "serviceId": "map",
+        "serviceName": "The listing",
+        "state": {
+          "mode": "replace",
+          "arrayMode": "single",
+          "template": {
+            "episodes=": "params"
+          }
+        }
+      },
+      {
+        "uuid": "seen",
+        "serviceId": "monitor",
+        "serviceName": "Listing",
+        "state": {}
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "library",
+        "title": "Library",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "align": "stretch",
+          "paddingX": 16,
+          "paddingY": 16,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Everything the radio has rendered. Tap one to play it; the address below is the same list as JSON, for anything that is not a person.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Refresh",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "browse",
+                      "payload": {
+                        "op": "list"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "label": "Address",
+                  "source": {
+                    "serviceUuid": "listen",
+                    "path": "__hkpMount"
+                  },
+                  "placeholder": "not published yet",
+                  "fontSize": 11,
+                  "wrap": true,
+                  "grow": true
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "seen",
+                "path": "episodes"
+              },
+              "gap": 4,
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "center",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.path}}",
+                    "href": "{{item.base}}/{{item.path}}",
+                    "fontSize": 12,
+                    "wrap": true,
+                    "grow": true
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.kb}} kB",
+                    "tone": "muted",
+                    "fontSize": 11
+                  }
+                ]
+              },
+              "stripe": {
+                "even": "rgba(127,127,127,0.10)",
+                "odd": "rgba(127,127,127,0.03)",
+                "padding": 8,
+                "radius": 6
+              }
+            },
+            {
+              "type": "qr-code",
+              "caption": "Scan for the listing",
+              "source": {
+                "serviceUuid": "listen",
+                "path": "__hkpMount"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "browse",
+        "payload": {
+          "op": "list"
+        }
+      }
+    ]
+  }
+}

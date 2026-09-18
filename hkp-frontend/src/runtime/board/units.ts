@@ -47,7 +47,7 @@ import {
 } from "../../types";
 import { FacadeDescriptor } from "../../facade/types";
 import { collectServicesById, deepClone, mapStrings } from "./traversal";
-import { MOUNT_FIELD, formatMountRef, parseMountRef } from "./mount";
+import { formatMountRef, parseMountRef } from "./mount";
 
 /**
  * Scheme spelling out that a `uri` is meant relative to the composition's
@@ -285,17 +285,37 @@ export function projectUnits(
   const units: PlacedUnit[] = [];
   const views: BoardView[] = [];
 
-  const rootRuntimes = deepClone(root.runtimes ?? []);
-  const rootServices = deepClone(root.services ?? {});
-  runtimes.push(...rootRuntimes);
-  for (const [runtimeId, list] of Object.entries(rootServices)) {
+  // A board's own parameters are substituted into it whether it was opened
+  // alone or included by something else. The defaults on a `unit` declaration
+  // are *what running alone means* — without this, a unit that parameterised
+  // its database or its endpoint would run with `{{param.…}}` in the field, and
+  // "test a unit on its own" would be exactly the case that does not work.
+  const rootParams = root.unit?.params ?? {};
+  const { value: rootBody, missing: rootMissing } = resolveParams(
+    {
+      runtimes: deepClone(root.runtimes ?? []),
+      services: deepClone(root.services ?? {}),
+      facade: root.facade,
+    },
+    rootParams,
+  );
+  for (const param of rootMissing) {
+    diagnostics.push({
+      level: "warning",
+      code: "unit-param-missing",
+      message: `Parameter "${param}" has no value; the reference is left in the board.`,
+    });
+  }
+
+  runtimes.push(...rootBody.runtimes);
+  for (const [runtimeId, list] of Object.entries(rootBody.services)) {
     services[runtimeId] = list;
   }
-  if (root.facade) {
+  if (rootBody.facade) {
     views.push({
       id: "composition",
       title: root.boardName || "Board",
-      facade: root.facade,
+      facade: rootBody.facade,
       runtimeIds: [],
     });
   }
@@ -314,6 +334,7 @@ export function projectUnits(
     ...root,
     runtimes,
     services,
+    ...(rootBody.facade ? { facade: rootBody.facade } : {}),
   };
 
   diagnostics.push(...validateProjection(root, units, services));
@@ -424,32 +445,51 @@ function placeUnit(
  * `hkp-mount://hotels.intake/peer`. A reference naming a runtime this unit does
  * not have is left alone — it is either already an address, or a mistake worth
  * seeing as written.
+ *
+ * **Wherever it appears**, not only in `__hkpMount`, because that is how a
+ * reference is found everywhere else (`findMountRefs`, and the coordinator that
+ * resolves one). A service names its target in whatever field it already calls
+ * its target — an `http-client`'s `url`, an `rss` feed's url, the value a `map`
+ * puts in a document — and a scheme is what makes them all recognisable without
+ * agreeing on a field.
  */
 function requalifyMounts(
   services: ServiceDescriptor[],
   runtimeIds: { [unitRuntimeId: string]: string },
 ): ServiceDescriptor[] {
+  const requalified = (raw: unknown): string | null => {
+    if (typeof raw !== "string") {
+      return null;
+    }
+    const ref = parseMountRef(raw);
+    const projectedId = ref && runtimeIds[ref.runtimeId];
+    return ref && projectedId
+      ? formatMountRef({ runtimeId: projectedId, serviceUuid: ref.serviceUuid })
+      : null;
+  };
+
   const walk = (node: unknown): void => {
     if (Array.isArray(node)) {
-      node.forEach(walk);
+      node.forEach((item, index) => {
+        const projected = requalified(item);
+        if (projected) {
+          node[index] = projected;
+          return;
+        }
+        walk(item);
+      });
       return;
     }
     if (!node || typeof node !== "object") {
       return;
     }
     const obj = node as Record<string, unknown>;
-    const raw = obj[MOUNT_FIELD];
-    if (typeof raw === "string") {
-      const ref = parseMountRef(raw);
-      const projectedId = ref && runtimeIds[ref.runtimeId];
-      if (ref && projectedId) {
-        obj[MOUNT_FIELD] = formatMountRef({
-          runtimeId: projectedId,
-          serviceUuid: ref.serviceUuid,
-        });
+    for (const [key, value] of Object.entries(obj)) {
+      const projected = requalified(value);
+      if (projected) {
+        obj[key] = projected;
+        continue;
       }
-    }
-    for (const value of Object.values(obj)) {
       walk(value);
     }
   };

@@ -1,6 +1,6 @@
 {
   "boardName": "RSS Aggregator",
-  "description": "Any number of RSS or Atom feeds read as one list, newest first, with Hacker News among them. Subscribe to a feed by pasting its URL; the feeds are fetched together and one slow or broken one costs its own rows and nothing else. Saving an article puts it in a SQL reading list that outlives the feed page it came from.",
+  "description": "Any number of RSS or Atom feeds read as one list, newest first, with Hacker News among them. Subscribe to a feed by pasting its URL; the feeds are fetched together and one slow or broken one costs its own rows and nothing else. Saving an article puts it in a SQL reading list that outlives the feed page it came from.\n\nThe reading list is also published **as a feed** of its own, at an address this board is given when it loads. Nothing here knows what a feed is: the document is built by the statement that reads the rows, and the endpoint in front of it serves the last one it was handed. Because those services sit after the ones that save and remove an article, the feed is rebuilt by the act of changing the list rather than on a schedule \u2014 anything subscribed to it sees the change on its next read.",
   "runtimes": [
     {
       "id": "node",
@@ -54,7 +54,7 @@
         "state": {
           "mode": "run",
           "emit": "input",
-          "database": "rss-reader",
+          "database": "{{param.database}}",
           "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);",
           "statement": "INSERT INTO article (link, title, feed, author, summary, published)\nSELECT $link, $title, $feed, $author, $summary, $published\n WHERE $intent = 'keep' AND $link <> ''\n    ON CONFLICT(link) DO NOTHING"
         }
@@ -66,7 +66,7 @@
         "state": {
           "mode": "run",
           "emit": "input",
-          "database": "rss-reader",
+          "database": "{{param.database}}",
           "statement": "DELETE FROM article\n WHERE $intent = 'drop'\n   AND link = $link"
         }
       },
@@ -76,9 +76,56 @@
         "serviceName": "Reading list",
         "state": {
           "mode": "query",
-          "database": "rss-reader",
+          "database": "{{param.database}}",
           "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);",
           "statement": "SELECT link, title, feed, published, saved\n  FROM article\n ORDER BY saved DESC\n LIMIT 100"
+        }
+      },
+      {
+        "uuid": "feed-about",
+        "serviceId": "map",
+        "serviceName": "What the feed is called",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "channelTitle": "{{param.feedTitle}}",
+            "channelDescription": "{{param.feedDescription}}",
+            "channelLink": "hkp-mount://node/feed-serve"
+          }
+        }
+      },
+      {
+        "uuid": "feed-doc",
+        "serviceId": "sql",
+        "serviceName": "The reading list as a feed",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "SELECT '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'\n    || '<rss version=\"2.0\"><channel>'\n    || '<title><![CDATA[' || replace(IFNULL($channelTitle, ''), ']]>', ']]&gt;') || ']]></title>'\n    || '<link>' || replace(replace(replace(IFNULL($channelLink, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n    || '<description><![CDATA[' || replace(IFNULL($channelDescription, ''), ']]>', ']]&gt;') || ']]></description>'\n    || IFNULL(group_concat(item, '' ORDER BY sortKey DESC), '')\n    || '</channel></rss>' AS feed\n  FROM (\n    SELECT '<item>'\n        || '<title><![CDATA[' || replace(IFNULL(title, ''), ']]>', ']]&gt;') || ']]></title>'\n        || '<link>' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n        || '<guid isPermaLink=\"true\">' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</guid>'\n        || '<pubDate>' || IFNULL(published, '') || '</pubDate>'\n        || '<category><![CDATA[' || replace(IFNULL(feed, ''), ']]>', ']]&gt;') || ']]></category>'\n        || '<description><![CDATA[' || replace(IFNULL(summary, ''), ']]>', ']]&gt;') || ']]></description>'\n        || '</item>' AS item,\n           saved AS sortKey\n      FROM article\n     ORDER BY saved DESC\n     LIMIT 100\n  )"
+        }
+      },
+      {
+        "uuid": "feed-wrap",
+        "serviceId": "map",
+        "serviceName": "As a document",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "meta.status": 200,
+            "meta.contentType": "application/rss+xml; charset=utf-8",
+            "body=": "params.rows[0].feed"
+          }
+        }
+      },
+      {
+        "uuid": "feed-serve",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Serve the feed",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_data",
+          "mountName": "list",
+          "pipeline": []
         }
       }
     ]
@@ -141,7 +188,7 @@
                     "serviceUuid": "feeds",
                     "path": "count"
                   },
-                  "placeholder": "—",
+                  "placeholder": "\u2014",
                   "grow": true
                 }
               ]
@@ -192,7 +239,7 @@
                   },
                   {
                     "type": "text",
-                    "placeholder": "{{item.feed}} · {{item.publishedLabel}}",
+                    "placeholder": "{{item.feed}} \u00b7 {{item.publishedLabel}}",
                     "tone": "muted",
                     "fontSize": 11
                   },
@@ -272,6 +319,18 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "text",
+              "label": "As a feed",
+              "source": {
+                "serviceUuid": "feed-serve",
+                "path": "__hkpMount"
+              },
+              "placeholder": "not published yet",
+              "tone": "muted",
+              "fontSize": 11,
+              "wrap": true
             }
           ]
         },
@@ -286,7 +345,7 @@
           "items": [
             {
               "type": "text",
-              "placeholder": "Paste any RSS or Atom URL to add it to the merged list. Feeds are fetched from the Node runtime, which is what makes arbitrary ones readable at all — almost no publisher sends the CORS header a browser would need.",
+              "placeholder": "Paste any RSS or Atom URL to add it to the merged list. Feeds are fetched from the Node runtime, which is what makes arbitrary ones readable at all \u2014 almost no publisher sends the CORS header a browser would need.",
               "tone": "muted",
               "fontSize": 12
             },
@@ -401,5 +460,13 @@
         }
       }
     ]
+  },
+  "unit": {
+    "name": "reader",
+    "params": {
+      "database": "rss-reader",
+      "feedTitle": "Reading list",
+      "feedDescription": "Articles kept from the feeds this board reads"
+    }
   }
 }
