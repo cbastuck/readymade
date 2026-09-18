@@ -255,6 +255,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `text`             | Whatever a service is saying, as text — a reason, a summary, a count       |
 | `data-table`       | Rows from a service; an array replaces the table, an object appends a row  |
 | `file-pick`        | File chooser that sends the file to a service                              |
+| `audio-player`     | Plays a service's list of audio files through, one after the next          |
 
 Two things a facade declares beside its panels, both about **what is on screen and when**:
 

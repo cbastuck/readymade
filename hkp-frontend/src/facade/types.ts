@@ -447,6 +447,65 @@ export type CalendarWidget = {
   confirm?: string;
 };
 
+// A set of audio files played as one sitting — the widget for a board whose
+// output is something a person listens to rather than looks at.
+//
+// A list of addresses is not yet listening. A browser opening one file plays
+// that file and stops, and the person is back at a listing choosing the next
+// one; what makes a run of separate recordings into a programme is that the
+// next one starts by itself. That is this widget's whole subject: it holds one
+// audio element, points it at a track, and moves to the next when that track
+// ends.
+//
+// The tracks come from a service, read like every other display widget's
+// `source`, so what a board already publishes as a list — a query's rows, a
+// storage listing — is what it plays. `url` is an item template in the same
+// vocabulary a `repeat` uses ("{{item.base}}/{{item.path}}"), because the
+// address of a track is usually assembled from an item rather than stored in
+// it.
+//
+// Tracks are identified by their address, not their position, so a list that
+// arrives again — a poll, a refresh, one new episode at the front — does not
+// interrupt what is playing. A track that is still in the list keeps playing
+// from where it is; only a track that has gone away stops.
+//
+// Playback starts on a tap, always. Browsers refuse to start audio that no one
+// asked for, and `autoplay` here only says to begin as soon as the first list
+// arrives *after* a person has pressed play once — a board reloaded in the
+// background stays silent, which is the behaviour a listener wants anyway.
+export type AudioPlayerWidget = {
+  type: "audio-player";
+  // The tracks, as an array. A path may name the array inside a larger
+  // notification ("episodes" for { episodes, count }).
+  source: FacadeWidgetSource;
+  // Each track's address, interpolated with the item. A bare "{{item.url}}"
+  // where the item already carries one; a joined template where it does not.
+  url: string;
+  // What a track is called in the list and in the now-playing line.
+  // Default: the address's last segment without its extension.
+  title?: string;
+  // A second, quieter line under the title — a date, a source, a duration.
+  subtitle?: string;
+  // Start by itself when a track the widget has not seen before arrives, once
+  // the person has played something here at least once in this session — the
+  // difference between a library and a station. Reaching the end of the list
+  // is still an end. Default false.
+  autoplay?: boolean;
+  // Move to the next track when one ends — and past one that will not play at
+  // all, since a volume holds whatever it holds. Default true; without it this
+  // is a player with a list, not a programme.
+  continuous?: boolean;
+  // Return to the first track after the last. Default false.
+  loop?: boolean;
+  // The tracks, as a list under the player, with the playing one marked and
+  // any of them tappable. Default true.
+  showList?: boolean;
+  // How tall that list may grow before it scrolls, in pixels. Default 220.
+  listMaxHeight?: number;
+  // What to say when the source has given nothing yet.
+  placeholder?: string;
+};
+
 export type FacadeWidget =
   | MessageListWidget
   | TextInputWidget
@@ -466,6 +525,7 @@ export type FacadeWidget =
   | XYPadWidget
   | DataTableWidget
   | RepeatWidget
+  | AudioPlayerWidget
   | CalendarWidget;
 
 // ---------------------------------------------------------------------------

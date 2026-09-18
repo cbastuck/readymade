@@ -347,6 +347,19 @@ describe("projection", () => {
     expect(views.map((view) => view.id)).toEqual(["composition", "hotels"]);
     expect(views[1].runtimeIds).toEqual(["hotels.intake", "hotels.review"]);
   });
+
+  it("leaves out the face of a unit the composition included as a resource", () => {
+    // A unit whose contribution is an address rather than a panel still needs
+    // that panel to be openable on its own, so the composition is what says it
+    // has no face here — and everything else about the unit is placed as usual.
+    const withFacade = { ...hotels, facade: { layout: "single", panels: [] } } as UnitBoard;
+    const { views, board } = projectUnits(emptyComposition, [
+      { entry: { uri: "hotels", view: false }, board: withFacade, name: "hotels" },
+    ]);
+
+    expect(views).toEqual([]);
+    expect(board.services["hotels.intake"]).toBeTruthy();
+  });
 });
 
 describe("declarations", () => {

@@ -72,6 +72,14 @@ rather than readers; what turns it into something to click is a panel, or a feed
 A single file opened in a browser does play — an `audio/mpeg` response is all a
 browser needs.
 
+A listing is also the raw material for a document some other program does
+understand. A board that wants one publishes it beside the store rather than
+asking the store to speak that language: `sql` over `json_each($rows)` joins the
+listing into the document — an M3U playlist, a feed — a `map` gives it a content
+type, and a second endpoint in `process_on_data` serves it. The store keeps its
+one job, and the board gains an address it can hand to a media player. The
+library unit of the reading-radio boards does exactly this.
+
 A caller with a storage request to make can also POST it as JSON to the same
 endpoint; a body carrying an `op` is read as the request rather than as bytes
 to keep.

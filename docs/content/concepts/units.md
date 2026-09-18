@@ -216,6 +216,21 @@ narrowed to them (`narrowBoardContext`), so a unit's facade addresses its own
 services and nothing else. A board that is not a composition has the single
 facade it always had.
 
+Not every unit is something to look at. A unit whose contribution is an
+**address** — a store served over HTTP, a voice that answers requests — still
+needs a panel of its own, because that is what makes it openable and testable
+alone; in a composition the same panel is a tab nobody has a reason to visit,
+and each of those makes the tabs that matter harder to find. So the composition
+decides, per entry:
+
+```json
+{ "uri": "library-unit-board.json", "as": "library", "view": false }
+```
+
+The unit keeps its facade — this is not an edit to the unit — and everything
+else about it is placed as usual: its runtimes run, its services load, its
+mounts publish and resolve. It simply contributes no face to this board.
+
 ---
 
 ## Saving: the inverse of linking

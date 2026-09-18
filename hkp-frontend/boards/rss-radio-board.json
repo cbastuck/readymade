@@ -11,7 +11,11 @@
     },
     {
       "uri": "rss-radio-voice-unit-board.json",
-      "as": "voice"
+      "as": "voice",
+      "params": {
+        "voice": "af_heart"
+      },
+      "view": false
     },
     {
       "uri": "rss-radio-unit-board.json",
@@ -30,7 +34,8 @@
       "as": "library",
       "params": {
         "volume": "radio"
-      }
+      },
+      "view": false
     }
   ],
   "runtimes": [],

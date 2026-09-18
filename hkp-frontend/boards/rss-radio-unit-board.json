@@ -248,6 +248,79 @@
           "mountName": "episodes",
           "pipeline": []
         }
+      },
+      {
+        "uuid": "pl-base",
+        "serviceId": "map",
+        "serviceName": "Where the audio lives",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "base": "{{param.audioBase}}"
+          }
+        }
+      },
+      {
+        "uuid": "pl-rows",
+        "serviceId": "sql",
+        "serviceName": "The programme, newest first",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "SELECT title,\n       IFNULL($base, '') || '/' || slug || '.mp3' AS url,\n       IFNULL(published, '') AS published\n  FROM episode\n WHERE rendered IS NOT NULL\n ORDER BY rendered DESC\n LIMIT 100"
+        }
+      },
+      {
+        "uuid": "pl-seen",
+        "serviceId": "monitor",
+        "serviceName": "The programme",
+        "state": {}
+      },
+      {
+        "uuid": "m3u-base",
+        "serviceId": "map",
+        "serviceName": "Where the audio lives",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "base": "{{param.audioBase}}"
+          }
+        }
+      },
+      {
+        "uuid": "m3u-doc",
+        "serviceId": "sql",
+        "serviceName": "The programme as a playlist",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "SELECT '#EXTM3U' || char(10)\n    || IFNULL(group_concat(entry, char(10) ORDER BY sortKey DESC), '')\n    || char(10) AS playlist\n  FROM (\n    SELECT '#EXTINF:-1,' || replace(replace(IFNULL(title, ''), char(13), ' '), char(10), ' ') || char(10)\n        || IFNULL($base, '') || '/' || slug || '.mp3' AS entry,\n           rendered AS sortKey\n      FROM episode\n     WHERE rendered IS NOT NULL\n     ORDER BY rendered DESC\n     LIMIT 100\n  )"
+        }
+      },
+      {
+        "uuid": "m3u-wrap",
+        "serviceId": "map",
+        "serviceName": "As a playlist file",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "meta.status": 200,
+            "meta.contentType": "audio/x-mpegurl; charset=utf-8",
+            "meta.headers.content-disposition": "inline; filename=\"radio.m3u\"",
+            "body=": "params.rows[0].playlist"
+          }
+        }
+      },
+      {
+        "uuid": "m3u-serve",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Serve the playlist",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_data",
+          "mountName": "playlist",
+          "pipeline": []
+        }
       }
     ]
   },
@@ -332,6 +405,67 @@
             }
           ]
         }
+      },
+      {
+        "id": "listen",
+        "title": "Listen",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "align": "stretch",
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Everything the radio has read, newest first. Press play once and it runs on by itself; a track finishing starts the next one, and an episode rendered while you listen joins the end.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "audio-player",
+              "source": {
+                "serviceUuid": "pl-seen",
+                "path": "rows"
+              },
+              "url": "{{item.url}}",
+              "title": "{{item.title}}",
+              "subtitle": "{{item.published}}",
+              "autoplay": true,
+              "placeholder": "Nothing has been read aloud yet."
+            },
+            {
+              "type": "button",
+              "label": "Refresh the programme",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "pl-base",
+                  "payload": {}
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Playlist",
+              "source": {
+                "serviceUuid": "m3u-serve",
+                "path": "__hkpMount"
+              },
+              "placeholder": "not published yet",
+              "tone": "muted",
+              "fontSize": 11,
+              "wrap": true,
+              "copyable": true
+            },
+            {
+              "type": "text",
+              "placeholder": "That address is an M3U: open it in VLC, Music or any desktop player and the whole programme queues up there instead of here.",
+              "tone": "muted",
+              "fontSize": 11
+            }
+          ]
+        }
       }
     ],
     "notices": [
@@ -346,6 +480,13 @@
           "serviceUuid": "each",
           "path": "error"
         }
+      }
+    ],
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "pl-base",
+        "payload": {}
       }
     ]
   }

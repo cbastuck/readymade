@@ -58,6 +58,17 @@
         "state": {}
       },
       {
+        "uuid": "sweep",
+        "serviceId": "timer",
+        "serviceName": "Look again",
+        "state": {
+          "periodic": true,
+          "periodicValue": 60,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
         "uuid": "browse",
         "serviceId": "storage",
         "serviceName": "What is there",
@@ -97,7 +108,9 @@
           "template": {
             "path=": "params.path",
             "kb=": "round(params.size / 1024)",
-            "base": "hkp-mount://files/listen"
+            "base": "hkp-mount://files/listen",
+            "type=": "params.contentType",
+            "when=": "params.modified"
           }
         }
       },
@@ -118,6 +131,40 @@
         "serviceId": "monitor",
         "serviceName": "Listing",
         "state": {}
+      },
+      {
+        "uuid": "m3u-doc",
+        "serviceId": "sql",
+        "serviceName": "The volume as a playlist",
+        "state": {
+          "mode": "query",
+          "statement": "SELECT '#EXTM3U' || char(10)\n    || IFNULL(group_concat(entry, char(10) ORDER BY sortKey DESC), '')\n    || char(10) AS playlist\n  FROM (\n    SELECT '#EXTINF:-1,' || replace(replace(name, char(13), ' '), char(10), ' ') || char(10)\n        || base || '/' || path AS entry,\n           sortKey\n      FROM (\n        SELECT json_extract(value, '$.path') AS path,\n               json_extract(value, '$.base') AS base,\n               json_extract(value, '$.type') AS type,\n               json_extract(value, '$.when') AS sortKey,\n               CASE\n                 WHEN json_extract(value, '$.path') LIKE '%.mp3'\n                 THEN substr(json_extract(value, '$.path'), 1, length(json_extract(value, '$.path')) - 4)\n                 ELSE json_extract(value, '$.path')\n               END AS name\n          FROM json_each($episodes)\n      )\n     WHERE type LIKE 'audio/%'\n  )"
+        }
+      },
+      {
+        "uuid": "m3u-wrap",
+        "serviceId": "map",
+        "serviceName": "As a playlist file",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "meta.status": 200,
+            "meta.contentType": "audio/x-mpegurl; charset=utf-8",
+            "meta.headers.content-disposition": "inline; filename=\"library.m3u\"",
+            "body=": "params.rows[0].playlist"
+          }
+        }
+      },
+      {
+        "uuid": "m3u-serve",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Serve the playlist",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_data",
+          "mountName": "playlist",
+          "pipeline": []
+        }
       }
     ]
   },
@@ -136,7 +183,7 @@
           "items": [
             {
               "type": "text",
-              "placeholder": "Everything the radio has rendered. Tap one to play it; the address below is the same list as JSON, for anything that is not a person.",
+              "placeholder": "Every file in the volume, played as one sitting: press play and it runs to the end of the list.",
               "tone": "muted",
               "fontSize": 12
             },
@@ -160,58 +207,53 @@
                 },
                 {
                   "type": "text",
-                  "label": "Address",
+                  "label": "Playlist",
                   "source": {
-                    "serviceUuid": "listen",
+                    "serviceUuid": "m3u-serve",
                     "path": "__hkpMount"
                   },
                   "placeholder": "not published yet",
                   "fontSize": 11,
                   "wrap": true,
-                  "grow": true
+                  "grow": true,
+                  "copyable": true
                 }
               ]
             },
             {
-              "type": "repeat",
+              "type": "audio-player",
               "source": {
                 "serviceUuid": "seen",
                 "path": "episodes"
               },
-              "gap": 4,
-              "template": {
-                "direction": "row",
-                "gap": 8,
-                "align": "center",
-                "items": [
-                  {
-                    "type": "text",
-                    "placeholder": "{{item.path}}",
-                    "href": "{{item.base}}/{{item.path}}",
-                    "fontSize": 12,
-                    "wrap": true,
-                    "grow": true
-                  },
-                  {
-                    "type": "text",
-                    "placeholder": "{{item.kb}} kB",
-                    "tone": "muted",
-                    "fontSize": 11
-                  }
-                ]
+              "url": "{{item.base}}/{{item.path}}",
+              "subtitle": "{{item.kb}} kB",
+              "placeholder": "Nothing in the volume yet."
+            },
+            {
+              "type": "text",
+              "placeholder": "Hand the playlist address to VLC, Music or any other player and the whole volume queues up there. The listing address below answers JSON \u2014 it is what a tool reads, not a player.",
+              "tone": "muted",
+              "fontSize": 11
+            },
+            {
+              "type": "text",
+              "label": "Listing",
+              "source": {
+                "serviceUuid": "listen",
+                "path": "__hkpMount"
               },
-              "stripe": {
-                "even": "rgba(127,127,127,0.10)",
-                "odd": "rgba(127,127,127,0.03)",
-                "padding": 8,
-                "radius": 6
-              }
+              "placeholder": "not published yet",
+              "tone": "muted",
+              "fontSize": 11,
+              "wrap": true,
+              "copyable": true
             },
             {
               "type": "qr-code",
-              "caption": "Scan for the listing",
+              "caption": "Scan to open the playlist",
               "source": {
-                "serviceUuid": "listen",
+                "serviceUuid": "m3u-serve",
                 "path": "__hkpMount"
               }
             }

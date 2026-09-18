@@ -96,6 +96,22 @@ export type UnitEntry = {
   as?: string;
   params?: Record<string, string>;
   runtimes?: { [unitRuntimeId: string]: UnitRuntimeBinding };
+  /**
+   * Whether this unit shows a face in the composition. Default true.
+   *
+   * A unit is not always something to look at. Some are **resources** — a store
+   * served over HTTP, a voice that answers requests — whose whole contribution
+   * is an address other units use, and whose own panel exists so the unit can
+   * be opened and tested alone. In a composition that panel is a tab a person
+   * has no reason to visit, and every one of those makes the tabs that matter
+   * harder to find.
+   *
+   * So this is the composition's say, not the unit's: the unit keeps the facade
+   * it needs when it runs on its own, and the board that includes it decides
+   * whether that facade is one of the faces this board has. It changes nothing
+   * else — the unit's runtimes, services and mounts are placed either way.
+   */
+  view?: boolean;
 };
 
 /**
@@ -411,15 +427,16 @@ function placeUnit(
     services[projectedId] = requalifyMounts(list, runtimeIds);
   }
 
-  const view = substituted.facade
-    ? {
-        id: name,
-        title: board.boardName || name,
-        unit: name,
-        facade: substituted.facade,
-        runtimeIds: Object.values(runtimeIds),
-      }
-    : null;
+  const view =
+    substituted.facade && entry.view !== false
+      ? {
+          id: name,
+          title: board.boardName || name,
+          unit: name,
+          facade: substituted.facade,
+          runtimeIds: Object.values(runtimeIds),
+        }
+      : null;
 
   return {
     unit: {
@@ -548,7 +565,9 @@ export function validateProjection(
     const topics = topicsUsedBy(
       Object.values(unit.runtimeIds).map((runtimeId) => services[runtimeId]),
     );
-    diagnostics.push(...checkDeclaredTopics(unit.name, unit.declaration, topics));
+    diagnostics.push(
+      ...checkDeclaredTopics(unit.name, unit.declaration, topics),
+    );
     for (const topic of topics.published) {
       published.add(topic);
     }
@@ -777,7 +796,12 @@ export function unlinkProjection(
 
 /** Provenance is written by the projection, so it never enters a document. */
 function stripProvenance(runtime: RuntimeDescriptor): RuntimeDescriptor {
-  const { unit: _unit, unitRuntimeId: _id, boardName: _name, ...rest } = runtime;
+  const {
+    unit: _unit,
+    unitRuntimeId: _id,
+    boardName: _name,
+    ...rest
+  } = runtime;
   return rest as RuntimeDescriptor;
 }
 
@@ -853,18 +877,29 @@ export function restoreEdits(
   if (deepEquals(expected, current)) {
     return source;
   }
-  if (Array.isArray(source) && Array.isArray(expected) && Array.isArray(current)) {
+  if (
+    Array.isArray(source) &&
+    Array.isArray(expected) &&
+    Array.isArray(current)
+  ) {
     // Only element-wise while the shape holds: an insertion or a removal
     // renumbers everything after it, and pairing across that would rewrite
     // unrelated services.
-    if (source.length === expected.length && expected.length === current.length) {
+    if (
+      source.length === expected.length &&
+      expected.length === current.length
+    ) {
       return current.map((item, index) =>
         restoreEdits(source[index], expected[index], item),
       );
     }
     return current;
   }
-  if (isPlainObject(source) && isPlainObject(expected) && isPlainObject(current)) {
+  if (
+    isPlainObject(source) &&
+    isPlainObject(expected) &&
+    isPlainObject(current)
+  ) {
     const merged: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(current)) {
       merged[key] = restoreEdits(source[key], expected[key], value);
@@ -902,7 +937,9 @@ function deepEquals(a: unknown, b: unknown): boolean {
     return true;
   }
   if (Array.isArray(a) && Array.isArray(b)) {
-    return a.length === b.length && a.every((item, i) => deepEquals(item, b[i]));
+    return (
+      a.length === b.length && a.every((item, i) => deepEquals(item, b[i]))
+    );
   }
   if (isPlainObject(a) && isPlainObject(b)) {
     const keys = Object.keys(a);

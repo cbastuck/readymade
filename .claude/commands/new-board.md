@@ -206,6 +206,35 @@ service type: `threshold-filter-svc` not `filter-1-svc`.
 }
 ```
 
+**A document a client understands** — a feed, a playlist, a report. A board that produces many
+things (rows in a table, files in a volume) often has to hand them to something that is not a
+board: a podcast client, VLC, a spreadsheet. The shape is always the same three services, and
+the joining is `sql`'s because the `map` dialect has no reduce:
+
+```json
+{ "uuid": "doc",   "serviceId": "sql",  "state": {
+    "mode": "query",
+    "statement": "SELECT '#EXTM3U' || char(10) || IFNULL(group_concat(entry, char(10) ORDER BY sortKey DESC), '') AS playlist FROM ( SELECT '#EXTINF:-1,' || title || char(10) || url AS entry, rendered AS sortKey FROM episode WHERE rendered IS NOT NULL )" } },
+{ "uuid": "wrap",  "serviceId": "map",  "state": { "mode": "replace", "template": {
+    "meta.status": 200,
+    "meta.contentType": "audio/x-mpegurl; charset=utf-8",
+    "meta.headers.content-disposition": "inline; filename=\"radio.m3u\"",
+    "body=": "params.rows[0].playlist" } } },
+{ "uuid": "serve", "serviceId": "http-server-subservices", "state": {
+    "mode": "process_on_data", "mountName": "playlist", "pipeline": [] } }
+```
+
+The rows need not come from a table: `FROM json_each($rows)` builds the same document out of an
+array the pipeline is already carrying, which is how a board with no database of its own (a
+listing from `storage`, say) still publishes one. The content type is what decides who can open
+the result, and the filename in `content-disposition` is what lets a machine hand it to the
+right application — a mount address ends in an opaque id and says nothing about what it holds.
+
+Do not put a `hkp-mount://` reference inside an endpoint's *nested* pipeline: the coordinator
+writes the address it resolves into the holding service's `__hkpMount`, which for an endpoint is
+where its own published address lives. Resolve the reference in a top-level `map` and let the
+value travel down the chain instead.
+
 ---
 
 ## Step 5 — Add a facade (when the board is for non-technical users)
@@ -584,6 +613,37 @@ any other value, which is what gives each row of a `repeat` its own destination:
 
 Nothing is linked where there is nothing to click, so a widget whose source has not answered yet
 shows its placeholder as plain text rather than as a link that goes nowhere.
+
+**audio-player** — a service's list of audio files, played through as one sitting. Reach for
+this rather than a `repeat` of links whenever what the board produces is something a person
+*listens to*: a list of links makes them choose the next thing every few minutes, and choosing is
+the opposite of listening. Scrubbing, volume and the play button are the browser's own controls;
+what the widget adds is which track is current, what follows it, and going there by itself:
+
+```json
+{
+  "type": "audio-player",
+  "source": { "serviceUuid": "programme", "path": "rows" },
+  "url": "{{item.base}}/{{item.path}}",
+  "title": "{{item.title}}",
+  "subtitle": "{{item.published}}",
+  "autoplay": true,
+  "placeholder": "Nothing rendered yet."
+}
+```
+
+`url` is an item template like a `repeat`'s, because a track's address is usually assembled from
+a row rather than stored in one — a mount reference a `map` resolved, plus a file name. `title`
+defaults to the address's last segment without its extension, which is a poor name and the best
+one available where the board does not supply a real one.
+
+Tracks are held by address, not by position, so a list arriving again — a poll, a refresh, one
+new episode at the front — never interrupts what is playing. `continuous: false` stops after each
+track, `loop: true` returns to the first after the last, and `showList: false` hides the list
+under the player. `autoplay` starts a track the widget has *not seen before*, and only once
+somebody has played something here: a browser refuses audio nobody asked for, and a board
+restored in a background tab should not start talking. Reaching the end of the list is still an
+end.
 
 **file-pick** — file chooser that sends the file to a service:
 
