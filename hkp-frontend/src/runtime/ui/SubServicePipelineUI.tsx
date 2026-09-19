@@ -48,6 +48,15 @@ type Props = {
   getActualInstance?: (instanceId: string) => ServiceInstance | null;
   /** Start with the pipeline content folded. */
   defaultCollapsed?: boolean;
+  /**
+   * The fold, when the host owns it.
+   *
+   * Given, this draws no fold control of its own — no "Show nested services",
+   * no chevron — and folds to nothing at all. A host that already has something
+   * to fold by, a track's name in a list of them, would otherwise make a reader
+   * open two things to see one.
+   */
+  collapsed?: boolean;
   /** What this pipeline is called in the breadcrumb trail once opened. A host
    *  with several pipelines names the branch as well as itself, since the trail
    *  would otherwise say only which service the level came from. */
@@ -60,11 +69,14 @@ export default function SubServicePipelineUI({
   FallbackUI = RuntimeRestServiceUI,
   getActualInstance,
   defaultCollapsed = true,
+  collapsed: collapsedByHost,
   levelLabel,
 }: Props) {
   const pipeline: PipelineEntry[] = service.state?.pipeline ?? [];
   const registry = service.app.listAvailableServices();
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const [selfCollapsed, setCollapsed] = useState(defaultCollapsed);
+  const hostFolds = collapsedByHost !== undefined;
+  const collapsed = hostFolds ? collapsedByHost : selfCollapsed;
   const isMobileHost = useIsMobileHost();
   const navigation = useNestedNavigation();
   const depth = useLevelDepth();
@@ -111,26 +123,31 @@ export default function SubServicePipelineUI({
     <div className="w-full flex flex-col">
       {/* Where the content can be shown, and the two places it can be shown in:
           here inside the panel, or on a level of its own. */}
+      {(!hostFolds || !collapsed) && (
       <div className="flex w-full items-center gap-2 mt-1">
-        <span
-          className="text-gray-400 whitespace-nowrap"
-          style={{ fontSize: 12 }}
-        >
-          Show nested sevices
-        </span>
+        {!hostFolds && (
+          <>
+            <span
+              className="text-gray-400 whitespace-nowrap"
+              style={{ fontSize: 12 }}
+            >
+              Show nested sevices
+            </span>
 
-        <button
-          className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
-          onClick={() => setCollapsed((c) => !c)}
-          aria-label={collapsed ? "Show content inline" : "Hide inline content"}
-          title={collapsed ? "Show content inline" : "Hide inline content"}
-        >
-          {collapsed ? (
-            <ChevronRight size={14} strokeWidth={1.5} />
-          ) : (
-            <ChevronDown size={14} strokeWidth={1.5} />
-          )}
-        </button>
+            <button
+              className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+              onClick={() => setCollapsed((c) => !c)}
+              aria-label={collapsed ? "Show content inline" : "Hide inline content"}
+              title={collapsed ? "Show content inline" : "Hide inline content"}
+            >
+              {collapsed ? (
+                <ChevronRight size={14} strokeWidth={1.5} />
+              ) : (
+                <ChevronDown size={14} strokeWidth={1.5} />
+              )}
+            </button>
+          </>
+        )}
 
         {navigation && (
           <button
@@ -149,6 +166,7 @@ export default function SubServicePipelineUI({
           <div className="flex ml-auto">{selector("sub-pipeline", true)}</div>
         )}
       </div>
+      )}
 
       {/* Shown here rather than opened, so anything nested inside it is one
           more hop from the level this panel sits on. */}

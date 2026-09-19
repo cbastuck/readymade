@@ -14,6 +14,8 @@ import { generateRandomName } from "../../core/board";
 import { BoardDocuments } from "../../core/boardPersistence";
 import {
   UnitOrigin,
+  chainUnitOrigins,
+  filesUnitOrigin,
   nativeFileUnitOrigin,
   urlUnitOrigin,
 } from "../../core/linkUnits";
@@ -380,19 +382,37 @@ export function usePlaygroundController(
    */
   const unitOrigin = () => {
     const source = props.boardSource ?? boardSourceUrlRef.current;
-    if (!source) {
-      return undefined;
+    const fromSource = !source
+      ? undefined
+      : /^https?:\/\//i.test(source) || source.startsWith("/")
+        ? urlUnitOrigin(source)
+        : nativeFileUnitOrigin(source, async (uri) => {
+            const contents = await readFileViaPlatform(uri);
+            if (contents === null) {
+              throw new Error(`Cannot read ${uri} on this platform`);
+            }
+            return contents;
+          });
+
+    // Documents handed over with the board come first: they are this board's
+    // units, not a document that merely answers to the same name. A restored
+    // session has nowhere else to look — it is at no URL and the files it was
+    // opened from were not kept — so without them a composition comes back as
+    // the flat board it was running as, and the faces its units contribute go
+    // missing.
+    const carried = props.unitDocuments;
+    const fromBoard =
+      carried && Object.keys(carried).length
+        ? filesUnitOrigin(
+            new Map(Object.entries(carried)),
+            "the documents this board was restored with",
+          )
+        : undefined;
+
+    if (fromBoard && fromSource) {
+      return chainUnitOrigins(fromBoard, fromSource);
     }
-    if (/^https?:\/\//i.test(source) || source.startsWith("/")) {
-      return urlUnitOrigin(source);
-    }
-    return nativeFileUnitOrigin(source, async (uri) => {
-      const contents = await readFileViaPlatform(uri);
-      if (contents === null) {
-        throw new Error(`Cannot read ${uri} on this platform`);
-      }
-      return contents;
-    });
+    return fromBoard ?? fromSource;
   };
 
   const serializeBoard = async (
@@ -405,7 +425,11 @@ export function usePlaygroundController(
     return {
       ...descriptor,
       description: desc,
-      facade: facadeRef.current,
+      // The board's facade, not the one the board was fetched with: a board
+      // that arrived by drop, by applying edited source or over a share link
+      // never went through `fetchBoard`, and serialising the fetched one would
+      // save it without the facade it is being looked at through.
+      facade: boardProviderRef.current?.state.facade ?? facadeRef.current,
       acceptedSyncSenders: accepted,
       rejectedSyncSenders: rejected,
     };

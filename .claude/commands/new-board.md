@@ -206,6 +206,58 @@ service type: `threshold-filter-svc` not `filter-1-svc`.
 }
 ```
 
+**Two things about the same value** — several statements, several services, several questions,
+all given the same input. Do not put them in a row and teach each to pass its input through: that
+works and records nothing. `tracks` says it:
+
+```json
+{ "uuid": "record-svc", "serviceId": "tracks", "state": {
+    "run": "serial",
+    "tracks": [
+      { "name": "keep", "pipeline": [ { "instanceId": "insert", "serviceId": "sql", "state": { … } } ] },
+      { "name": "drop", "pipeline": [ { "instanceId": "delete", "serviceId": "sql", "state": { … } } ] }
+    ],
+    "reduce": [ { "instanceId": "carry", "serviceId": "map",
+                  "state": { "mode": "replace", "template": { "=": "params.input" } } } ] } }
+```
+
+Every track is given the same input; the answers come back as an array, one element per track, in
+declaration order, with `null` where a track stopped. `reduce` is a pipeline given
+`{ input, results }` — `{"=": "params.input"}` carries the request on where the tracks were side
+effects, which is the common case. `run: "parallel"` overlaps tracks that wait on something (an
+HTTP call, another runtime); the default is one at a time, because two tracks writing to the same
+place are a race. A condition about the data still belongs *in* the track — `WHERE $intent =
+'keep'` in the statement, not a filter in front of it. See `docs/content/services/tracks.md`.
+
+**A document a client understands** — a feed, a playlist, a report. A board that produces many
+things (rows in a table, files in a volume) often has to hand them to something that is not a
+board: a podcast client, VLC, a spreadsheet. The shape is always the same three services, and
+the joining is `sql`'s because the `map` dialect has no reduce:
+
+```json
+{ "uuid": "doc",   "serviceId": "sql",  "state": {
+    "mode": "query",
+    "statement": "SELECT '#EXTM3U' || char(10) || IFNULL(group_concat(entry, char(10) ORDER BY sortKey DESC), '') AS playlist FROM ( SELECT '#EXTINF:-1,' || title || char(10) || url AS entry, rendered AS sortKey FROM episode WHERE rendered IS NOT NULL )" } },
+{ "uuid": "wrap",  "serviceId": "map",  "state": { "mode": "replace", "template": {
+    "meta.status": 200,
+    "meta.contentType": "audio/x-mpegurl; charset=utf-8",
+    "meta.headers.content-disposition": "inline; filename=\"radio.m3u\"",
+    "body=": "params.rows[0].playlist" } } },
+{ "uuid": "serve", "serviceId": "http-server-subservices", "state": {
+    "mode": "process_on_data", "mountName": "playlist", "pipeline": [] } }
+```
+
+The rows need not come from a table: `FROM json_each($rows)` builds the same document out of an
+array the pipeline is already carrying, which is how a board with no database of its own (a
+listing from `storage`, say) still publishes one. The content type is what decides who can open
+the result, and the filename in `content-disposition` is what lets a machine hand it to the
+right application — a mount address ends in an opaque id and says nothing about what it holds.
+
+Do not put a `hkp-mount://` reference inside an endpoint's *nested* pipeline: the coordinator
+writes the address it resolves into the holding service's `__hkpMount`, which for an endpoint is
+where its own published address lives. Resolve the reference in a top-level `map` and let the
+value travel down the chain instead.
+
 ---
 
 ## Step 5 — Add a facade (when the board is for non-technical users)
@@ -230,6 +282,74 @@ named controls and displays. Add it as a `"facade"` key in the board JSON.
 
 `layout` is `"single"` (one panel fills the view) or `"columns"` (panels side-by-side).
 
+### Tabs — one board, more than one job
+
+Most boards are used by two people who are not the same person, or by the same person at
+two moments: the feeds are subscribed to once and read every day; a poll's dates are put
+up by whoever called the meeting and answered by everyone else. Controls for the other job
+are not neutral — they are in the way, and they invite a change nobody meant to make.
+
+```json
+{
+  "layout": "columns",
+  "panels": [ /* declared once, as always */ ],
+  "tabs": [
+    { "id": "read",  "title": "Read",  "panels": ["articles", "saved"] },
+    { "id": "feeds", "title": "Feeds", "panels": ["library"] }
+  ],
+  "defaultTab": "read"
+}
+```
+
+A tab is a view over the panels the facade already has: it names panel ids, and a panel is
+still declared once in `panels`. Two panels in one tab sit side by side exactly as a
+`columns` facade's panels do — and a panel can say how much of that row it wants:
+
+```json
+{ "id": "articles", "title": "Latest", "width": "70%", "layout": { ...LayoutItem } }
+```
+
+`width` is a **share of the row, not a size** ("70%", or the bare number that means the
+same). Declare one on each panel that shares a row when you know which of them matters —
+an even split is otherwise what every facade opens as. It is only a starting point: the
+divider still moves, what a reader leaves it at is what that board opens as next time, and
+double-clicking the divider puts the board's own split back. Ignored on mobile, where
+panels stack.
+
+- **`defaultTab` is the tab for the many, not the few.** Boards open on using, not on
+  setting up. It is not remembered between visits, so this is what every reader gets.
+- **A panel no tab names stays on screen**, above the tab bar, whichever tab is chosen —
+  for the one status strip a board always wants read.
+- Switching tabs hides a panel rather than discarding it: a half-typed field and a table's
+  rows are still there when it comes back.
+
+### Notices — say it, do not reserve room for it
+
+A row kept free for a problem the board usually does not have spends layout on nothing, and
+on the rare occasion it fills it speaks from wherever it happens to sit — which on a long
+panel is past the bottom of the screen. Declare a notice instead and it arrives as a toast,
+where the rest of the app's notifications arrive:
+
+```json
+"notices": [
+  { "source": { "serviceUuid": "take-hour", "path": "error" } },
+  {
+    "source": { "serviceUuid": "feeds", "path": "error" },
+    "tone": "info",
+    "message": "Could not read that feed — {{value}}"
+  }
+]
+```
+
+A notice reads a service the way a widget's `source` does and fires whenever that value
+arrives with something in it — so a service reporting `error: ""` on every good run can be
+watched all day without saying a word. `tone` is `"error"` by default; `message` wraps the
+value, with `{{value}}` standing for it.
+
+It never seeds from what a service already holds: a failure from before the board was open
+is not news. Point one at every service that can refuse what a person asked for — the
+writes especially, since a refused write is otherwise silent.
+
 ### LayoutItem — container or widget
 
 A **container** groups children:
@@ -239,6 +359,8 @@ A **container** groups children:
   "direction": "row | column",
   "gap": 12,
   "padding": 16,
+  "paddingX": 16,
+  "paddingY": 12,
   "align": "center",
   "justify": "center",
   "fill": true,
@@ -246,6 +368,12 @@ A **container** groups children:
   "items": [ ...LayoutItem[] ]
 }
 ```
+
+`padding` is both axes; `paddingX` and `paddingY` override one of them. A panel's own root
+container is where this usually matters — a facade draws no margin of its own, so a column
+whose layout says nothing sits flush against the panel edge and, in a `columns` facade, against
+the divider between it and its neighbour. `paddingX` alone gives it room at the sides without
+pushing its first widget down from the panel's title.
 
 A container can **fold**, which is how a panel keeps controls that are occasionally needed from
 pushing the ones that always are off the bottom of the screen:
@@ -288,8 +416,48 @@ so booleans work):
 }
 ```
 
+`confirm` makes the button ask before it acts, in the facade's own dialog. Use it where the
+action is not one to take on a single tap — it spends money, sends something, or gives
+something away. Word it as what will happen, not as *are you sure*:
+
+```json
+{
+  "type": "button",
+  "label": "free",
+  "confirm": "Book court 2 at 12:00 on 2026-09-17?",
+  "disabled": false,
+  "actions": [{ "type": "process", "serviceUuid": "book-svc", "payload": { "court": 2 } }]
+}
+```
+
+`disabled` renders the button present but not offering anything — a slot already taken, a
+step not yet reachable. Prefer it to leaving the button out when the gap would say less
+than the dimmed control does. Both fields are ordinary values, so inside a `repeat` they
+can come from the item.
+
 A button may instead carry an `actions` array, which is where the things a button
-does that are not "configure one service" live. A **board action** names no service
+does that are not "configure one service" live. A **set-state action** with a written
+`value` is how a button *picks* something rather than acting on it — the choice goes into
+facade state, where the panel's other widgets read it:
+
+```json
+{
+  "type": "button",
+  "label": "{{item.label}}",
+  "actions": [
+    { "type": "set-state", "key": "poll", "value": "{{item.name}}" },
+    { "type": "process", "serviceUuid": "open-poll", "payload": { "poll": "{{item.name}}" } }
+  ]
+}
+```
+
+Written rather than read off the widget, because a button has no value of its own: a
+`repeat` over a list of things could otherwise be rendered and never picked from. Pass the
+choice to the actions beside it as the item reference, not as `{ "$state": … }` — the state
+lands after the pass they run in, so a reference there would still send the *previous*
+choice.
+
+A **board action** names no service
 at all — its subject is the board, and what it does is decided by the host showing
 the facade, not by the board:
 
@@ -321,6 +489,11 @@ inert rather than failing, so the board still renders everywhere.
   }
 }
 ```
+
+`defaultValue` gives the field a real starting value (not a placeholder — it is what submitting
+sends). Reach for it whenever a board would otherwise come up inert waiting to be told something
+it could have assumed: seed the same value in the facade's `state` so widgets reading
+`{ "$state": … }` agree with what the field shows.
 
 **knob** — rotary control with optional markers and live readout:
 
@@ -453,6 +626,48 @@ character cell comes out square and the picture is not stretched down the panel.
 indents an object value as JSON. Omit `source` entirely for a fixed line of prose: the
 `placeholder` is then the whole text.
 
+`href` makes the text a link, for a value that names something to open rather than something to
+read — a headline, a document, a result. It opens in a new tab, and takes an item reference like
+any other value, which is what gives each row of a `repeat` its own destination:
+
+```json
+{ "type": "text", "placeholder": "{{item.title}}", "href": "{{item.link}}", "grow": true }
+```
+
+Nothing is linked where there is nothing to click, so a widget whose source has not answered yet
+shows its placeholder as plain text rather than as a link that goes nowhere.
+
+**audio-player** — a service's list of audio files, played through as one sitting. Reach for
+this rather than a `repeat` of links whenever what the board produces is something a person
+*listens to*: a list of links makes them choose the next thing every few minutes, and choosing is
+the opposite of listening. Scrubbing, volume and the play button are the browser's own controls;
+what the widget adds is which track is current, what follows it, and going there by itself:
+
+```json
+{
+  "type": "audio-player",
+  "source": { "serviceUuid": "programme", "path": "rows" },
+  "url": "{{item.base}}/{{item.path}}",
+  "title": "{{item.title}}",
+  "subtitle": "{{item.published}}",
+  "autoplay": true,
+  "placeholder": "Nothing rendered yet."
+}
+```
+
+`url` is an item template like a `repeat`'s, because a track's address is usually assembled from
+a row rather than stored in one — a mount reference a `map` resolved, plus a file name. `title`
+defaults to the address's last segment without its extension, which is a poor name and the best
+one available where the board does not supply a real one.
+
+Tracks are held by address, not by position, so a list arriving again — a poll, a refresh, one
+new episode at the front — never interrupts what is playing. `continuous: false` stops after each
+track, `loop: true` returns to the first after the last, and `showList: false` hides the list
+under the player. `autoplay` starts a track the widget has *not seen before*, and only once
+somebody has played something here: a browser refuses audio nobody asked for, and a board
+restored in a background tab should not start talking. Reaching the end of the list is still an
+end.
+
 **file-pick** — file chooser that sends the file to a service:
 
 ```json
@@ -463,6 +678,120 @@ indents an object value as JSON. Omit `source` entirely for a fixed line of pros
   "action": { "serviceUuid": "file-svc" }
 }
 ```
+
+**calendar** — a day as a calendar: the hours down the side, one column per thing being booked
+(a court, a room, a machine). Reach for this instead of building a grid out of `repeat` and
+buttons whenever the *arrangement* is what carries the meaning — a person reads a timetable by
+looking down a column, which only works if the hours line up and every row is the same height:
+
+```json
+{
+  "type": "calendar",
+  "source": { "serviceUuid": "day-grid", "path": "rows" },
+  "columns": ["Court 1", "Court 2", "Court 3"],
+  "fromHour": 7,
+  "toHour": 21,
+  "rowHeight": 32,
+  "confirm": "{{item.prompt}}",
+  "actions": [{
+    "type": "process",
+    "serviceUuid": "book-svc",
+    "payload": {
+      "state": "{{item.state}}",
+      "court": "{{item.column}}",
+      "hour": "{{item.hour}}"
+    }
+  }]
+}
+```
+
+Each row is one cell and names its own position and meaning:
+
+| Field | What it is |
+|---|---|
+| `column` | 1-based index of the column it sits in |
+| `hour` | the hour it starts at |
+| `state` | `free` \| `mine` \| `taken` \| `blocked` — how it is drawn, and whether it can be tapped (`free` and `mine` can be) |
+| `label` | what it says; omitted, a default for the state is used (`free` → "+", `mine` → "You") |
+| anything else | travels with the cell, readable by the payload as `{{item.…}}` |
+
+`columns` names the headings; `fromHour`/`toHour` default to the hours the rows mention, and any
+hour in between with no row is still drawn, so the axis never has gaps. `dayField` (default
+`"day"`) names the field the calendar captions itself with.
+
+`stripe` rules the hours the way a wide table is ruled — `{ "even": "rgba(127,127,127,0.10)",
+"odd": "rgba(127,127,127,0.03)" }` — because a day three columns wide is read *across* one hour,
+and a band is what keeps that line from drifting into the next. It runs the full width of the
+row, gutter included, and a free hour draws no background of its own so the band reaches across
+it; `taken` and `mine` keep the colours that say what they are.
+
+**A free hour is drawn as a control**, with a solid border and a `+`; `blocked` is the only state
+drawn as a faded outline. That contrast is the one a person actually needs — an empty outline for
+both makes a bookable day look identical to a day with nothing on offer, and nothing on the
+calendar then looks clickable at all.
+
+**The widget draws; the query decides.** It works out nothing about availability — each cell
+arrives already knowing whether it is on offer, because the query that answered knows who holds
+what and a layout cannot. A `blocked` cell is the shape this takes in practice: an hour that is
+free but not yours to take, which keeps its place in the column and simply stops offering
+itself.
+
+**repeat** — renders one copy of a template per item, for a set of controls the board cannot
+write out by hand because it does not know how many there will be. Items come from one of
+three places: a static array, a facade state key, or — with `source` — **whatever a service
+is saying**, which is what turns a query result into a grid of controls rather than a table
+to look at:
+
+```json
+{
+  "type": "repeat",
+  "source": { "serviceUuid": "day-grid", "path": "rows" },
+  "columns": 4,
+  "gap": 6,
+  "template": {
+    "type": "button",
+    "label": "{{item.label}}",
+    "confirm": "{{item.prompt}}",
+    "disabled": "{{item.locked}}",
+    "actions": [{
+      "type": "process",
+      "serviceUuid": "book-svc",
+      "payload": { "court": "{{item.court}}", "hour": "{{item.hour}}" }
+    }]
+  }
+}
+```
+
+`{{item}}` is the item itself and `{{item.field}}` a field of it (dotted paths allowed). A
+value that is **exactly** one of those becomes that value whole, so a number stays a number
+and an object stays an object — which is what lets the item decide a payload's values and
+not merely a label's text. A reference inside a longer string is printed into it
+(`"Court {{item.court}} at {{item.hour}}:00"`).
+
+`columns` lays the items out in a CSS grid; without it they stack in a flex column, or a row
+if `direction` is set. `items` wins where a board wrote one, so a `source` is a fallback
+rather than something that can override what was written.
+
+`stripe` puts alternating backgrounds behind the items, for a list whose template is more
+than one line and would otherwise run together — where one article ends and the next begins
+is not something a gap can say when the item has gaps of its own:
+
+```json
+"gap": 0,
+"stripe": { "even": "rgba(127,127,127,0.10)", "odd": "rgba(127,127,127,0.03)", "padding": 10, "radius": 6 }
+```
+
+`even` is the first item and every second one after it. Use translucent colours: they tint
+whatever the panel is drawn on and so hold up in a light and a dark theme alike, where a
+fixed colour can only suit one of them. The bands are meant to touch, so set `gap` to 0 and
+let `padding` do the spacing. A `calendar` takes the same `even`/`odd` pair for its hours.
+
+**Have the service return the items already decided.** One query that emits them carrying their
+own labels, their own payloads and whether they are on offer beats a facade trying to work any of
+that out — there are no conditionals in a layout, and the service is where the rules already live.
+
+For a timetable specifically, reach for **calendar** rather than a `repeat` with a column count:
+a repeat of buttons can carry the same information and still not read as a calendar.
 
 ### Source object (for read widgets)
 
@@ -502,3 +831,6 @@ import myBoard from "../../../hkp-frontend/boards/my-board.json";
 - [ ] Remote runtimes have a `url` field
 - [ ] UUIDs are descriptive and end in `-svc`
 - [ ] The board does something useful with a fresh load (no manual steps required to see it work, or clear first-run instructions in the facade)
+- [ ] Controls for setting the board up are behind their own tab, and `defaultTab` names the one people use
+- [ ] Panels sharing a row declare a `width` share where one of them plainly matters more
+- [ ] Every service that can refuse a request has a notice on it, and no panel keeps a row free for an error

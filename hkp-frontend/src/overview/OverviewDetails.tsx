@@ -341,7 +341,7 @@ export default function OverviewDetails({
           }}
         >
           <CornerUpRight size={14} strokeWidth={1.5} />
-          open in playground
+          goto board
         </button>
       </div>
     </div>

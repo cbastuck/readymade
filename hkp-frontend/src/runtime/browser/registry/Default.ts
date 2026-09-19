@@ -42,7 +42,7 @@ import FlatMapDescriptor from "../services/FlatMap";
 import SmoothDescriptor from "../services/Smooth";
 
 // Structure / Containers
-import StackDescriptor from "../services/Stack";
+import TracksDescriptor from "../services/BrowserTracks";
 
 // Flows and Composites
 import BoardService from "../services/BoardService";
@@ -143,7 +143,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   MatchFilterDescriptor,
 
   // Structure / Containers
-  StackDescriptor,
+  TracksDescriptor,
   StateDescriptor,
 
   // Sensors

@@ -58,7 +58,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "Sequencer.tsx",
   "SpeechSynth.ts",
   "Spotify.tsx",
-  "Stack.tsx",
+  "BrowserTracks.tsx",
   "Switch.tsx",
   "Thrower.tsx",
   "Timeline.tsx",
@@ -157,9 +157,15 @@ describe("runtime browser services module contracts", () => {
 
   it("every discovered descriptor has valid metadata", () => {
     for (const { modulePath, descriptor } of serviceModules) {
-      expect(descriptor.serviceId, `${modulePath} serviceId`).toContain(
-        "hookup.to/service/",
-      );
+      // Browser-only services are named under the hookup.to prefix. A service
+      // that exists in more than one runtime carries the same bare id
+      // everywhere, so a board reads the same wherever it runs.
+      const shared = ["sub-service", "tracks", "http-client"];
+      if (!shared.includes(descriptor.serviceId)) {
+        expect(descriptor.serviceId, `${modulePath} serviceId`).toContain(
+          "hookup.to/service/",
+        );
+      }
       expect(descriptor.serviceName, `${modulePath} serviceName`).not.toBe("");
       expect(typeof descriptor.create, `${modulePath} create`).toBe("function");
     }

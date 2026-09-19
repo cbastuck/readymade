@@ -1,8 +1,12 @@
+import { CSSProperties } from "react";
+
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { LayoutItem, LayoutContainer, LayoutWidget, KnobWidget, RepeatWidget, FacadeStateRef } from "../types";
 import { PanelContext, widgetRegistry } from "./widgetRegistry";
 import { useFacadeState } from "../FacadeStateContext";
 import { CollapsibleSection } from "./CollapsibleSection";
+import { useNotificationValue } from "./renderers/StatusIndicatorRenderer";
+import { interpolateTemplate } from "../itemTemplate";
 
 export function isContainer(item: LayoutItem): item is LayoutContainer | LayoutWidget {
   return "items" in item && (!("type" in item) || (item as any).type !== "repeat");
@@ -10,26 +14,6 @@ export function isContainer(item: LayoutItem): item is LayoutContainer | LayoutW
 
 function isStateRef(value: unknown): value is FacadeStateRef {
   return typeof value === "object" && value !== null && "$state" in value;
-}
-
-// Recursively replaces "{{item}}" in string values with the current item.
-function interpolateTemplate(template: unknown, item: unknown): unknown {
-  if (typeof template === "string") {
-    if (template === "{{item}}") { return item; }
-    if (typeof item === "string") { return template.replace(/\{\{item\}\}/g, item); }
-    return template;
-  }
-  if (Array.isArray(template)) {
-    return template.map((v) => interpolateTemplate(v, item));
-  }
-  if (template !== null && typeof template === "object") {
-    const result: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(template)) {
-      result[k] = interpolateTemplate(v, item);
-    }
-    return result;
-  }
-  return template;
 }
 
 // Walk the layout tree and collect initial knob values, keyed the way
@@ -50,6 +34,36 @@ export function collectKnobDefaults(
   }
 }
 
+/**
+ * A container's padding, as the four sides.
+ *
+ * `padding` is both axes; `paddingX` and `paddingY` override one of them, so a
+ * column can be inset from a panel's edges without its first widget being
+ * pushed down from the title above it.
+ *
+ * Resolved to longhands rather than mixed with the shorthand: React warns when
+ * a style object carries both `padding` and a `paddingLeft` it covers, and
+ * which one wins would depend on key order.
+ */
+function paddingOf(item: LayoutContainer): CSSProperties {
+  const { padding, paddingX, paddingY } = item;
+  if (
+    padding === undefined &&
+    paddingX === undefined &&
+    paddingY === undefined
+  ) {
+    return {};
+  }
+  const x = paddingX ?? padding;
+  const y = paddingY ?? padding;
+  return {
+    paddingLeft: x,
+    paddingRight: x,
+    paddingTop: y,
+    paddingBottom: y,
+  };
+}
+
 export function LayoutNode({
   item,
   boardContext,
@@ -61,11 +75,26 @@ export function LayoutNode({
 }) {
   const { state: facadeState } = useFacadeState();
 
+  // Asked for unconditionally, because a hook cannot be: a node that is not a
+  // repeat, or a repeat taking its items from the board, passes no source and
+  // the hook watches nothing.
+  const repeatSource =
+    "type" in item && item.type === "repeat"
+      ? (item as RepeatWidget).source
+      : undefined;
+  const sourcedItems = useNotificationValue(boardContext, repeatSource);
+
   if ("type" in item && item.type === "repeat") {
     const repeat = item as RepeatWidget;
-    const rawItems = isStateRef(repeat.items)
-      ? facadeState[(repeat.items as FacadeStateRef)["$state"]]
-      : repeat.items;
+    // `items` wins where a board wrote one, so a source is what a repeat falls
+    // back to rather than something that can quietly override what was written.
+    const rawItems =
+      repeat.items !== undefined
+        ? isStateRef(repeat.items)
+          ? facadeState[(repeat.items as FacadeStateRef)["$state"]]
+          : repeat.items
+        // The source's path is already walked by the hook that read it.
+        : sourcedItems;
     const items = Array.isArray(rawItems) ? rawItems : [];
     const containerStyle = repeat.columns != null
       ? {
@@ -80,17 +109,38 @@ export function LayoutNode({
           flexWrap: (repeat.wrap ? "wrap" : undefined) as "wrap" | undefined,
         };
 
+    const stripe = repeat.stripe;
+
     return (
       <div style={containerStyle}>
         {items.map((it, i) => {
           const resolved = interpolateTemplate(repeat.template, it) as LayoutItem;
-          return (
+          const node = (
             <LayoutNode
               key={i}
               item={resolved}
               boardContext={boardContext}
               panelContext={panelContext}
             />
+          );
+          if (!stripe) {
+            return node;
+          }
+          // The band is a wrapper rather than something pushed into the
+          // template: the template describes one item, and which of two
+          // colours it sits on is a fact about its position in the list.
+          return (
+            <div
+              key={i}
+              style={{
+                background: i % 2 === 0 ? stripe.even : stripe.odd,
+                padding: stripe.padding,
+                borderRadius: stripe.radius,
+                minWidth: 0,
+              }}
+            >
+              {node}
+            </div>
           );
         })}
       </div>
@@ -104,7 +154,7 @@ export function LayoutNode({
           display: "flex",
           flexDirection: item.direction,
           gap: item.gap,
-          padding: item.padding,
+          ...paddingOf(item),
           alignItems: item.align,
           justifyContent: item.justify,
           flexWrap: item.wrap ? "wrap" : undefined,

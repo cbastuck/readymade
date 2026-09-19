@@ -15,6 +15,7 @@ import Link from "./Link";
 import VSpace from "./VSpace";
 import QRCode from "./QRCode";
 import Text from "./Text";
+import Markup from "../../../ui-components/Markup";
 import { ReactElement } from "react";
 
 type Props = {
@@ -26,12 +27,7 @@ type Props = {
 export function createDescription({ boardName, item, idx }: Props) {
   const key = `template-description-item-${idx}`;
   if (typeof item === "string") {
-    return (
-      <div key={key} style={s(t.fs12, t.tl, t.ls2)}>
-        {" "}
-        {item}{" "}
-      </div>
-    );
+    return <Markup key={key} text={item} style={s(t.fs12, t.tl, t.ls2)} />;
   }
 
   if (Array.isArray(item)) {

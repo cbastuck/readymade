@@ -19,7 +19,8 @@ import { commitUrl } from "hkp-frontend/src/projectMeta";
 import { forkBoard } from "hkp-frontend/src/core/forkBoard";
 import { listCoordinatorBoards } from "hkp-frontend/src/views/cloud/coordinatorClient";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
-import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
+import { useUserProfile } from "hkp-frontend/src/core/userProfile";
+import { AccountDialog } from "hkp-frontend/src/views/profile";
 import { getBackend } from "./backend";
 import { isMeanderApp } from "./isMeanderApp";
 import { useBackendRemotes } from "./useBackendRemotes";
@@ -39,8 +40,14 @@ type Props = {
 export default function StartPage({ onRestoreBoard }: Props) {
   const { user } = useAppContext();
   const cloudLogin = useCloudLogin();
-  const cloudLogout = useCloudLogout();
   const navigate = useNavigate();
+  // The display name someone set on the account page, so the avatar here and
+  // the one in the playground's toolbar show the same initials.
+  const profile = useUserProfile(user?.userId);
+  const accountName = profile.displayName || user?.username;
+  // Over the start page rather than a view of its own, the same way the
+  // playground's toolbar shows it — one account, one way it appears.
+  const [isAccountOpen, setAccountOpen] = useState(false);
   const remotes = useBackendRemotes();
   const [lastSessionName, setLastSessionName] = useState<string | null>(null);
   const [inApp, setInApp] = useState(false);
@@ -324,48 +331,51 @@ export default function StartPage({ onRestoreBoard }: Props) {
   const currentVersion = splitBuildVersion(__READYMADE_BUILD_VERSION__);
 
   return (
-    <SharedStartPage
-      store={store}
-      listSavedBoards={listSavedBoards}
-      boardStates={boardStates}
-      onOpen={handleOpen}
-      forkBoard={handleForkBoard}
-      onCreateBoard={() => onRestoreBoard(undefined)}
-      onCreateNamedBoard={(name) => void handleCreateNamedBoard(name)}
-      recentBoardName={lastSessionName}
-      onContinueRecent={() => void handleResume()}
-      onLoadBoard={() => void handleImportBoard()}
-      loadBoardLabel="Import board"
-      describeBoard={describeBoard}
-      listBoardHistory={listBoardHistory}
-      onDeleteBoard={deleteBoard}
-      loadBoardSource={loadBoardSource}
-      saveBoardSource={saveBoardSource}
-      uploadBoardToCloud={uploadBoardToCloud}
-      extraSources={[sharedSource]}
-      myBoardsExtraFolders={uploadedFolders}
-      onRevokeShare={onRevokeShare}
-      onLeaveShare={onLeaveShare}
-      onDeleteCloudBoard={onDeleteCloudBoard}
-      manageRemotes={remotes}
-      withCloudBoards
-      uploadBoardArt={uploadBoardArt}
-      pickBoardArtImage={inApp ? pickBoardArtImage : undefined}
-      excludeDemoTags={["iOS only"]}
-      title="Readymade"
-      badge={currentVersion.version}
-      badgeDetail={currentVersion.hash}
-      badgeDetailHref={commitUrl(currentVersion.hash)}
-      initials={initialsOf(user?.username)}
-      avatarTitle={
-        user
-          ? user.username
-            ? `Log out (${user.username})`
-            : "Log out"
-          : "Log in"
-      }
-      onAvatarClick={() => void (user ? cloudLogout() : cloudLogin())}
-      menuSlot={<MeanderAppMenu />}
-    />
+    <>
+      <SharedStartPage
+        store={store}
+        listSavedBoards={listSavedBoards}
+        boardStates={boardStates}
+        onOpen={handleOpen}
+        forkBoard={handleForkBoard}
+        onCreateBoard={() => onRestoreBoard(undefined)}
+        onCreateNamedBoard={(name) => void handleCreateNamedBoard(name)}
+        recentBoardName={lastSessionName}
+        onContinueRecent={() => void handleResume()}
+        onLoadBoard={() => void handleImportBoard()}
+        loadBoardLabel="Import board"
+        describeBoard={describeBoard}
+        listBoardHistory={listBoardHistory}
+        onDeleteBoard={deleteBoard}
+        loadBoardSource={loadBoardSource}
+        saveBoardSource={saveBoardSource}
+        uploadBoardToCloud={uploadBoardToCloud}
+        extraSources={[sharedSource]}
+        myBoardsExtraFolders={uploadedFolders}
+        onRevokeShare={onRevokeShare}
+        onLeaveShare={onLeaveShare}
+        onDeleteCloudBoard={onDeleteCloudBoard}
+        manageRemotes={remotes}
+        withCloudBoards
+        uploadBoardArt={uploadBoardArt}
+        pickBoardArtImage={inApp ? pickBoardArtImage : undefined}
+        excludeDemoTags={["iOS only"]}
+        title="Readymade"
+        badge={currentVersion.version}
+        badgeDetail={currentVersion.hash}
+        badgeDetailHref={commitUrl(currentVersion.hash)}
+        initials={initialsOf(accountName)}
+        avatarTitle={
+          user
+            ? accountName
+              ? `Account (${accountName})`
+              : "Account"
+            : "Log in"
+        }
+        onAvatarClick={() => (user ? setAccountOpen(true) : void cloudLogin())}
+        menuSlot={<MeanderAppMenu />}
+      />
+      <AccountDialog open={isAccountOpen} onOpenChange={setAccountOpen} />
+    </>
   );
 }

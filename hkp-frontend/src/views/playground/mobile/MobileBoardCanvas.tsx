@@ -1398,6 +1398,9 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
                 padding: "6px 10px 0",
                 overflowX: "auto",
                 flexShrink: 0,
+                // Outside the facade, so it paints the facade's surface itself
+                // — otherwise the canvas behind shows between the tabs.
+                background: "hsl(var(--background, 0 0% 100%))",
               }}
             >
               {views.map((v) => (

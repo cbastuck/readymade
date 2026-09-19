@@ -129,6 +129,10 @@ See **Queue** (`services/queue.md`) for the service itself.
 own `params` are the defaults — running alone is running with those — and a
 composition overrides them per instance.
 
+Substitution happens whether a board was opened alone or included by something
+else, which is what makes "test a unit on its own" a real case rather than the
+one that does not work.
+
 A reference with no value is **left as it stands**, not blanked. Unlike a secret,
 where an empty string is what every service already reads as "not configured", a
 parameter is usually a topic, a database or a URL, and emptying one produces a
@@ -211,6 +215,21 @@ set. A view carries the runtime ids it may address, and the board context is
 narrowed to them (`narrowBoardContext`), so a unit's facade addresses its own
 services and nothing else. A board that is not a composition has the single
 facade it always had.
+
+Not every unit is something to look at. A unit whose contribution is an
+**address** — a store served over HTTP, a voice that answers requests — still
+needs a panel of its own, because that is what makes it openable and testable
+alone; in a composition the same panel is a tab nobody has a reason to visit,
+and each of those makes the tabs that matter harder to find. So the composition
+decides, per entry:
+
+```json
+{ "uri": "library-unit-board.json", "as": "library", "view": false }
+```
+
+The unit keeps its facade — this is not an edit to the unit — and everything
+else about it is placed as usual: its runtimes run, its services load, its
+mounts publish and resolve. It simply contributes no face to this board.
 
 ---
 

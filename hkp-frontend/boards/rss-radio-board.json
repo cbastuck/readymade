@@ -1,0 +1,43 @@
+{
+  "boardName": "Reading Radio",
+  "description": "A reading list, read aloud and served as audio: four units, each of which runs and can be tested on its own.\n\n**Reader** is the RSS board \u2014 feeds in, a reading list out, and that list published as a feed of its own. **Voice** is a text-to-speech endpoint and nothing else. **Radio** reads a feed, skips what it has already spoken, calls the voice, keeps the audio, and publishes what it has read. **Library** serves the audio, read-only, at an address a player can be pointed at.\n\nWhat holds them together is deliberately thin, and it is not a wire. The radio reads the reader's output **as a feed**, which is why it does not know the reading list is a SQL table \u2014 or that there is a reading list at all; give it any feed and it does the same thing. It reaches the voice and the library by *mount reference*: a board names a service, and the coordinator resolves the address when the board loads. It shares the library's bytes by **naming the same volume**, the way two boards share a database.\n\nEach unit's runtimes keep the unit's own board name, so a unit composed here is the same to a server as a unit opened alone \u2014 the same endpoints, the same tables. What the composition qualifies is the runtime id, which is why the voice is addressed as `voice.speech` here and as `speech` when it runs by itself.\n\nNeeds hkp-node on port 8080 and hkp-python on port 9000.",
+  "units": [
+    {
+      "uri": "rss-demo-board.json",
+      "as": "reader",
+      "params": {
+        "database": "rss-reader"
+      }
+    },
+    {
+      "uri": "rss-radio-voice-unit-board.json",
+      "as": "voice",
+      "params": {
+        "voice": "af_heart"
+      },
+      "view": false
+    },
+    {
+      "uri": "rss-radio-unit-board.json",
+      "as": "radio",
+      "params": {
+        "feedUrl": "hkp-mount://reader.node/feed-serve",
+        "feedName": "Reading list",
+        "voiceMount": "hkp-mount://voice.speech/render",
+        "audioBase": "hkp-mount://library.files/listen",
+        "volume": "radio",
+        "database": "rss-radio"
+      }
+    },
+    {
+      "uri": "rss-radio-library-unit-board.json",
+      "as": "library",
+      "params": {
+        "volume": "radio"
+      },
+      "view": false
+    }
+  ],
+  "runtimes": [],
+  "services": {}
+}

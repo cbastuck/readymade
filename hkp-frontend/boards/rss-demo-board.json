@@ -1,0 +1,497 @@
+{
+  "boardName": "RSS Aggregator",
+  "description": "Any number of RSS or Atom feeds read as one list, newest first, with Hacker News among them. Subscribe to a feed by pasting its URL; the feeds are fetched together and one slow or broken one costs its own rows and nothing else. Saving an article puts it in a SQL reading list that outlives the feed page it came from.\n\nThe reading list is also published **as a feed** of its own, at an address this board is given when it loads. Nothing here knows what a feed is: the document is built by the statement that reads the rows, and the endpoint in front of it serves the last one it was handed. Because those services sit after the ones that save and remove an article, the feed is rebuilt by the act of changing the list rather than on a schedule \u2014 anything subscribed to it sees the change on its next read.",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "Reader",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "feeds",
+        "serviceId": "rss",
+        "serviceName": "Feeds",
+        "state": {
+          "feeds": [
+            {
+              "url": "https://hnrss.org/frontpage",
+              "name": "Hacker News"
+            },
+            {
+              "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+              "name": "BBC World"
+            },
+            {
+              "url": "https://lwn.net/headlines/rss",
+              "name": "LWN"
+            },
+            {
+              "url": "https://www.theverge.com/rss/index.xml",
+              "name": "The Verge"
+            }
+          ],
+          "limit": 60,
+          "summaryChars": 220
+        }
+      },
+      {
+        "uuid": "end-refresh",
+        "serviceId": "stopper",
+        "serviceName": "End of the read",
+        "state": {}
+      },
+      {
+        "uuid": "record-article",
+        "serviceId": "tracks",
+        "serviceName": "Keep or drop",
+        "state": {
+          "run": "serial",
+          "tracks": [
+            {
+              "name": "keep",
+              "pipeline": [
+                {
+                  "instanceId": "insert",
+                  "serviceId": "sql",
+                  "serviceName": "Save an article",
+                  "state": {
+                    "mode": "run",
+                    "database": "{{param.database}}",
+                    "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);",
+                    "statement": "INSERT INTO article (link, title, feed, author, summary, published)\nSELECT $link, $title, $feed, $author, $summary, $published\n WHERE $intent = 'keep' AND $link <> ''\n    ON CONFLICT(link) DO NOTHING"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "drop",
+              "pipeline": [
+                {
+                  "instanceId": "delete",
+                  "serviceId": "sql",
+                  "serviceName": "Remove an article",
+                  "state": {
+                    "mode": "run",
+                    "database": "{{param.database}}",
+                    "statement": "DELETE FROM article\n WHERE $intent = 'drop'\n   AND link = $link"
+                  }
+                }
+              ]
+            }
+          ],
+          "reduce": [
+            {
+              "instanceId": "carry",
+              "serviceId": "map",
+              "serviceName": "What came in",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "=": "params.input"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "kept-articles",
+        "serviceId": "sql",
+        "serviceName": "Reading list",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);",
+          "statement": "SELECT link, title, feed, published, saved\n  FROM article\n ORDER BY saved DESC\n LIMIT 100"
+        }
+      },
+      {
+        "uuid": "feed-about",
+        "serviceId": "map",
+        "serviceName": "What the feed is called",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "channelTitle": "{{param.feedTitle}}",
+            "channelDescription": "{{param.feedDescription}}",
+            "channelLink": "hkp-mount://node/feed-serve"
+          }
+        }
+      },
+      {
+        "uuid": "feed-doc",
+        "serviceId": "sql",
+        "serviceName": "The reading list as a feed",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "SELECT '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'\n    || '<rss version=\"2.0\"><channel>'\n    || '<title><![CDATA[' || replace(IFNULL($channelTitle, ''), ']]>', ']]&gt;') || ']]></title>'\n    || '<link>' || replace(replace(replace(IFNULL($channelLink, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n    || '<description><![CDATA[' || replace(IFNULL($channelDescription, ''), ']]>', ']]&gt;') || ']]></description>'\n    || IFNULL(group_concat(item, '' ORDER BY sortKey DESC), '')\n    || '</channel></rss>' AS feed\n  FROM (\n    SELECT '<item>'\n        || '<title><![CDATA[' || replace(IFNULL(title, ''), ']]>', ']]&gt;') || ']]></title>'\n        || '<link>' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n        || '<guid isPermaLink=\"true\">' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</guid>'\n        || '<pubDate>' || IFNULL(published, '') || '</pubDate>'\n        || '<category><![CDATA[' || replace(IFNULL(feed, ''), ']]>', ']]&gt;') || ']]></category>'\n        || '<description><![CDATA[' || replace(IFNULL(summary, ''), ']]>', ']]&gt;') || ']]></description>'\n        || '</item>' AS item,\n           saved AS sortKey\n      FROM article\n     ORDER BY saved DESC\n     LIMIT 100\n  )"
+        }
+      },
+      {
+        "uuid": "feed-wrap",
+        "serviceId": "map",
+        "serviceName": "As a document",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "meta.status": 200,
+            "meta.contentType": "application/rss+xml; charset=utf-8",
+            "body=": "params.rows[0].feed"
+          }
+        }
+      },
+      {
+        "uuid": "feed-serve",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Serve the feed",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_data",
+          "mountName": "list",
+          "pipeline": []
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "feeds",
+        "payload": {}
+      },
+      {
+        "type": "process",
+        "serviceUuid": "record-article",
+        "payload": {
+          "intent": "none",
+          "link": ""
+        }
+      }
+    ],
+    "panels": [
+      {
+        "id": "articles",
+        "title": "Latest",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Refresh",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "feeds",
+                      "payload": {}
+                    }
+                  ],
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "feeds",
+                      "path": "fetching"
+                    },
+                    "statusColors": {
+                      "true": "#f59e0b",
+                      "false": "#22c55e"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "label": "Articles",
+                  "source": {
+                    "serviceUuid": "feeds",
+                    "path": "count"
+                  },
+                  "placeholder": "\u2014",
+                  "grow": true
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "feeds",
+                "path": "items"
+              },
+              "gap": 0,
+              "template": {
+                "direction": "column",
+                "gap": 2,
+                "items": [
+                  {
+                    "direction": "row",
+                    "gap": 8,
+                    "align": "flex-start",
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.title}}",
+                        "href": "{{item.link}}",
+                        "fontSize": 14,
+                        "grow": true
+                      },
+                      {
+                        "type": "button",
+                        "label": "Save",
+                        "actions": [
+                          {
+                            "type": "process",
+                            "serviceUuid": "record-article",
+                            "payload": {
+                              "intent": "keep",
+                              "link": "{{item.link}}",
+                              "title": "{{item.title}}",
+                              "feed": "{{item.feed}}",
+                              "author": "{{item.author}}",
+                              "summary": "{{item.summary}}",
+                              "published": "{{item.published}}"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.feed}} \u00b7 {{item.publishedLabel}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.summary}}",
+                    "tone": "muted",
+                    "fontSize": 12
+                  }
+                ]
+              },
+              "stripe": {
+                "even": "rgba(127,127,127,0.10)",
+                "odd": "rgba(127,127,127,0.03)",
+                "padding": 10,
+                "radius": 6
+              }
+            }
+          ],
+          "paddingX": 16,
+          "paddingY": 12
+        },
+        "width": "70%"
+      },
+      {
+        "id": "saved",
+        "title": "Reading list",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "label": "Kept",
+              "source": {
+                "serviceUuid": "kept-articles",
+                "path": "count"
+              },
+              "placeholder": "0",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "kept-articles",
+                "path": "rows"
+              },
+              "gap": 6,
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "flex-start",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.title}}",
+                    "href": "{{item.link}}",
+                    "fontSize": 12,
+                    "grow": true
+                  },
+                  {
+                    "type": "button",
+                    "label": "Remove",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "record-article",
+                        "payload": {
+                          "intent": "drop",
+                          "link": "{{item.link}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "text",
+              "label": "As a feed",
+              "source": {
+                "serviceUuid": "feed-serve",
+                "path": "__hkpMount"
+              },
+              "placeholder": "not published yet",
+              "tone": "muted",
+              "fontSize": 11,
+              "wrap": true
+            }
+          ]
+        },
+        "width": "30%"
+      },
+      {
+        "id": "library",
+        "title": "Feeds",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Paste any RSS or Atom URL to add it to the merged list. Feeds are fetched from the Node runtime, which is what makes arbitrary ones readable at all \u2014 almost no publisher sends the CORS header a browser would need.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text-input",
+              "label": "Subscribe",
+              "placeholder": "https://example.com/feed.xml",
+              "submitLabel": "Add feed",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "feeds",
+                  "configure": {
+                    "addFeed": "$$input"
+                  }
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "feeds",
+                  "payload": {}
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "feeds",
+                "path": "feeds"
+              },
+              "gap": 4,
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "center",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.url}}",
+                    "fontSize": 11,
+                    "wrap": true,
+                    "grow": true
+                  },
+                  {
+                    "type": "button",
+                    "label": "Unsubscribe",
+                    "confirm": "Stop reading {{item.url}}?",
+                    "actions": [
+                      {
+                        "type": "configure",
+                        "serviceUuid": "feeds",
+                        "configure": {
+                          "removeFeed": "{{item.url}}"
+                        }
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "feeds",
+                        "payload": {}
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "paddingX": 16,
+          "paddingY": 12
+        }
+      }
+    ],
+    "tabs": [
+      {
+        "id": "read",
+        "title": "Read",
+        "panels": [
+          "articles",
+          "saved"
+        ]
+      },
+      {
+        "id": "feeds",
+        "title": "Feeds",
+        "panels": [
+          "library"
+        ]
+      }
+    ],
+    "defaultTab": "read",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "feeds",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "record-article",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "kept-articles",
+          "path": "error"
+        }
+      }
+    ]
+  },
+  "unit": {
+    "name": "reader",
+    "params": {
+      "database": "rss-reader",
+      "feedTitle": "Reading list",
+      "feedDescription": "Articles kept from the feeds this board reads"
+    }
+  }
+}

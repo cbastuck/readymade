@@ -19,10 +19,11 @@ import { useNotificationValue } from "./StatusIndicatorRenderer";
  * notification — which for an error is the difference between seeing the reason
  * and seeing nothing at all.
  *
- * Two things a value can be beyond prose, and each is one option rather than a
- * widget of its own: a value whose point is to be taken somewhere else is
- * `copyable`, and a value laid out in characters — ASCII art, a table a service
- * drew itself — sets `wrap: false` so its columns survive a narrow panel.
+ * Three things a value can be beyond prose, and each is one option rather than
+ * a widget of its own: a value whose point is to be taken somewhere else is
+ * `copyable`, a value laid out in characters — ASCII art, a table a service
+ * drew itself — sets `wrap: false` so its columns survive a narrow panel, and a
+ * value that names something to open carries an `href`.
  *
  * With no source it is a fixed line of prose, which is the same widget with
  * nothing ever arriving to replace the placeholder.
@@ -87,11 +88,25 @@ export function TextRenderer({
   const shown = text && text.trim() ? text : (widget.placeholder ?? "");
   const isPlaceholder = !(text && text.trim());
   const wraps = widget.wrap !== false;
+  // With no source the placeholder is the text itself; with one it stands in
+  // for a value that has not arrived.
+  const standingIn = !!widget.source && isPlaceholder;
+  // A link only where there is both somewhere to go and something to click.
+  // Offering a stood-in placeholder as a link is worse than plain text: it
+  // dresses up an absent value as something to open.
+  const links = !!widget.href && !!shown.trim() && !standingIn;
 
   const body = (
     <div
       style={{
-        color: isPlaceholder ? TONES.muted : TONES[widget.tone ?? "normal"],
+        // The accent says the text is a way somewhere, which is the one thing
+        // a reader cannot tell from an underline they have to hover to see. A
+        // tone the board asked for still wins — it was asked for.
+        color: isPlaceholder
+          ? TONES.muted
+          : links && !widget.tone
+            ? "var(--hkp-accent)"
+            : TONES[widget.tone ?? "normal"],
         fontSize: widget.fontSize ?? 13,
         fontFamily: widget.mono ? "var(--font-mono, monospace)" : undefined,
         // A message is prose, not a cell: it wraps, and keeps the line breaks a
@@ -116,8 +131,28 @@ export function TextRenderer({
     </div>
   );
 
+  const linked = links ? (
+    <a
+      href={widget.href}
+      target="_blank"
+      rel="noreferrer noopener"
+      // The colour is the body's, so that a tone the board set still applies;
+      // this element is the click target and nothing more.
+      style={{
+        color: "inherit",
+        textDecoration: "none",
+        minWidth: 0,
+        flex: widget.copyable ? 1 : undefined,
+      }}
+    >
+      {body}
+    </a>
+  ) : (
+    body
+  );
+
   if (!widget.copyable) {
-    return body;
+    return linked;
   }
 
   return (
@@ -131,7 +166,7 @@ export function TextRenderer({
         gap: 8,
       }}
     >
-      {body}
+      {linked}
       <CopyButton value={isPlaceholder ? "" : (text ?? "")} />
     </div>
   );

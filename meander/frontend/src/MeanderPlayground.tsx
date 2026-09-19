@@ -15,6 +15,7 @@ import {
 } from "./actions";
 import { getBackend } from "./backend";
 import { BoardHistoryEntry } from "./backend/types";
+import { BoardDocuments } from "hkp-frontend/src/core/boardPersistence";
 import Board from "./Board";
 import { SharePayload } from "./share/shareInbox";
 import BoardShareConsumer from "./share/BoardShareConsumer";
@@ -33,6 +34,12 @@ type Props = {
   initialBoard?: BoardDescriptor | null;
   /** Where `initialBoard` was read from, when it came from a file. */
   boardFilePath?: string;
+  /**
+   * The unit documents `initialBoard` was resumed with, keyed by `uri`. A
+   * session has no file path to resolve its units against; these are what it
+   * has instead.
+   */
+  unitDocuments?: Record<string, BoardDescriptor>;
   onLogo: () => void;
   /** A captured share to inject at the board's pipeline head (run once). */
   shareToInject?: SharePayload | null;
@@ -42,6 +49,7 @@ type Props = {
 export default function MeanderPlayground({
   initialBoard = null,
   boardFilePath,
+  unitDocuments,
   onLogo,
   shareToInject = null,
   onShareConsumed,
@@ -140,16 +148,24 @@ export default function MeanderPlayground({
     setBoardName(name);
   };
 
-  const onBoardInfrastructureChange = async (board: BoardDescriptor) => {
+  const onBoardInfrastructureChange = async (
+    board: BoardDescriptor,
+    documents: BoardDocuments,
+  ) => {
     const name = board.boardName || boardName;
     if (!name) {
       return;
     }
     localStorage.setItem("lastActiveBoardName", name);
+    // The documents, not the projection: a board is resumed by being opened,
+    // and what is opened has to be a document. Stored flat, a composition comes
+    // back declaring no units, so there is nothing left to link and the facades
+    // its units contribute are gone — the board is there, its faces are not.
     const entry: BoardHistoryEntry = {
       timestamp: new Date().toISOString(),
       label: "auto",
-      snapshot: board,
+      snapshot: documents.composition,
+      ...(documents.units.length ? { units: documents.units } : {}),
     };
     try {
       await (await getBackend()).pushBoardSnapshot(name, entry);
@@ -186,6 +202,7 @@ export default function MeanderPlayground({
       boardName={boardName}
       boardDescriptor={initialBoard}
       boardSource={boardFilePath}
+      unitDocuments={unitDocuments}
       availableRuntimeEngines={availableRuntimeEngines}
       onUpdateAvailableRuntimeEngines={syncAvailableRuntimeEngines}
       onSaveBoard={onSaveBoard}

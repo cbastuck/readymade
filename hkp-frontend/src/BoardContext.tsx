@@ -52,6 +52,7 @@ import {
   fetchBoard as fetchBoardOp,
   serializeBoard as serializeBoardOp,
   serializeBoardDocuments as serializeBoardDocumentsOp,
+  unlinkBoardDocuments,
   BoardDocuments,
   setBoardState as setBoardStateOp,
   clearBoard as clearBoardOp,
@@ -734,13 +735,22 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         clearTimeout(infraDebounceRef.current);
       }
       const call = () => {
-        propsRef.current.onBoardInfrastructureChange?.({
+        const board: BoardDescriptor = {
           boardName,
           runtimes,
           services,
           registry,
           facade,
-        });
+        };
+        // Handed over both ways round, because the two callers want opposite
+        // things: a coordinator registers what actually runs, while anything
+        // storing the board to open later needs the documents — a projection
+        // saved on its own has no `units` left to link, and a composition's
+        // facades live in its units, not in the board they were placed into.
+        propsRef.current.onBoardInfrastructureChange?.(
+          board,
+          unlinkBoardDocuments(board, linkage),
+        );
         infraPendingCallRef.current = null;
       };
       infraPendingCallRef.current = call;
@@ -751,7 +761,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         }
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [runtimes, services, boardName, registry, facade]);
+    }, [runtimes, services, boardName, registry, facade, linkage]);
 
     // Flush any pending infrastructure change notification when unmounting
     // so history is saved even if the user navigates away before the debounce fires.

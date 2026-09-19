@@ -1,0 +1,145 @@
+{
+  "boardName": "Radio Voice",
+  "description": "A voice, as an endpoint. POST {\"path\": \"episodes/x.mp3\", \"text\": \"\u2026\"} and the answer is that text spoken, as an mp3.\n\nIt keeps nothing and knows nothing about what it is reading: no feed, no library, no idea what an episode is. That is what makes it reusable \u2014 anything with text and somewhere to put audio can call it.\n\nThe answer carries the path it was asked about in an `x-episode-path` header, because a caller holding many items needs to know which one came back. Inside, a Join is what carries that path across the speaking: text-to-speech answers with audio rather than with the request and the audio, so the request is kept beside the detour rather than replaced by it.\n\nNeeds hkp-python on port 9000 with the speech and mp3 extras: pip install \"hkp-python[tts,mp3]\". The first call downloads the Kokoro model (~310 MB) and takes a while; later ones do not.",
+  "unit": {
+    "name": "voice",
+    "params": {
+      "voice": "af_heart",
+      "language": "en-us",
+      "bitrate": "64"
+    }
+  },
+  "runtimes": [
+    {
+      "id": "speech",
+      "name": "Speech",
+      "type": "rest",
+      "url": "http://127.0.0.1:9000",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "speech": [
+      {
+        "uuid": "render",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Render an episode",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_session",
+          "mountName": "render",
+          "pipeline": [
+            {
+              "instanceId": "spoken",
+              "serviceId": "join",
+              "serviceName": "Speak it",
+              "state": {
+                "as": "audio",
+                "pipeline": [
+                  {
+                    "instanceId": "words",
+                    "serviceId": "map",
+                    "serviceName": "The words",
+                    "state": {
+                      "mode": "replace",
+                      "template": {
+                        "text=": "params.body.text"
+                      }
+                    }
+                  },
+                  {
+                    "instanceId": "speak",
+                    "serviceId": "text-to-speech",
+                    "serviceName": "Kokoro",
+                    "state": {
+                      "voice": "{{param.voice}}",
+                      "lang": "{{param.language}}",
+                      "speed": 1.0
+                    }
+                  },
+                  {
+                    "instanceId": "encode",
+                    "serviceId": "audio-encode",
+                    "serviceName": "As mp3",
+                    "state": {
+                      "format": "mp3",
+                      "sampleRate": 24000,
+                      "channels": 1
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "instanceId": "answer",
+              "serviceId": "map",
+              "serviceName": "Answer with the audio",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "meta.status": 200,
+                  "meta.contentType": "audio/mpeg",
+                  "meta.headers.x-episode-path=": "params.body.path",
+                  "binary=": "params.audio"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "end",
+        "serviceId": "stopper",
+        "serviceName": "End of the call",
+        "state": {}
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "voice",
+        "title": "Voice",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Anything that can POST text gets it back as speech. The address below is assigned when the board loads; it does not change when the runtime restarts.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text",
+              "label": "Endpoint",
+              "source": {
+                "serviceUuid": "render",
+                "path": "__hkpMount"
+              },
+              "placeholder": "not published yet",
+              "fontSize": 12,
+              "wrap": true
+            },
+            {
+              "type": "text",
+              "label": "Voice",
+              "source": {
+                "serviceUuid": "render",
+                "path": "status"
+              },
+              "placeholder": "idle",
+              "tone": "muted",
+              "fontSize": 12
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
