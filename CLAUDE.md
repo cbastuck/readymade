@@ -352,7 +352,8 @@ registry registration, tests, demo board, and docs page. The demo board filename
   hard to reason about. Readymade has no wire UI; the ordered service list _is_ the flow. Express
   branching and iteration through control-flow services: a Switch that pattern-matches and
   routes into sub-pipelines, a Filter that stops propagation on a failed predicate, a Looper
-  that repeats sub-services until a predicate stops it.
+  that repeats sub-services until a predicate stops it, an Iterator that runs one pipeline over
+  many items, and Tracks that runs many pipelines over one item and reduces their answers.
 - **Scoped by concept, not by technique.** A service groups related logic by domain, not by
   implementation. Multiple modes and technologies belong together if they serve the same
   conceptual role (e.g. Input handles event streams and WebSockets — different tech, same

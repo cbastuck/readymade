@@ -206,6 +206,29 @@ service type: `threshold-filter-svc` not `filter-1-svc`.
 }
 ```
 
+**Two things about the same value** — several statements, several services, several questions,
+all given the same input. Do not put them in a row and teach each to pass its input through: that
+works and records nothing. `tracks` says it:
+
+```json
+{ "uuid": "record-svc", "serviceId": "tracks", "state": {
+    "run": "serial",
+    "tracks": [
+      { "name": "keep", "pipeline": [ { "instanceId": "insert", "serviceId": "sql", "state": { … } } ] },
+      { "name": "drop", "pipeline": [ { "instanceId": "delete", "serviceId": "sql", "state": { … } } ] }
+    ],
+    "reduce": [ { "instanceId": "carry", "serviceId": "map",
+                  "state": { "mode": "replace", "template": { "=": "params.input" } } } ] } }
+```
+
+Every track is given the same input; the answers come back as an array, one element per track, in
+declaration order, with `null` where a track stopped. `reduce` is a pipeline given
+`{ input, results }` — `{"=": "params.input"}` carries the request on where the tracks were side
+effects, which is the common case. `run: "parallel"` overlaps tracks that wait on something (an
+HTTP call, another runtime); the default is one at a time, because two tracks writing to the same
+place are a race. A condition about the data still belongs *in* the track — `WHERE $intent =
+'keep'` in the statement, not a filter in front of it. See `docs/content/services/tracks.md`.
+
 **A document a client understands** — a feed, a playlist, a report. A board that produces many
 things (rows in a table, files in a volume) often has to hand them to something that is not a
 board: a podcast client, VLC, a spreadsheet. The shape is always the same three services, and

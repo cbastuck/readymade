@@ -5,7 +5,10 @@
       "id": "ui",
       "name": "UI",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     }
   ],
   "services": {
@@ -29,90 +32,120 @@
         "serviceName": "Game of Life"
       },
       {
-        "uuid": "stack-svc",
-        "serviceId": "hookup.to/service/stack",
-        "serviceName": "Observers",
+        "uuid": "branches-svc",
+        "serviceId": "tracks",
+        "serviceName": "Tracks",
         "state": {
-          "input": "multiplex",
-          "services": [
+          "run": "serial",
+          "tracks": [
             {
-              "serviceId": "sub-service",
-              "serviceName": "Visual",
-              "uuid": "visual-branch",
+              "name": "visual-branch",
               "pipeline": [
                 {
-                  "instanceId": "gol-renderer",
-                  "serviceId": "hookup.to/service/game-of-life-renderer",
-                  "serviceName": "Game of Life Renderer",
+                  "serviceId": "sub-service",
+                  "instanceId": "visual-branch",
+                  "serviceName": "Visual",
                   "state": {
-                    "cellSize": 8,
-                    "canvasWidth": 600,
-                    "canvasHeight": 400
-                  }
-                },
-                {
-                  "instanceId": "gol-canvas",
-                  "serviceId": "hookup.to/service/canvas",
-                  "serviceName": "Canvas",
-                  "state": {
-                    "clearOnRedraw": true,
-                    "resizable": true,
-                    "size": [600, 400]
+                    "pipeline": [
+                      {
+                        "instanceId": "gol-renderer",
+                        "serviceId": "hookup.to/service/game-of-life-renderer",
+                        "serviceName": "Game of Life Renderer",
+                        "state": {
+                          "cellSize": 8,
+                          "canvasWidth": 600,
+                          "canvasHeight": 400
+                        }
+                      },
+                      {
+                        "instanceId": "gol-canvas",
+                        "serviceId": "hookup.to/service/canvas",
+                        "serviceName": "Canvas",
+                        "state": {
+                          "clearOnRedraw": true,
+                          "resizable": true,
+                          "size": [
+                            600,
+                            400
+                          ]
+                        }
+                      }
+                    ]
                   }
                 }
               ]
             },
             {
-              "serviceId": "sub-service",
-              "serviceName": "Audio",
-              "uuid": "audio-branch",
+              "name": "audio-branch",
               "pipeline": [
                 {
-                  "instanceId": "gol-extract",
-                  "serviceId": "hookup.to/service/map",
-                  "serviceName": "Extract Objects",
-                  "state": { "template": { "=": "params.objects" } }
-                },
-                {
-                  "instanceId": "gol-enrich",
-                  "serviceId": "hookup.to/service/map",
-                  "serviceName": "Enrich",
+                  "serviceId": "sub-service",
+                  "instanceId": "audio-branch",
+                  "serviceName": "Audio",
                   "state": {
-                    "template": {
-                      "alive=": "flatSum(params.matrix)",
-                      "centerCol=": "params.col + (params.matrix[0].length - 1) / 2"
-                    }
+                    "pipeline": [
+                      {
+                        "instanceId": "gol-extract",
+                        "serviceId": "hookup.to/service/map",
+                        "serviceName": "Extract Objects",
+                        "state": {
+                          "template": {
+                            "=": "params.objects"
+                          }
+                        }
+                      },
+                      {
+                        "instanceId": "gol-enrich",
+                        "serviceId": "hookup.to/service/map",
+                        "serviceName": "Enrich",
+                        "state": {
+                          "template": {
+                            "alive=": "flatSum(params.matrix)",
+                            "centerCol=": "params.col + (params.matrix[0].length - 1) / 2"
+                          }
+                        }
+                      },
+                      {
+                        "instanceId": "gol-sort",
+                        "serviceId": "hookup.to/service/sort",
+                        "serviceName": "Sort",
+                        "state": {
+                          "by": "alive",
+                          "dir": "desc"
+                        }
+                      },
+                      {
+                        "instanceId": "gol-limit",
+                        "serviceId": "hookup.to/service/limit",
+                        "serviceName": "Limit",
+                        "state": {
+                          "n": 6
+                        }
+                      },
+                      {
+                        "instanceId": "gol-to-notes",
+                        "serviceId": "hookup.to/service/map",
+                        "serviceName": "To Notes",
+                        "state": {
+                          "template": {
+                            "frequency=": "at([130.81, 146.83, 164.81, 196, 220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99, 880], params.centerCol)",
+                            "velocity=": "min(1, params.alive / 40)",
+                            "duration": 90
+                          }
+                        }
+                      },
+                      {
+                        "instanceId": "gol-synth",
+                        "serviceId": "hookup.to/service/sound",
+                        "serviceName": "Sound",
+                        "state": {
+                          "volume": 0.25,
+                          "waveType": "sawtooth",
+                          "generator": "synth"
+                        }
+                      }
+                    ]
                   }
-                },
-                {
-                  "instanceId": "gol-sort",
-                  "serviceId": "hookup.to/service/sort",
-                  "serviceName": "Sort",
-                  "state": { "by": "alive", "dir": "desc" }
-                },
-                {
-                  "instanceId": "gol-limit",
-                  "serviceId": "hookup.to/service/limit",
-                  "serviceName": "Limit",
-                  "state": { "n": 6 }
-                },
-                {
-                  "instanceId": "gol-to-notes",
-                  "serviceId": "hookup.to/service/map",
-                  "serviceName": "To Notes",
-                  "state": {
-                    "template": {
-                      "frequency=": "at([130.81, 146.83, 164.81, 196, 220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99, 880], params.centerCol)",
-                      "velocity=": "min(1, params.alive / 40)",
-                      "duration": 90
-                    }
-                  }
-                },
-                {
-                  "instanceId": "gol-synth",
-                  "serviceId": "hookup.to/service/sound",
-                  "serviceName": "Sound",
-                  "state": { "volume": 0.25, "waveType": "sawtooth", "generator": "synth" }
                 }
               ]
             }

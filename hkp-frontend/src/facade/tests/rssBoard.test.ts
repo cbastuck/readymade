@@ -12,17 +12,43 @@ import board from "../../../boards/rss-demo-board.json";
  * Stopper, so the article list is notified and goes no further; without it
  * every refresh would push sixty articles into the reading list's INSERT.
  *
- * The second is that **the reading list has one entry point**. Saving and
- * removing both process the first of the three statements, and the intent they
- * carry decides which one acts — so the query at the end re-reads whatever
- * changed, in the same pass, and the list a person sees is the state after
- * their own tap.
+ * The second is that **saving and removing are one entry point**. Both are the
+ * same request with a different intent, and the two statements that act on it
+ * are tracks of one service: independent of each other, given the same
+ * request, and followed by a reducer that carries the request on — so the query
+ * after them re-reads whatever changed, in the same pass, and the list a person
+ * sees is the state after their own tap.
  */
 
-type Service = { uuid: string; serviceId: string };
+type Service = { uuid: string; serviceId: string; state?: any };
 
 const services = board.services.node as Service[];
 const order = services.map((svc) => svc.uuid);
+
+/** The service holding the statements that change rows, and its tracks. */
+const record = services.find((svc) => svc.uuid === "record-article") as Service;
+const tracks = (record?.state?.tracks ?? []) as Array<{
+  name: string;
+  pipeline: Array<{ instanceId: string; serviceId: string; state: any }>;
+}>;
+
+/** Every sql statement the board runs, top-level and inside a track alike. */
+function statements(): Array<{ uuid: string; state: any }> {
+  const found: Array<{ uuid: string; state: any }> = [];
+  for (const svc of services) {
+    if (svc.serviceId === "sql") {
+      found.push({ uuid: svc.uuid, state: svc.state });
+    }
+    for (const track of (svc.state?.tracks ?? []) as typeof tracks) {
+      for (const entry of track.pipeline) {
+        if (entry.serviceId === "sql") {
+          found.push({ uuid: entry.instanceId, state: entry.state });
+        }
+      }
+    }
+  }
+  return found;
+}
 
 /** Every serviceUuid a facade layout mentions, however deeply nested. */
 function referencedUuids(node: unknown, found = new Set<string>()): Set<string> {
@@ -73,50 +99,51 @@ describe("the RSS aggregator board", () => {
     // The fetch is before it, so a refresh reaches the stopper …
     expect(order.indexOf("feeds")).toBeLessThan(stopper);
     // … and every statement is after it, so a refresh never reaches one.
-    for (const uuid of ["keep-article", "drop-article", "kept-articles"]) {
+    for (const uuid of ["record-article", "kept-articles"]) {
       expect(order.indexOf(uuid)).toBeGreaterThan(stopper);
     }
   });
 
-  it("passes the request through every statement that changes rows", () => {
-    const statements = services.filter((svc) => svc.serviceId === "sql");
-
-    // Each statement that changes rows steps out of the way of the request, so
-    // the ones after it are handed the article and not its own { changes }.
-    for (const svc of statements) {
-      const state = (svc as any).state;
-      if (state.mode === "run") {
-        expect([svc.uuid, state.emit]).toEqual([svc.uuid, "input"]);
-      }
+  it("keeps the statements that change rows independent of each other", () => {
+    // They are given the same request and neither can see what the other did,
+    // which is what lets each be read on its own. The guard stays in the
+    // statement, where a condition about rows belongs.
+    expect(record.serviceId).toBe("tracks");
+    expect(tracks.map((track) => track.name)).toEqual(["keep", "drop"]);
+    for (const track of tracks) {
+      expect(track.pipeline).toHaveLength(1);
+      expect(track.pipeline[0].serviceId).toBe("sql");
+      expect(track.pipeline[0].state.mode).toBe("run");
+      expect(track.pipeline[0].state.statement).toMatch(/\$intent/);
+      // Carrying the pass is the reducer's job now, not every writer's.
+      expect(track.pipeline[0].state.emit).toBeUndefined();
     }
-
-    // The reading list is read back in the same pass that changed it, so the
-    // list a person sees is the state after their own tap.
-    const reading = statements.findIndex((svc) => svc.uuid === "kept-articles");
-    const changing = statements
-      .map((svc, index) => ((svc as any).state.mode === "run" ? index : -1))
-      .filter((index) => index >= 0);
-    expect((statements[reading] as any).state.mode).toBe("query");
-    expect(Math.max(...changing)).toBeLessThan(reading);
   });
 
-  it("gives the reading list one entry point, at the head of the statements", () => {
-    const statements = services
-      .filter((svc) => svc.serviceId === "sql")
-      .map((svc) => svc.uuid);
+  it("carries the request on, so the list is read back in the same pass", () => {
+    // The tracks were side effects: what leaves is the article the panel sent,
+    // which is what the query after them reads.
+    const reduce = record.state.reduce as Array<{ serviceId: string; state: any }>;
+    expect(reduce).toHaveLength(1);
+    expect(reduce[0].serviceId).toBe("map");
+    expect(reduce[0].state.template).toEqual({ "=": "params.input" });
 
-    // Everything the facade asks a service to *do*, as opposed to read.
-    const processed = new Set(
-      collectProcessTargets(board.facade).filter((uuid) =>
-        statements.includes(uuid),
-      ),
-    );
+    const reading = services.find((svc) => svc.uuid === "kept-articles") as Service;
+    expect(reading.state.mode).toBe("query");
+    expect(order.indexOf("record-article")).toBeLessThan(order.indexOf("kept-articles"));
+  });
 
-    // Only the first. A payload sent to one in the middle would skip the
-    // statement before it, and the rest would be handed a request that had
-    // already been acted on.
-    expect([...processed]).toEqual([statements[0]]);
-    expect(statements[0]).toBe("keep-article");
+  it("gives the reading list one entry point", () => {
+    // Saving and removing are the same request, told apart by its intent, so
+    // there is one service to send it to. A payload sent to a statement
+    // directly would skip the one beside it and reach the query already acted
+    // on — and now cannot be sent at all, since the statements are not
+    // top-level services for a facade to name.
+    const targets = new Set(collectProcessTargets(board.facade));
+    expect(targets.has("record-article")).toBe(true);
+    for (const track of tracks) {
+      expect(targets.has(track.pipeline[0].instanceId)).toBe(false);
+    }
   });
 
   it("shares one database across the statements, named rather than derived", () => {
@@ -124,11 +151,7 @@ describe("the RSS aggregator board", () => {
     // share; naming it keeps this board alone with its reading list. The name
     // is a unit parameter, so what a statement holds is the reference and what
     // it runs with is the default — one name either way.
-    const names = new Set(
-      services
-        .filter((svc) => svc.serviceId === "sql")
-        .map((svc) => (svc as any).state.database),
-    );
+    const names = new Set(statements().map((svc) => svc.state.database));
     expect([...names]).toEqual(["{{param.database}}"]);
     expect((board as any).unit.params.database).toBe("rss-reader");
   });
@@ -138,7 +161,7 @@ describe("the RSS aggregator board", () => {
     // save and remove, so a save rebuilds the feed in its own pass — there is
     // nothing to schedule and nothing to invalidate.
     const feedServices = ["feed-about", "feed-doc", "feed-wrap", "feed-serve"];
-    const changing = order.indexOf("drop-article");
+    const changing = order.indexOf("record-article");
 
     for (const uuid of feedServices) {
       expect(order.indexOf(uuid)).toBeGreaterThan(changing);

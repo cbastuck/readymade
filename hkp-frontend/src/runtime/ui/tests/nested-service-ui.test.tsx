@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 import SubServicePipelineUI from "../SubServicePipelineUI";
 import { ServiceInstance } from "hkp-frontend/src/types";
@@ -72,5 +72,34 @@ describe("UI lookup for nested services", () => {
       version: undefined,
       capabilities: undefined,
     });
+  });
+});
+
+describe("a host that owns the fold", () => {
+  it("draws no fold control of its own, and nothing at all while shut", () => {
+    // A Tracks panel folds by the track's name. Left to fold itself too, the
+    // strip would make a reader open a track and then open its pipeline to see
+    // the same thing.
+    const { rerender } = render(
+      <SubServicePipelineUI
+        service={pipelineService([{ serviceId: "map", instanceId: "inner" }])}
+        findServiceUI={() => (({ service }: any) => <div>panel:{service.uuid}</div>) as any}
+        collapsed={true}
+      />,
+    );
+
+    expect(screen.queryByText(/Show nested sevices/)).toBeNull();
+    expect(screen.queryByText("panel:inner")).toBeNull();
+
+    rerender(
+      <SubServicePipelineUI
+        service={pipelineService([{ serviceId: "map", instanceId: "inner" }])}
+        findServiceUI={() => (({ service }: any) => <div>panel:{service.uuid}</div>) as any}
+        collapsed={false}
+      />,
+    );
+
+    expect(screen.getByText("panel:inner")).toBeTruthy();
+    expect(screen.queryByText(/Show nested sevices/)).toBeNull();
   });
 });

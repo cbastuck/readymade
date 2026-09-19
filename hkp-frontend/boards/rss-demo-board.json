@@ -48,26 +48,57 @@
         "state": {}
       },
       {
-        "uuid": "keep-article",
-        "serviceId": "sql",
-        "serviceName": "Save an article",
+        "uuid": "record-article",
+        "serviceId": "tracks",
+        "serviceName": "Keep or drop",
         "state": {
-          "mode": "run",
-          "emit": "input",
-          "database": "{{param.database}}",
-          "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);",
-          "statement": "INSERT INTO article (link, title, feed, author, summary, published)\nSELECT $link, $title, $feed, $author, $summary, $published\n WHERE $intent = 'keep' AND $link <> ''\n    ON CONFLICT(link) DO NOTHING"
-        }
-      },
-      {
-        "uuid": "drop-article",
-        "serviceId": "sql",
-        "serviceName": "Remove an article",
-        "state": {
-          "mode": "run",
-          "emit": "input",
-          "database": "{{param.database}}",
-          "statement": "DELETE FROM article\n WHERE $intent = 'drop'\n   AND link = $link"
+          "run": "serial",
+          "tracks": [
+            {
+              "name": "keep",
+              "pipeline": [
+                {
+                  "instanceId": "insert",
+                  "serviceId": "sql",
+                  "serviceName": "Save an article",
+                  "state": {
+                    "mode": "run",
+                    "database": "{{param.database}}",
+                    "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);",
+                    "statement": "INSERT INTO article (link, title, feed, author, summary, published)\nSELECT $link, $title, $feed, $author, $summary, $published\n WHERE $intent = 'keep' AND $link <> ''\n    ON CONFLICT(link) DO NOTHING"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "drop",
+              "pipeline": [
+                {
+                  "instanceId": "delete",
+                  "serviceId": "sql",
+                  "serviceName": "Remove an article",
+                  "state": {
+                    "mode": "run",
+                    "database": "{{param.database}}",
+                    "statement": "DELETE FROM article\n WHERE $intent = 'drop'\n   AND link = $link"
+                  }
+                }
+              ]
+            }
+          ],
+          "reduce": [
+            {
+              "instanceId": "carry",
+              "serviceId": "map",
+              "serviceName": "What came in",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "=": "params.input"
+                }
+              }
+            }
+          ]
         }
       },
       {
@@ -140,7 +171,7 @@
       },
       {
         "type": "process",
-        "serviceUuid": "keep-article",
+        "serviceUuid": "record-article",
         "payload": {
           "intent": "none",
           "link": ""
@@ -222,7 +253,7 @@
                         "actions": [
                           {
                             "type": "process",
-                            "serviceUuid": "keep-article",
+                            "serviceUuid": "record-article",
                             "payload": {
                               "intent": "keep",
                               "link": "{{item.link}}",
@@ -309,7 +340,7 @@
                     "actions": [
                       {
                         "type": "process",
-                        "serviceUuid": "keep-article",
+                        "serviceUuid": "record-article",
                         "payload": {
                           "intent": "drop",
                           "link": "{{item.link}}"
@@ -443,13 +474,7 @@
       },
       {
         "source": {
-          "serviceUuid": "keep-article",
-          "path": "error"
-        }
-      },
-      {
-        "source": {
-          "serviceUuid": "drop-article",
+          "serviceUuid": "record-article",
           "path": "error"
         }
       },
