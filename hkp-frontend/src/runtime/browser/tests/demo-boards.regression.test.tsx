@@ -256,13 +256,10 @@ describe("demo boards regression", () => {
       ) as any;
       expect(tracksService).toBeTruthy();
 
-      // Each branch is a track of one sub-service, and the services inside it
-      // are what the branch actually does.
+      // A track is a pipeline, so each branch's services sit in it directly —
+      // there is nothing for a sub-service to wrap.
       const branchServiceIds = (tracksService.state?.tracks || []).flatMap(
-        (track: any) =>
-          (track.pipeline || []).flatMap((step: any) =>
-            (step.state?.pipeline || []).map((inner: any) => inner.serviceId),
-          ),
+        (track: any) => (track.pipeline || []).map((step: any) => step.serviceId),
       );
 
       expect(branchServiceIds).toEqual([
