@@ -39,6 +39,13 @@ function renderRefresh(
   return { onToken };
 }
 
+/** Lets the watch run for `ms`, settling whatever it starts along the way. */
+async function pass(ms: number) {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
@@ -51,18 +58,14 @@ afterEach(() => {
 });
 
 describe("RefreshedUser", () => {
-  it("renews shortly before the token expires, not after", async () => {
-    const { onToken } = renderRefresh(jwtExpiringIn(60));
+  it("renews once the token is inside its lead time, not before", async () => {
+    const { onToken } = renderRefresh(jwtExpiringIn(20 * 60));
 
-    // Ten seconds of lead time: at 49s nothing has happened yet.
-    await act(async () => {
-      vi.advanceTimersByTime(49_000);
-    });
+    // Five minutes of lead time: fourteen minutes in, nothing has happened.
+    await pass(14 * 60_000);
     expect(auth0.getAccessTokenSilently).not.toHaveBeenCalled();
 
-    await act(async () => {
-      vi.advanceTimersByTime(2_000);
-    });
+    await pass(2 * 60_000);
     // cacheMode "off" is the part that matters: the cache is keyed to the
     // access token's lifetime, so anything else hands back the dying token.
     expect(auth0.getAccessTokenSilently).toHaveBeenCalledWith({
@@ -72,12 +75,65 @@ describe("RefreshedUser", () => {
   });
 
   it("renews immediately when the token is already within the lead time", async () => {
-    renderRefresh(jwtExpiringIn(3));
+    renderRefresh(jwtExpiringIn(60));
 
-    await act(async () => {
-      vi.advanceTimersByTime(0);
-    });
+    await pass(0);
     expect(auth0.getAccessTokenSilently).toHaveBeenCalled();
+  });
+
+  it("renews a token that expired while the machine slept", async () => {
+    // What waking up looks like: the deadline is long past and nothing ran.
+    const { onToken } = renderRefresh(jwtExpiringIn(-8 * 3600));
+
+    await pass(0);
+    expect(onToken).toHaveBeenCalledWith({ __raw: "renewed" });
+  });
+
+  it("tries again after a renewal fails", async () => {
+    // A renewal at wake usually fails: the network is not back yet. One failure
+    // must not be the end of renewing this session.
+    auth0.getAccessTokenSilently.mockRejectedValueOnce(new Error("offline"));
+    const { onToken } = renderRefresh(jwtExpiringIn(-3600));
+
+    await pass(0);
+    expect(auth0.getAccessTokenSilently).toHaveBeenCalledTimes(1);
+    expect(onToken).not.toHaveBeenCalled();
+
+    await pass(2 * 60_000);
+    expect(onToken).toHaveBeenCalledWith({ __raw: "renewed" });
+  });
+
+  it("tries again as soon as the network comes back", async () => {
+    auth0.getAccessTokenSilently.mockRejectedValueOnce(new Error("offline"));
+    const { onToken } = renderRefresh(jwtExpiringIn(-3600));
+
+    await pass(0);
+    expect(onToken).not.toHaveBeenCalled();
+
+    // The backoff earned while offline does not apply once it is back.
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(onToken).toHaveBeenCalledWith({ __raw: "renewed" });
+  });
+
+  it("waits longer each time a renewal changes nothing", async () => {
+    const token = jwtExpiringIn(60);
+    // A renewal that hands back the same token has renewed nothing; asking
+    // again every minute would just be hammering Auth0.
+    auth0.getIdTokenClaims.mockResolvedValue({ __raw: token });
+    const { onToken } = renderRefresh(token);
+
+    await pass(0);
+    expect(auth0.getAccessTokenSilently).toHaveBeenCalledTimes(1);
+
+    await pass(60_000);
+    expect(auth0.getAccessTokenSilently).toHaveBeenCalledTimes(1);
+
+    await pass(60_000);
+    expect(auth0.getAccessTokenSilently).toHaveBeenCalledTimes(2);
+    expect(onToken).not.toHaveBeenCalled();
   });
 
   it("renews through the host when the host owns the session", async () => {
@@ -89,22 +145,18 @@ describe("RefreshedUser", () => {
       refreshSession,
     });
 
-    await act(async () => {
-      vi.advanceTimersByTime(51_000);
-    });
+    await pass(0);
     expect(refreshSession).toHaveBeenCalled();
     expect(auth0.getAccessTokenSilently).not.toHaveBeenCalled();
     expect(onToken).toHaveBeenCalledWith({ __raw: "host-renewed" });
   });
 
-  it("schedules nothing for a host that owns the session and cannot renew it", async () => {
+  it("watches nothing for a host that owns the session and cannot renew it", async () => {
     // The mobile bridges return only an id_token: nothing to renew with, and
     // Auth0 must not be asked on their behalf.
     renderRefresh(jwtExpiringIn(60), { restoreSession: async () => null });
 
-    await act(async () => {
-      vi.advanceTimersByTime(120_000);
-    });
+    await pass(10 * 60_000);
     expect(auth0.getAccessTokenSilently).not.toHaveBeenCalled();
   });
 
@@ -114,28 +166,14 @@ describe("RefreshedUser", () => {
       refreshSession: async () => null,
     });
 
-    await act(async () => {
-      vi.advanceTimersByTime(51_000);
-    });
+    await pass(0);
     expect(onToken).not.toHaveBeenCalled();
   });
 
-  it("schedules nothing when nobody is signed in", async () => {
+  it("watches nothing when nobody is signed in", async () => {
     renderRefresh(undefined);
 
-    await act(async () => {
-      vi.advanceTimersByTime(120_000);
-    });
+    await pass(10 * 60_000);
     expect(auth0.getAccessTokenSilently).not.toHaveBeenCalled();
-  });
-
-  it("survives a failed renewal without applying anything", async () => {
-    auth0.getAccessTokenSilently.mockRejectedValue(new Error("login required"));
-    const { onToken } = renderRefresh(jwtExpiringIn(60));
-
-    await act(async () => {
-      vi.advanceTimersByTime(51_000);
-    });
-    expect(onToken).not.toHaveBeenCalled();
   });
 });
