@@ -118,6 +118,15 @@ Expressions have access to the incoming data via `params` and to a set of built-
 | `range` | `range(n)` | `[0, 1, … n-1]` |
 | `slug` | `slug(s)` | Lowercases and strips everything outside `[a-z0-9_-]` |
 | `now` | `now()` | Epoch milliseconds |
+| `withoutUrls` | `withoutUrls(s)` | Text with the web addresses removed, and the label that introduced one |
+
+`withoutUrls` is for text on its way to something that **speaks or summarises**
+it. A feed summary is often written for programs as much as for people — "Article
+URL: https://… Comments URL: https://… Points: 48" — which is a link to a reader
+and a minute of punctuation to a listener. The label goes with the address it
+introduced, since "Article URL:" with nothing after it says less than nothing.
+Never use it on what a board stores or publishes: there the address is the
+useful part.
 
 **Note:** `Math.cos` is not directly available. To compute cosine, use the identity `sin(θ + 1.5708)` (i.e. sin(θ + π/2)).
 
