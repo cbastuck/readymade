@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 
 import { artFor, formatModified, gradient, stateMeta } from "./model";
 import { BoardArt, BoardHistoryItem, BoardNode } from "./types";
+import Markup from "../../ui-components/Markup";
 
 /** Preset swatches for the artwork picker: solids and matching gradients. */
 const ART_COLORS = ["#3b5bff", "#17b877", "#f2a417", "#e0355f", "#5b5b6b"];
@@ -491,7 +492,8 @@ export default function BoardDetails({
         </div>
 
         {description && (
-          <p
+          <Markup
+            text={description}
             style={{
               margin: 0,
               fontSize: 13,
@@ -499,9 +501,7 @@ export default function BoardDetails({
               color: "#6b7080",
               textAlign: "center",
             }}
-          >
-            {description}
-          </p>
+          />
         )}
 
         {onChangeArt && (
