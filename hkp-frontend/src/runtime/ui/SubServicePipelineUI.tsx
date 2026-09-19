@@ -149,7 +149,10 @@ export default function SubServicePipelineUI({
           </>
         )}
 
-        {navigation && (
+        {/* A host that owns the fold puts this beside its own control, where
+            it reads as one of the things that can be done to a pipeline rather
+            than as a lone button on a row of its own. */}
+        {navigation && !hostFolds && (
           <button
             className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
             onClick={() =>
