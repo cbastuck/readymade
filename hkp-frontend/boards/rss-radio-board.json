@@ -21,7 +21,7 @@
       "uri": "rss-radio-unit-board.json",
       "as": "radio",
       "params": {
-        "feedUrl": "hkp-mount://reader.node/feed-serve",
+        "feedUrl": "hkp-mount://reader.node/list.feed-serve",
         "feedName": "Reading list",
         "voiceMount": "hkp-mount://voice.speech/render",
         "audioBase": "hkp-mount://library.files/listen",
