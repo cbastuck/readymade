@@ -76,7 +76,7 @@ A listing is also the raw material for a document some other program does
 understand. A board that wants one publishes it beside the store rather than
 asking the store to speak that language: `sql` over `json_each($rows)` joins the
 listing into the document — an M3U playlist, a feed — a `map` gives it a content
-type, and a second endpoint in `process_on_data` serves it. The store keeps its
+type, and a second endpoint publishes it from a slot. The store keeps its
 one job, and the board gains an address it can hand to a media player. The
 library unit of the reading-radio boards does exactly this.
 

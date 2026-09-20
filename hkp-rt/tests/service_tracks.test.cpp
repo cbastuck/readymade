@@ -119,6 +119,7 @@ public:
            const nlohmann::json& = nullptr) override {}
   void forwardLog(const LogEntry&) override {}
   SecretVault& secrets() override { return m_vault; }
+  SlotStore& slots() override { return m_slots; }
 
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override {
@@ -134,6 +135,7 @@ public:
   }
 
   SecretVault m_vault;
+  SlotStore m_slots;
 };
 
 /** A track of one fake service, named after the track. */

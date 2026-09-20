@@ -244,8 +244,23 @@ the joining is `sql`'s because the `map` dialect has no reduce:
     "meta.headers.content-disposition": "inline; filename=\"radio.m3u\"",
     "body=": "params.rows[0].playlist" } } },
 { "uuid": "serve", "serviceId": "http-server-subservices", "state": {
-    "mode": "process_on_data", "mountName": "playlist", "pipeline": [] } }
+    "mountName": "playlist",
+    "onProcess": [ { "instanceId": "keep", "serviceId": "hold",
+                     "state": { "slot": "document", "op": "write" } } ],
+    "onRequest": [ { "instanceId": "serve", "serviceId": "hold",
+                     "state": { "slot": "document", "op": "read" } } ] } }
 ```
+
+The endpoint has two ways in and they are different jobs: `onProcess` is a pass of the board's
+chain arriving, `onRequest` is a caller. They are separate pipelines, so a value one produces is
+gone by the time the other runs — which is what the slot is for. The document is therefore
+rebuilt by the **act of changing the rows**, not per request, and a hundred subscribers cost one
+SQL pass between them. Declaring `onRequest` is also what makes the endpoint the handler:
+without it the rest of the board answers, which is the right arrangement when a request is what
+should *cause* the work.
+
+The services after an endpoint still run on every request, so give each published document its
+own runtime rather than chaining two: a request should not drag a tail of SQL behind it.
 
 The rows need not come from a table: `FROM json_each($rows)` builds the same document out of an
 array the pipeline is already carrying, which is how a board with no database of its own (a

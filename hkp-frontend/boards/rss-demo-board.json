@@ -154,9 +154,29 @@
         "serviceName": "Serve the feed",
         "state": {
           "bypass": false,
-          "mode": "process_on_data",
           "mountName": "list",
-          "pipeline": []
+          "onProcess": [
+            {
+              "instanceId": "keep-list",
+              "serviceId": "hold",
+              "serviceName": "Keep the document",
+              "state": {
+                "slot": "document",
+                "op": "write"
+              }
+            }
+          ],
+          "onRequest": [
+            {
+              "instanceId": "serve-list",
+              "serviceId": "hold",
+              "serviceName": "Serve the document",
+              "state": {
+                "slot": "document",
+                "op": "read"
+              }
+            }
+          ]
         }
       }
     ]

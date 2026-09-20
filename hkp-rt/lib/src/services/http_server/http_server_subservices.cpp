@@ -112,9 +112,8 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
                                          const std::string& method,
                                          bool awaitResponse)
 {
-  if ((m_mode != "process_on_session" && m_mode != "process_on_both") || !session)
+  if (!session)
   {
-    std::cerr << "HttpServerSubservices::onNewSession: should not be called in mode " << m_mode << std::endl;
     return;
   }
 
@@ -181,15 +180,18 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
     data = Data(mixed);
   }
 
-  // A configured nested pipeline is the handler for this request: what it
-  // returns is what the caller gets. The outer runtime still runs and its
-  // result still drives the rest of the board, but it runs after the answer is
-  // decided — it is where the side effects of having served a request live, not
-  // where the answer is shaped. Without a nested pipeline the rest of the board
-  // is the handler instead, and its result is the answer.
-  if (m_subservices && !m_subservices->empty())
+  // A declared handler is what takes the answer away from the chain — not the
+  // presence of a pipeline, which says only that this endpoint has something to
+  // run, possibly on the other side. What the handler returns is what the caller
+  // gets; the outer runtime still runs and its result still drives the rest of
+  // the board, but it runs after the answer is decided — it is where the side
+  // effects of having served a request live, not where the answer is shaped.
+  // Without a handler the rest of the board is the handler instead, and its
+  // result is the answer.
+  const auto handler = entryFor(HttpEntry::kOnRequest);
+  if (handler && !handler->empty())
   {
-    Data answer = m_subservices->process(data);
+    Data answer = handler->process(data);
     session->sendDataSync(answer);
     // No callback: nothing downstream is awaited, because the caller has been
     // answered already. Registering one would leave the runtime waiting for a
@@ -277,53 +279,48 @@ json HttpServerSubservices::configure(Data data)
     }
   }
 
-  if (buf->contains("pipeline") && (*buf)["pipeline"].is_array())
+  // Declaring an entry point by name is what puts this endpoint in the newer
+  // form, and from then on its state is reported that way.
+  for (const auto& [key, entry] : {std::pair{"onProcess", HttpEntry::kOnProcess},
+                                   std::pair{"onRequest", HttpEntry::kOnRequest}})
   {
-    m_subserviceConfig.clear();
-    for (const auto& cfg : (*buf)["pipeline"])
+    if (buf->contains(key) && (*buf)[key].is_array())
     {
-      m_subserviceConfig.push_back(cfg);
-    }
-    rebuildSubservices();
-  }
-  else if (buf->contains("appendService"))
-  {
-    auto svcCfg = (*buf)["appendService"];
-    if (!svcCfg.contains("instanceId") || svcCfg["instanceId"].get<std::string>().empty())
-    {
-      svcCfg["instanceId"] = generateUUID();
-    }
-    syncSubserviceStates();
-    m_subserviceConfig.push_back(std::move(svcCfg));
-    rebuildSubservices();
-  }
-  else if (buf->contains("removeService") && (*buf)["removeService"].is_string())
-  {
-    const std::string id = (*buf)["removeService"].get<std::string>();
-    syncSubserviceStates();
-    m_subserviceConfig.erase(
-      std::remove_if(m_subserviceConfig.begin(), m_subserviceConfig.end(),
-        [&id](const json& cfg) { return cfg.value("instanceId", "") == id; }),
-      m_subserviceConfig.end()
-    );
-    rebuildSubservices();
-  }
-  else if (buf->contains("configureService") && (*buf)["configureService"].is_object())
-  {
-    const auto& cfg = (*buf)["configureService"];
-    if (cfg.contains("instanceId") && cfg.contains("state") && m_subservices)
-    {
-      const std::string id = cfg["instanceId"].get<std::string>();
-      for (auto it = m_subservices->begin(); it != m_subservices->end(); ++it)
-      {
-        if ((*it)->getId() == id)
-        {
-          (*it)->configure(cfg["state"]);
-          syncSubserviceStates();
-          break;
+      m_named = true;
+      editPipeline(entryPipeline(entry), json{{"pipeline", (*buf)[key]}});
+      // A named endpoint always enters onNewSession, which decides for itself
+      // whether it has a handler. Only the legacy process_on_data answers out
+      // of the server's own store, with no session callback at all.
+      m_impl->setOnSessionOpenedCallback(
+        [this](std::shared_ptr<Session> session, const std::string& path, const std::string& method) {
+          onNewSession(session, path, method);
         }
-      }
+      );
     }
+  }
+
+  // An edit aimed at one named entry. The unscoped verbs below cannot say which
+  // pipeline they mean once there is more than one.
+  if (buf->contains("configurePipeline") && (*buf)["configurePipeline"].is_object())
+  {
+    const auto& payload = (*buf)["configurePipeline"];
+    const std::string named = payload.value("entry", "");
+    if (named == "onProcess" || named == "onRequest")
+    {
+      m_named = true;
+      editPipeline(
+        entryPipeline(named == "onProcess" ? HttpEntry::kOnProcess : HttpEntry::kOnRequest),
+        payload);
+    }
+  }
+
+  // The unscoped verbs belong to the one pipeline a legacy board declares. Left
+  // working rather than redirected at an entry, because which entry they would
+  // mean is exactly what the older form cannot say.
+  if (buf->contains("pipeline") || buf->contains("appendService")
+      || buf->contains("removeService") || buf->contains("configureService"))
+  {
+    editPipeline(m_legacy, *buf);
   }
 
   // Bypass last. Leaving bypass binds a port and publishes the address, so both
@@ -351,32 +348,66 @@ json HttpServerSubservices::configure(Data data)
   return getState();
 }
 
-json HttpServerSubservices::getState() const
+json HttpServerSubservices::pipelineState(const Pipeline& pipeline)
 {
-  json pipeline = json::array();
-  if (m_subservices)
+  json state = json::array();
+  if (!pipeline.runtime)
   {
-    for (auto it = m_subservices->begin(); it != m_subservices->end(); ++it)
+    for (const auto& cfg : pipeline.config)
     {
-      const auto& svc = *it;
-      pipeline.push_back(json{
-        {"serviceId", svc->getServiceId()},
-        {"instanceId", svc->getId()},
-        {"state", svc->getState()}
+      state.push_back(json{
+        {"serviceId", cfg.value("serviceId", "")},
+        {"instanceId", cfg.value("instanceId", "")},
+        {"state", cfg.value("state", json::object())}
       });
     }
+    return state;
   }
 
-  return Service::mergeStateWith(json{
+  for (auto it = pipeline.runtime->begin(); it != pipeline.runtime->end(); ++it)
+  {
+    const auto& svc = *it;
+    state.push_back(json{
+      {"serviceId", svc->getServiceId()},
+      {"instanceId", svc->getId()},
+      {"state", svc->getState()}
+    });
+  }
+  return state;
+}
+
+json HttpServerSubservices::getState() const
+{
+  json state = json{
     {"port", m_impl->port()},
     {"host", m_host},
     // Public endpoint. Reserved name: generic board machinery reads and
     // rewrites it (see the frontend's runtime/board/mount).
     {MOUNT_FIELD, m_url},
     {"status", isBypass() ? "offline" : "online"},
-    {"forwardHeaders", m_forwardHeaders ? json(*m_forwardHeaders) : json(nullptr)},
-    {"pipeline", pipeline}
-  });
+    {"forwardHeaders", m_forwardHeaders ? json(*m_forwardHeaders) : json(nullptr)}
+  };
+
+  // What was declared, not what it was understood as. A board that named its
+  // entries gets them back; one that declared a single pipeline keeps that,
+  // because it is the version an older runtime can still load.
+  if (m_named)
+  {
+    if (m_onProcess.runtime || !m_onProcess.config.empty())
+    {
+      state["onProcess"] = pipelineState(m_onProcess);
+    }
+    if (m_onRequest.runtime || !m_onRequest.config.empty())
+    {
+      state["onRequest"] = pipelineState(m_onRequest);
+    }
+  }
+  else
+  {
+    state["pipeline"] = pipelineState(m_legacy);
+  }
+
+  return Service::mergeStateWith(state);
 }
 
 bool HttpServerSubservices::onBypassChanged(bool bypass)
@@ -401,22 +432,27 @@ bool HttpServerSubservices::onBypassChanged(bool bypass)
 
 Data HttpServerSubservices::process(Data data)
 {
-  if (m_mode == "process_on_data")
+  // The legacy built-in slot: what the board hands this endpoint is what a
+  // caller gets back. Expressible now as an `onProcess` that writes a slot and
+  // an `onRequest` that reads it, and kept because boards carry the older
+  // spelling and a board is a document people keep.
+  if (!m_named && m_mode == "process_on_data")
   {
     m_impl->processData(data);
     return data;
   }
 
-  // Routing only: the nested pipeline handles data arriving from the outer
-  // chain exactly as it handles a request, and what it returns carries on down
-  // the chain. Whatever has to survive between the two — a value one side
-  // produces and the other reads — is a service's job, not this one's.
-  if (m_mode == "process_on_both" && !isBypass() && m_subservices && !m_subservices->empty())
+  const auto entry = isBypass() ? nullptr : entryFor(HttpEntry::kOnProcess);
+  if (!entry || entry->empty())
   {
-    return m_subservices->process(data);
+    return data;
   }
 
-  return data;
+  // Routing only: what the pass's own pipeline returns carries on down the
+  // chain. Whatever has to survive until a request arrives — a value this side
+  // produces and the other reads — belongs in a slot, which is a service's job
+  // and not this one's.
+  return entry->process(data);
 }
 
 bool HttpServerSubservices::start()
@@ -462,17 +498,17 @@ bool HttpServerSubservices::stop()
   return m_impl->stop();
 }
 
-void HttpServerSubservices::syncSubserviceStates()
+void HttpServerSubservices::syncSubserviceStates(Pipeline& pipeline)
 {
-  if (!m_subservices)
+  if (!pipeline.runtime)
   {
     return;
   }
 
-  for (auto it = m_subservices->begin(); it != m_subservices->end(); ++it)
+  for (auto it = pipeline.runtime->begin(); it != pipeline.runtime->end(); ++it)
   {
     const auto& svc = *it;
-    for (auto& cfg : m_subserviceConfig)
+    for (auto& cfg : pipeline.config)
     {
       if (cfg.value("instanceId", "") == svc->getId())
       {
@@ -483,14 +519,111 @@ void HttpServerSubservices::syncSubserviceStates()
   }
 }
 
-void HttpServerSubservices::rebuildSubservices()
+void HttpServerSubservices::rebuildSubservices(Pipeline& pipeline)
 {
   json arr = json::array();
-  for (const auto& cfg : m_subserviceConfig)
+  for (const auto& cfg : pipeline.config)
   {
     arr.push_back(cfg);
   }
-  m_subservices = createSubRuntime(arr);
+  pipeline.runtime = createSubRuntime(arr);
+  // Both entries hold in the same cells: that they can is the whole reason for
+  // declaring them separately.
+  if (pipeline.runtime)
+  {
+    pipeline.runtime->shareSlots(m_slots);
+  }
+}
+
+HttpServerSubservices::Pipeline& HttpServerSubservices::entryPipeline(HttpEntry entry)
+{
+  return entry == HttpEntry::kOnProcess ? m_onProcess : m_onRequest;
+}
+
+/**
+ * The pipeline one side enters through, or null where that side has none.
+ *
+ * This is where a legacy `mode` is read, and the only place it is: a board that
+ * names its entries never reaches the table below.
+ *
+ *   | declared             | onProcess | onRequest |
+ *   |----------------------|-----------|-----------|
+ *   | process_on_session   | —         | the one   |
+ *   | process_on_both      | the one   | the one   |
+ *   | process_on_data      | —         | —         |
+ *
+ * `process_on_both` answers with *the same instance* on both sides, never a
+ * second copy of the configuration: a pipeline holding a Hold, a timer or a
+ * mount is one running thing, and duplicating it would give a board two of each
+ * and a slot that never reaches itself.
+ */
+std::shared_ptr<SubRuntime> HttpServerSubservices::entryFor(HttpEntry entry) const
+{
+  if (m_named)
+  {
+    return entry == HttpEntry::kOnProcess ? m_onProcess.runtime : m_onRequest.runtime;
+  }
+  if (m_mode == "process_on_data")
+  {
+    return nullptr;
+  }
+  if (entry == HttpEntry::kOnProcess && m_mode != "process_on_both")
+  {
+    return nullptr;
+  }
+  return m_legacy.runtime;
+}
+
+void HttpServerSubservices::editPipeline(Pipeline& pipeline, const json& payload)
+{
+  if (payload.contains("pipeline") && payload["pipeline"].is_array())
+  {
+    pipeline.config.clear();
+    for (const auto& cfg : payload["pipeline"])
+    {
+      pipeline.config.push_back(cfg);
+    }
+    rebuildSubservices(pipeline);
+  }
+  else if (payload.contains("appendService"))
+  {
+    auto svcCfg = payload["appendService"];
+    if (!svcCfg.contains("instanceId") || svcCfg["instanceId"].get<std::string>().empty())
+    {
+      svcCfg["instanceId"] = generateUUID();
+    }
+    syncSubserviceStates(pipeline);
+    pipeline.config.push_back(std::move(svcCfg));
+    rebuildSubservices(pipeline);
+  }
+  else if (payload.contains("removeService") && payload["removeService"].is_string())
+  {
+    const std::string id = payload["removeService"].get<std::string>();
+    syncSubserviceStates(pipeline);
+    pipeline.config.erase(
+      std::remove_if(pipeline.config.begin(), pipeline.config.end(),
+        [&id](const json& cfg) { return cfg.value("instanceId", "") == id; }),
+      pipeline.config.end()
+    );
+    rebuildSubservices(pipeline);
+  }
+  else if (payload.contains("configureService") && payload["configureService"].is_object())
+  {
+    const auto& cfg = payload["configureService"];
+    if (cfg.contains("instanceId") && cfg.contains("state") && pipeline.runtime)
+    {
+      const std::string id = cfg["instanceId"].get<std::string>();
+      for (auto it = pipeline.runtime->begin(); it != pipeline.runtime->end(); ++it)
+      {
+        if ((*it)->getId() == id)
+        {
+          (*it)->configure(cfg["state"]);
+          syncSubserviceStates(pipeline);
+          break;
+        }
+      }
+    }
+  }
 }
 
 } // namespace hkp

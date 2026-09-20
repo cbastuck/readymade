@@ -171,7 +171,9 @@ public:
   // A host that keeps no secrets: what a service resolves against when the
   // test is about something else.
   SecretVault& secrets() override { return m_vault; }
+  SlotStore& slots() override { return m_slots; }
   SecretVault m_vault;
+  SlotStore m_slots;
 
   size_t notificationsFrom(const std::string& sender) const {
     return static_cast<size_t>(std::count_if(

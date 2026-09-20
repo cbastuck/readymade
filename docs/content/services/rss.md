@@ -152,7 +152,7 @@ There is no service for this, and there does not need to be one: a feed is a
 document, and the statement that reads the rows can build it.
 
 ```
-sql (the document) → map (an envelope) → http-server-subservices (process_on_data)
+sql (the document) → map (an envelope) → http-server-subservices (publishes it)
 ```
 
 - **`sql`** concatenates the rows into one document —
@@ -161,8 +161,10 @@ sql (the document) → map (an envelope) → http-server-subservices (process_on
 - **`map`** wraps it as
   `{ meta: { status: 200, contentType: "application/rss+xml" }, body: … }`, which
   is what makes the answer XML rather than JSON describing it.
-- **`http-server-subservices`** in `process_on_data` mode holds the last document
-  it was handed and serves that to every caller.
+- **`http-server-subservices`** holds the last document it was handed in a slot
+  and serves that to every caller: an `onProcess` pipeline with a
+  [Hold](./hold.md) writing the slot, an `onRequest` pipeline with one reading
+  it. See [publishing a document](./http.md#publishing-a-document).
 
 Two things to get right, both of which are silent when wrong:
 
@@ -172,11 +174,17 @@ Two things to get right, both of which are silent when wrong:
 - **`||` propagates NULL**, so one absent column removes the whole item from the
   document rather than producing an empty element. `IFNULL` anything nullable.
 
-An endpoint in `process_on_data` mode answers with what **its chain** returns,
-so it has to be the last service in one. A pipeline that stops before reaching
-it — an `iterator` with nothing to iterate — leaves it holding the previous
-document, which is why the boards that publish this way give the publishing side
-a clock of its own.
+The document is rebuilt by the **act of changing the rows**, not per request: a
+save runs the chain, the chain hands the endpoint a new document, and every
+subscriber after that is answered from the slot. So a hundred subscribers cost
+one SQL pass between them — and a pass that stops before reaching the endpoint
+(an `iterator` with nothing to iterate) leaves it serving the previous document,
+which is why the boards that publish this way give the publishing side a clock
+of its own.
+
+The services after an endpoint still run on every request, so a board that
+publishes two documents gives each its own runtime rather than putting both
+chains in one: a request should not drag a tail of SQL behind it.
 
 See `rss-radio-board.json` for both halves: a reading list published as a feed,
 and a second board reading it as one.

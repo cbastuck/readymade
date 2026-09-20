@@ -78,6 +78,22 @@ public:
   // nested service as immediately as a top-level one, and so that nesting
   // composes to whichever runtime was actually given something.
   SecretVault& secrets() override { return m_parent.secrets(); }
+
+  // The cells this pipeline holds values in: the ones the service owning it
+  // lent it, and otherwise the ones around it.
+  //
+  // A service with two pipelines that must hold something between them lends
+  // both the same store; one with nothing to share lends none, and a slot
+  // named inside it then means what the same name means outside — so nesting
+  // never isolates what is inside it by accident.
+  SlotStore& slots() override
+  {
+    return m_slots ? *m_slots : m_parent.slots();
+  }
+
+  // Hold values here rather than in the runtime around this one. Called by the
+  // service that owns this pipeline, and one other, before either runs.
+  void shareSlots(SlotStore& store) { m_slots = &store; }
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override;
 
@@ -94,6 +110,8 @@ private:
   void processScheduled();
 
   RuntimeHost& m_parent;
+  // See shareSlots. Null means the cells of the runtime around this one.
+  SlotStore* m_slots = nullptr;
   const Service* m_ownerInParent = nullptr;
   ServiceFactory m_factory;
   PostFn         m_post;

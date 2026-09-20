@@ -48,7 +48,9 @@ public:
   // A host that keeps no secrets: what a service resolves against when the
   // test is about something else.
   SecretVault& secrets() override { return m_vault; }
+  SlotStore& slots() override { return m_slots; }
   SecretVault m_vault;
+  SlotStore m_slots;
   void log(const Service&, LogLevel, const std::string&,
            const nlohmann::json& = nullptr) override {}
 

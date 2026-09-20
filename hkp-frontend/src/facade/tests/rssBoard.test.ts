@@ -169,10 +169,20 @@ describe("the RSS aggregator board", () => {
 
     const serve = services.find((svc) => svc.uuid === "feed-serve") as any;
     // Serving the last document it was handed, which is what makes the board
-    // able to answer a subscriber without rebuilding anything per request.
-    expect(serve.state.mode).toBe("process_on_data");
-    // And it is last, because an endpoint in that mode answers with whatever
-    // its chain returns.
+    // able to answer a subscriber without rebuilding anything per request —
+    // said as the two pipelines it is: the pass writes the document into a
+    // slot, the request reads it back out.
+    const writer = serve.state.onProcess[0];
+    const reader = serve.state.onRequest[0];
+    expect(writer.serviceId).toBe("hold");
+    expect(reader.serviceId).toBe("hold");
+    expect(writer.state.op).toBe("write");
+    expect(reader.state.op).toBe("read");
+    // Naming the same cell is the whole of what connects them: they sit in
+    // pipelines that never meet.
+    expect(reader.state.slot).toBe(writer.state.slot);
+    // And it is last, because the services after an endpoint still run on every
+    // request — a request should not drag a tail of SQL behind it.
     expect(order[order.length - 1]).toBe("feed-serve");
   });
 

@@ -17,6 +17,7 @@ import SkillRouterUI from "./ui/SkillRouterUI";
 import HoldUI from "./ui/HoldUI";
 import CommunicationDispatcherUI from "./ui/CommunicationDispatcherUI";
 import TracksUI from "./ui/TracksUI";
+import HttpEndpointUI from "./ui/HttpEndpointUI";
 import RssUI from "./ui/RssUI";
 
 export type ServiceLookup = {
@@ -63,6 +64,8 @@ function findServiceUIByKey(
       return HoldUI;
     case "communication-dispatcher":
       return CommunicationDispatcherUI;
+    case "http-server-subservices":
+      return HttpEndpointUI;
     case "tracks":
       return TracksUI;
     case "tracks@v1":

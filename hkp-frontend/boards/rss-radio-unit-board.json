@@ -253,9 +253,29 @@
         "serviceName": "Serve the feed",
         "state": {
           "bypass": false,
-          "mode": "process_on_data",
           "mountName": "episodes",
-          "pipeline": []
+          "onProcess": [
+            {
+              "instanceId": "keep-episodes",
+              "serviceId": "hold",
+              "serviceName": "Keep the document",
+              "state": {
+                "slot": "document",
+                "op": "write"
+              }
+            }
+          ],
+          "onRequest": [
+            {
+              "instanceId": "serve-episodes",
+              "serviceId": "hold",
+              "serviceName": "Serve the document",
+              "state": {
+                "slot": "document",
+                "op": "read"
+              }
+            }
+          ]
         }
       }
     ],
@@ -327,9 +347,29 @@
         "serviceName": "Serve the playlist",
         "state": {
           "bypass": false,
-          "mode": "process_on_data",
           "mountName": "playlist",
-          "pipeline": []
+          "onProcess": [
+            {
+              "instanceId": "keep-playlist",
+              "serviceId": "hold",
+              "serviceName": "Keep the document",
+              "state": {
+                "slot": "document",
+                "op": "write"
+              }
+            }
+          ],
+          "onRequest": [
+            {
+              "instanceId": "serve-playlist",
+              "serviceId": "hold",
+              "serviceName": "Serve the document",
+              "state": {
+                "slot": "document",
+                "op": "read"
+              }
+            }
+          ]
         }
       }
     ]

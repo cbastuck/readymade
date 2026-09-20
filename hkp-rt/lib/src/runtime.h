@@ -41,6 +41,12 @@ public:
   // from every service's state and reachable only through here.
   SecretVault& secrets() override { return m_vault; }
 
+  // The cells services in this runtime hold values in between passes.
+  //
+  // A runtime is the outermost thing a slot name can mean, so two services
+  // that name the same slot and are given nothing more specific share this one.
+  SlotStore& slots() override { return m_slots; }
+
   // Takes in values for references this runtime's services already hold.
   //
   // Merges rather than replaces, because this is what a client editing one
@@ -140,6 +146,7 @@ private:
   std::string m_boardName;
   std::list<std::shared_ptr<Service>> m_services; // TODO: not thread safe
   SecretVault m_vault;
+  SlotStore m_slots;
   std::vector<RuntimeInput> m_inputs;
   ProcessDepth m_processDepth;
   // The call being processed right now, so an entry can name its run.
