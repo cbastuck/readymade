@@ -8,6 +8,7 @@ Keeps the latest value one side of a pipeline produced, and replays it to the ot
 
 | Runtime | Service ID |
 |---|---|
+| Browser | `hookup.to/service/hold` |
 | hkp-node | `hold` |
 | hkp-python | `hold` |
 | hkp-rt | `hold` |
@@ -153,3 +154,28 @@ Timer → Map → HttpServerSubservices
 
 Put Hold **before** the services that reshape the value, not after — those services are
 exactly what should not have to know which side called.
+
+
+---
+
+## Where its cells live
+
+A slot is a name, not a store. Which cells that name reaches is decided by whatever holds
+the pipelines — never by Hold itself, which is what lets the same board mean the same thing
+wherever it runs.
+
+| Holding it | Which cells |
+|---|---|
+| The runtime | Every service in it shares one set, so two Holds naming `document` meet. |
+| An endpoint ([`http-server-subservices`](./http.md)) | Its own, shared by its two entry pipelines — so two endpoints on a runtime may both call a slot `document` without meeting. |
+| A [scope](../concepts/scopes.md) (`sub-service`) | Its own by default, or the runtime's with `scope: { slots: "inherit" }`. |
+| Nothing | A Hold that reaches no store still holds, for itself alone, rather than dropping what it was given. |
+
+The default is worth saying plainly: **a scope keeps its cells to itself**. A reusable
+sub-pipeline whose slot names leaked into its surroundings would collide with a second copy
+of itself, so two Holds that must meet across a scope boundary need that boundary to say
+`inherit` — which the **Hold across scopes** demo board
+(`hkp-frontend/boards/hold-scopes-demo-board.json`) does on both of its scopes.
+
+The demo board linked from this page is the other arrangement: one endpoint
+whose two entry pipelines share the cells it owns.

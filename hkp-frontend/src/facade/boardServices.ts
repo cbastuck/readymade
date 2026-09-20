@@ -1,5 +1,10 @@
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import {
+  addressRoot,
+  isScopedAddress,
+  splitAddress,
+} from "hkp-frontend/src/runtime/board/address";
+import {
   RuntimeApi,
   RuntimeClassType,
   ServiceInstance,
@@ -37,6 +42,40 @@ function runtimeApiFor(
   return apis[type] || apis[toCanonicalRuntimeClassType(type)] || null;
 }
 
+/**
+ * The top-level service an address starts at, and what is left of the address.
+ *
+ * Only a browser scope answers: its services are live objects in this process,
+ * so a scope among them can be asked to walk the rest itself. On a REST
+ * runtime the whole address is dialled and the runtime walks it there.
+ */
+function ownerOfNested(
+  scope: unknown,
+  address: string,
+): { service: any; rest: string } | null {
+  if (!isScopedAddress(address)) {
+    return null;
+  }
+  const segments = splitAddress(address);
+  const root = (scope as any).findServiceInstance?.(segments[0])?.[0];
+  if (!root || typeof root.processNested !== "function") {
+    return null;
+  }
+  return { service: root, rest: segments.slice(1).join(".") };
+}
+
+/** The live service a scoped address names inside a browser scope. */
+function findNestedInScope(
+  scope: unknown,
+  address: string,
+): ServiceInstance | null {
+  const owner = ownerOfNested(scope, address);
+  if (!owner || typeof owner.service.findNested !== "function") {
+    return null;
+  }
+  return owner.service.findNested(owner.rest) ?? null;
+}
+
 export function findService(
   boardContext: BoardContextState,
   uuid: string,
@@ -49,10 +88,23 @@ export function findService(
     if (svc) {
       return svc;
     }
+    // A scoped address names a service inside one of this scope's own: the
+    // root is what the scope lists, and the scope holding it walks the rest.
+    const nested = findNestedInScope(scope, uuid);
+    if (nested) {
+      return nested;
+    }
   }
   // REST runtime services don't have a local instance — proxy configure() over HTTP
+  //
+  // A scoped address is matched by its root: what a board lists is the service
+  // at the top, and everything the address names after that is inside it. So
+  // the root says which runtime to dial, and the whole address is what gets
+  // dialled — the runtime walks the rest of it. The state a board holds is the
+  // root's; a nested service's arrives when it first reports.
+  const root = addressRoot(uuid);
   for (const [runtimeId, svcs] of Object.entries(boardContext.services)) {
-    const desc = svcs.find((s) => s.uuid === uuid);
+    const desc = svcs.find((s) => s.uuid === root);
     if (!desc) {
       continue;
     }
@@ -65,7 +117,7 @@ export function findService(
     return {
       uuid,
       app: (scope as any).app,
-      state: desc.state,
+      state: root === uuid ? desc.state : undefined,
       // The runtime's own API rather than a request written here: configuring a
       // remote service is more than the POST — the secrets a configuration
       // names have to reach the runtime first, and the state it answers with is
@@ -102,11 +154,21 @@ export function processService(
       void (scope as any).next?.(svc, payload, null, false);
       return;
     }
+    // A scoped address is entered through the scope holding it, so that what
+    // runs is what is written inside it rather than whatever happens to
+    // follow the scope in the runtime's own list.
+    const owner = ownerOfNested(scope, uuid);
+    if (owner) {
+      void owner.service.processNested(owner.rest, payload);
+      return;
+    }
   }
 
-  // No scope claimed the uuid: the service lives on a remote runtime.
+  // No scope claimed the uuid: the service lives on a remote runtime. Matched
+  // by the address's root for the same reason findService matches by it.
+  const root = addressRoot(uuid);
   for (const [runtimeId, svcs] of Object.entries(boardContext.services)) {
-    if (!svcs.find((s) => s.uuid === uuid)) {
+    if (!svcs.find((s) => s.uuid === root)) {
       continue;
     }
     const runtime = boardContext.runtimes.find((rt) => rt.id === runtimeId);

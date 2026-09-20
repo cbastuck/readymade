@@ -7,6 +7,7 @@
 #include <service.h>
 #include <types/data.h>
 
+#include "../address.h"
 #include "../sub_runtime.h"
 #include "../uuid.h"
 
@@ -72,6 +73,27 @@ public:
     if (!j)
       return getState();
 
+    // Read only when it is a boolean, so a board that never mentions it keeps
+    // the default rather than having one written over it by silence.
+    if (j->contains("stopPropagation") && (*j)["stopPropagation"].is_boolean())
+    {
+      m_stopPropagation = (*j)["stopPropagation"].get<bool>();
+      applyPipelineSettings();
+    }
+    if (j->contains("scope") && (*j)["scope"].is_object())
+    {
+      const auto& scope = (*j)["scope"];
+      if (scope.contains("slots") && scope["slots"].is_string())
+      {
+        const auto slots = scope["slots"].get<std::string>();
+        if (slots == "own" || slots == "inherit")
+        {
+          m_scopeSlots = slots;
+          applyPipelineSettings();
+        }
+      }
+    }
+
     if (j->contains("pipeline") && (*j)["pipeline"].is_array())
     {
       m_pipelineConfig.clear();
@@ -135,14 +157,59 @@ public:
         });
       }
     }
-    return mergeStateWith({{"pipeline", pipeline}});
+    return mergeStateWith({
+      // Reported even when false, like the bypass beside it: a saved board
+      // then says outright what each scope does with its answer, instead of
+      // leaving a reader to infer a boundary from what follows it.
+      {"stopPropagation", m_stopPropagation},
+      {"scope", json{{"slots", m_scopeSlots}}},
+      {"pipeline", pipeline},
+    });
   }
 
   Data process(Data data) override
   {
     if (!m_pipeline || m_pipeline->empty())
-      return data;
-    return m_pipeline->process(data);
+    {
+      // A scope that passes nothing on passes nothing on when there is nothing
+      // to run either: what leaves this service is the board author's to say,
+      // and it does not become the input again because the pipeline was empty.
+      return m_stopPropagation ? Data(Null()) : data;
+    }
+    auto result = m_pipeline->process(data);
+    return m_stopPropagation ? Data(Null()) : result;
+  }
+
+  // The nested service a scoped address names inside this one.
+  //
+  // What makes a sub-pipeline addressable from outside: without it the board
+  // can reach this service but nothing it contains, so a facade could drive a
+  // scope but not read what the scope is doing.
+  std::shared_ptr<Service> findNested(const std::string& instanceId) const override
+  {
+    return m_pipeline ? m_pipeline->find(instanceId) : nullptr;
+  }
+
+  // Enters this service's pipeline at one of its services. The nested pipeline
+  // is a chain like any other, so this is processAt one level down.
+  bool processNested(const std::string& address, Data data, Data& result) override
+  {
+    if (!m_pipeline)
+      return false;
+
+    const auto segments = splitAddress(address);
+    if (segments.empty())
+      return false;
+
+    auto svc = m_pipeline->find(segments[0]);
+    if (!svc)
+      return false;
+
+    if (segments.size() > 1)
+      return svc->processNested(restOfAddress(segments, 1), data, result);
+
+    result = m_pipeline->processFrom(*svc, data, /*advanceBefore=*/false);
+    return true;
   }
 
 protected:
@@ -176,10 +243,35 @@ private:
     for (const auto& cfg : m_pipelineConfig)
       arr.push_back(cfg);
     m_pipeline = createSubRuntime(arr);
+    applyPipelineSettings();
+  }
+
+  // What this scope keeps to itself, and what leaves it.
+  //
+  // Applied on every rebuild and on every change, because a SubRuntime is
+  // replaced whenever the pipeline is edited and would otherwise come back
+  // with the defaults rather than with what the board said.
+  void applyPipelineSettings()
+  {
+    if (!m_pipeline)
+      return;
+    m_pipeline->setStopPropagation(m_stopPropagation);
+    if (m_scopeSlots == "own")
+      m_pipeline->shareSlots(m_slots);
   }
 
   std::shared_ptr<SubRuntime> m_pipeline;
   std::vector<json>           m_pipelineConfig;
+  // Whether what this pipeline produced leaves this service. A scope that ends
+  // here rather than feeding the services after it: the two flows on one
+  // runtime that a Stopper between them used to mark by convention.
+  bool                        m_stopPropagation = false;
+  // What this scope keeps to itself: "own" | "inherit".
+  std::string                 m_scopeSlots = "own";
+  // The cells a scope of its own holds values in. Owned here rather than left
+  // to the nested runtime so that rebuilding the pipeline — which a board does
+  // on every edit to it — does not drop what is held across it.
+  SlotStore                   m_slots;
 };
 
 } // namespace hkp

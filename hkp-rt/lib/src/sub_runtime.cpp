@@ -1,4 +1,5 @@
 #include "sub_runtime.h"
+#include "address.h"
 #include "service.h"
 #include "uuid.h"
 
@@ -97,6 +98,15 @@ Data SubRuntime::processFrom(const Service& svc, Data data,
     }
   }
 
+  // A scope that passes nothing on stops here rather than at its owner: what
+  // bubbles is not the answer to a call anyone is waiting on, so there is
+  // nothing to return it to and nothing after the owner should run.
+  if (shouldBubbleToParent && m_stopPropagation)
+  {
+    shouldBubbleToParent = false;
+    data = Null();
+  }
+
   if (shouldBubbleToParent && m_ownerInParent)
   {
     return m_parent.processFrom(*m_ownerInParent, data, true, callback);
@@ -146,7 +156,25 @@ void SubRuntime::sendData(Data data, MessagePurpose purpose,
                            const std::string& sender,
                            std::function<void(Data)> callback)
 {
-  m_parent.sendData(std::move(data), purpose, sender, std::move(callback));
+  // Carried out under a scoped address rather than the bare instanceId the
+  // nested service reported: an instanceId is unique only inside its own
+  // pipeline, so on its own it is a name, not an address. Prefixing at each
+  // boundary is what makes the path a listener hears the path it can dial.
+  //
+  // Taken from the service owning this pipeline rather than set on it: a
+  // nested service is created and configured by populate(), and reports while
+  // it is — before anything outside could have handed this pipeline a name.
+  m_parent.sendData(
+    std::move(data), purpose,
+    joinAddress(m_ownerInParent ? m_ownerInParent->getId() : std::string(),
+                sender),
+    std::move(callback));
+}
+
+std::shared_ptr<Service> SubRuntime::find(const std::string& instanceId) const
+{
+  auto it = findServiceById(instanceId);
+  return it == m_services.cend() ? nullptr : *it;
 }
 
 void SubRuntime::log(const Service& svc, LogLevel level,

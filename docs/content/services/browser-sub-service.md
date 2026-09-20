@@ -10,6 +10,10 @@ Runs a nested pipeline inside a browser runtime, passing incoming data through i
 |---|---|
 | Browser | `sub-service` |
 
+The settings shared with the other runtimes — `pipeline`, `bypass`,
+`stopPropagation`, `scope` — are documented once in
+[SubService](./sub-service.md). What is here is the browser's own addition.
+
 ---
 
 ## What it does
@@ -33,6 +37,8 @@ Browser Sub-Service embeds a complete inner pipeline (a `BrowserRuntimeScope`) i
 | `runtimeName` | `string` | `"Browser Runtime"` | Display name of the inner runtime |
 | `runtimeType` | `string` | `"browser"` | Runtime type tag |
 | `pipeline` | `PipelineEntry[]` | `[]` | Ordered list of services in the inner pipeline |
+| `stopPropagation` | `boolean` | `false` | Whether what the pipeline produced leaves this service — see [SubService](./sub-service.md) |
+| `scope` | `{ slots }` | `{ slots: "own" }` | Which cells a [`hold`](./hold.md) inside reaches |
 
 ### Pipeline entry shape
 

@@ -80,6 +80,7 @@ import BrowserSubServiceDescriptor from "../services/BrowserSubService";
 import LZCompressDescriptor from "../services/LZCompress";
 import MicrophoneMonitorDescriptor from "../services/MicrophoneMonitor";
 import DebounceDescriptor from "../services/Debounce";
+import HoldDescriptor from "../services/Hold";
 import StopperDescriptor from "../services/Stopper";
 import ConfiguratorDescriptor from "../services/Configurator";
 import ProcessRouterDescriptor from "../services/ProcessRouter";
@@ -189,6 +190,7 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Flow control
   DebounceDescriptor,
+  HoldDescriptor,
   StopperDescriptor,
   ConfiguratorDescriptor,
   ProcessRouterDescriptor,

@@ -10,6 +10,7 @@ type ServiceDescriptor = {
 const moduleLoaders = import.meta.glob("../*.{ts,tsx}");
 
 const SERVICE_DESCRIPTOR_FILES = new Set([
+  "Hold.ts",
   "Aggregator.ts",
   "Analyzer.tsx",
   "ArrayTransform.tsx",

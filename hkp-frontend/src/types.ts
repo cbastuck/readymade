@@ -3,9 +3,22 @@ import PeerJs, { DataConnection } from "peerjs";
 import { BoardContextState, EngineState } from "./BoardContext";
 import type { BoardCoordinator } from "./core/coordinator";
 import type { RuntimeTokenRequest } from "./platform/PlatformContext";
+import type { SlotStore } from "./runtime/slots";
 
 export type InstanceId = {
   uuid: string;
+  /**
+   * Where this service's notifications arrive, when that is not its uuid.
+   *
+   * A service inside a scope is called by the name its own pipeline gives it
+   * and *reached* by the path through the services containing it, because an
+   * instanceId is unique only inside its own pipeline. One job each, the same
+   * split a mount makes between the reference a board keeps and the address it
+   * currently has: `uuid` stays what the service is called where it lives, and
+   * this says where to listen for it. Absent for a top-level service, whose
+   * uuid is already its address. See `runtime/board/address.ts`.
+   */
+  address?: string;
 };
 
 export type ServiceDescriptor = ServiceClass &
@@ -342,6 +355,11 @@ export type AppImpl = {
   // Absent on hosts that do not know the board they are part of; callers treat
   // that the same as a lookup that has not resolved yet.
   coordinator?: BoardCoordinator;
+  /**
+   * The cells a service holds values in between passes, or absent where the
+   * runtime it is in has none. See runtime/slots.ts.
+   */
+  slots?: () => SlotStore;
   getRuntimeVariable: () => Record<string, any>;
   setRuntimeVariable: (key: string, value: any) => void;
   // Mints a short-lived capability token from the host's embedded runtime,

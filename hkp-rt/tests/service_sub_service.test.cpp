@@ -862,7 +862,12 @@ TEST_CASE("A nested service's notifications reach the board",
 
   // Once: the nested pipeline forwards to the parent, and nothing forwards it
   // a second time on the way.
-  REQUIRE(host.notificationsFrom("nested-1") == 1);
+  //
+  // Under its scoped address, not the bare instanceId: an instanceId is unique
+  // only inside its own pipeline, so each boundary prefixes its owner on the
+  // way out. See address.h.
+  REQUIRE(host.notificationsFrom("sub-1.nested-1") == 1);
+  REQUIRE(host.notificationsFrom("nested-1") == 0);
 }
 
 TEST_CASE("Replacing a nested pipeline destroys the services it held",

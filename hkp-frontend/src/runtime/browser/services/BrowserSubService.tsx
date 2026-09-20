@@ -35,6 +35,8 @@ import BrowserSubServiceUI from "./BrowserSubServiceUI";
 import BrowserRegistry from "../BrowserRegistry";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
 import { addService, configureService } from "../BrowserRuntimeApi";
+import { createSlotStore, SlotStore } from "../../slots";
+import { joinAddress, splitAddress } from "../../board/address";
 
 const serviceId = "sub-service";
 const serviceName = "Browser Sub-Service";
@@ -48,6 +50,24 @@ type PipelineEntry = {
 
 type State = {
   mode: "pipeline" | "source";
+  /**
+   * Whether what this pipeline produced leaves this service.
+   *
+   * A scope that ends here rather than feeding the services after it: the two
+   * flows on one runtime that a Stopper between them used to mark by
+   * convention. False — and absent — is the pipeline a board already has, so
+   * every board that says nothing about it goes on passing its result along.
+   *
+   * It closes **both** routes out: `process` answers null, and the inner
+   * scope's `onResult` — a Timer tick, a service that answered late — stops
+   * being handed onward.
+   */
+  stopPropagation: boolean;
+  /**
+   * What this scope keeps to itself. One block rather than a flat key because
+   * a scope has more than one thing to say about what its children can see.
+   */
+  scope: { slots: "own" | "inherit" };
   boardName: string;
   runtimeId: string;
   runtimeName: string;
@@ -63,6 +83,14 @@ export class BrowserSubService extends ServiceBase<State> {
   private _scopeGeneration = 0;
   // Resolves when the current scope build is finished.
   _scopeBuilding: Promise<void> | null = null;
+  /**
+   * The cells a scope of its own holds values in.
+   *
+   * Owned here rather than left to the inner scope so that rebuilding the
+   * pipeline — which a board does on every edit to it — does not drop what was
+   * being held across it.
+   */
+  private _slots: SlotStore = createSlotStore();
 
   constructor(
     app: AppImpl,
@@ -76,11 +104,14 @@ export class BrowserSubService extends ServiceBase<State> {
       runtimeId: "browser-runtime",
       runtimeName: "Browser Runtime",
       runtimeType: "browser",
+      stopPropagation: false,
+      scope: { slots: "own" },
       pipeline: [],
     });
   }
 
   configure(config: Partial<State> & {
+    scope?: { slots?: string };
     pipeline?: any[];
     appendService?: { serviceId: string; instanceId?: string; serviceName?: string; state?: Record<string, any> };
     removeService?: string;
@@ -106,6 +137,21 @@ export class BrowserSubService extends ServiceBase<State> {
     }
     if (config.runtimeType !== undefined) {
       this.state.runtimeType = config.runtimeType;
+      changed = true;
+    }
+
+    // Read only when it is a boolean, so a board that never mentions it keeps
+    // the default rather than having one written over it by silence.
+    if (typeof config.stopPropagation === "boolean") {
+      this.state.stopPropagation = config.stopPropagation;
+      changed = true;
+    }
+    if (
+      config.scope &&
+      (config.scope.slots === "own" || config.scope.slots === "inherit")
+    ) {
+      this.state.scope = { slots: config.scope.slots };
+      this._applySlots();
       changed = true;
     }
 
@@ -193,14 +239,84 @@ export class BrowserSubService extends ServiceBase<State> {
       await this._scopeBuilding;
     }
     if (!this._scope) {
-      return input;
+      // A scope that passes nothing on passes nothing on when there is nothing
+      // to run either: what leaves this service is the board author's to say,
+      // and it does not become the input again because the pipeline was empty.
+      return this.state.stopPropagation ? null : input;
     }
-    return this._scope.next(null, input, null, false);
+    const result = await this._scope.next(null, input, null, false);
+    return this.state.stopPropagation ? null : result;
+  }
+
+  /**
+   * Points the inner scope at the cells its values are held in.
+   *
+   * Read on each lookup rather than copied, so that changing what a scope keeps
+   * to itself takes effect without rebuilding the pipeline, and so that a scope
+   * inside a scope reaches outward the same way one level at a time.
+   */
+  private _applySlots(): void {
+    this._scope?.delegateSlots(() =>
+      this.state.scope.slots === "inherit"
+        ? (this.app.slots?.() ?? null)
+        : this._slots,
+    );
   }
 
   /** Returns the real inner ServiceInstance for a given instanceId, once built. */
   getInnerInstance(instanceId: string): ServiceInstance | null {
     return this._scope?.findServiceInstance(instanceId)[0] ?? null;
+  }
+
+  /**
+   * The service a scoped address names inside this one, however deep.
+   *
+   * What makes a sub-pipeline addressable from outside: without it a board can
+   * reach this service but nothing it contains, so a facade could drive a
+   * scope but not read what the scope is doing.
+   */
+  findNested(address: string): ServiceInstance | null {
+    const segments = splitAddress(address);
+    if (segments.length === 0) {
+      return null;
+    }
+    const here = this.getInnerInstance(segments[0]);
+    if (!here || segments.length === 1) {
+      return segments.length === 1 ? here : null;
+    }
+    const deeper = here as unknown as BrowserSubService;
+    return typeof deeper.findNested === "function"
+      ? deeper.findNested(segments.slice(1).join("."))
+      : null;
+  }
+
+  /**
+   * Enters this service's pipeline at one of its services.
+   *
+   * The inner scope is a chain like any other, so this is the board's own
+   * "process at" one level down: what follows the named service inside this
+   * scope runs, and what precedes it does not.
+   */
+  async processNested(address: string, payload: unknown): Promise<unknown> {
+    if (!this._scope) {
+      await this._scopeBuilding;
+    }
+    const segments = splitAddress(address);
+    if (!this._scope || segments.length === 0) {
+      return null;
+    }
+    const here = this.getInnerInstance(segments[0]);
+    if (!here) {
+      return null;
+    }
+    if (segments.length > 1) {
+      const deeper = here as unknown as BrowserSubService;
+      return typeof deeper.processNested === "function"
+        ? deeper.processNested(segments.slice(1).join("."), payload)
+        : null;
+    }
+    // false: begin *at* this service; the default advances past it.
+    return this._scope.next(here, payload, null, false);
   }
 
   destroy(): void {
@@ -225,6 +341,7 @@ export class BrowserSubService extends ServiceBase<State> {
         return; // superseded by a newer configure() call
       }
       this._scope = scope;
+      this._applySlots();
       // Let the UI know inner instances are now available for wiring.
       this.app.notify(this as any, { __innerScopeReady: true });
     })();
@@ -244,6 +361,15 @@ export class BrowserSubService extends ServiceBase<State> {
     // Forward async results from the inner pipeline (e.g. Timer ticks) to the
     // outer pipeline so downstream services see the output.
     scope.onResult = async (_instanceId, result) => {
+      // The second route out, and the one a scope would otherwise leak
+      // through. What arrives here was not produced by a call this service is
+      // answering, so nothing has already been stopped on its behalf: a Timer
+      // inside a scope would go on driving the board after the scope's own
+      // answers had stopped. `process` answering null does not cover this,
+      // which is why stopping propagation has to be said in both places.
+      if (this.state.stopPropagation) {
+        return;
+      }
       if (result !== null && result !== undefined) {
         this.app.next(this, result);
       }
@@ -258,7 +384,16 @@ export class BrowserSubService extends ServiceBase<State> {
     const innerNotify = scope.app.notify.bind(scope.app);
     scope.app.notify = (svc: any, notification: any) => {
       innerNotify(svc, notification);
-      outerNotify(svc, notification);
+      // Outward under a scoped address rather than the bare instanceId: an
+      // instanceId is unique only inside its own pipeline, so on its own it is
+      // a name, not an address. `address` rather than `uuid` because the
+      // service is still called what it is called in here — one job each, the
+      // same split a mount makes. An inner scope has already prefixed its own,
+      // so this composes to any depth.
+      outerNotify(
+        { ...svc, address: joinAddress(this.uuid, svc.address ?? svc.uuid) },
+        notification,
+      );
     };
 
     for (const entry of this.state.pipeline) {

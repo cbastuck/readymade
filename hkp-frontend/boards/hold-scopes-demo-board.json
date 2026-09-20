@@ -1,0 +1,138 @@
+{
+  "boardName": "Hold across scopes",
+  "description": "A value produced on one schedule, read on another.\n\nThe **Ticker** scope runs on its own — a Timer inside it counts, and a Hold writes what it counted into the slot named `latest`. That scope passes nothing on, so counting never drives the half below it.\n\nThe **Reader** is entered by the button. Its Hold names the same slot and declares itself the other end, so it answers with whatever the ticker last wrote — even though the two pipelines never meet.\n\nThe two scopes hold in the runtime's cells rather than their own (`scope.slots: \"inherit\"`), which is what lets one slot name reach across both. Left alone, a scope keeps its cells to itself.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "ticker",
+        "serviceId": "sub-service",
+        "serviceName": "Ticker",
+        "state": {
+          "stopPropagation": true,
+          "scope": {
+            "slots": "inherit"
+          },
+          "pipeline": [
+            {
+              "serviceId": "hookup.to/service/timer",
+              "instanceId": "clock",
+              "serviceName": "Every second",
+              "state": {
+                "periodic": true,
+                "periodicValue": 1,
+                "periodicUnit": "s"
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/hold",
+              "instanceId": "keep",
+              "serviceName": "Keep the latest",
+              "state": {
+                "slot": "latest",
+                "op": "write"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "reader",
+        "serviceId": "sub-service",
+        "serviceName": "Reader",
+        "state": {
+          "scope": {
+            "slots": "inherit"
+          },
+          "pipeline": [
+            {
+              "serviceId": "hookup.to/service/hold",
+              "instanceId": "serve",
+              "serviceName": "Read the latest",
+              "state": {
+                "slot": "latest",
+                "op": "read"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "shown",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "What was held",
+        "state": {}
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "main",
+        "title": "Sample and hold",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "The ticker counts on its own and writes each count into a slot. Nothing below runs while it does — that scope passes nothing on. Press Read to enter the other scope, which answers with whatever was last written.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Read",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "reader",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "label": "Writes",
+                  "source": {
+                    "serviceUuid": "ticker.keep",
+                    "path": "writeCount"
+                  },
+                  "placeholder": "0",
+                  "grow": true
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Held",
+              "source": {
+                "serviceUuid": "reader.serve",
+                "path": "held"
+              },
+              "placeholder": "nothing held yet",
+              "wrap": true
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -13,6 +13,7 @@ import {
   findServiceUI as restFindServiceUI,
   type ServiceLookup,
 } from "../rest/UIRegistry";
+import { joinAddress } from "../board/address";
 import RuntimeRestServiceUI from "../rest/RuntimeRestServiceUI";
 import ServiceWithDropBars from "../ServiceWithDropBars";
 import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
@@ -376,6 +377,11 @@ function PipelineStrip({
 
         const proxyInstance: ServiceInstance = {
           uuid: entry.instanceId,
+          // A remote runtime reports a nested service under the path through
+          // the services containing it, because an instanceId is unique only
+          // inside its own pipeline. Without this the panel would listen under
+          // a name nothing is filed under and draw a service that never speaks.
+          address: joinAddress(service.uuid, entry.instanceId),
           serviceId: entry.serviceId,
           serviceName: descriptor?.serviceName ?? entry.serviceId,
           version: descriptor?.version,

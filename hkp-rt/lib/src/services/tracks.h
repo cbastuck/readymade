@@ -109,6 +109,7 @@ public:
       for (const auto& cfg : (*j)["reduce"])
         m_reduceConfig.push_back(cfg);
       m_reduce = m_reduceConfig.empty() ? nullptr : createSubRuntime((*j)["reduce"]);
+      adopt(m_reduce);
     }
 
     return getState();
@@ -155,7 +156,36 @@ public:
 protected:
   bool supportsSubservices() const override { return true; }
 
+  // The nested service a scoped address names, tracks first and in declaration
+  // order, then the reducer. A name used in two tracks resolves to the earlier,
+  // which is the cost of addressing a branch by what is in it rather than by
+  // the branch's own name.
+  std::shared_ptr<Service> findNested(const std::string& instanceId) const override
+  {
+    for (const auto& track : m_tracks)
+    {
+      if (!track.pipeline)
+        continue;
+      if (auto found = track.pipeline->find(instanceId))
+        return found;
+    }
+    return m_reduce ? m_reduce->find(instanceId) : nullptr;
+  }
+
 private:
+  // Lends a freshly built pipeline this service's cells and its name.
+  //
+  // The cells are owned here, like an endpoint's: the branches are pipelines
+  // of one arrangement, so a value one leaves for another belongs to this
+  // service rather than to the runtime around it — and two of these on a
+  // runtime may both use a name without meeting.
+  void adopt(const std::shared_ptr<SubRuntime>& pipeline)
+  {
+    if (!pipeline)
+      return;
+    pipeline->shareSlots(m_slots);
+  }
+
   struct Track
   {
     std::string name;
@@ -244,6 +274,7 @@ private:
         for (const auto& cfg : entry["pipeline"])
           track.config.push_back(cfg);
         track.pipeline = createSubRuntime(entry["pipeline"]);
+        adopt(track.pipeline);
       }
       next.push_back(std::move(track));
     }
@@ -350,6 +381,7 @@ private:
     for (const auto& cfg : track.config)
       arr.push_back(cfg);
     track.pipeline = createSubRuntime(arr);
+    adopt(track.pipeline);
   }
 
   std::string                 m_run = "serial";
@@ -357,6 +389,9 @@ private:
   std::shared_ptr<SubRuntime> m_reduce;
   std::vector<json>           m_reduceConfig;
   std::string                 m_lastError;
+  // See adopt(): the cells this service's pipelines share, private from the
+  // runtime around them.
+  SlotStore                   m_slots;
 };
 
 } // namespace hkp

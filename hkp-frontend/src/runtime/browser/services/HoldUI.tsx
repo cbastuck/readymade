@@ -1,19 +1,20 @@
 import { useCallback, useState } from "react";
 
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { ServiceUIProps } from "hkp-frontend/src/types";
 import HoldPanel, {
   EMPTY_HOLD_STATE,
   HoldPanelState,
   readHoldState,
 } from "../../ui/HoldPanel";
-import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 
 /**
- * A Hold on a REST runtime.
+ * A Hold in the browser runtime.
  *
- * The panel itself is shared with the browser runtime's — Hold is one service,
+ * The panel itself is shared with the REST runtime's — Hold is one service,
  * and the two differ in how a panel reaches it rather than in what there is to
- * see. What is here is the wrapper and the route to the service.
+ * see. What is here is the wrapper and the route to the service, which for a
+ * browser service is a direct call on a live object.
  */
 export default function HoldUI(props: ServiceUIProps) {
   const [state, setState] = useState<HoldPanelState>(EMPTY_HOLD_STATE);
@@ -23,12 +24,7 @@ export default function HoldUI(props: ServiceUIProps) {
   }, []);
 
   return (
-    <RuntimeRestServiceUI
-      {...props}
-      onNotification={onUpdate}
-      onInit={onUpdate}
-      genericUI={false}
-    >
+    <ServiceUI {...props} onInit={onUpdate} onNotification={onUpdate}>
       <HoldPanel
         state={state}
         onLocalChange={(next) =>
@@ -36,6 +32,6 @@ export default function HoldUI(props: ServiceUIProps) {
         }
         configure={(config) => props.service.configure(config)}
       />
-    </RuntimeRestServiceUI>
+    </ServiceUI>
   );
 }

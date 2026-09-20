@@ -138,6 +138,15 @@ private:
   Pipeline& entryPipeline(HttpEntry entry);
   // The pipeline one side enters through, or null where that side has none.
   std::shared_ptr<SubRuntime> entryFor(HttpEntry entry) const;
+
+public:
+  // The nested service a scoped address names, searching every pipeline this
+  // endpoint owns. The two entries are separate pipelines rather than branches
+  // of one, so an instanceId used in both resolves to whichever is searched
+  // first.
+  std::shared_ptr<Service> findNested(const std::string& instanceId) const override;
+
+private:
   static json pipelineState(const Pipeline& pipeline);
 
 private:

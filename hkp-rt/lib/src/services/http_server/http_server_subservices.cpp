@@ -535,6 +535,19 @@ void HttpServerSubservices::rebuildSubservices(Pipeline& pipeline)
   }
 }
 
+std::shared_ptr<Service> HttpServerSubservices::findNested(
+  const std::string& instanceId) const
+{
+  for (const auto* pipeline : {&m_onProcess, &m_onRequest})
+  {
+    if (!pipeline->runtime)
+      continue;
+    if (auto found = pipeline->runtime->find(instanceId))
+      return found;
+  }
+  return nullptr;
+}
+
 HttpServerSubservices::Pipeline& HttpServerSubservices::entryPipeline(HttpEntry entry)
 {
   return entry == HttpEntry::kOnProcess ? m_onProcess : m_onRequest;

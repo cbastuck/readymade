@@ -83,6 +83,24 @@ public:
 
   virtual Data process(Data data = Undefined()) = 0;
 
+  // The service one segment of a scoped address names inside this one.
+  //
+  // Only a service holding a pipeline answers: it is what lets an address
+  // reach past the runtime's flat list into what a scope contains. A service
+  // with several pipelines searches them in declaration order. See address.h.
+  virtual std::shared_ptr<Service> findNested(const std::string& instanceId) const;
+
+  // Runs from a service inside this one to the end of the pipeline holding it,
+  // the way processAt does at the top level. Answers Undefined where this
+  // service holds no pipeline that can be entered.
+  //
+  // Only a service whose pipeline is a chain answers. An endpoint's entries
+  // and a Tracks branch are driven by the thing that owns them — a request
+  // arriving, a fan-out — so entering one from outside would run half of an
+  // arrangement whose other half never happened. Those stay readable and
+  // configurable by address without being enterable by one.
+  virtual bool processNested(const std::string& address, Data data, Data& result);
+
 protected:
   virtual bool supportsSubservices() const;
   virtual bool onBypassChanged(bool bypass);

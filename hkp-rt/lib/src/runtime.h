@@ -116,6 +116,14 @@ public:
   std::list<std::shared_ptr<Service>>::const_iterator findServiceById(const std::string& instanceId);
   std::list<std::shared_ptr<Service>>::const_iterator findServiceById(const std::string& instanceId) const;
 
+  // The service an address names, flat or scoped.
+  //
+  // The flat list is asked first, so an instanceId that happens to contain a
+  // dot is still that service rather than a path into something else. Only
+  // when no service carries the whole address is it read as one — see
+  // address.h. Null when nothing claims it.
+  std::shared_ptr<Service> resolveService(const std::string& address) const;
+
   inline const std::string &getId() const { return m_runtimeId; }
   /** See RuntimeConfiguration::garbageCollected. False means persist. */
   inline bool isGarbageCollected() const { return m_garbageCollected; }

@@ -94,6 +94,19 @@ public:
   // Hold values here rather than in the runtime around this one. Called by the
   // service that owns this pipeline, and one other, before either runs.
   void shareSlots(SlotStore& store) { m_slots = &store; }
+
+  // Whether what this pipeline produces on its own leaves the service holding
+  // it.
+  //
+  // The second route out, and the one a scope would otherwise leak through: a
+  // nested service that emits without being called — a Timer tick, a deferred
+  // result — bubbles out through the owner and drives the services after it.
+  // The owner returning Null from process() does not cover that, which is why
+  // stopping propagation has to be said here too.
+  void setStopPropagation(bool stop) { m_stopPropagation = stop; }
+
+  // One of the services here, by the name it carries — for a scoped address.
+  std::shared_ptr<Service> find(const std::string& instanceId) const;
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override;
 
@@ -112,6 +125,8 @@ private:
   RuntimeHost& m_parent;
   // See shareSlots. Null means the cells of the runtime around this one.
   SlotStore* m_slots = nullptr;
+  // See setStopPropagation.
+  bool m_stopPropagation = false;
   const Service* m_ownerInParent = nullptr;
   ServiceFactory m_factory;
   PostFn         m_post;

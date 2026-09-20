@@ -3,6 +3,7 @@
 #include <fstream>
 #include <boost/beast.hpp>
 
+#include "./address.h"
 #include "./app.h"
 #include "./registry.h"
 #include "./service.h"
@@ -210,24 +211,24 @@ RuntimeConfiguration Runtime::getConfiguration() const
 
 json Runtime::configureService(const std::string &instanceId, json config)
 {
-  auto it = findServiceById(instanceId);
-  if (it == m_services.end())
+  auto svc = resolveService(instanceId);
+  if (!svc)
   {
     return false;
   }
 
-  return (*it)->configure(config);
+  return svc->configure(config);
 }
 
 json Runtime::getServiceState(const std::string &instanceId) const
 {
-  auto it = findServiceById(instanceId);
-  if (it == m_services.end())
+  auto svc = resolveService(instanceId);
+  if (!svc)
   {
     return false;
   }
 
-  return (*it)->getState();
+  return svc->getState();
 }
 
 json Runtime::getServices() const
@@ -321,6 +322,20 @@ Data Runtime::processAt(const std::string& instanceId, Data data, ProcessContext
   auto it = findServiceById(instanceId);
   if (it == m_services.cend())
   {
+    // Not one of this runtime's own: a scoped address enters the pipeline that
+    // holds it instead, and runs to the end of *that* list. What it produces is
+    // the nested pipeline's answer.
+    const auto segments = splitAddress(instanceId);
+    if (segments.size() > 1)
+    {
+      auto head = findServiceById(segments[0]);
+      if (head != m_services.cend())
+      {
+        Data nested;
+        if ((*head)->processNested(restOfAddress(segments, 1), data, nested))
+          return nested;
+      }
+    }
     throw std::runtime_error("Runtime::processAt service not found in runtime");
   }
 
@@ -629,6 +644,32 @@ std::list<std::shared_ptr<Service>>::const_iterator Runtime::findServiceById(con
     m_services.cend(), 
     [&instanceId](auto ptr) { return ptr.get()->getId() == instanceId; }
   );
+}
+
+std::shared_ptr<Service> Runtime::resolveService(const std::string& address) const
+{
+  auto direct = findServiceById(address);
+  if (direct != m_services.cend())
+    return *direct;
+
+  const auto segments = splitAddress(address);
+  if (segments.size() < 2)
+    return nullptr;
+
+  auto head = findServiceById(segments[0]);
+  if (head == m_services.cend())
+    return nullptr;
+
+  // A partial address is a miss, not a match: answering with the nearest
+  // service the path did reach would act on something nobody named.
+  std::shared_ptr<Service> current = *head;
+  for (size_t i = 1; i < segments.size(); ++i)
+  {
+    current = current->findNested(segments[i]);
+    if (!current)
+      return nullptr;
+  }
+  return current;
 }
 
 std::string Runtime::replaceHostWithExternalAddress(std::string url) const
