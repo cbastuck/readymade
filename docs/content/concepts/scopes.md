@@ -119,6 +119,41 @@ The same rule holds one level up: an endpoint owns the cells its two entry
 pipelines share, which is why two endpoints on a runtime may both call a slot
 `document` without meeting.
 
+A scope's panel says which of the two it got, under a **Slots** line that also
+says how many cells there are. The line is all it shows until it is opened,
+because a cell holds whatever a pipeline put in it — an article, a frame, a
+document — and a panel that drew every value would be mostly somebody else's
+data. Open it and the slot *names* appear, which is what a board is written in
+terms of; open a name and that one cell's value appears under it.
+
+Inherited cells are drawn greyed and a scope's own in the panel's text colour,
+because the difference is about who else can reach them — an inherited cell is
+shared with everything else out there naming that slot, so it is not this
+scope's to account for.
+
+Which of the two it is sits at the end of that same line, as a setting wearing
+what every other setting in a service panel wears — unlabelled, because the
+line is already headed Slots and the two values say themselves what they mean.
+It is the one thing about a scope's cells a panel offers to change, because the
+rest is what other pipelines left behind. Changing it **re-points the cells and
+rebuilds nothing** — the scope asks for its store on every lookup, so a Timer
+or a socket inside goes on running. A scope's own cells outlive the trip, too:
+they live on the service rather than on the pipeline, so a value held before a
+detour through the inherited ones is still there on the way back.
+
+Each slot carries a **bin**, and that is the only thing the panel does to a
+cell. What is in one is the pipelines' to write; what is worth doing from
+outside is taking a cell away, so that a board can be put back to before
+anything ran without hunting for the service that filled it. Removing is not
+the same as emptying — an empty cell is one a board named and nothing has
+filled yet, and a Hold reading either answers the same nothing — but it leaves
+no stale reading behind, and the next write brings the name back.
+
+This is all a browser-runtime reading, and the reason is distance: the store is
+an object in the same process as the panel, so it can be listed, watched and
+reached into directly. A scope on a REST runtime would have to report its cells
+in its state before a panel could draw them.
+
 `secrets` and `logging` are the members most likely to follow — which
 credentials a scope's children can resolve, and logging turned on for one scope
 and nothing else. Neither exists yet. The block is shaped for them so they do

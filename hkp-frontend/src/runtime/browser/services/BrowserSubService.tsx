@@ -151,8 +151,14 @@ export class BrowserSubService extends ServiceBase<State> {
       (config.scope.slots === "own" || config.scope.slots === "inherit")
     ) {
       this.state.scope = { slots: config.scope.slots };
+      // Re-points the cells the inner scope reaches, and nothing else: the
+      // delegate is read on every lookup, so no service has to be recreated
+      // for this — and recreating them would restart whatever the scope is
+      // running, which is a heavy answer to a question about where a value is
+      // kept. Reported rather than marked `changed` for the same reason: a
+      // panel showing these cells has to know, a rebuild is not what it needs.
       this._applySlots();
-      changed = true;
+      this.app.notify(this as any, { scope: this.state.scope });
     }
 
     if (config.facade !== undefined) {
@@ -261,6 +267,25 @@ export class BrowserSubService extends ServiceBase<State> {
         ? (this.app.slots?.() ?? null)
         : this._slots,
     );
+  }
+
+  /**
+   * The cells the services inside this scope hold values in, and whether the
+   * scope reached out of itself for them.
+   *
+   * Asked of the built scope rather than of `state.scope.slots`, because the
+   * two can differ: a scope that says `inherit` where nothing around it
+   * provides cells still holds, in cells of its own. What makes them inherited
+   * is that they are the same store the surrounding scope hands out — which is
+   * also what a reader wants to know, since those cells are shared with
+   * whatever else is out there naming the same slot.
+   */
+  slotsInUse(): { store: SlotStore | null; inherited: boolean } {
+    const store = this._scope?.slots() ?? null;
+    return {
+      store,
+      inherited: store !== null && store === this.app.slots?.(),
+    };
   }
 
   /** Returns the real inner ServiceInstance for a given instanceId, once built. */

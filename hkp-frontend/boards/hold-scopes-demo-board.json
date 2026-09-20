@@ -30,7 +30,10 @@
               "state": {
                 "periodic": true,
                 "periodicValue": 1,
-                "periodicUnit": "s"
+                "periodicUnit": "s",
+                "running": true,
+                "start": true,
+                "immediate": true
               }
             },
             {

@@ -130,3 +130,106 @@ describe("two Holds naming one slot", () => {
     expect(reader.process(undefined)).toEqual({ count: 3 });
   });
 });
+
+describe("what a scope can say about its cells", () => {
+  it("lists them, and reports a write or a removal to whoever is watching", () => {
+    // What a panel needs of a store: everything in it, word that it changed —
+    // a cell is written by whichever pipeline happens to run, not by the one
+    // being looked at — and a way to take one away again.
+    const slots = createSlotStore();
+    const seen = vi.fn();
+    const stop = slots.watch(seen);
+
+    slots.set("latest", { triggerCount: 3 });
+    expect(slots.entries()).toEqual([["latest", { triggerCount: 3 }]]);
+    expect(seen).toHaveBeenCalledTimes(1);
+
+    slots.remove("latest");
+    expect(slots.entries()).toEqual([]);
+    expect(seen).toHaveBeenCalledTimes(2);
+    // Removing what is not there says nothing happened, because nothing did.
+    slots.remove("latest");
+    expect(seen).toHaveBeenCalledTimes(2);
+
+    stop();
+    slots.set("latest", { triggerCount: 4 });
+    expect(seen).toHaveBeenCalledTimes(2);
+    expect(slots.entries()).toEqual([["latest", { triggerCount: 4 }]]);
+  });
+
+  it("calls the cells inherited only when they are the ones around it", async () => {
+    // Which store a scope reached, rather than what it asked for: the two
+    // differ where a scope says `inherit` and nothing around it has cells.
+    const runtimeSlots = createSlotStore();
+    const inheriting = new BrowserSubService(
+      makeApp(runtimeSlots),
+      "board",
+      {} as any,
+      "reader",
+    );
+    inheriting.configure({ scope: { slots: "inherit" }, pipeline: [] });
+    await (inheriting as any)._scopeBuilding;
+    expect(inheriting.slotsInUse()).toEqual({
+      store: runtimeSlots,
+      inherited: true,
+    });
+
+    const owning = new BrowserSubService(
+      makeApp(runtimeSlots),
+      "board",
+      {} as any,
+      "unit",
+    );
+    owning.configure({ scope: { slots: "own" }, pipeline: [] });
+    await (owning as any)._scopeBuilding;
+    const own = owning.slotsInUse();
+    expect(own.inherited).toBe(false);
+    expect(own.store).not.toBe(runtimeSlots);
+  });
+});
+
+describe("changing which cells a scope holds in", () => {
+  it("re-points the store and leaves the built scope alone", async () => {
+    // The cheap half of the change is the point: a scope may be holding a
+    // Timer, and rebuilding it to answer a question about where a value is
+    // kept would restart what it is running — a heavy way to say it.
+    const runtimeSlots = createSlotStore();
+    const app = makeApp(runtimeSlots);
+    const scope = new BrowserSubService(app, "board", {} as any, "reader");
+    scope.configure({ scope: { slots: "inherit" }, pipeline: [] });
+    await (scope as any)._scopeBuilding;
+
+    const built = (scope as any)._scope;
+    expect(built).not.toBeNull();
+    expect(scope.slotsInUse().inherited).toBe(true);
+
+    scope.configure({ scope: { slots: "own" } });
+
+    // The same scope object, so everything it holds is still the instance it
+    // was — nothing was torn down and built again.
+    expect((scope as any)._scope).toBe(built);
+    const after = scope.slotsInUse();
+    expect(after.inherited).toBe(false);
+    expect(after.store).not.toBe(runtimeSlots);
+    // Nothing else would tell a panel reading those cells that they changed.
+    expect(app.notify).toHaveBeenCalledWith(scope, {
+      scope: { slots: "own" },
+    });
+  });
+
+  it("keeps what a scope of its own was holding across the trip out and back", async () => {
+    // Its own cells live on the service rather than on the scope, so a value
+    // held before a detour through the runtime's cells is still there after.
+    const app = makeApp(createSlotStore());
+    const scope = new BrowserSubService(app, "board", {} as any, "unit");
+    scope.configure({ scope: { slots: "own" }, pipeline: [] });
+    await (scope as any)._scopeBuilding;
+
+    scope.slotsInUse().store?.set("draft", "unsent");
+    scope.configure({ scope: { slots: "inherit" } });
+    expect(scope.slotsInUse().store?.get("draft")).toBeUndefined();
+
+    scope.configure({ scope: { slots: "own" } });
+    expect(scope.slotsInUse().store?.get("draft")).toBe("unsent");
+  });
+});
