@@ -188,6 +188,44 @@ describe("what a scope can say about its cells", () => {
   });
 });
 
+describe("changing what leaves a scope", () => {
+  it("says it without rebuilding what the scope is running", async () => {
+    // Read on the way out of every call, so saying it is all it takes: a
+    // scope told to keep its answer to itself should not lose the Timer it
+    // was holding in the telling.
+    const app = makeApp(createSlotStore());
+    const scope = new BrowserSubService(app, "board", {} as any, "read");
+    scope.configure({ pipeline: [] });
+    await (scope as any)._scopeBuilding;
+
+    const built = (scope as any)._scope;
+    expect(scope.state.stopPropagation).toBe(false);
+
+    scope.configure({ stopPropagation: true });
+
+    expect(scope.state.stopPropagation).toBe(true);
+    expect((scope as any)._scope).toBe(built);
+    expect(app.notify).toHaveBeenCalledWith(scope, { stopPropagation: true });
+  });
+
+  it("answers nothing once it does, whatever the pipeline produced", async () => {
+    // The half of it a panel is promising: the services after this one stop
+    // running from it the moment the choice is made.
+    const scope = new BrowserSubService(
+      makeApp(createSlotStore()),
+      "board",
+      {} as any,
+      "read",
+    );
+    scope.configure({ pipeline: [] });
+    await (scope as any)._scopeBuilding;
+
+    expect(await scope.process({ carried: true })).toEqual({ carried: true });
+    scope.configure({ stopPropagation: true });
+    expect(await scope.process({ carried: true })).toBeNull();
+  });
+});
+
 describe("changing which cells a scope holds in", () => {
   it("re-points the store and leaves the built scope alone", async () => {
     // The cheap half of the change is the point: a scope may be holding a

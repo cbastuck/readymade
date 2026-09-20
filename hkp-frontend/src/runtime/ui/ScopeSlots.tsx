@@ -124,9 +124,12 @@ export default function ScopeSlots({
           aria-expanded={open}
           title="Named cells the services in this scope share values through."
         >
-          <Chevron open={open} />
+          {/* After the label rather than before it, so that Slots starts
+              where Output above it starts: a fold mark on the left would
+              indent the one row of the two that happens to fold. */}
           <span>Slots</span>
           <span>· {cells.length}</span>
+          <Chevron open={open} />
         </button>
 
         {/* Nothing labels this on the row, because the row is already headed

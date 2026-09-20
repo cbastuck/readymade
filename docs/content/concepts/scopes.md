@@ -83,6 +83,14 @@ answer; a scope that closed only the first route would let every one of those
 articles through. A scope that holds anything asynchronous needs both closed, or
 it goes on driving the board long after its own answers have stopped.
 
+The panel puts this as **Output**, with `continues` and `stops` rather than
+the board's own true and false: a boolean named after one of its two states
+makes a reader work out which way round the name runs before they can answer
+the question it asks. Changing it rebuilds nothing — the flag is read on the
+way out of every call and every push, so saying it is all it takes, and a
+scope told to keep its answer to itself does not lose the Timer it was holding
+in the telling.
+
 It composes with `bypass`, which a SubService already had:
 
 | `bypass` | `stopPropagation` | |

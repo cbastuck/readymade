@@ -144,7 +144,13 @@ export class BrowserSubService extends ServiceBase<State> {
     // the default rather than having one written over it by silence.
     if (typeof config.stopPropagation === "boolean") {
       this.state.stopPropagation = config.stopPropagation;
-      changed = true;
+      // Read on the way out of every call and every push, so saying it is all
+      // it takes — and rebuilding the pipeline to change where its answer goes
+      // would restart whatever it is running. Reported instead, for the panel
+      // that offers the choice.
+      this.app.notify(this as any, {
+        stopPropagation: this.state.stopPropagation,
+      });
     }
     if (
       config.scope &&

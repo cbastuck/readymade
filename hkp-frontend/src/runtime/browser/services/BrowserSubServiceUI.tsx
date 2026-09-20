@@ -4,6 +4,7 @@ import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import SubServicePipelineUI from "../../ui/SubServicePipelineUI";
 import { findServiceUI } from "../UIRegistry";
 import { BrowserSubService } from "./BrowserSubService";
+import ScopeOutput from "../../ui/ScopeOutput";
 import ScopeSlots from "../../ui/ScopeSlots";
 
 function BrowserSubServiceUI(props: ServiceUIProps): JSX.Element {
@@ -12,10 +13,14 @@ function BrowserSubServiceUI(props: ServiceUIProps): JSX.Element {
   const [, setScopeVersion] = useState(0);
 
   const onNotification = useCallback((notification: any) => {
-    // `scope` because changing which cells this one holds in re-points the
-    // store without rebuilding anything: nothing else would tell the panel
-    // reading those cells that it is now reading different ones.
-    if (notification?.__innerScopeReady || notification?.scope) {
+    // `scope` and `stopPropagation` because what a scope declares about
+    // itself is applied without rebuilding anything: nothing else would tell
+    // the panel that what it is showing has changed.
+    if (
+      notification?.__innerScopeReady ||
+      notification?.scope ||
+      notification?.stopPropagation !== undefined
+    ) {
       setScopeVersion((v) => v + 1);
     }
   }, []);
@@ -31,8 +36,20 @@ function BrowserSubServiceUI(props: ServiceUIProps): JSX.Element {
 
   return (
     <ServiceUI {...props} onNotification={onNotification}>
-      {/* Above the pipeline because it is about the scope rather than about
-          any one service in it, and because the pipeline below can be long. */}
+      {/* Above the pipeline because they are about the scope rather than
+          about any one service in it, and because the pipeline below can be
+          long. What leaves first, then where what is held is kept: the one is
+          about this service's place in the flow, the other about what the
+          services inside it can reach. */}
+      <ScopeOutput
+        stops={
+          (props.service as unknown as BrowserSubService).state
+            ?.stopPropagation === true
+        }
+        onChange={(stops) =>
+          props.service.configure({ stopPropagation: stops })
+        }
+      />
       <BrowserScopeSlots service={props.service} />
       <SubServicePipelineUI
         service={props.service}
