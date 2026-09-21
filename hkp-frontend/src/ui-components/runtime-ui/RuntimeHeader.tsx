@@ -56,6 +56,11 @@ export default function RuntimeHeader({
     : isRuntimeRestClassType(runtime.type)
       ? "rest"
       : toCanonicalRuntimeClassType(runtime.type);
+  // Which server a remote runtime lives on — the `rest` badge alone does not
+  // tell a node runtime from a python one.
+  const serverBadge = (
+    boardContext?.scopes[runtimeId] as { server?: string } | undefined
+  )?.server;
   const onChangeName = (newName: string) =>
     boardContext?.setRuntimeName(runtimeId, newName);
 
@@ -340,6 +345,11 @@ export default function RuntimeHeader({
 
           {isPlayground && (
             <span className="hkp-rt-badge">{runtimeTypeBadge}</span>
+          )}
+          {isPlayground && serverBadge && (
+            <span className="hkp-rt-badge" title={runtime.url}>
+              {serverBadge}
+            </span>
           )}
         </div>
       </div>

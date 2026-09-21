@@ -1,5 +1,6 @@
 import { isArrayBuffer } from "./helpers";
 import { AppInstance, ServiceClass } from "../../../types";
+import CacheUI from "./CacheUI";
 
 const serviceId = "hookup.to/service/cache";
 const serviceName = "Cache";
@@ -20,6 +21,7 @@ class Cache {
   updateTrigger: string;
   initial: any;
   values: any;
+  bypass = false;
 
   constructor(
     app: AppInstance,
@@ -65,12 +67,35 @@ class Cache {
       this.values = this.merge(add);
     }
 
-    this.app.notify(this as any, this.values);
+    this.report();
 
     const { triggerProcess } = cacheMeta;
     if (triggerProcess) {
       this.app.next(this as any, this.values);
     }
+  }
+
+  /**
+   * What a board keeps of this Cache: how it is set up, not what it has
+   * gathered since — the cached values start from `initial` on every load.
+   */
+  getConfiguration = async () => {
+    return {
+      initial: this.initial,
+      updateTrigger: this.updateTrigger,
+      bypass: this.bypass,
+    };
+  };
+
+  /** What this Cache is holding, for its panel. */
+  private report(): void {
+    this.app.notify(this as any, {
+      updateTrigger: this.updateTrigger,
+      initial: this.initial,
+      values: isArrayBuffer(this.values)
+        ? `[${this.values.byteLength} bytes]`
+        : this.values,
+    });
   }
 
   merge = (p: any): any => {
@@ -103,7 +128,7 @@ const descriptor = {
   serviceId,
   create: (app: AppInstance, board: string, desc: ServiceClass, id: string) =>
     new Cache(app, board, desc, id),
-  createUI: undefined,
+  createUI: CacheUI,
 };
 
 export default descriptor;

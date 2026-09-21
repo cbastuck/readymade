@@ -546,6 +546,9 @@ export function usePlaygroundController(
       externalInputs.current[ext].close();
     }
     externalInputs.current = {};
+    // The description belongs to the board being cleared, not the next one.
+    setDescription("");
+    descriptionRef.current = "";
   };
 
   const isActionAvailable = (action: Action) => {

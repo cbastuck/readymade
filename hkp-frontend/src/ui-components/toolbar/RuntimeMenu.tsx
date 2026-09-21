@@ -22,6 +22,7 @@ import {
 } from "hkp-frontend/src/types";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import ManageRuntimesDialog from "./ManageRuntimesDialog";
+import { useRemoteRuntimeEditing } from "./useRemoteRuntimeEditing";
 
 type Props = {
   triggerClassName?: string;
@@ -38,13 +39,6 @@ export default function RuntimeMenu({ triggerClassName, triggerStyle }: Props) {
 
   const availableRuntimeEngines = boardContext?.availableRuntimeEngines ?? [];
 
-  const persistRemoteRuntimes = (allEngines: RuntimeClass[]) => {
-    const remote = allEngines.filter(
-      (rt) => isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type),
-    );
-    localStorage.setItem("available-remote-runtimes", JSON.stringify(remote));
-  };
-
   const onAddRuntime = (rtClass: RuntimeClass) => {
     if (!boardContext) {
       return;
@@ -55,20 +49,11 @@ export default function RuntimeMenu({ triggerClassName, triggerStyle }: Props) {
     });
   };
 
-  const onAddRuntimeEngine = (desc: RuntimeClass) => {
-    const updated = boardContext?.addAvailableRuntime(desc, false) ?? [];
-    persistRemoteRuntimes(updated);
-  };
-
-  const onRemoveRuntimeEngine = (desc: RuntimeClass) => {
-    const updated = boardContext?.removeAvailableRuntime(desc) ?? [];
-    persistRemoteRuntimes(updated);
-  };
-
-  const onUpdateRuntimeEngine = (desc: RuntimeClass) => {
-    const updated = boardContext?.addAvailableRuntime(desc, true) ?? [];
-    persistRemoteRuntimes(updated);
-  };
+  const {
+    onAdd: onAddRuntimeEngine,
+    onRemove: onRemoveRuntimeEngine,
+    onUpdate: onUpdateRuntimeEngine,
+  } = useRemoteRuntimeEditing();
 
   const onOpenChange = (newOpen: boolean) => {
     if (!newOpen) {

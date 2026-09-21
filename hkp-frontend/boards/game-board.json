@@ -13,13 +13,22 @@
           "align": "center",
           "items": [
             {
-              "type": "xy-pad",
-              "serviceUuid": "xy-pad-svc",
-              "width": 400
-            },
-            {
-              "type": "canvas",
-              "serviceUuid": "canvas-svc"
+              "direction": "row",
+              "gap": 12,
+              "align": "center",
+              "justify": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "xy-pad",
+                  "serviceUuid": "xy-pad-svc",
+                  "width": 400
+                },
+                {
+                  "type": "canvas",
+                  "serviceUuid": "canvas-svc"
+                }
+              ]
             },
             {
               "direction": "row",

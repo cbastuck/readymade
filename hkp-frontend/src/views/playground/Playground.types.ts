@@ -3,6 +3,7 @@ import { BoardContextState } from "../../BoardContext";
 import { BoardDocuments } from "../../core/boardPersistence";
 import { BoardSnapshot } from "../../core/boardSnapshots";
 import { UnitBoard } from "../../runtime/board/units";
+import { RemoteRuntimeStore } from "../../ui-components/toolbar/useRemoteRuntimeEditing";
 import {
   BoardDescriptor,
   RuntimeClass,
@@ -13,9 +14,8 @@ export type PlaygroundProps = WithRouterProps & {
   boardName?: string;
   compact?: boolean;
   availableRuntimeEngines?: Array<RuntimeClass>;
-  onUpdateAvailableRuntimeEngines?: (
-    runtimeClasses: Array<RuntimeClass>,
-  ) => void | Promise<void>;
+  /** Where remote runtimes edited on the board persist; localStorage without one. */
+  remoteRuntimeStore?: RemoteRuntimeStore;
   boardDescriptor?: BoardDescriptor;
   children?: React.ReactNode;
   hideNavigation?: boolean;
@@ -77,9 +77,7 @@ export type PlaygroundInnerProps = {
   ) => Promise<any>;
   setIsSaveDialogVisible: (v: boolean) => void;
   onChangeBoardname: (newName: string) => void;
-  onUpdateAvailableRuntimeEngines?: (
-    runtimeClasses: Array<RuntimeClass>,
-  ) => void | Promise<void>;
+  remoteRuntimeStore?: RemoteRuntimeStore;
   requestedBoardName?: string;
   children?: React.ReactNode;
   emptySlot?: React.ReactNode;

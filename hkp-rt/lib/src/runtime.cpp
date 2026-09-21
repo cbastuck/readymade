@@ -302,14 +302,12 @@ Data Runtime::process(Data data, ProcessContext context)
   m_context = context;
   m_hasContext = true;
 
+  // Every onProcessBegin is paired with an onProcessEnd, empty runtime included:
+  // the depth they count decides when a result leaves this runtime, and one
+  // left unbalanced keeps every later result from leaving. With no services the
+  // input is the result, passed on unchanged.
   onProcessBegin();
-  if (m_services.empty())
-  {
-    m_context = previous;
-    m_hasContext = hadContext;
-    return data;
-  }
-  auto result = processFrom(*m_services.front(), data, false);
+  auto result = m_services.empty() ? data : processFrom(*m_services.front(), data, false);
   const auto& out = onProcessEnd(result, context);
 
   m_context = previous;
@@ -700,34 +698,34 @@ const Data& Runtime::onProcessEnd(const Data& data, ProcessContext context, std:
 {
   if (m_processDepth.decrement() == 0)
   {  
-    // if we are the last initiator, we should communicate the result
-    if (!m_boardName.empty())
+    // If we are the last initiator, communicate the result to whoever is
+    // listening on this runtime — the next runtime in the chain. Whether the
+    // runtime was created with a board name does not matter: an unnamed board
+    // chains the same way, and with no listener sendData delivers nothing.
+    std::string requestId = "RUNTIME";
+    auto purpose = MessagePurpose::RESULT;
+    if (callback)
     {
-        std::string requestId = "RUNTIME";
-        auto purpose = MessagePurpose::RESULT;
-        if (callback)
-        {
-          requestId = generateUUID();
-        }
-        else if (!context.requestId.empty())
-        {
-          requestId = context.requestId;
-        }
-        if (callback)
-        {
-          purpose = MessagePurpose::RESULT_AWAITING_RESPONSE;
-          std::cout << "Await pending resolve for request: " << requestId << std::endl;
-          if (!storePendingCallback(requestId, callback))
-          {
-            std::cerr << "Runtime::onProcessEnd: No empty slot available in m_pendingResolve" << std::endl;
-          }
-        }
-        else if (!context.requestId.empty())
-        {
-          purpose = MessagePurpose::RESULT_WITH_REQUEST_ID;
-        }
-        sendData(data, purpose, requestId, callback);
+      requestId = generateUUID();
     }
+    else if (!context.requestId.empty())
+    {
+      requestId = context.requestId;
+    }
+    if (callback)
+    {
+      purpose = MessagePurpose::RESULT_AWAITING_RESPONSE;
+      std::cout << "Await pending resolve for request: " << requestId << std::endl;
+      if (!storePendingCallback(requestId, callback))
+      {
+        std::cerr << "Runtime::onProcessEnd: No empty slot available in m_pendingResolve" << std::endl;
+      }
+    }
+    else if (!context.requestId.empty())
+    {
+      purpose = MessagePurpose::RESULT_WITH_REQUEST_ID;
+    }
+    sendData(data, purpose, requestId, callback);
   }
   return data;
 }

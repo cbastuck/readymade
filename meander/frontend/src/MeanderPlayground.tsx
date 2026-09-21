@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Playground from "hkp-frontend/src/views/playground";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
+import { RemoteRuntimeStore } from "hkp-frontend/src/ui-components/toolbar/useRemoteRuntimeEditing";
 
 import { Remote } from "./types";
 import MeanderAppMenu from "./MeanderAppMenu";
@@ -20,12 +21,7 @@ import Board from "./Board";
 import { SharePayload } from "./share/shareInbox";
 import BoardShareConsumer from "./share/BoardShareConsumer";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import {
-  BoardDescriptor,
-  isRuntimeGraphQLClassType,
-  isRuntimeRestClassType,
-  RuntimeClass,
-} from "hkp-frontend/src/types";
+import { BoardDescriptor, RuntimeClass } from "hkp-frontend/src/types";
 
 const isBuiltInRemote = (url?: string) =>
   (url || "").startsWith("hkp://remotes/");
@@ -87,45 +83,36 @@ export default function MeanderPlayground({
     ];
   }, [remotes]);
 
-  const syncAvailableRuntimeEngines = useCallback(
-    async (runtimeClasses: Array<RuntimeClass>) => {
-      const currentRemotes = (remotes || []).filter(
-        (remote) => !isBuiltInRemote(remote.url),
-      );
-
-      const desiredRemotes: Array<Remote> = runtimeClasses
-        .filter(
-          (runtime) =>
-            (isRuntimeGraphQLClassType(runtime.type) ||
-              isRuntimeRestClassType(runtime.type)) &&
-            !isBuiltInRemote(runtime.url),
-        )
-        .map((runtime) => {
-          const existingRemote = currentRemotes.find(
-            (remote) => remote.name === runtime.name,
-          );
-
-          return {
-            name: runtime.name,
-            url: runtime.url || "",
-            port: existingRemote?.port || 0,
-            color: runtime.color,
-          };
-        });
-
-      const desiredNames = new Set(desiredRemotes.map((remote) => remote.name));
-      const removedRemotes = currentRemotes.filter(
-        (remote) => !desiredNames.has(remote.name),
-      );
-
-      await Promise.all(desiredRemotes.map((remote) => saveRemote(remote)));
-      await Promise.all(
-        removedRemotes.map((remote) => deleteRemote(remote.name)),
-      );
+  // Remotes edited on a board persist to the backend one change at a time.
+  // Built-in remotes are the backend's own and are left alone; a saved remote
+  // keeps the port it was registered with.
+  const remoteRuntimeStore = useMemo<RemoteRuntimeStore>(() => {
+    const save = async (runtime: RuntimeClass) => {
+      if (isBuiltInRemote(runtime.url)) {
+        return;
+      }
+      const existing = (remotes || []).find((r) => r.name === runtime.name);
+      await saveRemote({
+        name: runtime.name,
+        url: runtime.url || "",
+        port: existing?.port || 0,
+        color: runtime.color,
+      });
       await loadRemotes();
-    },
-    [loadRemotes, remotes],
-  );
+    };
+    const remove = async (runtime: RuntimeClass) => {
+      if (isBuiltInRemote(runtime.url)) {
+        return;
+      }
+      await deleteRemote(runtime.name);
+      await loadRemotes();
+    };
+    return {
+      onAdd: (runtime) => void save(runtime),
+      onUpdate: (runtime) => void save(runtime),
+      onRemove: (runtime) => void remove(runtime),
+    };
+  }, [loadRemotes, remotes]);
 
   const onCloseBoardSource = () => setBoardSource("");
 
@@ -206,7 +193,7 @@ export default function MeanderPlayground({
       boardSource={boardFilePath}
       unitDocuments={unitDocuments}
       availableRuntimeEngines={availableRuntimeEngines}
-      onUpdateAvailableRuntimeEngines={syncAvailableRuntimeEngines}
+      remoteRuntimeStore={remoteRuntimeStore}
       onSaveBoard={onSaveBoard}
       onNewBoard={onNewBoard}
       onChangeBoardname={setBoardName}

@@ -95,7 +95,7 @@ function Playground(props: PlaygroundProps) {
         onSaveDialog={onSaveDialog}
         setIsSaveDialogVisible={setIsSaveDialogVisible}
         onChangeBoardname={onChangeBoardname}
-        onUpdateAvailableRuntimeEngines={props.onUpdateAvailableRuntimeEngines}
+        remoteRuntimeStore={props.remoteRuntimeStore}
         requestedBoardName={props.boardName || requestedBoardName}
         emptySlot={props.emptySlot}
       >

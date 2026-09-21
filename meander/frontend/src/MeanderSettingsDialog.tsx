@@ -16,6 +16,7 @@ import {
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import AppearanceSettings from "hkp-frontend/src/ui-components/AppearanceSettings";
 import ManageRuntimesContent from "hkp-frontend/src/ui-components/toolbar/ManageRuntimesContent";
+import { useRemoteRuntimeEditing } from "hkp-frontend/src/ui-components/toolbar/useRemoteRuntimeEditing";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import {
   isRuntimeGraphQLClassType,
@@ -97,19 +98,14 @@ const isRemoteRuntime = (rt: RuntimeClass) =>
 
 function RemotesTab() {
   // Remote management works anywhere inside the Meander host. On a board it is
-  // backed by the live board context; on the start page (no board) it is backed
+  // backed by the live board context, persisting through the board host's
+  // store; on the start page (no board) it is backed
   // directly by the persisted remotes in settings.json. The backend hook
   // fetches on mount, and the tab mounts when selected, so the list is fresh
   // each time the tab is opened.
   const boardContext = useBoardContext();
   const backendRemotes = useBackendRemotes();
-
-  const persistRemoteRuntimes = (allEngines: RuntimeClass[]) => {
-    localStorage.setItem(
-      "available-remote-runtimes",
-      JSON.stringify(allEngines.filter(isRemoteRuntime)),
-    );
-  };
+  const boardRemotes = useRemoteRuntimeEditing();
 
   let remoteRuntimes: RuntimeClass[];
   let onAddRuntimeEngine: (desc: RuntimeClass) => void;
@@ -121,12 +117,9 @@ function RemotesTab() {
     remoteRuntimes = (boardContext.availableRuntimeEngines ?? []).filter(
       isRemoteRuntime,
     );
-    onAddRuntimeEngine = (desc) =>
-      persistRemoteRuntimes(boardContext.addAvailableRuntime(desc, false) ?? []);
-    onRemoveRuntimeEngine = (desc) =>
-      persistRemoteRuntimes(boardContext.removeAvailableRuntime(desc) ?? []);
-    onUpdateRuntimeEngine = (desc) =>
-      persistRemoteRuntimes(boardContext.addAvailableRuntime(desc, true) ?? []);
+    onAddRuntimeEngine = boardRemotes.onAdd;
+    onRemoveRuntimeEngine = boardRemotes.onRemove;
+    onUpdateRuntimeEngine = boardRemotes.onUpdate;
   } else {
     remoteRuntimes = backendRemotes.runtimes;
     onAddRuntimeEngine = backendRemotes.onAdd;
