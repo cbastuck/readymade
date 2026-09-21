@@ -51,11 +51,13 @@ function BrowserSubServiceUI(props: ServiceUIProps): JSX.Element {
         }
       />
       <BrowserScopeSlots service={props.service} />
-      <SubServicePipelineUI
-        service={props.service}
-        findServiceUI={findServiceUI}
-        getActualInstance={getActualInstance}
-      />
+      <div className="pb-2">
+        <SubServicePipelineUI
+          service={props.service}
+          findServiceUI={findServiceUI}
+          getActualInstance={getActualInstance}
+        />
+      </div>
     </ServiceUI>
   );
 }
