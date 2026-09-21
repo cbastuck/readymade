@@ -306,8 +306,12 @@ function RuntimeCard({
   const handleServiceAction = (cmd: ServiceAction) => {
     if (cmd.action === "remove") {
       boardContext.removeService({ uuid: cmd.service.uuid }, runtime);
-    } else if (cmd.action === "rename" && cmd.payload) {
-      boardContext.setServiceName(runtime.id, cmd.service.uuid, cmd.payload);
+    } else if (cmd.action === "rename" && cmd.payload?.value) {
+      boardContext.setServiceName(
+        runtime.id,
+        cmd.service.uuid,
+        cmd.payload.value,
+      );
     }
   };
 
@@ -939,8 +943,12 @@ function FullServiceView({
       if (cmd.service.uuid === service.uuid) {
         onBack();
       }
-    } else if (cmd.action === "rename" && cmd.payload) {
-      boardContext.setServiceName(runtime.id, cmd.service.uuid, cmd.payload);
+    } else if (cmd.action === "rename" && cmd.payload?.value) {
+      boardContext.setServiceName(
+        runtime.id,
+        cmd.service.uuid,
+        cmd.payload.value,
+      );
     }
   };
 

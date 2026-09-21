@@ -29,7 +29,11 @@ const board = {
 
 const pipelineOf = (page: Page) =>
   page.evaluate(
-    async () => (await (window as any).hkp.getServiceConfig("rt", "sub")).pipeline,
+    // Empty rather than throwing while the board is still being restored, so
+    // a poll waits for it instead of failing on the first read.
+    async () =>
+      (await (window as any).hkp?.getServiceConfig("rt", "sub"))?.pipeline ??
+      [],
   );
 
 const draftNames = (page: Page) =>

@@ -490,8 +490,12 @@ export default function ServiceSheet({
         } else {
           removeActiveNode();
         }
-      } else if (cmd.action === "rename" && cmd.payload && isRoot) {
-        boardContext.setServiceName(runtime.id, cmd.service.uuid, cmd.payload);
+      } else if (cmd.action === "rename" && cmd.payload?.value && isRoot) {
+        boardContext.setServiceName(
+          runtime.id,
+          cmd.service.uuid,
+          cmd.payload.value,
+        );
       }
     };
 

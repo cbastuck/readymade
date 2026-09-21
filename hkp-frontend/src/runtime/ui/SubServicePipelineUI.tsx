@@ -33,6 +33,7 @@ import {
 type PipelineEntry = {
   serviceId: string;
   instanceId: string;
+  serviceName?: string;
   state?: any;
 };
 
@@ -321,6 +322,18 @@ function PipelineStrip({
     service.configure({ removeService: instanceId });
   };
 
+  // Sent as the whole pipeline with one name changed: `pipeline` is the one
+  // configure every host of a nested pipeline understands, on every runtime.
+  // A host that can tell only a name changed renames in place rather than
+  // rebuilding what it runs (see runtime/browser/pipelineNames).
+  const rename = (instanceId: string, serviceName: string) => {
+    service.configure({
+      pipeline: pipeline.map((entry) =>
+        entry.instanceId === instanceId ? { ...entry, serviceName } : entry,
+      ),
+    });
+  };
+
   const rearrange = (movedInstanceId: string, targetPos: number) => {
     const newPipeline = pipeline.filter(
       (entry) => entry.instanceId !== movedInstanceId,
@@ -362,6 +375,8 @@ function PipelineStrip({
         const onSubServiceAction = (command: ServiceAction) => {
           if (command.action === "remove") {
             remove(entry.instanceId);
+          } else if (command.action === "rename" && command.payload?.value) {
+            rename(entry.instanceId, command.payload.value);
           }
         };
 
@@ -393,7 +408,9 @@ function PipelineStrip({
             entry.instanceId,
           ),
           serviceId: entry.serviceId,
-          serviceName: descriptor?.serviceName ?? entry.serviceId,
+          // The name this pipeline gave it, which is what a rename writes.
+          serviceName:
+            entry.serviceName ?? descriptor?.serviceName ?? entry.serviceId,
           version: descriptor?.version,
           capabilities: descriptor?.capabilities,
           state: entry.state,
@@ -410,7 +427,11 @@ function PipelineStrip({
         // Keep configure() pointing at the proxy so config changes are persisted.
         const realInstance = getActualInstance?.(entry.instanceId);
         const subServiceInstance: ServiceInstance = realInstance
-          ? { ...realInstance, configure: configureProxy }
+          ? {
+              ...realInstance,
+              serviceName: entry.serviceName ?? realInstance.serviceName,
+              configure: configureProxy,
+            }
           : proxyInstance;
 
         // Look the service up the way a top-level one is looked up: by id
