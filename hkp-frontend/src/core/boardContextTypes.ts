@@ -99,6 +99,12 @@ export type Props = {
    * taken for another reason includes what they set.
    */
   onBoardSnapshot?: (snapshot: BoardSnapshot) => void;
+  /**
+   * Whether opening a board produces a snapshot. Default true. False for a host
+   * whose snapshots mean "changed since it was opened" — web drafts, where an
+   * opened and untouched saved board is not a draft.
+   */
+  snapshotOnLoad?: boolean;
 };
 
 export type BoardStateRefs = {

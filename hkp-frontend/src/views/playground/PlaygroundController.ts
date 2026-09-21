@@ -12,6 +12,8 @@ import { BoardProviderHandle } from "../../BoardContext";
 
 import { generateRandomName } from "../../core/board";
 import { BoardDocuments } from "../../core/boardPersistence";
+import { BoardSnapshot } from "../../core/boardSnapshots";
+import { browserDraftStore } from "../../core/boardDrafts";
 import {
   UnitOrigin,
   chainUnitOrigins,
@@ -31,6 +33,7 @@ import {
 import {
   defaultName,
   availableRuntimeEngines,
+  localBoardSavedAt,
   restoreBoardFromLocalStorage,
   storeBoardToLocalStorage,
 } from "./common";
@@ -93,6 +96,9 @@ export type PlaygroundControllerState = {
   ) => Promise<BoardDescriptor | null | undefined>;
   onChangeBoardname: (newName: string) => void;
   unitOrigin: () => UnitOrigin | undefined;
+  /** What BoardProvider hands its snapshots to: the host's, or the drafts. */
+  onBoardSnapshot?: (snapshot: BoardSnapshot) => void;
+  snapshotOnLoad?: boolean;
 };
 
 export function usePlaygroundController(
@@ -139,6 +145,51 @@ export function usePlaygroundController(
   useEffect(() => {
     requestedBoardNameRef.current = requestedBoardName;
   }, [requestedBoardName]);
+
+  // Drafts are this controller's own snapshots, for a host that asked for them
+  // and does not take the snapshots itself.
+  const draftsEnabled = !!props.keepDrafts && !props.onBoardSnapshot;
+  // What a draft is kept under: the address the board is at, since reloading
+  // that address is what has to bring it back. The route's name where there is
+  // one; the board's own name wins nowhere, as a demo keeps its title under a
+  // generated address.
+  const routeBoardRef = useRef<string | undefined>(undefined);
+  routeBoardRef.current = props.match?.params?.board;
+  const draftName = () => routeBoardRef.current || requestedBoardNameRef.current;
+  // Units a restored draft was stored with, keyed by `uri`: a composition
+  // restored from a draft has nowhere else to link them from.
+  const draftUnitsRef = useRef<Record<string, UnitBoard> | undefined>(
+    undefined,
+  );
+
+  const writeDraft = useCallback((snapshot: BoardSnapshot) => {
+    const name = draftName();
+    if (name) {
+      void browserDraftStore().save(name, snapshot.documents);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Settles what was kept of a board that is being saved: what was pending is
+   * written first, so nothing lands after the draft is gone, and the draft is
+   * then dropped — the save holds the same board.
+   */
+  const dropDraftsOnSave = useCallback(
+    async (...names: Array<string | undefined>) => {
+      if (!draftsEnabled) {
+        return;
+      }
+      await boardProviderRef.current?.state.flushSnapshots();
+      const drafts = browserDraftStore();
+      for (const name of new Set(names)) {
+        if (name) {
+          await drafts.remove(name);
+        }
+      }
+    },
+    [draftsEnabled],
+  );
   useEffect(() => {
     descriptionRef.current = description;
   }, [description]);
@@ -197,6 +248,7 @@ export function usePlaygroundController(
             JSON.stringify({ ...data, name, description: desc }),
             desc,
           );
+          await dropDraftsOnSave(name, draftName());
           const units = await saveUnitDocuments(documents);
           appContext?.pushNotification({
             type: "success",
@@ -212,7 +264,7 @@ export function usePlaygroundController(
         });
       }
     },
-    [appContext, props.boardName, props.onSaveBoard],
+    [appContext, props.boardName, props.onSaveBoard, dropDraftsOnSave],
   );
 
   const onKey = useCallback(
@@ -289,6 +341,7 @@ export function usePlaygroundController(
       }
 
       boardSourceUrlRef.current = null;
+      draftUnitsRef.current = undefined;
       const brd =
         props.match?.params?.board ||
         props.boardName ||
@@ -302,6 +355,33 @@ export function usePlaygroundController(
         } else if (params.fromLink) {
           return importFromLink(params.fromLink, params.vars);
         } else {
+          const draft = draftsEnabled
+            ? await browserDraftStore().load(brd)
+            : undefined;
+          const savedAt = localBoardSavedAt(brd);
+          // The draft only when it is newer than the save: a draft outlives a
+          // save that was made in another tab, and that save is then the board.
+          if (
+            draft &&
+            (savedAt === undefined || Date.parse(draft.updatedAt) > savedAt)
+          ) {
+            draftUnitsRef.current = draft.documents.units.length
+              ? Object.fromEntries(
+                  draft.documents.units.map((unit) => [unit.uri, unit.board]),
+                )
+              : undefined;
+            appContext?.pushNotification({
+              type: "info",
+              message:
+                savedAt === undefined
+                  ? `Restored the unsaved board '${brd}'.`
+                  : `Restored the unsaved changes to '${brd}'.`,
+            });
+            return {
+              ...(draft.documents.composition as Partial<PlaygroundState>),
+              boardName: brd,
+            };
+          }
           const localBoard = restoreBoardFromLocalStorage(brd);
           if (localBoard) {
             return localBoard;
@@ -400,7 +480,7 @@ export function usePlaygroundController(
     // opened from were not kept — so without them a composition comes back as
     // the flat board it was running as, and the faces its units contribute go
     // missing.
-    const carried = props.unitDocuments;
+    const carried = props.unitDocuments ?? draftUnitsRef.current;
     const fromBoard =
       carried && Object.keys(carried).length
         ? filesUnitOrigin(
@@ -564,6 +644,9 @@ export function usePlaygroundController(
         JSON.stringify({ ...data, boardName: name, description: desc }),
         desc,
       );
+      // Under the name it was saved as, and the address it was sketched at:
+      // saving under a new name moves the board, and leaves nothing behind.
+      await dropDraftsOnSave(name, draftName());
 
       if (!isSuggestedName) {
         setTimeout(
@@ -638,6 +721,8 @@ export function usePlaygroundController(
     onSaveDialog,
     onChangeBoardname,
     unitOrigin,
+    onBoardSnapshot: draftsEnabled ? writeDraft : props.onBoardSnapshot,
+    snapshotOnLoad: draftsEnabled ? false : undefined,
   };
 }
 

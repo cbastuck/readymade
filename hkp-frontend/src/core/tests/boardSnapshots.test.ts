@@ -103,6 +103,38 @@ describe("createSnapshotScheduler", () => {
   });
 });
 
+describe("createSnapshotScheduler rebase", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps the snapshot of a board just opened as the baseline", async () => {
+    const { board, written, scheduler } = setup();
+    scheduler.rebase();
+    scheduler.schedule("structure", 500);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(written).toHaveLength(0);
+
+    board.value = 1;
+    scheduler.schedule("configuration", 2000);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(written).toHaveLength(1);
+  });
+
+  it("writes when a person changed the board before the baseline", async () => {
+    const { written, scheduler } = setup();
+    scheduler.rebase();
+    scheduler.schedule("structure", 500);
+    scheduler.schedule("configuration", 2000);
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(written.map((s) => s.reason)).toEqual(["structure"]);
+  });
+});
+
 describe("withEditReporting", () => {
   class Service {
     uuid = "svc";

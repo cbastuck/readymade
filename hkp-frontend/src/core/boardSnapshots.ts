@@ -47,6 +47,12 @@ export type SnapshotScheduler = {
   flush: () => Promise<void>;
   /** Drops what is pending without writing it. */
   cancel: () => void;
+  /**
+   * The board was just loaded: the next snapshot is what it was loaded as, and
+   * is remembered to compare against rather than written — unless a person
+   * changed something before it was taken. Opening a board is not an edit.
+   */
+  rebase: () => void;
 };
 
 /**
@@ -67,6 +73,10 @@ export function createSnapshotScheduler(
   const { serialize, write, maxWaitMs, now = () => Date.now() } = options;
 
   let pending: BoardSnapshotReason | null = null;
+  // Whether a person's change is among what is pending, which a structural
+  // request would otherwise hide in `pending`.
+  let pendingConfiguration = false;
+  let rebasing = false;
   let firstPendingAt: number | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let writes: Promise<void> = Promise.resolve();
@@ -79,7 +89,10 @@ export function createSnapshotScheduler(
     }
   };
 
-  const writeSnapshot = async (reason: BoardSnapshotReason) => {
+  const writeSnapshot = async (
+    reason: BoardSnapshotReason,
+    baselineOnly: boolean,
+  ) => {
     const serialized = await serialize();
     if (!serialized) {
       return;
@@ -89,17 +102,22 @@ export function createSnapshotScheduler(
       return;
     }
     lastWritten = key;
-    write({ ...serialized, reason });
+    if (!baselineOnly) {
+      write({ ...serialized, reason });
+    }
   };
 
   const flush = () => {
     clearTimer();
     if (pending !== null) {
       const reason = pending;
+      const baselineOnly = rebasing && !pendingConfiguration;
       pending = null;
+      pendingConfiguration = false;
+      rebasing = false;
       firstPendingAt = null;
       writes = writes
-        .then(() => writeSnapshot(reason))
+        .then(() => writeSnapshot(reason, baselineOnly))
         .catch((err) => {
           console.error("Failed to take a board snapshot", err);
         });
@@ -109,6 +127,7 @@ export function createSnapshotScheduler(
 
   const schedule = (reason: BoardSnapshotReason, delayMs: number) => {
     pending = pending === "structure" ? pending : reason;
+    pendingConfiguration ||= reason === "configuration";
     const at = now();
     firstPendingAt ??= at;
     clearTimer();
@@ -122,8 +141,14 @@ export function createSnapshotScheduler(
   const cancel = () => {
     clearTimer();
     pending = null;
+    pendingConfiguration = false;
+    rebasing = false;
     firstPendingAt = null;
   };
 
-  return { schedule, flush, cancel };
+  const rebase = () => {
+    rebasing = true;
+  };
+
+  return { schedule, flush, cancel, rebase };
 }

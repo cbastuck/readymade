@@ -49,6 +49,13 @@ export type PlaygroundProps = WithRouterProps & {
   ) => void;
   /** See `onBoardSnapshot` on BoardProvider (core/boardContextTypes). */
   onBoardSnapshot?: (snapshot: BoardSnapshot) => void;
+  /**
+   * Keep what an unsaved board was changed to in this browser, so reloading
+   * its address brings it back (core/boardDrafts). For a host that saves to
+   * local storage and routes by board name — the website. Ignored when the
+   * host takes the snapshots itself (`onBoardSnapshot`).
+   */
+  keepDrafts?: boolean;
   emptySlot?: React.ReactNode;
 };
 

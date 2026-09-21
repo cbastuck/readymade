@@ -50,7 +50,9 @@ export type BoardState =
   | "saved"
   | "demo"
   | "recent"
-  | "runtime";
+  | "runtime"
+  /** Kept by the browser from an unsaved sketch (core/boardDrafts). */
+  | "unsaved";
 
 /** What opening a board row means — resolved by the host via onOpen. */
 export type BoardAction =

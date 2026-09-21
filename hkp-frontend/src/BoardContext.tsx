@@ -148,6 +148,12 @@ type BoardContextAPI = {
    * itself, such as a Configurator driving another service.
    */
   markBoardChanged: () => void;
+  /**
+   * Takes what snapshot is pending now, resolving once it is written. For a
+   * host about to act on the board as it is — saving it, and dropping what it
+   * kept in the meantime.
+   */
+  flushSnapshots: () => Promise<void>;
 
   fetchBoard: () => Promise<void>;
   isActionAvailable: (action: Action) => boolean;
@@ -504,6 +510,14 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setAwaitUserLogin(null);
     };
 
+    // A board that was just opened has not been changed by anyone, so a host
+    // that does not want a snapshot for that is spared one.
+    const rebaseAfterLoad = () => {
+      if (propsRef.current.snapshotOnLoad === false) {
+        snapshots.rebase();
+      }
+    };
+
     const cancelUserLoginWait = () => {
       if (awaitUserLoginResolverRef.current) {
         awaitUserLoginResolverRef.current();
@@ -524,6 +538,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
           buildContextValue,
           cancellation,
         );
+        rebaseAfterLoad();
       } finally {
         inFlightFetchesRef.current.delete(cancellation);
       }
@@ -596,14 +611,19 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       origin?: UnitOrigin,
     ) => {
       await snapshots.flush();
-      return setBoardStateOp(
+      await setBoardStateOp(
         newState,
         getRefs(),
         waitForUserLogin,
         removeRuntime,
         origin,
       );
+      rebaseAfterLoad();
     };
+    const flushSnapshots = useCallback(
+      () => snapshotsRef.current?.flush() ?? Promise.resolve(),
+      [],
+    );
     // Stable, since it reads only refs: widgets can depend on it without
     // setting up their listeners again on every render.
     const markBoardChanged = useCallback(() => {
@@ -823,6 +843,32 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [runtimes, services, boardName, registry, facade, linkage]);
 
+    // A tab being hidden is the last reliable moment before it may be closed —
+    // and on a phone, before the browser is suspended — so what is pending is
+    // written now instead of after the pause it was waiting for. `pagehide` for
+    // the browsers that close a tab without reporting it hidden first.
+    useEffect(() => {
+      const flushWhenHidden = () => {
+        if (
+          document.visibilityState === "hidden" &&
+          propsRef.current.onBoardSnapshot
+        ) {
+          void snapshotsRef.current?.flush();
+        }
+      };
+      const flushOnPageHide = () => {
+        if (propsRef.current.onBoardSnapshot) {
+          void snapshotsRef.current?.flush();
+        }
+      };
+      document.addEventListener("visibilitychange", flushWhenHidden);
+      window.addEventListener("pagehide", flushOnPageHide);
+      return () => {
+        document.removeEventListener("visibilitychange", flushWhenHidden);
+        window.removeEventListener("pagehide", flushOnPageHide);
+      };
+    }, []);
+
     // Flush any pending infrastructure change notification when unmounting
     // so history is saved even if the user navigates away before the debounce fires.
     //
@@ -903,6 +949,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       clearBoard,
       handOverRuntimes,
       markBoardChanged,
+      flushSnapshots,
       onAction,
       isRuntimeInScope,
       acquireRuntimeScope,

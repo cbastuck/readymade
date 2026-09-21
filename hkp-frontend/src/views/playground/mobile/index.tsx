@@ -41,6 +41,8 @@ function MobilePlayground(props: MobilePlaygroundProps) {
     onUpdateBoardState,
     onAction,
     unitOrigin,
+    onBoardSnapshot,
+    snapshotOnLoad,
   } = usePlaygroundController(props);
 
   const suggestedName =
@@ -68,7 +70,8 @@ function MobilePlayground(props: MobilePlaygroundProps) {
       onRemoveService={() => {}}
       availableRuntimeEngines={playgroundRuntimeEngines}
       onBoardInfrastructureChange={props.onBoardInfrastructureChange}
-      onBoardSnapshot={props.onBoardSnapshot}
+      onBoardSnapshot={onBoardSnapshot}
+      snapshotOnLoad={snapshotOnLoad}
     >
       <MobilePlaygroundInner
         suggestedName={suggestedName}
