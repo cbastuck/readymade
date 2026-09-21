@@ -28,6 +28,7 @@ export function KnobRenderer({
   // service — cols and rows of one image, say — are one service uuid and two
   // positions, so the key is the knob's own id where it has one.
   const knobKey = widget.id ?? widget.action.serviceUuid;
+  const { markBoardChanged } = boardContext;
 
   const value = panelContext.knobValues[knobKey] ?? widget.defaultValue;
 
@@ -42,8 +43,9 @@ export function KnobRenderer({
         configure[k] = applyValue(tmpl, v);
       }
       service.configure(configure);
+      markBoardChanged?.();
     },
-    [service, widget.action.configure, knobKey, panelContext],
+    [service, widget.action.configure, knobKey, panelContext, markBoardChanged],
   );
 
   const unit = widget.unit ?? "";

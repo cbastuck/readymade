@@ -4,7 +4,11 @@ import { Remote } from "../types";
 
 export type BoardHistoryEntry = {
   timestamp: string; // ISO 8601
-  label: "auto" | "manual";
+  /**
+   * "auto" after a structural change, "config" after a configuration change —
+   * consecutive "config" entries replace each other rather than piling up.
+   */
+  label: "auto" | "manual" | "config";
   snapshot: BoardDescriptor;
   /**
    * The documents the snapshot's units were assembled from, each under the

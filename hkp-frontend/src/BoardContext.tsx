@@ -3,6 +3,7 @@ import {
   Dispatch,
   forwardRef,
   RefObject,
+  useCallback,
   SetStateAction,
   useContext,
   useEffect,
@@ -57,6 +58,10 @@ import {
   setBoardState as setBoardStateOp,
   clearBoard as clearBoardOp,
 } from "./core/boardPersistence";
+import {
+  SnapshotScheduler,
+  createSnapshotScheduler,
+} from "./core/boardSnapshots";
 import {
   addRuntime as addRuntimeOp,
   removeRuntime as removeRuntimeOp,
@@ -135,6 +140,14 @@ type BoardContextAPI = {
    * is attempted, so a navigation that lands in between cannot do that either.
    */
   handOverRuntimes: () => void;
+
+  /**
+   * A person changed what a service is configured with — through its panel or
+   * a facade widget. Only marks the board: a snapshot follows once changes
+   * pause (see `Props.onBoardSnapshot`). Not for configure calls a board makes
+   * itself, such as a Configurator driving another service.
+   */
+  markBoardChanged: () => void;
 
   fetchBoard: () => Promise<void>;
   isActionAvailable: (action: Action) => boolean;
@@ -306,6 +319,13 @@ function providerStateReducer(
   }
 }
 
+/** After a structural change: the debounce the infrastructure callback uses. */
+const STRUCTURE_SNAPSHOT_DELAY_MS = 500;
+/** After a configuration change: long enough for a dragged knob to settle. */
+const CONFIGURATION_SNAPSHOT_DELAY_MS = 2000;
+/** A board configured without pause is still snapshotted this often. */
+const SNAPSHOT_MAX_WAIT_MS = 10000;
+
 const BoardCtx = createContext<BoardContextState | null>(null);
 const { Provider } = BoardCtx;
 
@@ -391,6 +411,25 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const coordinator = coordinatorProp ?? localCoordinatorRef.current;
     const propsRef = useRef(props);
     propsRef.current = props;
+    // Created once, reading through refs, so a snapshot requested on one render
+    // serialises the board as it is when the changes pause.
+    const snapshotsRef = useRef<SnapshotScheduler | null>(null);
+    if (!snapshotsRef.current) {
+      snapshotsRef.current = createSnapshotScheduler({
+        serialize: async () => {
+          const documents = await serializeBoardDocumentsOp(
+            getRefs(),
+            providerStateRef.current.linkage,
+          );
+          return documents
+            ? { boardName: boardNameRef.current, documents }
+            : null;
+        },
+        write: (snapshot) => propsRef.current.onBoardSnapshot?.(snapshot),
+        maxWaitMs: SNAPSHOT_MAX_WAIT_MS,
+      });
+    }
+    const snapshots = snapshotsRef.current;
     const appContextRef = useRef(appContext);
     appContextRef.current = appContext;
 
@@ -491,8 +530,11 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     };
     const removeRuntime = (runtime: RuntimeDescriptor) =>
       removeRuntimeOp(runtime, getRefs());
-    const clearBoard = (newBoardNameArg?: string) => {
+    const clearBoard = async (newBoardNameArg?: string) => {
       cancelUserLoginWait();
+      // What the board it is leaving was changed to is read now or never: once
+      // its runtimes are gone there is nothing left to serialise.
+      await snapshots.flush();
       return clearBoardOp(newBoardNameArg, getRefs(), removeRuntime);
     };
 
@@ -549,14 +591,29 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const serializeBoard = () => serializeBoardOp(getRefs());
     const serializeBoardDocuments = () =>
       serializeBoardDocumentsOp(getRefs(), providerStateRef.current.linkage);
-    const setBoardState = (newState: BoardDescriptor, origin?: UnitOrigin) =>
-      setBoardStateOp(
+    const setBoardState = async (
+      newState: BoardDescriptor,
+      origin?: UnitOrigin,
+    ) => {
+      await snapshots.flush();
+      return setBoardStateOp(
         newState,
         getRefs(),
         waitForUserLogin,
         removeRuntime,
         origin,
       );
+    };
+    // Stable, since it reads only refs: widgets can depend on it without
+    // setting up their listeners again on every render.
+    const markBoardChanged = useCallback(() => {
+      if (propsRef.current.onBoardSnapshot) {
+        snapshotsRef.current?.schedule(
+          "configuration",
+          CONFIGURATION_SNAPSHOT_DELAY_MS,
+        );
+      }
+    }, []);
 
     const setBoardName = (name: string) => {
       setBoardNameState(name);
@@ -755,6 +812,9 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       };
       infraPendingCallRef.current = call;
       infraDebounceRef.current = setTimeout(call, 500);
+      if (propsRef.current.onBoardSnapshot) {
+        snapshots.schedule("structure", STRUCTURE_SNAPSHOT_DELAY_MS);
+      }
       return () => {
         if (infraDebounceRef.current) {
           clearTimeout(infraDebounceRef.current);
@@ -765,11 +825,16 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
 
     // Flush any pending infrastructure change notification when unmounting
     // so history is saved even if the user navigates away before the debounce fires.
+    //
+    // A pending snapshot is dropped instead: it serialises the live services,
+    // and the runtimes are torn down on unmount before a serialisation could
+    // read them — what it wrote would be the board without its configuration.
     useEffect(() => {
       return () => {
         if (infraPendingCallRef.current) {
           infraPendingCallRef.current();
         }
+        snapshotsRef.current?.cancel();
       };
     }, []);
 
@@ -837,6 +902,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setBoardName,
       clearBoard,
       handOverRuntimes,
+      markBoardChanged,
       onAction,
       isRuntimeInScope,
       acquireRuntimeScope,

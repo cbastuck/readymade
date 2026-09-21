@@ -47,6 +47,7 @@ export async function executeActions({
   setState,
   state,
   boardActions,
+  byPerson = false,
 }: {
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
@@ -59,6 +60,10 @@ export async function executeActions({
   // When provided, { "$state": "key" } references in configure payloads are
   // resolved against these values before $$input substitution runs.
   state?: Record<string, unknown>;
+  // A person set these actions off — pressed, typed, picked — so what they
+  // configure is an edit to the board. False for what a facade runs by itself,
+  // such as its init actions.
+  byPerson?: boolean;
 }): Promise<void> {
   const all: WidgetAction[] = [
     ...(action
@@ -85,6 +90,9 @@ export async function executeActions({
         configure[k] = applyInput(withState, value);
       }
       await service.configure(configure);
+      if (byPerson) {
+        boardContext.markBoardChanged?.();
+      }
     } else if (act.type === "process") {
       // Same substitution as a configure payload: what a board writes into one
       // it can write into the other.

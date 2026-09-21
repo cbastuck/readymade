@@ -297,6 +297,7 @@ export function CalendarRenderer({
       setState,
       boardActions,
       state,
+      byPerson: true,
     });
   };
 

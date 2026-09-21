@@ -747,7 +747,19 @@ saucer::scheme::response SchemeHandler::handlePushBoardSnapshot(const Router::Pa
     }
   }
 
-  history.insert(history.begin(), entry);
+  // Configuration snapshots follow every pause in editing, so consecutive ones
+  // replace each other: the history keeps the latest configuration between two
+  // structural changes instead of being flushed out by knob turns.
+  const auto isConfigEntry = [](const json &e)
+  { return e.is_object() && e.value("label", "") == "config"; };
+  if (isConfigEntry(entry) && !history.empty() && isConfigEntry(history[0]))
+  {
+    history[0] = entry;
+  }
+  else
+  {
+    history.insert(history.begin(), entry);
+  }
   if (history.size() > MAX_HISTORY_DEPTH)
   {
     history.erase(history.begin() + MAX_HISTORY_DEPTH, history.end());

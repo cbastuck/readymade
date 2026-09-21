@@ -1,6 +1,7 @@
 import { WithRouterProps } from "../../common";
 import { BoardContextState } from "../../BoardContext";
 import { BoardDocuments } from "../../core/boardPersistence";
+import { BoardSnapshot } from "../../core/boardSnapshots";
 import { UnitBoard } from "../../runtime/board/units";
 import {
   BoardDescriptor,
@@ -46,6 +47,8 @@ export type PlaygroundProps = WithRouterProps & {
     board: BoardDescriptor,
     documents: BoardDocuments,
   ) => void;
+  /** See `onBoardSnapshot` on BoardProvider (core/boardContextTypes). */
+  onBoardSnapshot?: (snapshot: BoardSnapshot) => void;
   emptySlot?: React.ReactNode;
 };
 

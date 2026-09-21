@@ -16,6 +16,7 @@ import {
 import { FacadeDescriptor } from "../facade/types";
 import { BoardLinkage } from "../runtime/board/units";
 import { BoardDocuments } from "./boardPersistence";
+import { BoardSnapshot } from "./boardSnapshots";
 import { UnitOrigin } from "./linkUnits";
 import { BoardContextState, EngineState } from "../BoardContext";
 import { BoardCoordinator } from "./coordinator";
@@ -87,6 +88,17 @@ export type Props = {
     board: BoardDescriptor,
     documents: BoardDocuments,
   ) => void;
+  /**
+   * The board as it is running, for a host that keeps it to resume later.
+   *
+   * Taken after a structural change and after a person changes a service's
+   * configuration (`markBoardChanged`), once changes pause. Serialised from the
+   * live services, unlike `onBoardInfrastructureChange`, and only when it
+   * differs from the last one. Configure calls a board makes itself — a
+   * Configurator driving another service — do not cause one, though a snapshot
+   * taken for another reason includes what they set.
+   */
+  onBoardSnapshot?: (snapshot: BoardSnapshot) => void;
 };
 
 export type BoardStateRefs = {

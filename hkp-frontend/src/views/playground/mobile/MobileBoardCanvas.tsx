@@ -21,6 +21,7 @@ import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import MobileFacadeView from "./MobileFacadeView";
 import { narrowBoardContext } from "../../../facade/boardServices";
+import { useEditReportingService } from "../../../core/editedServices";
 
 // Presence of a `bridge` prop means this canvas renders a *cloud* board: browser
 // runtime results are forwarded to the coordinator over `bridge.ws`. When omitted
@@ -288,6 +289,7 @@ function RuntimeCard({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [fullView, setFullView] = useState(false);
+  const editable = useEditReportingService();
   const [menuOpen, setMenuOpen] = useState(false);
   const [reordering, setReordering] = useState(false);
   // Reordering is only meaningful with 2+ services; if a removal drops the list
@@ -330,7 +332,7 @@ function RuntimeCard({
       return (
         <UI
           key={svc.uuid}
-          service={instance}
+          service={editable(instance)}
           showBypassOnlyIfExplicit={false}
           draggable={false}
           onServiceAction={handleServiceAction}
@@ -925,6 +927,7 @@ function FullServiceView({
   onBack: () => void;
 }) {
   const boardContext = useBoardContext();
+  const editable = useEditReportingService();
   if (!boardContext) {
     return null;
   }
@@ -1040,7 +1043,7 @@ function FullServiceView({
         >
           {ServiceUI && serviceInstance ? (
             <ServiceUI
-              service={serviceInstance}
+              service={editable(serviceInstance)}
               showBypassOnlyIfExplicit={false}
               draggable={false}
               onServiceAction={handleServiceAction}

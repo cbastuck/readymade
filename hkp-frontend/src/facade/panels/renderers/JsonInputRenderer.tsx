@@ -36,6 +36,7 @@ export function JsonInputRenderer({
       boardContext,
       setState,
       state: facadeState,
+      byPerson: true,
     });
   };
 

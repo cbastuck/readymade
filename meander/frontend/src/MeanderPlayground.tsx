@@ -15,7 +15,7 @@ import {
 } from "./actions";
 import { getBackend } from "./backend";
 import { BoardHistoryEntry } from "./backend/types";
-import { BoardDocuments } from "hkp-frontend/src/core/boardPersistence";
+import { BoardSnapshot } from "hkp-frontend/src/core/boardSnapshots";
 import Board from "./Board";
 import { SharePayload } from "./share/shareInbox";
 import BoardShareConsumer from "./share/BoardShareConsumer";
@@ -148,11 +148,9 @@ export default function MeanderPlayground({
     setBoardName(name);
   };
 
-  const onBoardInfrastructureChange = async (
-    board: BoardDescriptor,
-    documents: BoardDocuments,
-  ) => {
-    const name = board.boardName || boardName;
+  const onBoardSnapshot = async (snapshot: BoardSnapshot) => {
+    const { documents, reason } = snapshot;
+    const name = snapshot.boardName || boardName;
     if (!name) {
       return;
     }
@@ -161,10 +159,14 @@ export default function MeanderPlayground({
     // and what is opened has to be a document. Stored flat, a composition comes
     // back declaring no units, so there is nothing left to link and the facades
     // its units contribute are gone — the board is there, its faces are not.
+    //
+    // A configuration snapshot is labelled apart so the history keeps one of
+    // them in a row rather than fifty: the backend replaces a "config" entry at
+    // the head with the next one, and a structural change starts a new entry.
     const entry: BoardHistoryEntry = {
       timestamp: new Date().toISOString(),
-      label: "auto",
-      snapshot: documents.composition,
+      label: reason === "configuration" ? "config" : "auto",
+      snapshot: { ...documents.composition, boardName: name },
       ...(documents.units.length ? { units: documents.units } : {}),
     };
     try {
@@ -209,7 +211,7 @@ export default function MeanderPlayground({
       onNewBoard={onNewBoard}
       onChangeBoardname={setBoardName}
       onUpdateBoardState={onUpdatedBoard}
-      onBoardInfrastructureChange={onBoardInfrastructureChange}
+      onBoardSnapshot={onBoardSnapshot}
       menuItemFactory={menuItemFactory}
       hideNavigation
       menuSlot={<MeanderAppMenu />}

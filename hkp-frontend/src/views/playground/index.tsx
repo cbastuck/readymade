@@ -72,6 +72,7 @@ function Playground(props: PlaygroundProps) {
       onRemoveService={() => {}}
       availableRuntimeEngines={playgroundRuntimeEngines}
       onBoardInfrastructureChange={props.onBoardInfrastructureChange}
+      onBoardSnapshot={props.onBoardSnapshot}
     >
       <PlaygroundInner
         description={description}

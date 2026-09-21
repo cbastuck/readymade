@@ -113,6 +113,7 @@ export function ButtonRenderer({
       // the reference object itself, and the service receives a shape it
       // cannot read rather than the value a widget published.
       state,
+      byPerson: true,
     });
   };
 

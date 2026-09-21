@@ -68,6 +68,7 @@ function MobilePlayground(props: MobilePlaygroundProps) {
       onRemoveService={() => {}}
       availableRuntimeEngines={playgroundRuntimeEngines}
       onBoardInfrastructureChange={props.onBoardInfrastructureChange}
+      onBoardSnapshot={props.onBoardSnapshot}
     >
       <MobilePlaygroundInner
         suggestedName={suggestedName}
