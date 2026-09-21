@@ -4,6 +4,7 @@ import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { ServiceUIProps } from "hkp-frontend/src/types";
 import HoldPanel, {
   EMPTY_HOLD_STATE,
+  HOLD_PANEL_SIZE,
   HoldPanelState,
   readHoldState,
 } from "../../ui/HoldPanel";
@@ -24,7 +25,12 @@ export default function HoldUI(props: ServiceUIProps) {
   }, []);
 
   return (
-    <ServiceUI {...props} onInit={onUpdate} onNotification={onUpdate}>
+    <ServiceUI
+      {...props}
+      initialSize={HOLD_PANEL_SIZE}
+      onInit={onUpdate}
+      onNotification={onUpdate}
+    >
       <HoldPanel
         state={state}
         onLocalChange={(next) =>

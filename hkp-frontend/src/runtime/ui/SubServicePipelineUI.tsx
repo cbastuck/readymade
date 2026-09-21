@@ -6,6 +6,7 @@ import {
   ServiceAction,
   ServiceClass,
   ServiceInstance,
+  ServiceModule,
   ServiceUIComponent,
 } from "hkp-frontend/src/types";
 import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
@@ -381,7 +382,16 @@ function PipelineStrip({
           // the services containing it, because an instanceId is unique only
           // inside its own pipeline. Without this the panel would listen under
           // a name nothing is filed under and draw a service that never speaks.
-          address: joinAddress(service.uuid, entry.instanceId),
+          // The path is the host's own — its address where it is nested too,
+          // and only then its uuid: a host two levels down that prefixed its
+          // uuid would drop every level above it. A host that is a pipeline
+          // rather than a service (NamedPipelinesPanel's proxy) carries the
+          // address of the service owning the pipeline, since the runtime files
+          // what is inside under that service and not under the entry's name.
+          address: joinAddress(
+            service.address ?? service.uuid,
+            entry.instanceId,
+          ),
           serviceId: entry.serviceId,
           serviceName: descriptor?.serviceName ?? entry.serviceId,
           version: descriptor?.version,
@@ -407,7 +417,9 @@ function PipelineStrip({
         // *and* version. A pipeline entry carries neither version nor
         // capabilities — only the runtime's registry knows them — so
         // without this a versioned service falls back to the UI of its
-        // older revision.
+        // older revision. A service whose module declares its own UI is
+        // found through that, the way a runtime's own services are, rather
+        // than depending on a registry listing it a second time.
         const SubServiceUI =
           (entry.serviceId &&
             findServiceUI({
@@ -415,6 +427,7 @@ function PipelineStrip({
               version: descriptor?.version,
               capabilities: descriptor?.capabilities,
             })) ||
+          (descriptor as ServiceModule | undefined)?.createUI ||
           FallbackUI;
 
         const uiElement = React.createElement(SubServiceUI as any, {

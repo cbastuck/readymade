@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { ServiceUIProps } from "hkp-frontend/src/types";
 import HoldPanel, {
   EMPTY_HOLD_STATE,
+  HOLD_PANEL_SIZE,
   HoldPanelState,
   readHoldState,
 } from "../../ui/HoldPanel";
@@ -28,6 +29,7 @@ export default function HoldUI(props: ServiceUIProps) {
       onNotification={onUpdate}
       onInit={onUpdate}
       genericUI={false}
+      initialSize={HOLD_PANEL_SIZE}
     >
       <HoldPanel
         state={state}

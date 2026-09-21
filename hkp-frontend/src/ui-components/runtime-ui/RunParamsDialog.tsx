@@ -23,6 +23,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onRun: (params: unknown) => void;
+  /** What receives the payload, as the description names it. */
+  target?: string;
 };
 
 /**
@@ -36,7 +38,12 @@ type Props = {
  */
 type Mode = "fields" | "text";
 
-export default function RunParamsDialog({ open, onClose, onRun }: Props) {
+export default function RunParamsDialog({
+  open,
+  onClose,
+  onRun,
+  target = "the first service",
+}: Props) {
   const [mode, setMode] = useState<Mode>("fields");
   // Held apart, so looking at the other way of writing a payload and coming
   // back does not throw away what was written.
@@ -51,8 +58,7 @@ export default function RunParamsDialog({ open, onClose, onRun }: Props) {
         <DialogHeader>
           <DialogTitle>Run with parameters</DialogTitle>
           <DialogDescription>
-            The input the first service is given. Run on its own gives it
-            nothing.
+            The input {target} is given. Run on its own gives it nothing.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

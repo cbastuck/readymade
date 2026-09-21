@@ -29,20 +29,30 @@ export default function HttpEndpointUI(props: ServiceUIProps) {
   const { service } = props;
 
   const read = useCallback((state: any) => {
+    if (typeof state !== "object" || state === null) {
+      return;
+    }
     const found: NamedPipeline[] = [];
     for (const name of ["onProcess", "onRequest"] as const) {
-      if (Array.isArray(state?.[name])) {
+      if (Array.isArray(state[name])) {
         found.push({ name, pipeline: state[name] as PipelineEntry[] });
       }
     }
     // Only where the endpoint named no entries: the two forms are alternatives,
     // and showing a legacy `pipeline` beside them would offer an edit that goes
     // to a pipeline nothing enters.
-    if (found.length === 0 && Array.isArray(state?.pipeline)) {
+    if (found.length === 0 && Array.isArray(state.pipeline)) {
       found.push({ name: "pipeline", pipeline: state.pipeline });
     }
-    setSections(found);
-    if (typeof state?.__hkpMount === "string") {
+    // A report is not always the whole state: a service says what it has to
+    // say, and one that has just been given its address says only that. Read
+    // per field, so a partial report leaves what it is silent about standing —
+    // an endpoint whose pipelines are genuinely gone reports them empty rather
+    // than omitting them.
+    if (found.length > 0 || carriesPipelines(state)) {
+      setSections(found);
+    }
+    if (typeof state.__hkpMount === "string") {
       setAddress(state.__hkpMount);
     }
   }, []);
@@ -95,4 +105,9 @@ export default function HttpEndpointUI(props: ServiceUIProps) {
       </div>
     </RuntimeRestServiceUI>
   );
+}
+
+/** Whether a report says anything about the endpoint's pipelines at all. */
+function carriesPipelines(state: Record<string, unknown>): boolean {
+  return ["onProcess", "onRequest", "pipeline"].some((name) => name in state);
 }

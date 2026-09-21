@@ -45,6 +45,12 @@ export function readHoldState(
   };
 }
 
+/**
+ * The frame a Hold opens at. Its explanations would otherwise set the width,
+ * running each on a single line.
+ */
+export const HOLD_PANEL_SIZE = { width: 300, height: undefined };
+
 export const EMPTY_HOLD_STATE: HoldPanelState = {
   property: "",
   slot: "",
@@ -85,7 +91,7 @@ export default function HoldPanel({ state, onLocalChange, configure }: Props) {
   };
 
   return (
-  <div className="flex flex-col gap-2" style={{ minWidth: 280 }}>
+  <div className="flex flex-col gap-2">
     <div className="flex items-center gap-2 text-xs">
       <span className="text-neutral-500">tell the sides apart by</span>
       <Select

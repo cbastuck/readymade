@@ -94,6 +94,11 @@ export default function NamedPipelinesPanel({
   ): ServiceInstance =>
     ({
       uuid: pipelineProxyUuid(service.uuid, name),
+      // A pipeline is not a service, so the runtime files what is inside it
+      // under the service owning it: the proxy's uuid is this panel's own
+      // invention and names nothing out there. Passing the owner's address on
+      // is what lets the panels below listen where the runtime reports.
+      address: service.address ?? service.uuid,
       serviceId: service.serviceId,
       serviceName: label,
       state: { pipeline },

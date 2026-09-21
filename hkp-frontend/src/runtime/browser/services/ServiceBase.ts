@@ -22,7 +22,11 @@ export default class ServiceBase<T> {
     this.descriptor = descriptor;
   }
 
-  getConfiguration = async () => {
+  /**
+   * What a board keeps of this service. A service may leave out state it does
+   * not currently act on.
+   */
+  getConfiguration = async (): Promise<Partial<T> & { bypass: boolean }> => {
     return { ...this.state, bypass: this.bypass };
   };
 

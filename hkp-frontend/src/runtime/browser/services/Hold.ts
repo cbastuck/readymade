@@ -185,17 +185,27 @@ class Hold extends ServiceBase<State> {
   }
 
   /**
-   * What this Hold is doing, for its panel.
-   *
-   * Only the arrangement in use is reported. A state property a service does
-   * not act on is one a board keeps and a reader has to discount.
+   * What a board keeps of this Hold: the arrangement in use and not the other
+   * one, the same as its panel is told.
    */
-  private report(): void {
-    const which = this.state.slot
+  getConfiguration = async () => {
+    return { ...this.arrangement(), bypass: this.bypass };
+  };
+
+  /**
+   * The fields of the arrangement in use. A state property a service does not
+   * act on is one a board keeps and a reader has to discount.
+   */
+  private arrangement(): Partial<State> {
+    return this.state.slot
       ? { slot: this.state.slot, op: this.state.op }
       : { property: this.state.property };
+  }
+
+  /** What this Hold is doing, for its panel. */
+  private report(): void {
     this.app.notify(this as any, {
-      ...which,
+      ...this.arrangement(),
       held: reportable(this.read()),
       readCount: this.readCount,
       writeCount: this.writeCount,

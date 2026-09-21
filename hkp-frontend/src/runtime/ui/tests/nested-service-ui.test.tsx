@@ -75,6 +75,39 @@ describe("UI lookup for nested services", () => {
   });
 });
 
+describe("a nested service whose module declares its own UI", () => {
+  it("gets that UI when the lookup does not list it", () => {
+    // The way a runtime's own services are drawn. Without this, a service
+    // added after the lookup was last extended — Hold — drew the generic
+    // panel inside a pipeline and its own beside it.
+    const HoldPanel = ({ service }: any) => <div>hold:{service.uuid}</div>;
+    const service = {
+      uuid: "host-1",
+      serviceId: "sub-service",
+      serviceName: "Sub-Service",
+      state: { pipeline: [{ serviceId: "hold", instanceId: "inner" }] },
+      configure: vi.fn(),
+      app: {
+        listAvailableServices: () => [
+          { serviceId: "hold", serviceName: "Hold", createUI: HoldPanel },
+        ],
+      },
+    } as unknown as ServiceInstance;
+
+    render(
+      <SubServicePipelineUI
+        service={service}
+        findServiceUI={() => null}
+        FallbackUI={() => <div>generic</div>}
+        defaultCollapsed={false}
+      />,
+    );
+
+    expect(screen.getByText("hold:inner")).toBeTruthy();
+    expect(screen.queryByText("generic")).toBeNull();
+  });
+});
+
 describe("a host that owns the fold", () => {
   it("draws no fold control of its own, and nothing at all while shut", () => {
     // A Tracks panel folds by the track's name. Left to fold itself too, the

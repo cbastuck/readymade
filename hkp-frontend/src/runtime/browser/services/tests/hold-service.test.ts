@@ -143,3 +143,22 @@ describe("a Hold in a runtime that provides no cells", () => {
     expect(sameService.process(undefined)).toBeNull();
   });
 });
+
+describe("what a board keeps of a Hold", () => {
+  it("is the arrangement in use and not the other one", async () => {
+    // A nested pipeline persists what getConfiguration returns, so a field the
+    // service does not act on would be written into the board.
+    const { service } = makeHold({ slot: "document", op: "read" });
+    expect(await service.getConfiguration()).toEqual({
+      slot: "document",
+      op: "read",
+      bypass: false,
+    });
+
+    service.configure({ slot: "", property: "triggerCount" });
+    expect(await service.getConfiguration()).toEqual({
+      property: "triggerCount",
+      bypass: false,
+    });
+  });
+});
