@@ -48,7 +48,7 @@ export default function ManageRuntimesContent({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="hkp-set flex flex-col gap-4">
       <ExistingRuntimesPanel
         remoteRuntimes={remoteRuntimes}
         onRemoveRuntime={onRemoveRuntimeEngine}

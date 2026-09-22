@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Lock, Monitor, Plus, RefreshCw, Search, Smartphone } from "lucide-react";
 
-import { Button } from "hkp-frontend/src/ui-components/primitives/button";
+import {
+  SettingsButton,
+  SettingsList,
+  SettingsRow,
+  SettingsSection,
+} from "hkp-frontend/src/ui-components/settings/kit";
 import { RuntimeClass } from "hkp-frontend/src/types";
 import {
   type DiscoveredPeer,
@@ -89,78 +94,70 @@ export default function DiscoverRuntimesPanel({ existing, onAdd }: Props) {
     discovering && endsAt > 0 ? Math.max(0, Math.ceil((endsAt - nowMs) / 1000)) : 0;
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Discover nearby
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={beginDiscover}
-          disabled={discovering}
-          className="gap-2"
-        >
+    <SettingsSection
+      label="Discover nearby"
+      hint={
+        discovering && peers.length === 0
+          ? "Looking for instances in discover mode on this network…"
+          : undefined
+      }
+      action={
+        <SettingsButton onClick={beginDiscover} disabled={discovering}>
           {discovering ? (
-            <RefreshCw size={14} className="animate-spin" />
+            <RefreshCw size={14} className="hkp-set-spin" />
           ) : (
             <Search size={14} />
           )}
           {discovering ? `Searching… ${remainingSeconds}s` : "Find instances"}
-        </Button>
-      </div>
-
-      {discovering && peers.length === 0 && (
-        <p className="py-1 text-center text-sm italic text-slate-400">
-          Looking for instances in discover mode on this network…
-        </p>
+        </SettingsButton>
+      }
+    >
+      {peers.length > 0 && (
+        <SettingsList>
+          {peers.map((peer) => {
+            const rtClass = peerToRuntimeClass(peer);
+            const added = existing.some((e) => e.url === rtClass.url);
+            const locked = authByPeer[peer.id] === "locked";
+            const PlatformIcon = locked
+              ? Lock
+              : peer.platform === "ios"
+                ? Smartphone
+                : Monitor;
+            return (
+              <SettingsRow
+                key={peer.id}
+                icon={
+                  <PlatformIcon
+                    size={16}
+                    color={locked ? "var(--set-warn)" : undefined}
+                  />
+                }
+                title={peer.name}
+                subtitle={
+                  locked
+                    ? "Not authorized on this device"
+                    : `${peer.host}:${peer.port}`
+                }
+                trailing={
+                  <SettingsButton
+                    disabled={added || locked}
+                    onClick={() => onAdd(rtClass)}
+                  >
+                    {locked ? (
+                      <Lock size={14} />
+                    ) : added ? (
+                      <Check size={14} />
+                    ) : (
+                      <Plus size={14} />
+                    )}
+                    {locked ? "Locked" : added ? "Added" : "Add"}
+                  </SettingsButton>
+                }
+              />
+            );
+          })}
+        </SettingsList>
       )}
-
-      {peers.map((peer) => {
-        const rtClass = peerToRuntimeClass(peer);
-        const added = existing.some((e) => e.url === rtClass.url);
-        const locked = authByPeer[peer.id] === "locked";
-        const PlatformIcon = locked
-          ? Lock
-          : peer.platform === "ios"
-            ? Smartphone
-            : Monitor;
-        return (
-          <div
-            key={peer.id}
-            className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2"
-          >
-            <PlatformIcon
-              size={18}
-              className={locked ? "shrink-0 text-amber-500" : "shrink-0 text-slate-400"}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-slate-800">
-                {peer.name}
-              </div>
-              <div className="truncate text-xs text-slate-500">
-                {locked ? "Not authorized on this device" : `${peer.host}:${peer.port}`}
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={added || locked}
-              onClick={() => onAdd(rtClass)}
-              className="gap-1"
-            >
-              {locked ? (
-                <Lock size={14} />
-              ) : added ? (
-                <Check size={14} />
-              ) : (
-                <Plus size={14} />
-              )}
-              {locked ? "Locked" : added ? "Added" : "Add"}
-            </Button>
-          </div>
-        );
-      })}
-    </div>
+    </SettingsSection>
   );
 }
