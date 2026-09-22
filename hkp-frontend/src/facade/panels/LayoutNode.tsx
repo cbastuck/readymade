@@ -7,6 +7,8 @@ import { useFacadeState } from "../FacadeStateContext";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { useNotificationValue } from "./renderers/StatusIndicatorRenderer";
 import { interpolateTemplate } from "../itemTemplate";
+import { useMissingServices } from "../serviceNotifications";
+import { widgetServiceUuids } from "../widgetServices";
 
 export function isContainer(item: LayoutItem): item is LayoutContainer | LayoutWidget {
   return "items" in item && (!("type" in item) || (item as any).type !== "repeat");
@@ -83,6 +85,14 @@ export function LayoutNode({
       ? (item as RepeatWidget).source
       : undefined;
   const sourcedItems = useNotificationValue(boardContext, repeatSource);
+
+  // Unconditional for the same reason, and asked of every kind of node rather
+  // than only the widget leaves that draw the answer below: a uuid the board
+  // has nothing under is worth saying wherever it was written.
+  const missingServices = useMissingServices(
+    boardContext,
+    widgetServiceUuids(item),
+  );
 
   if ("type" in item && item.type === "repeat") {
     const repeat = item as RepeatWidget;
@@ -207,6 +217,35 @@ export function LayoutNode({
         boardContext={boardContext}
         panelContext={panelContext}
       />
+      {missingServices.length > 0 && (
+        <MissingServices uuids={missingServices} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * A widget addressing something the board does not have.
+ *
+ * Said where the widget is, because that is the only thing that turns "the
+ * board does nothing" into a place to look: the panel, the position, and the
+ * uuid as it was written — which is usually enough to see the typo in it.
+ *
+ * Beside the widget rather than instead of it. A widget may name two services
+ * and have only one of them wrong, and what still works should still be there;
+ * a board that is merely broken should not also look empty.
+ */
+function MissingServices({ uuids }: { uuids: string[] }) {
+  return (
+    <div
+      style={{
+        fontSize: 11,
+        lineHeight: 1.4,
+        color: "#ef4444",
+        wordBreak: "break-all",
+      }}
+    >
+      {uuids.map((uuid) => `no service “${uuid}”`).join(" · ")}
     </div>
   );
 }
