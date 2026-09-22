@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { LayoutNode } from "../panels/LayoutNode";
 import { interpolateTemplate } from "../itemTemplate";
@@ -182,12 +182,14 @@ describe("a button that asks first", () => {
     expect(processed).toEqual([]);
   });
 
-  it("acts once, on agreement", () => {
+  it("acts once, on agreement", async () => {
     processed.length = 0;
     renderNode(asking);
     fireEvent.click(screen.getByText("Take it"));
     fireEvent.click(screen.getByText("Yes, do it"));
-    expect(processed).toEqual([{ uuid: "book", payload: { court: 2 } }]);
+    await waitFor(() =>
+      expect(processed).toEqual([{ uuid: "book", payload: { court: 2 } }]),
+    );
   });
 
   it("leaves the board alone when declined", () => {

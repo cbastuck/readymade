@@ -1,16 +1,8 @@
 import { useMemo, useState } from "react";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogTitle,
-} from "hkp-frontend/src/ui-components/primitives/dialog";
 import { CalendarWidget } from "../../types";
 import { WidgetRendererProps } from "../widgetRegistry";
-import { useFacadeState } from "../../FacadeStateContext";
-import { executeActions } from "../../executeActions";
-import { useFacadeBoardActions } from "../../FacadeBoardActions";
+import { useWidgetActions } from "../../useWidgetActions";
 import { interpolateTemplate } from "../../itemTemplate";
 import { useNotificationValue } from "./StatusIndicatorRenderer";
 
@@ -239,12 +231,8 @@ export function CalendarRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<CalendarWidget>) {
-  const { state, setState } = useFacadeState();
-  const boardActions = useFacadeBoardActions();
   const rows = useNotificationValue(boardContext, widget.source);
-  const [asking, setAsking] = useState<{ question: string; cell: Cell } | null>(
-    null,
-  );
+  const { run, prompt } = useWidgetActions(boardContext);
 
   const cells = useMemo(
     () => (Array.isArray(rows) ? rows.filter(isCell) : []),
@@ -278,8 +266,10 @@ export function CalendarRenderer({
     return map;
   }, [cells]);
 
-  const run = (cell: Cell) => {
-    void executeActions({
+  // Everything a tap sends is read against the cell tapped, the question
+  // included — which is how one cell asks and the next goes straight through.
+  const pick = (cell: Cell) => {
+    void run({
       action: widget.action
         ? {
             serviceUuid: widget.action.serviceUuid,
@@ -292,24 +282,10 @@ export function CalendarRenderer({
       actions: widget.actions
         ? (interpolateTemplate(widget.actions, cell) as typeof widget.actions)
         : undefined,
-      value: undefined,
-      boardContext,
-      setState,
-      boardActions,
-      state,
-      byPerson: true,
+      confirm: widget.confirm
+        ? String(interpolateTemplate(widget.confirm, cell) ?? "")
+        : undefined,
     });
-  };
-
-  const pick = (cell: Cell) => {
-    const question = widget.confirm
-      ? String(interpolateTemplate(widget.confirm, cell) ?? "")
-      : "";
-    if (question) {
-      setAsking({ question, cell });
-      return;
-    }
-    run(cell);
   };
 
   if (!hours.length || !columnCount) {
@@ -432,61 +408,7 @@ export function CalendarRenderer({
         </div>
       </div>
 
-      <Dialog
-        open={asking !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setAsking(null);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogTitle className="text-base font-medium leading-snug">
-            {asking?.question}
-          </DialogTitle>
-          <DialogFooter>
-            <button
-              onClick={() => setAsking(null)}
-              style={{
-                padding: "8px 16px",
-                borderRadius: 8,
-                borderWidth: 1,
-                borderStyle: "solid",
-                borderColor: "hsl(var(--border))",
-                backgroundColor: "hsl(var(--muted))",
-                color: "hsl(var(--foreground))",
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              Keep as it is
-            </button>
-            <button
-              onClick={() => {
-                const pending = asking;
-                setAsking(null);
-                if (pending) {
-                  run(pending.cell);
-                }
-              }}
-              style={{
-                padding: "8px 16px",
-                borderRadius: 8,
-                borderWidth: 1,
-                borderStyle: "solid",
-                borderColor: "transparent",
-                backgroundColor: "var(--hkp-accent, hsl(var(--primary)))",
-                color: "hsl(var(--primary-foreground))",
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 500,
-              }}
-            >
-              Yes, do it
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {prompt}
     </>
   );
 }

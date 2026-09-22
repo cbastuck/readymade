@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { LayoutNode } from "../panels/LayoutNode";
 import type { BoardContextState } from "hkp-frontend/src/BoardContext";
@@ -144,7 +144,7 @@ describe("what a cell's state decides", () => {
     expect(processed).toEqual([]);
   });
 
-  it("asks before taking a free hour, then sends the cell's own values", () => {
+  it("asks before taking a free hour, then sends the cell's own values", async () => {
     show();
     const free = screen
       .getAllByRole("button")
@@ -155,25 +155,29 @@ describe("what a cell's state decides", () => {
 
     fireEvent.click(screen.getByText("Yes, do it"));
     // Numbers stay numbers: the statement binding $court is given 1, not "1".
-    expect(processed).toEqual([
-      {
-        uuid: "book",
-        payload: { state: "free", court: 1, hour: 11, dayOffset: 0 },
-      },
-    ]);
+    await waitFor(() =>
+      expect(processed).toEqual([
+        {
+          uuid: "book",
+          payload: { state: "free", court: 1, hour: 11, dayOffset: 0 },
+        },
+      ]),
+    );
   });
 
-  it("asks a different question of your own hour", () => {
+  it("asks a different question of your own hour", async () => {
     show();
     fireEvent.click(screen.getByText("You"));
     expect(screen.getByText("Give back court 1 at 12:00?")).toBeTruthy();
     fireEvent.click(screen.getByText("Yes, do it"));
-    expect(processed).toEqual([
-      {
-        uuid: "book",
-        payload: { state: "mine", court: 1, hour: 12, dayOffset: 0 },
-      },
-    ]);
+    await waitFor(() =>
+      expect(processed).toEqual([
+        {
+          uuid: "book",
+          payload: { state: "mine", court: 1, hour: 12, dayOffset: 0 },
+        },
+      ]),
+    );
   });
 
   it("marks a free hour so it reads as something to tap", () => {

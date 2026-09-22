@@ -445,6 +445,10 @@ something away. Word it as what will happen, not as *are you sure*:
 }
 ```
 
+The field is shorthand for a **confirm step** at the head of `actions` (see below). Write
+the step itself when the answers should say what they do, or when something should happen
+whether or not the person agrees.
+
 `disabled` renders the button present but not offering anything — a slot already taken, a
 step not yet reachable. Prefer it to leaving the button out when the gap would say less
 than the dimmed control does. Both fields are ordinary values, so inside a `repeat` they
@@ -489,6 +493,30 @@ board with its `peer-socket` roles swapped and its machine-local runtimes droppe
 Put it on a board whose two sides are halves of one design, as
 `peer-chat-board.json` does. A host that cannot open such a window leaves the button
 inert rather than failing, so the board still renders everywhere.
+
+The steps in `actions` run in the order written, each waiting for the one before. A step
+may **wait on the person and end the sequence** instead of handing on — the facade's
+version of a service returning `null`. A **confirm step** is the first of these: it asks,
+and declining stops every step after it while leaving the ones before it done. Put it
+first when nothing should happen without consent:
+
+```json
+{
+  "type": "button",
+  "label": "Unsubscribe",
+  "actions": [
+    { "type": "confirm", "question": "Stop reading {{item.url}}?", "agree": "Unsubscribe", "decline": "Keep reading" },
+    { "type": "configure", "serviceUuid": "read.feeds", "configure": { "removeFeed": "{{item.url}}" } },
+    { "type": "process", "serviceUuid": "read.feeds", "payload": {} }
+  ]
+}
+```
+
+`question` is substituted like a payload — `$$input`, `{ "$state": … }`, and `{{item.…}}`
+inside a `repeat` — and an empty question asks nothing, so an item that needs no consent goes
+straight through. `agree` and `decline` default to "Yes, do it" and "Keep as it is". Steps
+work on every widget that takes `actions` (text-input, json-input, calendar, button), not
+only buttons. In a facade's `init` there is nobody to ask, so a confirm step there declines.
 
 **text-input** — text field that configures a service on submit. `$$input` is replaced with the typed value:
 

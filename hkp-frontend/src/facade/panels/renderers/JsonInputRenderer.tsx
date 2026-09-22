@@ -2,14 +2,15 @@ import { useState } from "react";
 import { JsonInputWidget } from "../../types";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { useFacadeState } from "../../FacadeStateContext";
-import { executeActions } from "../../executeActions";
+import { useWidgetActions } from "../../useWidgetActions";
 import JsonEditor from "hkp-frontend/src/ui-components/JsonEditor";
 
 export function JsonInputRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<JsonInputWidget>) {
-  const { state: facadeState, setState } = useFacadeState();
+  const { state: facadeState } = useFacadeState();
+  const { run, prompt } = useWidgetActions(boardContext);
 
   const [value, setValue] = useState(() => {
     const dv = widget.defaultValue;
@@ -29,15 +30,7 @@ export function JsonInputRenderer({
   });
 
   const submit = () => {
-    void executeActions({
-      action: widget.action,
-      actions: widget.actions,
-      value,
-      boardContext,
-      setState,
-      state: facadeState,
-      byPerson: true,
-    });
+    void run({ action: widget.action, actions: widget.actions, value });
   };
 
   return (
@@ -85,6 +78,7 @@ export function JsonInputRenderer({
           {widget.submitLabel ?? "Apply"}
         </button>
       </div>
+      {prompt}
     </div>
   );
 }

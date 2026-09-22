@@ -59,8 +59,65 @@ export type BoardAction = {
   action: "partner-board-qr";
 };
 
+// Asks the person before the rest of the actions run. Declining ends the
+// sequence there, the way a service returning null ends a pipeline: whatever
+// comes after it never runs, and whatever came before it has already happened.
+// So it goes first when nothing should happen without consent.
+//
+// The question names what will happen ("Cancel your booking on court 2 at
+// 12:00?") rather than asking whether they are sure. It is substituted like a
+// payload — `$$input`, and "{{item.…}}" inside a repeat — and an empty question
+// asks nothing, which is how an item that needs no consent goes straight
+// through. Where nobody can be asked, such as a facade's init actions, the
+// answer is no.
+export type ConfirmAction = {
+  type: "confirm";
+  question: string;
+  // What the two answers say, for a question whose answers read better as
+  // what they do ("Unsubscribe" / "Keep reading") than as yes and no.
+  agree?: string;
+  decline?: string;
+};
+
+// One step of what a widget does when used. Steps run in the order written,
+// each waiting for the one before, so a step that has to wait for something —
+// an answer, a choice — holds back the steps after it, and can end the
+// sequence instead of handing on.
+//
+// What a new step has to settle, none of which the type system asks for:
+//
+//   * **When it can run.** A step knows the ones before it have been *started*,
+//     not that their effect has landed. A configure is awaited, but `process`
+//     is handed to the runtime and not waited on: nothing reports that the work
+//     finished, or whether it worked. So a step that means "when that is done"
+//     or "if that failed" cannot be written honestly until process answers
+//     back — a step saying it afterwards would only be saying it was sent.
+//   * **Substituting its own values.** Every value a step carries is written by
+//     a board author, and authors write `$$input`, `{ "$state": … }` and, inside
+//     a repeat, "{{item.…}}". Only the last is already resolved when the step
+//     is reached; the other two are each branch's own job in executeActions,
+//     and a branch that skips them hands a service the reference object rather
+//     than the value.
+//   * **What it does when it cannot do it.** A facade is shown by hosts that
+//     offer different things, so every step needs an answer for the host that
+//     offers nothing. Where nothing is at stake, do nothing and let the rest
+//     run, as a board action does. Where the step is what stands between the
+//     person and an effect, end the sequence, as an unaskable confirm does:
+//     silence is not consent.
+//   * **Where it is shown, if it shows anything.** A step that puts something
+//     on screen is rendered by the widget rather than by the host — see
+//     useWidgetActions — because a widget appears in panels, previews and
+//     tests alike, and a step that quietly does nothing where no host provides
+//     it is the one failure nobody sees.
+//   * **Naming.** The `type` is the whole discriminator, and its fields are
+//     flat. BoardAction's nested `action` predates this and is not the pattern
+//     to copy: it forces every reader to learn where a step's real verb lives.
 export type WidgetAction =
-  ConfigureAction | SetStateAction | ProcessAction | BoardAction;
+  | ConfigureAction
+  | SetStateAction
+  | ProcessAction
+  | BoardAction
+  | ConfirmAction;
 
 export type MessageListWidget = {
   type: "message-list";
@@ -158,12 +215,9 @@ export type TextWidget = {
 export type ButtonWidget = {
   type: "button";
   label: string;
-  // Asks before doing it. The text is the question a person answers, so it
-  // names what will happen ("Cancel your booking on court 2 at 12:00?") rather
-  // than asking whether they are sure. Nothing runs unless they agree.
-  //
-  // Consent belongs to the action rather than to a dialog widget of its own:
-  // a button already holds what it will do, and this is a property of doing it.
+  // Asks before doing it: shorthand for a `confirm` step at the head of
+  // `actions`, so nothing runs unless the person agrees. Use the step itself to
+  // name the answers or to ask somewhere other than first.
   confirm?: string;
   // A button that is present but not offering anything — a slot already taken,
   // a step not yet reachable. It still says what it is, which is why it stays
@@ -442,8 +496,9 @@ export type CalendarWidget = {
   // vocabulary a repeat's template uses.
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
-  // Asks before acting, interpolated with the cell. An empty result asks
-  // nothing, which is how a cell that is merely being looked at stays silent.
+  // Asks before acting, interpolated with the cell: shorthand for a `confirm`
+  // step at the head of `actions`. An empty result asks nothing, which is how a
+  // cell that is merely being looked at stays silent.
   confirm?: string;
 };
 

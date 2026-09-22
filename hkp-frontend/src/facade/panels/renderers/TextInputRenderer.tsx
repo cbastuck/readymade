@@ -3,8 +3,7 @@ import { TextInputWidget } from "../../types";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { useVault } from "hkp-frontend/src/VaultContext";
 import { vaultSet } from "hkp-frontend/src/vault";
-import { useFacadeState } from "../../FacadeStateContext";
-import { executeActions } from "../../executeActions";
+import { useWidgetActions } from "../../useWidgetActions";
 import { usePressFeedback } from "../../pressFeedback";
 
 export function TextInputRenderer({
@@ -16,7 +15,7 @@ export function TextInputRenderer({
   const [vaultResolved, setVaultResolved] = useState<string | null>(null);
   const autoSubmitted = useRef(false);
   const { getSecret } = useVault();
-  const { state, setState } = useFacadeState();
+  const { run, prompt } = useWidgetActions(boardContext);
 
   useEffect(() => {
     if (!widget.vaultKey) {
@@ -36,7 +35,7 @@ export function TextInputRenderer({
       return;
     }
     autoSubmitted.current = true;
-    void executeActions({ action: widget.action, actions: widget.actions, value: vaultResolved, boardContext, setState, state, byPerson: true });
+    void run({ action: widget.action, actions: widget.actions, value: vaultResolved });
   }, [vaultResolved]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = useCallback(() => {
@@ -47,8 +46,8 @@ export function TextInputRenderer({
     if (widget.vaultKey) {
       vaultSet(widget.vaultKey, text);
     }
-    void executeActions({ action: widget.action, actions: widget.actions, value: text, boardContext, setState, state, byPerson: true });
-  }, [value, widget.action, widget.actions, widget.vaultKey, boardContext, setState]);
+    void run({ action: widget.action, actions: widget.actions, value: text });
+  }, [value, widget.action, widget.actions, widget.vaultKey, run]);
 
   return (
     <div
@@ -117,6 +116,7 @@ export function TextInputRenderer({
           {widget.submitLabel ?? "Set"}
         </button>
       </div>
+      {prompt}
     </div>
   );
 }
