@@ -87,12 +87,17 @@ export default function AppMenu() {
           className="w-56 mx-4 font-menu"
           style={{ borderRadius: theme.borderRadius }}
         >
+          <DropdownMenuItem
+            className="text-base"
+            onSelect={() => setSettingsTab(APPEARANCE_TAB)}
+          >
+            <MenuIcon icon={Settings} />
+            <span>Settings</span>
+          </DropdownMenuItem>
           <DropdownMenuGroup>
             <DropdownMenuItem
               className="text-base"
-              onClick={() =>
-                isLoggedIn ? setAccountOpen(true) : onLogin()
-              }
+              onClick={() => (isLoggedIn ? setAccountOpen(true) : onLogin())}
             >
               {isLoggedIn ? (
                 <>
@@ -118,14 +123,6 @@ export default function AppMenu() {
               <span>Dashboard</span>
             </DropdownMenuItem>
             */}
-
-            <DropdownMenuItem
-              className="text-base"
-              onSelect={() => setSettingsTab(APPEARANCE_TAB)}
-            >
-              <MenuIcon icon={Settings} />
-              <span>Settings</span>
-            </DropdownMenuItem>
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />

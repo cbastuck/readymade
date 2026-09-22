@@ -108,6 +108,10 @@ export interface BoardNode {
   /** When the board was last written, ISO 8601. Only hosts that track a
    *  timestamp for their storage report one; absent everywhere else. */
   modified?: string;
+  /** Deletes the board from the coordinator running it — its runtimes are
+   *  stopped and the coordinator forgets it. Set on boards of the Cloud Boards
+   *  source; enables "Delete cloud board" in the details column. */
+  onUndeploy?: () => Promise<void>;
 }
 
 /** A saved board as the host lists it. Hosts that keep no timestamp may return
@@ -234,6 +238,12 @@ export interface CoordinatorsController {
   coordinators: CoordinatorDescriptor[];
   onAdd: (coordinator: CoordinatorDescriptor) => void;
   onRemove: (coordinator: CoordinatorDescriptor) => void;
+  /** Replaces `previous` with `next`, keeping its place in the list. Optional:
+   *  a host without it offers no edit. */
+  onUpdate?: (
+    previous: CoordinatorDescriptor,
+    next: CoordinatorDescriptor,
+  ) => void;
   /** Opens the host's coordinator management UI. When set, the Cloud Boards
    *  source offers it as an action — the source is where a user notices that
    *  no coordinator is configured. */

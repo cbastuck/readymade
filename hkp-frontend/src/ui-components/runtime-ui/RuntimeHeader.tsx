@@ -363,7 +363,10 @@ export default function RuntimeHeader({
       <RuntimeConfigurationDialog
         isOpen={isRuntimeConfigOpen}
         onClose={() => setIsRuntimeConfigOpen(false)}
-        config={enrichedConfig || runtimeConfig}
+        // The live runtime rather than the one captured on open: a change the
+        // dialog applies without closing (the color) must show in the JSON the
+        // dialog applies next.
+        config={enrichedConfig ? { ...enrichedConfig, runtime } : runtimeConfig}
         onApply={onApplyRuntimeConfig}
       />
 

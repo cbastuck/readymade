@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
-import { Globe, KeyRound, Plus, Server, X } from "lucide-react";
+import { Globe, KeyRound, Plus, Server } from "lucide-react";
 
-import { Button } from "hkp-frontend/src/ui-components/primitives/button";
+import {
+  RemoveButton,
+  SettingsButton,
+  SettingsCard,
+  SettingsInput,
+  SettingsList,
+  SettingsNote,
+  SettingsRow,
+  SettingsSection,
+  SettingsStack,
+} from "hkp-frontend/src/ui-components/settings/kit";
 import { secretReference } from "hkp-frontend/src/core/secrets";
 import { readGrantKey } from "hkp-frontend/src/core/secretConsent";
 import { allGrants } from "hkp-frontend/src/grants";
@@ -140,197 +150,184 @@ export default function SecretsTab() {
   };
 
   if (entries === null) {
-    return <div className="pt-2 text-sm text-slate-500">Loading…</div>;
+    return <p className="hkp-set-hint">Loading…</p>;
   }
   if (!supported) {
     return (
-      <div className="pt-2 text-sm text-slate-500">
-        Secrets are only stored inside the Readymade app.
-      </div>
+      <SettingsNote>Secrets are only stored inside the Readymade app.</SettingsNote>
     );
   }
 
   return (
-    // Capped and scrolled here rather than left to the dialog: the tab grows
-    // with the number of secrets stored, and the dialog it sits in has no
-    // height of its own to give. Same treatment as the Remotes tab.
-    <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pt-2 pr-1 text-sm">
-      <span className="text-[0.8rem] text-slate-500 leading-snug">
-        Give a secret a name here, then refer to it from a board by that name
-        instead of pasting the value in. A board written that way holds no
-        credentials, so it stays safe to save, share, or hand to the AI refiner.
-      </span>
-
-      {entries.length === 0 && (
-        <span className="text-[0.8rem] italic text-slate-400">
-          Nothing stored yet.
-        </span>
-      )}
-      {entries.map((entry) => (
-        <div
-          key={entry.alias}
-          className="flex flex-col gap-2 rounded-md border border-slate-200 bg-white px-3 py-2"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <KeyRound size={14} className="shrink-0 text-slate-400" />
-              <code className="truncate font-mono text-slate-800">
-                {secretReference(entry.alias)}
-              </code>
-            </div>
-            <button
-              onClick={() => void remove(entry.alias)}
-              aria-label={`Remove ${entry.alias}`}
-              className="shrink-0 text-slate-400 hover:text-red-600"
-            >
-              <X size={15} />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 pl-[22px] text-[0.78rem]">
-            <Globe size={12} className="shrink-0 text-slate-400" />
-            {editing === entry.alias ? (
-              <>
-                <input
-                  value={editText}
-                  autoFocus
-                  onChange={(e) => setEditText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      void saveAudience(entry.alias);
-                    }
-                    if (e.key === "Escape") {
-                      setEditing(null);
-                    }
-                  }}
-                  placeholder="imap.gmail.com, *.example.com"
-                  className="flex-1 rounded-md border border-slate-200 px-2 py-1 font-mono outline-none focus:border-slate-400"
-                  style={{ fontSize: 16 }}
+    <SettingsStack>
+      <SettingsSection
+        label="Stored secrets"
+        hint="Give a secret a name here, then refer to it from a board by that name instead of pasting the value in. A board written that way holds no credentials, so it stays safe to save, share, or hand to the AI refiner."
+      >
+        <SettingsList empty="Nothing stored yet.">
+          {entries.map((entry) => (
+            <SettingsRow
+              key={entry.alias}
+              icon={<KeyRound size={15} />}
+              mono
+              title={secretReference(entry.alias)}
+              subtitle={
+                editing === entry.alias ? undefined : (
+                  <button
+                    disabled={!constrainable}
+                    onClick={() => {
+                      setEditing(entry.alias);
+                      setEditText(entry.audience.join(", "));
+                    }}
+                    title={constrainable ? "Edit the hosts it may be sent to" : undefined}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      maxWidth: "100%",
+                      padding: 0,
+                      border: "none",
+                      background: "none",
+                      font: "inherit",
+                      color: entry.audience.length ? "inherit" : "var(--set-warn)",
+                      cursor: constrainable ? "pointer" : "default",
+                    }}
+                  >
+                    <Globe size={11} style={{ flex: "0 0 auto" }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {entry.audience.length
+                        ? entry.audience.join(", ")
+                        : "any host — pinned to the first one it is sent to"}
+                    </span>
+                  </button>
+                )
+              }
+              trailing={
+                <RemoveButton
+                  label={`Remove ${entry.alias}`}
+                  onClick={() => void remove(entry.alias)}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void saveAudience(entry.alias)}
-                >
-                  Save
-                </Button>
-              </>
-            ) : (
-              <button
-                disabled={!constrainable}
-                onClick={() => {
-                  setEditing(entry.alias);
-                  setEditText(entry.audience.join(", "));
+              }
+            >
+              {editing === entry.alias && (
+                <div className="hkp-set-inline" style={{ padding: "0 12px 10px 56px" }}>
+                  <SettingsInput
+                    mono
+                    value={editText}
+                    autoFocus
+                    onChange={(e) => setEditText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        void saveAudience(entry.alias);
+                      }
+                      if (e.key === "Escape") {
+                        setEditing(null);
+                      }
+                    }}
+                    placeholder="imap.gmail.com, *.example.com"
+                  />
+                  <SettingsButton onClick={() => setEditing(null)}>
+                    Cancel
+                  </SettingsButton>
+                  <SettingsButton
+                    variant="primary"
+                    onClick={() => void saveAudience(entry.alias)}
+                  >
+                    Save
+                  </SettingsButton>
+                </div>
+              )}
+            </SettingsRow>
+          ))}
+        </SettingsList>
+      </SettingsSection>
+
+      <SettingsSection label="Add or replace">
+        <SettingsCard>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="hkp-set-inline">
+              <SettingsInput
+                mono
+                value={alias}
+                onChange={(e) => setAlias(e.target.value)}
+                placeholder="name"
+                style={{ flex: "0 0 34%" }}
+              />
+              <SettingsInput
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void save();
+                  }
                 }}
-                className="min-w-0 flex-1 truncate text-left font-mono text-slate-600 hover:text-slate-900 disabled:cursor-default disabled:hover:text-slate-600"
-              >
-                {entry.audience.length ? (
-                  entry.audience.join(", ")
-                ) : (
-                  <span className="font-sans italic text-amber-700">
-                    any host — pinned to the first one it is sent to
+                type="password"
+                placeholder="value"
+                autoComplete="off"
+              />
+            </div>
+            {constrainable && (
+              <SettingsInput
+                mono
+                value={audience}
+                onChange={(e) => setAudience(e.target.value)}
+                placeholder="hosts it may be sent to — blank to pin on first use"
+              />
+            )}
+            <div className="hkp-set-inline" style={{ justifyContent: "space-between" }}>
+              <span>
+                {error && <span className="hkp-set-error">{error}</span>}
+                {alias.trim() && !error && (
+                  <span className="hkp-set-hint">
+                    Refer to it as{" "}
+                    <code className="hkp-set-mono">
+                      {secretReference(alias.trim())}
+                    </code>
                   </span>
                 )}
-              </button>
-            )}
+              </span>
+              <SettingsButton variant="primary" onClick={() => void save()}>
+                <Plus size={14} />
+                Save
+              </SettingsButton>
+            </div>
           </div>
-        </div>
-      ))}
-
-      <div className="flex flex-col gap-2 border-t border-slate-200 pt-3">
-        <span className="uppercase tracking-[0.12em] text-muted-foreground text-[0.68rem] font-semibold">
-          Add or replace
-        </span>
-        <div className="flex items-center gap-2">
-          <input
-            value={alias}
-            onChange={(e) => setAlias(e.target.value)}
-            placeholder="name"
-            className="w-1/3 rounded-md border border-slate-200 px-3 py-2 font-mono outline-none focus:border-slate-400"
-            style={{ fontSize: 16 }}
-          />
-          <input
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                void save();
-              }
-            }}
-            type="password"
-            placeholder="value"
-            autoComplete="off"
-            className="flex-1 rounded-md border border-slate-200 px-3 py-2 outline-none focus:border-slate-400"
-            style={{ fontSize: 16 }}
-          />
-          <Button variant="outline" size="sm" onClick={() => void save()} className="gap-1">
-            <Plus size={14} />
-            Save
-          </Button>
-        </div>
-        {constrainable && (
-          <input
-            value={audience}
-            onChange={(e) => setAudience(e.target.value)}
-            placeholder="hosts it may be sent to — blank to pin on first use"
-            className="rounded-md border border-slate-200 px-3 py-2 font-mono outline-none focus:border-slate-400"
-            style={{ fontSize: 16 }}
-          />
-        )}
-        {error && <span className="text-[0.78rem] text-red-600">{error}</span>}
-        {alias.trim() && !error && (
-          <span className="text-[0.78rem] text-slate-500">
-            Refer to it as{" "}
-            <code className="font-mono">{secretReference(alias.trim())}</code>
-          </span>
-        )}
-      </div>
+        </SettingsCard>
+      </SettingsSection>
 
       {grants.length > 0 && (
-        <div className="flex flex-col gap-2 border-t border-slate-200 pt-3">
-          <span className="uppercase tracking-[0.12em] text-muted-foreground text-[0.68rem] font-semibold">
-            Runtimes you allowed
-          </span>
-          <span className="text-[0.78rem] text-slate-500 leading-snug">
-            Boards allowed to hand a secret to a runtime without asking again.
-            Forget one and the next board that tries will ask.
-          </span>
-          {grants.map((grant) => (
-            <div
-              key={grant.key}
-              className="flex items-start justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2"
-            >
-              <div className="flex min-w-0 items-start gap-2">
-                <Server size={14} className="mt-[3px] shrink-0 text-slate-400" />
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-slate-800">
-                    {grant.boardName}
+        <SettingsSection
+          label="Runtimes you allowed"
+          hint="Boards allowed to hand a secret to a runtime without asking again. Forget one and the next board that tries will ask."
+        >
+          <SettingsList>
+            {grants.map((grant) => (
+              <SettingsRow
+                key={grant.key}
+                icon={<Server size={15} />}
+                title={grant.boardName}
+                subtitle={
+                  <span className="hkp-set-mono">
+                    {grant.origin} · {grant.aliases.join(", ")}
                   </span>
-                  <span className="truncate font-mono text-[0.72rem] text-slate-500">
-                    {grant.origin}
-                  </span>
-                  <span className="truncate font-mono text-[0.72rem] text-slate-600">
-                    {grant.aliases.join(", ")}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => void revoke(grant.key)}
-                aria-label={`Forget ${grant.boardName}`}
-                className="shrink-0 text-slate-400 hover:text-red-600"
-              >
-                <X size={15} />
-              </button>
-            </div>
-          ))}
-        </div>
+                }
+                trailing={
+                  <RemoveButton
+                    label={`Forget ${grant.boardName}`}
+                    onClick={() => void revoke(grant.key)}
+                  />
+                }
+              />
+            ))}
+          </SettingsList>
+        </SettingsSection>
       )}
 
-      <span className="text-[0.78rem] text-amber-700 leading-snug">
-        ⚠️ Stored in ~/.hkp/vault.json, readable only by your user account. The
+      <SettingsNote tone="warn">
+        Stored in ~/.hkp/vault.json, readable only by your user account. The
         file is not encrypted — anything that can run as you can read it. What
         you have allowed is in ~/.hkp/grants.json alongside it.
-      </span>
-    </div>
+      </SettingsNote>
+    </SettingsStack>
   );
 }

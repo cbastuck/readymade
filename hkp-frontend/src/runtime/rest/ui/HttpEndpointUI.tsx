@@ -7,6 +7,7 @@ import NamedPipelinesPanel, {
   PipelineEntry,
 } from "../../ui/NamedPipelinesPanel";
 import { findServiceUI } from "../UIRegistry";
+import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
 
 /**
  * The endpoint's pipelines, one section per entry point.
@@ -78,8 +79,11 @@ export default function HttpEndpointUI(props: ServiceUIProps) {
           // What this endpoint is reachable at, which is assigned rather than
           // configured and therefore the one thing here a reader cannot work
           // out from the board.
-          <div className="text-xs text-neutral-500 break-all font-mono">
-            {address}
+          <div className="flex items-start gap-1">
+            <div className="text-xs text-neutral-500 break-all font-mono flex-1">
+              {address}
+            </div>
+            <CopyButton value={address} label="mount URL" />
           </div>
         )}
 

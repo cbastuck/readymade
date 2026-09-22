@@ -367,6 +367,9 @@
   background: var(--set-hover);
   color: var(--set-danger);
 }
+.hkp-set-icon-btn--neutral:hover {
+  color: var(--set-ink);
+}
 
 .hkp-set-input {
   width: 100%;

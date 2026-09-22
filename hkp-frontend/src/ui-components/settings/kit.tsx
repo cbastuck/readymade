@@ -151,6 +151,8 @@ export function SettingsInput({
   );
 }
 
+/** A labelled input. The label wraps the input, so the two are associated
+ *  without an id; `htmlFor` is for inputs rendered elsewhere. */
 export function SettingsField({
   label,
   htmlFor,
@@ -161,12 +163,10 @@ export function SettingsField({
   children: ReactNode;
 }) {
   return (
-    <div className="hkp-set-field">
-      <label className="hkp-set-label" htmlFor={htmlFor}>
-        {label}
-      </label>
+    <label className="hkp-set-field" htmlFor={htmlFor}>
+      <span className="hkp-set-label">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 

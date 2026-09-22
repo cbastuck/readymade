@@ -8,6 +8,8 @@ import {
 import { RuntimeClass } from "hkp-frontend/src/types";
 import { CoordinatorDescriptor } from "hkp-frontend/src/common";
 
+import { toCoordinatorUrl, toServerBaseUrl } from "./serverUrl";
+
 type Props = {
   /** Omitted when the host cannot register runtimes; the form then adds
    *  coordinators only. */
@@ -17,16 +19,6 @@ type Props = {
   onAddCoordinator?: (coordinator: CoordinatorDescriptor) => void;
   onCancel?: () => void;
 };
-
-const COORDINATOR_PATH = "/coordinator";
-
-// The server's base URL, without a trailing slash or coordinator path.
-function toBaseUrl(url: string): string {
-  const trimmed = url.trim().replace(/\/+$/, "");
-  return trimmed.endsWith(COORDINATOR_PATH)
-    ? trimmed.slice(0, -COORDINATOR_PATH.length)
-    : trimmed;
-}
 
 // One form for a server that may host runtimes, coordinate boards, or both:
 // the runtime is registered at the base URL, the coordinator under
@@ -50,12 +42,11 @@ export default function NewConnectionPanel({
     if (!canSubmit) {
       return;
     }
-    const base = toBaseUrl(url);
     if (addsRuntime) {
-      onAddRuntime!({ type: "rest", name, url: base });
+      onAddRuntime!({ type: "rest", name, url: toServerBaseUrl(url) });
     }
     if (addsCoordinator) {
-      onAddCoordinator!({ name, url: `${base}${COORDINATOR_PATH}` });
+      onAddCoordinator!({ name, url: toCoordinatorUrl(url) });
     }
     setName("");
     setUrl("");

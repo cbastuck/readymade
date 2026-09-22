@@ -66,6 +66,7 @@ export default function ManageConnectionsContent({
           <ExistingCoordinatorsPanel
             coordinators={coordinators.coordinators}
             onRemove={coordinators.onRemove}
+            onUpdate={coordinators.onUpdate}
           />
         )}
 

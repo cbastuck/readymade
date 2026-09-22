@@ -194,6 +194,7 @@ export default function MobileBoardDetails({
   onRemoveFromFolder,
   onDelete,
   onDeleteFromCloud,
+  onUndeploy,
   onRevokeShare,
   onLeaveShare,
   loadHistory,
@@ -211,6 +212,9 @@ export default function MobileBoardDetails({
   /** Deletes the board's uploaded copy from the cloud storage (owner side);
    *  asked to confirm with a second tap. The local copy stays. */
   onDeleteFromCloud?: () => Promise<void>;
+  /** Deletes a deployed board from the coordinator running it, stopping its
+   *  runtimes; asked to confirm with a second tap. */
+  onUndeploy?: () => Promise<void>;
   onRevokeShare?: (email: string) => Promise<void>;
   onLeaveShare?: () => Promise<void>;
   loadHistory?: () => Promise<BoardHistoryItem[]>;
@@ -262,14 +266,18 @@ export default function MobileBoardDetails({
     }
   };
 
+  // Deleting an uploaded copy and deleting a deployed board share one confirm
+  // flow; a board is only ever one or the other.
+  const cloudDelete = onDeleteFromCloud ?? onUndeploy;
+
   const deleteFromCloud = async () => {
-    if (!onDeleteFromCloud || cloudDeleteState === "busy") {
+    if (!cloudDelete || cloudDeleteState === "busy") {
       return;
     }
     setCloudDeleteState("busy");
     setCloudDeleteError(null);
     try {
-      await onDeleteFromCloud();
+      await cloudDelete();
       setCloudDeleteState("idle");
       setConfirmingCloudDelete(false);
     } catch (err) {
@@ -513,15 +521,19 @@ export default function MobileBoardDetails({
             )}
           </>
         )}
-        {onDeleteFromCloud && (
+        {cloudDelete && (
           <>
             <ActionButton
               label={
                 cloudDeleteState === "busy"
                   ? "Deleting…"
-                  : confirmingCloudDelete
-                    ? `Really delete “${board.name}” from the cloud?`
-                    : "Delete from cloud"
+                  : onDeleteFromCloud
+                    ? confirmingCloudDelete
+                      ? `Really delete “${board.name}” from the cloud?`
+                      : "Delete from cloud"
+                    : confirmingCloudDelete
+                      ? `Really stop and delete “${board.name}”?`
+                      : "Delete cloud board"
               }
               tone="danger"
               disabled={cloudDeleteState === "busy"}
