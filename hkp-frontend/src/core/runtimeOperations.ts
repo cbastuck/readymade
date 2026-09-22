@@ -215,6 +215,27 @@ export function addAvailableRuntime(
   return updated;
 }
 
+/** Replaces `previous` with `next`, keeping its place in the pool. The pool
+ *  is keyed by name, so the entry is matched on the name it had — a rename
+ *  through add-then-remove would either leave the old entry behind or undo
+ *  itself, both writes being computed from the same pool. */
+export function updateAvailableRuntime(
+  previous: RuntimeClass,
+  { name, url, type, color }: RuntimeClass,
+  refs: BoardStateRefs,
+): Array<RuntimeClass> {
+  const current = refs.availableRuntimeEnginesRef.current!;
+  const entry = { name, type, url, color };
+  const replaced = current.some((rt) => rt.name === previous.name)
+    ? current.map((rt) => (rt.name === previous.name ? entry : rt))
+    : current.concat(entry);
+  // Renaming onto a name the pool already holds collapses the two: it is keyed
+  // by name and cannot keep both.
+  const updated = replaced.filter((rt) => rt === entry || rt.name !== name);
+  refs.setAvailableRuntimeEngines(updated);
+  return updated;
+}
+
 export function removeAvailableRuntime(
   { name }: RuntimeClass,
   refs: BoardStateRefs,

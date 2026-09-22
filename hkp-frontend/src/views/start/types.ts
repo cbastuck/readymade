@@ -223,7 +223,9 @@ export interface RemotesController {
   runtimes: RuntimeClass[];
   onAdd: (rt: RuntimeClass) => void;
   onRemove: (rt: RuntimeClass) => void;
-  onUpdate: (rt: RuntimeClass) => void;
+  /** Replaces `previous` with `next` — a rename or a moved URL, not only a
+   *  changed colour, so the store is told which entry the edit was made on. */
+  onUpdate: (previous: RuntimeClass, next: RuntimeClass) => void;
   /** Called right before the manage UI opens; hosts re-read their store. */
   refresh?: () => void;
 }

@@ -87,11 +87,13 @@ export default function MeanderPlayground({
   // Built-in remotes are the backend's own and are left alone; a saved remote
   // keeps the port it was registered with.
   const remoteRuntimeStore = useMemo<RemoteRuntimeStore>(() => {
-    const save = async (runtime: RuntimeClass) => {
+    // `knownAs` is the name the entry is currently stored under, which a
+    // rename changes — the port is looked up by it so an edit keeps it.
+    const save = async (runtime: RuntimeClass, knownAs = runtime.name) => {
       if (isBuiltInRemote(runtime.url)) {
         return;
       }
-      const existing = (remotes || []).find((r) => r.name === runtime.name);
+      const existing = (remotes || []).find((r) => r.name === knownAs);
       await saveRemote({
         name: runtime.name,
         url: runtime.url || "",
@@ -107,9 +109,17 @@ export default function MeanderPlayground({
       await deleteRemote(runtime.name);
       await loadRemotes();
     };
+    // A rename is a new entry to the backend, which keys remotes by name, so
+    // the entry it replaces is deleted first.
+    const update = async (previous: RuntimeClass, next: RuntimeClass) => {
+      if (previous.name !== next.name) {
+        await remove(previous);
+      }
+      await save(next, previous.name);
+    };
     return {
       onAdd: (runtime) => void save(runtime),
-      onUpdate: (runtime) => void save(runtime),
+      onUpdate: (previous, next) => void update(previous, next),
       onRemove: (runtime) => void remove(runtime),
     };
   }, [loadRemotes, remotes]);

@@ -57,8 +57,9 @@ export default function ManageConnectionsContent({
             remoteRuntimes={remotes.runtimes}
             onRemoveRuntime={remotes.onRemove}
             onChangeRuntimeColor={(rt, color) =>
-              remotes.onUpdate({ ...rt, color })
+              remotes.onUpdate(rt, { ...rt, color })
             }
+            onUpdateRuntime={remotes.onUpdate}
           />
         )}
 

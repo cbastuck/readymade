@@ -68,6 +68,7 @@ import {
   updateRuntime as updateRuntimeOp,
   arrangeRuntimes as arrangeRuntimesOp,
   addAvailableRuntime as addAvailableRuntimeOp,
+  updateAvailableRuntime as updateAvailableRuntimeOp,
   removeAvailableRuntime as removeAvailableRuntimeOp,
   setRuntimeName as setRuntimeNameOp,
   registerBrowserRuntime,
@@ -92,6 +93,11 @@ type BoardContextAPI = {
   addAvailableRuntime: (
     c: RuntimeClass,
     overwriteIfExists: boolean,
+  ) => Array<RuntimeClass>;
+  /** Replaces `previous` with `next` in the engine pool, rename included. */
+  updateAvailableRuntime: (
+    previous: RuntimeClass,
+    next: RuntimeClass,
   ) => Array<RuntimeClass>;
   removeAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
 
@@ -568,6 +574,10 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       rtClass: RuntimeClass,
       overwriteIfExists: boolean,
     ) => addAvailableRuntimeOp(rtClass, overwriteIfExists, getRefs());
+    const updateAvailableRuntime = (
+      previous: RuntimeClass,
+      next: RuntimeClass,
+    ) => updateAvailableRuntimeOp(previous, next, getRefs());
     const removeAvailableRuntime = (rtClass: RuntimeClass) =>
       removeAvailableRuntimeOp(rtClass, getRefs());
     const setRuntimeName = (runtimeId: string, newName: string) =>
@@ -958,6 +968,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setRuntimeName,
       setServiceName,
       addAvailableRuntime,
+      updateAvailableRuntime,
       removeAvailableRuntime,
       serializeBoard,
       serializeBoardDocuments,

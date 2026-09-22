@@ -17,7 +17,11 @@ export type ManageRuntimesContentProps = {
   remoteRuntimes: Array<RuntimeClass>;
   onRemoveRuntimeEngine: (rt: RuntimeClass) => void;
   onAddRuntimeEngine: (desc: RuntimeClass) => void;
-  onUpdateRuntimeEngine: (updated: RuntimeClass) => void;
+  /** Replaces `previous` with `next` — a recolour, a rename or a new URL. */
+  onUpdateRuntimeEngine: (
+    previous: RuntimeClass,
+    next: RuntimeClass,
+  ) => void;
   /** Render the add-runtime form inline below the button instead of in a
    *  popover. Hosts above the popover's z-layer (the mobile bottom sheet,
    *  where the body-portaled popover would end up behind the sheet) use
@@ -44,7 +48,7 @@ export default function ManageRuntimesContent({
   };
 
   const onChangeRuntimeColor = (rt: RuntimeClass, color: string) => {
-    onUpdateRuntimeEngine({ ...rt, color });
+    onUpdateRuntimeEngine(rt, { ...rt, color });
   };
 
   return (
@@ -53,6 +57,7 @@ export default function ManageRuntimesContent({
         remoteRuntimes={remoteRuntimes}
         onRemoveRuntime={onRemoveRuntimeEngine}
         onChangeRuntimeColor={onChangeRuntimeColor}
+        onUpdateRuntime={onUpdateRuntimeEngine}
       />
 
       <DiscoverRuntimesPanel

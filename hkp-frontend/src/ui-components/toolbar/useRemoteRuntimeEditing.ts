@@ -12,7 +12,9 @@ import { RuntimeClass } from "hkp-frontend/src/types";
 export type RemoteRuntimeStore = {
   onAdd: (rt: RuntimeClass) => void;
   onRemove: (rt: RuntimeClass) => void;
-  onUpdate: (rt: RuntimeClass) => void;
+  /** Replaces `previous` with `next`; the two differ when a remote is
+   *  renamed or moved, and stores key their entries by one or the other. */
+  onUpdate: (previous: RuntimeClass, next: RuntimeClass) => void;
 };
 
 export const RemoteRuntimeStoreCtx = createContext<RemoteRuntimeStore | null>(
@@ -48,10 +50,10 @@ export function useRemoteRuntimeEditing(): RemoteRuntimeStore {
         boardContext?.removeAvailableRuntime(rt) ?? [],
         store ? () => store.onRemove(rt) : undefined,
       ),
-    onUpdate: (rt) =>
+    onUpdate: (previous, next) =>
       persist(
-        boardContext?.addAvailableRuntime(rt, true) ?? [],
-        store ? () => store.onUpdate(rt) : undefined,
+        boardContext?.updateAvailableRuntime(previous, next) ?? [],
+        store ? () => store.onUpdate(previous, next) : undefined,
       ),
   };
 }

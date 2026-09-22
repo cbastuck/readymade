@@ -3,13 +3,11 @@ import { Network, Pencil } from "lucide-react";
 
 import {
   RemoveButton,
-  SettingsButton,
-  SettingsField,
-  SettingsInput,
   SettingsList,
   SettingsRow,
   SettingsSection,
 } from "hkp-frontend/src/ui-components/settings/kit";
+import EditServerForm from "hkp-frontend/src/ui-components/connections/EditServerForm";
 import { toCoordinatorUrl } from "hkp-frontend/src/ui-components/connections/serverUrl";
 import { CoordinatorDescriptor } from "../../common";
 
@@ -66,11 +64,13 @@ export default function ExistingCoordinatorsPanel({
             }
           >
             {onUpdate && editing === idx && (
-              <EditCoordinatorForm
-                coordinator={coord}
+              <EditServerForm
+                name={coord.name}
+                url={coord.url}
+                normalizeUrl={toCoordinatorUrl}
                 onCancel={() => setEditing(null)}
-                onSave={(next) => {
-                  onUpdate(coord, next);
+                onSave={({ name, url }) => {
+                  onUpdate(coord, { ...coord, name, url });
                   setEditing(null);
                 }}
               />
@@ -79,65 +79,5 @@ export default function ExistingCoordinatorsPanel({
         ))}
       </SettingsList>
     </SettingsSection>
-  );
-}
-
-function EditCoordinatorForm({
-  coordinator,
-  onSave,
-  onCancel,
-}: {
-  coordinator: CoordinatorDescriptor;
-  onSave: (next: CoordinatorDescriptor) => void;
-  onCancel: () => void;
-}) {
-  const [name, setName] = useState(coordinator.name);
-  const [url, setUrl] = useState(coordinator.url);
-  const canSave = !!name.trim() && !!url.trim();
-
-  const save = () => {
-    if (canSave) {
-      onSave({ ...coordinator, name: name.trim(), url: toCoordinatorUrl(url) });
-    }
-  };
-
-  const onKeyDown = (ev: React.KeyboardEvent) => {
-    if (ev.key === "Enter") {
-      save();
-    }
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        padding: "2px 12px 12px 56px",
-      }}
-    >
-      <SettingsField label="Name">
-        <SettingsInput
-          value={name}
-          autoFocus
-          onChange={(ev) => setName(ev.target.value)}
-          onKeyDown={onKeyDown}
-        />
-      </SettingsField>
-      <SettingsField label="URL">
-        <SettingsInput
-          mono
-          value={url}
-          onChange={(ev) => setUrl(ev.target.value)}
-          onKeyDown={onKeyDown}
-        />
-      </SettingsField>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <SettingsButton onClick={onCancel}>Cancel</SettingsButton>
-        <SettingsButton variant="primary" onClick={save} disabled={!canSave}>
-          Save
-        </SettingsButton>
-      </div>
-    </div>
   );
 }
