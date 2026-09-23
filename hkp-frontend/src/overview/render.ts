@@ -18,6 +18,27 @@ import { OverviewScene } from "./graph";
 /** Card size in world units, before perspective. */
 const NODE_WIDTH = 210;
 const NODE_HEIGHT = 58;
+/** How far a ground extends past the cards standing on it. */
+const GROUND_PADDING = 26;
+/** Room kept above a runtime's head point for the name written there. */
+const GROUND_HEADROOM = 34;
+/** How far a ground's edge is taken towards the text colour, to draw its line. */
+const GROUND_EDGE = 0.14;
+/** How far the corners of a runtime's field are rounded off, in world units. */
+const GROUND_ROUNDING = 22;
+/** The same for a scope drawn on it, kept tighter than the field around it. */
+const SCOPE_ROUNDING = 14;
+/**
+ * How big the name of a pipeline is written on the scope holding it.
+ *
+ * It goes in the padding a scope already has above its first card rather than
+ * in room of its own: two pipelines of one host are a row apart, and a scope
+ * given its own headroom is taller than a row — the second's name would be
+ * written under the first's ground.
+ */
+const SCOPE_CAPTION = 12;
+/** How far that name is taken towards the text colour, to be read on it. */
+const GROUND_CAPTION_INK = 0.55;
 
 export type Palette = {
   background: string;
@@ -29,9 +50,18 @@ export type Palette = {
   textMuted: string;
   edge: string;
   accent: string;
+  /**
+   * What a runtime naming no colour of its own stands on: the same appearance
+   * default the playground fills its container with, so a board that was never
+   * coloured by hand looks here as it does there.
+   */
+  runtimeGround: string;
 };
 
-export function defaultPalette(accent: string): Palette {
+export function defaultPalette(
+  accent: string,
+  runtimeGround = "#ffffff",
+): Palette {
   return {
     background: "#f4f2ef",
     card: "#ffffff",
@@ -44,6 +74,7 @@ export function defaultPalette(accent: string): Palette {
     textMuted: "rgba(34, 38, 43, 0.5)",
     edge: "rgba(34, 38, 43, 0.22)",
     accent,
+    runtimeGround,
   };
 }
 
@@ -58,6 +89,79 @@ export type HitTarget = {
 };
 
 type Drawable = { depth: number; draw: () => void };
+
+/**
+ * A colour a board or a theme wrote, as channels the mixing below can work on.
+ *
+ * What arrives here is whatever was authored: the runtime picker writes hex, a
+ * board written by hand says `black` or `#333`, and a theme names a token with
+ * a fallback behind it — `var(--bg-runtime, oklch(…))`. Anything past plain hex
+ * is therefore read in two steps, because neither alone covers it: a hidden
+ * element in the document resolves the cascade, which is the only place a
+ * custom property means anything, and a canvas pixel then resolves the colour
+ * space, which is where `oklch` stops being a string a browser hands back
+ * unchanged. A value the cascade does not recognise comes back transparent,
+ * and is read as no colour at all.
+ *
+ * Answers are kept, since a board's runtimes are few and their colours are
+ * read on every frame.
+ */
+const readColours = new Map<string, [number, number, number] | null>();
+let colourProbe: CanvasRenderingContext2D | null | undefined;
+let cascadeProbe: HTMLElement | null | undefined;
+
+function readColour(colour: string): [number, number, number] | null {
+  const cached = readColours.get(colour);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const resolved = resolveColour(colour);
+  readColours.set(colour, resolved);
+  return resolved;
+}
+
+function resolveColour(colour: string): [number, number, number] | null {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(colour.trim());
+  if (hex) {
+    const digits =
+      hex[1].length === 3
+        ? hex[1].replace(/./g, (digit) => digit + digit)
+        : hex[1];
+    return [
+      parseInt(digits.slice(0, 2), 16),
+      parseInt(digits.slice(2, 4), 16),
+      parseInt(digits.slice(4, 6), 16),
+    ];
+  }
+
+  if (typeof document === "undefined") {
+    return null;
+  }
+  if (cascadeProbe === undefined) {
+    cascadeProbe = document.createElement("div");
+    cascadeProbe.style.display = "none";
+    document.body.appendChild(cascadeProbe);
+  }
+  if (colourProbe === undefined) {
+    colourProbe = document.createElement("canvas").getContext("2d");
+  }
+  if (!cascadeProbe || !colourProbe) {
+    return null;
+  }
+
+  // Set twice: what the cascade rejects leaves the first value standing, and
+  // a transparent one is how an unusable colour is told from a real one.
+  cascadeProbe.style.color = "rgba(0, 0, 0, 0)";
+  cascadeProbe.style.color = colour;
+  const cascaded = getComputedStyle(cascadeProbe).color;
+
+  colourProbe.clearRect(0, 0, 1, 1);
+  colourProbe.fillStyle = "rgba(0, 0, 0, 0)";
+  colourProbe.fillStyle = cascaded;
+  colourProbe.fillRect(0, 0, 1, 1);
+  const [r, g, b, alpha] = colourProbe.getImageData(0, 0, 1, 1).data;
+  return alpha === 0 ? null : [r, g, b];
+}
 
 function parseHex(colour: string): [number, number, number] {
   const hex = colour.trim().replace("#", "");
@@ -114,6 +218,92 @@ function roundedRect(
   ctx.quadraticCurveTo(x, y + height, x, y + height - r);
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+/**
+ * The outline around a set of screen-space points, counter-clockwise.
+ *
+ * Andrew's monotone chain: sort, then walk the points keeping only the turns
+ * that go one way. What it is given is the corners of every card in a runtime,
+ * so what comes back is the smallest shape holding all of them whatever angle
+ * the board is being looked at from.
+ */
+function hull(points: Array<{ x: number; y: number }>) {
+  if (points.length < 3) {
+    return points;
+  }
+  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cross = (
+    o: { x: number; y: number },
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+  ) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+  const half = (order: typeof sorted) => {
+    const line: typeof sorted = [];
+    for (const point of order) {
+      while (
+        line.length >= 2 &&
+        cross(line[line.length - 2], line[line.length - 1], point) <= 0
+      ) {
+        line.pop();
+      }
+      line.push(point);
+    }
+    line.pop();
+    return line;
+  };
+
+  return [...half(sorted), ...half([...sorted].reverse())];
+}
+
+/**
+ * Traces a polygon with its corners rounded off, as one path.
+ *
+ * One path rather than a fill and a fattened stroke standing in for a radius:
+ * a ground is painted with the level behind it still showing through, and
+ * anything drawn twice would show as a band of double the colour where the two
+ * passes overlap.
+ */
+function roundedPath(
+  ctx: CanvasRenderingContext2D,
+  points: Array<{ x: number; y: number }>,
+  radius: number,
+) {
+  if (points.length < 3) {
+    return;
+  }
+  const towards = (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    by: number,
+  ) => {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = Math.hypot(dx, dy) || 1;
+    // Never past the middle of a side, or a short one would be cut twice.
+    const step = Math.min(by, length / 2);
+    return {
+      x: from.x + (dx / length) * step,
+      y: from.y + (dy / length) * step,
+    };
+  };
+
+  ctx.beginPath();
+  for (let i = 0; i < points.length; i += 1) {
+    const corner = points[i];
+    const before = points[(i - 1 + points.length) % points.length];
+    const after = points[(i + 1) % points.length];
+    const enter = towards(corner, before, radius);
+    const leave = towards(corner, after, radius);
+    if (i === 0) {
+      ctx.moveTo(enter.x, enter.y);
+    } else {
+      ctx.lineTo(enter.x, enter.y);
+    }
+    ctx.quadraticCurveTo(corner.x, corner.y, leave.x, leave.y);
+  }
   ctx.closePath();
 }
 
@@ -176,7 +366,20 @@ export function render(
   // Which services sit directly on which runtime, worked out once rather than
   // per runtime per frame.
   const topLevelByRuntime = new Map<string, typeof scene.nodes>();
+  // Every pipeline on the board, its own services in order: the one a runtime
+  // holds, and one more for each pipeline a service holds. Each is a place
+  // services stand in, and gets a ground of its own, because a sub-pipeline is
+  // a container in the playground rather than a run of the list around it.
+  // Keyed by the host *and* the name it files that pipeline under, since a
+  // host can hold several — an endpoint's `onProcess` and `onRequest` are two
+  // runs, and one outline around both would say they were one.
+  const pipelines = new Map<string, typeof scene.nodes>();
   for (const node of scene.nodes) {
+    const key = `${node.runtimeId}::${node.parent ?? ""}::${node.pipeline ?? ""}`;
+    const pipeline = pipelines.get(key) ?? [];
+    pipeline.push(node);
+    pipelines.set(key, pipeline);
+
     if (node.depth !== 0) {
       continue;
     }
@@ -187,10 +390,167 @@ export function render(
 
   const cardRgb = parseHex(palette.card);
   const cardHotRgb = parseHex(palette.cardHot);
+  const textRgb = parseHex(palette.text);
   const drawables: Drawable[] = [];
   const hits: HitTarget[] = [];
 
-  // ── runtime labels and their spines ──────────────────────────────────────
+  type Station = { x: number; y: number; depth: number; scale: number };
+
+  /** The padded corners of the cards standing on a surface. */
+  const cornersOf = (cards: Station[]) =>
+    cards.flatMap((card) => {
+      const halfWidth = (NODE_WIDTH / 2 + GROUND_PADDING) * card.scale;
+      const halfHeight = (NODE_HEIGHT / 2 + GROUND_PADDING) * card.scale;
+      return [
+        { x: card.x - halfWidth, y: card.y - halfHeight },
+        { x: card.x + halfWidth, y: card.y - halfHeight },
+        { x: card.x - halfWidth, y: card.y + halfHeight },
+        { x: card.x + halfWidth, y: card.y + halfHeight },
+      ];
+    });
+
+  /** Just behind the last of its own cards, and in front of anything deeper. */
+  const behindOwn = (cards: Station[]) =>
+    cards.reduce((deepest, card) => Math.max(deepest, card.depth), 0) + 0.5;
+
+  /**
+   * A surface holding a set of cards, in the colour of the runtime they run in.
+   *
+   * Drawn as the hull of what stands on it rather than as a column, because
+   * nesting puts a level behind the one above it: the moment the camera is
+   * turned, a host and the pipeline it holds stop being above and below each
+   * other on screen, and anything shaped like a column becomes a funnel. Built
+   * in screen space for the same reason the cards are billboarded — a quad
+   * placed in the world would stop lining up with them once orbited.
+   *
+   * Opaque, and in the same order as everything else, one level at a time: a
+   * ground and the cards standing on it are one thing, and what is behind that
+   * is behind it. A level nearer the camera therefore hides what it covers,
+   * the way anything in front of anything else does — which is the point.
+   * Turning the board is what looks past it, and at most angles the levels
+   * stand beside one another rather than in front.
+   */
+  const surface = (
+    corners: Array<{ x: number; y: number }>,
+    colour: [number, number, number],
+    rounding: number,
+    filled = true,
+  ) => {
+    const outline = hull(corners);
+    return () => {
+      ctx.save();
+      roundedPath(ctx, outline, rounding);
+      if (filled) {
+        ctx.fillStyle = `rgb(${Math.round(colour[0])}, ${Math.round(
+          colour[1],
+        )}, ${Math.round(colour[2])})`;
+        ctx.fill();
+      }
+      ctx.strokeStyle = mix(colour, textRgb, GROUND_EDGE);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    };
+  };
+
+  /**
+   * The outline a whole runtime covers: its own services and every scope
+   * nested inside them, as one shape.
+   *
+   * Scoping a pipeline puts it behind the service hosting it, not somewhere
+   * else — it still runs in the runtime that service sits in — so what says
+   * which runtime a service belongs to has to hold all of them at once. An
+   * outline rather than a ground, because the ground at the front of a runtime
+   * is the one its own pipeline stands on: a second surface over the same
+   * level would only be the same colour laid on twice.
+   */
+  const field = (
+    cards: Station[],
+    head: Station,
+    colour: [number, number, number],
+  ) => {
+    // The head is a name rather than a card, and the outline has to reach over
+    // it: a runtime holding no services is that name and nothing else.
+    const headWidth = (NODE_WIDTH / 2 + GROUND_PADDING) * head.scale;
+    const headTop = head.y - (GROUND_HEADROOM + GROUND_PADDING) * head.scale;
+    const headBottom = head.y + GROUND_PADDING * head.scale;
+    return surface(
+      [
+        ...cornersOf(cards),
+        { x: head.x - headWidth, y: headTop },
+        { x: head.x + headWidth, y: headTop },
+        { x: head.x - headWidth, y: headBottom },
+        { x: head.x + headWidth, y: headBottom },
+      ],
+      colour,
+      GROUND_ROUNDING * head.scale,
+      false,
+    );
+  };
+
+  /**
+   * The ground one pipeline stands on, in the colour of the runtime it runs in.
+   *
+   * The service hosting it is outside it, for a reason that only shows on a
+   * host holding more than one — an endpoint's `onProcess` and `onRequest`, a
+   * Tracks' tracks. Each would have to wrap that same card, so each would have
+   * to overlap all the others there, and no order of drawing makes overlapping
+   * grounds read as anything but a smear. Which host a scope belongs to is
+   * said by the line drawn from it instead, and *which of that host's* is
+   * written on the scope, since the line cannot say that. The host is still
+   * wanted here for that writing: it is a layer nearer and lands over one side
+   * of the scope or the other depending on where the camera is, and the name
+   * goes on the side it is not, where a card cannot come down over it.
+   */
+  const scope = (
+    pipeline: Station[],
+    name: string | undefined,
+    host: Station | undefined,
+    colour: [number, number, number],
+  ) => {
+    const first = pipeline[0];
+    const halfWidth = (NODE_WIDTH / 2 + GROUND_PADDING) * first.scale;
+    // A pipeline is named where the name tells it from another of the same
+    // host's. `pipeline` is what a service with only one calls it, which the
+    // outline has already said, so that one is left unwritten.
+    const caption = name && name !== "pipeline" ? name : null;
+
+    const drawn = surface(
+      cornersOf(pipeline),
+      colour,
+      SCOPE_ROUNDING * first.scale,
+    );
+    if (!caption) {
+      return drawn;
+    }
+
+    return () => {
+      drawn();
+      const size = SCOPE_CAPTION * first.scale;
+      // Small enough to be a texture rather than a word is worse than
+      // nothing: the outline still says a scope is there.
+      if (size < 6.5) {
+        return;
+      }
+      const awayFromHost = host && host.x < first.x ? "right" : "left";
+      ctx.save();
+      ctx.font = `${size}px ui-monospace, SFMono-Regular, monospace`;
+      ctx.fillStyle = mix(colour, textRgb, GROUND_CAPTION_INK);
+      ctx.textAlign = awayFromHost;
+      ctx.textBaseline = "bottom";
+      ctx.fillText(
+        truncate(ctx, caption, halfWidth * 2 - 12 * first.scale),
+        awayFromHost === "right"
+          ? first.x + halfWidth - 6 * first.scale
+          : first.x - halfWidth + 6 * first.scale,
+        // Just clear of the card, in the ground's own padding above it.
+        first.y - (NODE_HEIGHT / 2 + 5) * first.scale,
+      );
+      ctx.restore();
+    };
+  };
+
+  // ── runtime backdrops, labels and spines ─────────────────────────────────
   for (const runtime of scene.runtimes) {
     const head = project(camera, runtime, viewport);
     if (!head) {
@@ -200,6 +560,55 @@ export function render(
     const tail = column.length
       ? projected.get(column[column.length - 1].uuid)
       : undefined;
+
+    // The colour the board gave the runtime, or the appearance default it left
+    // in place, as the ground its services stand on — what the playground
+    // fills the container holding them with. A ground for each pipeline the
+    // runtime holds, the one it holds itself included, and the runtime's own
+    // outline around the lot.
+    const colour =
+      (runtime.color ? readColour(runtime.color) : null) ??
+      readColour(palette.runtimeGround);
+    if (colour) {
+      const points = (nodes: typeof scene.nodes) =>
+        nodes
+          .map((node) => projected.get(node.uuid))
+          .filter((point): point is Station => !!point);
+
+      const held = [...pipelines].filter(([key]) =>
+        key.startsWith(`${runtime.id}::`),
+      );
+      const inRuntime = points(
+        scene.nodes.filter((node) => node.runtimeId === runtime.id),
+      );
+
+      drawables.push({
+        // Behind the whole runtime: it says where the runtime reaches, and
+        // nothing in it should be read through its line.
+        depth: behindOwn(inRuntime) + 1,
+        draw: field(inRuntime, head, colour),
+      });
+
+      for (const [, pipeline] of held) {
+        const stations = points(pipeline);
+        if (stations.length === 0) {
+          continue;
+        }
+        drawables.push({
+          // With its own services rather than under the whole board: a ground
+          // and the cards standing on it are one level, and putting every
+          // ground behind every card is what had a nested service drawn over
+          // the runtime its host sits in.
+          depth: behindOwn(stations),
+          draw: scope(
+            stations,
+            pipeline[0].pipeline,
+            pipeline[0].parent ? projected.get(pipeline[0].parent) : undefined,
+            colour,
+          ),
+        });
+      }
+    }
 
     drawables.push({
       // Behind everything in its column, so a card is never hidden by the

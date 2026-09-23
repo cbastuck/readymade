@@ -6,14 +6,18 @@
  * force or by hand:
  *
  *   X — the runtime chain. Runtimes are called in order, left to right.
- *   Y — position within a pipeline. Services are called top to bottom.
+ *   Y — position within a pipeline. Services are called top to bottom, and a
+ *       runtime starts on the row the one before it handed over from, so the
+ *       board reads as one flow stepping down and across.
  *   Z — nesting depth, away from the camera. A sub-pipeline sits behind the
  *       service hosting it.
  *
- * A pipeline is walked depth-first, so a nested service is placed directly
- * below the one that hosts it and one layer further back. The result reads as
- * the board does — a column per runtime — with the levels that a flat list can
- * only show one at a time laid out in depth.
+ * A pipeline is walked depth-first. A nested service starts level with the one
+ * that hosts it, one layer further back, so what a host contains reads as a
+ * step into the board rather than a step down it; the rows below are taken by
+ * the rest of that pipeline, and what follows the host resumes under them. The
+ * result reads as the board does — a column per runtime — with the levels that
+ * a flat list can only show one at a time laid out in depth.
  */
 import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
 
@@ -49,6 +53,12 @@ export type OverviewNode = {
   index: number;
   /** The service hosting this one, if any. */
   parent?: string;
+  /**
+   * Which of that host's pipelines it sits in — `onRequest`, a track's name —
+   * where the host holds more than one and the name says which. Absent for a
+   * service sitting directly on a runtime.
+   */
+  pipeline?: string;
   /** Hosts from the outermost in — what has to be opened to reach this node. */
   ancestry: string[];
   bypassed: boolean;
@@ -67,6 +77,8 @@ export type OverviewRuntime = {
   id: string;
   label: string;
   type: string;
+  /** What the board paints this runtime with, where it says so. */
+  color?: string;
   x: number;
   y: number;
   z: number;
@@ -83,10 +95,85 @@ export type OverviewScene = {
   radius: number;
 };
 
-/** The sub-pipeline a service hosts, or an empty list if it hosts none. */
-function childrenOf(service: any): Array<any> {
-  const pipeline = service?.state?.pipeline;
-  return Array.isArray(pipeline) ? pipeline : [];
+/** One pipeline a service holds, under the name that service files it by. */
+type NestedPipeline = { name: string; entries: Array<any> };
+
+function isEntry(value: unknown): boolean {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as { serviceId?: unknown }).serviceId === "string"
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * Every pipeline a service holds, in the order it reports them.
+ *
+ * The search is over the shape of an entry — a `serviceId` — rather than over
+ * the field a particular container keeps its pipeline in, for the reason
+ * `runtime/board/address.ts` gives: a scope calls it `pipeline`, an endpoint
+ * has `onProcess` and `onRequest`, Tracks has one per track and a `reduce`
+ * besides. Teaching this the fields would mean teaching it again for the next
+ * container, and until then drawing that container as though it held nothing.
+ *
+ * Each one is kept apart rather than run together, because they are separate
+ * runs: what follows a service in `onProcess` is not what follows it in
+ * `onRequest`, and a list of both would say it was. The name is the field they
+ * were found under, or what the thing holding them calls itself where it has a
+ * name of its own — a track's, rather than the `pipeline` inside it. A list of
+ * things that hold pipelines and name none of them — a Switch's cases — is
+ * numbered, and anything still sharing a name after that is numbered too:
+ * what a pipeline is called is also what tells it from its host's others, so
+ * two of them called the same thing would be drawn as one.
+ */
+function pipelinesOf(service: any): NestedPipeline[] {
+  const found: NestedPipeline[] = [];
+
+  const visit = (value: unknown, label: string, named: boolean) => {
+    if (Array.isArray(value)) {
+      const entries = value.filter(isEntry);
+      if (entries.length > 0) {
+        // What a service holds is its own; this is as deep as the search goes.
+        found.push({ name: label, entries });
+        return;
+      }
+      value.forEach((item, order) => {
+        const own =
+          isRecord(item) && typeof item.name === "string" && item.name
+            ? item.name
+            : null;
+        // What an item is called is the best name for what is inside it, so
+        // from here on a field name does not replace it: the `pipeline` in a
+        // track is that track's, not a pipeline among the host's others.
+        visit(item, own ?? (named ? label : `${label} ${order + 1}`), true);
+      });
+      return;
+    }
+    if (!isRecord(value)) {
+      return;
+    }
+    for (const [key, nested] of Object.entries(value)) {
+      if (nested && typeof nested === "object") {
+        visit(nested, named ? label : key, named);
+      }
+    }
+  };
+
+  visit(service?.state, "pipeline", false);
+
+  // Whatever the shapes above left, no two of a host's pipelines answer to the
+  // same name: that name is what tells them apart on screen and what groups
+  // the services standing in them.
+  const taken = new Map<string, number>();
+  return found.map((held) => {
+    const seen = (taken.get(held.name) ?? 0) + 1;
+    taken.set(held.name, seen);
+    return seen > 1 ? { ...held, name: `${held.name} ${seen}` } : held;
+  });
 }
 
 function labelOf(service: any, fallback: string): string {
@@ -114,24 +201,37 @@ export function buildScene(
   const edges: OverviewEdge[] = [];
   const runtimeNodes: OverviewRuntime[] = [];
 
+  // Where the next runtime's first service goes: the row its input arrives on,
+  // which is the row the runtime before it hands over from. Starting every
+  // column at the top instead would leave the handoff running the height of
+  // the board — the longest line drawn, for the one relationship that needs
+  // saying least, since the columns are already in the order they are called.
+  let columnStart = 0;
+
   runtimes.forEach((runtime, column) => {
     const x = column * COLUMN_SPACING;
     runtimeNodes.push({
       id: runtime.id,
       label: runtime.name || runtime.id,
       type: String(runtime.type ?? ""),
+      color: runtime.state?.color,
       x,
-      y: -ROW_SPACING,
+      y: (columnStart - 1) * ROW_SPACING,
       z: 0,
     });
 
     // One cursor for the whole column: depth-first placement puts a nested
     // service on the row after its host, rather than restarting at the top of
     // the column and overlapping what is already there.
-    let row = 0;
+    let row = columnStart;
+    // The row the chain leaves this runtime on, which is where the next one
+    // picks it up. A nested pipeline can be placed below it, so it is the last
+    // service the runtime itself holds rather than the cursor's final value.
+    let handoffRow = columnStart;
 
     const walk = (
       pipeline: Array<any>,
+      name: string | undefined,
       depth: number,
       ancestry: string[],
       parent: string | undefined,
@@ -144,7 +244,8 @@ export function buildScene(
           return;
         }
 
-        const children = childrenOf(service);
+        const nested = pipelinesOf(service);
+        const hostRow = row;
         const node: OverviewNode = {
           uuid,
           label: labelOf(service, service?.serviceId ?? uuid),
@@ -153,13 +254,17 @@ export function buildScene(
           depth,
           index,
           parent,
+          pipeline: name,
           ancestry,
           bypassed: !!(service?.bypass ?? service?.state?.bypass),
           state: service?.state,
           x,
-          y: row * ROW_SPACING,
+          y: hostRow * ROW_SPACING,
           z: depth * LAYER_SPACING,
         };
+        if (depth === 0) {
+          handoffRow = hostRow;
+        }
         row += 1;
         nodes.push(node);
         placed.push(uuid);
@@ -172,18 +277,33 @@ export function buildScene(
           });
         }
 
-        if (children.length > 0) {
-          const inner = walk(children, depth + 1, [...ancestry, uuid], uuid);
+        nested.forEach((held, order) => {
+          // The first is level with its host rather than under it: the two are
+          // a layer apart, so sharing the row costs nothing and says that
+          // stepping into a service is not the same move as going on to the
+          // next one. A second pipeline of the same host is a layer apart from
+          // nothing, so it takes the rows under the first.
+          if (order === 0) {
+            row = hostRow;
+          }
+          const inner = walk(
+            held.entries,
+            held.name,
+            depth + 1,
+            [...ancestry, uuid],
+            uuid,
+          );
           if (inner.length > 0) {
             edges.push({ from: uuid, to: inner[0], kind: "contains" });
           }
-        }
+        });
       });
 
       return placed;
     };
 
-    walk(services[runtime.id] ?? [], 0, [], undefined);
+    walk(services[runtime.id] ?? [], undefined, 0, [], undefined);
+    columnStart = handoffRow;
   });
 
   // Runtimes are chained, so what leaves the last service of one arrives at the

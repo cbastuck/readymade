@@ -36,7 +36,15 @@ import Select from "hkp-frontend/src/ui-components/Select";
  * depend on how a panel reached them.
  */
 type Props = {
-  cells: [string, unknown][];
+  /**
+   * What the cells are holding, or null where the runtime does not say.
+   *
+   * Null is not the same as none: a scope on a REST runtime keeps its cells in
+   * the process it runs in, and nothing carries them to a panel here — so the
+   * section says the origin and stops, rather than claiming a scope that is
+   * holding plenty is holding nothing.
+   */
+  cells: [string, unknown][] | null;
   /**
    * What the scope asks for, spelled as a board spells it.
    *
@@ -118,19 +126,28 @@ export default function ScopeSlots({
   return (
     <div className="w-full flex flex-col mt-1" style={{ fontSize: 12 }}>
       <div className="flex items-center gap-2">
-        <button
-          className="flex items-center gap-2 text-gray-400 text-left"
-          onClick={() => onOpenChange(!open)}
-          aria-expanded={open}
-          title="Named cells the services in this scope share values through."
-        >
-          {/* After the label rather than before it, so that Slots starts
-              where Output above it starts: a fold mark on the left would
-              indent the one row of the two that happens to fold. */}
-          <span>Slots</span>
-          <span>· {cells.length}</span>
-          <Chevron open={open} />
-        </button>
+        {cells ? (
+          <button
+            className="flex items-center gap-2 text-gray-400 text-left"
+            onClick={() => onOpenChange(!open)}
+            aria-expanded={open}
+            title="Named cells the services in this scope share values through."
+          >
+            {/* After the label rather than before it, so that Slots starts
+                where Output above it starts: a fold mark on the left would
+                indent the one row of the two that happens to fold. */}
+            <span>Slots</span>
+            <span>· {cells.length}</span>
+            <Chevron open={open} />
+          </button>
+        ) : (
+          <span
+            className="text-gray-400"
+            title="Named cells the services in this scope share values through. What they are holding is not reported from here."
+          >
+            Slots
+          </span>
+        )}
 
         {/* Nothing labels this on the row, because the row is already headed
             Slots: a second noun for them here — cells, data, shared state —
@@ -159,6 +176,7 @@ export default function ScopeSlots({
       </div>
 
       {open &&
+        cells &&
         (cells.length === 0 ? (
           <div className="text-neutral-500 pl-5 mt-1">nothing held</div>
         ) : (

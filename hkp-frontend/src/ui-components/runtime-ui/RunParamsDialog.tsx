@@ -25,6 +25,8 @@ type Props = {
   onRun: (params: unknown) => void;
   /** What receives the payload, as the description names it. */
   target?: string;
+  /** Where to open, for a caller drawn over the app. See `DialogContent`. */
+  container?: HTMLElement | null;
 };
 
 /**
@@ -43,6 +45,7 @@ export default function RunParamsDialog({
   onClose,
   onRun,
   target = "the first service",
+  container,
 }: Props) {
   const [mode, setMode] = useState<Mode>("fields");
   // Held apart, so looking at the other way of writing a payload and coming
@@ -54,7 +57,7 @@ export default function RunParamsDialog({
 
   return (
     <Dialog open={open} onOpenChange={(open: boolean) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" container={container}>
         <DialogHeader>
           <DialogTitle>Run with parameters</DialogTitle>
           <DialogDescription>
