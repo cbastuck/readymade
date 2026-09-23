@@ -718,6 +718,11 @@ export default function MobileStartPage(props: StartPageProps) {
                   ? () => onDeleteCloudBoard(detail.board).then(pop)
                   : undefined
               }
+              onUndeploy={
+                detail.board.onUndeploy
+                  ? () => detail.board.onUndeploy!().then(pop)
+                  : undefined
+              }
               loadHistory={
                 detailIsSaved && listBoardHistory
                   ? () => listBoardHistory(detail.board.name)

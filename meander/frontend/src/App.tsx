@@ -36,7 +36,13 @@ function shouldRenderPlaygroundFromUrl() {
   return pathname === "/playground" || pathname.startsWith("/playground/");
 }
 
-async function tryResumeLastBoard(): Promise<BoardDescriptor | undefined> {
+/** A resumed session: the board, and the unit documents it was stored with. */
+type ResumedBoard = {
+  board: BoardDescriptor;
+  units?: Record<string, BoardDescriptor>;
+};
+
+async function tryResumeLastBoard(): Promise<ResumedBoard | undefined> {
   const lastBoardName = localStorage.getItem("lastActiveBoardName");
   if (!lastBoardName) {
     return undefined;
@@ -45,11 +51,17 @@ async function tryResumeLastBoard(): Promise<BoardDescriptor | undefined> {
   try {
     const history = await backend.loadBoardHistory(lastBoardName);
     if (history.length > 0) {
-      return history[0].snapshot;
+      const entry = history[0];
+      // A composition is stored as a composition, so it has to be linked again
+      // to run — and these are the only documents left to link it from.
+      const units = entry.units?.length
+        ? Object.fromEntries(entry.units.map((unit) => [unit.uri, unit.board]))
+        : undefined;
+      return { board: entry.snapshot, units };
     }
   } catch {}
   try {
-    return await backend.loadBoard(lastBoardName);
+    return { board: await backend.loadBoard(lastBoardName) };
   } catch {}
   return undefined;
 }
@@ -63,6 +75,8 @@ type View =
       type: "playground";
       board: BoardDescriptor | null;
       source?: string;
+      /** Unit documents a resumed composition links against, keyed by `uri`. */
+      units?: Record<string, BoardDescriptor>;
     };
 
 /** Top-left logo for the cloud view, matching the playground's. */
@@ -192,8 +206,12 @@ function MeanderShell() {
         return;
       }
     }
-    tryResumeLastBoard().then((board) =>
-      setView({ type: "playground", board: board ?? null }),
+    tryResumeLastBoard().then((resumed) =>
+      setView({
+        type: "playground",
+        board: resumed?.board ?? null,
+        units: resumed?.units,
+      }),
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -217,6 +235,7 @@ function MeanderShell() {
         key={playgroundKey}
         initialBoard={view.board}
         boardFilePath={view.source}
+        unitDocuments={view.units}
         onLogo={onShowStartPage}
         shareToInject={share.shareToInject}
         onShareConsumed={share.onShareConsumed}

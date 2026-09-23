@@ -137,6 +137,13 @@ export default function BoardEntryPoint({
               padding: "6px 8px 0",
               flexWrap: "wrap",
               flexShrink: 0,
+              // The bar sits above the facade rather than inside it, so it has
+              // to paint the facade's own surface: left transparent, the page
+              // behind shows through the gaps between the tabs and the strip
+              // reads as a hole rather than as the top of the facade. Named
+              // with the value to use where the token is absent, since a facade
+              // is shown in hosts that do not define the playground's tokens.
+              background: "hsl(var(--background, 0 0% 100%))",
             }}
           >
             {views.map((view) => (

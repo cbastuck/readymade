@@ -46,6 +46,8 @@ function Playground(props: PlaygroundProps) {
     onSaveDialog,
     onChangeBoardname,
     unitOrigin,
+    onBoardSnapshot,
+    snapshotOnLoad,
   } = usePlaygroundController(props);
 
   // Only a name for a board that has none; generated once so it does not change
@@ -72,6 +74,8 @@ function Playground(props: PlaygroundProps) {
       onRemoveService={() => {}}
       availableRuntimeEngines={playgroundRuntimeEngines}
       onBoardInfrastructureChange={props.onBoardInfrastructureChange}
+      onBoardSnapshot={onBoardSnapshot}
+      snapshotOnLoad={snapshotOnLoad}
     >
       <PlaygroundInner
         description={description}
@@ -91,7 +95,7 @@ function Playground(props: PlaygroundProps) {
         onSaveDialog={onSaveDialog}
         setIsSaveDialogVisible={setIsSaveDialogVisible}
         onChangeBoardname={onChangeBoardname}
-        onUpdateAvailableRuntimeEngines={props.onUpdateAvailableRuntimeEngines}
+        remoteRuntimeStore={props.remoteRuntimeStore}
         requestedBoardName={props.boardName || requestedBoardName}
         emptySlot={props.emptySlot}
       >

@@ -40,6 +40,11 @@ export default class RuntimeRestScope implements RuntimeScope {
   runtimeOutput: WebSocket | undefined;
   registry: ServiceRegistry = [];
   /**
+   * Which runtime server hosts this runtime ("node", "python", "c++"), as the
+   * server reports it. Absent when the server does not say.
+   */
+  server?: string;
+  /**
    * The runtime's services in pipeline order.
    *
    * A browser runtime keeps its instances and can say what follows a given

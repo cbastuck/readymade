@@ -20,7 +20,12 @@ type Props = {
   bridgeWs: WebSocket | null;
 };
 
-export default function CloudBoard({ boardContext, boardName, description, bridgeWs }: Props) {
+export default function CloudBoard({
+  boardContext,
+  boardName,
+  description,
+  bridgeWs,
+}: Props) {
   // The hkp-node coordinator is the sole routing authority for cloud boards.
   // This handler only needs to handle two cases:
   //   1. coordinator-initiated call (context.onResolve set) — respond via onResolve
@@ -37,14 +42,24 @@ export default function CloudBoard({ boardContext, boardName, description, bridg
       return;
     }
 
-    if (isRuntimeBrowserClassType(runtime.type) && bridgeWs?.readyState === WebSocket.OPEN) {
+    if (
+      isRuntimeBrowserClassType(runtime.type) &&
+      bridgeWs?.readyState === WebSocket.OPEN
+    ) {
       bridgeWs.send(
-        JSON.stringify({ type: "result-from-browser", runtimeId: runtime.id, data: result }),
+        JSON.stringify({
+          type: "result-from-browser",
+          runtimeId: runtime.id,
+          data: result,
+        }),
       );
     }
   };
 
-  const processRuntimeByName = async (name: string, params: unknown): Promise<unknown> => {
+  const processRuntimeByName = async (
+    name: string,
+    params: unknown,
+  ): Promise<unknown> => {
     const rt = boardContext.runtimes.find((r) => r.name === name);
     if (rt) {
       const scope = boardContext.scopes[rt.id];
@@ -55,7 +70,9 @@ export default function CloudBoard({ boardContext, boardName, description, bridg
         return api.processRuntime(scope, params, null);
       }
     }
-    console.error(`CloudBoard.processRuntimeByName: no runtime named "${name}"`);
+    console.error(
+      `CloudBoard.processRuntimeByName: no runtime named "${name}"`,
+    );
     return null;
   };
 
@@ -126,7 +143,9 @@ export default function CloudBoard({ boardContext, boardName, description, bridg
       >
         <RuntimeMenu />
         {isDraggingRuntimeOver && (
-          <span style={{ fontSize: 11.5, color: "var(--hkp-accent-secondary)" }}>
+          <span
+            style={{ fontSize: 11.5, color: "var(--hkp-accent-secondary)" }}
+          >
             Drop to add runtime
           </span>
         )}

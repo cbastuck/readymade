@@ -6,6 +6,7 @@ import {
   ServiceAction,
   ServiceClass,
   ServiceInstance,
+  ServiceModule,
   ServiceUIComponent,
 } from "hkp-frontend/src/types";
 import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
@@ -13,6 +14,7 @@ import {
   findServiceUI as restFindServiceUI,
   type ServiceLookup,
 } from "../rest/UIRegistry";
+import { joinAddress } from "../board/address";
 import RuntimeRestServiceUI from "../rest/RuntimeRestServiceUI";
 import ServiceWithDropBars from "../ServiceWithDropBars";
 import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
@@ -31,6 +33,7 @@ import {
 type PipelineEntry = {
   serviceId: string;
   instanceId: string;
+  serviceName?: string;
   state?: any;
 };
 
@@ -48,6 +51,15 @@ type Props = {
   getActualInstance?: (instanceId: string) => ServiceInstance | null;
   /** Start with the pipeline content folded. */
   defaultCollapsed?: boolean;
+  /**
+   * The fold, when the host owns it.
+   *
+   * Given, this draws no fold control of its own — no "Show nested services",
+   * no chevron — and folds to nothing at all. A host that already has something
+   * to fold by, a track's name in a list of them, would otherwise make a reader
+   * open two things to see one.
+   */
+  collapsed?: boolean;
   /** What this pipeline is called in the breadcrumb trail once opened. A host
    *  with several pipelines names the branch as well as itself, since the trail
    *  would otherwise say only which service the level came from. */
@@ -60,11 +72,14 @@ export default function SubServicePipelineUI({
   FallbackUI = RuntimeRestServiceUI,
   getActualInstance,
   defaultCollapsed = true,
+  collapsed: collapsedByHost,
   levelLabel,
 }: Props) {
   const pipeline: PipelineEntry[] = service.state?.pipeline ?? [];
   const registry = service.app.listAvailableServices();
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const [selfCollapsed, setCollapsed] = useState(defaultCollapsed);
+  const hostFolds = collapsedByHost !== undefined;
+  const collapsed = hostFolds ? collapsedByHost : selfCollapsed;
   const isMobileHost = useIsMobileHost();
   const navigation = useNestedNavigation();
   const depth = useLevelDepth();
@@ -111,28 +126,36 @@ export default function SubServicePipelineUI({
     <div className="w-full flex flex-col">
       {/* Where the content can be shown, and the two places it can be shown in:
           here inside the panel, or on a level of its own. */}
+      {(!hostFolds || !collapsed) && (
       <div className="flex w-full items-center gap-2 mt-1">
-        <span
-          className="text-gray-400 whitespace-nowrap"
-          style={{ fontSize: 12 }}
-        >
-          Show nested sevices
-        </span>
+        {!hostFolds && (
+          <>
+            <span
+              className="text-gray-400 whitespace-nowrap"
+              style={{ fontSize: 12 }}
+            >
+              Show nested sevices
+            </span>
 
-        <button
-          className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
-          onClick={() => setCollapsed((c) => !c)}
-          aria-label={collapsed ? "Show content inline" : "Hide inline content"}
-          title={collapsed ? "Show content inline" : "Hide inline content"}
-        >
-          {collapsed ? (
-            <ChevronRight size={14} strokeWidth={1.5} />
-          ) : (
-            <ChevronDown size={14} strokeWidth={1.5} />
-          )}
-        </button>
+            <button
+              className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+              onClick={() => setCollapsed((c) => !c)}
+              aria-label={collapsed ? "Show content inline" : "Hide inline content"}
+              title={collapsed ? "Show content inline" : "Hide inline content"}
+            >
+              {collapsed ? (
+                <ChevronRight size={14} strokeWidth={1.5} />
+              ) : (
+                <ChevronDown size={14} strokeWidth={1.5} />
+              )}
+            </button>
+          </>
+        )}
 
-        {navigation && (
+        {/* A host that owns the fold puts this beside its own control, where
+            it reads as one of the things that can be done to a pipeline rather
+            than as a lone button on a row of its own. */}
+        {navigation && !hostFolds && (
           <button
             className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
             onClick={() =>
@@ -149,6 +172,7 @@ export default function SubServicePipelineUI({
           <div className="flex ml-auto">{selector("sub-pipeline", true)}</div>
         )}
       </div>
+      )}
 
       {/* Shown here rather than opened, so anything nested inside it is one
           more hop from the level this panel sits on. */}
@@ -298,6 +322,18 @@ function PipelineStrip({
     service.configure({ removeService: instanceId });
   };
 
+  // Sent as the whole pipeline with one name changed: `pipeline` is the one
+  // configure every host of a nested pipeline understands, on every runtime.
+  // A host that can tell only a name changed renames in place rather than
+  // rebuilding what it runs (see runtime/browser/pipelineNames).
+  const rename = (instanceId: string, serviceName: string) => {
+    service.configure({
+      pipeline: pipeline.map((entry) =>
+        entry.instanceId === instanceId ? { ...entry, serviceName } : entry,
+      ),
+    });
+  };
+
   const rearrange = (movedInstanceId: string, targetPos: number) => {
     const newPipeline = pipeline.filter(
       (entry) => entry.instanceId !== movedInstanceId,
@@ -339,6 +375,8 @@ function PipelineStrip({
         const onSubServiceAction = (command: ServiceAction) => {
           if (command.action === "remove") {
             remove(entry.instanceId);
+          } else if (command.action === "rename" && command.payload?.value) {
+            rename(entry.instanceId, command.payload.value);
           }
         };
 
@@ -355,8 +393,24 @@ function PipelineStrip({
 
         const proxyInstance: ServiceInstance = {
           uuid: entry.instanceId,
+          // A remote runtime reports a nested service under the path through
+          // the services containing it, because an instanceId is unique only
+          // inside its own pipeline. Without this the panel would listen under
+          // a name nothing is filed under and draw a service that never speaks.
+          // The path is the host's own — its address where it is nested too,
+          // and only then its uuid: a host two levels down that prefixed its
+          // uuid would drop every level above it. A host that is a pipeline
+          // rather than a service (NamedPipelinesPanel's proxy) carries the
+          // address of the service owning the pipeline, since the runtime files
+          // what is inside under that service and not under the entry's name.
+          address: joinAddress(
+            service.address ?? service.uuid,
+            entry.instanceId,
+          ),
           serviceId: entry.serviceId,
-          serviceName: descriptor?.serviceName ?? entry.serviceId,
+          // The name this pipeline gave it, which is what a rename writes.
+          serviceName:
+            entry.serviceName ?? descriptor?.serviceName ?? entry.serviceId,
           version: descriptor?.version,
           capabilities: descriptor?.capabilities,
           state: entry.state,
@@ -373,14 +427,20 @@ function PipelineStrip({
         // Keep configure() pointing at the proxy so config changes are persisted.
         const realInstance = getActualInstance?.(entry.instanceId);
         const subServiceInstance: ServiceInstance = realInstance
-          ? { ...realInstance, configure: configureProxy }
+          ? {
+              ...realInstance,
+              serviceName: entry.serviceName ?? realInstance.serviceName,
+              configure: configureProxy,
+            }
           : proxyInstance;
 
         // Look the service up the way a top-level one is looked up: by id
         // *and* version. A pipeline entry carries neither version nor
         // capabilities — only the runtime's registry knows them — so
         // without this a versioned service falls back to the UI of its
-        // older revision.
+        // older revision. A service whose module declares its own UI is
+        // found through that, the way a runtime's own services are, rather
+        // than depending on a registry listing it a second time.
         const SubServiceUI =
           (entry.serviceId &&
             findServiceUI({
@@ -388,6 +448,7 @@ function PipelineStrip({
               version: descriptor?.version,
               capabilities: descriptor?.capabilities,
             })) ||
+          (descriptor as ServiceModule | undefined)?.createUI ||
           FallbackUI;
 
         const uiElement = React.createElement(SubServiceUI as any, {

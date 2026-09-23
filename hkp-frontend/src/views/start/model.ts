@@ -446,6 +446,8 @@ export function stateMeta(state: BoardState): StateMeta {
       return { dot: "#8b90a0", label: "Recent" };
     case "runtime":
       return { dot: "#8b90a0", label: "Runtime" };
+    case "unsaved":
+      return { dot: "#d9822b", label: "Unsaved" };
     case "saved":
     default:
       return { dot: "#b9bdc9", label: "Saved" };

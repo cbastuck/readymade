@@ -232,7 +232,7 @@ describe("demo boards regression", () => {
       const runtimeId = board.runtimes[0].id;
       expect(serviceIdsForRuntime(board, runtimeId)).toEqual([
         "hookup.to/service/timer",
-        "hookup.to/service/stack",
+        "tracks",
         "hookup.to/service/monitor",
         "hookup.to/service/canvas",
         "hookup.to/service/gif-encoder",
@@ -248,17 +248,18 @@ describe("demo boards regression", () => {
       expect(topLevelServiceIds).toEqual([
         "hookup.to/service/timer",
         "hookup.to/service/game-of-life",
-        "hookup.to/service/stack",
+        "tracks",
       ]);
 
-      const stackService = (board.services[runtimeId] || []).find(
-        (service) => service.serviceId === "hookup.to/service/stack",
+      const tracksService = (board.services[runtimeId] || []).find(
+        (service) => service.serviceId === "tracks",
       ) as any;
-      expect(stackService).toBeTruthy();
+      expect(tracksService).toBeTruthy();
 
-      const branchServiceIds = (stackService.state?.services || []).flatMap(
-        (branch: any) =>
-          (branch.pipeline || []).map((step: any) => step.serviceId),
+      // A track is a pipeline, so each branch's services sit in it directly —
+      // there is nothing for a sub-service to wrap.
+      const branchServiceIds = (tracksService.state?.tracks || []).flatMap(
+        (track: any) => (track.pipeline || []).map((step: any) => step.serviceId),
       );
 
       expect(branchServiceIds).toEqual([

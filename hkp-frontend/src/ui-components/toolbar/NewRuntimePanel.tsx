@@ -4,16 +4,15 @@ import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { Input } from "hkp-frontend/src/ui-components/primitives/input";
 import { Label } from "hkp-frontend/src/ui-components/primitives/label";
 import { RuntimeClass } from "hkp-frontend/src/types";
-import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 
 type Props = {
   onAddRuntime: (rtClass: RuntimeClass) => void;
 };
 
+// Remote runtimes are registered as REST; GraphQL is legacy and not offered.
 export default function NewRuntimePanel({ onAddRuntime }: Props) {
   const [host, setHost] = useState("");
   const [name, setName] = useState("");
-  const [type, setType] = useState<"remote" | "realtime">("remote");
   return (
     <div className="flex flex-col gap-3 text-sm">
       <div className="flex flex-col gap-1.5">
@@ -46,21 +45,10 @@ export default function NewRuntimePanel({ onAddRuntime }: Props) {
         />
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Type
-        </Label>
-        <SelectorField
-          options={{ remote: "graphql", realtime: "rest" }}
-          value={type}
-          onChange={({ value }) => setType(value as any)}
-        />
-      </div>
-
       <div className="w-full text-right">
         <Button
           size="sm"
-          onClick={() => onAddRuntime({ type, name, url: host })}
+          onClick={() => onAddRuntime({ type: "rest", name, url: host })}
           disabled={!name || !host}
         >
           Register Runtime

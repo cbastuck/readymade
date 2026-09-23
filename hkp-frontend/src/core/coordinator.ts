@@ -21,6 +21,7 @@
  * an absent coordinator the same as an unresolved lookup.
  */
 
+import { resolveNestedState, splitAddress } from "../runtime/board/address";
 import {
   MountEndpoint,
   MOUNT_FIELD,
@@ -66,9 +67,25 @@ export interface BoardCoordinator {
 export function createBoardCoordinator(
   readState: () => CoordinatorState,
 ): BoardCoordinator {
-  const getServiceState = (runtimeId: string, serviceUuid: string): unknown =>
-    readState().services[runtimeId]?.find((svc) => svc.uuid === serviceUuid)
-      ?.state;
+  /**
+   * What a service on this board is currently saying.
+   *
+   * A board lists the services at the top of each runtime, so a scoped address
+   * is answered by finding the scope and then reading what it holds — which is
+   * in the scope's own state, since a container reports its pipeline as part
+   * of what it is. Without this a mount reference into a scope resolved to
+   * nothing, and a board could not point a client at an endpoint it had
+   * nested.
+   */
+  const getServiceState = (runtimeId: string, serviceUuid: string): unknown => {
+    const segments = splitAddress(serviceUuid);
+    const root = readState().services[runtimeId]?.find(
+      (svc) => svc.uuid === (segments.length > 1 ? segments[0] : serviceUuid),
+    )?.state;
+    return segments.length > 1
+      ? resolveNestedState(root, segments.slice(1))
+      : root;
+  };
 
   const resolveMountUrl = (value: string | null | undefined): string | null => {
     const ref = parseMountRef(value);

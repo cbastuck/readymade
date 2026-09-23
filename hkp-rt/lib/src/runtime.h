@@ -41,6 +41,12 @@ public:
   // from every service's state and reachable only through here.
   SecretVault& secrets() override { return m_vault; }
 
+  // The cells services in this runtime hold values in between passes.
+  //
+  // A runtime is the outermost thing a slot name can mean, so two services
+  // that name the same slot and are given nothing more specific share this one.
+  SlotStore& slots() override { return m_slots; }
+
   // Takes in values for references this runtime's services already hold.
   //
   // Merges rather than replaces, because this is what a client editing one
@@ -110,6 +116,14 @@ public:
   std::list<std::shared_ptr<Service>>::const_iterator findServiceById(const std::string& instanceId);
   std::list<std::shared_ptr<Service>>::const_iterator findServiceById(const std::string& instanceId) const;
 
+  // The service an address names, flat or scoped.
+  //
+  // The flat list is asked first, so an instanceId that happens to contain a
+  // dot is still that service rather than a path into something else. Only
+  // when no service carries the whole address is it read as one — see
+  // address.h. Null when nothing claims it.
+  std::shared_ptr<Service> resolveService(const std::string& address) const;
+
   inline const std::string &getId() const { return m_runtimeId; }
   /** See RuntimeConfiguration::garbageCollected. False means persist. */
   inline bool isGarbageCollected() const { return m_garbageCollected; }
@@ -140,6 +154,7 @@ private:
   std::string m_boardName;
   std::list<std::shared_ptr<Service>> m_services; // TODO: not thread safe
   SecretVault m_vault;
+  SlotStore m_slots;
   std::vector<RuntimeInput> m_inputs;
   ProcessDepth m_processDepth;
   // The call being processed right now, so an entry can name its run.

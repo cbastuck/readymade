@@ -4,6 +4,7 @@ import ServiceWithDropBars from "./ServiceWithDropBars";
 import { RuntimeDescriptor, ServiceClass, ServiceInstance } from "../types";
 import { useThemeControl } from "../ui-components/ThemeContext";
 import { useBoardContext } from "../BoardContext";
+import { useEditReportingService } from "../core/editedServices";
 import {
   Popover,
   PopoverContent,
@@ -70,14 +71,18 @@ export default function ServiceUiContainer(props: Props) {
     boardContext?.addService(svc, runtime, undefined, insertAtIndex);
   };
 
+  // A panel is where a person changes a service, so what it configures is an
+  // edit to the board (see core/editedServices).
+  const editable = useEditReportingService();
+
   const runtimeId = runtime.id;
   const serviceElements = useMemo(() => {
     return services
       ? services.map((service) =>
-          onCreateServiceUi(boardName, service, runtimeId, userId),
+          onCreateServiceUi(boardName, editable(service), runtimeId, userId),
         )
       : [];
-  }, [services, runtimeId, userId, boardName, onCreateServiceUi]);
+  }, [services, runtimeId, userId, boardName, onCreateServiceUi, editable]);
 
   if (!services) {
     return null;

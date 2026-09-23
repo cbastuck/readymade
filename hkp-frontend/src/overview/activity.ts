@@ -15,8 +15,15 @@
  * A runtime only sends a notification for a service something is listening to,
  * so a tracker that did not register would see a silent board — registering for
  * every node is what makes the ones with no panel on screen report at all.
+ *
+ * Registering is by *address*, not by uuid: a scope forwards what happens
+ * inside it under the path through the services containing it, since an
+ * instanceId is only unique within its own pipeline. Listening for the bare
+ * name of a nested service is listening for something nobody says, which is
+ * a scope that runs and reports nothing.
  */
 import { RuntimeScope } from "hkp-frontend/src/types";
+import { joinAddress } from "hkp-frontend/src/runtime/board/address";
 import { OverviewEdge, OverviewNode } from "./graph";
 import { previewValue } from "./preview";
 
@@ -101,7 +108,7 @@ export function describeResult(value: unknown): string {
 
 type Registration = {
   app: { unregisterNotificationTarget?: (svc: any, cb: any) => void };
-  target: { uuid: string };
+  target: { uuid: string; address?: string };
   callback: (notification: any) => void;
 };
 
@@ -139,7 +146,17 @@ export class ActivityTracker {
       if (!app?.registerNotificationTarget) {
         continue;
       }
-      const target = { uuid: node.uuid };
+      // What the service is called where it lives, and where to listen for
+      // it: the path through the services containing it, which is what a
+      // scope forwards under. A service the runtime holds itself is already
+      // at its own address, and says so by leaving this out.
+      const target: Registration["target"] = { uuid: node.uuid };
+      if (node.ancestry.length > 0) {
+        target.address = [...node.ancestry, node.uuid].reduce(
+          (path, part) => joinAddress(path, part),
+          "",
+        );
+      }
       const callback = (notification: any) =>
         this.onNotification(node.uuid, notification);
       app.registerNotificationTarget(target, callback);

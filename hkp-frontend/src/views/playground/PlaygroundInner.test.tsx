@@ -113,7 +113,7 @@ function createProps(
     onSaveDialog: vi.fn(async () => null),
     setIsSaveDialogVisible: vi.fn(),
     onChangeBoardname: vi.fn(),
-    onUpdateAvailableRuntimeEngines: undefined,
+    remoteRuntimeStore: undefined,
     requestedBoardName: "requested-board",
     children: null,
     emptySlot: null,

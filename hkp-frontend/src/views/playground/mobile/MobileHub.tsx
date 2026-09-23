@@ -5,6 +5,7 @@ import { useBoardContext } from "../../../BoardContext";
 import { BoardDescriptor, SavedBoard } from "../../../types";
 import { getLocalBoard, getLocalBoards, removeLocalBoard } from "../common";
 import { M } from "./tokens";
+import { stripMarkup } from "../../../ui-components/Markup";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import ManageRuntimesSheet from "./ManageRuntimesSheet";
 import ManageCoordinatorsSheet from "./ManageCoordinatorsSheet";
@@ -96,7 +97,9 @@ function SavedBoardRow({
           year: "numeric",
         })
       : "";
-  const subtitle = board.description?.trim() || dateLabel;
+  // One line with an ellipsis is all there is room for, so the markup a
+  // description may carry is removed rather than rendered.
+  const subtitle = stripMarkup(board.description ?? "") || dateLabel;
 
   // Horizontal swipe-to-reveal. `dx` is the foreground offset (0…-ACTION_WIDTH).
   const [dx, setDx] = useState(0);

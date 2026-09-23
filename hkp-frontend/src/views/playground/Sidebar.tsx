@@ -25,6 +25,7 @@ import {
   HKP_DND_SERVICE_CLASS_TYPE,
 } from "../../components/DropTypes";
 import ManageRuntimesDialog from "../../ui-components/toolbar/ManageRuntimesDialog";
+import { useRemoteRuntimeEditing } from "../../ui-components/toolbar/useRemoteRuntimeEditing";
 import { boardHasFacade, useFacadeView } from "../../facade/FacadeViewContext";
 import { useSelection } from "../../selection/SelectionContext";
 
@@ -538,28 +539,11 @@ export default function Sidebar() {
     }
   };
 
-  const persistRemoteRuntimes = (allEngines: RuntimeClass[]) => {
-    const remote = allEngines.filter(
-      (rt) =>
-        isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type),
-    );
-    localStorage.setItem("available-remote-runtimes", JSON.stringify(remote));
-  };
-
-  const onAddRuntimeEngine = (desc: RuntimeClass) => {
-    const updated = boardContext?.addAvailableRuntime(desc, false) ?? [];
-    persistRemoteRuntimes(updated);
-  };
-
-  const onRemoveRuntimeEngine = (desc: RuntimeClass) => {
-    const updated = boardContext?.removeAvailableRuntime(desc) ?? [];
-    persistRemoteRuntimes(updated);
-  };
-
-  const onUpdateRuntimeEngine = (desc: RuntimeClass) => {
-    const updated = boardContext?.addAvailableRuntime(desc, true) ?? [];
-    persistRemoteRuntimes(updated);
-  };
+  const {
+    onAdd: onAddRuntimeEngine,
+    onRemove: onRemoveRuntimeEngine,
+    onUpdate: onUpdateRuntimeEngine,
+  } = useRemoteRuntimeEditing();
 
   const remoteRuntimes = availableRuntimes.filter(
     (rt) =>

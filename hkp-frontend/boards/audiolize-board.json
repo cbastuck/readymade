@@ -5,7 +5,10 @@
       "id": "ui",
       "name": "Browser",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     }
   ],
   "services": {
@@ -20,50 +23,116 @@
         }
       },
       {
-        "uuid": "map-stack-svc",
-        "serviceId": "hookup.to/service/stack",
-        "serviceName": "Map to Notes",
+        "uuid": "notes-svc",
+        "serviceId": "tracks",
+        "serviceName": "Tracks",
         "state": {
-          "input": "multiplex",
-          "output": "array",
-          "services": [
+          "run": "serial",
+          "tracks": [
             {
-              "serviceId": "hookup.to/service/map",
-              "serviceName": "Snare / Hihat",
-              "template": {
-                "note=": "params.bot ? 'D4' : 'E4'"
-              }
+              "name": "snare",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "snare",
+                  "serviceName": "Snare / Hihat",
+                  "state": {
+                    "template": {
+                      "note=": "params.bot ? 'D4' : 'E4'"
+                    }
+                  }
+                }
+              ]
             },
             {
-              "serviceId": "hookup.to/service/map",
-              "serviceName": "Bass",
-              "template": {
-                "note=": "(!params.bot && rand() < 0.2) ? 'C4' : null"
-              }
+              "name": "bass",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "bass",
+                  "serviceName": "Bass",
+                  "state": {
+                    "template": {
+                      "note=": "(!params.bot && rand() < 0.2) ? 'C4' : null"
+                    }
+                  }
+                }
+              ]
             }
           ]
         }
       },
       {
-        "uuid": "agg-stack-svc",
-        "serviceId": "hookup.to/service/stack",
-        "serviceName": "Aggregate",
+        "uuid": "aggregates-svc",
+        "serviceId": "tracks",
+        "serviceName": "Tracks",
         "state": {
-          "input": "lanes",
-          "output": "array",
-          "services": [
+          "run": "serial",
+          "tracks": [
             {
-              "serviceId": "hookup.to/service/aggregator",
-              "serviceName": "Snare / Hihat Aggregator",
-              "interval": 90,
-              "property": "note",
-              "aggregator": "val_max_occ"
+              "name": "snare",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "snare-lane",
+                  "serviceName": "The snare note",
+                  "state": {
+                    "arrayMode": "single",
+                    "template": {
+                      "=": "params[0]"
+                    }
+                  }
+                },
+                {
+                  "serviceId": "hookup.to/service/aggregator",
+                  "instanceId": "snare",
+                  "serviceName": "Snare / Hihat Aggregator",
+                  "state": {
+                    "interval": 90,
+                    "property": "note",
+                    "aggregator": "val_max_occ"
+                  }
+                }
+              ]
             },
             {
-              "serviceId": "hookup.to/service/aggregator",
-              "serviceName": "Bass Aggregator",
-              "interval": 180,
-              "property": "note"
+              "name": "bass",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "bass-lane",
+                  "serviceName": "The bass note",
+                  "state": {
+                    "arrayMode": "single",
+                    "template": {
+                      "=": "params[1]"
+                    }
+                  }
+                },
+                {
+                  "serviceId": "hookup.to/service/aggregator",
+                  "instanceId": "bass",
+                  "serviceName": "Bass Aggregator",
+                  "state": {
+                    "interval": 180,
+                    "property": "note"
+                  }
+                }
+              ]
+            }
+          ],
+          "reduce": [
+            {
+              "instanceId": "played",
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Anything to play",
+              "state": {
+                "mode": "replace",
+                "arrayMode": "single",
+                "template": {
+                  "=": "filter(params.results, 'item !== null').length ? params.results : null"
+                }
+              }
             }
           ]
         }

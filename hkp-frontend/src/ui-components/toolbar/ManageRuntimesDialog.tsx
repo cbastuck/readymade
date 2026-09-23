@@ -14,7 +14,10 @@ type Props = {
   isOpen: boolean;
   onRemoveRuntimeEngine: (rt: RuntimeClass) => void;
   onAddRuntimeEngine: (desc: RuntimeClass) => void;
-  onUpdateRuntimeEngine: (updated: RuntimeClass) => void;
+  onUpdateRuntimeEngine: (
+    previous: RuntimeClass,
+    next: RuntimeClass,
+  ) => void;
   onClose: () => void;
 };
 

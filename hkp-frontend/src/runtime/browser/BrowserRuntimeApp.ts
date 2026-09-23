@@ -132,6 +132,15 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
         },
       });
     },
+    /**
+     * The cells this service holds values in between passes.
+     *
+     * Reached through the app because a browser service has no host of its
+     * own: `this.app` is the whole of what it can ask. Which cells those are
+     * is the scope's to decide — its own, or the ones a scope around it
+     * lent it — so a service names a slot and never a store.
+     */
+    slots: () => scope.slots(),
     getRuntimeVariable: () => boardVariables,
     setRuntimeVariable: (key: string, value: any) => {
       boardVariables[key] = value;

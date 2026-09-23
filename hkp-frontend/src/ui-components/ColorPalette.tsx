@@ -176,7 +176,7 @@ const paletteRGB = [
   "#db93a6",
   "#bc7c8b",
   "#fffafb",
-  "#NaNNaNNaN",
+  "#fff4f5",
   "#ffedef",
   "#ffdde1",
   "#ffc7cb",
@@ -250,9 +250,9 @@ export default function ColorPalette({ onChange }: Props) {
     <div className="flex flex-col gap-1">
       <h2>Palette</h2>
       <div className="grid grid-cols-11 gap-1">
-        {paletteRGB.map((presetColor) => (
+        {paletteRGB.map((presetColor, index) => (
           <button
-            key={presetColor}
+            key={index}
             style={{ background: presetColor }}
             onClick={() => onChange(presetColor)}
             className="w-10 h-5"

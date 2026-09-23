@@ -15,6 +15,8 @@ import {
 } from "../types";
 import { FacadeDescriptor } from "../facade/types";
 import { BoardLinkage } from "../runtime/board/units";
+import { BoardDocuments } from "./boardPersistence";
+import { BoardSnapshot } from "./boardSnapshots";
 import { UnitOrigin } from "./linkUnits";
 import { BoardContextState, EngineState } from "../BoardContext";
 import { BoardCoordinator } from "./coordinator";
@@ -73,7 +75,36 @@ export type Props = {
   serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
   onUpdateBoardState?: (updated: BoardDescriptor) => void;
   onLoad?: (context: BoardContextState) => void;
-  onBoardInfrastructureChange?: (board: BoardDescriptor) => void;
+  /**
+   * The board's infrastructure changed: runtimes, services, name or facade.
+   *
+   * `board` is the projection — the flat board, which is what a coordinator
+   * registers. `documents` is the same board as the sources it was assembled
+   * from, which is what anything storing the board for later must keep: a
+   * composition re-read as a projection declares no units, so the facades its
+   * units contribute are lost the next time it is opened.
+   */
+  onBoardInfrastructureChange?: (
+    board: BoardDescriptor,
+    documents: BoardDocuments,
+  ) => void;
+  /**
+   * The board as it is running, for a host that keeps it to resume later.
+   *
+   * Taken after a structural change and after a person changes a service's
+   * configuration (`markBoardChanged`), once changes pause. Serialised from the
+   * live services, unlike `onBoardInfrastructureChange`, and only when it
+   * differs from the last one. Configure calls a board makes itself — a
+   * Configurator driving another service — do not cause one, though a snapshot
+   * taken for another reason includes what they set.
+   */
+  onBoardSnapshot?: (snapshot: BoardSnapshot) => void;
+  /**
+   * Whether opening a board produces a snapshot. Default true. False for a host
+   * whose snapshots mean "changed since it was opened" — web drafts, where an
+   * opened and untouched saved board is not a draft.
+   */
+  snapshotOnLoad?: boolean;
 };
 
 export type BoardStateRefs = {

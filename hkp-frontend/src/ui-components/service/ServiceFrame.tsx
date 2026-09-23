@@ -174,6 +174,10 @@ export default function ServiceFrame({
   };
 
   const onApplyConfig = async (newConfig: string | object) => {
+    // The name first and on its own: it belongs to the board, not to the
+    // service's configuration, so a configuration that fails to apply does not
+    // take it down with it.
+    applyNameDraft();
     try {
       const config = assureJSON(newConfig);
       const actualConfig =
@@ -195,6 +199,16 @@ export default function ServiceFrame({
   };
 
   const [filteredServiceConfig, setFilteredServiceConfig] = useState("");
+  // What the name field holds while the dialog is open. Starts from the name
+  // the service has each time the dialog opens, so an edit that was never
+  // applied does not come back.
+  const [nameDraft, setNameDraft] = useState("");
+  useEffect(() => {
+    if (configVisible) {
+      setNameDraft(serviceName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configVisible]);
   useEffect(() => {
     if (configVisible) {
       if (service.getConfiguration) {
@@ -218,6 +232,13 @@ export default function ServiceFrame({
 
   const onChangeName = (newName: string) => {
     onAction({ action: "rename", service, payload: { value: newName } });
+  };
+
+  const applyNameDraft = () => {
+    const name = nameDraft.trim();
+    if (name && name !== serviceName) {
+      onChangeName(name);
+    }
   };
 
   const copyServiceUuid = async () => {
@@ -244,6 +265,72 @@ export default function ServiceFrame({
   if (frameless) {
     return children;
   }
+
+  const configDetails = (
+    <>
+      <label
+        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}
+      >
+        <span>Name:</span>
+        <input
+          type="text"
+          aria-label="Service name"
+          value={nameDraft}
+          onChange={(e) => setNameDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              applyNameDraft();
+            }
+          }}
+          style={{
+            flex: 1,
+            maxWidth: 320,
+            border: "1px solid #b8b2ab",
+            borderRadius: 6,
+            padding: "2px 8px",
+            // Below 16px iOS zooms into a focused input and stays zoomed.
+            fontSize: isTouch ? 16 : 13,
+            color: "var(--text, #1a1a1a)",
+            background: "white",
+          }}
+        />
+      </label>
+      <div>
+        Service:{" "}
+        <a
+          href={`${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {serviceId}
+        </a>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+
+          gap: 8,
+        }}
+      >
+        <span>Service ID:{` ${service.uuid}`}</span>
+        <button
+          type="button"
+          onClick={copyServiceUuid}
+          style={{
+            border: "1px solid #b8b2ab",
+            borderRadius: 6,
+            padding: "2px 8px",
+            fontSize: 12,
+            background: "#f8f6f3",
+            cursor: "pointer",
+          }}
+        >
+          {serviceIdCopied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </>
+  );
 
   const dragData = filterPrivateMembers(
     service,
@@ -312,40 +399,7 @@ export default function ServiceFrame({
               onClose={onCloseConfig}
               actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
             >
-              <div>
-                Service:{" "}
-                <a
-                  href={`${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {serviceId}
-                </a>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-
-                  gap: 8,
-                }}
-              >
-                <span>Service ID:{` ${service.uuid}`}</span>
-                <button
-                  type="button"
-                  onClick={copyServiceUuid}
-                  style={{
-                    border: "1px solid #b8b2ab",
-                    borderRadius: 6,
-                    padding: "2px 8px",
-                    fontSize: 12,
-                    background: "#f8f6f3",
-                    cursor: "pointer",
-                  }}
-                >
-                  {serviceIdCopied ? "Copied" : "Copy"}
-                </button>
-              </div>
+              {configDetails}
             </EditorDialog>
           </div>
           {!isTouch && (
@@ -403,7 +457,9 @@ export default function ServiceFrame({
             isOpen={configVisible}
             onClose={onCloseConfig}
             actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
-          />
+          >
+            {configDetails}
+          </EditorDialog>
 
           <div
             style={{

@@ -24,6 +24,8 @@ The browser Cache is a general-purpose in-memory store that can be merged increm
 - **`config`** — the cache is updated when `configure()` is called with `cache+` or `cacheProperties+`.
 - **`process`** — the cache is updated on each pipeline tick (the incoming value is merged in).
 
+Its panel shows one row per cached property — the current value beside its `initial` one, bold where they differ — and updates live as the cache changes. The board keeps only `initial` and `updateTrigger`; the gathered values start over from `initial` on every load.
+
 ### hkp-rt
 
 The hkp-rt Cache caches the result of downstream pipeline processing (i.e. the return value of `next(data)`) using a string key derived from the input. Results can optionally be persisted to disk so they survive restarts.

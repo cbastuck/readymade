@@ -266,6 +266,78 @@ describe("projection", () => {
     );
   });
 
+  it("points a reference in any field at the id the runtime ended up with", () => {
+    // A service names its target in whatever field it already calls its target:
+    // a url, a feed's url, a value a Map puts into a document. The scheme is
+    // what makes them recognisable without agreeing on a field.
+    const withRefs: UnitBoard = {
+      ...hotels,
+      services: {
+        ...hotels.services,
+        review: [
+          {
+            uuid: "reader",
+            serviceId: "rss",
+            serviceName: "Feed",
+            state: { feeds: [{ url: "hkp-mount://intake/server", name: "In" }] },
+          },
+          {
+            uuid: "about",
+            serviceId: "map",
+            serviceName: "About",
+            state: {
+              template: {
+                self: "hkp-mount://intake/server",
+                elsewhere: "hkp-mount://somebody-else/server",
+                plain: "https://example.test/feed.xml",
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    const { board } = projectUnits(emptyComposition, [
+      { entry: { uri: "hotels" }, board: withRefs, name: "hotels" },
+    ]);
+
+    const [reader, about] = board.services["hotels.review"];
+    expect((reader.state.feeds as any)[0].url).toBe("hkp-mount://hotels.intake/server");
+    expect((about.state.template as any).self).toBe("hkp-mount://hotels.intake/server");
+    // A runtime this unit does not have is left as written: already an address,
+    // or a mistake worth seeing.
+    expect((about.state.template as any).elsewhere).toBe(
+      "hkp-mount://somebody-else/server",
+    );
+    expect((about.state.template as any).plain).toBe("https://example.test/feed.xml");
+  });
+
+  it("substitutes a board's own parameters when it is the one being opened", () => {
+    // What "running alone" means: the defaults on a unit declaration are the
+    // values a unit has when nobody is overriding them, so a unit opened by
+    // itself must not run with {{param.…}} still in the field.
+    const alone: UnitBoard = {
+      boardName: "Hotels",
+      unit: { name: "hotels", params: { database: "hotels-db" } },
+      runtimes: [{ id: "intake", name: "In", type: "rest", url: "", state: {} } as any],
+      services: {
+        intake: [
+          {
+            uuid: "rows",
+            serviceId: "sql",
+            serviceName: "Rows",
+            state: { database: "{{param.database}}" },
+          },
+        ],
+      },
+    };
+
+    const { board, diagnostics } = projectUnits(alone, []);
+
+    expect(board.services.intake[0].state.database).toBe("hotels-db");
+    expect(hasErrors(diagnostics)).toBe(false);
+  });
+
   it("collects one view per unit rather than merging facades", () => {
     const withFacade = { ...hotels, facade: { layout: "single", panels: [] } } as UnitBoard;
     const { views } = projectUnits(
@@ -274,6 +346,19 @@ describe("projection", () => {
     );
     expect(views.map((view) => view.id)).toEqual(["composition", "hotels"]);
     expect(views[1].runtimeIds).toEqual(["hotels.intake", "hotels.review"]);
+  });
+
+  it("leaves out the face of a unit the composition included as a resource", () => {
+    // A unit whose contribution is an address rather than a panel still needs
+    // that panel to be openable on its own, so the composition is what says it
+    // has no face here — and everything else about the unit is placed as usual.
+    const withFacade = { ...hotels, facade: { layout: "single", panels: [] } } as UnitBoard;
+    const { views, board } = projectUnits(emptyComposition, [
+      { entry: { uri: "hotels", view: false }, board: withFacade, name: "hotels" },
+    ]);
+
+    expect(views).toEqual([]);
+    expect(board.services["hotels.intake"]).toBeTruthy();
   });
 });
 

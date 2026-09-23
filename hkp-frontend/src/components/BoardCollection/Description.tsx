@@ -1,5 +1,6 @@
 import { s, t } from "../../styles";
 import CardText from "hkp-frontend/src/ui-components/CardText";
+import Markup from "hkp-frontend/src/ui-components/Markup";
 
 type Props = {
   name: string;
@@ -16,7 +17,7 @@ export default function Description({ name, description }: Props) {
     <div style={s(t.nc)}>
       {d.map((content, idx) => (
         <CardText key={`usecase-${name}-description-${idx}`}>
-          {typeof content === "string" ? content : ""}
+          {typeof content === "string" ? <Markup text={content} /> : ""}
         </CardText>
       ))}
     </div>

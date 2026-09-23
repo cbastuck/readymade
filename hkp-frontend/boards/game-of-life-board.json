@@ -5,7 +5,10 @@
       "id": "ui",
       "name": "UI",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     }
   ],
   "services": {
@@ -29,16 +32,14 @@
         "serviceName": "Game of Life"
       },
       {
-        "uuid": "stack-svc",
-        "serviceId": "hookup.to/service/stack",
-        "serviceName": "Observers",
+        "uuid": "branches-svc",
+        "serviceId": "tracks",
+        "serviceName": "Tracks",
         "state": {
-          "input": "multiplex",
-          "services": [
+          "run": "serial",
+          "tracks": [
             {
-              "serviceId": "sub-service",
-              "serviceName": "Visual",
-              "uuid": "visual-branch",
+              "name": "visual-branch",
               "pipeline": [
                 {
                   "instanceId": "gol-renderer",
@@ -57,21 +58,26 @@
                   "state": {
                     "clearOnRedraw": true,
                     "resizable": true,
-                    "size": [600, 400]
+                    "size": [
+                      600,
+                      400
+                    ]
                   }
                 }
               ]
             },
             {
-              "serviceId": "sub-service",
-              "serviceName": "Audio",
-              "uuid": "audio-branch",
+              "name": "audio-branch",
               "pipeline": [
                 {
                   "instanceId": "gol-extract",
                   "serviceId": "hookup.to/service/map",
                   "serviceName": "Extract Objects",
-                  "state": { "template": { "=": "params.objects" } }
+                  "state": {
+                    "template": {
+                      "=": "params.objects"
+                    }
+                  }
                 },
                 {
                   "instanceId": "gol-enrich",
@@ -88,13 +94,18 @@
                   "instanceId": "gol-sort",
                   "serviceId": "hookup.to/service/sort",
                   "serviceName": "Sort",
-                  "state": { "by": "alive", "dir": "desc" }
+                  "state": {
+                    "by": "alive",
+                    "dir": "desc"
+                  }
                 },
                 {
                   "instanceId": "gol-limit",
                   "serviceId": "hookup.to/service/limit",
                   "serviceName": "Limit",
-                  "state": { "n": 6 }
+                  "state": {
+                    "n": 6
+                  }
                 },
                 {
                   "instanceId": "gol-to-notes",
@@ -112,7 +123,11 @@
                   "instanceId": "gol-synth",
                   "serviceId": "hookup.to/service/sound",
                   "serviceName": "Sound",
-                  "state": { "volume": 0.25, "waveType": "sawtooth", "generator": "synth" }
+                  "state": {
+                    "volume": 0.25,
+                    "waveType": "sawtooth",
+                    "generator": "synth"
+                  }
                 }
               ]
             }

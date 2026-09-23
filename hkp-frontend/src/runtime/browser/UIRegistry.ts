@@ -1,12 +1,12 @@
 import { ServiceUIComponent } from "../../types";
 import type { ServiceLookup } from "../rest/UIRegistry";
 import MapUI from "./services/MapUI";
+import TracksUI from "./services/TracksUI";
 import TimerUI from "./services/TimerUI";
 import MonitorUI from "./services/MonitorUI";
 import CanvasUI from "./services/CanvasUI";
 import InputUI from "./services/InputUI";
 import WebsocketClientUI from "./services/WebsocketClientUI";
-import StackUI from "./services/StackUI";
 import CameraUI from "./services/CameraUI";
 import XYPadUI from "./services/XYPadUI";
 import AggregatorUI from "./services/AggregatorUI";
@@ -79,8 +79,8 @@ export function findServiceUI(
       return InjectorUI;
     case "hookup.to/service/map":
       return MapUI;
-    case "hookup.to/service/stack":
-      return StackUI;
+    case "tracks":
+      return TracksUI;
     case "hookup.to/service/filter":
       return FilterUI;
     case "hookup.to/service/aggregator":

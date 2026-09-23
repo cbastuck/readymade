@@ -23,7 +23,7 @@ export default function Routes(): JSX.Element {
   return (
     <RouterRoutes>
       <Route path="/" element={<Navigate replace to="/playground" />} />
-      <Route path="/playground/:board" element={<Playground />} />
+      <Route path="/playground/:board" element={<Playground keepDrafts />} />
       <Route path="/playground" element={<PlaygroundRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/logout" element={<Logout />} />

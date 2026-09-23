@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 import SubServicePipelineUI from "../SubServicePipelineUI";
 import { ServiceInstance } from "hkp-frontend/src/types";
@@ -72,5 +72,67 @@ describe("UI lookup for nested services", () => {
       version: undefined,
       capabilities: undefined,
     });
+  });
+});
+
+describe("a nested service whose module declares its own UI", () => {
+  it("gets that UI when the lookup does not list it", () => {
+    // The way a runtime's own services are drawn. Without this, a service
+    // added after the lookup was last extended — Hold — drew the generic
+    // panel inside a pipeline and its own beside it.
+    const HoldPanel = ({ service }: any) => <div>hold:{service.uuid}</div>;
+    const service = {
+      uuid: "host-1",
+      serviceId: "sub-service",
+      serviceName: "Sub-Service",
+      state: { pipeline: [{ serviceId: "hold", instanceId: "inner" }] },
+      configure: vi.fn(),
+      app: {
+        listAvailableServices: () => [
+          { serviceId: "hold", serviceName: "Hold", createUI: HoldPanel },
+        ],
+      },
+    } as unknown as ServiceInstance;
+
+    render(
+      <SubServicePipelineUI
+        service={service}
+        findServiceUI={() => null}
+        FallbackUI={() => <div>generic</div>}
+        defaultCollapsed={false}
+      />,
+    );
+
+    expect(screen.getByText("hold:inner")).toBeTruthy();
+    expect(screen.queryByText("generic")).toBeNull();
+  });
+});
+
+describe("a host that owns the fold", () => {
+  it("draws no fold control of its own, and nothing at all while shut", () => {
+    // A Tracks panel folds by the track's name. Left to fold itself too, the
+    // strip would make a reader open a track and then open its pipeline to see
+    // the same thing.
+    const { rerender } = render(
+      <SubServicePipelineUI
+        service={pipelineService([{ serviceId: "map", instanceId: "inner" }])}
+        findServiceUI={() => (({ service }: any) => <div>panel:{service.uuid}</div>) as any}
+        collapsed={true}
+      />,
+    );
+
+    expect(screen.queryByText(/Show nested sevices/)).toBeNull();
+    expect(screen.queryByText("panel:inner")).toBeNull();
+
+    rerender(
+      <SubServicePipelineUI
+        service={pipelineService([{ serviceId: "map", instanceId: "inner" }])}
+        findServiceUI={() => (({ service }: any) => <div>panel:{service.uuid}</div>) as any}
+        collapsed={false}
+      />,
+    );
+
+    expect(screen.getByText("panel:inner")).toBeTruthy();
+    expect(screen.queryByText(/Show nested sevices/)).toBeNull();
   });
 });

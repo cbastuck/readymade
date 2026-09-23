@@ -29,6 +29,13 @@ export default function MeanderAppMenu() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-48 mx-4">
+          <DropdownMenuItem
+            className="text-base"
+            onSelect={() => setIsSettingsOpen(true)}
+          >
+            <Settings size={16} className="mr-2" />
+            <span>Settings</span>
+          </DropdownMenuItem>
           {user ? (
             <DropdownMenuItem
               className="text-base"
@@ -48,13 +55,6 @@ export default function MeanderAppMenu() {
               <span>Login</span>
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem
-            className="text-base"
-            onSelect={() => setIsSettingsOpen(true)}
-          >
-            <Settings size={16} className="mr-2" />
-            <span>Settings</span>
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <MeanderSettingsDialog

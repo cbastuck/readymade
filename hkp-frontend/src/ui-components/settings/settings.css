@@ -1,0 +1,555 @@
+/* Settings kit — the vocabulary of the settings dialog and the connection
+   panels, in the start page's terms: white cards on a soft ground, small
+   uppercase section labels, list rows with an icon tile, and the accent for
+   what is selected or acted on.
+
+   Sizes are set here rather than through text-size utilities because the hosts
+   disagree about those: meander's tailwind config replaces the font-size scale
+   (no `text-xs`, a smaller `text-sm`), so the same class renders differently
+   per host. Every rule is one `hkp-set-` class, and the kit's elements carry no
+   utilities for the properties set here, so nothing ties on specificity. */
+
+.hkp-set {
+  --set-ink: var(--text, #14161c);
+  --set-mid: var(--text-mid, #5f6475);
+  --set-mut: var(--text-dim, #9a9fae);
+  --set-line: #e6e8ee;
+  --set-line-soft: #eceef3;
+  --set-ground: #f6f7f9;
+  --set-hover: #f1f2f6;
+  --set-accent: var(--hkp-accent, #2784d5);
+  --set-accent-dim: var(--hkp-accent-dim, rgb(39 132 213 / 0.12));
+  --set-danger: #d93a3a;
+  --set-warn: #a35f00;
+  --set-warn-bg: #fff7e8;
+  --set-ok: #0f7a52;
+  --set-ok-bg: #eaf8f1;
+
+  font-family: var(--hkp-start-font, "DM Sans"), system-ui, sans-serif;
+  color: var(--set-ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hkp-set button,
+.hkp-set input {
+  font-family: inherit;
+}
+
+/* ── Dialog frame ─────────────────────────────────────────────────────────── */
+
+.hkp-set-frame {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.hkp-set-nav {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px 10px;
+  background: var(--set-ground);
+  border-right: 1px solid var(--set-line);
+  overflow-y: auto;
+}
+
+.hkp-set-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Titles are headings, which globals.css styles as the old display face with
+   wide tracking; each property it sets is set again here. */
+.hkp-set-nav-title,
+.hkp-set-pane-title {
+  font-family: inherit;
+  color: var(--set-ink);
+  text-align: left;
+}
+
+.hkp-set-nav-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  padding: 2px 10px 14px;
+  margin: 0;
+}
+
+.hkp-set-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--set-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.hkp-set-nav-item:hover {
+  background: var(--set-hover);
+}
+.hkp-set-nav-item[data-state="active"] {
+  background: var(--set-accent-dim);
+}
+.hkp-set-nav-item:focus-visible {
+  outline: 2px solid var(--set-accent);
+  outline-offset: -2px;
+}
+
+.hkp-set-nav-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--set-line);
+  color: var(--set-mid);
+}
+.hkp-set-nav-item[data-state="active"] .hkp-set-nav-icon {
+  background: var(--set-accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+.hkp-set-pane {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.hkp-set-pane[hidden] {
+  display: none;
+}
+
+.hkp-set-pane-header {
+  flex: 0 0 auto;
+  padding: 20px 56px 14px 24px;
+  border-bottom: 1px solid var(--set-line-soft);
+}
+.hkp-set-pane-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.hkp-set-pane-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 24px 24px;
+}
+
+/* The close button the dialog primitive draws: sized to the header here. */
+.hkp-set-dialog > .absolute {
+  top: 18px;
+  right: 18px;
+}
+.hkp-set-dialog > .absolute svg {
+  width: 18px;
+  height: 18px;
+  color: var(--set-mid);
+}
+
+/* Narrow screens: the navigation becomes a strip above the pane. */
+@media (max-width: 640px) {
+  .hkp-set-frame {
+    flex-direction: column;
+  }
+  .hkp-set-nav {
+    flex: 0 0 auto;
+    padding: 12px 12px 10px;
+    border-right: none;
+    border-bottom: 1px solid var(--set-line);
+    overflow-x: auto;
+  }
+  .hkp-set-nav-list {
+    flex-direction: row;
+    gap: 4px;
+  }
+  .hkp-set-nav-title {
+    padding: 0 6px 10px;
+    font-size: 16px;
+  }
+  .hkp-set-nav-item {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 6px 10px 6px 6px;
+  }
+  .hkp-set-pane-header {
+    padding: 14px 48px 10px 16px;
+  }
+  .hkp-set-pane-body {
+    padding: 14px 16px 20px;
+  }
+}
+
+/* ── Content ──────────────────────────────────────────────────────────────── */
+
+.hkp-set-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.hkp-set-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hkp-set-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 24px;
+}
+
+.hkp-set-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--set-mut);
+}
+
+.hkp-set-hint {
+  font-size: 12.5px;
+  color: var(--set-mid);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.hkp-set-card {
+  background: #fff;
+  border: 1px solid var(--set-line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+/* A card of rows, divided like the start page's columns. */
+.hkp-set-list {
+  background: #fff;
+  border: 1px solid var(--set-line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.hkp-set-list > * + * {
+  border-top: 1px solid var(--set-line-soft);
+}
+
+.hkp-set-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+.hkp-set-row-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--set-ground);
+  color: var(--set-mid);
+}
+
+.hkp-set-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hkp-set-row-title {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hkp-set-row-sub {
+  font-size: 11.5px;
+  color: var(--set-mut);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hkp-set-empty {
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--set-mut);
+}
+
+.hkp-set-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+/* ── Controls ─────────────────────────────────────────────────────────────── */
+
+.hkp-set-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--set-line);
+  background: #fff;
+  color: var(--set-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    filter 0.12s;
+}
+.hkp-set-btn:hover:not(:disabled) {
+  background: var(--set-hover);
+}
+.hkp-set-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.hkp-set-btn:focus-visible {
+  outline: 2px solid var(--set-accent);
+  outline-offset: 1px;
+}
+.hkp-set-btn--primary {
+  background: var(--set-accent);
+  border-color: transparent;
+  color: #fff;
+}
+.hkp-set-btn--primary:hover:not(:disabled) {
+  background: var(--set-accent);
+  filter: brightness(1.08);
+}
+.hkp-set-btn--block {
+  width: 100%;
+  height: 36px;
+  border-style: dashed;
+  color: var(--set-mid);
+}
+
+.hkp-set-icon-btn {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--set-mut);
+  cursor: pointer;
+}
+.hkp-set-icon-btn:hover {
+  background: var(--set-hover);
+  color: var(--set-danger);
+}
+.hkp-set-icon-btn--neutral:hover {
+  color: var(--set-ink);
+}
+
+.hkp-set-input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--set-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--set-ink);
+  font-size: 13px;
+  outline: none;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+.hkp-set-input::placeholder {
+  color: var(--set-mut);
+}
+.hkp-set-input:focus {
+  border-color: var(--set-accent);
+  box-shadow: 0 0 0 3px var(--set-accent-dim);
+}
+/* iOS zooms into any field under 16px and does not zoom back out. */
+@media (pointer: coarse) {
+  .hkp-set-input {
+    font-size: 16px;
+  }
+}
+
+.hkp-set-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hkp-set-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hkp-set-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--set-ink);
+  cursor: pointer;
+}
+.hkp-set-check input {
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--set-accent);
+  flex: 0 0 auto;
+}
+
+/* Segmented choice: the selected option wears the accent. */
+.hkp-set-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hkp-set-choice {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 34px;
+  padding: 6px 14px;
+  border-radius: 9px;
+  border: 1px solid var(--set-line);
+  background: #fff;
+  color: var(--set-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.hkp-set-choice:hover {
+  border-color: #d3d7e0;
+}
+.hkp-set-choice[aria-pressed="true"] {
+  border-color: var(--set-accent);
+  background: var(--set-accent-dim);
+}
+.hkp-set-choice-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--set-mid);
+}
+
+/* On/off switch. */
+.hkp-set-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: #d5d9e1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.hkp-set-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  transition: transform 0.15s;
+}
+.hkp-set-switch[aria-checked="true"] {
+  background: var(--set-accent);
+}
+.hkp-set-switch[aria-checked="true"]::after {
+  transform: translateX(16px);
+}
+
+/* A remark under a section: neutral, a warning, or a confirmation. */
+.hkp-set-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--set-ground);
+  color: var(--set-mid);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.hkp-set-note svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.hkp-set-note--warn {
+  background: var(--set-warn-bg);
+  color: var(--set-warn);
+}
+.hkp-set-note--ok {
+  background: var(--set-ok-bg);
+  color: var(--set-ok);
+}
+
+.hkp-set-error {
+  font-size: 12px;
+  color: var(--set-danger);
+}
+
+.hkp-set-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--set-line);
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  color: var(--set-ink);
+}
+.hkp-set-copy:hover {
+  background: var(--set-hover);
+}
+
+@keyframes hkp-set-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.hkp-set-spin {
+  animation: hkp-set-spin 1s linear infinite;
+}

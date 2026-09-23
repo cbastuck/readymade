@@ -232,7 +232,7 @@ definitions live in `hkp-frontend/src/facade/types.ts`.
 ```json
 {
   "layout": "single | columns",
-  "panels": [{ "id": "string", "title": "optional", "layout": { ...LayoutItem } }]
+  "panels": [{ "id": "string", "title": "optional", "width": "70%", "layout": { ...LayoutItem } }]
 }
 ```
 
@@ -247,6 +247,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `level-meter`      | Vertical bar driven by a service notification                              |
 | `canvas`           | Embeds a Canvas service's drawing surface                                  |
 | `camera`           | Live camera; the frame it captures goes down the pipeline                   |
+| `calendar`         | A day as a calendar: hours down the side, one column per bookable thing     |
 | `xy-pad`           | Embeds an XY Pad service                                                   |
 | `qr-code`          | Displays a QR code from a service notification                             |
 | `message-list`     | Scrolling message thread with optional inline composer                     |
@@ -254,6 +255,31 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `text`             | Whatever a service is saying, as text — a reason, a summary, a count       |
 | `data-table`       | Rows from a service; an array replaces the table, an object appends a row  |
 | `file-pick`        | File chooser that sends the file to a service                              |
+| `audio-player`     | Plays a service's list of audio files through, one after the next          |
+
+Two things a facade declares beside its panels, both about **what is on screen and when**:
+
+```json
+{
+  "tabs": [{ "id": "read", "title": "Read", "panels": ["articles"] }],
+  "defaultTab": "read",
+  "notices": [{ "source": { "serviceUuid": "take-hour", "path": "error" }, "tone": "error" }]
+}
+```
+
+A panel's `width` is its share of the row it shares with other panels ("70%", or the bare
+number) — a starting point the divider between them still overrides, remembered per board.
+
+**Tabs** group the panels into faces, one at a time, because a board's controls rarely all
+belong to the same person or the same moment — subscribing to a feed is done once, reading
+it every day. A tab is a view over the panels a facade already has: it names panel ids, and
+a panel no tab names stays on screen above the bar. `defaultTab` is what everybody gets, so
+it names the tab for using the board rather than setting it up.
+
+**Notices** are what a board says without being looked at: a toast raised when a service
+reports something, instead of a row kept free for a problem that is usually not there. A
+notice reads a service the way a widget's `source` does, fires when that value arrives with
+something in it, and never seeds from the state a service was already in.
 
 Use `/new-board` for the full widget schema and board design workflow.
 
@@ -326,7 +352,8 @@ registry registration, tests, demo board, and docs page. The demo board filename
   hard to reason about. Readymade has no wire UI; the ordered service list _is_ the flow. Express
   branching and iteration through control-flow services: a Switch that pattern-matches and
   routes into sub-pipelines, a Filter that stops propagation on a failed predicate, a Looper
-  that repeats sub-services until a predicate stops it.
+  that repeats sub-services until a predicate stops it, an Iterator that runs one pipeline over
+  many items, and Tracks that runs many pipelines over one item and reduces their answers.
 - **Scoped by concept, not by technique.** A service groups related logic by domain, not by
   implementation. Multiple modes and technologies belong together if they serve the same
   conceptual role (e.g. Input handles event streams and WebSockets — different tech, same

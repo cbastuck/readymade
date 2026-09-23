@@ -123,7 +123,7 @@ describe("OverviewDetails", () => {
 
   it("offers going to the service as an action, not as the only one", () => {
     const { onOpenInPlayground } = renderPanel("map-1");
-    fireEvent.click(screen.getByRole("button", { name: /open in playground/ }));
+    fireEvent.click(screen.getByRole("button", { name: /goto board/ }));
     expect(onOpenInPlayground).toHaveBeenCalledTimes(1);
   });
 });

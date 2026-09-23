@@ -106,6 +106,18 @@ switched on — `logging`, `logLevel` and `logData` → `concepts/logging.md`.
 | `serviceName` | **required in practice.** A display label with no effect on behaviour |
 | `state` | whatever the service last reported |
 
+A `sub-service` reports two further fields, which is what makes it a
+**scope** (`concepts/scopes.md`):
+
+| Field in `state` | |
+|---|---|
+| `stopPropagation` | whether what its pipeline produced leaves the service. Absent means `false` |
+| `scope` | what the services inside can see — today `{ "slots": "own" \| "inherit" }` |
+
+Both are reported even at their defaults, so a saved board says outright what
+each scope does with its answer and its cells rather than leaving a reader to
+infer a boundary from what follows it.
+
 ### The uuid is scoped to its runtime, not the board
 
 Two runtimes may each hold a service called `intake`; that has always been
@@ -116,6 +128,27 @@ scopes them (`concepts/units.md`).
 The consequence: nothing addresses a service by uuid alone. A facade widget, a
 mount reference, a configure call — each names the runtime and the uuid
 together.
+
+### A service inside another is addressed by the path to it
+
+A `sub-service` holds a pipeline of its own, and what is in it is not in the
+runtime's list. Those services are named by the path through the services
+holding them, dot-separated:
+
+```json
+{ "serviceUuid": "list.kept-articles", "path": "rows" }
+```
+
+`serviceUuid` is the address and `path` is still the field inside that service's
+state, so the two stay separable however deep the nesting goes —
+`read.list.feed-doc` is three services, not a field called `list`.
+
+The separator is a dot because a service address is carried in a URL path
+segment, which a slash would split — the same constraint that decided the
+separator between a unit's name and its runtime ids (`concepts/units.md`).
+
+A flat uuid is always tried first, so a board whose service uuid happens to
+contain a dot goes on meaning that service. See `concepts/scopes.md`.
 
 ### `serviceId` is the one that matters
 

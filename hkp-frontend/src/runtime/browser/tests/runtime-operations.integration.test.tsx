@@ -207,6 +207,65 @@ describe("runtime operations integration", () => {
     });
   });
 
+  describe("updateAvailableRuntime", () => {
+    it("renames an entry in place, leaving nothing behind", async () => {
+      const api = makeApi();
+      const before: RuntimeClass = {
+        name: "Old Name",
+        type: "rest",
+        url: "http://127.0.0.1:8080",
+      };
+      const keep: RuntimeClass = { name: "Other", type: "browser" };
+
+      const { getCtx } = renderWithRuntimes(api, [], {
+        availableRuntimeEngines: [before, keep],
+      });
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+
+      const after: RuntimeClass = {
+        name: "New Name",
+        type: "rest",
+        url: "http://127.0.0.1:9090",
+      };
+
+      await act(async () => {
+        getCtx()!.updateAvailableRuntime(before, after);
+      });
+
+      await waitFor(() => {
+        const engines = getCtx()!.availableRuntimeEngines;
+        expect(engines.some((e) => e.name === "Old Name")).toBe(false);
+        expect(engines[0]).toMatchObject({
+          name: "New Name",
+          url: "http://127.0.0.1:9090",
+        });
+        expect(engines.some((e) => e.name === "Other")).toBe(true);
+      });
+    });
+
+    it("collapses a rename onto a name the pool already holds", async () => {
+      const api = makeApi();
+      const before: RuntimeClass = { name: "Alpha", type: "rest", url: "http://a" };
+      const clash: RuntimeClass = { name: "Beta", type: "rest", url: "http://b" };
+
+      const { getCtx } = renderWithRuntimes(api, [], {
+        availableRuntimeEngines: [before, clash],
+      });
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+
+      await act(async () => {
+        getCtx()!.updateAvailableRuntime(before, { ...before, name: "Beta" });
+      });
+
+      await waitFor(() => {
+        const engines = getCtx()!.availableRuntimeEngines;
+        const match = engines.filter((e) => e.name === "Beta");
+        expect(match).toHaveLength(1);
+        expect(match[0].url).toBe("http://a");
+      });
+    });
+  });
+
   describe("removeAvailableRuntime", () => {
     it("removes the named runtime class from availableRuntimeEngines", async () => {
       const api = makeApi();

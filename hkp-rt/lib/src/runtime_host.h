@@ -10,6 +10,7 @@
 #include <log_entry.h>
 
 #include <secrets.h>
+#include <slot_store.h>
 
 namespace hkp {
 
@@ -84,6 +85,19 @@ public:
   // always be empty, and a credential service could only ever be used at the
   // top level.
   virtual SecretVault& secrets() = 0;
+
+  // The cells this pipeline's values may be held in.
+  //
+  // A pipeline pass carries one value and ends; anything that has to survive
+  // until a *different* pipeline runs has nowhere to live. A store gives it a
+  // name, and whoever owns the pipelines that must share decides which store
+  // they see — which is what keeps the sharing scoped to the arrangement that
+  // needs it rather than being ambient across a runtime.
+  //
+  // A nested pipeline answers with the store the service hosting it gave it,
+  // and otherwise with its parent's — so a slot named inside a sub-pipeline
+  // reaches the nearest owner that declared one.
+  virtual SlotStore& slots() = 0;
 
   // Instantiate a new SubRuntime from a JSON array of service-config objects.
   // ownerInParent is the service in this host that owns the new SubRuntime.

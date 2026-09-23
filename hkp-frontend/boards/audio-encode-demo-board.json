@@ -1,0 +1,153 @@
+{
+  "boardName": "Audio Encode",
+  "description": "Type a line, hear what it costs. The text is spoken by Kokoro, which answers with samples, and the samples are encoded — so what the board ends up holding is a file rather than a buffer that exists only while the pipeline is running.\n\nThe panel reports what came out: how long it is, and how many bytes that is at the bitrate configured. Switch the format to wav to see the same audio uncompressed, which is also what a runtime without the mp3 extra installed can still do.\n\nNeeds hkp-python on port 8080 with the speech extra: pip install \"hkp-python[tts,mp3]\". The first run downloads the Kokoro model (~310 MB).",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "words",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "The words",
+        "state": {
+          "recentInjection": "Samples are not a file. This is what it costs to keep them.",
+          "plainText": true
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "speak",
+        "serviceId": "text-to-speech",
+        "serviceName": "Kokoro",
+        "state": {
+          "model": "kokoro-v1.0",
+          "voice": "af_heart",
+          "speed": 1.0,
+          "lang": "en-us"
+        }
+      },
+      {
+        "uuid": "encode",
+        "serviceId": "audio-encode",
+        "serviceName": "Encode it",
+        "state": {
+          "format": "mp3",
+          "bitrate": 64,
+          "sampleRate": 24000,
+          "channels": 1
+        }
+      },
+      {
+        "uuid": "end",
+        "serviceId": "stopper",
+        "serviceName": "Nowhere to send it",
+        "state": {}
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "encode",
+        "title": "Audio Encode",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "paddingX": 16,
+          "paddingY": 14,
+          "items": [
+            {
+              "type": "text-input",
+              "label": "Say something",
+              "placeholder": "a line to read aloud",
+              "submitLabel": "Encode",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "words",
+                  "configure": {
+                    "recentInjection": "$$input"
+                  }
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "words",
+                  "payload": {}
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "align": "center",
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Seconds",
+                  "source": {
+                    "serviceUuid": "encode",
+                    "path": "lastSeconds"
+                  },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Bytes",
+                  "source": {
+                    "serviceUuid": "encode",
+                    "path": "lastBytes"
+                  },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Format",
+                  "source": {
+                    "serviceUuid": "encode",
+                    "path": "format"
+                  },
+                  "placeholder": "mp3",
+                  "tone": "muted"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "The samples arrive at 24 kHz because that is what Kokoro synthesises at — a FloatRingBuffer does not say how fast it was meant to be played, so the rate is configuration here rather than something read off the input.",
+              "tone": "muted",
+              "fontSize": 12
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "encode",
+          "path": "error"
+        },
+        "tone": "error"
+      }
+    ]
+  }
+}

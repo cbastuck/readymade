@@ -1,63 +1,96 @@
-import { X } from "lucide-react";
+import { useState } from "react";
+import { Pencil } from "lucide-react";
 
 import { RuntimeClass } from "hkp-frontend/src/types";
+import EditServerForm from "../connections/EditServerForm";
+import { toServerBaseUrl } from "../connections/serverUrl";
 import { ColorPicker } from "../ColorPicker";
+import {
+  RemoveButton,
+  SettingsList,
+  SettingsRow,
+  SettingsSection,
+} from "../settings/kit";
 
 type Props = {
   remoteRuntimes: Array<RuntimeClass>;
   onRemoveRuntime: (rt: RuntimeClass) => void;
   onChangeRuntimeColor: (rt: RuntimeClass, color: string) => void;
+  /** Replaces `previous` with `next`. Offers an edit on each row when set. */
+  onUpdateRuntime?: (previous: RuntimeClass, next: RuntimeClass) => void;
 };
 
 export default function ExistingRuntimesPanel({
   remoteRuntimes,
   onRemoveRuntime,
   onChangeRuntimeColor,
+  onUpdateRuntime,
 }: Props) {
+  // The row being edited, by index: two entries may share a name or a URL.
+  const [editing, setEditing] = useState<number | null>(null);
+
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-        Registered remotes
-      </span>
-
-      {remoteRuntimes.length === 0 && (
-        <p className="py-1 text-center text-sm italic text-slate-400">
-          No remote runtimes registered yet.
-        </p>
-      )}
-
-      {remoteRuntimes.map((rt, idx) => {
-        const builtIn = rt.url?.startsWith("hkp://remotes/") ?? false;
-        return (
-          <div
-            key={`${rt.name}-${rt.url}-${idx}`}
-            className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2"
-          >
-            <ColorPicker
-              showPaletteOnly={true}
-              disabled={builtIn}
-              onChange={(color) => onChangeRuntimeColor(rt, color)}
-              value={rt.color || "white"}
-              className="h-6 w-6 shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-slate-800">
-                {rt.name}
-              </div>
-              <div className="truncate text-xs text-slate-500">{rt.url}</div>
-            </div>
-            {!builtIn && (
-              <button
-                onClick={() => onRemoveRuntime(rt)}
-                aria-label={`Remove ${rt.name}`}
-                className="shrink-0 text-slate-400 hover:text-red-600"
-              >
-                <X size={15} />
-              </button>
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <SettingsSection label="Runtime servers">
+      <SettingsList empty="No remote runtimes registered yet.">
+        {remoteRuntimes.map((rt, idx) => {
+          const builtIn = rt.url?.startsWith("hkp://remotes/") ?? false;
+          // Built-in remotes are the host's own: it decides what they are
+          // called and where they live, so neither end is editable.
+          const editable = !!onUpdateRuntime && !builtIn;
+          return (
+            <SettingsRow
+              key={`${rt.name}-${rt.url}-${idx}`}
+              bareIcon
+              icon={
+                <ColorPicker
+                  showPaletteOnly={true}
+                  disabled={builtIn}
+                  onChange={(color) => onChangeRuntimeColor(rt, color)}
+                  value={rt.color || "white"}
+                  className="h-7 w-7 shrink-0"
+                />
+              }
+              title={rt.name}
+              subtitle={rt.url}
+              trailing={
+                !builtIn && (
+                  <>
+                    {editable && editing !== idx && (
+                      <button
+                        className="hkp-set-icon-btn hkp-set-icon-btn--neutral"
+                        onClick={() => setEditing(idx)}
+                        aria-label={`Edit ${rt.name}`}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
+                    <RemoveButton
+                      label={`Remove ${rt.name}`}
+                      onClick={() => {
+                        setEditing(null);
+                        onRemoveRuntime(rt);
+                      }}
+                    />
+                  </>
+                )
+              }
+            >
+              {editable && editing === idx && (
+                <EditServerForm
+                  name={rt.name}
+                  url={rt.url ?? ""}
+                  normalizeUrl={toServerBaseUrl}
+                  onCancel={() => setEditing(null)}
+                  onSave={({ name, url }) => {
+                    onUpdateRuntime!(rt, { ...rt, name, url });
+                    setEditing(null);
+                  }}
+                />
+              )}
+            </SettingsRow>
+          );
+        })}
+      </SettingsList>
+    </SettingsSection>
   );
 }

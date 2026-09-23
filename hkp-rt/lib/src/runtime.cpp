@@ -3,6 +3,7 @@
 #include <fstream>
 #include <boost/beast.hpp>
 
+#include "./address.h"
 #include "./app.h"
 #include "./registry.h"
 #include "./service.h"
@@ -210,24 +211,24 @@ RuntimeConfiguration Runtime::getConfiguration() const
 
 json Runtime::configureService(const std::string &instanceId, json config)
 {
-  auto it = findServiceById(instanceId);
-  if (it == m_services.end())
+  auto svc = resolveService(instanceId);
+  if (!svc)
   {
     return false;
   }
 
-  return (*it)->configure(config);
+  return svc->configure(config);
 }
 
 json Runtime::getServiceState(const std::string &instanceId) const
 {
-  auto it = findServiceById(instanceId);
-  if (it == m_services.end())
+  auto svc = resolveService(instanceId);
+  if (!svc)
   {
     return false;
   }
 
-  return (*it)->getState();
+  return svc->getState();
 }
 
 json Runtime::getServices() const
@@ -301,14 +302,12 @@ Data Runtime::process(Data data, ProcessContext context)
   m_context = context;
   m_hasContext = true;
 
+  // Every onProcessBegin is paired with an onProcessEnd, empty runtime included:
+  // the depth they count decides when a result leaves this runtime, and one
+  // left unbalanced keeps every later result from leaving. With no services the
+  // input is the result, passed on unchanged.
   onProcessBegin();
-  if (m_services.empty())
-  {
-    m_context = previous;
-    m_hasContext = hadContext;
-    return data;
-  }
-  auto result = processFrom(*m_services.front(), data, false);
+  auto result = m_services.empty() ? data : processFrom(*m_services.front(), data, false);
   const auto& out = onProcessEnd(result, context);
 
   m_context = previous;
@@ -321,6 +320,20 @@ Data Runtime::processAt(const std::string& instanceId, Data data, ProcessContext
   auto it = findServiceById(instanceId);
   if (it == m_services.cend())
   {
+    // Not one of this runtime's own: a scoped address enters the pipeline that
+    // holds it instead, and runs to the end of *that* list. What it produces is
+    // the nested pipeline's answer.
+    const auto segments = splitAddress(instanceId);
+    if (segments.size() > 1)
+    {
+      auto head = findServiceById(segments[0]);
+      if (head != m_services.cend())
+      {
+        Data nested;
+        if ((*head)->processNested(restOfAddress(segments, 1), data, nested))
+          return nested;
+      }
+    }
     throw std::runtime_error("Runtime::processAt service not found in runtime");
   }
 
@@ -631,6 +644,32 @@ std::list<std::shared_ptr<Service>>::const_iterator Runtime::findServiceById(con
   );
 }
 
+std::shared_ptr<Service> Runtime::resolveService(const std::string& address) const
+{
+  auto direct = findServiceById(address);
+  if (direct != m_services.cend())
+    return *direct;
+
+  const auto segments = splitAddress(address);
+  if (segments.size() < 2)
+    return nullptr;
+
+  auto head = findServiceById(segments[0]);
+  if (head == m_services.cend())
+    return nullptr;
+
+  // A partial address is a miss, not a match: answering with the nearest
+  // service the path did reach would act on something nobody named.
+  std::shared_ptr<Service> current = *head;
+  for (size_t i = 1; i < segments.size(); ++i)
+  {
+    current = current->findNested(segments[i]);
+    if (!current)
+      return nullptr;
+  }
+  return current;
+}
+
 std::string Runtime::replaceHostWithExternalAddress(std::string url) const
 {
   if (!m_app->getServer())
@@ -659,34 +698,34 @@ const Data& Runtime::onProcessEnd(const Data& data, ProcessContext context, std:
 {
   if (m_processDepth.decrement() == 0)
   {  
-    // if we are the last initiator, we should communicate the result
-    if (!m_boardName.empty())
+    // If we are the last initiator, communicate the result to whoever is
+    // listening on this runtime — the next runtime in the chain. Whether the
+    // runtime was created with a board name does not matter: an unnamed board
+    // chains the same way, and with no listener sendData delivers nothing.
+    std::string requestId = "RUNTIME";
+    auto purpose = MessagePurpose::RESULT;
+    if (callback)
     {
-        std::string requestId = "RUNTIME";
-        auto purpose = MessagePurpose::RESULT;
-        if (callback)
-        {
-          requestId = generateUUID();
-        }
-        else if (!context.requestId.empty())
-        {
-          requestId = context.requestId;
-        }
-        if (callback)
-        {
-          purpose = MessagePurpose::RESULT_AWAITING_RESPONSE;
-          std::cout << "Await pending resolve for request: " << requestId << std::endl;
-          if (!storePendingCallback(requestId, callback))
-          {
-            std::cerr << "Runtime::onProcessEnd: No empty slot available in m_pendingResolve" << std::endl;
-          }
-        }
-        else if (!context.requestId.empty())
-        {
-          purpose = MessagePurpose::RESULT_WITH_REQUEST_ID;
-        }
-        sendData(data, purpose, requestId, callback);
+      requestId = generateUUID();
     }
+    else if (!context.requestId.empty())
+    {
+      requestId = context.requestId;
+    }
+    if (callback)
+    {
+      purpose = MessagePurpose::RESULT_AWAITING_RESPONSE;
+      std::cout << "Await pending resolve for request: " << requestId << std::endl;
+      if (!storePendingCallback(requestId, callback))
+      {
+        std::cerr << "Runtime::onProcessEnd: No empty slot available in m_pendingResolve" << std::endl;
+      }
+    }
+    else if (!context.requestId.empty())
+    {
+      purpose = MessagePurpose::RESULT_WITH_REQUEST_ID;
+    }
+    sendData(data, purpose, requestId, callback);
   }
   return data;
 }

@@ -21,6 +21,7 @@ import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import MobileFacadeView from "./MobileFacadeView";
 import { narrowBoardContext } from "../../../facade/boardServices";
+import { useEditReportingService } from "../../../core/editedServices";
 
 // Presence of a `bridge` prop means this canvas renders a *cloud* board: browser
 // runtime results are forwarded to the coordinator over `bridge.ws`. When omitted
@@ -288,6 +289,7 @@ function RuntimeCard({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [fullView, setFullView] = useState(false);
+  const editable = useEditReportingService();
   const [menuOpen, setMenuOpen] = useState(false);
   const [reordering, setReordering] = useState(false);
   // Reordering is only meaningful with 2+ services; if a removal drops the list
@@ -304,8 +306,12 @@ function RuntimeCard({
   const handleServiceAction = (cmd: ServiceAction) => {
     if (cmd.action === "remove") {
       boardContext.removeService({ uuid: cmd.service.uuid }, runtime);
-    } else if (cmd.action === "rename" && cmd.payload) {
-      boardContext.setServiceName(runtime.id, cmd.service.uuid, cmd.payload);
+    } else if (cmd.action === "rename" && cmd.payload?.value) {
+      boardContext.setServiceName(
+        runtime.id,
+        cmd.service.uuid,
+        cmd.payload.value,
+      );
     }
   };
 
@@ -330,7 +336,7 @@ function RuntimeCard({
       return (
         <UI
           key={svc.uuid}
-          service={instance}
+          service={editable(instance)}
           showBypassOnlyIfExplicit={false}
           draggable={false}
           onServiceAction={handleServiceAction}
@@ -925,6 +931,7 @@ function FullServiceView({
   onBack: () => void;
 }) {
   const boardContext = useBoardContext();
+  const editable = useEditReportingService();
   if (!boardContext) {
     return null;
   }
@@ -936,8 +943,12 @@ function FullServiceView({
       if (cmd.service.uuid === service.uuid) {
         onBack();
       }
-    } else if (cmd.action === "rename" && cmd.payload) {
-      boardContext.setServiceName(runtime.id, cmd.service.uuid, cmd.payload);
+    } else if (cmd.action === "rename" && cmd.payload?.value) {
+      boardContext.setServiceName(
+        runtime.id,
+        cmd.service.uuid,
+        cmd.payload.value,
+      );
     }
   };
 
@@ -1040,7 +1051,7 @@ function FullServiceView({
         >
           {ServiceUI && serviceInstance ? (
             <ServiceUI
-              service={serviceInstance}
+              service={editable(serviceInstance)}
               showBypassOnlyIfExplicit={false}
               draggable={false}
               onServiceAction={handleServiceAction}
@@ -1398,6 +1409,9 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
                 padding: "6px 10px 0",
                 overflowX: "auto",
                 flexShrink: 0,
+                // Outside the facade, so it paints the facade's surface itself
+                // — otherwise the canvas behind shows between the tabs.
+                background: "hsl(var(--background, 0 0% 100%))",
               }}
             >
               {views.map((v) => (

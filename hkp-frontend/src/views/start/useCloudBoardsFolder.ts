@@ -4,6 +4,7 @@ import { useAppContext } from "../../AppContext";
 import { CoordinatorDescriptor, restoreCoordinators } from "../../common";
 import {
   CoordinatorBoardInfo,
+  deleteCoordinatorBoard,
   listCoordinatorBoards,
 } from "../cloud/coordinatorClient";
 import { BoardNode, CoordinatorsController, FolderNode } from "./types";
@@ -29,6 +30,7 @@ function statusLabel(status: CoordinatorBoardInfo["status"]): string {
 function boardNode(
   coordinatorUrl: string,
   board: CoordinatorBoardInfo,
+  onUndeploy: () => Promise<void>,
 ): BoardNode {
   return {
     type: "board",
@@ -38,6 +40,7 @@ function boardNode(
     // Reuse the existing cloud action; the host opens it in the Cloud Boards
     // view (the same live coordinator session the toolbar icon uses).
     action: { kind: "cloud", coordinatorUrl, boardName: board.boardName },
+    onUndeploy,
   };
 }
 
@@ -123,6 +126,24 @@ export function useCloudBoardsFolder(
     [user],
   );
 
+  const undeploy = useCallback(
+    async (coordinator: CoordinatorDescriptor, boardName: string) => {
+      if (!user) {
+        throw new Error("Log in to delete cloud boards.");
+      }
+      await deleteCoordinatorBoard(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        boardName,
+      );
+      // The refetched list no longer holds the board, which drops it from the
+      // column and closes its details.
+      await fetchCoordinator(coordinator);
+    },
+    [user, fetchCoordinator],
+  );
+
   useEffect(() => {
     if (!user || coordinators.length === 0) {
       setByCoordinator({});
@@ -152,7 +173,9 @@ export function useCloudBoardsFolder(
     const children = coordinators.map<FolderNode>((coordinator) => {
       const state = byCoordinator[coordinator.url];
       const boards = (state?.boards ?? []).map((board) =>
-        boardNode(coordinator.url, board),
+        boardNode(coordinator.url, board, () =>
+          undeploy(coordinator, board.boardName),
+        ),
       );
       return {
         type: "folder",
@@ -178,7 +201,7 @@ export function useCloudBoardsFolder(
         coordinators.length === 0 ? "No coordinators configured" : undefined,
       action: manageAction,
     };
-  }, [user, coordinators, byCoordinator, fetchCoordinator, onManage]);
+  }, [user, coordinators, byCoordinator, fetchCoordinator, undeploy, onManage]);
 
   return enabled ? folder : null;
 }

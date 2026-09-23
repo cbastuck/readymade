@@ -11,6 +11,7 @@ export function XYPadRenderer({
 }: WidgetRendererProps<XYPadWidget>) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const thumbRef = useRef({ x: 0.5, y: 0.5 });
+  const { markBoardChanged } = boardContext;
 
   const service = useMemo(
     () => findService(boardContext, widget.serviceUuid),
@@ -120,6 +121,7 @@ export function XYPadRenderer({
 
     const emit = (pos: { x: number; y: number }, eventType: string) => {
       service?.configure({ position: { x: pos.x, y: pos.y }, eventType });
+      markBoardChanged?.();
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -152,7 +154,7 @@ export function XYPadRenderer({
       ro.disconnect();
       canvas.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [draw, syncSize, service]);
+  }, [draw, syncSize, service, markBoardChanged]);
 
   const w = widget.width ?? 400;
   const h = widget.height ?? 180;

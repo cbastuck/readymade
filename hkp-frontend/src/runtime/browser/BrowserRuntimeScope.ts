@@ -17,6 +17,7 @@ import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 import api from "./BrowserRuntimeApi";
 import { onServiceProcess, onServiceResult } from "../serviceState";
+import { createSlotStore, SlotStore } from "../slots";
 
 export type InstanceIndexTuple = [ServiceInstance | null, number];
 
@@ -48,6 +49,37 @@ export default class BrowserRuntimeScope implements RuntimeScope {
    * record something it did not mean to.
    */
   private logData = false;
+  /**
+   * The cells services in this scope hold values in between passes.
+   *
+   * Owned rather than delegated by default: a runtime is the outermost thing a
+   * slot name can mean, so two services that name the same slot and are given
+   * nothing more specific share this one.
+   */
+  private ownSlots: SlotStore = createSlotStore();
+  /**
+   * Where this scope's slots actually come from, when they are not its own;
+   * see `delegateSlots`.
+   */
+  private slotsFrom: (() => SlotStore | null) | null = null;
+
+  /** The cells a service in this scope holds values in. */
+  slots(): SlotStore {
+    return this.slotsFrom?.() ?? this.ownSlots;
+  }
+
+  /**
+   * Take slots from somewhere else rather than from this scope's own cells.
+   *
+   * A nested pipeline is a scope nobody provisions, so the service holding it
+   * decides which cells it sees: its own, where it scopes them, and otherwise
+   * the ones around it. Asked for on each lookup rather than copied, so that
+   * changing what a scope keeps to itself takes effect without rebuilding, and
+   * so that nesting composes outward one level at a time.
+   */
+  delegateSlots(source: () => SlotStore | null): void {
+    this.slotsFrom = source;
+  }
 
   registerLogTarget(target: (entry: LogEntry) => void): () => void {
     this.logTargets.add(target);

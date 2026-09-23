@@ -1,0 +1,547 @@
+{
+  "boardName": "Meeting Poll",
+  "description": "Dates for a meeting, answered by whoever is coming. The organiser puts up times; everyone else says which ones work for them — none, one or all of them. Who may put a date up, whether a closed poll still takes one, and that a person answers a date once are the database's to enforce — triggers and unique indexes rather than board logic — so it refuses what the page would not have offered, and says why. Every tap enters the same pipeline, and the queries at its end re-read what it changed.",
+  "runtimes": [
+    {
+      "id": "office",
+      "name": "Office",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "office": [
+      {
+        "uuid": "open-poll",
+        "serviceId": "sql",
+        "serviceName": "Call a meeting",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meeting-poll",
+          "schema": "CREATE TABLE IF NOT EXISTS poll (\n  name      TEXT PRIMARY KEY,\n  organiser TEXT NOT NULL,\n  closed    INTEGER NOT NULL DEFAULT 0,\n  created   TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE TABLE IF NOT EXISTS option (\n  id         INTEGER PRIMARY KEY,\n  poll       TEXT NOT NULL,\n  -- Who put the date up: what the trigger below checks it against.\n  proposedBy TEXT NOT NULL,\n  starts     TEXT NOT NULL CONSTRAINT a_date_and_a_time\n             CHECK (starts GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]')\n);\n-- A date is on the poll once, however often it is put up.\nCREATE UNIQUE INDEX IF NOT EXISTS one_option_per_time\n  ON option (poll, starts);\nCREATE TABLE IF NOT EXISTS vote (\n  id     INTEGER PRIMARY KEY,\n  option INTEGER NOT NULL REFERENCES option (id) ON DELETE CASCADE,\n  voter  TEXT NOT NULL,\n  castAt TEXT NOT NULL DEFAULT (datetime('now'))\n);\n-- One person, one answer per date: a second tap cannot count twice.\nCREATE UNIQUE INDEX IF NOT EXISTS one_vote_per_option\n  ON vote (option, voter);\n-- The three rules a WHERE clause would only decline to break. Said here they\n-- are refused with a reason, which is what the board has to show a person.\nCREATE TRIGGER IF NOT EXISTS the_organiser_puts_up_the_dates\nBEFORE INSERT ON option\nWHEN NEW.proposedBy IS NOT (SELECT organiser FROM poll WHERE name = NEW.poll)\nBEGIN\n  SELECT RAISE(ABORT, 'only the person who called the meeting can put up a date');\nEND;\nCREATE TRIGGER IF NOT EXISTS a_closed_poll_takes_no_dates\nBEFORE INSERT ON option\nWHEN (SELECT closed FROM poll WHERE name = NEW.poll) = 1\nBEGIN\n  SELECT RAISE(ABORT, 'the poll is closed');\nEND;\nCREATE TRIGGER IF NOT EXISTS a_closed_poll_takes_no_answers\nBEFORE INSERT ON vote\nWHEN (SELECT p.closed FROM poll p JOIN option o ON o.poll = p.name\n       WHERE o.id = NEW.option) = 1\nBEGIN\n  SELECT RAISE(ABORT, 'the poll is closed');\nEND;",
+          "statement": "INSERT OR IGNORE INTO poll (name, organiser)\nSELECT trim($poll), trim($actor)\n WHERE $intent IN ('seed', 'create')\n   AND trim($poll)  <> ''\n   AND trim($actor) <> ''"
+        }
+      },
+      {
+        "uuid": "first-run",
+        "serviceId": "sql",
+        "serviceName": "The example dates",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meeting-poll",
+          "statement": "INSERT INTO option (poll, proposedBy, starts)\nSELECT $poll, trim($actor), at\n  FROM (\n    SELECT date('now', 'localtime', '+3 days') || ' 10:00' AS at\n    UNION ALL SELECT date('now', 'localtime', '+3 days') || ' 15:30'\n    UNION ALL SELECT date('now', 'localtime', '+4 days') || ' 09:30'\n    UNION ALL SELECT date('now', 'localtime', '+8 days') || ' 11:00'\n  )\n WHERE $intent = 'seed'\n   AND NOT EXISTS (SELECT 1 FROM option WHERE poll = $poll)\n   AND EXISTS (\n     SELECT 1 FROM poll WHERE name = $poll AND organiser = trim($actor)\n   )"
+        }
+      },
+      {
+        "uuid": "put-up-date",
+        "serviceId": "sql",
+        "serviceName": "Put up a date",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meeting-poll",
+          "statement": "INSERT INTO option (poll, proposedBy, starts)\nSELECT $poll, trim($actor), trim($starts)\n WHERE $intent = 'propose'"
+        }
+      },
+      {
+        "uuid": "withdraw-date",
+        "serviceId": "sql",
+        "serviceName": "Withdraw a date",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meeting-poll",
+          "statement": "DELETE FROM option\n WHERE $intent = 'withdraw'\n   AND id   = $option\n   AND poll = $poll\n   AND EXISTS (\n     SELECT 1 FROM poll\n      WHERE name = $poll AND organiser = trim($actor) AND closed = 0\n   )"
+        }
+      },
+      {
+        "uuid": "say-yes",
+        "serviceId": "sql",
+        "serviceName": "Works for me",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meeting-poll",
+          "statement": "INSERT INTO vote (option, voter)\nSELECT $option, trim($actor)\n WHERE $intent = 'vote'\n   AND trim($actor) <> ''"
+        }
+      },
+      {
+        "uuid": "take-it-back",
+        "serviceId": "sql",
+        "serviceName": "Take an answer back",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meeting-poll",
+          "statement": "DELETE FROM vote\n WHERE $intent = 'unvote'\n   AND option = $option\n   AND voter  = trim($actor)\n   AND EXISTS (\n     SELECT 1 FROM option o JOIN poll p ON p.name = o.poll\n      WHERE o.id = $option AND o.poll = $poll AND p.closed = 0\n   )"
+        }
+      },
+      {
+        "uuid": "close-poll",
+        "serviceId": "sql",
+        "serviceName": "Close or reopen",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meeting-poll",
+          "statement": "UPDATE poll\n   SET closed = CASE $intent WHEN 'close' THEN 1 ELSE 0 END\n WHERE $intent IN ('close', 'reopen')\n   AND name      = $poll\n   AND organiser = trim($actor)"
+        }
+      },
+      {
+        "uuid": "the-dates",
+        "serviceId": "sql",
+        "serviceName": "The dates",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "meeting-poll",
+          "statement": "WITH\n  answers AS (\n    SELECT o.id     AS id,\n           o.starts AS starts,\n           count(v.id) AS yes,\n           coalesce(group_concat(v.voter, ', '), '') AS voters,\n           max(CASE WHEN v.voter = trim($actor) THEN 1 ELSE 0 END) AS mine\n      FROM option o\n      LEFT JOIN vote v ON v.option = o.id\n     WHERE o.poll = $poll\n     GROUP BY o.id, o.starts\n  ),\n  best(n)  AS (SELECT coalesce(max(yes), 0) FROM answers),\n  meeting  AS (SELECT organiser, closed FROM poll WHERE name = $poll)\nSELECT\n  a.id     AS id,\n  a.starts AS starts,\n  a.yes    AS yes,\n  a.mine   AS mine,\n  CASE strftime('%w', substr(a.starts, 1, 10))\n    WHEN '0' THEN 'Sun' WHEN '1' THEN 'Mon' WHEN '2' THEN 'Tue'\n    WHEN '3' THEN 'Wed' WHEN '4' THEN 'Thu' WHEN '5' THEN 'Fri'\n    ELSE 'Sat'\n  END || ' ' || substr(a.starts, 1, 10) || ' at ' || substr(a.starts, 12, 5) AS label,\n  CASE WHEN a.yes = 0 THEN 'Nobody yet' ELSE a.voters END AS who,\n  CASE\n    WHEN a.yes = best.n AND best.n > 0 THEN a.yes || ' yes - best so far'\n    ELSE a.yes || ' yes'\n  END AS score,\n  CASE WHEN a.mine = 1 THEN 'unvote' ELSE 'vote' END AS intent,\n  CASE WHEN a.mine = 1 THEN 'Take it back' ELSE 'Works for me' END AS answerLabel,\n  CASE\n    WHEN m.closed = 1 OR trim($actor) = '' THEN 1\n    ELSE 0\n  END AS locked,\n  CASE\n    WHEN m.organiser = trim($actor) AND m.closed = 0 THEN 0\n    ELSE 1\n  END AS notYours,\n  'Take ' || a.starts || ' off the poll, along with every answer given to it?' AS dropPrompt\nFROM answers a\nCROSS JOIN best\nLEFT JOIN meeting m ON 1 = 1\nORDER BY a.starts"
+        }
+      },
+      {
+        "uuid": "the-poll",
+        "serviceId": "sql",
+        "serviceName": "The meeting",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "meeting-poll",
+          "statement": "SELECT\n  p.name      AS name,\n  p.organiser AS organiser,\n  p.closed    AS closed,\n  (SELECT count(*) FROM option o WHERE o.poll = p.name) AS dates,\n  (SELECT count(DISTINCT v.voter)\n     FROM vote v JOIN option o ON o.id = v.option\n    WHERE o.poll = p.name) AS people,\n  CASE\n    WHEN p.closed = 1\n      THEN 'Closed by ' || p.organiser || '. The answers stand as they are.'\n    WHEN p.organiser = trim($actor)\n      THEN 'You called this meeting, so you put up the dates and you close the poll.'\n    ELSE 'Called by ' || p.organiser || ', who puts up the dates. Answer the ones that work for you.'\n  END AS notice,\n  CASE WHEN p.organiser = trim($actor) THEN 0 ELSE 1 END AS notYours,\n  CASE WHEN p.closed = 1 THEN 'Reopen the poll' ELSE 'Close the poll' END AS closeLabel,\n  CASE WHEN p.closed = 1 THEN 'reopen' ELSE 'close' END AS closeIntent,\n  CASE\n    WHEN p.closed = 1 THEN 'Let people answer ' || p.name || ' again?'\n    ELSE 'Close voting on ' || p.name || '?'\n  END AS closePrompt\nFROM poll p\nWHERE p.name = $poll"
+        }
+      },
+      {
+        "uuid": "the-meetings",
+        "serviceId": "sql",
+        "serviceName": "Every meeting",
+        "state": {
+          "mode": "query",
+          "emit": "result",
+          "database": "meeting-poll",
+          "statement": "SELECT\n  p.name AS name,\n  CASE WHEN p.name = $poll THEN '• ' ELSE '' END\n    || p.name\n    || CASE WHEN p.closed = 1 THEN ' (closed)' ELSE '' END AS label\nFROM poll p\nORDER BY p.created DESC, p.name"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "state": {
+      "poll": "Sprint review",
+      "you": "you@example.com"
+    },
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "open-poll",
+        "payload": {
+          "intent": "seed",
+          "poll": {
+            "$state": "poll"
+          },
+          "actor": {
+            "$state": "you"
+          }
+        }
+      }
+    ],
+    "panels": [
+      {
+        "id": "vote",
+        "title": "Which dates work?",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Answer every date that works for you — none, one or all of them. Change who you are to answer as somebody else: it is the same poll seen from another desk. Putting dates up and closing the meeting are on Organise.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text-input",
+              "label": "You are",
+              "placeholder": "you@example.com",
+              "defaultValue": "you@example.com",
+              "submitLabel": "Answer as this person",
+              "actions": [
+                {
+                  "type": "set-state",
+                  "key": "you"
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "open-poll",
+                  "payload": {
+                    "intent": "none",
+                    "poll": {
+                      "$state": "poll"
+                    },
+                    "actor": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "the-poll",
+                "path": "rows"
+              },
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "baseline",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.name}}",
+                    "fontSize": 15,
+                    "grow": true
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.dates}} dates · {{item.people}} answered",
+                    "tone": "muted",
+                    "fontSize": 11
+                  }
+                ]
+              }
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "the-dates",
+                "path": "rows"
+              },
+              "gap": 10,
+              "template": {
+                "direction": "row",
+                "gap": 10,
+                "align": "center",
+                "items": [
+                  {
+                    "direction": "column",
+                    "gap": 2,
+                    "grow": true,
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.label}}",
+                        "fontSize": 14
+                      },
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.who}}",
+                        "tone": "muted",
+                        "fontSize": 11
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.score}}",
+                    "fontSize": 12
+                  },
+                  {
+                    "type": "button",
+                    "label": "{{item.answerLabel}}",
+                    "disabled": "{{item.locked}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "open-poll",
+                        "payload": {
+                          "intent": "{{item.intent}}",
+                          "poll": {
+                            "$state": "poll"
+                          },
+                          "actor": {
+                            "$state": "you"
+                          },
+                          "option": "{{item.id}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "meeting",
+        "title": "The meeting",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "the-poll",
+                "path": "rows"
+              },
+              "gap": 8,
+              "template": {
+                "direction": "column",
+                "gap": 8,
+                "align": "flex-start",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.notice}}",
+                    "tone": "muted",
+                    "fontSize": 12
+                  },
+                  {
+                    "type": "button",
+                    "label": "{{item.closeLabel}}",
+                    "disabled": "{{item.notYours}}",
+                    "confirm": "{{item.closePrompt}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "open-poll",
+                        "payload": {
+                          "intent": "{{item.closeIntent}}",
+                          "poll": {
+                            "$state": "poll"
+                          },
+                          "actor": {
+                            "$state": "you"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "text-input",
+              "label": "Put up a date",
+              "placeholder": "2026-09-24 14:00",
+              "submitLabel": "Propose it",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "open-poll",
+                  "payload": {
+                    "intent": "propose",
+                    "poll": {
+                      "$state": "poll"
+                    },
+                    "actor": {
+                      "$state": "you"
+                    },
+                    "starts": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "the-dates",
+                "path": "rows"
+              },
+              "gap": 4,
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "center",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.label}}",
+                    "fontSize": 12,
+                    "grow": true
+                  },
+                  {
+                    "type": "button",
+                    "label": "Withdraw",
+                    "disabled": "{{item.notYours}}",
+                    "confirm": "{{item.dropPrompt}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "open-poll",
+                        "payload": {
+                          "intent": "withdraw",
+                          "poll": {
+                            "$state": "poll"
+                          },
+                          "actor": {
+                            "$state": "you"
+                          },
+                          "option": "{{item.id}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "direction": "column",
+              "collapsible": true,
+              "title": "Other meetings",
+              "summary": {
+                "serviceUuid": "the-meetings",
+                "path": "count"
+              },
+              "open": true,
+              "gap": 8,
+              "items": [
+                {
+                  "type": "text-input",
+                  "label": "Call a meeting",
+                  "placeholder": "Roadmap review",
+                  "submitLabel": "Call it",
+                  "actions": [
+                    {
+                      "type": "set-state",
+                      "key": "poll"
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "open-poll",
+                      "payload": {
+                        "intent": "create",
+                        "poll": "$$input",
+                        "actor": {
+                          "$state": "you"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "repeat",
+                  "source": {
+                    "serviceUuid": "the-meetings",
+                    "path": "rows"
+                  },
+                  "direction": "row",
+                  "wrap": true,
+                  "gap": 6,
+                  "template": {
+                    "type": "button",
+                    "label": "{{item.label}}",
+                    "actions": [
+                      {
+                        "type": "set-state",
+                        "key": "poll",
+                        "value": "{{item.name}}"
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "open-poll",
+                        "payload": {
+                          "intent": "none",
+                          "poll": "{{item.name}}",
+                          "actor": {
+                            "$state": "you"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "tabs": [
+      {
+        "id": "answer",
+        "title": "Vote",
+        "panels": [
+          "vote"
+        ]
+      },
+      {
+        "id": "organise",
+        "title": "Organise",
+        "panels": [
+          "meeting"
+        ]
+      }
+    ],
+    "defaultTab": "answer",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "open-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "first-run",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "put-up-date",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "withdraw-date",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "say-yes",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "take-it-back",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "close-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-dates",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-meetings",
+          "path": "error"
+        }
+      }
+    ]
+  }
+}

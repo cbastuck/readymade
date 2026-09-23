@@ -1,21 +1,30 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, Globe, Lock, Plus, X } from "lucide-react";
+import {
+  Globe,
+  Info,
+  KeyRound,
+  Lock,
+  Network,
+  Plus,
+  ShieldCheck,
+} from "lucide-react";
 
+import SettingsDialog from "hkp-frontend/src/ui-components/SettingsDialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "hkp-frontend/src/ui-components/primitives/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "hkp-frontend/src/ui-components/primitives/tabs";
-import { Button } from "hkp-frontend/src/ui-components/primitives/button";
-import AppearanceSettings from "hkp-frontend/src/ui-components/AppearanceSettings";
-import ManageRuntimesContent from "hkp-frontend/src/ui-components/toolbar/ManageRuntimesContent";
+  CopyableValue,
+  RemoveButton,
+  SettingsButton,
+  SettingsCard,
+  SettingsInput,
+  SettingsList,
+  SettingsNote,
+  SettingsRow,
+  SettingsSection,
+  SettingsStack,
+  SettingsSwitch,
+} from "hkp-frontend/src/ui-components/settings/kit";
+import ManageConnectionsContent from "hkp-frontend/src/ui-components/connections/ManageConnectionsContent";
+import { useRemoteRuntimeEditing } from "hkp-frontend/src/ui-components/toolbar/useRemoteRuntimeEditing";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import {
   isRuntimeGraphQLClassType,
@@ -23,6 +32,11 @@ import {
   RuntimeClass,
 } from "hkp-frontend/src/types";
 import { isDiscoverySupported } from "hkp-frontend/src/runtime/discovery/DiscoveryApi";
+import { useLocalStorageCoordinators } from "hkp-frontend/src/views/start/useLocalStorageCoordinators";
+import type {
+  CoordinatorsController,
+  RemotesController,
+} from "hkp-frontend/src/views/start/types";
 
 import SecretsTab from "./SecretsTab";
 import { getBackend } from "./backend";
@@ -50,100 +64,100 @@ type Props = {
   onOpenChange: (open: boolean) => void;
 };
 
+const ABOUT_TAB = "about";
+
+// The shared settings dialog with the tabs only the app can fill: the runtime
+// it hosts, the servers it knows, the secrets it holds and who may reach it.
 export default function MeanderSettingsDialog({ open, onOpenChange }: Props) {
   const canManageRemotes = isDiscoverySupported();
+  const [tab, setTab] = useState(ABOUT_TAB);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg w-[90vw]">
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-        </DialogHeader>
-        <Tabs defaultValue="about">
-          <TabsList>
-            <TabsTrigger value="about">About</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            {canManageRemotes && (
-              <TabsTrigger value="remotes">Remotes</TabsTrigger>
-            )}
-            <TabsTrigger value="secrets">Secrets</TabsTrigger>
-            <TabsTrigger value="access">Access</TabsTrigger>
-          </TabsList>
-          <TabsContent value="about">
-            <AboutTab />
-          </TabsContent>
-          <TabsContent value="appearance">
-            <AppearanceSettings />
-          </TabsContent>
-          {canManageRemotes && (
-            <TabsContent value="remotes">
-              <RemotesTab />
-            </TabsContent>
-          )}
-          <TabsContent value="secrets">
-            <SecretsTab />
-          </TabsContent>
-          <TabsContent value="access">
-            <AccessTab />
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+    <SettingsDialog
+      tab={open ? tab : null}
+      onChangeTab={(next) => {
+        if (next === null) {
+          onOpenChange(false);
+          setTab(ABOUT_TAB);
+          return;
+        }
+        setTab(next);
+      }}
+      leadingTabs={[
+        {
+          id: ABOUT_TAB,
+          label: "About",
+          icon: <Info size={15} />,
+          content: <AboutTab />,
+        },
+      ]}
+      extraTabs={[
+        {
+          id: "connections",
+          label: "Connections",
+          icon: <Network size={15} />,
+          content: <ConnectionsTab canManageRemotes={canManageRemotes} />,
+        },
+        {
+          id: "secrets",
+          label: "Secrets",
+          icon: <KeyRound size={15} />,
+          content: <SecretsTab />,
+        },
+        {
+          id: "access",
+          label: "Access",
+          icon: <ShieldCheck size={15} />,
+          content: <AccessTab />,
+        },
+      ]}
+    />
   );
 }
 
 const isRemoteRuntime = (rt: RuntimeClass) =>
   isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type);
 
-function RemotesTab() {
+function ConnectionsTab({ canManageRemotes }: { canManageRemotes: boolean }) {
+  // Coordinators live in the webview's localStorage, the one list the deploy
+  // menu, the Cloud Boards view and the engine picker read.
+  const coordinators = useLocalStorageCoordinators();
+  return canManageRemotes ? (
+    <ConnectionsWithRemotes coordinators={coordinators} />
+  ) : (
+    <ManageConnectionsContent coordinators={coordinators} />
+  );
+}
+
+function ConnectionsWithRemotes({
+  coordinators,
+}: {
+  coordinators: CoordinatorsController;
+}) {
   // Remote management works anywhere inside the Meander host. On a board it is
-  // backed by the live board context; on the start page (no board) it is backed
+  // backed by the live board context, persisting through the board host's
+  // store; on the start page (no board) it is backed
   // directly by the persisted remotes in settings.json. The backend hook
   // fetches on mount, and the tab mounts when selected, so the list is fresh
   // each time the tab is opened.
   const boardContext = useBoardContext();
   const backendRemotes = useBackendRemotes();
+  const boardRemotes = useRemoteRuntimeEditing();
 
-  const persistRemoteRuntimes = (allEngines: RuntimeClass[]) => {
-    localStorage.setItem(
-      "available-remote-runtimes",
-      JSON.stringify(allEngines.filter(isRemoteRuntime)),
-    );
-  };
-
-  let remoteRuntimes: RuntimeClass[];
-  let onAddRuntimeEngine: (desc: RuntimeClass) => void;
-  let onRemoveRuntimeEngine: (desc: RuntimeClass) => void;
-  let onUpdateRuntimeEngine: (desc: RuntimeClass) => void;
-
-  if (boardContext) {
-    // Mirror RuntimeMenu so a runtime added here matches the toolbar's behaviour.
-    remoteRuntimes = (boardContext.availableRuntimeEngines ?? []).filter(
-      isRemoteRuntime,
-    );
-    onAddRuntimeEngine = (desc) =>
-      persistRemoteRuntimes(boardContext.addAvailableRuntime(desc, false) ?? []);
-    onRemoveRuntimeEngine = (desc) =>
-      persistRemoteRuntimes(boardContext.removeAvailableRuntime(desc) ?? []);
-    onUpdateRuntimeEngine = (desc) =>
-      persistRemoteRuntimes(boardContext.addAvailableRuntime(desc, true) ?? []);
-  } else {
-    remoteRuntimes = backendRemotes.runtimes;
-    onAddRuntimeEngine = backendRemotes.onAdd;
-    onRemoveRuntimeEngine = backendRemotes.onRemove;
-    onUpdateRuntimeEngine = backendRemotes.onUpdate;
-  }
+  // Mirror RuntimeMenu so a runtime added here matches the toolbar's behaviour.
+  const remotes: RemotesController = boardContext
+    ? {
+        runtimes: (boardContext.availableRuntimeEngines ?? []).filter(
+          isRemoteRuntime,
+        ),
+        onAdd: boardRemotes.onAdd,
+        onRemove: boardRemotes.onRemove,
+        onUpdate: boardRemotes.onUpdate,
+      }
+    : backendRemotes;
 
   return (
-    <div className="max-h-[60vh] overflow-y-auto pt-2">
-      <ManageRuntimesContent
-        remoteRuntimes={remoteRuntimes}
-        onAddRuntimeEngine={onAddRuntimeEngine}
-        onRemoveRuntimeEngine={onRemoveRuntimeEngine}
-        onUpdateRuntimeEngine={onUpdateRuntimeEngine}
-        inlineNewRuntimePanel
-      />
-    </div>
+    <ManageConnectionsContent remotes={remotes} coordinators={coordinators} />
   );
 }
 
@@ -165,57 +179,51 @@ function AboutTab() {
   const runtimeUrl = port ? `http://${host}:${port}` : null;
 
   return (
-    <div className="flex flex-col gap-4 pt-2 text-sm">
-      <div className="flex flex-col gap-1.5">
-        <span className="uppercase tracking-[0.12em] text-muted-foreground text-[0.68rem] font-semibold">
-          Runtime server
-        </span>
+    <SettingsStack>
+      <SettingsSection label="Runtime server">
         {runtimeUrl ? (
-          <CopyableUrl url={runtimeUrl} />
+          <CopyableValue value={runtimeUrl} />
         ) : (
-          <span className="text-muted-foreground">Not available</span>
+          <p className="hkp-set-hint">Not available</p>
         )}
-      </div>
+      </SettingsSection>
 
-      <div className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-        {exposed ? (
-          <Globe size={16} className="mt-0.5 shrink-0 text-slate-500" />
-        ) : (
-          <Lock size={16} className="mt-0.5 shrink-0 text-slate-500" />
+      <SettingsSection label="Network">
+        <SettingsList>
+          <SettingsRow
+            icon={exposed ? <Globe size={15} /> : <Lock size={15} />}
+            title={exposed ? "Exposed to local network" : "Local only"}
+            subtitle={
+              <span style={{ whiteSpace: "normal" }}>
+                {exposed
+                  ? "Other devices on this network can connect to this runtime at the URL above."
+                  : "The runtime is bound to 127.0.0.1 and cannot be reached from other devices. Enable external access to connect from another device."}
+              </span>
+            }
+          />
+        </SettingsList>
+        {exposed && authKnown && authConfigured && (
+          <SettingsNote tone="ok">
+            Authentication is enforced. Only allow-listed users can drive this
+            runtime from another device.
+          </SettingsNote>
         )}
-        <div className="flex flex-col gap-0.5">
-          <span className="font-semibold text-slate-800">
-            {exposed ? "Exposed to local network" : "Local only"}
-          </span>
-          <span className="text-[0.8rem] text-slate-500 leading-snug">
-            {exposed
-              ? "Other devices on this network can connect to this runtime at the URL above."
-              : "The runtime is bound to 127.0.0.1 and cannot be reached from other devices. Enable external access to connect from another device."}
-          </span>
-        </div>
-      </div>
-
-      {exposed && authKnown && authConfigured && (
-        <span className="text-[0.78rem] text-emerald-700 leading-snug">
-          🔒 Authentication is enforced. Only allow-listed users can drive this
-          runtime from another device.
-        </span>
-      )}
-      {exposed && authKnown && !authConfigured && (
-        <span className="text-[0.78rem] text-amber-700 leading-snug">
-          ⚠️ External access is on but no allowed users are configured, so all
-          external requests are denied. Add trusted issuers and allowed users
-          under "auth" in settings.json.
-        </span>
-      )}
-      {exposed && !authKnown && (
-        <span className="text-[0.78rem] text-amber-700 leading-snug">
-          ⚠️ Exposed to the local network. Configure trusted issuers and allowed
-          users under "auth" in settings.json so only allow-listed users can
-          drive this runtime.
-        </span>
-      )}
-    </div>
+        {exposed && authKnown && !authConfigured && (
+          <SettingsNote tone="warn">
+            External access is on but no allowed users are configured, so all
+            external requests are denied. Add trusted issuers and allowed users
+            under "auth" in settings.json.
+          </SettingsNote>
+        )}
+        {exposed && !authKnown && (
+          <SettingsNote tone="warn">
+            Exposed to the local network. Configure trusted issuers and allowed
+            users under "auth" in settings.json so only allow-listed users can
+            drive this runtime.
+          </SettingsNote>
+        )}
+      </SettingsSection>
+    </SettingsStack>
   );
 }
 
@@ -266,13 +274,13 @@ function AccessTab() {
   };
 
   if (loading) {
-    return <div className="pt-2 text-sm text-slate-500">Loading…</div>;
+    return <p className="hkp-set-hint">Loading…</p>;
   }
   if (!supported || !settings) {
     return (
-      <div className="pt-2 text-sm text-slate-500">
+      <SettingsNote>
         Runtime access settings are only editable inside the Readymade app.
-      </div>
+      </SettingsNote>
     );
   }
 
@@ -292,65 +300,49 @@ function AccessTab() {
   };
 
   return (
-    <div className="flex flex-col gap-4 pt-2 text-sm">
-      <div className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
-        <div className="flex flex-col gap-0.5">
-          <span className="font-semibold text-slate-800">
-            Expose to local network
-          </span>
-          <span className="text-[0.8rem] text-slate-500 leading-snug">
-            {allowExternalRuntimeAccess
-              ? "Bound to 0.0.0.0 — other devices can connect (authenticated)."
-              : "Bound to 127.0.0.1 — reachable only from this device."}
-          </span>
-        </div>
-        <button
-          onClick={() =>
-            void persist({
-              allowExternalRuntimeAccess: !allowExternalRuntimeAccess,
-            })
-          }
-          className={`shrink-0 rounded-full px-3 py-1 text-[0.8rem] font-semibold transition-colors ${
-            allowExternalRuntimeAccess
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-slate-100 text-slate-500"
-          }`}
-        >
-          {allowExternalRuntimeAccess ? "On" : "Off"}
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <span className="uppercase tracking-[0.12em] text-muted-foreground text-[0.68rem] font-semibold">
-          Allowed users
-        </span>
-        <span className="text-[0.8rem] text-slate-500 leading-snug">
-          Emails permitted to drive this runtime from other devices.
-        </span>
-
-        {allowedUsers.length === 0 && (
-          <span className="text-[0.8rem] italic text-slate-400">
-            No users yet — while exposed, all external requests are denied.
-          </span>
-        )}
-        {allowedUsers.map((email) => (
-          <div
-            key={email}
-            className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2"
-          >
-            <span className="truncate text-slate-800">{email}</span>
-            <button
-              onClick={() => removeEmail(email)}
-              aria-label={`Remove ${email}`}
-              className="shrink-0 text-slate-400 hover:text-red-600"
-            >
-              <X size={15} />
-            </button>
+    <SettingsStack>
+      <SettingsSection label="Local network">
+        <SettingsCard>
+          <div className="hkp-set-inline" style={{ justifyContent: "space-between", gap: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <div className="hkp-set-row-title">Expose to local network</div>
+              <p className="hkp-set-hint">
+                {allowExternalRuntimeAccess
+                  ? "Bound to 0.0.0.0 — other devices can connect (authenticated)."
+                  : "Bound to 127.0.0.1 — reachable only from this device."}
+              </p>
+            </div>
+            <SettingsSwitch
+              label="Expose to local network"
+              checked={allowExternalRuntimeAccess}
+              onChange={(checked) =>
+                void persist({ allowExternalRuntimeAccess: checked })
+              }
+            />
           </div>
-        ))}
+        </SettingsCard>
+      </SettingsSection>
 
-        <div className="flex items-center gap-2">
-          <input
+      <SettingsSection
+        label="Allowed users"
+        hint="Emails permitted to drive this runtime from other devices."
+      >
+        <SettingsList empty="No users yet — while exposed, all external requests are denied.">
+          {allowedUsers.map((email) => (
+            <SettingsRow
+              key={email}
+              title={email}
+              trailing={
+                <RemoveButton
+                  label={`Remove ${email}`}
+                  onClick={() => removeEmail(email)}
+                />
+              }
+            />
+          ))}
+        </SettingsList>
+        <div className="hkp-set-inline">
+          <SettingsInput
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             onKeyDown={(e) => {
@@ -359,47 +351,17 @@ function AccessTab() {
               }
             }}
             placeholder="name@example.com"
-            className="flex-1 rounded-md border border-slate-200 px-3 py-2 outline-none focus:border-slate-400"
-            style={{ fontSize: 16 }}
           />
-          <Button variant="outline" size="sm" onClick={addEmail} className="gap-1">
+          <SettingsButton onClick={addEmail} disabled={!newEmail.trim()}>
             <Plus size={14} />
             Add
-          </Button>
+          </SettingsButton>
         </div>
-      </div>
+      </SettingsSection>
 
-      <span className="text-[0.78rem] text-amber-700 leading-snug">
-        ⚠️ Changes take effect after restarting the app.
-      </span>
-    </div>
-  );
-}
-
-function CopyableUrl({ url }: { url: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Clipboard may be unavailable; ignore.
-    }
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:bg-slate-50 hover:border-slate-300"
-    >
-      <code className="font-mono text-slate-800 break-all">{url}</code>
-      {copied ? (
-        <Check size={15} className="shrink-0 text-emerald-600" />
-      ) : (
-        <Copy size={15} className="shrink-0 text-slate-400" />
-      )}
-    </button>
+      <SettingsNote tone="warn">
+        Changes take effect after restarting the app.
+      </SettingsNote>
+    </SettingsStack>
   );
 }

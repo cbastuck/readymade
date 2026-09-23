@@ -5,6 +5,11 @@ import {
   ThemeName,
   useThemeControl,
 } from "./ThemeContext";
+import {
+  SettingsChoices,
+  SettingsSection,
+  SettingsStack,
+} from "./settings/kit";
 
 const THEME_OPTIONS: Array<{ id: ThemeName; label: string }> = [
   { id: "playground", label: "Playground" },
@@ -30,110 +35,82 @@ export default function AppearanceSettings() {
   } = useThemeControl();
 
   return (
-    <div className="flex flex-col gap-5 pt-2 text-sm">
-      <div className="flex flex-col gap-2">
-        <span className="uppercase tracking-[0.12em] text-slate-400 text-[0.68rem] font-semibold">
-          Theme
-        </span>
-        <div className="flex gap-2">
-          {THEME_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => setThemeName(option.id)}
-              className={`rounded-lg border px-3 py-2 text-[0.85rem] font-semibold transition-colors ${
-                themeName === option.id
-                  ? "border-slate-800 bg-slate-800 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <SettingsStack>
+      <SettingsSection label="Theme">
+        <SettingsChoices
+          options={THEME_OPTIONS}
+          value={themeName}
+          onChange={setThemeName}
+        />
+      </SettingsSection>
 
-      <div className="flex flex-col gap-2">
-        <span className="uppercase tracking-[0.12em] text-slate-400 text-[0.68rem] font-semibold">
-          Accent colors
-        </span>
-        <span className="text-[0.8rem] text-slate-500 leading-snug">
-          Each pick swaps the primary and secondary accents used across the
-          whole app.
-        </span>
-        <div className="flex items-center gap-2.5">
+      <SettingsSection
+        label="Accent colors"
+        hint="Each pick swaps the primary and secondary accents used across the whole app."
+      >
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
           {ACCENT_PRESETS.map((preset) => (
             <button
               key={preset.id}
               title={preset.label}
               aria-label={`Accent ${preset.label}`}
+              aria-pressed={accentId === preset.id}
               onClick={() => setAccentId(preset.id)}
-              className="rounded-full transition-shadow"
               style={{
-                width: 26,
-                height: 26,
+                width: 28,
+                height: 28,
+                padding: 0,
+                cursor: "pointer",
+                borderRadius: "50%",
                 border: "2px solid #fff",
                 boxShadow:
                   accentId === preset.id
                     ? `0 0 0 2px ${preset.accent}`
                     : "0 0 0 1px #dfe2e9",
                 background: `linear-gradient(135deg, ${preset.accent} 50%, ${preset.accentSecondary} 50%)`,
+                transition: "box-shadow 0.12s",
               }}
             />
           ))}
         </div>
-      </div>
+      </SettingsSection>
 
-      <div className="flex flex-col gap-2">
-        <span className="uppercase tracking-[0.12em] text-slate-400 text-[0.68rem] font-semibold">
-          Density
-        </span>
-        <span className="text-[0.8rem] text-slate-500 leading-snug">
-          Compact shrinks service cards and their text across every theme.
-        </span>
-        <div className="flex gap-2">
-          {DENSITY_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              onClick={() => setDensityId(preset.id)}
-              className={`rounded-lg border px-3 py-2 text-[0.85rem] font-semibold transition-colors ${
-                densityId === preset.id
-                  ? "border-slate-800 bg-slate-800 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-              }`}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <SettingsSection
+        label="Density"
+        hint="Compact shrinks service cards and their text across every theme."
+      >
+        <SettingsChoices
+          options={DENSITY_PRESETS.map((preset) => ({
+            id: preset.id,
+            label: preset.label,
+          }))}
+          value={densityId}
+          onChange={setDensityId}
+        />
+      </SettingsSection>
 
-      <div className="flex flex-col gap-2">
-        <span className="uppercase tracking-[0.12em] text-slate-400 text-[0.68rem] font-semibold">
-          Font
-        </span>
-        <div className="flex gap-2">
-          {FONT_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              title={preset.label}
-              onClick={() => setFontId(preset.id)}
-              className={`flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 transition-colors ${
-                fontId === preset.id
-                  ? "border-slate-800 bg-slate-50"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-              }`}
-            >
+      <SettingsSection label="Font">
+        <SettingsChoices
+          options={FONT_PRESETS.map((preset) => ({
+            id: preset.id,
+            title: preset.label,
+            label: (
               <span
-                className="text-lg font-semibold leading-none text-slate-800"
-                style={preset.family ? { fontFamily: preset.family } : undefined}
+                style={{
+                  fontSize: 18,
+                  lineHeight: 1,
+                  fontFamily: preset.family ?? undefined,
+                }}
               >
                 Aa
               </span>
-              <span className="text-[0.7rem] text-slate-500">{preset.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+            ),
+            sub: preset.label,
+          }))}
+          value={fontId}
+          onChange={setFontId}
+        />
+      </SettingsSection>
+    </SettingsStack>
   );
 }

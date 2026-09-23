@@ -19,7 +19,8 @@ import {
 } from "hkp-frontend/src/views/start";
 import { commitUrl } from "hkp-frontend/src/projectMeta";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
-import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
+import { MobileAccountPage } from "hkp-frontend/src/views/profile";
+import { useUserProfile } from "hkp-frontend/src/core/userProfile";
 import {
   getLocalBoards,
   localStoragePrefix,
@@ -56,14 +57,19 @@ type BoardSession = {
 
 function StartScreen({
   onOpenSession,
+  onShowAccount,
   remotes,
 }: {
   onOpenSession: (session: BoardSession) => void;
+  onShowAccount: () => void;
   remotes: RemotesController;
 }) {
   const { user } = useAppContext();
   const cloudLogin = useCloudLogin();
-  const cloudLogout = useCloudLogout();
+  // The display name someone set on the account page, so the avatar shows the
+  // same initials the account does.
+  const profile = useUserProfile(user?.userId);
+  const accountName = profile.displayName || user?.username;
   // Coordinators live in the webview's localStorage, like the boards — the
   // same list the playground's connections sheet and deploy menu read. No
   // onManage: the start page manages them in its own connections sheet.
@@ -196,21 +202,18 @@ function StartScreen({
       badge={buildVersion.version}
       badgeDetail={buildVersion.hash}
       badgeDetailHref={commitUrl(buildVersion.hash)}
-      initials={initialsOf(user?.username)}
+      initials={initialsOf(accountName)}
       avatarTitle={
-        user
-          ? user.username
-            ? `Log out (${user.username})`
-            : "Log out"
-          : "Log in"
+        user ? (accountName ? `Account (${accountName})` : "Account") : "Log in"
       }
-      onAvatarClick={() => void (user ? cloudLogout() : cloudLogin())}
+      onAvatarClick={() => (user ? onShowAccount() : void cloudLogin())}
     />
   );
 }
 
 export default function MobileApp() {
   const [session, setSession] = useState<BoardSession | null>(null);
+  const [showAccount, setShowAccount] = useState(false);
   const remotes = useBackendRemotes();
 
   // Share feature: a share captured by the iOS share extension is delivered by
@@ -325,7 +328,11 @@ export default function MobileApp() {
         <RuntimeUserSync />
         <SecretConsentDialog />
         {session === null ? (
-          <StartScreen onOpenSession={setSession} remotes={remotes} />
+          <StartScreen
+            onOpenSession={setSession}
+            onShowAccount={() => setShowAccount(true)}
+            remotes={remotes}
+          />
         ) : (
           <MobilePlaygroundWithRouter
             boardName={session.name}
@@ -343,6 +350,12 @@ export default function MobileApp() {
               onConsumed={handleShareConsumed}
             />
           </MobilePlaygroundWithRouter>
+        )}
+        {/* Over whatever is showing, never instead of it: a board underneath
+            is live state, and unmounting it to show an account would discard
+            edits nobody agreed to lose. */}
+        {showAccount && (
+          <MobileAccountPage onBack={() => setShowAccount(false)} />
         )}
         {pendingShare && (
           <ShareBoardPicker

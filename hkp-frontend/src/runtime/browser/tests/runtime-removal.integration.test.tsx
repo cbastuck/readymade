@@ -170,8 +170,8 @@ describe("runtime removal integration", () => {
 
     const parent = {
       uuid: "parent-1",
-      serviceId: "hookup.to/service/stack",
-      serviceName: "Stack",
+      serviceId: "tracks",
+      serviceName: "Tracks",
       board: "test-board",
       app: scope.app,
       process: vi.fn(async (x) => x),

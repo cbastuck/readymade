@@ -1,7 +1,6 @@
 import { useContext, useState } from "react";
 import { LogIn, LogOut, Menu, Settings, User } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useNavigate } from "react-router-dom";
 
 import { AppCtx } from "hkp-frontend/src/AppContext";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
@@ -18,6 +17,7 @@ import MenuIcon from "../MenuIcon";
 import SettingsDialog, {
   APPEARANCE_TAB,
 } from "hkp-frontend/src/ui-components/SettingsDialog";
+import AccountDialog from "hkp-frontend/src/views/profile/AccountDialog";
 import {
   useTheme,
   useThemeControl,
@@ -32,8 +32,10 @@ export default function AppMenu() {
   const cloudLogin = useCloudLogin();
   const context = useContext(AppCtx);
   const currentUser = context?.user;
-  const navigate = useNavigate();
   const [settingsTab, setSettingsTab] = useState<string | null>(null);
+  // Over whatever is showing, not in place of it: this menu sits in a board's
+  // toolbar, and a board is live state that a replaced view would discard.
+  const [isAccountOpen, setAccountOpen] = useState(false);
 
   const isLoggedIn = !!currentUser;
   const nickname = currentUser?.username;
@@ -85,10 +87,17 @@ export default function AppMenu() {
           className="w-56 mx-4 font-menu"
           style={{ borderRadius: theme.borderRadius }}
         >
+          <DropdownMenuItem
+            className="text-base"
+            onSelect={() => setSettingsTab(APPEARANCE_TAB)}
+          >
+            <MenuIcon icon={Settings} />
+            <span>Settings</span>
+          </DropdownMenuItem>
           <DropdownMenuGroup>
             <DropdownMenuItem
               className="text-base"
-              onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
+              onClick={() => (isLoggedIn ? setAccountOpen(true) : onLogin())}
             >
               {isLoggedIn ? (
                 <>
@@ -114,14 +123,6 @@ export default function AppMenu() {
               <span>Dashboard</span>
             </DropdownMenuItem>
             */}
-
-            <DropdownMenuItem
-              className="text-base"
-              onSelect={() => setSettingsTab(APPEARANCE_TAB)}
-            >
-              <MenuIcon icon={Settings} />
-              <span>Settings</span>
-            </DropdownMenuItem>
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />
@@ -138,6 +139,7 @@ export default function AppMenu() {
       </DropdownMenu>
 
       <SettingsDialog tab={settingsTab} onChangeTab={setSettingsTab} />
+      <AccountDialog open={isAccountOpen} onOpenChange={setAccountOpen} />
     </>
   );
 }

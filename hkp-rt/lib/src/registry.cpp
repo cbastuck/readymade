@@ -32,6 +32,7 @@
 #include "./services/stopper.h"
 #include "./services/hold.h"
 #include "./services/sub_service.h"
+#include "./services/tracks.h"
 #include "./services/if_service.h"
 #include "./services/peer_server/peer_server.h"
 #include "./services/text_generation.h"
@@ -71,6 +72,7 @@ using ServiceTypes = Registry::TypeList<
   ,Stopper
   ,Hold
   ,SubService
+  ,Tracks
   ,IfService
   ,PeerServerService
   ,TextGeneration

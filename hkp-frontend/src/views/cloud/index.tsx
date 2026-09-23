@@ -15,6 +15,7 @@ import {
   Cloud,
   CloudOff,
   Plus,
+  TriangleAlert,
   ScrollText,
 } from "lucide-react";
 
@@ -865,6 +866,9 @@ export default function CloudBoards({
   );
 
   const isStopped = boardStatus === "stopped";
+  // Provisioning failed for at least one runtime. The ones that did provision
+  // are still live on their hosts, so Stop stays offered — it releases them.
+  const isFailed = boardStatus === "error";
   const coordinatorName = selectedCoordinator?.name ?? "a coordinator";
   const boardIsOpen = !!(mountedBoard && selectedCoordinator && selectedBoard);
   const statusSlot = boardIsOpen ? (
@@ -873,7 +877,9 @@ export default function CloudBoards({
         title={
           isStopped
             ? "Its runtimes are released; Start provisions them again"
-            : "It keeps running when you close this"
+            : isFailed
+              ? "Some runtimes could not be provisioned; Stop releases the ones that were"
+              : "It keeps running when you close this"
         }
         style={{
           display: "flex",
@@ -881,7 +887,7 @@ export default function CloudBoards({
           gap: 6,
           minWidth: 0,
           fontSize: 12.5,
-          color: "var(--text-dim, #6b7280)",
+          color: isFailed ? "#dc2626" : "var(--text-dim, #6b7280)",
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -889,11 +895,18 @@ export default function CloudBoards({
       >
         {isStopped ? (
           <CloudOff size={14} strokeWidth={1.75} />
+        ) : isFailed ? (
+          <TriangleAlert size={14} strokeWidth={1.75} />
         ) : (
           <Cloud size={14} strokeWidth={1.75} />
         )}
         <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-          {isStopped ? "Stopped on" : "Deployed to"} {coordinatorName}
+          {isStopped
+            ? "Stopped on"
+            : isFailed
+              ? "Didn’t fully start on"
+              : "Deployed to"}{" "}
+          {coordinatorName}
         </span>
       </span>
       <button

@@ -1,0 +1,193 @@
+{
+  "boardName": "Storage",
+  "description": "Where a board keeps bytes. Type a line and it is written into a volume as a file; the same volume is served, read-only, at an address you can open in a browser.\n\nTwo instances of the same service, doing opposite things, which is the point: the one the facade writes through accepts writes because nothing outside the board can reach it, and the one behind the endpoint is read-only because a mount is unauthenticated by design. What holds the bytes is neither of them — it is the nested pipeline, `filesystem` here, and swapping it for something speaking S3 changes nothing in front of it.\n\nNeeds hkp-node on port 8080.",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "Node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "keep",
+        "serviceId": "storage",
+        "serviceName": "Keep it",
+        "state": {
+          "pipeline": [
+            {
+              "instanceId": "files",
+              "serviceId": "filesystem",
+              "serviceName": "Files",
+              "state": {
+                "volume": "storage-demo"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "answer",
+        "serviceId": "monitor",
+        "serviceName": "What it said",
+        "state": {}
+      },
+      {
+        "uuid": "serve",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Serve the volume",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_session",
+          "mountName": "files",
+          "pipeline": [
+            {
+              "instanceId": "read",
+              "serviceId": "storage",
+              "serviceName": "Read only",
+              "state": {
+                "readOnly": true,
+                "pipeline": [
+                  {
+                    "instanceId": "files",
+                    "serviceId": "filesystem",
+                    "serviceName": "Files",
+                    "state": {
+                      "volume": "storage-demo"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "end",
+        "serviceId": "stopper",
+        "serviceName": "End of the call",
+        "state": {}
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "storage",
+        "title": "Storage",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "paddingX": 16,
+          "paddingY": 14,
+          "items": [
+            {
+              "type": "text-input",
+              "label": "Write a note",
+              "placeholder": "anything",
+              "submitLabel": "Keep it",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "keep",
+                  "payload": {
+                    "op": "write",
+                    "path": "notes/latest.txt",
+                    "contentType": "text/plain",
+                    "body": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "What is kept",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "keep",
+                      "payload": {
+                        "op": "list"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "label": "Last write",
+                  "source": {
+                    "serviceUuid": "keep",
+                    "path": "lastPath"
+                  },
+                  "placeholder": "nothing yet",
+                  "grow": true,
+                  "fontSize": 12
+                }
+              ]
+            },
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "answer",
+                "path": "body.files"
+              },
+              "columns": [
+                {
+                  "key": "path",
+                  "label": "File"
+                },
+                {
+                  "key": "size",
+                  "label": "Bytes"
+                },
+                {
+                  "key": "contentType",
+                  "label": "Type"
+                }
+              ],
+              "empty": "Nothing kept yet"
+            },
+            {
+              "type": "text",
+              "label": "Served at",
+              "source": {
+                "serviceUuid": "serve",
+                "path": "__hkpMount"
+              },
+              "placeholder": "not published yet",
+              "tone": "muted",
+              "fontSize": 12,
+              "wrap": true
+            },
+            {
+              "type": "text",
+              "placeholder": "Open that address for a listing, or add a path to it for the file — /notes/latest.txt. It is read-only: a PUT to it is refused.",
+              "tone": "muted",
+              "fontSize": 12
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "keep",
+          "path": "error"
+        },
+        "tone": "error"
+      }
+    ]
+  }
+}

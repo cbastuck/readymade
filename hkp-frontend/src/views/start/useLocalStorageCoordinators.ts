@@ -39,6 +39,10 @@ export function useLocalStorageCoordinators(
         mutate([...coordinators, coordinator]),
       onRemove: (coordinator: CoordinatorDescriptor) =>
         mutate(coordinators.filter((c) => !sameCoordinator(c, coordinator))),
+      onUpdate: (previous: CoordinatorDescriptor, next: CoordinatorDescriptor) =>
+        mutate(
+          coordinators.map((c) => (sameCoordinator(c, previous) ? next : c)),
+        ),
       onManage,
     }),
     [coordinators, mutate, onManage],

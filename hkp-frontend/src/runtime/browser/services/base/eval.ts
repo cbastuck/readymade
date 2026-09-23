@@ -93,6 +93,17 @@ const globalScope = {
     String(x)
       .toLowerCase()
       .replace(/[^a-z0-9_-]/g, ""),
+  // Text with the web addresses taken out, and with whatever label introduced
+  // one — "Article URL:" says less than nothing once the address is gone. For
+  // text on its way to something that speaks or summarises it, where an address
+  // is a minute of punctuation; never for what a board stores or publishes,
+  // where the address is the useful part.
+  withoutUrls: (x: unknown) =>
+    String(x ?? "")
+      .replace(/(?:[A-Za-z][\w ]{0,30}:[ \t]*)?(?:https?:\/\/|www\.)\S+/gi, " ")
+      .replace(/[ \t]{2,}/g, " ")
+      .replace(/\s+([.,;:!?])/g, "$1")
+      .trim(),
   uuid: {
     v4: uuidv4,
     v7: uuidv7,

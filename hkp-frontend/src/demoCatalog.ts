@@ -190,6 +190,30 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     icon: "🆔",
     tags: ["Utility"],
   },
+  {
+    slug: "court-booking",
+    label: "Court Booking",
+    description:
+      "Three tennis courts as an hourly timetable: tap a free hour to take it, tap your own to give it back. Both club rules — no double booking, one hour per member per day — are unique indexes, so the database refuses what the grid would not offer.",
+    icon: "🎾",
+    tags: ["Needs Node", "SQL"],
+  },
+  {
+    slug: "rss-aggregator",
+    label: "RSS Aggregator",
+    description:
+      "Any number of RSS or Atom feeds read as one list, newest first, with Hacker News among them. Paste a URL to subscribe; save an article and it goes into a SQL reading list that outlives the feed page it came from.",
+    icon: "📰",
+    tags: ["Needs Node", "SQL"],
+  },
+  {
+    slug: "meeting-poll",
+    label: "Meeting Poll",
+    description:
+      "Dates for a meeting, answered by everyone coming: the organiser puts times up, each person says which ones work \u2014 none, one or all of them. Who may propose a date and who may answer at all are triggers and indexes, so the database turns down what the page would not offer, and says why.",
+    icon: "🗳️",
+    tags: ["Needs Node", "SQL"],
+  },
 ];
 
 export const ALL_DEMO_TAGS = Array.from(

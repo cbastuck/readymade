@@ -20,6 +20,10 @@
 namespace hkp
 {
 
+// Which runtime server this is, reported beside the runtimes so a client can
+// tell remote runtimes apart without reading their address.
+constexpr const char* kRuntimeServerKind = "c++";
+
 // Per-connection bookkeeping for a notification WebSocket, stored as the Crow
 // connection's userdata. `runtimeId` is empty until the client sends its
 // protocol handshake ({type, id}); after that the connection is registered
@@ -417,7 +421,7 @@ crow::response Server::impl::getRuntimes()
   {
     arr.push_back(jsonSerialise(rt));
   }
-  return makeJsonResponse(json{{"runtimes", arr}, {"registry", app->getRegistry()}});
+  return makeJsonResponse(json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}});
 }
 
 
@@ -462,7 +466,7 @@ crow::response Server::impl::createRuntimes(const crow::request &req)
     auto createdConfig = app->createRuntime(*rtConfig);
     arr.push_back(jsonSerialise(createdConfig));
   }
-  return makeJsonResponse({json {{"runtimes", arr}, {"registry", app->getRegistry()}}});
+  return makeJsonResponse({json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}}});
 }
 
 crow::response Server::impl::configureService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId)

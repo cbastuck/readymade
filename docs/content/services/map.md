@@ -118,6 +118,15 @@ Expressions have access to the incoming data via `params` and to a set of built-
 | `range` | `range(n)` | `[0, 1, … n-1]` |
 | `slug` | `slug(s)` | Lowercases and strips everything outside `[a-z0-9_-]` |
 | `now` | `now()` | Epoch milliseconds |
+| `withoutUrls` | `withoutUrls(s)` | Text with the web addresses removed, and the label that introduced one |
+
+`withoutUrls` is for text on its way to something that **speaks or summarises**
+it. A feed summary is often written for programs as much as for people — "Article
+URL: https://… Comments URL: https://… Points: 48" — which is a link to a reader
+and a minute of punctuation to a listener. The label goes with the address it
+introduced, since "Article URL:" with nothing after it says less than nothing.
+Never use it on what a board stores or publishes: there the address is the
+useful part.
 
 **Note:** `Math.cos` is not directly available. To compute cosine, use the identity `sin(θ + 1.5708)` (i.e. sin(θ + π/2)).
 
@@ -185,3 +194,31 @@ Alongside the `=`-suffix convention, the hkp-rt Map also renders **Inja** (a C++
 ```
 
 Note the difference in scope: an Inja template addresses the incoming data directly (`{{ value }}`), while an expression addresses it through `params` (`"angle=": "params.value * 0.1"`). Inja's own filters and functions apply inside `{{ }}`; the built-in table above applies inside expressions.
+
+---
+
+## An address a board mentions
+
+A `hkp-mount://<runtimeId>/<serviceUuid>` value anywhere in what a template
+produces becomes the address it names, once the board's coordinator has
+resolved it:
+
+```json
+{ "template": { "audioBase": "hkp-mount://library.files/listen" } }
+```
+
+This is for a board that has to **mention** an endpoint — an enclosure URL in a
+feed, a link somebody is handed, an address written into a document — as against
+dialling one, which `http-client` does with the same reference in the field it
+calls. The address is assigned when the board loads, so it cannot be written
+down in advance.
+
+It applies to what the template *produced*, so a reference an expression
+returned is covered as well as one written as a static value.
+
+An unresolved reference is **left as it stands**: the owner has not published
+yet, and a value that still says `hkp-mount://…` is visibly not an address,
+where an empty string would look like a field nobody filled in. One address per
+service, so one reference per Map.
+
+Available on hkp-node and hkp-python.

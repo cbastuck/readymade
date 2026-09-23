@@ -364,6 +364,10 @@ port of its own — see `concepts/mounts.md`.
 - **A registry**: what services this runtime can create. Sent back when the
   runtime is provisioned, and used to offer the right service list and pick the
   right UI panel (`ServiceRegistry` per runtime id).
+- **A server kind**: remote servers report what they are (`"server": "node"`,
+  `"python"`, `"c++"`) beside the registry, and the runtime header shows it
+  next to the `rest` badge. It lives on the live scope, never in the board — the
+  same board can point a runtime at a different server tomorrow.
 - **State**: presentation and per-runtime settings, e.g. `color`,
   `wrapServices`, `minimized`, `logData` — `runtime.state` in the board.
 - **A URL**, for remote runtimes. `hkp://remotes/<name>` addresses the app's own

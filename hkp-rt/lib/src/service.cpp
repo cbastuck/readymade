@@ -164,6 +164,18 @@ bool Service::supportsSubservices() const
   return false;
 }
 
+// A service holding no pipeline has nothing inside it to name, and says so by
+// answering nothing rather than by being asked to know about addresses.
+std::shared_ptr<Service> Service::findNested(const std::string&) const
+{
+  return nullptr;
+}
+
+bool Service::processNested(const std::string&, Data, Data&)
+{
+  return false;
+}
+
 // ── Sub-runtime support ───────────────────────────────────────────────────────
 
 std::shared_ptr<SubRuntime> Service::createSubRuntime(const json& servicesConfig)

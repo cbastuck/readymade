@@ -1,11 +1,15 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FacadeStateContext } from "./FacadeStateContext";
 import { executeActions } from "./executeActions";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeDescriptor } from "./types";
-import { PanelRenderer } from "./panels/PanelRenderer";
+import { PanelRow } from "./panels/PanelRow";
 import { FacadeEditor } from "./editor/FacadeEditor";
+import { FacadeNotices } from "./FacadeNotices";
+import { FacadeTabBar } from "./FacadeTabBar";
+import { currentFace, defaultFaceId, resolveFaces } from "./tabs";
 import { useFacadeView } from "./FacadeViewContext";
+import { useChromeRetracted } from "./FacadeChrome";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
 
 type FacadeRendererProps = {
@@ -21,6 +25,13 @@ export default function FacadeRenderer({
   boardName,
   runtimeContent,
 }: FacadeRendererProps) {
+  // The copyright strip is fixed to the bottom of the window and paints over
+  // whatever is under it, so the facade keeps clear of it — except where the
+  // chrome has retracted and there is no strip to keep clear of, which is the
+  // one state where those pixels are the difference between a facade that
+  // fills the window and one that stops just short of it.
+  const footerClearance = useChromeRetracted() ? 0 : 36;
+
   // ── facade state store ───────────────────────────────────────────────────
   const [facadeState, setFacadeStateRaw] = useState<Record<string, unknown>>(
     () => facade.state ?? {},
@@ -70,6 +81,20 @@ export default function FacadeRenderer({
   useEffect(() => {
     setDraftFacade(facade);
   }, [boardName]);
+
+  // ── tabs ─────────────────────────────────────────────────────────────────
+  // Which face is chosen lives here rather than in storage: a board says what
+  // it opens as, and that answer is the tab everybody uses. Editing the facade
+  // can rename or drop a tab, so what is on screen is resolved against the
+  // faces that exist rather than trusted.
+  const { shared, faces } = resolveFaces(draftFacade);
+  const [chosenTab, setChosenTab] = useState<string | null>(() =>
+    defaultFaceId(facade),
+  );
+  useEffect(() => {
+    setChosenTab(defaultFaceId(facade));
+  }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
+  const shownFace = currentFace(faces, chosenTab);
 
   // ── vertical (runtime) splitter ──────────────────────────────────────────
   const DEFAULT_RUNTIME_HEIGHT = Math.round(window.innerHeight * 0.4);
@@ -160,13 +185,16 @@ export default function FacadeRenderer({
     window.addEventListener("mouseup", onMouseUp);
   };
 
-  const multiPanel = draftFacade.panels.length > 1;
-
   return (
     <FacadeStateContext.Provider
       value={{ state: facadeState, setState: setFacadeStateEntry }}
     >
       <FacadeBoardActionsProvider boardContext={boardContext}>
+        {/* Draws nothing: what these have to say arrives as a toast. */}
+        <FacadeNotices
+          notices={draftFacade.notices}
+          boardContext={boardContext}
+        />
         <div
           style={{
             display: "flex",
@@ -175,7 +203,7 @@ export default function FacadeRenderer({
             background: "hsl(var(--background))",
             overflow: "hidden",
             fontFamily: "'Recursive', monospace",
-            paddingBottom: "36px",
+            paddingBottom: footerClearance,
           }}
         >
           {/* The board, with the editor alongside it */}
@@ -206,29 +234,33 @@ export default function FacadeRenderer({
                   minHeight: 0,
                   overflow: "hidden",
                   display: "flex",
-                  flexDirection: multiPanel ? "row" : "column",
+                  flexDirection: "column",
                 }}
               >
-                {draftFacade.panels.map((panel, idx) => (
-                  <div
-                    key={panel.id}
-                    style={{
-                      flex: 1,
-                      overflow: "hidden",
-                      display: "flex",
-                      flexDirection: "column",
-                      borderLeft:
-                        multiPanel && idx > 0
-                          ? "1px solid hsl(var(--border))"
-                          : undefined,
-                    }}
-                  >
-                    <PanelRenderer
-                      panel={panel}
-                      boardContext={boardContext}
-                      showTitle={multiPanel}
-                    />
-                  </div>
+                {/* Panels no tab claims, on screen whichever tab is chosen.
+                    Every panel, for a facade with no tabs at all. */}
+                {shared.length > 0 && (
+                  <PanelRow
+                    panels={shared}
+                    boardContext={boardContext}
+                    widthsKey={boardName}
+                  />
+                )}
+                {faces.length > 0 && (
+                  <FacadeTabBar
+                    tabs={faces.map((face) => face.tab)}
+                    active={shownFace?.tab.id ?? null}
+                    onSelect={setChosenTab}
+                  />
+                )}
+                {faces.map((face) => (
+                  <PanelRow
+                    key={face.tab.id}
+                    panels={face.panels}
+                    boardContext={boardContext}
+                    widthsKey={`${boardName}#${face.tab.id}`}
+                    hidden={face.tab.id !== shownFace?.tab.id}
+                  />
                 ))}
               </div>
 

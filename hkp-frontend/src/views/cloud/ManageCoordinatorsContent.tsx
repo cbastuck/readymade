@@ -38,7 +38,7 @@ export default function ManageCoordinatorsContent({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="hkp-set flex flex-col gap-4">
       <ExistingCoordinatorsPanel
         coordinators={coordinators}
         onRemove={onRemove}
