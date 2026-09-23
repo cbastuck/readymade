@@ -3,6 +3,10 @@
 Plan for a fresh session. Decisions are made (Aug 2026); nothing below is
 implemented yet.
 
+> **Partly superseded (Sep 2026).** Ownership, the bridge and snapshots stand.
+> How the coordinator *reaches* a board's runtimes does not: it no longer dials
+> them, they connect to it. See `TODO-COORDINATOR-CONNECTIONS.md`.
+
 ---
 
 ## The problem this fixes
