@@ -849,6 +849,7 @@ export default function StartPage(props: StartPageProps) {
           ? () => onDeleteCloudBoard(detailBoard.board)
           : undefined
       }
+      onUndeploy={detailBoard.board.onUndeploy}
       loadHistory={
         detailIsSaved && listBoardHistory
           ? () => listBoardHistory(detailBoard.board.name)

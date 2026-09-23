@@ -266,7 +266,9 @@ export default function OverviewDetails({
             {node.depth === 0 ? "top level" : `nested ${node.depth} deep`}
           </Row>
           <Row label="Position" palette={palette}>
-            {`#${node.index + 1} in its pipeline`}
+            {node.pipeline
+              ? `#${node.index + 1} in its host's ${node.pipeline}`
+              : `#${node.index + 1} in its pipeline`}
           </Row>
           {node.ancestry.length > 0 && (
             <Row label="Path" palette={palette}>
@@ -341,7 +343,7 @@ export default function OverviewDetails({
           }}
         >
           <CornerUpRight size={14} strokeWidth={1.5} />
-          open in playground
+          goto board
         </button>
       </div>
     </div>

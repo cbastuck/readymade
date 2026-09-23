@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 
 import { artFor, formatModified, gradient, stateMeta } from "./model";
 import { BoardArt, BoardHistoryItem, BoardNode } from "./types";
+import Markup from "../../ui-components/Markup";
 
 /** Preset swatches for the artwork picker: solids and matching gradients. */
 const ART_COLORS = ["#3b5bff", "#17b877", "#f2a417", "#e0355f", "#5b5b6b"];
@@ -59,6 +60,9 @@ interface Props {
   /** Deletes the board's uploaded copy from the cloud storage (owner side);
    *  asked to confirm with a second click. The local copy stays. */
   onDeleteFromCloud?: () => Promise<void>;
+  /** Deletes a deployed board from the coordinator running it, stopping its
+   *  runtimes; asked to confirm with a second click. */
+  onUndeploy?: () => Promise<void>;
   /** Revokes a share recipient's access (owner side); renders the board's
    *  sharedWith list with a Revoke action per entry. */
   onRevokeShare?: (email: string) => Promise<void>;
@@ -232,6 +236,7 @@ export default function BoardDetails({
   onRemoveFromFolder,
   onDelete,
   onDeleteFromCloud,
+  onUndeploy,
   onRevokeShare,
   onLeaveShare,
 }: Props) {
@@ -324,14 +329,18 @@ export default function BoardDetails({
     }
   };
 
+  // Deleting an uploaded copy and deleting a deployed board share one confirm
+  // flow; a board is only ever one or the other.
+  const cloudDelete = onDeleteFromCloud ?? onUndeploy;
+
   const deleteFromCloud = async () => {
-    if (!onDeleteFromCloud || cloudDeleteState === "busy") {
+    if (!cloudDelete || cloudDeleteState === "busy") {
       return;
     }
     setCloudDeleteState("busy");
     setCloudDeleteError(null);
     try {
-      await onDeleteFromCloud();
+      await cloudDelete();
       setCloudDeleteState("idle");
       setConfirmingCloudDelete(false);
     } catch (err) {
@@ -491,7 +500,8 @@ export default function BoardDetails({
         </div>
 
         {description && (
-          <p
+          <Markup
+            text={description}
             style={{
               margin: 0,
               fontSize: 13,
@@ -499,9 +509,7 @@ export default function BoardDetails({
               color: "#6b7080",
               textAlign: "center",
             }}
-          >
-            {description}
-          </p>
+          />
         )}
 
         {onChangeArt && (
@@ -843,7 +851,7 @@ export default function BoardDetails({
               )}
             </>
           )}
-          {onDeleteFromCloud && (
+          {cloudDelete && (
             <>
               <button
                 className="st-btn st-btn-ghost"
@@ -863,9 +871,13 @@ export default function BoardDetails({
               >
                 {cloudDeleteState === "busy"
                   ? "Deleting…"
-                  : confirmingCloudDelete
-                    ? `Really delete “${board.name}” from the cloud?`
-                    : "Delete from cloud"}
+                  : onDeleteFromCloud
+                    ? confirmingCloudDelete
+                      ? `Really delete “${board.name}” from the cloud?`
+                      : "Delete from cloud"
+                    : confirmingCloudDelete
+                      ? `Really stop and delete “${board.name}”?`
+                      : "Delete cloud board"}
               </button>
               {cloudDeleteState === "error" && cloudDeleteError && (
                 <div

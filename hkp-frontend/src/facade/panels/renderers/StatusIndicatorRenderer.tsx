@@ -1,18 +1,15 @@
 import { useState, useEffect } from "react";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeWidgetSource, StatusIndicatorWidget } from "../../types";
-import { findService } from "../../boardServices";
 import { resolvePath } from "../../readValue";
+import {
+  facadeDebugLog,
+  useResolvedService,
+  useServiceNotifications,
+} from "../../serviceNotifications";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 const DEFAULT_DOT_COLOR = "#6b7280";
-
-// Enable with: localStorage.setItem("hkp-facade-debug", "1") + reload.
-function debugLog(...args: unknown[]) {
-  if (localStorage.getItem("hkp-facade-debug") === "1") {
-    console.log("[facade-source]", ...args);
-  }
-}
 
 /**
  * Latest value a service notification carried at `source.path`. Notifications
@@ -24,70 +21,41 @@ export function useNotificationValue(
   source: FacadeWidgetSource | undefined,
 ): unknown {
   const [value, setValue] = useState<unknown>(undefined);
-  const [sourceService, setSourceService] = useState<ReturnType<typeof findService>>(null);
+  const sourceService = useResolvedService(boardContext, source?.serviceUuid);
 
-  // Browser service instances are appended into their runtime scope by
-  // mutation, possibly after the facade has mounted — a one-shot lookup can
-  // miss them and would never re-run. Poll until the service appears.
+  // Seed from the service's current state so the widget shows a real value
+  // (e.g. isRecording: false) before the first notification arrives.
   useEffect(() => {
+    if (!sourceService?.state || !source?.path) {
+      return;
+    }
+    const seed = resolvePath(sourceService.state, source.path);
+    if (seed === undefined) {
+      return;
+    }
+    setValue((prev: unknown) => (prev === undefined ? seed : prev));
+  }, [sourceService, source?.path]);
+
+  useServiceNotifications(sourceService, (notification) => {
     if (!source) {
       return;
     }
-    const resolve = (svc: NonNullable<ReturnType<typeof findService>>) => {
-      setSourceService(svc);
-      // Seed from the service's current state so the widget shows a real
-      // value (e.g. isRecording: false) before the first notification.
-      if (source.path && svc.state) {
-        const seed = resolvePath(svc.state, source.path);
-        if (seed !== undefined) {
-          setValue((prev: unknown) => (prev === undefined ? seed : prev));
-        }
-      }
-    };
-    const found = findService(boardContext, source.serviceUuid);
-    if (found) {
-      debugLog(source.serviceUuid, "resolved immediately", found);
-      resolve(found);
-      return;
+    const val = source.path
+      ? resolvePath(notification, source.path)
+      : notification;
+    facadeDebugLog(
+      source.serviceUuid,
+      "notification",
+      notification,
+      "->",
+      source.path,
+      "=",
+      val,
+    );
+    if (val !== undefined) {
+      setValue(val);
     }
-    debugLog(source.serviceUuid, "not found yet — polling");
-    const timer = setInterval(() => {
-      const svc = findService(boardContext, source.serviceUuid);
-      if (svc) {
-        debugLog(source.serviceUuid, "resolved by polling", svc);
-        resolve(svc);
-        clearInterval(timer);
-      }
-    }, 250);
-    return () => clearInterval(timer);
-  }, [boardContext.scopes, boardContext.services, source?.serviceUuid]);
-
-  useEffect(() => {
-    if (!sourceService?.app || !source) {
-      return;
-    }
-    const handler = (notification: any) => {
-      if (notification?.__internal) {
-        return;
-      }
-      const val = source.path
-        ? resolvePath(notification, source.path)
-        : notification;
-      debugLog(source.serviceUuid, "notification", notification, "->", source.path, "=", val);
-      if (val !== undefined) {
-        setValue(val);
-      }
-    };
-    if (!sourceService.app.registerNotificationTarget) {
-      debugLog(source.serviceUuid, "app has NO registerNotificationTarget", sourceService.app);
-      return;
-    }
-    debugLog(source.serviceUuid, "subscribed");
-    sourceService.app.registerNotificationTarget(sourceService, handler);
-    return () => {
-      sourceService.app.unregisterNotificationTarget?.(sourceService, handler);
-    };
-  }, [sourceService, source?.path]);
+  });
 
   return value;
 }

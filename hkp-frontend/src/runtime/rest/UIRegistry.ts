@@ -16,6 +16,10 @@ import InjectorUI from "./ui/InjectorUI";
 import SkillRouterUI from "./ui/SkillRouterUI";
 import HoldUI from "./ui/HoldUI";
 import CommunicationDispatcherUI from "./ui/CommunicationDispatcherUI";
+import TracksUI from "./ui/TracksUI";
+import HttpEndpointUI from "./ui/HttpEndpointUI";
+import RssUI from "./ui/RssUI";
+import SubServiceUI from "./ui/SubServiceUI";
 
 export type ServiceLookup = {
   serviceId?: ServiceClass["serviceId"];
@@ -61,6 +65,14 @@ function findServiceUIByKey(
       return HoldUI;
     case "communication-dispatcher":
       return CommunicationDispatcherUI;
+    case "http-server-subservices":
+      return HttpEndpointUI;
+    case "sub-service":
+      return SubServiceUI;
+    case "tracks":
+      return TracksUI;
+    case "tracks@v1":
+      return TracksUI;
     case "timer":
       return TimerUI;
     case "imap-email":
@@ -71,6 +83,8 @@ function findServiceUIByKey(
       return TelegramSenderUI;
     case "smtp-email":
       return SmtpEmailUI;
+    case "rss":
+      return RssUI;
   }
   return null;
 }

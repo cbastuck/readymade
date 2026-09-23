@@ -1,32 +1,26 @@
 import { useCallback, useState } from "react";
 
 import { ServiceUIProps } from "hkp-frontend/src/types";
-import InputField from "hkp-frontend/src/components/shared/InputField";
-import Button from "hkp-frontend/src/ui-components/Button";
+import HoldPanel, {
+  EMPTY_HOLD_STATE,
+  HOLD_PANEL_SIZE,
+  HoldPanelState,
+  readHoldState,
+} from "../../ui/HoldPanel";
 import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 
+/**
+ * A Hold on a REST runtime.
+ *
+ * The panel itself is shared with the browser runtime's — Hold is one service,
+ * and the two differ in how a panel reaches it rather than in what there is to
+ * see. What is here is the wrapper and the route to the service.
+ */
 export default function HoldUI(props: ServiceUIProps) {
-  const [property, setProperty] = useState<string>("");
-  const [held, setHeld] = useState<unknown>(null);
-  const [readCount, setReadCount] = useState<number>(0);
-  const [writeCount, setWriteCount] = useState<number>(0);
+  const [state, setState] = useState<HoldPanelState>(EMPTY_HOLD_STATE);
 
-  // Null is the empty value, not a held one.
-  const hasHeld = held !== null;
-
-  const onUpdate = useCallback((state: any) => {
-    if (state.property !== undefined) {
-      setProperty(state.property);
-    }
-    if (state.held !== undefined) {
-      setHeld(state.held);
-    }
-    if (state.readCount !== undefined) {
-      setReadCount(state.readCount);
-    }
-    if (state.writeCount !== undefined) {
-      setWriteCount(state.writeCount);
-    }
+  const onUpdate = useCallback((next: any) => {
+    setState((previous) => readHoldState(next, previous));
   }, []);
 
   return (
@@ -35,53 +29,15 @@ export default function HoldUI(props: ServiceUIProps) {
       onNotification={onUpdate}
       onInit={onUpdate}
       genericUI={false}
+      initialSize={HOLD_PANEL_SIZE}
     >
-      <div className="flex flex-col gap-2" style={{ minWidth: 280 }}>
-        <InputField
-          label="Property"
-          value={property}
-          onChange={(value) => {
-            setProperty(value);
-            props.service.configure({ property: value });
-          }}
-        />
-        <div style={{ fontSize: 12, opacity: 0.7 }}>
-          An input carrying this property replaces what is held. Every call
-          emits the held value under the same name, and stops while nothing is
-          held.
-        </div>
-
-        <div className="flex items-center justify-between">
-          {/* Which side has been calling — a producer that has stopped writing
-              shows up here as reads without writes. */}
-          <span style={{ fontSize: 12, opacity: 0.7 }}>
-            reads: {readCount} · writes: {writeCount}
-          </span>
-          <Button
-            className="hkp-svc-btn"
-            disabled={!hasHeld}
-            onClick={() => props.service.configure({ action: "clear" })}
-          >
-            Clear
-          </Button>
-        </div>
-
-        <div className="border border-gray-300 p-2">
-          <h3 className="tracking-[6px]">Held</h3>
-          <pre
-            style={{
-              fontSize: 12,
-              margin: 0,
-              maxHeight: 160,
-              overflow: "auto",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-            }}
-          >
-            {hasHeld ? JSON.stringify(held, null, 2) : "nothing held yet"}
-          </pre>
-        </div>
-      </div>
+      <HoldPanel
+        state={state}
+        onLocalChange={(next) =>
+          setState((previous) => ({ ...previous, ...next }))
+        }
+        configure={(config) => props.service.configure(config)}
+      />
     </RuntimeRestServiceUI>
   );
 }

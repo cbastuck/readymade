@@ -26,7 +26,10 @@ type Props = {
   availableRuntimeEngines: Array<RuntimeClass>;
   onAddAvailableRuntimeEngine: (desc: RuntimeClass) => void;
   onRemoveAvailableRuntimeEngine: (desc: RuntimeClass) => void;
-  onUpdateRuntimeEngine: (updated: RuntimeClass) => void;
+  onUpdateRuntimeEngine: (
+    previous: RuntimeClass,
+    next: RuntimeClass,
+  ) => void;
   onSelectEngine: (rt: RuntimeClass) => void;
 };
 

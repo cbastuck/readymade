@@ -80,6 +80,12 @@ function describeAuthFailure(
         `then reload the board (${url})`;
 }
 
+/** The runtime server's own name for what it is, when it reports one. */
+function serverKindOf(body: unknown): string | undefined {
+  const server = (body as { server?: unknown } | null)?.server;
+  return typeof server === "string" && server ? server : undefined;
+}
+
 function normalizeRegistry(registry: ServiceClass[]): ServiceClass[] {
   return registry.map((entry) => {
     if (entry.serviceId !== "sub-service") {
@@ -303,6 +309,7 @@ async function attachRuntime(
     user,
   );
   scope.registry = registry;
+  scope.server = serverKindOf(body);
   scope.services = existing.services;
   scope.boardName = boardName;
   // A runtime that restarted still has its services and no longer has their
@@ -408,6 +415,7 @@ export async function attachRuntimes(
       user,
     );
     scope.registry = registry;
+    scope.server = serverKindOf(body);
     scope.services = cur.services;
     return {
       ...acc,
@@ -705,7 +713,8 @@ async function createRuntimeRequest(
         : `Failed to create runtime (${res.status} ${res.statusText}): ${runtimesUrl}`,
     );
   }
-  const { registry, runtimes } = await res.json();
+  const body = await res.json();
+  const { registry, runtimes } = body;
   const normalizedRegistry = normalizeRegistry(registry ?? []);
   const rt = runtimes[0]; // TODO only considering the first runtime here
   if (!rt) {
@@ -717,6 +726,7 @@ async function createRuntimeRequest(
     user ?? null,
   );
   scope.registry = normalizedRegistry;
+  scope.server = serverKindOf(body);
   scope.services = rt.services ?? [];
   scope.boardName = boardName ?? "";
 

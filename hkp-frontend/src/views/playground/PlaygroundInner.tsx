@@ -5,24 +5,28 @@ import Toolbar from "../../components/Toolbar";
 import Footer from "hkp-frontend/src/components/Footer";
 import SaveBoardDialog from "../../components/SaveBoardDialog";
 import DeployMenu from "../../components/Toolbar/DeployMenu";
+import PlayBoardControls from "../../components/Toolbar/PlayBoardControls";
 import BoardEntryPoint from "./BoardEntryPoint";
 import BoardFetchError from "./BoardFetchError";
 import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
 import { RuntimeClass } from "../../types";
 import { PlaygroundInnerProps } from "./Playground.types";
 import Sidebar from "./Sidebar";
+import { RemoteRuntimeStoreCtx } from "../../ui-components/toolbar/useRemoteRuntimeEditing";
 import { useThemeControl } from "../../ui-components/ThemeContext";
 import { HKP_DND_RUNTIME_CLASS_TYPE } from "../../components/DropTypes";
 import NestedNavProvider from "../../runtime/ui/NestedNavigation";
 import { OverviewProvider } from "../../overview/OverviewContext";
 import OverviewView from "../../overview/OverviewView";
 import OverviewToolbarButton from "../../overview/OverviewToolbarButton";
+import { PlayProvider } from "../../core/play";
 import { FacadeViewProvider } from "../../facade/FacadeViewContext";
 import {
   SelectionProvider,
   useSelection,
 } from "../../selection/SelectionContext";
 import FacadeViewControls from "../../facade/FacadeViewControls";
+import FacadeChrome, { useChromeRetracted } from "../../facade/FacadeChrome";
 
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -34,80 +38,112 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
   }
 
   return (
-    <SelectionProvider runtimeIds={boardContext.runtimes.map((rt) => rt.id)}>
-      <OverviewProvider>
-        <FacadeViewProvider
-          boardName={boardContext.boardName || props.requestedBoardName || ""}
-        >
-          <div
-            className="w-full h-full flex flex-col"
-            style={{ width: "100%", background: "var(--bg-app, #fafafa)" }}
-          >
-            <Toolbar
-              isCompact={props.compact}
-              menuItemFactory={props.menuItemFactory}
-              hideNavigation={props.hideNavigation}
-              menuSlot={props.menuSlot}
-              logoSlot={props.logoSlot}
-              actionsSlot={
-                <>
-                  <FacadeViewControls />
-                  <OverviewToolbarButton />
-                  <DeployMenu />
-                </>
+    <RemoteRuntimeStoreCtx.Provider value={props.remoteRuntimeStore ?? null}>
+      <SelectionProvider runtimeIds={boardContext.runtimes.map((rt) => rt.id)}>
+        <OverviewProvider>
+          {/* Both places the board can be run from are inside this, so an
+              input written in one is a press away in the other. */}
+          <PlayProvider>
+            <FacadeViewProvider
+              boardName={
+                boardContext.boardName || props.requestedBoardName || ""
               }
-              includeNavigationLinks={!props.hideNavigation}
-            />
-
-            <ShareQRCodeDialog
-              isOpen={props.showShareBoardQRCodeURL !== null}
-              url={props.showShareBoardQRCodeURL}
-              onClose={() => props.setShowShareBoardQRCodeURL(null)}
-            />
-            <SaveBoardDialog
-              isOpen={props.isSaveDialogVisible}
-              suggestedName={boardContext.boardName || props.suggestedName}
-              suggestedDescription={props.description}
-              onSave={props.onSaveDialog}
-              onCancel={() => props.setIsSaveDialogVisible(false)}
-            />
-
-            {/* Main area: sidebar + board canvas */}
-            <div
-              style={{
-                display: "flex",
-                flex: 1,
-                minHeight: 0,
-                overflow: "hidden",
-              }}
             >
-              {isPlayground && <Sidebar />}
-              {/* Levels drilled into nested pipelines cover the canvas and nothing
-            else, so the trail out of them sits above the board rather than
-            above the whole window. */}
-              <NestedNavProvider rootLabel={boardContext.boardName || "Board"}>
-                <BoardCanvas
-                  boardContext={boardContext}
-                  isPlayground={isPlayground}
-                  requestedBoardName={props.requestedBoardName}
-                  description={props.description}
-                  onChangeBoardname={props.onChangeBoardname}
-                  emptySlot={props.emptySlot}
+              <div
+                className="w-full h-full flex flex-col"
+                style={{
+                  width: "100%",
+                  background: "var(--bg-app, #fafafa)",
+                  // What the retracted bar and its logo are placed against: while
+                  // the facade is the app they are painted over it rather than
+                  // taking a row of their own.
+                  position: "relative",
+                }}
+              >
+                <FacadeChrome>
+                  <Toolbar
+                    isCompact={props.compact}
+                    menuItemFactory={props.menuItemFactory}
+                    hideNavigation={props.hideNavigation}
+                    menuSlot={props.menuSlot}
+                    logoSlot={props.logoSlot}
+                    centreSlot={<PlayBoardControls />}
+                    actionsSlot={
+                      <>
+                        <FacadeViewControls />
+                        <OverviewToolbarButton />
+                        <DeployMenu />
+                      </>
+                    }
+                    includeNavigationLinks={!props.hideNavigation}
+                  />
+                </FacadeChrome>
+
+                <ShareQRCodeDialog
+                  isOpen={props.showShareBoardQRCodeURL !== null}
+                  url={props.showShareBoardQRCodeURL}
+                  onClose={() => props.setShowShareBoardQRCodeURL(null)}
+                />
+                <SaveBoardDialog
+                  isOpen={props.isSaveDialogVisible}
+                  suggestedName={boardContext.boardName || props.suggestedName}
+                  suggestedDescription={props.description}
+                  onSave={props.onSaveDialog}
+                  onCancel={() => props.setIsSaveDialogVisible(false)}
                 />
 
-                {/* Covers the window rather than taking a pane, and reads the levels
-              from here so clicking a node can open the one it sits on. */}
-                <OverviewView />
-              </NestedNavProvider>
-            </div>
+                {/* Main area: sidebar + board canvas */}
+                <div
+                  style={{
+                    display: "flex",
+                    flex: 1,
+                    minHeight: 0,
+                    overflow: "hidden",
+                  }}
+                >
+                  {isPlayground && <Sidebar />}
+                  {/* Levels drilled into nested pipelines cover the canvas and nothing
+              else, so the trail out of them sits above the board rather than
+              above the whole window. */}
+                  <NestedNavProvider
+                    rootLabel={boardContext.boardName || "Board"}
+                  >
+                    <BoardCanvas
+                      boardContext={boardContext}
+                      isPlayground={isPlayground}
+                      requestedBoardName={props.requestedBoardName}
+                      description={props.description}
+                      onChangeBoardname={props.onChangeBoardname}
+                      emptySlot={props.emptySlot}
+                    />
 
-            <Footer />
-            {props.children || null}
-          </div>
-        </FacadeViewProvider>
-      </OverviewProvider>
-    </SelectionProvider>
+                    {/* Covers the window rather than taking a pane, and reads the levels
+                from here so clicking a node can open the one it sits on. */}
+                    <OverviewView />
+                  </NestedNavProvider>
+                </div>
+
+                <ChromeFooter />
+                {props.children || null}
+              </div>
+            </FacadeViewProvider>
+          </PlayProvider>
+        </OverviewProvider>
+      </SelectionProvider>
+    </RemoteRuntimeStoreCtx.Provider>
   );
+}
+
+/**
+ * The copyright strip, unless the facade is the app.
+ *
+ * Its own component because the state that decides this is provided by this
+ * file's own render, and only something mounted inside that provider can read
+ * it. Retracting the bar and leaving the footer would trade one strip of
+ * chrome for another.
+ */
+function ChromeFooter() {
+  return useChromeRetracted() ? null : <Footer />;
 }
 
 /**
@@ -138,7 +174,9 @@ function BoardCanvas({
 
   return (
     <div
-      className={isRtClassDragOver ? "hkp-board-runtime-drop-active" : undefined}
+      className={
+        isRtClassDragOver ? "hkp-board-runtime-drop-active" : undefined
+      }
       ref={boardCanvasRef}
       style={{
         flex: 1,

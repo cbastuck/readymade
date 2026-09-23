@@ -13,13 +13,22 @@
           "align": "center",
           "items": [
             {
-              "type": "xy-pad",
-              "serviceUuid": "xy-pad-svc",
-              "width": 400
-            },
-            {
-              "type": "canvas",
-              "serviceUuid": "canvas-svc"
+              "direction": "row",
+              "gap": 12,
+              "align": "center",
+              "justify": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "xy-pad",
+                  "serviceUuid": "xy-pad-svc",
+                  "width": 400
+                },
+                {
+                  "type": "canvas",
+                  "serviceUuid": "canvas-svc"
+                }
+              ]
             },
             {
               "direction": "row",
@@ -31,7 +40,9 @@
                   "label": "Start",
                   "action": {
                     "serviceUuid": "timer-svc",
-                    "configure": { "start": true }
+                    "configure": {
+                      "start": true
+                    }
                   }
                 },
                 {
@@ -39,7 +50,9 @@
                   "label": "Stop",
                   "action": {
                     "serviceUuid": "timer-svc",
-                    "configure": { "running": false }
+                    "configure": {
+                      "running": false
+                    }
                   }
                 }
               ]
@@ -47,7 +60,10 @@
             {
               "type": "qr-code",
               "caption": "Scan to open the phone controller",
-              "source": { "serviceUuid": "controller-qr-svc", "path": "url" }
+              "source": {
+                "serviceUuid": "controller-qr-svc",
+                "path": "url"
+              }
             }
           ]
         }
@@ -59,25 +75,37 @@
       "id": "input",
       "name": "Input",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     },
     {
       "id": "game",
       "name": "Game",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": true }
+      "state": {
+        "wrapServices": false,
+        "minimized": true
+      }
     },
     {
       "id": "canvas",
       "name": "Canvas",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     },
     {
       "id": "phone-share",
       "name": "Phone Controller",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": true }
+      "state": {
+        "wrapServices": false,
+        "minimized": true
+      }
     }
   ],
   "services": {
@@ -128,7 +156,9 @@
               "state": {
                 "mode": "add",
                 "template": {
-                  "cacheProperties+": ["relX"]
+                  "cacheProperties+": [
+                    "relX"
+                  ]
                 }
               }
             }
@@ -176,7 +206,13 @@
             "dY=": "((params.ballY < params.height && params.ballY + params.dY >= params.height && params.ballX >= params.barX && params.ballX <= params.barX + 70) || (params.ballY + params.dY < 20)) ? params.dY * -1 : params.dY",
             "ballX=": "params.triggerCount ? params.ballX + params.dX : params.ballX",
             "ballY=": "params.ballY > params.height + 10 ? 50 : (params.triggerCount ? params.ballY + params.dY : params.ballY)",
-            "cacheProperties+": ["ballX", "ballY", "barX", "dX", "dY"],
+            "cacheProperties+": [
+              "ballX",
+              "ballY",
+              "barX",
+              "dX",
+              "dY"
+            ],
             "width=": "params.width",
             "height=": "params.height"
           }
@@ -192,35 +228,50 @@
         }
       },
       {
-        "uuid": "stack-svc",
-        "serviceId": "hookup.to/service/stack",
-        "serviceName": "Render",
+        "uuid": "tracks-svc",
+        "serviceId": "tracks",
+        "serviceName": "Tracks",
         "state": {
-          "input": "multiplex",
-          "output": "array",
-          "services": [
+          "run": "serial",
+          "tracks": [
             {
-              "serviceId": "hookup.to/service/map",
-              "serviceName": "Ball",
-              "template": {
-                "type": "text",
-                "text": "•",
-                "x=": "params.ballX",
-                "y=": "params.ballY",
-                "color": "#454f6d"
-              }
+              "name": "t0",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "t0",
+                  "serviceName": "Ball",
+                  "state": {
+                    "template": {
+                      "type": "text",
+                      "text": "\u2022",
+                      "x=": "params.ballX",
+                      "y=": "params.ballY",
+                      "color": "#454f6d"
+                    }
+                  }
+                }
+              ]
             },
             {
-              "serviceId": "hookup.to/service/map",
-              "serviceName": "Bar",
-              "template": {
-                "type": "rect",
-                "x=": "params.barX",
-                "y=": "params.height - 10",
-                "height": "5",
-                "width": "70",
-                "color": "#333"
-              }
+              "name": "t1",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "t1",
+                  "serviceName": "Bar",
+                  "state": {
+                    "template": {
+                      "type": "rect",
+                      "x=": "params.barX",
+                      "y=": "params.height - 10",
+                      "height": "5",
+                      "width": "70",
+                      "color": "#333"
+                    }
+                  }
+                }
+              ]
             }
           ]
         }
@@ -234,7 +285,10 @@
         "state": {
           "clearOnRedraw": true,
           "resizable": true,
-          "size": [400, 250],
+          "size": [
+            400,
+            250
+          ],
           "reportSizeUpdate": true
         }
       },
@@ -252,7 +306,9 @@
               "instanceId": "if-size-changed",
               "serviceName": "If Size Changed",
               "state": {
-                "conditions": ["params.updatedWidth || params.updatedHeight"]
+                "conditions": [
+                  "params.updatedWidth || params.updatedHeight"
+                ]
               }
             },
             {
@@ -263,7 +319,10 @@
                 "template": {
                   "width=": "params.updatedWidth || params.width",
                   "height=": "params.updatedHeight || params.height",
-                  "cacheProperties+": ["width", "height"]
+                  "cacheProperties+": [
+                    "width",
+                    "height"
+                  ]
                 }
               }
             }

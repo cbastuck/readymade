@@ -17,6 +17,7 @@ import {
   isRuntimeGraphQLClassType,
 } from "../../../types";
 import { useBoardContext } from "../../../BoardContext";
+import { useEditReportingService } from "../../../core/editedServices";
 import { copyToClipboard } from "../../../clipboard";
 import { MOUNT_FIELD } from "../../../runtime/board/mount";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
@@ -98,6 +99,7 @@ export default function ServiceSheet({
   onRename,
 }: Props) {
   const boardContext = useBoardContext();
+  const editable = useEditReportingService();
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState("");
   const [uiExpanded, setUiExpanded] = useState(false);
@@ -309,6 +311,8 @@ export default function ServiceSheet({
     } else if (isRuntimeGraphQLClassType(runtime.type)) {
       await configureGraphQLService(sc, service, payload);
     }
+    // Every edit this sheet makes lands here: a person's, by construction.
+    boardContext?.markBoardChanged();
   };
 
   // Deliver a configure payload to the *active* node, then refresh the tree.
@@ -486,8 +490,12 @@ export default function ServiceSheet({
         } else {
           removeActiveNode();
         }
-      } else if (cmd.action === "rename" && cmd.payload && isRoot) {
-        boardContext.setServiceName(runtime.id, cmd.service.uuid, cmd.payload);
+      } else if (cmd.action === "rename" && cmd.payload?.value && isRoot) {
+        boardContext.setServiceName(
+          runtime.id,
+          cmd.service.uuid,
+          cmd.payload.value,
+        );
       }
     };
 
@@ -497,7 +505,7 @@ export default function ServiceSheet({
     }
     return (
       <UI
-        service={instance}
+        service={editable(instance)}
         showBypassOnlyIfExplicit={!isRuntimeBrowserClassType(runtime.type)}
         draggable={false}
         onServiceAction={handleServiceAction}

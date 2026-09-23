@@ -34,6 +34,7 @@ import { AppImpl, ServiceClass, ServiceInstance } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import BrowserRegistry from "../BrowserRegistry";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
+import { renameLiveServices, renamedEntries } from "../pipelineNames";
 import { addService, configureService } from "../BrowserRuntimeApi";
 
 const serviceId = "hookup.to/service/configurator";
@@ -78,7 +79,14 @@ export class Configurator extends ServiceBase<State> {
       this.state.passThrough = config.passThrough;
     }
 
-    if (Array.isArray(config.pipeline)) {
+    // A rename arrives as the whole pipeline with one name changed; applied
+    // in place, since rebuilding would restart what the pipeline runs.
+    const renamed = renamedEntries(this.state.pipeline, config.pipeline);
+    if (renamed) {
+      this.state.pipeline = renamed;
+      renameLiveServices(this._scope, renamed);
+      this.app.notify(this as any, { __innerScopeReady: true });
+    } else if (Array.isArray(config.pipeline)) {
       this.state.pipeline = config.pipeline.map((entry: any) => ({
         serviceId: entry.serviceId,
         instanceId: entry.instanceId || entry.uuid || crypto.randomUUID(),

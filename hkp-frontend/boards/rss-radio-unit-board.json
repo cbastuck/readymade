@@ -1,0 +1,543 @@
+{
+  "boardName": "Radio",
+  "description": "A feed, read aloud. Every minute it reads the feed it was given, and anything it has not spoken before is sent to a voice and the audio kept in the library.\n\nThe feed is the only thing it knows about its source, which is what makes it general: a reading list, a blog, a newsroom \u2014 anything that publishes RSS or Atom becomes a podcast without this board learning where it came from.\n\nTwo things are worth reading in the pipeline. The **claim** is one SQL statement doing the work of a lease: it takes the item, hands back nothing at all when the item is already spoken or is being spoken right now \u2014 and returning nothing stops that pass, which is how work is skipped \u2014 and gives back the path the episode is to be kept at, built from its identity rather than from a counter that would drift. An item claimed but never finished is offered again once its claim goes stale, so a voice that was down for an hour costs a delay rather than a silence nobody notices. And the **path comes back with the audio**, in a header the voice sets, because an answer arriving later than the pass that asked for it has to say what it is an answer to.\n\nA round asks the feed for its ten newest and lets the claim decide which of those are work; nothing limits the iteration itself, because an Iterator cuts the list before the claim sees it and an article below the cut would never get another turn. The calls of one round are in flight together and a voice renders them in order, so the first full round on an empty library takes as long as everything in it put together.\n\nNeeds hkp-node on 8080 and a voice to call. Alone it points at the public Hacker News feed; in the composition the reading list is the feed instead.\n\nWhat it has read aloud is published as a feed of its own, by the second runtime here. It has a clock rather than a trigger, for a structural reason worth knowing: an endpoint serving the last value it was handed answers with whatever its chain returns, so it has to be the last service in one \u2014 and the rendering chain above stops on the rounds where there is nothing new. A minute's staleness buys a feed that is rebuilt whatever happened.\n\nThe enclosure URLs point into the library, named rather than written down: the address is assigned when the board loads, and a Map is handed it the same way a client dialling it would be.",
+  "unit": {
+    "name": "radio",
+    "params": {
+      "feedUrl": "https://hnrss.org/frontpage",
+      "feedName": "Hacker News",
+      "voiceMount": "hkp-mount://speech/render",
+      "volume": "radio",
+      "database": "rss-radio",
+      "everySeconds": "60",
+      "retryAfter": "-15 minutes",
+      "audioBase": "hkp-mount://files/listen",
+      "feedTitle": "Reading Radio",
+      "feedDescription": "Everything the radio has read aloud"
+    }
+  },
+  "runtimes": [
+    {
+      "id": "radio",
+      "name": "Radio",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "publish",
+      "name": "Published",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "playlist",
+      "name": "Playlist",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "radio": [
+      {
+        "uuid": "tick",
+        "serviceId": "timer",
+        "serviceName": "Every minute",
+        "state": {
+          "periodic": true,
+          "periodicValue": 60,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "feed",
+        "serviceId": "rss",
+        "serviceName": "The feed",
+        "state": {
+          "feeds": [
+            {
+              "url": "{{param.feedUrl}}",
+              "name": "{{param.feedName}}"
+            }
+          ],
+          "limit": 10,
+          "summaryChars": 400
+        }
+      },
+      {
+        "uuid": "each",
+        "serviceId": "iterator",
+        "serviceName": "Each article",
+        "state": {
+          "pipeline": [
+            {
+              "instanceId": "name",
+              "serviceId": "map",
+              "serviceName": "Name it",
+              "state": {
+                "mode": "add",
+                "template": {
+                  "slug=": "slug(params.id || params.link)",
+                  "retryAfter": "{{param.retryAfter}}"
+                }
+              }
+            },
+            {
+              "instanceId": "claim",
+              "serviceId": "sql",
+              "serviceName": "Claim it, or skip it",
+              "state": {
+                "mode": "query",
+                "database": "{{param.database}}",
+                "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);",
+                "statement": "INSERT INTO episode (slug, guid, title, summary, link, feed, published)\nVALUES (substr($slug, 1, 100), $id, $title, $summary, $link, $feed, $published)\nON CONFLICT(slug) DO UPDATE SET claimed = datetime('now')\n  WHERE episode.rendered IS NULL\n    AND episode.claimed < datetime('now', $retryAfter)\nRETURNING 'episodes/' || slug || '.mp3' AS path, title, summary"
+              }
+            },
+            {
+              "instanceId": "new",
+              "serviceId": "map",
+              "serviceName": "Only the new one",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "=": "params.count ? params.rows[0] : null"
+                }
+              }
+            },
+            {
+              "instanceId": "ask",
+              "serviceId": "map",
+              "serviceName": "What to say",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "meta.method": "post",
+                  "body.path=": "params.path",
+                  "body.text=": "params.title + '. ' + withoutUrls(params.summary)"
+                }
+              }
+            },
+            {
+              "instanceId": "render",
+              "serviceId": "http-client",
+              "serviceName": "The voice",
+              "state": {
+                "url": "{{param.voiceMount}}",
+                "method": "post",
+                "timeoutMs": 600000
+              }
+            },
+            {
+              "instanceId": "keep",
+              "serviceId": "map",
+              "serviceName": "Where it goes",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "op": "write",
+                  "path=": "params.meta.headers['x-episode-path']",
+                  "binary=": "params.binary"
+                }
+              }
+            },
+            {
+              "instanceId": "store",
+              "serviceId": "storage",
+              "serviceName": "The library",
+              "state": {
+                "pipeline": [
+                  {
+                    "instanceId": "files",
+                    "serviceId": "filesystem",
+                    "serviceName": "Files",
+                    "state": {
+                      "volume": "{{param.volume}}"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "instanceId": "kept",
+              "serviceId": "map",
+              "serviceName": "What was kept",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "path=": "params.body.path",
+                  "size=": "params.body.size"
+                }
+              }
+            },
+            {
+              "instanceId": "note",
+              "serviceId": "sql",
+              "serviceName": "Mark it rendered",
+              "state": {
+                "mode": "run",
+                "database": "{{param.database}}",
+                "statement": "UPDATE episode\n   SET rendered = datetime('now'), bytes = $size\n WHERE 'episodes/' || slug || '.mp3' = $path"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "end",
+        "serviceId": "stopper",
+        "serviceName": "End of the round",
+        "state": {}
+      }
+    ],
+    "publish": [
+      {
+        "uuid": "pub-tick",
+        "serviceId": "timer",
+        "serviceName": "Every minute",
+        "state": {
+          "periodic": true,
+          "periodicValue": 60,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "pub-about",
+        "serviceId": "map",
+        "serviceName": "What the feed is called",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "channelTitle": "{{param.feedTitle}}",
+            "channelDescription": "{{param.feedDescription}}",
+            "channelLink": "{{param.audioBase}}",
+            "audioBase": "{{param.audioBase}}"
+          }
+        }
+      },
+      {
+        "uuid": "pub-doc",
+        "serviceId": "sql",
+        "serviceName": "The episodes as a feed",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "SELECT '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'\n    || '<rss version=\"2.0\"><channel>'\n    || '<title><![CDATA[' || replace(IFNULL($channelTitle, ''), ']]>', ']]&gt;') || ']]></title>'\n    || '<link>' || replace(replace(replace(IFNULL($channelLink, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n    || '<description><![CDATA[' || replace(IFNULL($channelDescription, ''), ']]>', ']]&gt;') || ']]></description>'\n    || IFNULL(group_concat(item, '' ORDER BY sortKey DESC), '')\n    || '</channel></rss>' AS feed\n  FROM (\n    SELECT '<item>'\n        || '<title><![CDATA[' || replace(IFNULL(title, ''), ']]>', ']]&gt;') || ']]></title>'\n        || '<link>' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n        || '<guid isPermaLink=\"false\">' || replace(replace(replace(slug, '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</guid>'\n        || '<pubDate>' || IFNULL(published, '') || '</pubDate>'\n        || '<description><![CDATA[' || replace(IFNULL(summary, ''), ']]>', ']]&gt;') || ']]></description>'\n        || '<enclosure url=\"' || replace(replace(replace(IFNULL($audioBase, '') || '/' || slug || '.mp3', '&', '&amp;'), '<', '&lt;'), '>', '&gt;')\n        || '\" type=\"audio/mpeg\" length=\"' || IFNULL(bytes, 0) || '\"/>'\n        || '</item>' AS item,\n           rendered AS sortKey\n      FROM episode\n     WHERE rendered IS NOT NULL\n     ORDER BY rendered DESC\n     LIMIT 100\n  )"
+        }
+      },
+      {
+        "uuid": "pub-wrap",
+        "serviceId": "map",
+        "serviceName": "As a document",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "meta.status": 200,
+            "meta.contentType": "application/rss+xml; charset=utf-8",
+            "body=": "params.rows[0].feed"
+          }
+        }
+      },
+      {
+        "uuid": "pub-serve",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Serve the feed",
+        "state": {
+          "bypass": false,
+          "mountName": "episodes",
+          "onProcess": [
+            {
+              "instanceId": "keep-episodes",
+              "serviceId": "hold",
+              "serviceName": "Keep the document",
+              "state": {
+                "slot": "document",
+                "op": "write"
+              }
+            }
+          ],
+          "onRequest": [
+            {
+              "instanceId": "serve-episodes",
+              "serviceId": "hold",
+              "serviceName": "Serve the document",
+              "state": {
+                "slot": "document",
+                "op": "read"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "playlist": [
+      {
+        "uuid": "pl-tick",
+        "serviceId": "timer",
+        "serviceName": "Every minute",
+        "state": {
+          "periodic": true,
+          "periodicValue": 60,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "pl-base",
+        "serviceId": "map",
+        "serviceName": "Where the audio lives",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "base": "{{param.audioBase}}"
+          }
+        }
+      },
+      {
+        "uuid": "pl-rows",
+        "serviceId": "sql",
+        "serviceName": "The programme, newest first",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "SELECT title,\n       IFNULL($base, '') || '/' || slug || '.mp3' AS url,\n       IFNULL(published, '') AS published\n  FROM episode\n WHERE rendered IS NOT NULL\n ORDER BY rendered DESC\n LIMIT 100"
+        }
+      },
+      {
+        "uuid": "pl-seen",
+        "serviceId": "monitor",
+        "serviceName": "The programme",
+        "state": {}
+      },
+      {
+        "uuid": "m3u-doc",
+        "serviceId": "sql",
+        "serviceName": "The programme as a playlist",
+        "state": {
+          "mode": "query",
+          "statement": "SELECT '#EXTM3U' || char(10)\n    || IFNULL(group_concat(entry, char(10) ORDER BY sortKey), '')\n    || char(10) AS playlist\n  FROM (\n    SELECT '#EXTINF:-1,' || replace(replace(IFNULL(json_extract(value, '$.title'), ''), char(13), ' '), char(10), ' ') || char(10)\n        || IFNULL(json_extract(value, '$.url'), '') AS entry,\n           key AS sortKey\n      FROM json_each($rows)\n  )"
+        }
+      },
+      {
+        "uuid": "m3u-wrap",
+        "serviceId": "map",
+        "serviceName": "As a playlist file",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "meta.status": 200,
+            "meta.contentType": "audio/x-mpegurl; charset=utf-8",
+            "meta.headers.content-disposition": "inline; filename=\"radio.m3u\"",
+            "body=": "params.rows[0].playlist"
+          }
+        }
+      },
+      {
+        "uuid": "m3u-serve",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Serve the playlist",
+        "state": {
+          "bypass": false,
+          "mountName": "playlist",
+          "onProcess": [
+            {
+              "instanceId": "keep-playlist",
+              "serviceId": "hold",
+              "serviceName": "Keep the document",
+              "state": {
+                "slot": "document",
+                "op": "write"
+              }
+            }
+          ],
+          "onRequest": [
+            {
+              "instanceId": "serve-playlist",
+              "serviceId": "hold",
+              "serviceName": "Serve the document",
+              "state": {
+                "slot": "document",
+                "op": "read"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "radio",
+        "title": "Radio",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Read now",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "feed",
+                      "payload": {}
+                    }
+                  ],
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "feed",
+                      "path": "fetching"
+                    },
+                    "statusColors": {
+                      "true": "#f59e0b",
+                      "false": "#22c55e"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "label": "Articles seen",
+                  "source": {
+                    "serviceUuid": "feed",
+                    "path": "count"
+                  },
+                  "placeholder": "\u2014",
+                  "grow": true
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Rendered this round",
+              "source": {
+                "serviceUuid": "each",
+                "path": "results"
+              },
+              "placeholder": "0",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text",
+              "placeholder": "Nothing is spoken twice: an article already in the ledger stops its own pass. The audio is written into the library volume, which the Library unit serves.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text",
+              "label": "Feed",
+              "source": {
+                "serviceUuid": "pub-serve",
+                "path": "__hkpMount"
+              },
+              "placeholder": "not published yet",
+              "tone": "muted",
+              "fontSize": 11,
+              "wrap": true
+            }
+          ]
+        }
+      },
+      {
+        "id": "listen",
+        "title": "Listen",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "align": "stretch",
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Everything the radio has read, newest first. Press play once and it runs on by itself; a track finishing starts the next one, and an episode rendered while you listen joins the end.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "audio-player",
+              "source": {
+                "serviceUuid": "pl-seen",
+                "path": "rows"
+              },
+              "url": "{{item.url}}",
+              "title": "{{item.title}}",
+              "subtitle": "{{item.published}}",
+              "autoplay": true,
+              "placeholder": "Nothing has been read aloud yet."
+            },
+            {
+              "type": "button",
+              "label": "Refresh the programme",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "pl-base",
+                  "payload": {}
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Playlist",
+              "source": {
+                "serviceUuid": "m3u-serve",
+                "path": "__hkpMount"
+              },
+              "placeholder": "not published yet",
+              "tone": "muted",
+              "fontSize": 11,
+              "wrap": true,
+              "copyable": true
+            },
+            {
+              "type": "text",
+              "placeholder": "That address is an M3U: open it in VLC, Music or any desktop player and the whole programme queues up there instead of here.",
+              "tone": "muted",
+              "fontSize": 11
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "feed",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "each",
+          "path": "error"
+        }
+      }
+    ],
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "pl-base",
+        "payload": {}
+      }
+    ]
+  }
+}

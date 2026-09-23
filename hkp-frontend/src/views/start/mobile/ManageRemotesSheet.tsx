@@ -1,6 +1,5 @@
 import BottomSheet from "../../playground/mobile/BottomSheet";
-import ManageRuntimesContent from "../../../ui-components/toolbar/ManageRuntimesContent";
-import ManageCoordinatorsContent from "../../cloud/ManageCoordinatorsContent";
+import ManageConnectionsContent from "../../../ui-components/connections/ManageConnectionsContent";
 import type { CoordinatorsController, RemotesController } from "../StartPage";
 
 type Props = {
@@ -12,9 +11,9 @@ type Props = {
 
 /**
  * Mobile surface for connection management: hosts the shared
- * ManageRuntimesContent (existing remotes, LAN discovery, manual add) and
- * ManageCoordinatorsContent in a bottom sheet — the same sources the desktop
- * dialogs wrap. Both roles live in one sheet because both answer the same
+ * ManageConnectionsContent (existing remotes and coordinators, LAN discovery,
+ * manual add) in a bottom sheet — the same content the desktop settings
+ * dialog wraps. Both roles live in one sheet because both answer the same
  * question on a phone: which servers does this app know about.
  */
 export default function ManageRemotesSheet({
@@ -44,23 +43,10 @@ export default function ManageRemotesSheet({
         className="hkp-remotes-sheet"
         style={{ display: "flex", flexDirection: "column", gap: 16 }}
       >
-        {remotes && (
-          <ManageRuntimesContent
-            remoteRuntimes={remotes.runtimes}
-            onAddRuntimeEngine={remotes.onAdd}
-            onRemoveRuntimeEngine={remotes.onRemove}
-            onUpdateRuntimeEngine={remotes.onUpdate}
-            inlineNewRuntimePanel
-          />
-        )}
-        {coordinators && (
-          <ManageCoordinatorsContent
-            coordinators={coordinators.coordinators}
-            onAdd={coordinators.onAdd}
-            onRemove={coordinators.onRemove}
-            inlineNewCoordinatorPanel
-          />
-        )}
+        <ManageConnectionsContent
+          remotes={remotes}
+          coordinators={coordinators}
+        />
       </div>
     </BottomSheet>
   );

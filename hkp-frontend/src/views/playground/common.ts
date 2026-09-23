@@ -94,6 +94,18 @@ export function restoreBoardFromLocalStorage(
   return null;
 }
 
+/** When the board saved under `name` was last written, ms since the epoch. */
+export function localBoardSavedAt(name: string): number | undefined {
+  try {
+    const raw = localStorage.getItem(`${localStoragePrefix}${name}`);
+    const createdAt = raw ? (JSON.parse(raw) as LocalBoard).createdAt : null;
+    const at = createdAt ? Date.parse(createdAt) : NaN;
+    return Number.isNaN(at) ? undefined : at;
+  } catch {
+    return undefined;
+  }
+}
+
 export function storeBoardToLocalStorage(
   boardName: string,
   source: string,

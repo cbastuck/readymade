@@ -34,4 +34,5 @@ export { DEFAULT_NEWS } from "./news";
 export { createEmptyBoard } from "./emptyBoard";
 export { useLocalStorageCoordinators } from "./useLocalStorageCoordinators";
 export { useCloudBoardSources } from "./useCloudBoardSources";
+export { useDraftsSource } from "./useDraftsSource";
 export type { CloudBoardSources } from "./useCloudBoardSources";

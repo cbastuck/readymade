@@ -10,6 +10,7 @@ had, rather than instead of it.
 | Runtime | Service ID |
 |---|---|
 | Node.js (hkp-node) | `join` |
+| Python (hkp-python) | `join` |
 
 ---
 

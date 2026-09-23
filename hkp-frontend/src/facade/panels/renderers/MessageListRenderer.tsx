@@ -75,6 +75,7 @@ export function MessageListRenderer({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const { markBoardChanged } = boardContext;
   const handleSend = useCallback(
     (text: string) => {
       if (!actionService || !widget.composer) {
@@ -90,8 +91,9 @@ export function MessageListRenderer({
         { id: uuidv4(), text, direction: "sent" },
       ]);
       actionService.configure(configure);
+      markBoardChanged?.();
     },
-    [actionService, widget.composer],
+    [actionService, widget.composer, markBoardChanged],
   );
 
   const submitComposer = useCallback(() => {

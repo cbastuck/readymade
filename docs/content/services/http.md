@@ -40,6 +40,26 @@ equivalent of the browser's [Fetcher](./fetcher.md) service.
 - **Input**: any value; may be merged into the request body
 - **Output**: HTTP response body, parsed as JSON if the Content-Type is `application/json`, otherwise a string
 
+#### A request that says where it is going
+
+`path` and `method` are configuration, which is right for a service calling one
+endpoint over and over. Where a board calls a *different* address per item — an
+episode written to its own path, a record fetched by its own id — the input may
+say so, in the same envelope the response comes back in:
+
+```json
+{
+  "meta": { "method": "put", "path": "/episodes/one.mp3", "contentType": "audio/mpeg" },
+  "binary": "…the bytes…"
+}
+```
+
+What the input leaves unsaid stays as configured, so a board that names neither
+is unaffected. `path` is a sub-path of a mount, exactly as the configured field
+is: a typed URL carries its own path and is not rewritten from a distance.
+
+On hkp-node.
+
 ### On hkp-node, hkp-python and the browser
 
 These implementations share the configuration above (and therefore, on the
@@ -187,20 +207,108 @@ an endpoint can be made terminal with a [Stopper](./stopper.md) — ending the
 chain so it does not drive the runtime that calls it — while still answering its
 callers normally.
 
-### Where the nested pipeline is entered from
+### What a handler may answer with
 
-`mode` says which arrivals run the nested pipeline:
+An answer is JSON unless the handler says otherwise, which is what every board
+got before there was a way to say anything else. To say otherwise, return the
+request envelope read backwards — `meta` beside `body` or `binary`:
 
-| `mode` | Requests | Data from the outer chain |
-|---|---|---|
-| `process_on_session` (default) | run the nested pipeline | passed through untouched |
-| `process_on_data` | answered with the last value stored, verbatim | stored; the nested pipeline is not used |
-| `process_on_both` | run the nested pipeline | runs the nested pipeline, and its result carries on down the chain |
+```json
+{
+  "meta": { "status": 200, "contentType": "application/rss+xml" },
+  "body": "<?xml version=\"1.0\"?><rss version=\"2.0\">…</rss>"
+}
+```
 
-`process_on_both` gives the nested pipeline two entry points. It is still a
-single ordered list, and what one entry point produces is gone by the time the
-other arrives — see [Hold](./hold.md), which keeps a producer's latest value
-available to a caller that shows up later.
+| Field | Means |
+|---|---|
+| `meta.status` | the response status, **and what marks this as an answer** |
+| `meta.contentType` | the `content-type` header |
+| `meta.headers` | any other headers, by name |
+| `binary` | the bytes to send |
+| `body` | a string, sent as text; anything else, sent as JSON |
+
+**The status is what distinguishes an answer from a request.** A request and a
+response are the same shape, so a pipeline that passes its input through returns
+a request — and reading any `meta` as an answer would silently reply with the
+caller's own content type. A request carries no status; a response always does.
+It is also what [http-client](#http-client) reports a response as, so a board
+that proxies one endpoint to another passes what it got straight back.
+
+Raw bytes on their own are sent as `application/octet-stream`, because there is
+no JSON encoding of them anybody wanted.
+
+**Byte answers are seekable.** A `Range` header is honoured against the bytes
+the handler produced, and answered `206` with a `content-range`. That is what a
+player dragging a scrubber sends, and a server that ignores it re-sends the whole
+file each time.
+
+Available on hkp-node and hkp-python.
+
+### The two ways in
+
+An endpoint is entered from two sides, and they are different jobs: a **request**
+arriving from outside, and a **pass** of the board's own chain flowing through.
+A board names the pipelines it wants for them.
+
+```json
+{ "onRequest": [ … ] }                        // requests; a pass goes through
+{ "onProcess": [ … ] }                        // passes; the board answers
+{ "onProcess": [ … ], "onRequest": [ … ] }    // both, separately
+{ "pipeline":  [ … ] }                        // one pipeline, entered from both
+```
+
+**Declaring `onRequest` is what takes the answer away from the chain.** With
+one, that pipeline is the handler: what it returns is what the caller gets. The
+services after the endpoint still run — that is where a board reacts to having
+served a request — but after the answer is decided. Without one, the request
+flows into the services after the endpoint and whatever they return is the
+answer, which is the inversion of control this service is built around.
+
+So an endpoint can have something to run on a pass — counting it, logging it —
+without silently becoming an HTTP handler.
+
+`pipeline` is the way to say *one pipeline, both entries*, which is the only way
+the two sides can share a service's state: they are one running thing rather
+than two.
+
+### Publishing a document
+
+A pass ends where it ends, so a value it produced is gone by the time a request
+arrives. An endpoint that publishes what the board last handed it keeps that
+value in a **slot** — cells the endpoint owns and lends to both its pipelines:
+
+```json
+{
+  "onProcess": [ { "serviceId": "hold", "state": { "slot": "document", "op": "write" } } ],
+  "onRequest": [ { "serviceId": "hold", "state": { "slot": "document", "op": "read"  } } ]
+}
+```
+
+See [Hold](./hold.md). Nothing here inspects the value, so anything can be
+published this way — a feed, a playlist, an audio file — and the two Holds may
+sit in pipelines that never meet.
+
+Because the answer is decided at the endpoint, a runtime may publish **more than
+one document**: two endpoints in one chain, each answering what reached it. The
+services after an endpoint still run on every request, though, so a feed and a
+playlist are better off one runtime each: a request should not drag a tail of
+SQL behind it.
+
+### The older spelling
+
+Boards written before the entry points had names carry a `mode` beside a single
+`pipeline`, and still load:
+
+| `mode` | Means |
+|---|---|
+| `process_on_session` | `onRequest` ← the pipeline |
+| `process_on_both` | both entries ← the same pipeline |
+| `process_on_data` | the slot arrangement above, built in and unnamed |
+
+It is the same endpoint either way. What `mode` could not express is an
+endpoint with a pipeline for passes and no handler — under the older rule,
+having a pipeline at all decided who answered.
 
 ---
 

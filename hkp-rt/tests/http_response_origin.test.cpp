@@ -40,6 +40,12 @@ using namespace hkp;
 // handler, and services added behind the server must not silently rewrite what
 // an external caller receives.
 //
+// What declares a handler is `onRequest` — a pipeline for requests. The rows
+// above say "nested pipeline" because a board that names no entry points has
+// only one, and the legacy `mode` decides which sides enter it. An endpoint
+// that declares `onProcess` alone has a pipeline and no handler, which is the
+// fourth row and the one the older shape could not express.
+//
 // Ported from hkp-node/tests/http-response-origin.test.ts.
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -121,7 +127,9 @@ public:
   // A host that keeps no secrets: what a service resolves against when the
   // test is about something else.
   SecretVault& secrets() override { return m_vault; }
+  SlotStore& slots() override { return m_slots; }
   SecretVault m_vault;
+  SlotStore m_slots;
   void log(const Service&, LogLevel, const std::string&,
            const nlohmann::json& = nullptr) override {}
 
@@ -192,7 +200,9 @@ struct Endpoint {
   }
 };
 
-std::shared_ptr<Endpoint> serve(bool withSubservices, bool withOuterService) {
+// Declared instead of the legacy mode + pipeline, when given.
+std::shared_ptr<Endpoint> serve(bool withSubservices, bool withOuterService,
+                                json entries = json()) {
   auto endpoint = std::make_shared<Endpoint>();
 
   endpoint->host.factory = [](const std::string&, const std::string& instanceId)
@@ -212,12 +222,12 @@ std::shared_ptr<Endpoint> serve(bool withSubservices, bool withOuterService) {
   }
 
   // Port 0 asks the OS for a free one, so tests never collide.
-  endpoint->server->configure(Data(json{
-    {"port", 0},
-    {"mode", "process_on_session"},
-    {"pipeline", pipeline},
-    {"bypass", true},
-  }));
+  json config = entries.is_object()
+    ? entries
+    : json{{"mode", "process_on_session"}, {"pipeline", pipeline}};
+  config["port"] = 0;
+  config["bypass"] = true;
+  endpoint->server->configure(Data(config));
   endpoint->server->configure(Data(json{{"bypass", false}}));
 
   return endpoint;
@@ -250,4 +260,46 @@ TEST_CASE("the outer runtime answers when there is no nested pipeline",
   auto endpoint = serve(/*withSubservices=*/false, /*withOuterService=*/true);
   REQUIRE(endpoint->port() != 0);
   REQUIRE(httpGet(endpoint->port(), "/") == R"({"from":"outer"})");
+}
+
+TEST_CASE("a pipeline for passes alone leaves the chain answering",
+          "[http-server-subservices]") {
+  // The distinction a single unnamed pipeline could not draw: this endpoint has
+  // something to run, but nothing to run *for a request*, so the board still
+  // answers. Declared the old way the same board would have served whatever its
+  // one pipeline returned, because having one at all decided.
+  auto endpoint = serve(
+    /*withSubservices=*/false, /*withOuterService=*/true,
+    json{{"onProcess", json::array({json{{"instanceId", "on-pass"},
+                                         {"serviceId", "replacing"}}})}});
+  REQUIRE(endpoint->port() != 0);
+  REQUIRE(httpGet(endpoint->port(), "/") == R"({"from":"outer"})");
+}
+
+TEST_CASE("a pipeline for requests answers, with one for passes beside it",
+          "[http-server-subservices]") {
+  auto endpoint = serve(
+    /*withSubservices=*/false, /*withOuterService=*/true,
+    json{{"onProcess", json::array({json{{"instanceId", "on-pass"},
+                                         {"serviceId", "replacing"}}})},
+         {"onRequest", json::array({json{{"instanceId", "on-request"},
+                                         {"serviceId", "replacing"}}})}});
+  REQUIRE(endpoint->port() != 0);
+  REQUIRE(httpGet(endpoint->port(), "/") == R"({"from":"subservice"})");
+}
+
+TEST_CASE("an endpoint reports the entry points it was given, and no pipeline",
+          "[http-server-subservices]") {
+  // State is what a board is saved from. Reporting a canonical form would
+  // rewrite every board that used the other spelling.
+  auto endpoint = serve(
+    /*withSubservices=*/false, /*withOuterService=*/false,
+    json{{"onRequest", json::array({json{{"instanceId", "on-request"},
+                                         {"serviceId", "replacing"}}})}});
+
+  const auto state = endpoint->server->getState();
+  REQUIRE_FALSE(state.contains("pipeline"));
+  REQUIRE(state.contains("onRequest"));
+  REQUIRE(state["onRequest"].size() == 1);
+  REQUIRE(state["onRequest"][0]["instanceId"] == "on-request");
 }

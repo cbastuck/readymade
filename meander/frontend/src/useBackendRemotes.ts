@@ -57,9 +57,15 @@ export function useBackendRemotes(): RemotesController {
     [refresh],
   );
 
+  // The backend keys its remotes by name, so a rename is a new entry: the one
+  // it replaces has to go, or both would be listed.
   const onUpdate = useCallback(
-    (desc: RuntimeClass) => {
-      void saveRemote(toRemote(desc)).then(refresh);
+    (previous: RuntimeClass, next: RuntimeClass) => {
+      const dropped =
+        previous.name && previous.name !== next.name
+          ? deleteRemote(previous.name)
+          : Promise.resolve();
+      void dropped.then(() => saveRemote(toRemote(next))).then(refresh);
     },
     [refresh],
   );

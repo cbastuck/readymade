@@ -1,54 +1,83 @@
-import { X } from "lucide-react";
+import { useState } from "react";
+import { Network, Pencil } from "lucide-react";
 
+import {
+  RemoveButton,
+  SettingsList,
+  SettingsRow,
+  SettingsSection,
+} from "hkp-frontend/src/ui-components/settings/kit";
+import EditServerForm from "hkp-frontend/src/ui-components/connections/EditServerForm";
+import { toCoordinatorUrl } from "hkp-frontend/src/ui-components/connections/serverUrl";
 import { CoordinatorDescriptor } from "../../common";
 
 type Props = {
   coordinators: CoordinatorDescriptor[];
   onRemove: (coordinator: CoordinatorDescriptor) => void;
+  /** Offers an edit on each row when set. */
+  onUpdate?: (
+    previous: CoordinatorDescriptor,
+    next: CoordinatorDescriptor,
+  ) => void;
 };
 
-// Card rows rather than a table: a coordinator URL is long and unbreakable, so
+// List rows rather than a table: a coordinator URL is long and unbreakable, so
 // the row truncates it and fits whatever width the surface gives it — the
 // settings dialog is far narrower than the Cloud Boards one. Mirrors the
 // registered-remotes list, which sits next to this one in the settings dialog.
 export default function ExistingCoordinatorsPanel({
   coordinators,
   onRemove,
+  onUpdate,
 }: Props) {
+  // The row being edited, by index: two entries may share a name or a URL.
+  const [editing, setEditing] = useState<number | null>(null);
+
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-        Registered coordinators
-      </span>
-
-      {coordinators.length === 0 && (
-        <p className="py-1 text-center text-sm italic text-slate-400">
-          No coordinators added yet.
-        </p>
-      )}
-
-      {coordinators.map((coord, idx) => (
-        <div
-          key={`${coord.name}-${coord.url}-${idx}`}
-          className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2"
-        >
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-slate-800">
-              {coord.name}
-            </div>
-            <div className="truncate text-xs text-slate-500" title={coord.url}>
-              {coord.url}
-            </div>
-          </div>
-          <button
-            onClick={() => onRemove(coord)}
-            aria-label={`Remove ${coord.name}`}
-            className="shrink-0 text-slate-400 hover:text-red-600"
+    <SettingsSection label="Coordinators">
+      <SettingsList empty="No coordinators added yet.">
+        {coordinators.map((coord, idx) => (
+          <SettingsRow
+            key={`${coord.name}-${coord.url}-${idx}`}
+            icon={<Network size={15} />}
+            title={coord.name}
+            subtitle={<span title={coord.url}>{coord.url}</span>}
+            trailing={
+              <>
+                {onUpdate && editing !== idx && (
+                  <button
+                    className="hkp-set-icon-btn hkp-set-icon-btn--neutral"
+                    onClick={() => setEditing(idx)}
+                    aria-label={`Edit ${coord.name}`}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
+                <RemoveButton
+                  label={`Remove ${coord.name}`}
+                  onClick={() => {
+                    setEditing(null);
+                    onRemove(coord);
+                  }}
+                />
+              </>
+            }
           >
-            <X size={15} />
-          </button>
-        </div>
-      ))}
-    </div>
+            {onUpdate && editing === idx && (
+              <EditServerForm
+                name={coord.name}
+                url={coord.url}
+                normalizeUrl={toCoordinatorUrl}
+                onCancel={() => setEditing(null)}
+                onSave={({ name, url }) => {
+                  onUpdate(coord, { ...coord, name, url });
+                  setEditing(null);
+                }}
+              />
+            )}
+          </SettingsRow>
+        ))}
+      </SettingsList>
+    </SettingsSection>
   );
 }

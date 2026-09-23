@@ -38,10 +38,15 @@ type Props = {
    *  account controls. Centred by taking it out of the flow, so it stays put
    *  as either side changes width. */
   statusSlot?: ReactNode;
+  /** Controls for the board itself — running it — centred the same way and for
+   *  the same reason. In the middle rather than among the actions on the right
+   *  because what is done *to* a board is a row of things, while running it is
+   *  the one thing done *with* it, and the two are not reached for together. */
+  centreSlot?: ReactNode;
 };
 
-/** Holds the status slot in the middle of the bar without letting it push the
- *  controls around, and without swallowing clicks meant for them. */
+/** Holds the middle of the bar without letting it push the controls around,
+ *  and without swallowing clicks meant for them. */
 function CentredStatus({ children }: { children: ReactNode }) {
   return (
     <div
@@ -92,6 +97,7 @@ export default function Toolbar({
   logoSlot,
   actionsSlot,
   statusSlot,
+  centreSlot,
 }: Props) {
   const theme = useTheme();
   const { themeName } = useThemeControl();
@@ -128,11 +134,14 @@ export default function Toolbar({
         {/* Board menu */}
         <BoardMenu menuItemFactory={menuItemFactory} />
 
-        <TbSeparator />
-
         {children ? children : null}
 
-        {statusSlot && <CentredStatus>{statusSlot}</CentredStatus>}
+        {(statusSlot || centreSlot) && (
+          <CentredStatus>
+            {statusSlot}
+            {centreSlot}
+          </CentredStatus>
+        )}
 
         {/* Right side */}
         <div
@@ -200,7 +209,12 @@ export default function Toolbar({
 
           {children ? children : null}
 
-          {statusSlot && <CentredStatus>{statusSlot}</CentredStatus>}
+          {(statusSlot || centreSlot) && (
+            <CentredStatus>
+              {statusSlot}
+              {centreSlot}
+            </CentredStatus>
+          )}
 
           <div
             style={{

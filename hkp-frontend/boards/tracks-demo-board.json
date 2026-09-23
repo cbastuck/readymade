@@ -1,0 +1,95 @@
+{
+  "boardName": "Tracks Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 1,
+          "periodicUnit": "s",
+          "running": true,
+          "start": true,
+          "immediate": true
+        }
+      },
+      {
+        "uuid": "tracks-svc",
+        "serviceId": "tracks",
+        "serviceName": "Tracks",
+        "state": {
+          "run": "serial",
+          "tracks": [
+            {
+              "name": "circle-sub",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "circle-sub",
+                  "serviceName": "Circle",
+                  "state": {
+                    "template": {
+                      "type": "circle",
+                      "x=": "round(sin(triggerCount * 0.4) * 200 + 300)",
+                      "y": 200,
+                      "radius": 24,
+                      "color": "#6366f1"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "label-sub",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "label-sub",
+                  "serviceName": "Label",
+                  "state": {
+                    "template": {
+                      "type": "text",
+                      "text=": "concat('tick #', triggerCount)",
+                      "y": "78%",
+                      "color": "#64748b",
+                      "font": {
+                        "size": "7%",
+                        "family": "monospace"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": {
+          "clearOnRedraw": true,
+          "resizable": true,
+          "size": [
+            600,
+            400
+          ]
+        }
+      }
+    ]
+  },
+  "description": "A timer drives one value into two tracks \u2014 a circle and a label \u2014 and the array they answer with is drawn on a canvas. The tracks never see each other; what arrives at the canvas is both of them, in the order they were declared."
+}

@@ -14,8 +14,12 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Play, X } from "lucide-react";
 
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
+import RunParamsDialog from "hkp-frontend/src/ui-components/runtime-ui/RunParamsDialog";
+import { canPlay, play, useRunParams } from "hkp-frontend/src/core/play";
 import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
 import { ActivityTracker } from "./activity";
 import { Camera, createCamera, orbit, pan, project, zoom } from "./camera";
@@ -118,6 +122,16 @@ export default function OverviewView() {
   const overview = useOverview();
   const boardContext = useBoardContext();
   const navigation = useNestedNavigation();
+  const theme = useTheme();
+
+  // Where a dialog the view opens goes: inside the view rather than on the
+  // body, which is underneath it. State rather than a ref because the element
+  // does not exist on the render that would have to pass it on.
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
+  const [askingForData, setAskingForData] = useState(false);
+  // What the board was last run with, shared with the toolbar's own controls:
+  // an input written in one place is a press away in the other.
+  const [lastParams, setLastParams] = useRunParams();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cameraRef = useRef<Camera | null>(null);
@@ -142,7 +156,13 @@ export default function OverviewView() {
 
   // The chrome is painted from the same palette the scene is, so the bar and
   // the tooltip cannot end up describing a different view than the canvas.
-  const palette = useMemo(() => defaultPalette(accentColor()), []);
+  // The theme comes into it for one thing only: what a runtime that was never
+  // given a colour stands on, which is the same appearance default the board
+  // itself is drawn with.
+  const palette = useMemo(
+    () => defaultPalette(accentColor(), theme.runtimeBackgroundColor),
+    [theme.runtimeBackgroundColor],
+  );
 
   // What the services report about themselves, which is where a pipeline built
   // in this session is. Read when the view opens, and again whenever the board
@@ -366,6 +386,15 @@ export default function OverviewView() {
     setSelectedUuid(hit?.uuid ?? null);
   };
 
+  const playBoard = useCallback(
+    (params?: unknown) => {
+      if (boardContext) {
+        play(boardContext, params);
+      }
+    },
+    [boardContext],
+  );
+
   const openInPlayground = useCallback(
     (node: OverviewNode) => {
       overview?.hide();
@@ -456,8 +485,12 @@ export default function OverviewView() {
         })
       : null;
 
+  const playable = canPlay(boardContext);
+  const armed = playable && lastParams !== undefined;
+
   return createPortal(
     <div
+      ref={setRoot}
       style={{
         position: "fixed",
         inset: 0,
@@ -469,7 +502,13 @@ export default function OverviewView() {
     >
       <div
         style={{
-          display: "flex",
+          // Three columns rather than a row, so that what runs the board is in
+          // the middle of the bar and not merely after what is to its left —
+          // the same place it is in the toolbar this view is covering. The
+          // outer two share what is left over, which is what centres the
+          // middle, and they give way rather than overlap as the bar narrows.
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
           gap: 12,
           padding: "8px 14px",
@@ -481,30 +520,94 @@ export default function OverviewView() {
           flexShrink: 0,
         }}
       >
-        <span style={{ fontWeight: 600, color: palette.text }}>
-          {boardContext.boardName || "Board"}
-        </span>
-        <span style={{ opacity: 0.6 }}>
-          {scene.nodes.length} services · {scene.runtimes.length} runtimes
-        </span>
-        <span style={{ opacity: 0.45, marginLeft: "auto" }}>
-          drag orbit · shift-drag pan · wheel zoom · click to inspect · R reset
-        </span>
-        <button
-          onClick={() => overview?.hide()}
+        <div
           style={{
-            padding: "4px 10px",
-            borderRadius: 6,
-            border: `1px solid ${palette.cardBorder}`,
-            background: "transparent",
-            color: palette.text,
-            cursor: "pointer",
-            fontSize: 11,
-            fontFamily: "monospace",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            minWidth: 0,
+            overflow: "hidden",
           }}
         >
-          {"{ close }"}
+          <span
+            style={{
+              fontWeight: 600,
+              color: palette.text,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {boardContext.boardName || "Board"}
+          </span>
+          <span style={{ opacity: 0.6, whiteSpace: "nowrap" }}>
+            {scene.nodes.length} services · {scene.runtimes.length} runtimes
+          </span>
+        </div>
+
+        <button
+          type="button"
+          disabled={!playable}
+          title={
+            !playable
+              ? "Nothing on this board to run yet"
+              : armed
+                ? "Run the board again with what it was last given — hold Alt to write a new input"
+                : "Run the board from the top — hold Alt to write an input"
+          }
+          aria-label={armed ? "Run the board again" : "Run the board"}
+          aria-keyshortcuts="Alt+Enter"
+          onClick={(event) => {
+            // Any modifier, not one in particular: which key means "this, but"
+            // is a habit that differs by platform and by person, and none of
+            // them means anything else on a button that does one thing.
+            if (event.altKey || event.shiftKey || event.metaKey) {
+              setAskingForData(true);
+              return;
+            }
+            playBoard(lastParams);
+          }}
+          style={{
+            ...barButton(palette, playable),
+            // Carrying an input marks itself the way the toolbar's own control
+            // marks a way back: the press does something more than the plain
+            // one, and there is no room in an icon to say what.
+            color: armed ? palette.accent : palette.text,
+          }}
+        >
+          <Play size={15} strokeWidth={1.75} />
         </button>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 12,
+            minWidth: 0,
+          }}
+        >
+          <span
+            style={{
+              opacity: 0.45,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            drag orbit · shift-drag pan · wheel zoom · click to inspect · R
+            reset
+          </span>
+          <button
+            type="button"
+            onClick={() => overview?.hide()}
+            title="Close the overview"
+            aria-label="Close the overview"
+            style={barButton(palette, true)}
+          >
+            <X size={15} strokeWidth={1.75} />
+          </button>
+        </div>
       </div>
 
       <div
@@ -579,6 +682,10 @@ export default function OverviewView() {
               </div>
               <div style={{ color: palette.textMuted }}>
                 {hovered.runtimeId}
+                {/* Which of its host's pipelines it is in, where the host
+                    holds more than one and the name is what tells them
+                    apart — an endpoint's onProcess from its onRequest. */}
+                {hovered.pipeline ? ` · ${hovered.pipeline}` : ""}
                 {hovered.depth > 0 ? ` · level ${hovered.depth}` : ""}
                 {hovered.bypassed ? " · bypassed" : ""}
               </div>
@@ -609,7 +716,47 @@ export default function OverviewView() {
           />
         )}
       </div>
+
+      <RunParamsDialog
+        open={askingForData}
+        onClose={() => setAskingForData(false)}
+        onRun={(params) => {
+          setAskingForData(false);
+          setLastParams(params);
+          playBoard(params);
+        }}
+        target="the first service of the first runtime"
+        container={root}
+      />
     </div>,
     document.body,
   );
+}
+
+/**
+ * One control in the bar: a mark, with what it does in its title.
+ *
+ * Icons rather than words, and the same square the toolbar's own controls are,
+ * because this bar is read across — the board's name, what is on it, how to
+ * move around it — and a row of words to be scanned past is a worse place to
+ * lose the name than a row of marks is.
+ */
+function barButton(
+  palette: ReturnType<typeof defaultPalette>,
+  enabled: boolean,
+): React.CSSProperties {
+  return {
+    width: 26,
+    height: 26,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    borderRadius: 7,
+    border: `1px solid ${palette.cardBorder}`,
+    background: "transparent",
+    color: palette.text,
+    cursor: enabled ? "pointer" : "default",
+    opacity: enabled ? 1 : 0.4,
+  };
 }

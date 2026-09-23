@@ -78,6 +78,35 @@ public:
   // nested service as immediately as a top-level one, and so that nesting
   // composes to whichever runtime was actually given something.
   SecretVault& secrets() override { return m_parent.secrets(); }
+
+  // The cells this pipeline holds values in: the ones the service owning it
+  // lent it, and otherwise the ones around it.
+  //
+  // A service with two pipelines that must hold something between them lends
+  // both the same store; one with nothing to share lends none, and a slot
+  // named inside it then means what the same name means outside — so nesting
+  // never isolates what is inside it by accident.
+  SlotStore& slots() override
+  {
+    return m_slots ? *m_slots : m_parent.slots();
+  }
+
+  // Hold values here rather than in the runtime around this one. Called by the
+  // service that owns this pipeline, and one other, before either runs.
+  void shareSlots(SlotStore& store) { m_slots = &store; }
+
+  // Whether what this pipeline produces on its own leaves the service holding
+  // it.
+  //
+  // The second route out, and the one a scope would otherwise leak through: a
+  // nested service that emits without being called — a Timer tick, a deferred
+  // result — bubbles out through the owner and drives the services after it.
+  // The owner returning Null from process() does not cover that, which is why
+  // stopping propagation has to be said here too.
+  void setStopPropagation(bool stop) { m_stopPropagation = stop; }
+
+  // One of the services here, by the name it carries — for a scoped address.
+  std::shared_ptr<Service> find(const std::string& instanceId) const;
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override;
 
@@ -94,6 +123,10 @@ private:
   void processScheduled();
 
   RuntimeHost& m_parent;
+  // See shareSlots. Null means the cells of the runtime around this one.
+  SlotStore* m_slots = nullptr;
+  // See setStopPropagation.
+  bool m_stopPropagation = false;
   const Service* m_ownerInParent = nullptr;
   ServiceFactory m_factory;
   PostFn         m_post;

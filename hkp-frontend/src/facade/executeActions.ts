@@ -1,4 +1,4 @@
-import { FacadeWidgetAction, WidgetAction } from "./types";
+import { ConfirmAction, FacadeWidgetAction, WidgetAction } from "./types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeBoardActions } from "./FacadeBoardActions";
 import { findService, processService } from "./boardServices";
@@ -32,6 +32,13 @@ function resolveStateRefs(
 }
 
 /**
+ * Puts a question to the person using the facade and resolves with their
+ * answer. Supplied by whatever renders the widget, since that is where the
+ * question is shown.
+ */
+export type AskPerson = (question: ConfirmAction) => Promise<boolean>;
+
+/**
  * Runs a widget's actions, in the order they are written and one at a time.
  *
  * Order is the whole point of awaiting: a button that configures a service and
@@ -42,14 +49,19 @@ function resolveStateRefs(
 export async function executeActions({
   action,
   actions,
+  confirm,
   value,
   boardContext,
   setState,
   state,
   boardActions,
+  byPerson = false,
+  ask,
 }: {
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
+  // A widget's `confirm` shorthand: asked before any of the actions.
+  confirm?: string;
   value: unknown;
   boardContext: BoardContextState;
   setState: (key: string, value: unknown) => void;
@@ -59,8 +71,16 @@ export async function executeActions({
   // When provided, { "$state": "key" } references in configure payloads are
   // resolved against these values before $$input substitution runs.
   state?: Record<string, unknown>;
+  // A person set these actions off — pressed, typed, picked — so what they
+  // configure is an edit to the board. False for what a facade runs by itself,
+  // such as its init actions.
+  byPerson?: boolean;
+  // How a confirm step reaches the person. Absent where there is nobody to ask,
+  // which declines: consent that could not be asked for was not given.
+  ask?: AskPerson;
 }): Promise<void> {
   const all: WidgetAction[] = [
+    ...(confirm ? [{ type: "confirm" as const, question: confirm }] : []),
     ...(action
       ? [
           {
@@ -85,6 +105,9 @@ export async function executeActions({
         configure[k] = applyInput(withState, value);
       }
       await service.configure(configure);
+      if (byPerson) {
+        boardContext.markBoardChanged?.();
+      }
     } else if (act.type === "process") {
       // Same substitution as a configure payload: what a board writes into one
       // it can write into the other.
@@ -97,10 +120,25 @@ export async function executeActions({
         applyInput(withState, value),
       );
     } else if (act.type === "set-state") {
-      setState(act.key, value);
+      // A written value wins over the widget's own, and `undefined` written on
+      // purpose is still a value — which is why the field's presence decides
+      // rather than its content.
+      setState(act.key, "value" in act ? act.value : value);
     } else if (act.type === "board") {
       if (act.action === "partner-board-qr") {
         boardActions?.showPartnerBoardQr();
+      }
+    } else if (act.type === "confirm") {
+      const withState = state
+        ? resolveStateRefs(act.question, state)
+        : act.question;
+      const question = applyInput(withState, value);
+      if (typeof question !== "string" || !question) {
+        continue;
+      }
+      const agreed = ask ? await ask({ ...act, question }) : false;
+      if (!agreed) {
+        return;
       }
     }
   }

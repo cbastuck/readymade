@@ -53,6 +53,8 @@ add_executable(hkp-rt-service-tests
   service_hold.test.cpp
   service_http_client_mount.test.cpp
   service_sub_service.test.cpp
+  service_scopes.test.cpp
+  service_tracks.test.cpp
   http_response_origin.test.cpp
   http_server_lifecycle.test.cpp
   runtime_no_input.test.cpp

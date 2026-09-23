@@ -4,8 +4,23 @@ import { Remote } from "../types";
 
 export type BoardHistoryEntry = {
   timestamp: string; // ISO 8601
-  label: "auto" | "manual";
+  /**
+   * "auto" after a structural change, "config" after a configuration change —
+   * consecutive "config" entries replace each other rather than piling up.
+   */
+  label: "auto" | "manual" | "config";
   snapshot: BoardDescriptor;
+  /**
+   * The documents the snapshot's units were assembled from, each under the
+   * `uri` that names it.
+   *
+   * A composition is stored as what it is — a board that lists its units — so
+   * resuming it has to link them again, and by then there is nowhere left to
+   * look them up: the session is at no URL, and the files it was opened from
+   * were only ever read once. Keeping them with the entry is what makes a
+   * resumed composition the board it was, facades included.
+   */
+  units?: Array<{ name: string; uri: string; board: BoardDescriptor }>;
 };
 
 export type HistoryBoardSummary = {

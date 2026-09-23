@@ -180,6 +180,10 @@ export default function CommunicationDispatcherUI(props: ServiceUIProps) {
   ): ServiceInstance =>
     ({
       uuid: `${service.uuid}-branch-${name}`,
+      // A branch is this panel's own name for one of the service's pipelines;
+      // the runtime files what is inside it under the service. See
+      // NamedPipelinesPanel, which carries the address on for the same reason.
+      address: service.address ?? service.uuid,
       serviceId: "communication-dispatcher",
       serviceName: label,
       state: { pipeline },
