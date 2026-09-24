@@ -143,8 +143,8 @@ Native GUI app (`Readymade/`) that embeds `hkp-rt-lib`. Uses the Saucer framewor
 
 ### Configuration
 
-Runtimes are configured via JSON (examples in `hkp-rt/config/`). A config defines a `runtimeId` and an ordered list of `services[]` with per-service settings and routing.
+Runtimes are configured via JSON (examples in `boards/runtime-configs/`). A config defines a `runtimeId` and an ordered list of `services[]` with per-service settings and routing.
 
 ## No Dedicated Test Suite
 
-Testing is done by running the HTTP/WebSocket API against a live runtime, using example configs from `hkp-rt/config/`.
+Testing is done by running the HTTP/WebSocket API against a live runtime, using example configs from `boards/runtime-configs/`.

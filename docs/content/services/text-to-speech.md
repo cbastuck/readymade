@@ -114,7 +114,7 @@ to that and a `truncated` count is reported in the audio-metadata notification.
 
 ### Example (hkp-rt)
 
-`hkp-rt/config/text-to-speech-example.json` wires `text-to-speech` (local) →
+`boards/runtime-configs/text-to-speech-example.json` wires `text-to-speech` (local) →
 `core-output`, so a POST of text is spoken through the speakers.
 
 ---

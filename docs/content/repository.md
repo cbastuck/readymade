@@ -21,6 +21,7 @@ committed, so it is worth knowing before the first commit rather than after.
 | `hkp-rt/` | superproject | C++ runtime — audio, high performance, embedded in the apps |
 | `meander/` | superproject | The Readymade desktop app: a saucer webview shell (`backend/`) around the frontend (`frontend/`) |
 | `docs/` | superproject | These pages, and the small site that serves them |
+| `boards/` | superproject | Every board the repo ships — the demo board behind each service page, the worked examples, and `runtime-configs/` for hkp-rt |
 | `3rdparty/`, `scripts/`, `deployments/` | superproject | Vendored dependencies, tooling, packaging |
 | `hkp-node/` | **submodule** | Node.js runtime server, published as its own package |
 | `hkp-python/` | **submodule** | Python runtime server, installed into its own virtualenv |

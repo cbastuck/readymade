@@ -175,7 +175,7 @@ The default is worth saying plainly: **a scope keeps its cells to itself**. A re
 sub-pipeline whose slot names leaked into its surroundings would collide with a second copy
 of itself, so two Holds that must meet across a scope boundary need that boundary to say
 `inherit` — which the **Hold across scopes** demo board
-(`hkp-frontend/boards/hold-scopes-demo-board.json`) does on both of its scopes.
+(`boards/hold-scopes-demo-board.json`) does on both of its scopes.
 
 The demo board linked from this page is the other arrangement: one endpoint
 whose two entry pipelines share the cells it owns.

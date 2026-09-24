@@ -16,7 +16,7 @@ Ask the user focused questions only where the design is genuinely ambiguous.
 
 1. **`hkp-rt/lib/src/services/<Name>.h`** — service header (and `.cpp` if needed)
 2. Register in **`hkp-rt/lib/src/registry.cpp`** — include + TypeList entry
-3. **`hkp-rt/config/<slug>-example.json`** — example runtime config
+3. **`boards/runtime-configs/<slug>-example.json`** — example runtime config
 4. **`docs/content/services/<slug>.md`** — documentation
 
 ---
@@ -207,7 +207,7 @@ The `TypeList` machinery calls `Name::serviceId()` and `Name(instanceId)` automa
 
 ---
 
-## Config example (`hkp-rt/config/<slug>-example.json`)
+## Config example (`boards/runtime-configs/<slug>-example.json`)
 
 ```json
 {

@@ -12,7 +12,7 @@ import {
 vi.mock("sonner", () => ({ toast: { warning: vi.fn(), error: vi.fn() } }));
 
 const board = (file: string): UnitBoard =>
-  JSON.parse(readFileSync(`boards/${file}`, "utf8"));
+  JSON.parse(readFileSync(`../boards/${file}`, "utf8"));
 
 const composition = board("syn-board.json");
 // Stands in for the saved-boards store, which keys documents by the base name

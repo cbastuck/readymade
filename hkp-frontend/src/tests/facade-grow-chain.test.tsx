@@ -71,7 +71,7 @@ describe("growing a widget through nested containers", () => {
 
   it("keeps the peer-chat message list filling its panel", () => {
     const board = JSON.parse(
-      readFileSync("boards/peer-chat-board.json", "utf-8"),
+      readFileSync("../boards/peer-chat-board.json", "utf-8"),
     ) as { facade: FacadeDescriptor };
     const panel = board.facade.panels.find((p) => p.id === "chat");
     expect(panel).toBeDefined();

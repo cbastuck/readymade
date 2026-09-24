@@ -18,7 +18,7 @@ Ask the user focused questions only where the design is genuinely ambiguous.
 2. **`hkp-frontend/src/runtime/browser/services/<Name>UI.tsx`** — service UI (if interactive config is needed)
 3. Register in **`hkp-frontend/src/runtime/browser/registry/Default.ts`**
 4. Add filename to **`SERVICE_DESCRIPTOR_FILES`** in `hkp-frontend/src/runtime/browser/services/tests/service-modules.contract.test.ts`
-5. **`hkp-frontend/boards/<slug>-demo-board.json`** — demo board
+5. **`boards/<slug>-demo-board.json`** — demo board
 6. **`docs/content/services/<slug>.md`** — documentation
 
 The demo board is automatically linked in the docs UI via naming convention — no code changes needed in `DocumentationServices.tsx`.
@@ -190,7 +190,7 @@ The contract test auto-discovers service files by glob, loads those in `SERVICE_
 
 ---
 
-## Demo board (`hkp-frontend/boards/<slug>-demo-board.json`)
+## Demo board (`boards/<slug>-demo-board.json`)
 
 Show the service doing something useful: a source (Injector or Timer), the new service, and a Monitor to display output. If the service has multiple modes, show a round-trip.
 

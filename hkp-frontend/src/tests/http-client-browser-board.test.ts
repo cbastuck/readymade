@@ -14,7 +14,7 @@ import { defaultRegistry } from "../runtime/browser/registry/Default";
  */
 
 function board(name: string) {
-  return JSON.parse(readFileSync(`boards/${name}`, "utf-8"));
+  return JSON.parse(readFileSync(`../boards/${name}`, "utf-8"));
 }
 
 const browserBoard = board("http-client-browser-demo-board.json");

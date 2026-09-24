@@ -10,8 +10,8 @@ import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import ManageRuntimesSheet from "./ManageRuntimesSheet";
 import ManageCoordinatorsSheet from "./ManageCoordinatorsSheet";
 
-import liveLocationBoard from "../../../../boards/live-location-demo-board.json";
-import microphoneSpeakerBoard from "../../../../boards/microphone-speaker-demo-board.json";
+import liveLocationBoard from "../../../../../boards/live-location-demo-board.json";
+import microphoneSpeakerBoard from "../../../../../boards/microphone-speaker-demo-board.json";
 
 // ── Bundled demo boards (ready-to-run examples) ────────────────
 type DemoEntry = {

@@ -334,10 +334,10 @@ Start the Python runtime (`hkp-python`, default port 8080), open the board,
 and inject a prompt.
 
 For hkp-rt the equivalent runtime config ships as
-`hkp-rt/config/text-generation-example.json`:
+`boards/runtime-configs/text-generation-example.json`:
 
 ```
-./build/hkp-rt/exe/Debug/hkp-rt 5556 127.0.0.1 hkp-rt/config/text-generation-example.json
+./build/hkp-rt/exe/Debug/hkp-rt 5556 127.0.0.1 boards/runtime-configs/text-generation-example.json
 curl -X POST http://127.0.0.1:5556/runtimes/text-generation-example \
   -H 'Content-Type: application/json' \
   -d '{"prompt":"Name three primary colors."}'

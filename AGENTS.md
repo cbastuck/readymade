@@ -169,16 +169,17 @@ Use `/new-board` for the full widget schema and board design workflow.
 ## Where things live
 
 ```
+boards/                Every board the repo ships — demo boards, example configs
+  runtime-configs/       Example single-runtime config JSONs for hkp-rt
+
 hkp-frontend/          React app — playground UI, board engine, all browser services
   src/runtime/browser/   Browser runtime and services
   src/runtime/rest/      REST runtime client + YAS serialization
-  boards/                Board JSON files (demo boards, example configs)
   docs/                  Documentation site content
 
 hkp-rt/                C++ runtime (audio, high-performance services)
   lib/src/services/      Service headers
   lib/src/registry.cpp   Service registry (TypeList)
-  config/                Example runtime config JSONs
 
 hkp-node/              Node.js runtime (messaging, server I/O)
 hkp-python/            Python runtime (AI/ML)

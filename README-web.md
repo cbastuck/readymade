@@ -67,7 +67,7 @@ submodule, so it needs `git submodule update --init` before it will build.
 
 ## Note on `/boards`
 
-In dev, a small Vite middleware serves `hkp-frontend/boards/*.json` over HTTP at `/boards/…`.
+In dev, a small Vite middleware serves `boards/*.json` over HTTP at `/boards/…`.
 The production build does **not** copy that directory into the output. Demo boards the UI
 loads directly are imported as modules and get bundled normally, so this only matters if you
 link to board JSON by URL.

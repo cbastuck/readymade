@@ -9,7 +9,7 @@ export default defineConfig({
   build: {
     outDir: "build",
   },
-  plugins: [svgr(), react(), serveBoards(path.resolve(__dirname, "boards"))],
+  plugins: [svgr(), react(), serveBoards(path.resolve(__dirname, "../boards"))],
   server: {
     port: 5555,
   },

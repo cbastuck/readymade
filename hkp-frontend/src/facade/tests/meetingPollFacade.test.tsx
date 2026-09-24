@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import board from "../../../boards/meeting-poll-demo-board.json";
+import board from "../../../../boards/meeting-poll-demo-board.json";
 import { LayoutNode } from "../panels/LayoutNode";
 import { FacadeStateContext } from "../FacadeStateContext";
 import type { BoardContextState } from "hkp-frontend/src/BoardContext";

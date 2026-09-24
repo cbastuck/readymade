@@ -197,7 +197,7 @@ finished when all of its pieces exist:
 | Descriptor + factory | `runtime/browser/services/*.tsx` | `ServiceRegistryEntry` | `serviceId()` static |
 | Registration | `runtime/browser/registry/Default.ts` | the service map in `src/server.ts` | `lib/src/registry.cpp` |
 | Panel | `*UI.tsx` in the same folder | frontend `runtime/rest/ui/` | frontend `runtime/rest/ui/` |
-| Docs + demo board | `docs/content/services/<slug>.md`, `hkp-frontend/boards/<slug>-demo-board.json` | same | same |
+| Docs + demo board | `docs/content/services/<slug>.md`, `boards/<slug>-demo-board.json` | same | same |
 
 The scaffolding skills do this end to end: `/new-browser-service`,
 `/new-node-service`, `/new-cpp-service`.

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import MapDescriptor from "../base/Map";
-import board from "../../../../../boards/audiolize-board.json";
+import board from "../../../../../../boards/audiolize-board.json";
 
 /**
  * The lane each track takes for itself.

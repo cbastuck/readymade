@@ -219,7 +219,7 @@ actually changed.
 | Reading and writing one | `hkp-frontend/src/core/boardPersistence.ts` |
 | Facade shape | `hkp-frontend/src/facade/types.ts` |
 | Unit and composition shape | `hkp-frontend/src/runtime/board/units.ts` |
-| Example boards | `hkp-frontend/boards/` |
+| Example boards | `boards/` |
 
 ---
 
