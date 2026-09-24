@@ -1,6 +1,6 @@
 # Scopes — SubService as a boundary
 
-Design notes from 2026-09-20, arising from `hkp-frontend/boards/rss-demo-board.json`.
+Design notes from 2026-09-20, arising from `boards/rss-demo-board.json`.
 Nothing is built yet. The board has two independent flows in one runtime — reading
 feeds, and keeping/publishing a reading list — separated by a `stopper` named
 "End of the read". The stopper works, but it is a *convention*: it says "nothing

@@ -23,7 +23,7 @@ Ask the user focused questions only where the design is genuinely ambiguous.
 1. **`hkp-node/src/services/<name>.ts`** — service logic
 2. Register in **`hkp-node/src/server.ts`** — import + factory entry
 3. **`hkp-node/tests/<name>.test.ts`** — vitest integration test
-4. **`hkp-frontend/boards/<slug>-demo-board.json`** — demo board
+4. **`boards/<slug>-demo-board.json`** — demo board
 5. **`docs/content/services/<slug>.md`** — documentation
 
 ---
@@ -222,7 +222,7 @@ Run with: `cd hkp-node && npm test`
 
 ---
 
-## Demo board (`hkp-frontend/boards/<slug>-demo-board.json`)
+## Demo board (`boards/<slug>-demo-board.json`)
 
 Show the service in a multi-runtime board: a browser injector sends data into a node runtime containing the new service, with a browser monitor showing the result.
 

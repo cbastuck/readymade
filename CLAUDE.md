@@ -288,16 +288,17 @@ Use `/new-board` for the full widget schema and board design workflow.
 ## Where things live
 
 ```
+boards/                Every board the repo ships — demo boards, example configs
+  runtime-configs/       Example single-runtime config JSONs for hkp-rt
+
 hkp-frontend/          React app — playground UI, board engine, all browser services
   src/runtime/browser/   Browser runtime and services
   src/runtime/rest/      REST runtime client + YAS serialization
-  boards/                Board JSON files (demo boards, example configs)
   docs/                  Documentation site content
 
 hkp-rt/                C++ runtime (audio, high-performance services)
   lib/src/services/      Service headers
   lib/src/registry.cpp   Service registry (TypeList)
-  config/                Example runtime config JSONs
 
 hkp-node/              Node.js runtime (messaging, server I/O)
 hkp-python/            Python runtime (AI/ML)
@@ -315,6 +316,7 @@ meander-ios/           iOS-specific native layer
 | `docs/content/introduction.md` | The first-read narrative: what Readymade is, what people build with it, and the shape of a board                                                                                                                                                 |
 | `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, presets, units, mounts, coordinator, cloud boards, logging)                                                                                                          |
 | `docs/content/services/`       | One page per service                                                                                                                                                                                                                             |
+| `docs/content/boards/`         | One page per demo board — what the app does and what each runtime contributes. The runtime/service breakdown below it is generated from the board document at build time, so only the prose lives here. A file here is what puts a board in the docs; its name must match the board's file in `boards/` |
 | `docs/content/board-json.md`   | The serialisation format: what a board document contains, field by field, and what it deliberately does not                                                                                                                                      |
 | `docs/content/repository.md`   | How the checkout is laid out: what is in the superproject, what is a submodule, and what follows from that when committing, building and testing                                                                                                 |
 | `docs/content/testing.md`      | What runs where: the per-area suites behind `run-all-tests.sh`, the Playwright suite in `e2e/` across three host profiles, and what CI actually covers                                                                                           |

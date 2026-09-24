@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import board from "../../../boards/meeting-poll-demo-board.json";
+import board from "../../../../boards/meeting-poll-demo-board.json";
 
 /**
  * The meeting poll's wiring, as the board relies on it.

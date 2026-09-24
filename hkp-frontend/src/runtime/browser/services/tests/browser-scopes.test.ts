@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import HoldDescriptor from "../Hold";
 import { BrowserSubService } from "../BrowserSubService";
 import { createSlotStore } from "../../../slots";
-import board from "../../../../../boards/hold-scopes-demo-board.json";
+import board from "../../../../../../boards/hold-scopes-demo-board.json";
 
 /**
  * A scope in the browser runtime: what it keeps to itself, what leaves it, and

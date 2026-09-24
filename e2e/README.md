@@ -105,7 +105,7 @@ browser with a working board library, no saucer build needed.
 ## The shipped-board sweep
 
 `tests/smoke/shipped-boards.spec.ts` opens every browser-only board in
-`hkp-frontend/boards/` and asserts that each service it declares renders a
+`boards/` and asserts that each service it declares renders a
 frame. Around a minute for 63 boards, `web` profile only — it asks about board
 JSON, not about a host, so one profile answers it.
 

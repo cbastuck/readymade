@@ -4,7 +4,7 @@ import path from "node:path";
 /** The board JSON shipped with the frontend — what the sweep reads. */
 const BOARDS_DIR = path.resolve(
   import.meta.dirname,
-  "../../hkp-frontend/boards",
+  "../../boards",
 );
 
 export type BoardDescriptor = {

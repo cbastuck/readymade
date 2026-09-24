@@ -17,7 +17,7 @@ import {
   isBoardDescriptor,
 } from "hkp-frontend/src/types";
 
-const boardModules = import.meta.glob("../../../../boards/*.json", {
+const boardModules = import.meta.glob("../../../../../boards/*.json", {
   eager: true,
   import: "default",
 }) as Record<string, BoardDescriptor>;

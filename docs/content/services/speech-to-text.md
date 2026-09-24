@@ -165,7 +165,7 @@ such utterance per call.
 
 ### Example (hkp-rt)
 
-`hkp-rt/config/speech-to-text-example.json` wires the microphone straight into
+`boards/runtime-configs/speech-to-text-example.json` wires the microphone straight into
 the transcriber: `core-input` → `speech-to-text` (local) → `monitor`. It pairs
 naturally with **text-generation** and **text-to-speech** to form a fully local
 voice loop inside one C++ runtime.

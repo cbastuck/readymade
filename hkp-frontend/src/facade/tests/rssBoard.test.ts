@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import board from "../../../boards/rss-demo-board.json";
+import board from "../../../../boards/rss-demo-board.json";
 
 /**
  * The RSS aggregator's wiring, as the board relies on it.

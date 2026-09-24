@@ -20,7 +20,7 @@ without them.
 | `PRAGMA busy_timeout`, tolerated WAL-conversion race | `database.ts` | ☑ |
 | Multi-process regression test (spawns real processes) | `tests/database-processes.test.ts` | ☑ |
 | Docs | `docs/content/services/queue.md`, `sql.md`, `conversations.md` | ☑ |
-| Demo board | `hkp-frontend/boards/queue-demo-board.json` | ☑ |
+| Demo board | `boards/queue-demo-board.json` | ☑ |
 
 Tests: `tests/queue.test.ts` (20), `tests/database.test.ts`,
 `tests/database-processes.test.ts`. The one failing test in the suite,
@@ -111,7 +111,7 @@ removed; see git history on this branch if the shape is ever wanted back.
 
 ## Board files
 
-`hkp-frontend/boards/syn-booking-unit-board.json` and
+`boards/syn-booking-unit-board.json` and
 `syn-hotels-unit-board.json` carry `unit: { name, units, imports, exports }`
 blocks that nothing reads yet. Both currently point at `127.0.0.1:8080` and name
 their databases (`syn-booking`, `syn-hotels`). They belong with the board-units

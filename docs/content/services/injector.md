@@ -79,7 +79,7 @@ from living behind a REST API rather than in the same process as the UI:
 Run the example config:
 
 ```bash
-./build/hkp-rt/exe/hkp-rt 8887 127.0.0.1 hkp-rt/config/injector-example.json
+./build/hkp-rt/exe/hkp-rt 8887 127.0.0.1 boards/runtime-configs/injector-example.json
 ```
 
 ---

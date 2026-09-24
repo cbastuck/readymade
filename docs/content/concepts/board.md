@@ -231,7 +231,7 @@ The role that owns the board is the **coordinator**
 | Host template variables | `hkp-frontend/src/templateVars.ts` |
 | Facade | `hkp-frontend/src/facade/` |
 | Host storage | `meander/frontend/src/backend/types.ts` (`BackendAdapter`) |
-| Example boards | `hkp-frontend/boards/*.json` |
+| Example boards | `boards/*.json` |
 
 ---
 

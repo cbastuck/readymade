@@ -73,7 +73,7 @@ What leaks is inconsistent by service, which is why a heuristic fix was rejected
 | Vault, kept out of state       | `OpenAIPrompt` (`_apiKey` is a class field; UI uses `secretId("uservault", …)`), `WorkflowBoardBuilder` | ✅    |
 | **Free-form headers in state** | node `http-client` (`headers: this.headers` in `getState`), browser `Fetcher`                           | ❌    |
 
-Checked Aug 2026: none of the 85 boards in `hkp-frontend/boards/` carry real credentials —
+Checked Aug 2026: none of the 85 boards in `boards/` carry real credentials —
 only demo encryption keys. The mechanism is live; nothing has leaked through it yet.
 
 This constraint bites SYN hardest: every credential in their stack (Baserow,
@@ -369,7 +369,7 @@ The dialect is the second half of the reason, and it is not a side benefit. `map
 header already claimed both runtimes shared a dialect so one UI could serve both; it was
 not true, and a template written against node's fuller JavaScript failed on import with
 `Unclosed ( at character 14`. Now the claim holds by construction. The migration cost was
-checked, not assumed: no board under `hkp-frontend/boards/` uses an object literal, arrow
+checked, not assumed: no board under `boards/` uses an object literal, arrow
 or template string in a term, and all 381 existing tests passed unchanged.
 
 Boundaries are only boundaries while nobody widens them: **no helper in `globalScope` may
@@ -684,7 +684,7 @@ Goal: a board that can be trusted with real correspondence unattended.
 - ☐ **G5 — control-flow parity.** Port `switch`, `if`, `filter`, `select`, `sort`,
   `group-by`, `flat-map`, `batch`, `limit`, `cache` to node against the existing
   `hkp-node/src/services/expression.ts`. Extend the board-loading test proposed in
-  TODO-CONSOLIDATION §1 (load every board in `hkp-frontend/boards/`, assert each
+  TODO-CONSOLIDATION §1 (load every board in `boards/`, assert each
   non-browser `serviceId` resolves in that runtime's registry) to cover the parity set.
   Effort L.
 - ☐ **G3 — OCR cascade.** Mostly built already, and smaller than this entry assumed.

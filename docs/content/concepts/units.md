@@ -299,7 +299,7 @@ read from a URL has no writable place to go back to and is skipped.
 | Origin for how a board arrived | `hkp-frontend/src/views/playground/PlaygroundController.ts` |
 | Missing-unit remedy | `hkp-frontend/src/views/playground/BoardFetchError.tsx` |
 | Boards served so relative URLs resolve in dev | `hkp-frontend/vite-plugins/serveBoards.ts` |
-| Worked example | `hkp-frontend/boards/syn-board.json` + `syn-booking-unit-board.json`, `syn-hotels-unit-board.json` |
+| Worked example | `boards/syn-board.json` + `syn-booking-unit-board.json`, `syn-hotels-unit-board.json` |
 | Tests | `hkp-frontend/src/runtime/board/tests/units.test.ts`, `core/tests/linkUnits.test.ts`, `linkUnits.syn.test.ts` |
 
 ---

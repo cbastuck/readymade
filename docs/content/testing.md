@@ -31,7 +31,7 @@ board opening, a shell mounting, a pipeline actually running.
 | hkp-node | vitest | `npm test` | the same ground, plus the coordinator and its stores |
 | hkp-rt | Catch2 + ctest | `./run-tests.sh` | the C++ runtime and its services |
 | Readymade app backend | Catch2 | `./run-tests.sh` | the desktop shell's rules — routing, settings, grants, the share inbox |
-| hkp-frontend demo boards | vitest | `npm run test -- src/runtime/browser/tests/demo-boards.regression.test.tsx` | every board in `hkp-frontend/boards/`, checked against the registry |
+| hkp-frontend demo boards | vitest | `npm run test -- src/runtime/browser/tests/demo-boards.regression.test.tsx` | every board in `boards/`, checked against the registry |
 | hkp-frontend | vitest | `npm run test -- --exclude …` | everything else in the frontend |
 
 Two things about the runner are deliberate. It **does not stop at the first
@@ -108,7 +108,7 @@ per-change checklists kept in `TODO-TEST.md`.
 ### The shipped-board sweep
 
 `e2e/tests/smoke/shipped-boards.spec.ts` opens every browser-only board in
-`hkp-frontend/boards/` and asserts that each service it declares renders a frame,
+`boards/` and asserts that each service it declares renders a frame,
 with no uncaught exception. `web` profile only — it asks about board JSON, not
 about a host.
 

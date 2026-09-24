@@ -76,7 +76,7 @@ asks first (`restoreRuntime` → `attachRuntime`), which means:
   older client is expected to post-to-attach.
 
 **The test that would have caught all three**: load every board in
-`hkp-frontend/boards/` and, for each service on a non-browser runtime, assert the
+`boards/` and, for each service on a non-browser runtime, assert the
 `serviceId` resolves in that runtime's registry. All four registries are now
 reachable from tests. Cheap, and it turns a runtime error into a build failure.
 

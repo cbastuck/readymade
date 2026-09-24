@@ -19,7 +19,7 @@ import { UNIT_SEPARATOR, UnitBoard, unitNameOf } from "../units";
  * is what this test is here to catch.
  */
 
-const boards = import.meta.glob("../../../../boards/*.json", {
+const boards = import.meta.glob("../../../../../boards/*.json", {
   eager: true,
   import: "default",
 }) as Record<string, UnitBoard>;

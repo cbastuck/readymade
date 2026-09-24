@@ -33,7 +33,7 @@ vi.mock("../facade/boardServices", () => ({
 }));
 
 const board = JSON.parse(
-  readFileSync("boards/http-client-demo-board.json", "utf-8"),
+  readFileSync("../boards/http-client-demo-board.json", "utf-8"),
 ) as { facade: FacadeDescriptor };
 
 function renderRequestPanel(state: Record<string, unknown>) {

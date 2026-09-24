@@ -76,7 +76,7 @@ Return `null` from a service to stop propagation; return early to skip downstrea
 
 ## Step 4 — Generate the board JSON
 
-Produce a valid board JSON file at `hkp-frontend/boards/<slug>-board.json`.
+Produce a valid board JSON file at `boards/<slug>-board.json`.
 
 ### Full schema
 
@@ -847,13 +847,33 @@ notification value.
 
 ---
 
-## Step 6 — Register as a demo board (optional)
+## Step 6 — Write its documentation page (app-like boards)
+
+A board that is an app rather than one service's demo gets a page in the docs.
+Create `docs/content/boards/<the board's file name>.md` — the name must match
+the board file in `boards/` exactly, minus `.json`, because that pairing is what
+the site uses to find the board. Creating the file is the only thing that puts
+the board in the docs; there is no list to add it to.
+
+Write only the prose: what the board is for, what each runtime contributes and
+why that work belongs there, and anything worth knowing before running it. Do
+**not** hand-write the runtime and service breakdown — the site generates that
+from the board document at build time, under an "Anatomy" heading, with every
+service linked to its reference page. Duplicating it by hand only creates
+something that can go stale.
+
+Link to services as `../services/<slug>.md` and to concepts as
+`../concepts/<slug>.md`; both resolve to the built site's URLs.
+
+---
+
+## Step 7 — Register as a demo board (optional)
 
 If this board should appear in the Readymade app demo list, add it to
 `meander/frontend/src/demoBoards.ts`:
 
 ```typescript
-import myBoard from "../../../hkp-frontend/boards/my-board.json";
+import myBoard from "../../../boards/my-board.json";
 
 // Add to DEMO_BOARDS array:
 {
