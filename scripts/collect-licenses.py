@@ -1038,7 +1038,7 @@ def build_index(found: dict[str, dict[str, Found]]) -> dict:
         "project": {
             "name": "Readymade",
             "spdx": "AGPL-3.0-only",
-            "source": "https://github.com/cbastuck/hkp",
+            "source": "https://github.com/cbastuck/readymade",
         },
         "surfaces": ["website"] + TARGETS,
         "texts": texts,
