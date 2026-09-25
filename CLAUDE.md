@@ -46,7 +46,7 @@ asks for), and saying nothing persists it until an explicit DELETE (what a coord
 - `hkp-frontend/src/core/coordinator.ts` — the interface and the browser implementation
 - `hkp-frontend/src/core/deploy.ts` — handing a board to a coordinator
 - `hkp-node/src/coordinator/` — the cloud-board coordinator
-- `CLOUD-BOARDS.md` — the provisioning walkthrough: who owns what, in what order
+- `docs/content/concepts/cloud-boards.md` — the provisioning walkthrough: who owns what, in what order
 
 ### Runtime
 
@@ -290,6 +290,9 @@ Use `/new-board` for the full widget schema and board design workflow.
 ```
 boards/                Every board the repo ships — demo boards, example configs
   runtime-configs/       Example single-runtime config JSONs for hkp-rt
+
+plans/                 Working documents for multi-session changes — what was
+                       decided, why, and what is still open (see plans/README.md)
 
 hkp-frontend/          React app — playground UI, board engine, all browser services
   src/runtime/browser/   Browser runtime and services

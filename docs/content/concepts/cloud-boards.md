@@ -73,7 +73,8 @@ by `core/tests/deploy.test.ts` and `core/tests/deploy-handover.test.tsx`.
      leaves the process (`coordinator/urlGuard.ts`).
    - `POST /runtimes` with `garbageCollected: false`, authenticated with the
      **user's forwarded JWT**. Always a POST: registering a board is a deploy,
-     so it creates-or-replaces.
+     so it creates-or-replaces. The flag is what makes that replacement safe —
+     the browser's dying socket cannot reap the coordinator's fresh runtime.
    - `POST /runtimes/:id/session-token` with the same JWT — see below.
    - open the coordinator's **own** WebSocket to the returned `outputUrl`,
      authenticated with that session token, after validating the URL again in
@@ -276,6 +277,24 @@ registers only when asked.
 
 ---
 
+## When touching this area
+
+- **Ownership before anything.** Ask who provisioned the runtime you are about
+  to change or delete. Runtime ids are the board's, so "it has the right id" is
+  not evidence that it is yours.
+- **Ids are per user, not global.** The stable ids boards ship (`node`,
+  `chat-node`) do not collide between people — and *do* collide between a
+  browser and a coordinator acting for the same person. That collision is the
+  mechanism, not a bug.
+- **Cloud boards with browser runtimes cannot run headless.** The coordinator
+  drives those over the bridge, so that link stalls with no viewer.
+- **Reconnection is a real state.** A dropped bridge re-snapshots; it does not
+  resume blindly. Snapshots carry a `seq` for gap detection.
+- **Mount references, not addresses, are what a board stores.** Resolution is
+  lazy and belongs to the coordinator — only it sees the whole board.
+
+---
+
 ## Rough index into the source
 
 | Concern | Where |
@@ -310,7 +329,6 @@ registers only when asked.
 ---
 
 See also: **Coordinator** (`concepts/coordinator.md`), **Mounts**
-(`concepts/mounts.md`) and **Logging** (`concepts/logging.md`). The working
-reference with more operational detail is `CLOUD-BOARDS.md` at the repo root;
-`TODO-CLOUD-COORDINATOR.md` records why it is built this way and what is still
-open.
+(`concepts/mounts.md`) and **Logging** (`concepts/logging.md`).
+`plans/TODO-CLOUD-COORDINATOR.md` records why it is built this way and what is
+still open.

@@ -20,7 +20,7 @@ namespace hkp
  *
  * Arrives as JSON over the session socket and was read field by field wherever
  * it was needed, which left its shape as a convention rather than a contract —
- * the divergence TODO-CONSOLIDATION.md section 4 records. Naming the fields
+ * the divergence plans/TODO-CONSOLIDATION.md section 4 records. Naming the fields
  * here is what lets the four runtimes agree on them.
  *
  * `requestId` is deliberately not a run identity: it is a *reply address*,

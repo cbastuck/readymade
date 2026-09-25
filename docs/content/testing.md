@@ -103,7 +103,7 @@ handed the platform rather than only on what the UI shows.
 change an `hkp://` route and this suite stays green while the shipped app
 breaks. The fake is written against `BackendAdapter`, so TypeScript catches a
 changed *shape* — a changed *route* needs a manual pass, in the style of the
-per-change checklists kept in `TODO-TEST.md`.
+per-change checklists kept in `plans/TODO-TEST.md`.
 
 ### The shipped-board sweep
 
@@ -189,7 +189,7 @@ trusting it:
 | Board drift, in a browser | `e2e/tests/smoke/shipped-boards.spec.ts` |
 | What CI covers | `.github/workflows/run-all-tests.yml` |
 | Why CI covers only part of it | [Repository](./repository.md) |
-| Manual checklists for a change | `TODO-TEST.md` |
+| Manual checklists for a change | `plans/TODO-TEST.md` |
 
 ---
 

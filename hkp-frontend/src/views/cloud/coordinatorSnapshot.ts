@@ -15,7 +15,7 @@
  * gets structure and state as one thing at one `seq` rather than two fetches
  * that can disagree.
  *
- * See TODO-CLOUD-COORDINATOR.md; the coordinator half is
+ * See plans/TODO-CLOUD-COORDINATOR.md; the coordinator half is
  * `hkp-node/src/coordinator/bridgeProtocol.ts`.
  */
 

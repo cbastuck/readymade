@@ -434,7 +434,7 @@ export type RuntimeImpl = {
  * the payload cannot answer it: the same data can flow through the same
  * services for entirely unrelated reasons.
  *
- * The shape is shared with the other runtimes (see TODO-CONSOLIDATION.md
+ * The shape is shared with the other runtimes (see plans/TODO-CONSOLIDATION.md
  * section 4), which is why `runId` is not folded into `requestId`: the two have
  * different lifetimes and a run makes any number of awaited calls.
  */
