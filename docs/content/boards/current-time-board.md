@@ -20,8 +20,9 @@ One [browser runtime](../concepts/runtime.md), two services.
 
 ## Why it is a board and not a service
 
-This is a **skill target**: the [Voice Assistant with skills](./voice-assistant-skills-demo-board.md)
-board routes a spoken request here through
+This is a **skill target**: the Voice Assistant with skills board
+(`boards/voice-assistant-skills-demo-board.json`) routes a spoken request here
+through
 [Skill Router](../services/skill-router.md), and the calling board's
 [text-to-speech](../services/text-to-speech.md) reads the returned `text` aloud.
 

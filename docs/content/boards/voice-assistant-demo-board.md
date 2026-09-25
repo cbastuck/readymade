@@ -42,15 +42,6 @@ serialised, not handed over. The board is the same shape it would be if the
 Python runtime were on another machine, which is the point: moving it there is a
 `url` change.
 
-## Variants
-
-- [Voice Assistant (local model)](./voice-assistant-local-demo-board.md) — same
-  board with the LLM loaded in-process instead of over a server.
-- [Voice Assistant (hkp-rt)](./voice-assistant-hkp-rt-demo-board.md) — the whole
-  middle on the C++ runtime.
-- [Voice Assistant + Skills](./voice-assistant-skills-demo-board.md) — the same,
-  with spoken requests routed to purpose-built boards.
-
 ## Try it
 
 Needs hkp-python on port 8080 with both extras —

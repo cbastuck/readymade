@@ -26,8 +26,9 @@ Which stop it watches is the Fetcher's `url` and nothing else — change the
 
 ## Why it is a board
 
-The [Voice Assistant with skills](./voice-assistant-skills-demo-board.md) board
-dispatches to this one by name through
+The Voice Assistant with skills board
+(`boards/voice-assistant-skills-demo-board.json`) dispatches to this one by name
+through
 [Skill Router](../services/skill-router.md), and reads the returned `text` aloud
 with [text-to-speech](../services/text-to-speech.md). Save it locally as
 `next bus` or the dispatcher will not find it.
