@@ -6,6 +6,9 @@ import svgr from "vite-plugin-svgr";
 import { readBuildVersion } from "./buildVersion";
 
 const hkpFrontendRoot = path.resolve(import.meta.dirname, "../../hkp-frontend");
+// The generated third-party licence index lives at the repo root, outside both
+// source trees, and the About tab imports it.
+const licensesRoot = path.resolve(import.meta.dirname, "../../licenses");
 
 export default defineConfig({
   define: {
@@ -16,7 +19,7 @@ export default defineConfig({
   server: {
     host: "0.0.0.0", // added only for using the frontend in Readymade iOS app - remove if not needed
     fs: {
-      allow: [".", hkpFrontendRoot],
+      allow: [".", hkpFrontendRoot, licensesRoot],
     },
   },
   plugins: [svgr(), react()],

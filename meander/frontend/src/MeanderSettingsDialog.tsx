@@ -24,6 +24,7 @@ import {
   SettingsSwitch,
 } from "hkp-frontend/src/ui-components/settings/kit";
 import ManageConnectionsContent from "hkp-frontend/src/ui-components/connections/ManageConnectionsContent";
+import { licencesTab } from "hkp-frontend/src/ui-components/settings/licencesTab";
 import { useRemoteRuntimeEditing } from "hkp-frontend/src/ui-components/toolbar/useRemoteRuntimeEditing";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import {
@@ -39,6 +40,7 @@ import type {
 } from "hkp-frontend/src/views/start/types";
 
 import SecretsTab from "./SecretsTab";
+import { currentSurface } from "./currentSurface";
 import { getBackend } from "./backend";
 import { RuntimeSettings } from "./backend/types";
 import { useBackendRemotes } from "./useBackendRemotes";
@@ -110,6 +112,8 @@ export default function MeanderSettingsDialog({ open, onOpenChange }: Props) {
           icon: <ShieldCheck size={15} />,
           content: <AccessTab />,
         },
+        // Last: reference material, consulted rather than configured.
+        licencesTab(currentSurface()),
       ]}
     />
   );
