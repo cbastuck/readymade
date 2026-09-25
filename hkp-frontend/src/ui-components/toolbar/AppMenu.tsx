@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
+import { licencesTab } from "hkp-frontend/src/ui-components/settings/licencesTab";
 import SettingsDialog, {
   APPEARANCE_TAB,
 } from "hkp-frontend/src/ui-components/SettingsDialog";
@@ -138,7 +139,16 @@ export default function AppMenu() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <SettingsDialog tab={settingsTab} onChangeTab={setSettingsTab} />
+      {/*
+        This menu is the browser's: every host with native code of its own
+        replaces it with one that knows which build it is, so the bundle
+        serving this page is the surface to attribute.
+      */}
+      <SettingsDialog
+        tab={settingsTab}
+        onChangeTab={setSettingsTab}
+        extraTabs={[licencesTab("website")]}
+      />
       <AccountDialog open={isAccountOpen} onOpenChange={setAccountOpen} />
     </>
   );

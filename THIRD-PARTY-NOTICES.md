@@ -122,11 +122,9 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | Package | Version | Licence | Frontend | Text in index |
 | --- | --- | --- | --- | --- |
 | `@alloc/quick-lru` | 5.2.0 | MIT | hkp-frontend, readymade-frontend | yes |
-| `@auth0/auth0-auth-js` | 1.6.0 | MIT | hkp-frontend, hkp-website | yes |
-| `@auth0/auth0-react` | 2.16.1 | MIT | hkp-frontend | yes |
-| `@auth0/auth0-react` | 2.16.2 | MIT | hkp-website | yes |
-| `@auth0/auth0-spa-js` | 2.18.3 | MIT | hkp-frontend | yes |
-| `@auth0/auth0-spa-js` | 2.19.3 | MIT | hkp-website | yes |
+| `@auth0/auth0-auth-js` | 1.15.0 | MIT | hkp-frontend, hkp-website | yes |
+| `@auth0/auth0-react` | 2.25.0 | MIT | hkp-frontend, hkp-website | yes |
+| `@auth0/auth0-spa-js` | 2.25.0 | MIT | hkp-frontend, hkp-website | yes |
 | `@babel/runtime` | 7.29.2 | MIT | hkp-frontend | yes |
 | `@floating-ui/core` | 1.7.5 | MIT | hkp-frontend | yes |
 | `@floating-ui/dom` | 1.7.6 | MIT | hkp-frontend | yes |
@@ -194,16 +192,13 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `@react-dnd/invariant` | 2.0.0 | MIT | hkp-frontend | yes |
 | `@react-dnd/shallowequal` | 2.0.0 | MIT | hkp-frontend | yes |
 | `@types/debug` | 4.1.13 | MIT | hkp-website | yes |
-| `@types/estree-jsx` | 1.0.5 | MIT | hkp-website | yes |
-| `@types/estree` | 1.0.8 | MIT | hkp-website | yes |
-| `@types/hast` | 3.0.4 | MIT | hkp-website | yes |
+| `@types/hast` | 3.0.5 | MIT | hkp-website | yes |
 | `@types/mdast` | 4.0.4 | MIT | hkp-website | yes |
 | `@types/ms` | 2.1.0 | MIT | hkp-website | yes |
 | `@types/node` | 20.19.37 | MIT | hkp-frontend | yes |
 | `@types/react-dom` | 19.2.3 | MIT | hkp-frontend | yes |
-| `@types/react` | 19.2.14 | MIT | hkp-frontend, hkp-website | yes |
+| `@types/react` | 19.2.14 | MIT | hkp-frontend | yes |
 | `@types/trusted-types` | 2.0.7 | MIT | hkp-frontend | yes |
-| `@types/unist` | 2.0.11 | MIT | hkp-website | yes |
 | `@types/unist` | 3.0.3 | MIT | hkp-website | yes |
 | `@ungap/structured-clone` | 1.3.0 | ISC | hkp-website | yes |
 | `ansi-regex` | 5.0.1 | MIT | hkp-frontend | yes |
@@ -228,10 +223,7 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `cbor-extract` | 2.2.0 | MIT | hkp-frontend | yes |
 | `cbor-x` | 1.5.4 | MIT | hkp-frontend | yes |
 | `ccount` | 2.0.1 | MIT | hkp-website | yes |
-| `character-entities-html4` | 2.1.0 | MIT | hkp-website | yes |
-| `character-entities-legacy` | 3.0.0 | MIT | hkp-website | yes |
 | `character-entities` | 2.0.2 | MIT | hkp-website | yes |
-| `character-reference-invalid` | 2.0.1 | MIT | hkp-website | yes |
 | `chokidar` | 3.6.0 | MIT | hkp-frontend, readymade-frontend | yes |
 | `class-variance-authority` | 0.7.1 | Apache-2.0 | hkp-frontend | yes |
 | `cliui` | 6.0.0 | ISC | hkp-frontend | yes |
@@ -239,11 +231,10 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `cmdk` | 1.1.1 | MIT | hkp-frontend | yes |
 | `color-convert` | 2.0.1 | MIT | hkp-frontend | yes |
 | `color-name` | 1.1.4 | MIT | hkp-frontend | yes |
-| `comma-separated-tokens` | 2.0.3 | MIT | hkp-website | yes |
 | `commander` | 4.1.1 | MIT | hkp-frontend, readymade-frontend | yes |
 | `cookie` | 1.1.1 | MIT | hkp-frontend, hkp-website | yes |
 | `cssesc` | 3.0.0 | MIT | hkp-frontend, readymade-frontend | yes |
-| `csstype` | 3.2.3 | MIT | hkp-frontend, hkp-website | yes |
+| `csstype` | 3.2.3 | MIT | hkp-frontend | yes |
 | `debug` | 4.4.3 | MIT | hkp-website | yes |
 | `decamelize` | 1.2.0 | MIT | hkp-frontend | yes |
 | `decode-named-character-reference` | 1.3.0 | MIT | hkp-website | yes |
@@ -256,7 +247,7 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `dlv` | 1.1.3 | MIT | hkp-frontend, readymade-frontend | — |
 | `dnd-core` | 14.0.1 | MIT | hkp-frontend | yes |
 | `dompurify` | 3.4.13 | (MPL-2.0 OR Apache-2.0) | hkp-frontend | yes |
-| `dpop` | 2.1.1 | MIT | hkp-frontend, hkp-website | yes |
+| `dpop` | 2.1.2 | MIT | hkp-frontend, hkp-website | yes |
 | `ejs` | 3.1.10 | Apache-2.0 | hkp-frontend | yes |
 | `electron-to-chromium` | 1.5.328 | ISC | readymade-frontend | yes |
 | `embla-carousel-react` | 8.6.0 | MIT | hkp-frontend | — |
@@ -267,7 +258,6 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `es-cookie` | 1.3.2 | MIT | hkp-frontend, hkp-website | yes |
 | `escalade` | 3.2.0 | MIT | readymade-frontend | yes |
 | `escape-string-regexp` | 5.0.0 | MIT | hkp-website | yes |
-| `estree-util-is-identifier-name` | 3.0.0 | MIT | hkp-website | yes |
 | `event-source-polyfill` | 1.0.31 | MIT | hkp-frontend | yes |
 | `eventemitter3` | 4.0.7 | MIT | hkp-frontend | yes |
 | `expression-eval` | 5.0.1 | MIT | hkp-frontend | yes |
@@ -285,31 +275,20 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `function-bind` | 1.1.2 | MIT | hkp-frontend, readymade-frontend | yes |
 | `get-caller-file` | 2.0.5 | ISC | hkp-frontend | yes |
 | `get-nonce` | 1.0.1 | MIT | hkp-frontend | yes |
-| `gifuct-js` | 2.1.2 | MIT | hkp-website | yes |
 | `glob-parent` | 5.1.2 | ISC | hkp-frontend, readymade-frontend | yes |
 | `glob-parent` | 6.0.2 | ISC | hkp-frontend, readymade-frontend | yes |
 | `hasown` | 2.0.2 | MIT | hkp-frontend, readymade-frontend | yes |
-| `hast-util-to-jsx-runtime` | 2.3.6 | MIT | hkp-website | yes |
-| `hast-util-whitespace` | 3.0.0 | MIT | hkp-website | yes |
 | `hoist-non-react-statics` | 3.3.2 | BSD-3-Clause | hkp-frontend | yes |
-| `html-url-attributes` | 3.0.1 | MIT | hkp-website | yes |
-| `inline-style-parser` | 0.2.7 | MIT | hkp-website | yes |
-| `is-alphabetical` | 2.0.1 | MIT | hkp-website | yes |
-| `is-alphanumerical` | 2.0.1 | MIT | hkp-website | yes |
 | `is-binary-path` | 2.1.0 | MIT | hkp-frontend, readymade-frontend | yes |
 | `is-core-module` | 2.16.1 | MIT | hkp-frontend, readymade-frontend | yes |
-| `is-decimal` | 2.0.1 | MIT | hkp-website | yes |
 | `is-extglob` | 2.1.1 | MIT | hkp-frontend, readymade-frontend | yes |
 | `is-fullwidth-code-point` | 3.0.0 | MIT | hkp-frontend | yes |
 | `is-glob` | 4.0.3 | MIT | hkp-frontend, readymade-frontend | yes |
-| `is-hexadecimal` | 2.0.1 | MIT | hkp-website | yes |
 | `is-number` | 7.0.0 | MIT | hkp-frontend, readymade-frontend | yes |
 | `is-plain-obj` | 4.1.0 | MIT | hkp-website | yes |
 | `jake` | 10.9.4 | Apache-2.0 | hkp-frontend | — |
 | `jiti` | 1.21.7 | MIT | hkp-frontend, readymade-frontend | yes |
-| `jose` | 6.2.2 | MIT | hkp-frontend | yes |
-| `jose` | 6.2.3 | MIT | hkp-website | yes |
-| `js-binary-schema-parser` | 2.0.3 | MIT | hkp-website | yes |
+| `jose` | 6.2.12 | MIT | hkp-frontend, hkp-website | yes |
 | `jsep` | 0.3.5 | MIT | hkp-frontend | yes |
 | `jwt-decode` | 3.1.2 | MIT | hkp-frontend | yes |
 | `lilconfig` | 3.1.3 | MIT | hkp-frontend, readymade-frontend | yes |
@@ -317,8 +296,8 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `locate-path` | 5.0.0 | MIT | hkp-frontend | yes |
 | `lodash` | 4.18.1 | MIT | hkp-frontend, hkp-website | yes |
 | `longest-streak` | 3.1.0 | MIT | hkp-website | yes |
-| `lucide-react` | 1.16.0 | ISC | hkp-website | yes |
-| `lucide-react` | 1.7.0 | ISC | hkp-frontend, readymade-frontend | yes |
+| `lucide-react` | 1.46.0 | ISC | hkp-frontend, hkp-website | yes |
+| `lucide-react` | 1.7.0 | ISC | readymade-frontend | yes |
 | `lz-string` | 1.5.0 | MIT | hkp-frontend, hkp-website | yes |
 | `markdown-table` | 3.0.4 | MIT | hkp-website | yes |
 | `marked` | 14.0.0 | MIT | hkp-frontend | yes |
@@ -330,9 +309,6 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `mdast-util-gfm-table` | 2.0.0 | MIT | hkp-website | yes |
 | `mdast-util-gfm-task-list-item` | 2.0.0 | MIT | hkp-website | yes |
 | `mdast-util-gfm` | 3.1.0 | MIT | hkp-website | yes |
-| `mdast-util-mdx-expression` | 2.0.1 | MIT | hkp-website | yes |
-| `mdast-util-mdx-jsx` | 3.2.0 | MIT | hkp-website | yes |
-| `mdast-util-mdxjs-esm` | 2.0.1 | MIT | hkp-website | yes |
 | `mdast-util-phrasing` | 4.1.0 | MIT | hkp-website | yes |
 | `mdast-util-to-hast` | 13.2.1 | MIT | hkp-website | yes |
 | `mdast-util-to-markdown` | 2.1.2 | MIT | hkp-website | yes |
@@ -379,16 +355,13 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `node-gyp-build-optional-packages` | 5.1.1 | MIT | hkp-frontend | yes |
 | `node-releases` | 2.0.36 | MIT | readymade-frontend | yes |
 | `normalize-path` | 3.0.0 | MIT | hkp-frontend, readymade-frontend | yes |
-| `oauth4webapi` | 3.8.5 | MIT | hkp-frontend | yes |
-| `oauth4webapi` | 3.8.6 | MIT | hkp-website | yes |
+| `oauth4webapi` | 3.8.8 | MIT | hkp-frontend, hkp-website | yes |
 | `object-assign` | 4.1.1 | MIT | hkp-frontend, readymade-frontend | yes |
 | `object-hash` | 3.0.0 | MIT | hkp-frontend, readymade-frontend | yes |
-| `openid-client` | 6.8.2 | MIT | hkp-frontend | yes |
-| `openid-client` | 6.8.4 | MIT | hkp-website | yes |
+| `openid-client` | 6.8.8 | MIT | hkp-frontend, hkp-website | yes |
 | `p-limit` | 2.3.0 | MIT | hkp-frontend | yes |
 | `p-locate` | 4.1.0 | MIT | hkp-frontend | yes |
 | `p-try` | 2.2.0 | MIT | hkp-frontend | yes |
-| `parse-entities` | 4.0.2 | MIT | hkp-website | yes |
 | `path-exists` | 4.0.0 | MIT | hkp-frontend | yes |
 | `path-parse` | 1.0.7 | MIT | hkp-frontend, readymade-frontend | yes |
 | `peerjs-js-binarypack` | 2.1.0 | MIT | hkp-frontend | yes |
@@ -406,7 +379,6 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `postcss-selector-parser` | 6.1.2 | MIT | hkp-frontend, readymade-frontend | yes |
 | `postcss-value-parser` | 4.2.0 | MIT | hkp-frontend, readymade-frontend | yes |
 | `postcss` | 8.5.26 | MIT | hkp-frontend, readymade-frontend | yes |
-| `property-information` | 7.1.0 | MIT | hkp-website | yes |
 | `qrcode.react` | 4.2.0 | ISC | hkp-frontend | yes |
 | `qrcode` | 1.5.3 | MIT | hkp-frontend | yes |
 | `queue-microtask` | 1.2.3 | MIT | hkp-frontend, readymade-frontend | yes |
@@ -416,7 +388,6 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `react-dnd` | 14.0.5 | MIT | hkp-frontend | yes |
 | `react-dom` | 19.2.4 | MIT | hkp-frontend, hkp-website, readymade-frontend | yes |
 | `react-is` | 16.13.1 | MIT | hkp-frontend | yes |
-| `react-markdown` | 10.1.0 | MIT | hkp-website | yes |
 | `react-remove-scroll-bar` | 2.3.8 | MIT | hkp-frontend | — |
 | `react-remove-scroll` | 2.7.2 | MIT | hkp-frontend | yes |
 | `react-router-dom` | 7.18.2 | MIT | hkp-frontend, hkp-website | yes |
@@ -446,13 +417,9 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `setimmediate` | 1.0.5 | MIT | hkp-frontend | yes |
 | `sonner` | 1.7.4 | MIT | hkp-frontend | yes |
 | `source-map-js` | 1.2.1 | BSD-3-Clause | hkp-frontend, readymade-frontend | yes |
-| `space-separated-tokens` | 2.0.2 | MIT | hkp-website | yes |
 | `state-local` | 1.0.7 | MIT | hkp-frontend | yes |
 | `string-width` | 4.2.3 | MIT | hkp-frontend | yes |
-| `stringify-entities` | 4.0.4 | MIT | hkp-website | yes |
 | `strip-ansi` | 6.0.1 | MIT | hkp-frontend | yes |
-| `style-to-js` | 1.1.21 | MIT | hkp-website | yes |
-| `style-to-object` | 1.0.14 | MIT | hkp-website | yes |
 | `sucrase` | 3.35.1 | MIT | hkp-frontend, readymade-frontend | yes |
 | `supports-preserve-symlinks-flag` | 1.0.0 | MIT | hkp-frontend, readymade-frontend | yes |
 | `swr` | 2.4.1 | MIT | hkp-frontend | yes |
