@@ -224,8 +224,9 @@ the board in a playground tab and deploying it again.
 - ~~**Fork a deployed board** into the playground.~~ **Done** — "Fork board" in
   the start page's details column (`core/forkBoard.ts`,
   `core/tests/forkBoard.test.ts`), wired in both hosts. Ids are regenerated and
-  every reference to them rewritten; see CLOUD-BOARDS.md for which fields those
-  are and why the rewrite is driven by field name rather than value.
+  every reference to them rewritten; see the **Cloud boards** concept
+  (`docs/content/concepts/cloud-boards.md`) for which fields those are and why
+  the rewrite is driven by field name rather than value.
 
 ### Parked by decision
 

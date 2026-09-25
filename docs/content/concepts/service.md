@@ -99,7 +99,7 @@ A service may ship a UI component (`createUI`). A service that ships none gets
 Browser service ids are historically URL-shaped (`hookup.to/service/...`), while
 the other runtimes use plain names (`http-client`). Where a service exists on
 more than one runtime, the ids are being aligned so a board can move — see
-`TODO-CONSOLIDATION.md`.
+`plans/TODO-CONSOLIDATION.md`.
 
 ---
 

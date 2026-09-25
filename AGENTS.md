@@ -172,6 +172,9 @@ Use `/new-board` for the full widget schema and board design workflow.
 boards/                Every board the repo ships — demo boards, example configs
   runtime-configs/       Example single-runtime config JSONs for hkp-rt
 
+plans/                 Working documents for multi-session changes — what was
+                       decided, why, and what is still open (see plans/README.md)
+
 hkp-frontend/          React app — playground UI, board engine, all browser services
   src/runtime/browser/   Browser runtime and services
   src/runtime/rest/      REST runtime client + YAS serialization

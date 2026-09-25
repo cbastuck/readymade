@@ -22,6 +22,7 @@ committed, so it is worth knowing before the first commit rather than after.
 | `meander/` | superproject | The Readymade desktop app: a saucer webview shell (`backend/`) around the frontend (`frontend/`) |
 | `docs/` | superproject | These pages, and the small site that serves them |
 | `boards/` | superproject | Every board the repo ships — the demo board behind each service page, the worked examples, and `runtime-configs/` for hkp-rt |
+| `plans/` | superproject | Working documents for changes that span sessions: what was decided, why, and what is still open — deleted once a plan lands and its conclusions move into these pages |
 | `3rdparty/`, `scripts/`, `deployments/` | superproject | Vendored dependencies, tooling, packaging |
 | `hkp-node/` | **submodule** | Node.js runtime server, published as its own package |
 | `hkp-python/` | **submodule** | Python runtime server, installed into its own virtualenv |
