@@ -35,6 +35,7 @@ function renderStartPage(canOpen?: () => boolean) {
       <MobileStartPage
         store={emptyStore}
         listSavedBoards={async () => []}
+        news={[]}
         onOpen={() => {}}
         onCreateBoard={() => {}}
         manageRemotes={{

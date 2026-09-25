@@ -20,7 +20,8 @@ import {
   searchBoards,
   setBoardFiled,
 } from "../model";
-import { DEFAULT_NEWS } from "../news";
+import { useNewsFeed } from "../news";
+import NewsTeaserMedia from "../NewsTeaserMedia";
 import { useStartPageModel } from "../useStartPageModel";
 import type { StartPageProps } from "../StartPage";
 import {
@@ -89,17 +90,24 @@ function NewsStrip({ items }: { items: NewsItem[] }) {
           onClick={item.onAction}
           style={{
             flex: "0 0 auto",
-            width: "78%",
+            width: item.media ? "88%" : "78%",
             maxWidth: 340,
             scrollSnapAlign: "start",
             borderRadius: 16,
             background: item.bg,
             color: "#fff",
-            padding: "14px 16px",
+            padding: item.media ? 0 : "14px 16px",
             boxSizing: "border-box",
-            cursor: item.onAction ? "pointer" : "default",
+            cursor: item.onAction || item.href ? "pointer" : "default",
           }}
         >
+          {item.media && (
+            <NewsTeaserMedia
+              media={item.media}
+              className="st-news-media-mobile"
+            />
+          )}
+          <div style={item.media ? { padding: "14px 16px 16px" } : undefined}>
           <div
             style={{
               display: "inline-block",
@@ -127,7 +135,23 @@ function NewsStrip({ items }: { items: NewsItem[] }) {
           >
             {item.body}
           </div>
-          {item.cta && (
+          {item.cta && item.href && (
+            <a
+              href={item.href}
+              style={{
+                display: "inline-block",
+                color: "inherit",
+                fontSize: 12,
+                fontWeight: 700,
+                marginTop: 10,
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+              }}
+            >
+              {item.cta}
+            </a>
+          )}
+          {item.cta && !item.href && (
             <div
               style={{
                 fontSize: 12,
@@ -140,6 +164,7 @@ function NewsStrip({ items }: { items: NewsItem[] }) {
               {item.cta}
             </div>
           )}
+          </div>
         </div>
       ))}
     </div>
@@ -231,6 +256,7 @@ export default function MobileStartPage(props: StartPageProps) {
     myBoardsExtraFolders,
     excludeDemoTags,
     news,
+    newsUrl,
     title = "Boards",
     badge,
     badgeDetail,
@@ -240,6 +266,8 @@ export default function MobileStartPage(props: StartPageProps) {
     avatarTitle,
     menuSlot,
   } = props;
+
+  const resolvedNews = useNewsFeed(news, newsUrl);
 
   // Declared before the model because the sources reach back into this sheet:
   // it is where connections are managed on mobile.
@@ -801,7 +829,7 @@ export default function MobileStartPage(props: StartPageProps) {
                   />
                 </button>
               )}
-              <NewsStrip items={news ?? DEFAULT_NEWS} />
+              <NewsStrip items={resolvedNews} />
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={onCreateBoard}

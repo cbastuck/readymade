@@ -30,7 +30,12 @@ export {
   initialsOf,
   splitBuildVersion,
 } from "./model";
-export { DEFAULT_NEWS } from "./news";
+export {
+  DEFAULT_NEWS,
+  DEFAULT_NEWS_FEED_URL,
+  parseNewsFeed,
+  useNewsFeed,
+} from "./news";
 export { createEmptyBoard } from "./emptyBoard";
 export { useLocalStorageCoordinators } from "./useLocalStorageCoordinators";
 export { useCloudBoardSources } from "./useCloudBoardSources";
