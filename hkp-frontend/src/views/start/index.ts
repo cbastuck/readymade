@@ -34,6 +34,7 @@ export {
   DEFAULT_NEWS,
   DEFAULT_NEWS_FEED_URL,
   parseNewsFeed,
+  useNewsDismissal,
   useNewsFeed,
 } from "./news";
 export { createEmptyBoard } from "./emptyBoard";

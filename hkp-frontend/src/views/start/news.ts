@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { NewsItem } from "./types";
 
@@ -23,6 +23,48 @@ export const DEFAULT_NEWS: NewsItem[] = [
     bg: "var(--st-news-c)",
   },
 ];
+
+const DISMISSED_NEWS_STORAGE_KEY = "hkp-startpage-dismissed-news";
+
+function newsIdentity(items: NewsItem[]): string {
+  return JSON.stringify(
+    items.map((item) => [
+      item.tag,
+      item.title,
+      item.body,
+      item.href,
+      item.media?.video,
+    ]),
+  );
+}
+
+/** Keep a dismissed feed hidden until its published content changes. */
+export function useNewsDismissal(items: NewsItem[]): {
+  dismissed: boolean;
+  dismiss: () => void;
+} {
+  const identity = useMemo(() => newsIdentity(items), [items]);
+  const [dismissedIdentity, setDismissedIdentity] = useState<string | null>(
+    () => {
+      try {
+        return sessionStorage.getItem(DISMISSED_NEWS_STORAGE_KEY);
+      } catch {
+        return null;
+      }
+    },
+  );
+
+  const dismiss = useCallback(() => {
+    setDismissedIdentity(identity);
+    try {
+      sessionStorage.setItem(DISMISSED_NEWS_STORAGE_KEY, identity);
+    } catch {
+      // Persistence is optional in restricted webviews.
+    }
+  }, [identity]);
+
+  return { dismissed: dismissedIdentity === identity, dismiss };
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

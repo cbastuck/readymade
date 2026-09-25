@@ -2,12 +2,14 @@ import { useState } from "react";
 
 import { NewsItem } from "./types";
 import NewsTeaserMedia from "./NewsTeaserMedia";
+import { useNewsDismissal } from "./news";
 
 export default function NewsCarousel({ items }: { items: NewsItem[] }) {
   const [index, setIndex] = useState(0);
   const [videoExpanded, setVideoExpanded] = useState(false);
+  const { dismissed, dismiss } = useNewsDismissal(items);
 
-  if (items.length === 0) {
+  if (items.length === 0 || dismissed) {
     return null;
   }
   const i = ((index % items.length) + items.length) % items.length;
@@ -121,6 +123,14 @@ export default function NewsCarousel({ items }: { items: NewsItem[] }) {
             </button>
           </div>
         )}
+        <button
+          className="st-news-dismiss"
+          aria-label="Dismiss news"
+          title="Hide news"
+          onClick={dismiss}
+        >
+          &times;
+        </button>
         {items.length > 1 && (
           <div style={{ position: "absolute", left: 26, bottom: 8, display: "flex", gap: 5 }}>
             {items.map((_, di) => (

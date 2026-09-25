@@ -20,7 +20,7 @@ import {
   searchBoards,
   setBoardFiled,
 } from "../model";
-import { useNewsFeed } from "../news";
+import { useNewsDismissal, useNewsFeed } from "../news";
 import NewsTeaserMedia from "../NewsTeaserMedia";
 import { useStartPageModel } from "../useStartPageModel";
 import type { StartPageProps } from "../StartPage";
@@ -68,105 +68,118 @@ function Slide({ id, children }: { id: string; children: ReactNode }) {
 // ── News strip ────────────────────────────────────────────────────────────────
 
 function NewsStrip({ items }: { items: NewsItem[] }) {
-  if (items.length === 0) {
+  const { dismissed, dismiss } = useNewsDismissal(items);
+
+  if (items.length === 0 || dismissed) {
     return null;
   }
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: 10,
-        overflowX: "auto",
-        WebkitOverflowScrolling: "touch",
-        scrollSnapType: "x mandatory",
-        padding: "0 16px",
-        // Hide the scrollbar-induced jump on iOS; cards keep their shadow room.
-        paddingBottom: 4,
-      }}
-    >
-      {items.map((item, index) => (
-        <div
-          key={`${item.title}-${index}`}
-          onClick={item.onAction}
-          style={{
-            flex: "0 0 auto",
-            width: item.media ? "88%" : "78%",
-            maxWidth: 340,
-            scrollSnapAlign: "start",
-            borderRadius: 16,
-            background: item.bg,
-            color: "#fff",
-            padding: item.media ? 0 : "14px 16px",
-            boxSizing: "border-box",
-            cursor: item.onAction || item.href ? "pointer" : "default",
-          }}
+    <div style={{ position: "relative" }}>
+      <button
+        className="st-news-dismiss st-news-dismiss-mobile"
+        aria-label="Dismiss news"
+        title="Hide news"
+        onClick={dismiss}
+      >
+        &times;
+      </button>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          scrollSnapType: "x mandatory",
+          padding: "0 16px",
+          // Hide the scrollbar-induced jump on iOS; cards keep their shadow room.
+          paddingBottom: 4,
+        }}
+      >
+        {items.map((item, index) => (
+          <div
+            key={`${item.title}-${index}`}
+            className={item.media ? "st-news-card-mobile" : undefined}
+            onClick={item.onAction}
+            style={{
+              flex: "0 0 auto",
+              width: item.media ? "88%" : "78%",
+              maxWidth: 340,
+              scrollSnapAlign: "start",
+              borderRadius: 16,
+              background: item.bg,
+              color: "#fff",
+              padding: item.media ? 0 : "14px 16px",
+              boxSizing: "border-box",
+              cursor: item.onAction || item.href ? "pointer" : "default",
+            }}
         >
-          {item.media && (
-            <NewsTeaserMedia
-              media={item.media}
-              className="st-news-media-mobile"
-            />
-          )}
-          <div style={item.media ? { padding: "14px 16px 16px" } : undefined}>
-          <div
-            style={{
-              display: "inline-block",
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              background: "rgba(255,255,255,0.22)",
-              borderRadius: 6,
-              padding: "3px 7px",
-            }}
-          >
-            {item.tag}
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8 }}>
-            {item.title}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              lineHeight: 1.45,
-              marginTop: 4,
-              opacity: 0.9,
-            }}
-          >
-            {item.body}
-          </div>
-          {item.cta && item.href && (
-            <a
-              href={item.href}
-              style={{
-                display: "inline-block",
-                color: "inherit",
-                fontSize: 12,
-                fontWeight: 700,
-                marginTop: 10,
-                textDecoration: "underline",
-                textUnderlineOffset: 3,
-              }}
-            >
-              {item.cta}
-            </a>
-          )}
-          {item.cta && !item.href && (
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                marginTop: 10,
-                textDecoration: "underline",
-                textUnderlineOffset: 3,
-              }}
-            >
-              {item.cta}
+            {item.media && (
+              <NewsTeaserMedia
+                media={item.media}
+                className="st-news-media-mobile"
+              />
+            )}
+            <div style={item.media ? { padding: "14px 16px 16px" } : undefined}>
+              <div
+                style={{
+                  display: "inline-block",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  background: "rgba(255,255,255,0.22)",
+                  borderRadius: 6,
+                  padding: "3px 7px",
+                }}
+              >
+                {item.tag}
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 8 }}>
+                {item.title}
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  marginTop: 4,
+                  opacity: 0.9,
+                }}
+              >
+                {item.body}
+              </div>
+              {item.cta && item.href && (
+                <a
+                  href={item.href}
+                  style={{
+                    display: "inline-block",
+                    color: "inherit",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    marginTop: 10,
+                    textDecoration: "underline",
+                    textUnderlineOffset: 3,
+                  }}
+                >
+                  {item.cta}
+                </a>
+              )}
+              {item.cta && !item.href && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    marginTop: 10,
+                    textDecoration: "underline",
+                    textUnderlineOffset: 3,
+                  }}
+                >
+                  {item.cta}
+                </div>
+              )}
             </div>
-          )}
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
