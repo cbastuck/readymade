@@ -3,9 +3,9 @@
   "runtimes": [
     {
       "id": "node",
-      "name": "node1.readymadeit.com",
+      "name": "Node",
       "type": "rest",
-      "url": "https://node1.readymadeit.com",
+      "url": "http://127.0.0.1:8080",
       "state": { "wrapServices": false }
     }
   ],
