@@ -22,7 +22,7 @@ import {
   stateMeta,
 } from "./model";
 import { downscaleImage } from "./imageUpload";
-import { DEFAULT_NEWS } from "./news";
+import { useNewsFeed } from "./news";
 import { StartPageStore } from "./store";
 import { RuntimeEntry, useStartPageModel } from "./useStartPageModel";
 import {
@@ -152,7 +152,10 @@ export interface StartPageProps {
   myBoardsExtraFolders?: FolderNode[];
   /** Demo entries with any of these tags are hidden (e.g. "iOS only"). */
   excludeDemoTags?: string[];
+  /** Optional host override. When absent, news is fetched from newsUrl. */
   news?: NewsItem[];
+  /** Runtime news feed. Native hosts default to readymadeit.com. */
+  newsUrl?: string;
   title?: string;
   badge?: string;
   /** Secondary, smaller part of the badge chip (e.g. the build hash). */
@@ -270,6 +273,7 @@ export default function StartPage(props: StartPageProps) {
     myBoardsExtraFolders,
     excludeDemoTags,
     news,
+    newsUrl,
     title = "Boards",
     badge,
     badgeDetail,
@@ -300,6 +304,7 @@ export default function StartPage(props: StartPageProps) {
   const [columnWidths, setColumnWidths] =
     useState<number[]>(restoreColumnWidths);
   const [sort, setSort] = useState<BoardSort>(restoreSort);
+  const resolvedNews = useNewsFeed(news, newsUrl);
 
   const changeSort = useCallback((next: BoardSort) => {
     setSort(next);
@@ -925,7 +930,7 @@ export default function StartPage(props: StartPageProps) {
         onCreateBoard={onCreateBoard}
         menuSlot={menuSlot}
       />
-      <NewsCarousel items={news ?? DEFAULT_NEWS} />
+      <NewsCarousel items={resolvedNews} />
       <ColumnBrowser
         columns={columns}
         breadcrumb={breadcrumb}

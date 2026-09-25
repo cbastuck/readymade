@@ -259,6 +259,15 @@ export interface NewsItem {
   title: string;
   body: string;
   cta?: string;
+  /** Optional destination for a news action or visual teaser. */
+  href?: string;
+  /** A short, silent visual preview. Kept optional so ordinary news stays lean. */
+  media?: {
+    video: string;
+    poster?: string;
+    /** Accessible description of the visual preview. */
+    label: string;
+  };
   /** CSS background of the banner. */
   bg: string;
   onAction?: () => void;
