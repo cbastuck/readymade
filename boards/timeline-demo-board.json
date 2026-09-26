@@ -1,18 +1,18 @@
 {
   "boardName": "Timeline Demo",
-  "description": "Images animated by keyframes, each on a timeline of its own, all driven by one clock.\n\nThe **Show** timeline keeps the clock: eight seconds, looping. Every frame goes into the **Scene**, one track per image, and the tracks' answers are drawn on one canvas, the first track at the back.\n\nEach image sits on a timeline that holds one object — the image — and keyframes for its properties: where it is, how big, how far turned, how opaque. The timeline eases each property from one keyframe to the next and emits the image as it is at that moment, which is exactly what the canvas draws.\n\nThe motions are written once, as blocks. **Pop** makes an image appear with an overshoot, turn a full circle and fade; **Fly** carries one across the sky. Every star, the planet, the rocket and the comet is a use of one of the two, and says only which image, where, and when: its offset in the Show's time is where its own timeline starts, and outside its stretch it draws nothing. Even the sky is a timeline, its colour keyframed from night to dusk and back.",
+  "description": "Images animated by keyframes, each on a timeline of its own, all arranged on one.\n\nThe **Show** timeline keeps the clock: eight seconds, looping. It also says when each image plays: its **placements** put a name at a moment for a while — `star-1` at 0 s for three seconds, the `rocket` at 2.5 s for four. Every frame goes into the **Scene**, one track per image, and the tracks' answers are drawn on one canvas, the first track at the back.\n\nEach image sits on a timeline that holds one object — the image — and keyframes for its properties: where it is, how big, how far turned, how opaque. That timeline takes a name, plays while the Show places it, and is stretched to fit: the second placement of `star-1` lasts two seconds, so the same pop plays faster, and the comet crosses in two and a half where the rocket takes four.\n\nThe motions are written once, as blocks. **Pop** makes an image appear with an overshoot, turn a full circle and fade; **Fly** carries one across the sky. Every star, the planet, the rocket and the comet is a use of one of the two, and says only which image, where, and the name it plays under. The sky is a timeline too, placed nowhere: it reads the Show's time, its colour keyframed from night to dusk and back.",
   "blocks": [
     {
       "id": "pop",
       "name": "Pop",
       "serviceId": "sub-service",
-      "description": "An image that appears with an overshoot, turns a full circle and fades — three seconds of its own, starting where its offset says in the time driving it.",
+      "description": "An image that appears with an overshoot, turns a full circle and fades — three seconds of its own, stretched to fit wherever its name is placed.",
       "params": {
         "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpolygon%20points='50.0%2C4.0%2061.2%2C34.6%2093.7%2C35.8%2068.1%2C55.9%2077.0%2C87.2%2050.0%2C69.0%2023.0%2C87.2%2031.9%2C55.9%206.3%2C35.8%2038.8%2C34.6'%20fill='%23facc15'%20stroke='%23fef08a'%20stroke-width='3'%20stroke-linejoin='round'/%3E%3C/svg%3E",
         "x": "50%",
         "y": "50%",
         "size": "16%",
-        "offset": 0
+        "name": "pop"
       },
       "state": {
         "pipeline": [
@@ -22,7 +22,6 @@
             "serviceName": "Motion",
             "state": {
               "clock": "input",
-              "offset": "{{param.offset}}",
               "length": 3,
               "object": {
                 "type": "image",
@@ -74,7 +73,8 @@
                     "value": 0
                   }
                 ]
-              }
+              },
+              "placement": "{{param.name}}"
             }
           }
         ]
@@ -84,7 +84,7 @@
       "id": "fly",
       "name": "Fly",
       "serviceId": "sub-service",
-      "description": "An image that travels from one place to another over four seconds, easing in and out, tilting as it climbs and levelling off as it arrives.",
+      "description": "An image that travels from one place to another, easing in and out, tilting as it climbs and levelling off as it arrives — four seconds of its own, stretched to fit wherever its name is placed.",
       "params": {
         "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpath%20d='M8%2050%20L24%2038%20L24%2062%20Z'%20fill='%23f97316'/%3E%3Cpath%20d='M24%2036%20L70%2036%20Q94%2050%2070%2064%20L24%2064%20Z'%20fill='%23e2e8f0'/%3E%3Ccircle%20cx='62'%20cy='50'%20r='7'%20fill='%2338bdf8'%20stroke='%2364748b'%20stroke-width='2'/%3E%3Cpath%20d='M30%2036%20L20%2022%20L44%2036%20Z%20M30%2064%20L20%2078%20L44%2064%20Z'%20fill='%23ef4444'/%3E%3C/svg%3E",
         "fromX": "0%",
@@ -92,7 +92,7 @@
         "toX": "100%",
         "toY": "20%",
         "size": "14%",
-        "offset": 0
+        "name": "fly"
       },
       "state": {
         "pipeline": [
@@ -102,7 +102,6 @@
             "serviceName": "Motion",
             "state": {
               "clock": "input",
-              "offset": "{{param.offset}}",
               "length": 4,
               "object": {
                 "type": "image",
@@ -159,7 +158,8 @@
                     "value": 0.8
                   }
                 ]
-              }
+              },
+              "placement": "{{param.name}}"
             }
           }
         ]
@@ -188,7 +188,49 @@
           "fps": 30,
           "length": 8,
           "loop": true,
-          "running": true
+          "running": true,
+          "placements": [
+            {
+              "name": "star-1",
+              "at": 0,
+              "duration": 3
+            },
+            {
+              "name": "star-2",
+              "at": 0.7,
+              "duration": 3
+            },
+            {
+              "name": "star-3",
+              "at": 1.4,
+              "duration": 3
+            },
+            {
+              "name": "star-4",
+              "at": 2.1,
+              "duration": 3
+            },
+            {
+              "name": "rocket",
+              "at": 2.5,
+              "duration": 4
+            },
+            {
+              "name": "planet",
+              "at": 4.5,
+              "duration": 3
+            },
+            {
+              "name": "star-1",
+              "at": 5,
+              "duration": 2
+            },
+            {
+              "name": "comet",
+              "at": 5.5,
+              "duration": 2.5
+            }
+          ]
         }
       },
       {
@@ -247,7 +289,7 @@
                     "x": "50%",
                     "y": "50%",
                     "size": "45%",
-                    "offset": 4.5
+                    "name": "planet"
                   }
                 }
               ]
@@ -261,7 +303,7 @@
                   "params": {
                     "x": "18%",
                     "y": "25%",
-                    "offset": 0
+                    "name": "star-1"
                   }
                 }
               ]
@@ -275,8 +317,8 @@
                   "params": {
                     "x": "80%",
                     "y": "30%",
-                    "offset": 0.7,
-                    "size": "12%"
+                    "size": "12%",
+                    "name": "star-2"
                   }
                 }
               ]
@@ -290,8 +332,8 @@
                   "params": {
                     "x": "35%",
                     "y": "70%",
-                    "offset": 1.4,
-                    "size": "10%"
+                    "size": "10%",
+                    "name": "star-3"
                   }
                 }
               ]
@@ -305,7 +347,7 @@
                   "params": {
                     "x": "65%",
                     "y": "75%",
-                    "offset": 2.1
+                    "name": "star-4"
                   }
                 }
               ]
@@ -317,7 +359,7 @@
                   "block": "fly",
                   "instanceId": "rocket",
                   "params": {
-                    "offset": 2.5
+                    "name": "rocket"
                   }
                 }
               ]
@@ -335,7 +377,7 @@
                     "toX": "0%",
                     "toY": "40%",
                     "size": "7%",
-                    "offset": 5.5
+                    "name": "comet"
                   }
                 }
               ]
@@ -424,7 +466,7 @@
               "type": "text",
               "tone": "muted",
               "fontSize": 12,
-              "placeholder": "Each image runs on a timeline of its own: one object and keyframes for where it is, how big, how far turned and how opaque. Two blocks, Pop and Fly, write the motions once; every star, the planet, the rocket and the comet is a use of one of them, placed in the Show's time by its offset."
+              "placeholder": "Each image runs on a timeline of its own: one object and keyframes for where it is, how big, how far turned and how opaque. The Show places each by name — when it plays and for how long — and a placement stretches the motion to fit. Two blocks, Pop and Fly, write the motions once."
             }
           ]
         }

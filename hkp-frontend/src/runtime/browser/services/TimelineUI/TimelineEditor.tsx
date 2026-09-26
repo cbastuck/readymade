@@ -3,10 +3,17 @@ import { Plus, Trash2 } from "lucide-react";
 
 import Select from "hkp-frontend/src/ui-components/Select";
 import { Ease } from "../timeline-core";
-import { Field, KeyButton, Lane, Playhead, Preview, Ruler } from "./parts";
+import { Bars, Field, KeyButton, Lane, Playhead, Preview, Ruler } from "./parts";
 import Transport from "./Transport";
 import {
   addAction,
+  addPlacement,
+  indexOfPlacement,
+  movePlacement,
+  placementNames,
+  removePlacement,
+  renamePlacements,
+  resizePlacement,
   displayLength,
   EASES,
   formatTime,
@@ -35,6 +42,7 @@ const LABEL = 200;
 type Selection =
   | { kind: "key"; property: string; index: number }
   | { kind: "action"; index: number }
+  | { kind: "placement"; index: number }
   | null;
 
 /**
@@ -115,22 +123,16 @@ export default function TimelineEditor({
         </>
       ) : (
         <>
-          <label className="flex items-center gap-1">
-            starts at
+          <label
+            className="flex items-center gap-1"
+            title="The name this timeline takes from its driver's placements; empty, it plays in its driver's time"
+          >
+            placement
             <Field
-              width={52}
-              value={formatValue(view.offset)}
+              width={96}
+              value={view.placement}
               readOnly={readOnly}
-              onCommit={(text) => configure({ offset: Number(text) || 0 })}
-            />
-          </label>
-          <label className="flex items-center gap-1">
-            speed
-            <Field
-              width={44}
-              value={formatValue(view.speed)}
-              readOnly={readOnly}
-              onCommit={(text) => configure({ speed: Number(text) || 1 })}
+              onCommit={(text) => configure({ placement: text.trim() })}
             />
           </label>
         </>
@@ -227,6 +229,7 @@ export default function TimelineEditor({
           readOnly={readOnly}
           selection={selection}
           configure={configure}
+          onSelect={setSelection}
           onDeselect={() => setSelection(null)}
         />
       </div>
@@ -264,6 +267,17 @@ export default function TimelineEditor({
             />
           </div>
         )}
+
+        <PlacementRows
+          view={view}
+          length={length}
+          cursor={cursor}
+          readOnly={readOnly}
+          selection={selection}
+          configure={configure}
+          onScrub={onScrub}
+          onSelect={setSelection}
+        />
 
         <div className="mt-1 flex items-center">
           <div className="flex shrink-0 items-center gap-1.5" style={{ width: LABEL }}>
@@ -315,12 +329,14 @@ function Inspector({
   readOnly,
   selection,
   configure,
+  onSelect,
   onDeselect,
 }: {
   view: TimelineView;
   readOnly: boolean;
   selection: Selection;
   configure: (config: Record<string, unknown>) => void;
+  onSelect: (selection: Selection) => void;
   onDeselect: () => void;
 }) {
   const [draft, setDraft] = useState<{ index: number; text: string } | null>(null);
@@ -354,6 +370,62 @@ function Inspector({
           <DeleteButton
             onClick={() => {
               configure(removeKeyframe(view, selection.property, selection.index));
+              onDeselect();
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (selection?.kind === "placement") {
+    const placement = view.placements[selection.index];
+    if (!placement) {
+      return null;
+    }
+    const update = (next: typeof placement) => {
+      const placements = view.placements.map((p, i) => (i === selection.index ? next : p));
+      configure({ placements });
+      // The service keeps them in the order they start, so find it again.
+      const found = indexOfPlacement([...placements].sort((a, b) => a.at - b.at), next);
+      onSelect(found >= 0 ? { kind: "placement", index: found } : null);
+    };
+    return (
+      <div className="flex flex-col gap-2 text-xs" style={{ minWidth: 220, color: "var(--text-mid)" }}>
+        <div style={{ color: "var(--text)" }}>placement of "{placement.name}"</div>
+        <label className="flex items-center gap-2">
+          name
+          <Field
+            width={110}
+            readOnly={readOnly}
+            value={placement.name}
+            onCommit={(text) => text.trim() && update({ ...placement, name: text.trim() })}
+          />
+        </label>
+        <label className="flex items-center gap-2">
+          starts at
+          <Field
+            width={60}
+            readOnly={readOnly}
+            value={formatValue(placement.at)}
+            onCommit={(text) => update({ ...placement, at: Math.max(0, Number(text) || 0) })}
+          />
+        </label>
+        <label className="flex items-center gap-2">
+          lasts
+          <Field
+            width={60}
+            readOnly={readOnly}
+            value={formatValue(placement.duration)}
+            onCommit={(text) =>
+              Number(text) > 0 && update({ ...placement, duration: Number(text) })
+            }
+          />
+        </label>
+        {!readOnly && (
+          <DeleteButton
+            onClick={() => {
+              configure({ placements: removePlacement(view.placements, selection.index) });
               onDeselect();
             }}
           />
@@ -444,3 +516,135 @@ function DeleteButton({ onClick }: { onClick: () => void }) {
     </button>
   );
 }
+
+/**
+ * The names this timeline places, one row each, with their placements as
+ * bars. A driven timeline below takes a name to play when and for as long as
+ * its bars say — stretched to fit, unless it loops.
+ */
+function PlacementRows({
+  view,
+  length,
+  cursor,
+  readOnly,
+  selection,
+  configure,
+  onScrub,
+  onSelect,
+}: {
+  view: TimelineView;
+  length: number;
+  cursor: number;
+  readOnly: boolean;
+  selection: Selection;
+  configure: (config: Record<string, unknown>) => void;
+  onScrub?: (t: number) => void;
+  onSelect: (selection: Selection) => void;
+}) {
+  const [newName, setNewName] = useState("");
+  const names = placementNames(view.placements);
+
+  /** Configures placements and keeps the one being edited selected, wherever sorting puts it. */
+  const edit = (placements: typeof view.placements, index: number) => {
+    configure({ placements });
+    const sorted = [...placements].sort((a, b) => a.at - b.at);
+    const found = indexOfPlacement(sorted, placements[index]);
+    onSelect(found >= 0 ? { kind: "placement", index: found } : null);
+  };
+
+  const place = () => {
+    const name = newName.trim();
+    if (!name) {
+      return;
+    }
+    const placements = addPlacement(view.placements, name, cursor);
+    edit(placements, placements.length - 1);
+    setNewName("");
+  };
+
+  if (readOnly && names.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="mt-1 text-xs" style={{ color: "var(--text-mid)" }}>
+        placements
+      </div>
+      {names.map((name) => {
+        const indices = view.placements
+          .map((p, index) => ({ p, index }))
+          .filter(({ p }) => p.name === name);
+        return (
+          <div key={name} className="flex items-center">
+            <div className="flex shrink-0 items-center gap-1.5" style={{ width: LABEL }}>
+              <Field
+                width={LABEL - 8}
+                readOnly={readOnly}
+                title="Renames every placement of this name"
+                value={name}
+                onCommit={(text) =>
+                  text.trim() &&
+                  configure({ placements: renamePlacements(view.placements, name, text.trim()) })
+                }
+              />
+            </div>
+            <div className="flex-1 pl-2">
+              <Bars
+                length={length}
+                onScrub={onScrub}
+                bars={indices.map(({ p, index }) => ({
+                  at: p.at,
+                  duration: p.duration,
+                  title: `${name}: ${formatTime(p.at)} for ${formatTime(p.duration)}`,
+                  selected: selection?.kind === "placement" && selection.index === index,
+                }))}
+                onSelect={(i) => onSelect({ kind: "placement", index: indices[i].index })}
+                onMove={
+                  readOnly
+                    ? undefined
+                    : (i, at) => edit(movePlacement(view.placements, indices[i].index, at), indices[i].index)
+                }
+                onResize={
+                  readOnly
+                    ? undefined
+                    : (i, duration) =>
+                        edit(
+                          resizePlacement(view.placements, indices[i].index, duration),
+                          indices[i].index,
+                        )
+                }
+              />
+            </div>
+          </div>
+        );
+      })}
+      {!readOnly && (
+        <div className="flex items-center gap-1.5" style={{ width: LABEL }}>
+          <input
+            value={newName}
+            placeholder="place a name at the playhead"
+            className="flex-1 rounded px-1 py-0.5 text-xs"
+            style={{ background: "transparent", border: "1px solid var(--border-mid)" }}
+            onChange={(event) => setNewName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                place();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+            title="Place this name at the playhead"
+            disabled={!newName.trim()}
+            onClick={place}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+

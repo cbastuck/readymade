@@ -3,8 +3,8 @@
  * Service ID: hookup.to/service/timeline
  * Service Name: Timeline
  * Modes: clock "own" | "input"
- * Key Config: clock, object, keyframes, actions, length, loop, unit, tempoSlot, fps, offset, speed, running, play, pause, stop, seek
- * IO: in=a frame { t } (clock "input") -> out={ ...object, ...values, t, actions } every frame, null outside its stretch
+ * Key Config: clock, object, keyframes, actions, placements, placement, length, loop, unit, tempoSlot, fps, speed, running, play, pause, stop, seek
+ * IO: in=a frame { t, placements? } (clock "input") -> out={ ...object, ...values, t, actions, placements? } every frame, null outside its stretch
  *
  * Actions placed on a time axis: when time reaches an action, the action's
  * data leaves on the output. Time is a value, not a schedule — nothing is set
@@ -17,10 +17,23 @@
  * - `"own"` — the timeline keeps time itself, emitting `fps` frames a second
  *   while it plays. Measured in seconds or in beats of the tempo held in the
  *   slot `tempoSlot` names, as Timer measures them. Input is ignored.
- * - `"input"` — the timeline is driven: each input's `t` is the time, in
- *   whatever unit the driver counts, and its own time is
- *   `(t − offset) × speed`. Before its stretch, and after the end of one that
- *   does not loop, it emits null, so what follows it does not run.
+ * - `"input"` — the timeline is driven by the frames it is given. Without a
+ *   `placement` its time is theirs: `t`, in whatever unit the driver counts.
+ *   After the end of a stretch that does not loop, it emits null, so what
+ *   follows it does not run.
+ *
+ * **Placements** arrange driven timelines on the one driving them, by name.
+ * A timeline's `placements` say when each name plays and for how long; a
+ * driven timeline's `placement` says which name it takes. Neither knows where
+ * the other sits — the name is all they share, as two Holds share a slot — and
+ * everything travels in the frame: `placements` maps every name placed to how
+ * far into its placement it is (`progress`, 0 to 1, and `elapsed`), or null
+ * where it is not playing. A placed timeline that does not loop is stretched
+ * to its placement (its time is `progress × length`); one that loops, or is
+ * unbounded, plays at its own speed for as long as the placement lasts. While
+ * its name is not playing it emits null. A name that starts playing without a
+ * jump enters from its start. A timeline's frames carry its own placements
+ * only, so each level sees the names of the one driving it.
  *
  * **One object, animated.** A timeline can hold an `object` — an image to
  * draw, say — and `keyframes` for any of its properties: values at moments,
@@ -50,6 +63,11 @@ import {
   Keyframes,
   normalizeActions,
   normalizeKeyframes,
+  normalizePlacements,
+  Placement,
+  placementEnds,
+  placementsAt,
+  PlacementState,
   restOfPass,
   TimelineAction,
   valuesAt,
@@ -75,11 +93,22 @@ type State = {
   tempoSlot: string;
   /** Frames a second an own clock emits. */
   fps: number;
-  /** Where a driven timeline's own time starts, in its driver's time. */
-  offset: number;
+  /** How fast an own clock runs. */
   speed: number;
   running: boolean;
+  /** When each name plays on this timeline, and for how long. */
+  placements: Placement[];
+  /** The name a driven timeline takes from its driver's placements; "" takes none. */
+  placement: string;
 };
+
+/**
+ * Whether a placed timeline's frames place it. `playing` and `waiting` are the
+ * name being placed, now or at another time; `unplaced` is frames that place
+ * other names but never this one — a name mistyped on one side, most likely;
+ * `no-placements` is frames that place nothing at all.
+ */
+export type PlacementStatus = "playing" | "waiting" | "unplaced" | "no-placements";
 
 type Config = Partial<State> & {
   play?: boolean;
@@ -92,6 +121,7 @@ type Frame = {
   t: number;
   actions: unknown[];
   jump?: true;
+  placements?: Record<string, PlacementState>;
   [property: string]: unknown;
 };
 
@@ -115,6 +145,7 @@ class Timeline extends ServiceBase<State> {
   /** The last frame a driven timeline emitted, for showing an edit on it. */
   private lastDriven: { t: number; frameIn: Record<string, unknown> } | null =
     null;
+  private placementStatus: PlacementStatus | null = null;
 
   constructor(
     app: AppInstance,
@@ -132,9 +163,10 @@ class Timeline extends ServiceBase<State> {
       unit: "s",
       tempoSlot: "tempo",
       fps: 30,
-      offset: 0,
       speed: 1,
       running: false,
+      placements: [],
+      placement: "",
     });
   }
 
@@ -192,19 +224,34 @@ class Timeline extends ServiceBase<State> {
       }
     }
 
-    if (isNumber(config.offset)) {
-      this.state.offset = changed.offset = config.offset;
-    }
-
     if (isNumber(config.speed)) {
       this.state.speed = changed.speed = config.speed;
+    }
+
+    if (config.placements !== undefined) {
+      this.state.placements = changed.placements = normalizePlacements(
+        config.placements,
+      );
+    }
+
+    if (typeof config.placement === "string") {
+      if (config.placement !== this.state.placement) {
+        this.prevRaw = null;
+        this.lastDriven = null;
+        this.placementStatus = null;
+      }
+      this.state.placement = changed.placement = config.placement;
     }
 
     if (Object.keys(changed).length > 0) {
       this.app.notify(this, changed);
     }
 
-    if (changed.object !== undefined || changed.keyframes !== undefined) {
+    if (
+      changed.object !== undefined ||
+      changed.keyframes !== undefined ||
+      changed.placements !== undefined
+    ) {
       this.refresh();
     }
 
@@ -231,32 +278,57 @@ class Timeline extends ServiceBase<State> {
       typeof input === "object" && input !== null && !Array.isArray(input)
         ? (input as Record<string, unknown>)
         : {};
-    const t = Number(typeof input === "number" ? input : frameIn.t);
-    if (!Number.isFinite(t)) {
-      return null;
+    const extent = this.extent();
+    const { length, loop } = extent;
+
+    let raw: number;
+    let entering = false;
+    if (this.state.placement) {
+      const placed = this.placedIn(frameIn);
+      if (!placed) {
+        // Not playing: nothing to show, and whatever plays next starts fresh.
+        this.prevRaw = null;
+        this.lastDriven = null;
+        return null;
+      }
+      raw = !loop && length > 0 ? placed.progress * length : placed.elapsed;
+      entering = this.prevRaw === null;
+    } else {
+      raw = Number(typeof input === "number" ? input : frameIn.t);
+      if (!Number.isFinite(raw)) {
+        return null;
+      }
     }
 
-    const raw = (t - this.state.offset) * this.state.speed;
-    const extent = this.extent();
     const prev = this.prevRaw;
     this.prevRaw = raw;
 
-    let actions: unknown[];
-    if (prev === null || frameIn.jump === true) {
-      actions = dueActions(this.state.actions, raw, raw, extent, true);
-    } else if (raw >= prev) {
-      actions = dueActions(this.state.actions, prev, raw, extent);
-    } else {
-      // Started over: the rest of the pass it was in, if it had begun one,
-      // then its own start.
-      actions = [
-        ...(prev >= 0 ? restOfPass(this.state.actions, prev, extent) : []),
-        ...(raw >= 0 ? dueActions(this.state.actions, 0, raw, extent, true) : []),
+    // What lies between the time last seen and this one — the same window for
+    // the actions and for the ends of this timeline's own placements.
+    const due = (list: TimelineAction[]): unknown[] => {
+      if (frameIn.jump === true) {
+        return dueActions(list, raw, raw, extent, true);
+      }
+      if (prev === null) {
+        // A placement just begun enters from its start; time first seen
+        // anywhere else was set, not travelled.
+        return entering
+          ? dueActions(list, 0, raw, extent, true)
+          : dueActions(list, raw, raw, extent, true);
+      }
+      if (raw >= prev) {
+        return dueActions(list, prev, raw, extent);
+      }
+      // Started over: the rest of the pass it was in, then its own start.
+      return [
+        ...restOfPass(list, prev, extent),
+        ...dueActions(list, 0, raw, extent, true),
       ];
-    }
+    };
+    const actions = due(this.state.actions);
+    const ended = due(placementEnds(this.state.placements, extent)) as number[];
 
-    const { length, loop } = extent;
-    const outside = raw < 0 || (!loop && length > 0 && raw > length);
+    const outside = !loop && length > 0 && raw > length;
     if (outside && actions.length === 0) {
       this.lastDriven = null;
       return null;
@@ -264,10 +336,32 @@ class Timeline extends ServiceBase<State> {
 
     // Outside its stretch only to deliver what fell due on the way out, so the
     // time reported is the edge it left by.
-    const own = outside ? Math.min(Math.max(raw, 0), length) : wrap(raw, extent);
+    const own = outside ? length : wrap(raw, extent);
     this.app.notify(this, { t: own });
     this.lastDriven = { t: own, frameIn };
-    return this.frame(own, actions, frameIn);
+    return this.frame(own, actions, frameIn, ended);
+  }
+
+  /**
+   * Where this timeline's placement is in the frame it was given, or null
+   * where it is not playing; says so to the panel when that changes.
+   */
+  private placedIn(frameIn: Record<string, unknown>): { progress: number; elapsed: number } | null {
+    const all = frameIn.placements;
+    const known = !!all && typeof all === "object";
+    const entry = known ? (all as Record<string, PlacementState>)[this.state.placement] : undefined;
+    const status: PlacementStatus = !known
+      ? "no-placements"
+      : entry === undefined
+        ? "unplaced"
+        : entry === null
+          ? "waiting"
+          : "playing";
+    if (status !== this.placementStatus) {
+      this.placementStatus = status;
+      this.app.notify(this, { placementStatus: status });
+    }
+    return entry ?? null;
   }
 
   destroy() {
@@ -394,11 +488,18 @@ class Timeline extends ServiceBase<State> {
       extent,
       this.posIsFresh,
     );
+    const ended = dueActions(
+      placementEnds(this.state.placements, extent),
+      this.pos,
+      to,
+      extent,
+      this.posIsFresh,
+    ) as number[];
     this.pos = to;
     this.posIsFresh = false;
     this.hasEmitted = true;
 
-    const frame = this.frame(wrap(to, extent), actions, {});
+    const frame = this.frame(wrap(to, extent), actions, {}, ended);
     if (this.jumpPending) {
       frame.jump = true;
       this.jumpPending = false;
@@ -412,9 +513,16 @@ class Timeline extends ServiceBase<State> {
   /**
    * The frame for time `t`: the object with its keyframed values, or, with no
    * object, what came in. A jump is passed on either way, so a seek reaches
-   * every timeline below this one.
+   * every timeline below this one. Placements are not: the frame carries this
+   * timeline's own — replacing its driver's, which were meant for this level —
+   * with those that `ended` in it reported at their end.
    */
-  private frame(t: number, actions: unknown[], frameIn: Record<string, unknown>): Frame {
+  private frame(
+    t: number,
+    actions: unknown[],
+    frameIn: Record<string, unknown>,
+    ended: number[] = [],
+  ): Frame {
     const base = this.state.object ?? frameIn;
     const frame: Frame = {
       ...base,
@@ -422,6 +530,10 @@ class Timeline extends ServiceBase<State> {
       t,
       actions,
     };
+    delete frame.placements;
+    if (this.state.placements.length > 0 || "placements" in frameIn) {
+      frame.placements = placementsAt(this.state.placements, t, this.extent(), ended);
+    }
     if (frameIn.jump === true) {
       frame.jump = true;
     }

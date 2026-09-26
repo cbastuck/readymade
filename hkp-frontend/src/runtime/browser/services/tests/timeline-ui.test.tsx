@@ -5,7 +5,7 @@
  */
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import TimelineDescriptor from "../Timeline";
 import BlockUseFrame from "../../../ui/BlockUse";
@@ -195,6 +195,35 @@ describe("the Timeline editor", () => {
   });
 });
 
+describe("placing names", () => {
+  it("places a name at the playhead, and moves and stretches its bar", async () => {
+    const { service } = await renderTimeline({ length: 4 });
+    await screen.findByText("Drop an image here to animate it on this timeline");
+    fireEvent.click(screen.getByTitle("Open the timeline editor"));
+    const name = await screen.findByPlaceholderText("place a name at the playhead");
+    fireEvent.change(name, { target: { value: "star" } });
+    fireEvent.keyDown(name, { key: "Enter" });
+    expect(service.state.placements).toEqual([{ name: "star", at: 0, duration: 1 }]);
+
+    const editor = within(screen.getByRole("dialog"));
+    const bar = await editor.findByTitle("star: 0.00 for 1.00");
+    const lane = bar.parentElement as HTMLElement;
+    fireEvent.pointerDown(bar, { clientX: 0, pointerId: 1 });
+    fireEvent.pointerMove(lane, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerUp(lane, { pointerId: 1 });
+    expect(service.state.placements).toEqual([{ name: "star", at: 1, duration: 1 }]);
+
+    const edge = (await editor.findByTitle("star: 1.00 for 1.00")).querySelector(
+      "[title='Drag to change how long it plays']",
+    ) as HTMLElement;
+    fireEvent.pointerDown(edge, { clientX: 200, pointerId: 1 });
+    fireEvent.pointerMove(lane, { clientX: 300, pointerId: 1 });
+    fireEvent.pointerUp(lane, { pointerId: 1 });
+    expect(service.state.placements).toEqual([{ name: "star", at: 1, duration: 2 }]);
+    expect(await screen.findByText('placement of "star"')).toBeTruthy();
+  });
+});
+
 describe("a driven Timeline", () => {
   it("pins its playhead where it is pressed instead of seeking, until told to follow", async () => {
     const { configure } = await renderTimeline({
@@ -209,6 +238,23 @@ describe("a driven Timeline", () => {
 
     fireEvent.click(screen.getByTitle("Follow the time driving this timeline again"));
     await screen.findByText(/^0\.00/);
+  });
+
+  it("says when nothing places the name it takes", async () => {
+    const { service } = await renderTimeline({
+      clock: "input",
+      length: 4,
+      object: image,
+      placement: "star",
+    });
+    act(() => {
+      service.process({ t: 0, placements: { moon: null } });
+    });
+    expect(await screen.findByText('nothing places "star"')).toBeTruthy();
+    act(() => {
+      service.process({ t: 0, placements: { star: { progress: 0.5, elapsed: 1 } } });
+    });
+    expect(await screen.findByText('plays as "star"')).toBeTruthy();
   });
 });
 

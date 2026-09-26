@@ -415,3 +415,130 @@ export function KeyButton({
     </button>
   );
 }
+
+export type Bar = { at: number; duration: number; selected?: boolean; title?: string };
+
+/**
+ * One row of bars along the time axis: placements, each from where it starts
+ * for as long as it lasts. A bar is picked by pressing it, moved by dragging
+ * it, and made longer or shorter by dragging its right edge; pressing the row
+ * elsewhere scrubs.
+ */
+export function Bars({
+  bars,
+  length,
+  onScrub,
+  onSelect,
+  onMove,
+  onResize,
+  height = 22,
+}: {
+  bars: Bar[];
+  length: number;
+  onScrub?: (t: number) => void;
+  onSelect?: (index: number) => void;
+  onMove?: (index: number, at: number) => void;
+  onResize?: (index: number, duration: number) => void;
+  height?: number;
+}) {
+  const [drag, setDrag] = useState<{
+    index: number;
+    mode: "move" | "resize";
+    from: number;
+    at: number;
+    duration: number;
+    moved: boolean;
+  } | null>(null);
+
+  const start = (
+    event: PointerEvent<HTMLDivElement>,
+    index: number,
+    mode: "move" | "resize",
+  ) => {
+    event.stopPropagation();
+    const lane = event.currentTarget.closest("[data-bars]") as HTMLElement | null;
+    lane?.setPointerCapture(event.pointerId);
+    onSelect?.(index);
+    const from = lane ? timeAt(event, lane, length) : null;
+    const editable = mode === "move" ? onMove : onResize;
+    if (editable && from !== null) {
+      const { at, duration } = bars[index];
+      setDrag({ index, mode, from, at, duration, moved: false });
+    }
+  };
+
+  return (
+    <div
+      data-bars
+      className="relative select-none"
+      style={{
+        height,
+        touchAction: "none",
+        background: "color-mix(in srgb, var(--border-mid) 25%, transparent)",
+        borderRadius: 4,
+      }}
+      onPointerDown={(event) => {
+        const t = timeAt(event, event.currentTarget, length);
+        if (event.target === event.currentTarget && t !== null) {
+          onScrub?.(snap(t));
+        }
+      }}
+      onPointerMove={(event) => {
+        const t = timeAt(event, event.currentTarget, length);
+        if (!drag || t === null) {
+          return;
+        }
+        const bar = bars[drag.index];
+        const delta = t - drag.from;
+        const next =
+          drag.mode === "move"
+            ? { at: snap(bar.at + delta), duration: bar.duration }
+            : { at: bar.at, duration: Math.max(0.05, snap(bar.duration + delta)) };
+        if (next.at !== drag.at || next.duration !== drag.duration) {
+          setDrag({ ...drag, ...next, moved: true });
+        }
+      }}
+      onPointerUp={() => {
+        if (drag?.moved) {
+          if (drag.mode === "move") {
+            onMove?.(drag.index, drag.at);
+          } else {
+            onResize?.(drag.index, drag.duration);
+          }
+        }
+        setDrag(null);
+      }}
+    >
+      {bars.map((bar, index) => {
+        const shown = drag?.index === index ? drag : bar;
+        const color = bar.selected ? "var(--hkp-accent)" : "var(--text-mid)";
+        return (
+          <div
+            key={index}
+            title={bar.title}
+            className={`absolute ${onMove ? "cursor-grab" : onSelect ? "cursor-pointer" : ""}`}
+            style={{
+              left: percent(shown.at, length),
+              width: `calc(${percent(Math.min(shown.duration, Math.max(length - shown.at, 0)), length)})`,
+              top: 3,
+              bottom: 3,
+              borderRadius: 3,
+              background: `color-mix(in srgb, ${color} 35%, transparent)`,
+              border: `1px solid ${color}`,
+            }}
+            onPointerDown={(event) => start(event, index, "move")}
+          >
+            {onResize && (
+              <div
+                title="Drag to change how long it plays"
+                className="absolute top-0 right-0 bottom-0 cursor-ew-resize"
+                style={{ width: 6 }}
+                onPointerDown={(event) => start(event, index, "resize")}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

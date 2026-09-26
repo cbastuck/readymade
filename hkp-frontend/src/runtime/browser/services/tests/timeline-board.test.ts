@@ -10,7 +10,7 @@ import { linkBlocks } from "../../../../core/linkBlocks";
 
 /**
  * The Timeline demo board: images animated by keyframes, each on a timeline of
- * its own, driven by one clock. The Show's frames are run through the board's
+ * its own, arranged by name on one clock. The Show's frames are run through the board's
  * own Scene — its block uses expanded, as loading it does — so what is checked
  * is what the canvas would be given.
  */
@@ -107,6 +107,15 @@ describe("the Timeline demo board", () => {
     expect(uses).toEqual(["pop", "pop", "pop", "pop", "pop", "fly", "fly"]);
   });
 
+  it("places every image's name on the Show, and every name placed is one an image takes", () => {
+    const placed = new Set(entry("show").state.placements.map((p: any) => p.name));
+    const taken = (document as any).services.ui[1].state.tracks
+      .map((t: any) => t.pipeline[0])
+      .filter((e: any) => e.block)
+      .map((e: any) => e.params.name);
+    expect(new Set(taken)).toEqual(placed);
+  });
+
   it("carries images the browser can read", () => {
     const urls = new Set<string>();
     JSON.stringify(document, (_key, value) => {
@@ -174,6 +183,23 @@ describe("the Timeline demo board", () => {
     expect(x(middle)).toBeLessThan(x(late));
     expect(start.rotate).toBeLessThan(late.rotate);
     expect(at(frames, 7)["rocket"]).toBeNull();
+  });
+
+  it("pops the first star again later, faster, for its shorter placement", async () => {
+    const frames = await play(8000);
+    expect(at(frames, 4)["star-1"]).toBeNull();
+    // Placed at 5 s for 2 s: halfway through its turn at 6 s, not 6.5 s.
+    expect(Math.abs(at(frames, 6)["star-1"].rotate - 180)).toBeLessThan(10);
+    expect(at(frames, 7.5)["star-1"]).toBeNull();
+  });
+
+  it("squeezes the comet's flight into its placement", async () => {
+    const frames = await play(8000);
+    expect(at(frames, 5)["comet"]).toBeNull();
+    const x = (d: any) => Number(d.centerX.replace("%", ""));
+    // Placed at 5.5 s for 2.5 s: halfway across at 6.75 s.
+    expect(Math.abs(x(at(frames, 6.75)["comet"]) - 50)).toBeLessThan(3);
+    expect(x(at(frames, 7.9)["comet"])).toBeLessThan(5);
   });
 
   it("keyframes the sky's colour from night to dusk", async () => {

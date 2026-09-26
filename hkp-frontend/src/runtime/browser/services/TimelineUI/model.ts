@@ -9,6 +9,7 @@ import {
   Ease,
   Keyframe,
   Keyframes,
+  Placement,
   TimelineAction,
   valueAt,
 } from "../timeline-core";
@@ -22,9 +23,13 @@ export type TimelineView = {
   loop: boolean;
   unit: "s" | "beats";
   fps: number;
-  offset: number;
-  speed: number;
   running: boolean;
+  /** When each name plays on this timeline. */
+  placements: Placement[];
+  /** The name a driven timeline takes from its driver. */
+  placement: string;
+  /** Whether the driver's frames place that name, as the timeline last said. */
+  placementStatus: "playing" | "waiting" | "unplaced" | "no-placements" | null;
   /** Where the timeline is, as it last said. */
   t: number;
 };
@@ -38,9 +43,10 @@ export const EMPTY_VIEW: TimelineView = {
   loop: false,
   unit: "s",
   fps: 30,
-  offset: 0,
-  speed: 1,
   running: false,
+  placements: [],
+  placement: "",
+  placementStatus: null,
   t: 0,
 };
 
@@ -76,6 +82,7 @@ export function displayLength(view: TimelineView): number {
   const ats = [
     ...Object.values(view.keyframes).flatMap((frames) => frames.map((k) => k.at)),
     ...view.actions.map((a) => a.at),
+    ...view.placements.map((p) => p.at + p.duration),
     view.t,
   ];
   return Math.max(4, Math.ceil(Math.max(...ats) * 1.25));
@@ -297,3 +304,71 @@ export function withImage(
   }
   return { type: "image", url, centerX: "50%", centerY: "50%", height: "60%" };
 }
+
+/** The names placed, each once, in the order they first start. */
+export function placementNames(placements: Placement[]): string[] {
+  return [...new Set(placements.map((p) => p.name))];
+}
+
+/** A name placed at `at`, for a unit of time unless said otherwise. */
+export function addPlacement(
+  placements: Placement[],
+  name: string,
+  at: number,
+  duration = 1,
+): Placement[] {
+  return [...placements, { name, at: snap(at), duration }];
+}
+
+export function movePlacement(placements: Placement[], index: number, at: number) {
+  return placements.map((p, i) => (i === index ? { ...p, at: snap(at) } : p));
+}
+
+/** A placement's duration, never shorter than a snap. */
+export function resizePlacement(placements: Placement[], index: number, duration: number) {
+  return placements.map((p, i) =>
+    i === index ? { ...p, duration: Math.max(SNAP, snap(duration)) } : p,
+  );
+}
+
+/** Renames every placement of a name: a row of the editor is a name. */
+export function renamePlacements(placements: Placement[], from: string, to: string) {
+  return placements.map((p) => (p.name === from ? { ...p, name: to } : p));
+}
+
+export function removePlacement(placements: Placement[], index: number) {
+  return placements.filter((_, i) => i !== index);
+}
+
+/**
+ * Where a placement is in the list the service keeps, which it sorts by start:
+ * found again by what it is, after an edit may have moved it.
+ */
+export function indexOfPlacement(placements: Placement[], placement: Placement): number {
+  return placements.findIndex(
+    (p) =>
+      p.name === placement.name &&
+      Math.abs(p.at - placement.at) < 1e-9 &&
+      Math.abs(p.duration - placement.duration) < 1e-9,
+  );
+}
+
+/** What a placed timeline's panel says about the name it takes. */
+export function placementNote(view: TimelineView): { text: string; warn: boolean } | null {
+  if (!view.placement) {
+    return null;
+  }
+  switch (view.placementStatus) {
+    case "playing":
+      return { text: `plays as "${view.placement}"`, warn: false };
+    case "waiting":
+      return { text: `placed as "${view.placement}", not playing now`, warn: false };
+    case "unplaced":
+      return { text: `nothing places "${view.placement}"`, warn: true };
+    case "no-placements":
+      return { text: `takes "${view.placement}", but its driver places nothing`, warn: true };
+    default:
+      return { text: `takes "${view.placement}"`, warn: false };
+  }
+}
+

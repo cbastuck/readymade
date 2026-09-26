@@ -7,7 +7,9 @@
  *    timelines, the rest of a pass
  *  - Own clock: play, frame rate, pause and resume, stop, playing through to
  *    the end, looping, beats at the tempo slot, seek and its jump flag, bypass
- *  - Driven clock: offset and speed, null outside the stretch, the frame that
+ *  - Placements: what an arranging timeline's frames say about each name, and
+ *    how a placed timeline plays — stretched, looped, entered, jumped, scoped
+ *  - Driven clock: the driver's time, null after the stretch, the frame that
  *    leaves the stretch, the driver starting over versus jumping, pass-through
  *    of the input's other fields, one timeline driving another
  *
@@ -20,6 +22,8 @@ import {
   dueActions,
   interpolate,
   normalizeKeyframes,
+  normalizePlacements,
+  placementsAt,
   restOfPass,
   valueAt,
 } from "../timeline-core";
@@ -372,22 +376,14 @@ describe("Timeline – driven", () => {
     return { timeline, app };
   }
 
-  it("counts its own time from the offset, at its speed", () => {
-    const { timeline } = driven({ offset: 2, speed: 2 });
-    expect(timeline.process({ t: 3 })).toEqual({ t: 2, actions: [] });
+  it("counts in its driver's time", () => {
+    const { timeline } = driven({});
+    expect(timeline.process({ t: 3 })).toEqual({ t: 3, actions: [] });
   });
 
   it("accepts a bare number as time", () => {
     const { timeline } = driven({});
     expect(timeline.process(1.5)).toEqual({ t: 1.5, actions: [] });
-  });
-
-  it("emits null before its stretch, and its start once it enters", () => {
-    const { timeline } = driven({ offset: 1, actions: [at(0, "enter")] });
-    expect(timeline.process({ t: 0.9 })).toBeNull();
-    const entered = timeline.process({ t: 1.05 });
-    expect(entered.actions).toEqual(["enter"]);
-    expect(entered.t).toBeCloseTo(0.05);
   });
 
   it("delivers what falls due on the way out, then emits null", () => {
@@ -416,12 +412,6 @@ describe("Timeline – driven", () => {
     expect(timeline.process({ t: 0.1 }).actions).toEqual(["tail", "start"]);
   });
 
-  it("owes nothing from before its stretch when its driver starts over", () => {
-    const { timeline } = driven({ offset: 1, actions: [at(0.5, "a")] });
-    timeline.process({ t: 0.5 });
-    expect(timeline.process({ t: 0.2 })).toBeNull();
-  });
-
   it("fires only what sits exactly there after a jump", () => {
     const { timeline } = driven({ actions: [at(0, "start"), at(2, "there")] });
     timeline.process({ t: 3 });
@@ -437,15 +427,15 @@ describe("Timeline – driven", () => {
   });
 
   it("shows an edit on the frame it last emitted", () => {
-    const { timeline, app } = driven({ object: { type: "rect" }, offset: 1 });
+    const { timeline, app } = driven({ object: { type: "rect" }, length: 1 });
     timeline.configure({ keyframes: { x: [{ at: 0, value: 5 }] } });
     expect(frames(app)).toEqual([]); // no frame yet
 
-    timeline.process({ t: 1.5, color: "ignored" });
+    timeline.process({ t: 0.5, color: "ignored" });
     timeline.configure({ keyframes: { x: [{ at: 0, value: 7 }] } });
     expect(frames(app)).toEqual([{ type: "rect", x: 7, t: 0.5, actions: [] }]);
 
-    timeline.process({ t: 0.5 }); // before its stretch again: nothing on show
+    timeline.process({ t: 1.5 }); // past its stretch: nothing on show
     timeline.configure({ keyframes: {} });
     expect(frames(app)).toHaveLength(1);
   });
@@ -501,12 +491,14 @@ describe("Timeline – an animated object", () => {
     vi.useRealTimers();
   });
 
-  it("is drawn only within its stretch", () => {
+  it("is drawn only while its placement plays", () => {
     const { timeline } = createTimeline();
-    timeline.configure({ clock: "input", object: image, offset: 1, length: 2 });
-    expect(timeline.process({ t: 0.5 })).toBeNull();
-    expect(timeline.process({ t: 2 })).toMatchObject({ type: "image", t: 1 });
-    expect(timeline.process({ t: 3.5 })).toBeNull();
+    timeline.configure({ clock: "input", object: image, length: 2, placement: "a" });
+    expect(timeline.process({ t: 0.5, placements: { a: null } })).toBeNull();
+    expect(
+      timeline.process({ t: 2, placements: { a: { progress: 0.5, elapsed: 1 } } }),
+    ).toMatchObject({ type: "image", t: 1 });
+    expect(timeline.process({ t: 3.5, placements: { a: null } })).toBeNull();
   });
 });
 
@@ -525,7 +517,7 @@ describe("Timeline – one driving another", () => {
     const inner = createTimeline();
     inner.timeline.configure({
       clock: "input",
-      offset: 0.5,
+      placement: "blink",
       length: 0.25,
       actions: [at(0, "on"), at(0.25, "off")],
     });
@@ -534,11 +526,190 @@ describe("Timeline – one driving another", () => {
       innerOut.push(inner.timeline.process(frame));
     });
 
-    outer.timeline.configure({ fps: 20, length: 1, loop: true, play: true });
+    outer.timeline.configure({
+      fps: 20,
+      length: 1,
+      loop: true,
+      placements: [{ name: "blink", at: 0.5, duration: 0.25 }],
+      play: true,
+    });
     vi.advanceTimersByTime(2000);
 
     const innerFired = innerOut.filter(Boolean).flatMap((f) => f.actions);
     expect(innerFired).toEqual(["on", "off", "on", "off"]);
     outer.timeline.destroy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Placements
+// ---------------------------------------------------------------------------
+
+describe("placementsAt", () => {
+  const open = { length: 0, loop: false };
+  const placements = normalizePlacements([
+    { name: "b", at: 2, duration: 1 },
+    { name: "a", at: 0, duration: 2 },
+    { name: "a", at: 1.5, duration: 1 },
+    { name: "", at: 0, duration: 1 },
+    { name: "c", at: 0, duration: 0 },
+  ]);
+
+  it("keeps placements with a name, a place and a duration, in the order they start", () => {
+    expect(placements.map((p) => `${p.name}@${p.at}`)).toEqual(["a@0", "a@1.5", "b@2"]);
+  });
+
+  it("says how far into its placement each name is, and null for those not playing", () => {
+    expect(placementsAt(placements, 1, open)).toEqual({
+      a: { progress: 0.5, elapsed: 1 },
+      b: null,
+    });
+  });
+
+  it("lets the later of two overlapping placements of a name win", () => {
+    expect(placementsAt(placements, 1.75, open).a).toEqual({ progress: 0.25, elapsed: 0.25 });
+  });
+
+  it("reports a placement that ended in the frame at its end", () => {
+    const ended = [2]; // b's index
+    expect(placementsAt(placements, 3.5, open, ended).b).toEqual({ progress: 1, elapsed: 1 });
+    expect(placementsAt(placements, 3.5, open).b).toBeNull();
+  });
+
+  it("cuts a placement at the length of a bounded timeline", () => {
+    const cut = normalizePlacements([{ name: "a", at: 3, duration: 2 }]);
+    expect(placementsAt(cut, 4.5, { length: 4, loop: false }).a).toBeNull();
+    expect(placementsAt(cut, 4, { length: 4, loop: false }).a).toEqual({
+      progress: 0.5,
+      elapsed: 1,
+    });
+  });
+});
+
+describe("Timeline – arranging by placements", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("carries every name it places in each frame it emits", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({
+      fps: 10,
+      placements: [
+        { name: "a", at: 0, duration: 0.5 },
+        { name: "b", at: 1, duration: 1 },
+      ],
+      play: true,
+    });
+    expect(frames(app)[0].placements).toEqual({
+      a: { progress: 0, elapsed: 0 },
+      b: null,
+    });
+    vi.advanceTimersByTime(1500);
+    expect(frames(app).at(-1).placements.a).toBeNull();
+    expect(frames(app).at(-1).placements.b.progress).toBeCloseTo(0.5);
+    timeline.destroy();
+  });
+
+  it("does not skip the end of a placement that ends between two frames", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({
+      fps: 10,
+      placements: [{ name: "a", at: 0, duration: 0.25 }],
+      play: true,
+    });
+    vi.advanceTimersByTime(500);
+    const progress = frames(app)
+      .map((f) => f.placements.a?.progress)
+      .filter((p) => p !== undefined);
+    expect(progress).toEqual([0, 0.4, 0.8, 1]);
+    timeline.destroy();
+  });
+});
+
+describe("Timeline – placed", () => {
+  function placed(config: Record<string, unknown>) {
+    const { timeline, app } = createTimeline();
+    timeline.configure({ clock: "input", placement: "a", ...config });
+    return { timeline, app };
+  }
+  const playing = (progress: number, elapsed: number, more: object = {}) => ({
+    t: 0,
+    placements: { a: { progress, elapsed } },
+    ...more,
+  });
+
+  it("is stretched to its placement when it does not loop", () => {
+    const { timeline } = placed({ length: 4 });
+    expect(timeline.process(playing(0.25, 0.5)).t).toBe(1);
+  });
+
+  it("plays at its own speed when it loops, repeating while the placement lasts", () => {
+    const { timeline } = placed({ length: 0.5, loop: true, actions: [at(0, "pass")] });
+    timeline.process(playing(0, 0));
+    const frame = timeline.process(playing(0.5, 1.2));
+    expect(frame.t).toBeCloseTo(0.2);
+    expect(frame.actions).toEqual(["pass", "pass"]);
+  });
+
+  it("plays at its own speed when unbounded", () => {
+    const { timeline } = placed({});
+    expect(timeline.process(playing(0.9, 3)).t).toBe(3);
+  });
+
+  it("enters from its start when its name starts playing", () => {
+    const { timeline } = placed({ length: 4, actions: [at(0, "start"), at(0.5, "soon")] });
+    expect(timeline.process({ t: 0, placements: { a: null } })).toBeNull();
+    expect(timeline.process(playing(0.25, 0.25)).actions).toEqual(["start", "soon"]);
+  });
+
+  it("fires only what sits exactly there when its driver jumped into it", () => {
+    const { timeline } = placed({ length: 4, actions: [at(0, "start"), at(1, "there")] });
+    expect(timeline.process(playing(0.25, 0.25, { jump: true })).actions).toEqual(["there"]);
+  });
+
+  it("starts over when the same name is placed again right after", () => {
+    const { timeline } = placed({ length: 1, actions: [at(0, "start"), at(1, "end")] });
+    timeline.process(playing(0, 0));
+    timeline.process(playing(0.9, 0.9));
+    expect(timeline.process(playing(0.1, 0.1)).actions).toEqual(["end", "start"]);
+  });
+
+  it("says whether its driver's frames place it", () => {
+    const { timeline, app } = placed({ length: 1 });
+    const status = () =>
+      app.notify.mock.calls.map(([, n]) => n.placementStatus).filter(Boolean).at(-1);
+    timeline.process({ t: 0 });
+    expect(status()).toBe("no-placements");
+    timeline.process({ t: 0, placements: { b: null } });
+    expect(status()).toBe("unplaced");
+    timeline.process({ t: 0, placements: { a: null } });
+    expect(status()).toBe("waiting");
+    timeline.process(playing(0, 0));
+    expect(status()).toBe("playing");
+  });
+
+  it("passes on its own placements, not its driver's", () => {
+    const night = createTimeline().timeline;
+    night.configure({
+      clock: "input",
+      placement: "night",
+      length: 4,
+      placements: [{ name: "twinkle", at: 1, duration: 2 }],
+    });
+    const frame = night.process({
+      t: 5,
+      placements: { night: { progress: 0.5, elapsed: 2 }, twinkle: null },
+    });
+    expect(frame.placements).toEqual({ twinkle: { progress: 0.5, elapsed: 1 } });
+
+    const plain = createTimeline().timeline;
+    plain.configure({ clock: "input" });
+    expect(plain.process({ t: 1, placements: { x: null } }).placements).toEqual({});
   });
 });

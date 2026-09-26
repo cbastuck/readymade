@@ -1,6 +1,6 @@
-import { Lane, Marker, Playhead, Preview, Ruler } from "./parts";
+import { Bars, Lane, Marker, Playhead, Preview, Ruler } from "./parts";
 import Transport from "./Transport";
-import { displayLength, objectAt, TimelineView, withImage } from "./model";
+import { displayLength, formatTime, objectAt, TimelineView, withImage } from "./model";
 
 /**
  * The Timeline as it sits on the board: where it is, what it draws there, and
@@ -59,6 +59,18 @@ export default function TimelinePanel({
       <div className="relative flex flex-col gap-1">
         <Ruler length={length} onScrub={onScrub} />
         <Lane markers={markers} length={length} onScrub={onScrub} />
+        {view.placements.length > 0 && (
+          <Bars
+            height={14}
+            length={length}
+            onScrub={onScrub}
+            bars={view.placements.map((p) => ({
+              at: p.at,
+              duration: p.duration,
+              title: `${p.name}: ${formatTime(p.at)} for ${formatTime(p.duration)}`,
+            }))}
+          />
+        )}
         <Playhead t={cursor} length={length} />
       </div>
       {!view.object && !readOnly && (

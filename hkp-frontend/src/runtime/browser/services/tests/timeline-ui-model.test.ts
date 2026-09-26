@@ -21,6 +21,13 @@ import {
   toggleKey,
   valueOf,
   withImage,
+  addPlacement,
+  indexOfPlacement,
+  movePlacement,
+  placementNames,
+  placementNote,
+  renamePlacements,
+  resizePlacement,
 } from "../TimelineUI/model";
 
 const image = { type: "image", url: "a.png", height: "20%" };
@@ -165,3 +172,46 @@ describe("dropping an image", () => {
     });
   });
 });
+
+describe("placements", () => {
+  const placements = [
+    { name: "a", at: 0, duration: 2 },
+    { name: "b", at: 1, duration: 1 },
+    { name: "a", at: 3, duration: 1 },
+  ];
+
+  it("shows each name once, in the order it first starts", () => {
+    expect(placementNames(placements)).toEqual(["a", "b"]);
+  });
+
+  it("places a name at the playhead for a unit, snapped", () => {
+    expect(addPlacement([], "c", 1.52)).toEqual([{ name: "c", at: 1.5, duration: 1 }]);
+  });
+
+  it("moves and resizes one placement, never shorter than a snap", () => {
+    expect(movePlacement(placements, 1, 2.01)[1].at).toBe(2);
+    expect(resizePlacement(placements, 1, 0)[1].duration).toBe(0.05);
+  });
+
+  it("renames every placement of a name", () => {
+    expect(renamePlacements(placements, "a", "z").map((p) => p.name)).toEqual(["z", "b", "z"]);
+  });
+
+  it("finds a placement again after the list is sorted", () => {
+    const moved = movePlacement(placements, 0, 5);
+    const sorted = [...moved].sort((x, y) => x.at - y.at);
+    expect(indexOfPlacement(sorted, moved[0])).toBe(2);
+  });
+
+  it("warns when nothing places the name a timeline takes", () => {
+    const view = { ...EMPTY_VIEW, placement: "star", placementStatus: "unplaced" as const };
+    expect(placementNote(view)).toEqual({ text: 'nothing places "star"', warn: true });
+    expect(placementNote({ ...view, placementStatus: "playing" })?.warn).toBe(false);
+    expect(placementNote(EMPTY_VIEW)).toBeNull();
+  });
+
+  it("makes room on an unbounded axis for the last placement", () => {
+    expect(displayLength({ ...EMPTY_VIEW, placements: [{ name: "a", at: 6, duration: 2 }] })).toBe(10);
+  });
+});
+

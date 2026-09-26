@@ -9,9 +9,9 @@ ones. The board built from it is the visual counterpart of
 `nested-rhythm-demo-board.json`, where small animated blocks together make one
 animation drawn on one canvas.
 
-**State:** decided 2026-09-26; the service (time, actions, object and
-keyframes) is built in `Timeline.ts` and `timeline-core.ts`, and so is the demo
-board, `boards/timeline-demo-board.json`. Tests are in
+**State:** decided 2026-09-26; placements built the same day (see *Placements*).
+The service (time, actions, object and keyframes) is built in `Timeline.ts`
+and `timeline-core.ts`, and so is the demo board, `boards/timeline-demo-board.json`. Tests are in
 `tests/timeline-service.test.ts` and `tests/timeline-board.test.ts`. There is
 the timeline UI (`TimelineUI/`), tested in `tests/timeline-ui-model.test.ts`
 and `tests/timeline-ui.test.tsx` but not yet seen in the app. No docs page yet. Performance and frame rate are judged on
@@ -50,16 +50,18 @@ draws in the browser. Other runtimes follow if an audio or server board needs it
   frames a second. Input is ignored. Time is counted in seconds or **beats**
   (`unit`). Beats read the tempo slot as Timer does (`tempoSlot`, default
   `"tempo"`), measured per frame, so a tempo change applies from the next frame.
-- **`"input"` (driven):** the timeline reads `t` from its input (or a bare
-  number) and has no clock of its own. This is every inner timeline. It counts
-  in whatever unit its driver does, so `unit` only matters to an own clock.
+- **`"input"` (driven):** the timeline has no clock of its own. This is every
+  inner timeline. With a `placement` it plays when and as its driver places
+  that name (see *Placements*). Without one it reads `t` from its input (or a
+  bare number), in whatever unit its driver counts, so `unit` only matters to
+  an own clock.
 
-Local time for a driven timeline is the outer time remapped:
-`local = (t − offset) × speed`, wrapped at `length` when it loops. Outside its
-stretch a driven timeline emits nothing (null), so a block that is not on yet
-draws nothing and the pipeline behind it is not run. The one exception is the
-frame that leaves the stretch: if an action fell due on the way out (one at
-`length`), that frame is emitted at the edge.
+A driven timeline's time wraps at `length` when it loops. Past the end of a
+stretch that does not loop, or while its placement is not playing, it emits
+nothing (null), so a block that is not on draws nothing and the pipeline behind
+it is not run. The one exception is the frame that leaves the stretch: if an
+action fell due on the way out (one at `length`), that frame is emitted at the
+edge.
 
 `length` 0 is unbounded. A looping timeline's positions are `[0, length)`, so an
 action at `length` never fires. A non-looping one's are `[0, length]`. An own
@@ -147,6 +149,87 @@ Decided 2026-09-26, built the same day:
 
 ---
 
+### Placements
+
+Decided and built 2026-09-26. Replaces `offset` and a driven timeline's
+`speed`. The demo board arranges all its images this way.
+
+**The problem.** Where an inner timeline starts was its own `offset`, fed
+through a block param. The outer timeline, where the arranging happens, had no
+say and no view of it.
+
+**Rejected: the outer editor showing the inner timelines it reaches.** That
+works out the board's structure from inside one service's panel. It only
+seemed cheap because every runtime in the demo shares one process. On a remote
+runtime or a cloud board, a panel has no view of the board, and one timeline's
+editor should not need the coordinator to draw itself.
+
+**Rejected: the outer timeline naming inner timelines by address.** That is a
+wire: it addresses into block uses, which blocks refuse, and breaks when a track
+is renamed, moved or pasted.
+
+**Decided: named placements.** The outer timeline says *when* a name plays; an
+inner timeline says *which* name it takes. Neither knows where the other sits,
+the way two Holds share a slot.
+
+```json
+// outer (the Show)
+"placements": [
+  { "name": "star-1", "at": 0,   "duration": 3 },
+  { "name": "rocket", "at": 2.5, "duration": 4 },
+  { "name": "star-1", "at": 6,   "duration": 1.5 }
+]
+
+// a frame, carrying each placement active in it
+{ "t": 2.8, "actions": [],
+  "placements": { "rocket": { "progress": 0.075, "elapsed": 0.3 } } }
+
+// inner (in the Pop block)
+{ "clock": "input", "placement": "{{param.name}}" }
+```
+
+Everything a placement needs travels in the frame, as JSON, so it crosses a REST
+runtime like `t` does. Nothing is wired at run time; the names are in the board.
+
+**Rules**
+
+| Question | Decision | Why |
+|---|---|---|
+| What the frame carries | For **every** name the timeline places: `{ progress, elapsed }` while it plays (`progress` 0 to 1 through the placement, `elapsed` the outer time since it started), and `null` while it does not | The outer timeline knows the duration and the inner one knows its length; neither knows both, so each side computes with what it has. Listing the names not playing lets a placed timeline tell "not now" from "never": the latter is a name placed on one side only. |
+| The end of a placement | A placement that ends between two frames is reported once more, at its end (`progress` 1) | Otherwise the last of it (the final pose, an action at the end) falls between frames. |
+| Stretching | A **non-looping** inner timeline with a length is **stretched** to its placement: its time is `progress × length`. A **looping** or **unbounded** one plays at its own speed (`elapsed`), and a looping one repeats for as long as the placement lasts. | Decided by the user: the outer duration scales the inner's intrinsic length. A loop has no whole to fit; one slow twinkle is not what placing Twinkle across the night means. |
+| The same name twice | Allowed: the star plays at 0 s and again at 6 s from one use. Where two of a name overlap, the one that started later wins. | One inner timeline has one playhead. |
+| Entering a placement | A name absent from the previous frame and present in this one enters from its start: what sits at 0 fires. After a `jump` (a seek), only what sits exactly there fires, as before. | A placement appears in a frame already partway in, so there is no rise through 0 to see. |
+| Scoping | A timeline's output **replaces** `placements` with its own, empty when it has none. | Otherwise Twinkle below Night would also see the Show's names. Each level sees only its direct driver's, like slot scopes. |
+| Not placed | A driven timeline without `placement` reads `t` from 0, as now. | The simple case keeps working: the Sky reads the Show's time. |
+| `offset`, driven `speed` | **Removed.** | Decided by the user; a placement's `at` and `duration` do both. The own clock keeps `speed` for playback. |
+| A looping outer timeline | Placements lie within `[0, length)`. One running past the end is cut there. | The loop starts every placement over anyway. |
+
+**What it costs**
+
+- **A name is a contract nothing checks.** A mistyped name silently never
+  plays. Built: a placed timeline reports its `placementStatus` (`playing`,
+  `waiting`, `unplaced` for frames that place other names but never its own,
+  `no-placements`), and its panel warns on the last two. Not built: the
+  coordinator warning on load wherever it sees every runtime, as a check rather
+  than a requirement.
+- **The outer editor knows only names**, not an inner timeline's content or
+  length. A placement is a named bar sized by its own duration.
+- **Timing leaves the use.** A Pop use no longer says when it plays: copied
+  to another board, it plays only where that board places its name. That is the
+  arrangement model (the arrangement places clips, a clip does not place
+  itself), unlike the rhythm board, where each Note carries its own wait.
+- **Everything in between must pass `placements` on.** Tracks, sub-services and
+  Switch do. A Map in replace mode drops it, as it already drops `t`.
+
+**The UI** (built). The editor has a placements section: one row per name, its
+placements as bars. Drag a bar to move it, drag its right edge to change its
+duration, type a name to place it at the playhead, rename a row to rename every
+placement of that name; a picked bar shows its name, start and duration. The
+panel shows the placements as a thin row of bars. A driven timeline's panel
+shows the name it takes and whether it plays, and the editor has its
+`placement` field where "starts at" and "speed" were.
+
 ## The canvas side
 
 - **A `group` draw type**:
@@ -174,7 +257,10 @@ image, onto one Canvas. Two blocks write the motions once:
 - **Fly:** travel from one place to another, tilting.
 
 Four stars and a planet are uses of Pop, and a rocket and a comet are uses of
-Fly. Each use says which image, where and when (its offset in the Show's time).
+Fly. Each use says which image, where, and the name it plays under; the Show's
+placements say when each name plays and for how long. `star-1` is placed twice,
+the second time shorter, so the same pop plays faster; the comet's four-second
+flight is squeezed into two and a half.
 The sky is a timeline too, its colour keyframed. The images are inline SVG data
 URLs. The facade is the canvas with Play, Pause and Stop.
 
@@ -192,8 +278,10 @@ shared slots (a palette, a tempo in beats) making the pieces read as one.
 3. ~~Canvas: images turn and scale, nested arrays~~ (built 2026-09-26).
 4. ~~The board~~ (built 2026-09-26).
 5. ~~Timeline UI~~ (built 2026-09-26; tested, not yet seen in the app).
-6. Canvas `group`, and a board where an outer level moves a whole block.
-7. Docs page, vocabulary check, and the performance judgement.
+6. ~~Placements~~ (built 2026-09-26: service, editor section, placed
+   timeline's status, demo board moved over).
+7. Canvas `group`, and a board where an outer level moves a whole block.
+8. Docs page, vocabulary check, and the performance judgement.
 
 ---
 
@@ -207,9 +295,8 @@ shared slots (a palette, a tempo in beats) making the pieces read as one.
   Chasing only if a board needs it.
 - **Several lanes** in one timeline, or several timelines in Tracks. The latter
   already works and keeps the service small.
-- **Tail lost on a wrap before the stretch.** When a looping driven timeline's
-  driver starts over and lands before the timeline's offset, the actions left
-  in the pass it was in are settled but not emitted, since nothing is emitted
-  outside the stretch. At most one frame's worth. Fix it only if a board shows it.
+- **Stretching a looping timeline.** The rule above plays a loop at its own
+  speed. If a board wants a loop stretched instead (a pass per placement), that
+  is a per-placement option, not a default.
 - **Frame rate and cost:** nested SubServices, Tracks and a Canvas redraw per
   frame. The Canvas only drops frames in capture mode. Judged on the prototype.

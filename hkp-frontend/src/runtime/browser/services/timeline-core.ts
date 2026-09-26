@@ -248,3 +248,90 @@ export function normalizeKeyframes(value: unknown): Keyframes {
   }
   return out;
 }
+
+/** A name placed on a timeline: from `at`, for `duration`. */
+export type Placement = { name: string; at: number; duration: number };
+
+/** How far into its placement a name is, or null where it is not playing. */
+export type PlacementState = { progress: number; elapsed: number } | null;
+
+/**
+ * The placements a board wrote, keeping only those with a name, a place and a
+ * duration, in the order they start — so where two of a name overlap, the one
+ * that started later comes later.
+ */
+export function normalizePlacements(value: unknown): Placement[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .filter(
+      (p): p is Placement =>
+        !!p &&
+        typeof p === "object" &&
+        typeof (p as any).name === "string" &&
+        (p as any).name !== "" &&
+        Number.isFinite(Number((p as any).at)) &&
+        Number((p as any).at) >= 0 &&
+        Number((p as any).duration) > 0,
+    )
+    .map((p) => ({ name: p.name, at: Number(p.at), duration: Number(p.duration) }))
+    .sort((a, b) => a.at - b.at);
+}
+
+/**
+ * Where a placement ends on the timeline. A bounded timeline cuts it at its
+ * length; a looping one's positions stop just short of it, since its length is
+ * the next pass's start.
+ */
+function endOf(placement: Placement, extent: Extent): number {
+  const end = placement.at + placement.duration;
+  if (extent.length <= 0) {
+    return end;
+  }
+  if (extent.loop && end >= extent.length) {
+    return extent.length - 1e-9;
+  }
+  return Math.min(end, extent.length);
+}
+
+/**
+ * Each placement's end as an action whose data is its index — so the windows
+ * that decide which actions are due decide which placements ended as well.
+ */
+export function placementEnds(placements: Placement[], extent: Extent): TimelineAction[] {
+  return placements.map((p, index) => ({ at: endOf(p, extent), data: index }));
+}
+
+/**
+ * Every name placed, and where `t` is in it: playing where `t` lies in a
+ * placement of it, and null where it lies in none. A placement that `ended`
+ * in the frame without `t` lying in it is reported at its end, so the last of
+ * it is not skipped between frames. Where two of a name overlap, the later wins.
+ */
+export function placementsAt(
+  placements: Placement[],
+  t: number,
+  extent: Extent,
+  ended: number[] = [],
+): Record<string, PlacementState> {
+  const states: Record<string, PlacementState> = {};
+  placements.forEach((p, index) => {
+    const end = endOf(p, extent);
+    let state: PlacementState = null;
+    if (t >= p.at && t <= end) {
+      state = { progress: (t - p.at) / p.duration, elapsed: t - p.at };
+    } else if (ended.includes(index)) {
+      state = { progress: (end - p.at) / p.duration, elapsed: end - p.at };
+    }
+    if (state) {
+      states[p.name] = {
+        progress: Math.min(1, Math.round(state.progress * 1e9) / 1e9),
+        elapsed: state.elapsed,
+      };
+    } else if (!(p.name in states)) {
+      states[p.name] = null;
+    }
+  });
+  return states;
+}

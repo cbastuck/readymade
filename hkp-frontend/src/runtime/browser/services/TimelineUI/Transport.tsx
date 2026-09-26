@@ -1,6 +1,6 @@
 import { Maximize2, Pause, Play, Radio, Square } from "lucide-react";
 
-import { formatTime, TimelineView } from "./model";
+import { formatTime, placementNote, TimelineView } from "./model";
 
 /**
  * Play, pause and stop for a timeline keeping its own clock, and where it is.
@@ -27,6 +27,7 @@ export default function Transport({
   onExpand?: () => void;
 }) {
   const own = view.clock === "own";
+  const note = placementNote(view);
   const unit = own && view.unit === "beats" ? "beats" : "s";
 
   return (
@@ -53,9 +54,11 @@ export default function Transport({
           </button>
         </>
       ) : (
-        <span style={{ color: "var(--text-mid)" }}>
-          driven{view.offset ? `, from ${formatTime(view.offset)}` : ""}
-          {view.speed !== 1 ? `, ×${view.speed}` : ""}
+        <span
+          style={{ color: note?.warn ? "#d97706" : "var(--text-mid)" }}
+          title={note?.warn ? "A name placed on one side only: check both are spelled the same" : undefined}
+        >
+          {note ? note.text : "driven"}
         </span>
       )}
       <span className="tabular-nums" style={{ color: "var(--text)" }}>
