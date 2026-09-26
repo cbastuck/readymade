@@ -320,7 +320,7 @@ test.describe("inside a Switch case", () => {
     fs.readFileSync(new URL("../../boards/nested-rhythm-demo-board.json", import.meta.url), "utf8"),
   );
 
-  test("a Hit's volume, stepped with the arrows, reaches the Sound panel below it", async ({
+  test("a Note's volume, stepped with the arrows, reaches the Sound panel below it", async ({
     page,
     seedBoard,
     openBoard,
@@ -334,20 +334,20 @@ test.describe("inside a Switch case", () => {
     await expect(page.locator("#service-frame-groove")).toBeVisible({ timeout: 20_000 });
     await page.getByRole("button", { name: "Show the board controls" }).click();
     await page.getByRole("button", { name: "Show the board only" }).click();
-    for (const level of ["Groove", "Patterns · case 2", "Four on the floor"]) {
+    for (const level of ["Groove", "Patterns · case 2", "Four on the floor", "Beat 2"]) {
       await page.getByRole("button", { name: `Open ${level} as its own level` }).first().click();
     }
-    await page.getByRole("button", { name: "Edit block" }).first().click();
-    await page.getByRole("button", { name: "Open Two beats as its own level" }).first().click();
-
-    const snare = uses(page, "hit").last();
-    await expect(snare.getByText("60%")).toBeVisible();
+    const snare = uses(page, "note").filter({ hasText: "Snare" }).first();
+    await expect(snare.getByLabel("volume")).toHaveValue("0.6");
     await snare.getByLabel("volume").focus();
     for (let i = 0; i < 3; i++) {
       await page.keyboard.press("ArrowUp");
     }
     // No Enter, no blur: a number is taken once it stops changing.
     await expect(snare.getByLabel("volume")).toHaveValue("0.9");
-    await expect(snare.getByText("90%")).toBeVisible();
+
+    // The Sound is inside the Note, a level further in.
+    await page.getByRole("button", { name: "Open Snare as its own level" }).first().click();
+    await expect(page.getByText("90%")).toBeVisible();
   });
 });

@@ -321,8 +321,13 @@ class Timer {
 
     // Rounded, not left to setTimeout, which truncates: delays that are
     // fractions of a beat (a swung third, say) would each come out short, and
-    // a chain of them would lose a millisecond at every step.
-    await sleep(Math.round(this.toMs(this.oneShotDelay, this.oneShotDelayUnit)));
+    // a chain of them would lose a millisecond at every step. A zero delay
+    // passes straight on: a timeout would still yield, and the browser clamps
+    // nested timeouts to a few milliseconds each.
+    const delayMs = Math.round(this.toMs(this.oneShotDelay, this.oneShotDelayUnit));
+    if (delayMs > 0) {
+      await sleep(delayMs);
+    }
 
     const result = this.nextTimerArgument(params);
     this.app.notify(this, { counter: result.triggerCount });

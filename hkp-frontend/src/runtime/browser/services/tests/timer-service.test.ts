@@ -613,6 +613,16 @@ describe("Timer service – process() one-shot mode", () => {
     expect(second.call).toBe(2);
     expect(second.triggerCount).toBe(2);
   });
+
+  it("passes a zero delay on without scheduling a timeout", async () => {
+    const { timer, app } = createTimer();
+    timer.configure({ oneShotDelay: 0, oneShotDelayUnit: "beats" });
+
+    const result = await timer.process({ n: 1 });
+    expect(vi.getTimerCount()).toBe(0);
+    expect(result).toEqual({ n: 1, triggerCount: 1 });
+    expect(app.notify).toHaveBeenCalledWith(timer, { counter: 1 });
+  });
 });
 
 // ---------------------------------------------------------------------------

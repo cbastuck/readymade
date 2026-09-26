@@ -19,9 +19,9 @@ One [browser runtime](../concepts/runtime.md) holding one
 [scope](../concepts/scopes.md), the **Groove**. Every bar starts with the clock
 ticking; **Which pattern** reads the chosen pattern's name out of a slot, and a
 [Switch](../services/switch.md) routes the bar into the pattern of that name.
-Each pattern is a bar of [Browser Sub-Services](../services/browser-sub-service.md)
-nested inside each other, with [Sound](../services/sound.md) instances playing
-a fixed drum on whatever reaches them:
+Each pattern is a [Browser Sub-Service](../services/browser-sub-service.md)
+holding four more, one per beat, and each beat holds the **Notes** that fall
+in it:
 
 ```
 Groove                     (scope: own slots)
@@ -31,56 +31,67 @@ Groove                     (scope: own slots)
 ├─ Which pattern           (Hold ← slot "pattern")
 └─ Patterns                (Switch)
    ├─ Straight             (inherits slots)
-   │  ├─ Kick                   Hit
-   │  ├─ Two beats              Two beats, of Beat
-   │  │  ├─ Beat                Beat
-   │  │  │  ├─ Note             Note: hi-hat, ½ beat
-   │  │  │  │  ├─ Hit           (Sound)
-   │  │  │  │  └─ Wait          (Timer, ½ beat)
-   │  │  │  └─ Note             Note: quieter hi-hat, ½ beat
-   │  │  ├─ Snare               Hit
-   │  │  └─ Beat                Beat
-   │  └─ Two beats              Two beats, of Beat
+   │  ├─ Beat 1             (inherits slots)
+   │  │  ├─ Kick            Note: 0 · kick · 0
+   │  │  ├─ Hi-hat          Note: 0 · hi-hat · ½
+   │  │  │  ├─ Wait before  (Timer, 0 beats)
+   │  │  │  ├─ Sound        (Sound: hi-hat)
+   │  │  │  └─ Wait after   (Timer, ½ beat)
+   │  │  └─ Hi-hat          Note: 0 · quieter hi-hat · ½
+   │  ├─ Beat 2
+   │  │  ├─ Snare           Note: 0 · snare · 0
+   │  │  └─ …
+   │  ├─ Beat 3
+   │  └─ Beat 4
    ├─ Shuffle
    ├─ Four on the floor
    └─ Funk
 ```
 
-The names on the right are [blocks](../concepts/blocks.md): each is defined
-once in the board and used wherever it recurs, with what varies — which drum,
-how loud, how many beats — given at each use. A **Hit** is one drum; a **Note**
-is a Hit and then a wait; a **Beat** is two Notes; **Two beats** is a beat, a
-Snare and the beat again, and is told which beat to repeat. The board writes
-each of them down once, so the four patterns are a few lines each.
+The Note is the board's one [block](../concepts/blocks.md): defined once, used
+for every drum hit, with four parameters given at each use —
+
+| Parameter | What it is |
+|---|---|
+| `waitBefore` | beats to wait before the sound |
+| `sound` | which drum: `kick`, `snare`, `hihat` |
+| `waitAfter` | beats to wait after it |
+| `volume` | 0 to 1 |
 
 A Timer that is not periodic holds whatever it is given for its delay, then
-passes it on. A sub-service answers once its pipeline has, so **a
-sub-service lasts as long as the waits inside it**: a Beat is two eighths
-long, Two beats is two Beats long, and the Bar is two of those. Services with
-no wait between them play together, so the kick and the first hi-hat land on
-the same instant, and the snare lands with the first hi-hat of the second Beat.
+passes it on, and one of zero passes it on at once. A sub-service answers once
+its pipeline has, so **a Note lasts as long as its two waits**, a beat as
+long as its Notes, and a bar as long as its four beats. A Note with nothing after it sounds together with the next
+one: the kick and the first hi-hat land on the same instant because the kick
+waits for nothing.
+
+Each Note carries its own stretch of time, so it can be read, moved or changed
+without working out what its neighbours do. That is the reason for two waits
+where one would do: a wait before the sound could always be written as a wait
+after the note before it, but then shaping one note would mean editing
+another.
 
 ## The patterns
 
-Every pattern is a bar made the same way, from blocks that each know one
-thing. What makes them different is which blocks they are made of:
+Every pattern is four beats of Notes. What makes them different is only which
+drums are in them and how their waits are split:
 
-| Pattern | Kick | Snare | Hi-hat | What changed |
-|---|---|---|---|---|
-| **Straight** | 1 | 2, 4 | every eighth | the bar above |
-| **Shuffle** | 1, 3 | 2, 4 | every eighth, swung | the Beat waits ⅔ of a beat, then ⅓, instead of ½ and ½; a second Kick sits between the two Two beats |
-| **Four on the floor** | every beat | 2, 4 | the off-beats | the Beat is a kick, then a hi-hat half a beat later |
-| **Funk** | 1, the "and" of 2, the "and" of 3 | 2, 4 | every sixteenth | the Beat is four sixteenths; a second block, *Kick on the and*, puts a kick halfway through them |
+| Pattern | Kick | Snare | Hi-hat |
+|---|---|---|---|
+| **Straight** | 1 | 2, 4 | every eighth |
+| **Shuffle** | 1, 3 | 2, 4 | every eighth, swung |
+| **Four on the floor** | every beat | 2, 4 | the off-beats |
+| **Funk** | 1, the "and" of 2, the "and" of 3 | 2, 4 | every sixteenth |
 
-The Shuffle is the clearest case of what nesting buys: it is the Straight bar
-with one block swapped — *Two beats*, told to repeat the Swung beat instead of
-the Beat. Changing the two waits inside the Swung beat swings every hi-hat in
-the bar, because every beat of the bar is that block.
+Straight and Shuffle show what the wait before is for. A straight hi-hat is
+`0 · hi-hat · ½`: it plays, then takes half a beat. The Shuffle's second
+hi-hat of each beat is `⅙ · hi-hat · ⅓`: it still takes half a beat, but plays
+a sixth of a beat into it, which lands it two thirds of the way through the
+beat. The swing lives in that one note; the Note before it is a plain eighth.
 
-The Funk's two halves reuse *Kick on the and* in different places: the first
-half is Kick, Sixteenths, Snare, *Kick on the and*; the second is *Kick on the
-and*, Snare, Sixteenths. That puts the pushed kicks either side of the middle
-of the bar.
+The Funk's pushed kicks are the same idea without a wait: a `0 · kick · 0` Note
+just before the third sixteenth of a beat sounds with that hi-hat, on the
+"and".
 
 A pattern is chosen once per bar, when Which pattern reads the slot, so a new
 choice never cuts into the bar that is playing.
@@ -95,10 +106,10 @@ waits.
 The slot belongs to the Groove, which keeps its cells to itself
 (`scope: { slots: "own" }`); the **Tempo** Hold writes the board's tempo into
 it. Every scope inside says `scope: { slots: "inherit" }`, meaning *my cells
-are the ones of whatever holds me*. So a Beat asks Two beats, which asks the
+are the ones of whatever holds me*. So a Note asks its beat, which asks the
 pattern's bar, which asks the Groove. The Switch between them is not a scope
 and passes the question straight through: a case is a branch of the pipeline
-around it. The Beat is written without knowing where the tempo is set, or that
+around it. The Note is written without knowing where the tempo is set, or that
 it is set at all.
 
 That default matters: a scope keeps its cells to itself unless it says
@@ -111,14 +122,20 @@ bar after the one already scheduled. The pattern buttons do the same with the
 Pattern Hold. The board saves the tempo and pattern last set, so the groove
 comes back as it was left.
 
-## Why nesting
+## Why one block
 
-The rhythm is written once per level rather than once per step. The Beat
-knows nothing about snares or bars; Two beats knows nothing about hi-hats. Add
-a third hi-hat to a Beat (and make its waits a third of a beat) and every
-beat of the bar becomes a triplet. Move the snare before the first Beat in Two
-beats and the backbeat becomes an on-beat. The board has the same structure a
-score has: bars made of beats made of subdivisions.
+An earlier version of this board built each pattern from blocks for a beat,
+two beats, a swung beat and so on, each defined once and used wherever it
+recurred. It wrote less down, but the blocks were whatever happened to repeat
+across the four patterns: add a fifth pattern and the best grouping changes.
+A musician changing a pattern thinks in notes, not in which repeats a block
+happens to capture. One Note block with four parameters fits any pattern, and
+a new pattern is four new beats of Notes.
+
+The beats are plain sub-services, not blocks: they are there to give a bar the
+shape a musician reads it in, not to be reused. Each one is exactly a beat
+long, so a beat can be opened, read and changed on its own, and its Notes'
+waits add up to one.
 
 ## Timing
 
@@ -141,8 +158,8 @@ of what you hear.
 ## Try it
 
 Press **Play**, then switch between the patterns and turn **Tempo**. Open the
-Shuffle in the playground, choose **Edit block** on one of its Swung beats, and
-set the beats of its two Notes to ⅗ and ⅖ for a lighter swing, or ¾ and ¼ for a
-dotted feel. **Apply**, and every swung beat in the bar takes it. Or **Detach**
-one Two beats, delete its Snare, and hear the backbeat thin out to beat 4 only —
-in that bar alone, since the others still follow the block.
+Shuffle in the playground and set the `waitBefore` of a swung hi-hat to 0.25
+with a `waitAfter` of 0.25 for a harder swing on that one eighth — the others
+keep theirs. Or add a Note: a `0 · snare · 0` at volume 0.2, placed just
+before the second hi-hat of Straight's Beat 2, sounds with it — a ghost snare on the
+"and" of 2, and nothing else in the bar moves.

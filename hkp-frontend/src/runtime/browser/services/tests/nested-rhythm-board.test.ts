@@ -255,17 +255,17 @@ describe("the Nested Rhythm demo board", () => {
   });
 
   it("reports what happens inside a pattern under its address through the Switch", async () => {
-    // What the overview and the panels listen for: a hit inside a case is
-    // reported as groove.patterns.straight.kick, not under its bare name.
+    // What the overview and the panels listen for: a note inside a case is
+    // reported as groove.patterns.straight.beat-1.kick-1, not under its bare name.
     const { groove, app } = await buildGroove();
     await playBar(groove);
 
     const addresses = new Set(
       app.notify.mock.calls.map(([svc]: any[]) => svc.address).filter(Boolean),
     );
-    expect(addresses).toContain("groove.patterns.straight.kick");
-    // A note is a block of its own, so the hi-hat in it is one level further in.
-    expect(addresses).toContain("groove.patterns.straight.half-1.beat-1.note-1.hit");
+    expect(addresses).toContain("groove.patterns.straight.beat-1.kick-1");
+    // A note is a block of its own, so the sound in it is one level further in.
+    expect(addresses).toContain("groove.patterns.straight.beat-1.hihat-1.sound");
     groove.destroy();
   });
 

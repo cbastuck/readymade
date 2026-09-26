@@ -29,7 +29,7 @@ Setting `immediate: true` in either mode causes the first tick to fire almost in
 
 ### As a delay
 
-A one-shot Timer placed in a pipeline also delays what flows through it: `process` waits `oneShotDelay`, then passes its input on with `triggerCount` added. Each input waits on its own, so one arriving while an earlier one is still waiting is not dropped or let through early, but held for its full delay too. A periodic Timer passes its input straight through. The [Nested Rhythm](../boards/nested-rhythm-demo-board.md) board times a whole drum groove this way.
+A one-shot Timer placed in a pipeline also delays what flows through it: `process` waits `oneShotDelay`, then passes its input on with `triggerCount` added; a delay of zero passes it on at once, without yielding. Each input waits on its own, so one arriving while an earlier one is still waiting is not dropped or let through early, but held for its full delay too. A periodic Timer passes its input straight through. The [Nested Rhythm](../boards/nested-rhythm-demo-board.md) board times a whole drum groove this way.
 
 ### Beats
 

@@ -1,6 +1,6 @@
 {
   "boardName": "Nested Rhythm",
-  "description": "A drum groove built from nested sub-services, where a pipeline's length in time is the sum of the waits inside it.\n\nFour patterns — Straight, Shuffle, Four on the floor and Funk — each a **Bar** made of smaller blocks, each defined once in the board and used wherever it recurs: a Note is a hit and a wait, a Beat two Notes, Two beats a beat with a snare between, and so on. The Shuffle is the Straight bar with a swung Beat; the Funk pushes kicks onto the \"and\" with a block that is sixteenth hi-hats with a kick in the middle.\n\nEvery wait is measured in beats. The tempo and the chosen pattern are slots in the outermost scope, the **Groove**. Each bar reads the pattern and a Switch routes the bar into it; every scope inside inherits the Groove's slots, so a Beat reads the tempo from its surroundings without knowing where it is set.",
+  "description": "A drum groove built from nested sub-services, where a pipeline's length in time is the sum of the waits inside it.\n\nFour patterns — Straight, Shuffle, Four on the floor and Funk — each a **Bar** of four **Beats**, and each beat a list of **Notes**, the one block the board defines. A Note waits, plays one drum at a volume, and waits again; its two waits are its own stretch of the bar, so each note can be read and changed without looking at its neighbours. A Note with no wait after it sounds together with the next one. The Shuffle swings by giving every second hi-hat a wait before it, inside the same half beat a straight eighth takes.\n\nEvery wait is measured in beats. The tempo and the chosen pattern are slots in the outermost scope, the **Groove**. Each bar reads the pattern and a Switch routes the bar into it; every scope inside inherits the Groove's slots, so a Note reads the tempo from its surroundings without knowing where it is set.",
   "runtimes": [
     {
       "id": "ui",
@@ -81,26 +81,172 @@
                           },
                           "pipeline": [
                             {
-                              "block": "hit",
-                              "instanceId": "kick",
-                              "serviceName": "Kick",
-                              "params": {
-                                "trigger": "kick",
-                                "volume": 0.9
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-1",
+                              "serviceName": "Beat 1",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0,
+                                      "volume": 0.9
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.5
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.35
+                                    }
+                                  }
+                                ]
                               }
                             },
                             {
-                              "block": "two-beats",
-                              "instanceId": "half-1",
-                              "params": {
-                                "beat": "beat"
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-2",
+                              "serviceName": "Beat 2",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "snare-1",
+                                    "serviceName": "Snare",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "snare",
+                                      "waitAfter": 0,
+                                      "volume": 0.7
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.5
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.35
+                                    }
+                                  }
+                                ]
                               }
                             },
                             {
-                              "block": "two-beats",
-                              "instanceId": "half-2",
-                              "params": {
-                                "beat": "beat"
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-3",
+                              "serviceName": "Beat 3",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.5
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.35
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-4",
+                              "serviceName": "Beat 4",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "snare-1",
+                                    "serviceName": "Snare",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "snare",
+                                      "waitAfter": 0,
+                                      "volume": 0.7
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.5
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.35
+                                    }
+                                  }
+                                ]
                               }
                             }
                           ]
@@ -121,35 +267,183 @@
                           },
                           "pipeline": [
                             {
-                              "block": "hit",
-                              "instanceId": "kick-1",
-                              "serviceName": "Kick",
-                              "params": {
-                                "trigger": "kick",
-                                "volume": 0.9
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-1",
+                              "serviceName": "Beat 1",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0,
+                                      "volume": 0.9
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.5
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0.1667,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.3333,
+                                      "volume": 0.3
+                                    }
+                                  }
+                                ]
                               }
                             },
                             {
-                              "block": "two-beats",
-                              "instanceId": "half-1",
-                              "params": {
-                                "beat": "swung-beat"
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-2",
+                              "serviceName": "Beat 2",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "snare-1",
+                                    "serviceName": "Snare",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "snare",
+                                      "waitAfter": 0,
+                                      "volume": 0.7
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.5
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0.1667,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.3333,
+                                      "volume": 0.3
+                                    }
+                                  }
+                                ]
                               }
                             },
                             {
-                              "block": "hit",
-                              "instanceId": "kick-3",
-                              "serviceName": "Kick",
-                              "params": {
-                                "trigger": "kick",
-                                "volume": 0.8
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-3",
+                              "serviceName": "Beat 3",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0,
+                                      "volume": 0.8
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.5
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0.1667,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.3333,
+                                      "volume": 0.3
+                                    }
+                                  }
+                                ]
                               }
                             },
                             {
-                              "block": "two-beats",
-                              "instanceId": "half-2",
-                              "params": {
-                                "beat": "swung-beat"
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-4",
+                              "serviceName": "Beat 4",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "snare-1",
+                                    "serviceName": "Snare",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "snare",
+                                      "waitAfter": 0,
+                                      "volume": 0.7
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.5
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0.1667,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.3333,
+                                      "volume": 0.3
+                                    }
+                                  }
+                                ]
                               }
                             }
                           ]
@@ -170,19 +464,161 @@
                           },
                           "pipeline": [
                             {
-                              "block": "two-beats",
-                              "instanceId": "half-1",
-                              "params": {
-                                "beat": "floor-beat",
-                                "snare": 0.6
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-1",
+                              "serviceName": "Beat 1",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.9
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.45
+                                    }
+                                  }
+                                ]
                               }
                             },
                             {
-                              "block": "two-beats",
-                              "instanceId": "half-2",
-                              "params": {
-                                "beat": "floor-beat",
-                                "snare": 0.6
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-2",
+                              "serviceName": "Beat 2",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "snare-1",
+                                    "serviceName": "Snare",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "snare",
+                                      "waitAfter": 0,
+                                      "volume": 0.6
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.9
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.45
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-3",
+                              "serviceName": "Beat 3",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.9
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.45
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-4",
+                              "serviceName": "Beat 4",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "snare-1",
+                                    "serviceName": "Snare",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "snare",
+                                      "waitAfter": 0,
+                                      "volume": 0.6
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.9
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.5,
+                                      "volume": 0.45
+                                    }
+                                  }
+                                ]
                               }
                             }
                           ]
@@ -204,67 +640,279 @@
                           "pipeline": [
                             {
                               "serviceId": "sub-service",
-                              "instanceId": "half-1",
-                              "serviceName": "First half",
+                              "instanceId": "beat-1",
+                              "serviceName": "Beat 1",
                               "state": {
                                 "scope": {
                                   "slots": "inherit"
                                 },
                                 "pipeline": [
                                   {
-                                    "block": "hit",
-                                    "instanceId": "kick",
+                                    "block": "note",
+                                    "instanceId": "kick-1",
                                     "serviceName": "Kick",
                                     "params": {
-                                      "trigger": "kick",
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0,
                                       "volume": 0.9
                                     }
                                   },
                                   {
-                                    "block": "sixteenths",
-                                    "instanceId": "beat-1"
-                                  },
-                                  {
-                                    "block": "hit",
-                                    "instanceId": "snare",
-                                    "serviceName": "Snare",
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
                                     "params": {
-                                      "trigger": "snare",
-                                      "volume": 0.7
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.45
                                     }
                                   },
                                   {
-                                    "block": "kick-on-the-and",
-                                    "instanceId": "beat-2"
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.2
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-3",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.3
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-4",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.2
+                                    }
                                   }
                                 ]
                               }
                             },
                             {
                               "serviceId": "sub-service",
-                              "instanceId": "half-2",
-                              "serviceName": "Second half",
+                              "instanceId": "beat-2",
+                              "serviceName": "Beat 2",
                               "state": {
                                 "scope": {
                                   "slots": "inherit"
                                 },
                                 "pipeline": [
                                   {
-                                    "block": "kick-on-the-and",
-                                    "instanceId": "beat-1"
-                                  },
-                                  {
-                                    "block": "hit",
-                                    "instanceId": "snare",
+                                    "block": "note",
+                                    "instanceId": "snare-1",
                                     "serviceName": "Snare",
                                     "params": {
-                                      "trigger": "snare",
+                                      "waitBefore": 0,
+                                      "sound": "snare",
+                                      "waitAfter": 0,
                                       "volume": 0.7
                                     }
                                   },
                                   {
-                                    "block": "sixteenths",
-                                    "instanceId": "beat-2"
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.45
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.2
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0,
+                                      "volume": 0.8
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-3",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.3
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-4",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.2
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-3",
+                              "serviceName": "Beat 3",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.45
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.2
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "kick-1",
+                                    "serviceName": "Kick",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "kick",
+                                      "waitAfter": 0,
+                                      "volume": 0.8
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-3",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.3
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-4",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.2
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "serviceId": "sub-service",
+                              "instanceId": "beat-4",
+                              "serviceName": "Beat 4",
+                              "state": {
+                                "scope": {
+                                  "slots": "inherit"
+                                },
+                                "pipeline": [
+                                  {
+                                    "block": "note",
+                                    "instanceId": "snare-1",
+                                    "serviceName": "Snare",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "snare",
+                                      "waitAfter": 0,
+                                      "volume": 0.7
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-1",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.45
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-2",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.2
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-3",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.3
+                                    }
+                                  },
+                                  {
+                                    "block": "note",
+                                    "instanceId": "hihat-4",
+                                    "serviceName": "Hi-hat",
+                                    "params": {
+                                      "waitBefore": 0,
+                                      "sound": "hihat",
+                                      "waitAfter": 0.25,
+                                      "volume": 0.2
+                                    }
                                   }
                                 ]
                               }
@@ -285,29 +933,15 @@
   },
   "blocks": [
     {
-      "id": "hit",
-      "name": "Hit",
-      "serviceId": "hookup.to/service/sound",
-      "description": "One drum sound, played the moment it is reached. Takes no time, so it sounds together with whatever follows it.",
-      "params": {
-        "trigger": "kick",
-        "volume": 0.8
-      },
-      "state": {
-        "generator": "drums",
-        "trigger": "{{param.trigger}}",
-        "volume": "{{param.volume}}"
-      }
-    },
-    {
       "id": "note",
       "name": "Note",
       "serviceId": "sub-service",
-      "description": "A hit, then a wait: the sound and how long it lasts, in beats, before the next thing plays.",
+      "description": "One sound in its own stretch of time: a wait, the sound, and a wait. The two waits, in beats, are how long the note lasts and where in it the sound falls; either may be zero.",
       "params": {
-        "trigger": "hihat",
-        "volume": 0.5,
-        "beats": 0.5
+        "waitBefore": 0,
+        "sound": "hihat",
+        "waitAfter": 0.5,
+        "volume": 0.5
       },
       "state": {
         "scope": {
@@ -315,241 +949,34 @@
         },
         "pipeline": [
           {
-            "block": "hit",
-            "instanceId": "hit",
-            "params": {
-              "trigger": "{{param.trigger}}",
+            "serviceId": "hookup.to/service/timer",
+            "instanceId": "before",
+            "serviceName": "Wait before",
+            "state": {
+              "periodic": false,
+              "oneShotDelay": "{{param.waitBefore}}",
+              "oneShotDelayUnit": "beats"
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/sound",
+            "instanceId": "sound",
+            "serviceName": "Sound",
+            "state": {
+              "generator": "drums",
+              "trigger": "{{param.sound}}",
               "volume": "{{param.volume}}"
             }
           },
           {
             "serviceId": "hookup.to/service/timer",
-            "instanceId": "wait",
-            "serviceName": "Wait",
+            "instanceId": "after",
+            "serviceName": "Wait after",
             "state": {
               "periodic": false,
-              "oneShotDelay": "{{param.beats}}",
+              "oneShotDelay": "{{param.waitAfter}}",
               "oneShotDelayUnit": "beats"
             }
-          }
-        ]
-      }
-    },
-    {
-      "id": "beat",
-      "name": "Beat",
-      "serviceId": "sub-service",
-      "description": "One beat as two eighth-note hi-hats, the first accented.",
-      "state": {
-        "scope": {
-          "slots": "inherit"
-        },
-        "pipeline": [
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.5,
-              "beats": 0.5
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.35,
-              "beats": 0.5
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "floor-beat",
-      "name": "Kick beat",
-      "serviceId": "sub-service",
-      "description": "One beat as a kick on the beat and a hi-hat on the off-beat.",
-      "state": {
-        "scope": {
-          "slots": "inherit"
-        },
-        "pipeline": [
-          {
-            "block": "note",
-            "params": {
-              "trigger": "kick",
-              "volume": 0.9,
-              "beats": 0.5
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.45,
-              "beats": 0.5
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "swung-beat",
-      "name": "Swung beat",
-      "serviceId": "sub-service",
-      "description": "One beat as two hi-hats split two thirds to one third: the eighths of a shuffle.",
-      "state": {
-        "scope": {
-          "slots": "inherit"
-        },
-        "pipeline": [
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.5,
-              "beats": 0.6667
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.3,
-              "beats": 0.3333
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "sixteenths",
-      "name": "Sixteenths",
-      "serviceId": "sub-service",
-      "description": "One beat as four sixteenth-note hi-hats.",
-      "state": {
-        "scope": {
-          "slots": "inherit"
-        },
-        "pipeline": [
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.45,
-              "beats": 0.25
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.2,
-              "beats": 0.25
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.3,
-              "beats": 0.25
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.2,
-              "beats": 0.25
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "kick-on-the-and",
-      "name": "Kick on the and",
-      "serviceId": "sub-service",
-      "description": "Sixteenths with a kick on the \"and\" — the off-beat in the middle of the beat.",
-      "state": {
-        "scope": {
-          "slots": "inherit"
-        },
-        "pipeline": [
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.45,
-              "beats": 0.25
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.2,
-              "beats": 0.25
-            }
-          },
-          {
-            "block": "hit",
-            "serviceName": "Kick",
-            "params": {
-              "trigger": "kick",
-              "volume": 0.8
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.3,
-              "beats": 0.25
-            }
-          },
-          {
-            "block": "note",
-            "params": {
-              "trigger": "hihat",
-              "volume": 0.2,
-              "beats": 0.25
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "two-beats",
-      "name": "Two beats",
-      "serviceId": "sub-service",
-      "description": "Half a bar: a beat, a snare on the backbeat, and the beat again. Which beat is a parameter.",
-      "params": {
-        "beat": "beat",
-        "snare": 0.7
-      },
-      "state": {
-        "scope": {
-          "slots": "inherit"
-        },
-        "pipeline": [
-          {
-            "block": "{{param.beat}}",
-            "instanceId": "beat-1"
-          },
-          {
-            "block": "hit",
-            "instanceId": "snare",
-            "serviceName": "Snare",
-            "params": {
-              "trigger": "snare",
-              "volume": "{{param.snare}}"
-            }
-          },
-          {
-            "block": "{{param.beat}}",
-            "instanceId": "beat-2"
           }
         ]
       }
@@ -569,7 +996,7 @@
           "items": [
             {
               "type": "text",
-              "placeholder": "Each pattern is a bar built from smaller blocks nested inside it. Every wait is in beats; the tempo and the pattern are slots in the outermost scope, and a pattern change lands on the next bar.",
+              "placeholder": "Each pattern is a bar of four beats, and each beat a list of notes: a wait, a drum, and a wait. Every wait is in beats; the tempo and the pattern are slots in the outermost scope, and a pattern change lands on the next bar.",
               "tone": "muted",
               "fontSize": 12
             },

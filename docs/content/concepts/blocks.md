@@ -72,8 +72,8 @@ place and warned about.
 Parameters are **lexical**: inside a definition, `{{param.x}}` is that block's.
 A block used inside another is handed what it needs through its own `params`,
 which may refer to the outer block's — that is how *Note* passes `trigger` to
-*Hit*. A parameter may even name a block, `{ "block": "{{param.beat}}" }`: the
-nested-rhythm board's *Two beats* is told which beat to repeat.
+*Hit*. A parameter may even name a block, `{ "block": "{{param.beat}}" }`, so
+one definition can be told which block to repeat.
 
 A unit's parameters (`concepts/units.md`) share the syntax and not the scope:
 they are substituted into a unit's services — including the params its uses pass
