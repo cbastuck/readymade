@@ -122,65 +122,70 @@ export default function SubServicePipelineUI({
 
   // Inside a use of a block the pipeline is its definition's: nothing is added
   // to it here.
-  const selector = (idPrefix: string, compact = false) => locked ? null : (
-    <ServiceSelector
-      id={`${idPrefix}-${service.uuid}`}
-      registry={registry}
-      onAddService={append}
-      compact={compact}
-    />
-  );
+  const selector = (idPrefix: string, compact = false) =>
+    locked ? null : (
+      <ServiceSelector
+        id={`${idPrefix}-${service.uuid}`}
+        registry={registry}
+        onAddService={append}
+        compact={compact}
+      />
+    );
 
   return (
     <div className="w-full flex flex-col">
       {/* Where the content can be shown, and the two places it can be shown in:
           here inside the panel, or on a level of its own. */}
       {(!hostFolds || !collapsed) && (
-      <div className="flex w-full items-center gap-2 mt-1">
-        {!hostFolds && (
-          <>
-            <span
-              className="text-gray-400 whitespace-nowrap"
-              style={{ fontSize: 12 }}
-            >
-              Show nested sevices
-            </span>
+        <div className="flex w-full items-center gap-2 mt-1">
+          {!hostFolds && (
+            <>
+              <span
+                className="text-gray-400 whitespace-nowrap"
+                style={{ fontSize: 12 }}
+              >
+                Show nested sevices
+              </span>
 
-            <button
-              className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
-              onClick={() => setCollapsed((c) => !c)}
-              aria-label={collapsed ? "Show content inline" : "Hide inline content"}
-              title={collapsed ? "Show content inline" : "Hide inline content"}
-            >
-              {collapsed ? (
-                <ChevronRight size={14} strokeWidth={1.5} />
-              ) : (
-                <ChevronDown size={14} strokeWidth={1.5} />
-              )}
-            </button>
-          </>
-        )}
+              <button
+                className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+                onClick={() => setCollapsed((c) => !c)}
+                aria-label={
+                  collapsed ? "Show content inline" : "Hide inline content"
+                }
+                title={
+                  collapsed ? "Show content inline" : "Hide inline content"
+                }
+              >
+                {collapsed ? (
+                  <ChevronRight size={14} strokeWidth={1.5} />
+                ) : (
+                  <ChevronDown size={14} strokeWidth={1.5} />
+                )}
+              </button>
+            </>
+          )}
 
-        {/* A host that owns the fold puts this beside its own control, where
+          {/* A host that owns the fold puts this beside its own control, where
             it reads as one of the things that can be done to a pipeline rather
             than as a lone button on a row of its own. */}
-        {navigation && !hostFolds && (
-          <button
-            className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
-            onClick={() =>
-              navigation.open(service.uuid, label, depth, inlineHops > 0)
-            }
-            aria-label={`Open ${label} as its own level`}
-            title={`Open ${label} as its own level`}
-          >
-            <Maximize2 size={14} strokeWidth={1.5} />
-          </button>
-        )}
+          {navigation && !hostFolds && (
+            <button
+              className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+              onClick={() =>
+                navigation.open(service.uuid, label, depth, inlineHops > 0)
+              }
+              aria-label={`Open ${label} as its own level`}
+              title={`Open ${label} as its own level`}
+            >
+              <Maximize2 size={14} strokeWidth={1.5} />
+            </button>
+          )}
 
-        {!collapsed && (
-          <div className="flex ml-auto">{selector("sub-pipeline", true)}</div>
-        )}
-      </div>
+          {!collapsed && (
+            <div className="flex ml-auto">{selector("sub-pipeline", true)}</div>
+          )}
+        </div>
       )}
 
       {/* Shown here rather than opened, so anything nested inside it is one
@@ -210,6 +215,7 @@ export default function SubServicePipelineUI({
             <InlineHopsContext.Provider value={0}>
               <PipelineLevel
                 label={label}
+                inBlock={locked}
                 actions={<BlockEditActions />}
                 selector={selector("sub-pipeline-level", true)}
                 isEmpty={pipeline.length === 0}
@@ -242,12 +248,15 @@ export default function SubServicePipelineUI({
  */
 function PipelineLevel({
   label,
+  inBlock,
   actions,
   selector,
   isEmpty,
   children,
 }: {
   label: string;
+  /** Whether the level shows the inside of a block's use, and so is locked. */
+  inBlock: boolean;
   /** What the host has to say on its own level — e.g. applying a block edit. */
   actions?: React.ReactNode;
   selector: React.ReactNode;
@@ -285,7 +294,11 @@ function PipelineLevel({
             compact ? "py-1" : "py-2"
           }`}
         >
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+            {/* Tagged the way a runtime's header tags its type. */}
+            {inBlock && <span className="hkp-rt-badge">block</span>}
+          </div>
           {actions}
           <div className="flex ml-auto">{selector}</div>
         </div>
@@ -328,7 +341,11 @@ function liveCopy(
   ) {
     for (const name of Object.getOwnPropertyNames(proto)) {
       const member = (instance as any)[name];
-      if (name !== "constructor" && !(name in copy) && typeof member === "function") {
+      if (
+        name !== "constructor" &&
+        !(name in copy) &&
+        typeof member === "function"
+      ) {
         copy[name] = member.bind(instance);
       }
     }
@@ -480,11 +497,15 @@ function PipelineStrip({
               // The name the pipeline gives it, then the registry's — an
               // instance may carry no more than its id.
               serviceName:
-                entry.serviceName ?? descriptor?.serviceName ?? realInstance.serviceName,
+                entry.serviceName ??
+                descriptor?.serviceName ??
+                realInstance.serviceName,
               // A service that keeps no `state` of its own (Timer) is shown
               // what its host last reported, which is where a frame looks for
               // whether it is bypassed.
-              ...((realInstance as any).state === undefined ? { state: entry.state } : {}),
+              ...((realInstance as any).state === undefined
+                ? { state: entry.state }
+                : {}),
               configure: configureProxy,
             })
           : proxyInstance;
@@ -543,7 +564,8 @@ function PipelineStrip({
                     toCanonicalServiceId(entry.serviceId) === "sub-service"
                       ? {
                           id: subServiceInstance.uuid,
-                          label: subServiceInstance.serviceName || entry.serviceId,
+                          label:
+                            subServiceInstance.serviceName || entry.serviceId,
                         }
                       : undefined
                   }
