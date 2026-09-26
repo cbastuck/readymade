@@ -47,6 +47,11 @@ held in the slot `tempoSlot` names, as [Timer](./timer.md#beats) does. The
 tempo is read every frame, so a change applies from the next frame. With no
 tempo held, a beat is counted at 120 BPM.
 
+Counting beats, every frame carries the **`tempo`** it was counted at, and a
+driven timeline passes it on. What follows can then turn beats into time
+without reaching the slot, which a service inside a Tracks track cannot: a
+[Sound](./sound.md#envelope) holds its notes for beats of it.
+
 ### Length and looping
 
 `length` 0 is unbounded. A looping timeline wraps at `length`, and its
@@ -259,3 +264,7 @@ placements say when each plays and for how long.
 Its Show counts in beats at a tempo held in a slot, and places drums and
 images alike. Each drum is a looping timeline whose actions are its hits,
 followed by a Sound.
+
+`boards/pad-groove-demo-board.json` is the same idea with no picture: a pad,
+a bass line and drums. Its chords are several actions at one moment, played by
+a synth that holds them for beats of the tempo on the frame.

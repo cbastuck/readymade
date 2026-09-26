@@ -271,6 +271,15 @@ hits, a Filter and a Sound. The moon takes the name `kick`, so one placement is
 both heard and seen. Hits sound on the first frame after their moment (60 fps,
 so up to ~17 ms late); scheduling them ahead on the audio clock is not built.
 
+`pad-groove-demo-board.json` (2026-09-26) is the audio-only counterpart: a
+pad and a bass as uses of a Notes block (chords are several actions at one
+moment) beside the Drum block. Sound gained an envelope (`attack`, `release`
+after the held `noteDuration`) and note lengths in beats. A track cannot see
+the runtime's slots (Tracks owns its store), so an own clock counting beats
+now puts its `tempo` on every frame, driven timelines pass it on, and Sound
+prefers an input's `tempo` to its slot. Sound has no note-off: Pause and Stop
+end what is scheduled, not what is already sounding.
+
 Still to show: an outer level transforming a whole block (needs `group`), and
 a shared palette making the pieces read as one.
 

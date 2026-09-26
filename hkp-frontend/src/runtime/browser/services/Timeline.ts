@@ -17,6 +17,8 @@
  * - `"own"` — the timeline keeps time itself, emitting `fps` frames a second
  *   while it plays. Measured in seconds or in beats of the tempo held in the
  *   slot `tempoSlot` names, as Timer measures them. Input is ignored.
+ *   Counting beats, its frames carry the `tempo` they were counted at, so
+ *   what follows can turn beats into time without a view of the slot.
  * - `"input"` — the timeline is driven by the frames it is given. Without a
  *   `placement` its time is theirs: `t`, in whatever unit the driver counts.
  *   After the end of a stretch that does not loop, it emits null, so what
@@ -46,7 +48,8 @@
  * with the data of every action due in that frame, earliest first and in list
  * order where several share a moment. A driven timeline with no object keeps
  * the other fields of its input instead, so a frame can carry more than time
- * down through nested timelines.
+ * down through nested timelines. A `tempo` is passed on either way: a driven
+ * timeline counts in its driver's beats.
  *
  * **A jump is not a wrap.** A frame after a seek carries `jump: true`. A
  * driven timeline seeing time go backwards *without* it takes it for the
@@ -121,6 +124,8 @@ type Frame = {
   t: number;
   actions: unknown[];
   jump?: true;
+  /** Beats per minute, on the frames of a clock counting beats. */
+  tempo?: number;
   placements?: Record<string, PlacementState>;
   [property: string]: unknown;
 };
@@ -504,6 +509,9 @@ class Timeline extends ServiceBase<State> {
       frame.jump = true;
       this.jumpPending = false;
     }
+    if (this.state.unit === "beats") {
+      frame.tempo = this.tempo();
+    }
     this.app.notify(this, { t: frame.t });
     if (!this.bypass) {
       this.app.next(this, frame);
@@ -513,7 +521,7 @@ class Timeline extends ServiceBase<State> {
   /**
    * The frame for time `t`: the object with its keyframed values, or, with no
    * object, what came in. A jump is passed on either way, so a seek reaches
-   * every timeline below this one. Placements are not: the frame carries this
+   * every timeline below this one, and so is a tempo. Placements are not: the frame carries this
    * timeline's own — replacing its driver's, which were meant for this level —
    * with those that `ended` in it reported at their end.
    */
@@ -536,6 +544,9 @@ class Timeline extends ServiceBase<State> {
     }
     if (frameIn.jump === true) {
       frame.jump = true;
+    }
+    if (isNumber(frameIn.tempo)) {
+      frame.tempo = frameIn.tempo;
     }
     return frame;
   }

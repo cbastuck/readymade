@@ -1,23 +1,31 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import SoundUI from "./SoundUI";
-type NoteEvent = { frequency: number; velocity: number; duration: number };
-type NoteFrame = { notes: NoteEvent[] };
+type NoteEvent =
+  | { frequency: number; velocity: number; duration: number }
+  | { note: string };
+type NoteFrame = { notes: NoteEvent[]; tempo?: number };
 
 /**
  * Service Documentation
  * Service ID: hookup.to/service/sound
  * Service Name: Sound
- * Input:  { note: string } | Array<{ note: string }> | NoteFrame
+ * Input:  { note: string } | Array<{ note: string }> | { notes, tempo? }
  * Output: pass-through
- * Config: generator.type ("synth" | "drums"), volume, waveType, noteDuration, trigger
+ * Config: generator.type ("synth" | "drums"), volume, waveType, noteDuration, noteDurationUnit, attack, release, tempoSlot, trigger
  *
  * Two generator modes:
  *
  *   synth  — Oscillator-based. Converts note names (e.g. "C4") to Hz
  *             using standard MIDI tuning (A4 = 440 Hz). Configurable
- *             waveType and noteDuration. Also accepts NoteFrame objects
- *             from the game-of-life pipeline.
+ *             waveType and an envelope: a note rises over `attack`, is held
+ *             for `noteDuration`, then fades over `release`. The duration is
+ *             in seconds or in beats: of the `tempo` the input carries (a
+ *             Timeline counting beats puts it on its frames), else of the
+ *             tempo held in the slot `tempoSlot` names, as Timer measures
+ *             beats — read as each note starts. Also accepts
+ *             `{ notes: [...] }`, each entry a note name (`{ note }`) or, in
+ *             synth mode, a frequency (the game-of-life's NoteFrame).
  *
  *   drums  — Synthesises kick, snare, and hi-hat purely via Web Audio API
  *             (no sample files). Notes are mapped to drum types via
@@ -57,10 +65,19 @@ type State = {
   volume: number;
   generator: GeneratorType;
   waveType: WaveType;
-  noteDuration: number; // seconds, used in synth mode
+  /** How long a synth note is held, in `noteDurationUnit`, before its release. */
+  noteDuration: number;
+  noteDurationUnit: "s" | "beats";
+  /** Seconds a synth note takes to rise to full volume. */
+  attack: number;
+  /** Seconds a synth note takes to fade once it is no longer held. */
+  release: number;
+  tempoSlot: string;
   drumMap: Record<string, DrumType>; // note name → drum type
   trigger: string | null; // played for input that names no note
 };
+
+const DEFAULT_TEMPO_BPM = 120;
 
 const DEFAULT_DRUM_MAP: Record<string, DrumType> = {
   C4: "kick",
@@ -265,6 +282,10 @@ class Sound extends ServiceBase<State> {
       generator: "drums",
       waveType: "sine",
       noteDuration: 0.3,
+      noteDurationUnit: "s",
+      attack: 0.01,
+      release: 0.03,
+      tempoSlot: "tempo",
       drumMap: { ...DEFAULT_DRUM_MAP },
       trigger: null,
     });
@@ -302,6 +323,22 @@ class Sound extends ServiceBase<State> {
     if (config.drumMap !== undefined) {
       this.state.drumMap = config.drumMap;
     }
+    const envelope: Partial<State> = {};
+    for (const key of ["noteDuration", "attack", "release"] as const) {
+      const value = Number(config[key]);
+      if (config[key] !== undefined && Number.isFinite(value) && value >= 0) {
+        this.state[key] = envelope[key] = value;
+      }
+    }
+    if (config.noteDurationUnit === "s" || config.noteDurationUnit === "beats") {
+      this.state.noteDurationUnit = envelope.noteDurationUnit = config.noteDurationUnit;
+    }
+    if (typeof config.tempoSlot === "string" && config.tempoSlot) {
+      this.state.tempoSlot = envelope.tempoSlot = config.tempoSlot;
+    }
+    if (Object.keys(envelope).length > 0) {
+      this.app.notify(this, envelope);
+    }
     if (config.trigger !== undefined) {
       this.state.trigger = config.trigger || null;
       this.app.notify(this, { trigger: this.state.trigger });
@@ -319,12 +356,14 @@ class Sound extends ServiceBase<State> {
 
     const ctx = this.audioContext();
 
-    // NoteFrame from game-of-life pipeline: { notes: NoteEvent[] }
-    // Only synth mode can play frequency-based notes; drums mode requires note names.
+    // A list of notes: named ones play as a note input does; frequencies (the
+    // game-of-life's NoteFrame) only in synth mode, since drums need a name.
     if (params.notes && Array.isArray(params.notes)) {
-      if (this.state.generator === "synth") {
-        const noteFrame = params as NoteFrame;
-        for (const note of noteFrame.notes) {
+      const { notes, tempo } = params as NoteFrame;
+      for (const note of notes) {
+        if ("note" in note) {
+          this.playNoteByName(ctx, note.note, tempo);
+        } else if (this.state.generator === "synth") {
           this.playSynthNote(
             ctx,
             note.frequency,
@@ -350,9 +389,9 @@ class Sound extends ServiceBase<State> {
 
     // Single { note: string } object
     if (params.note) {
-      this.playNoteByName(ctx, params.note);
+      this.playNoteByName(ctx, params.note, params.tempo);
     } else if (this.state.trigger) {
-      this.playTrigger(ctx, this.state.trigger);
+      this.playTrigger(ctx, this.state.trigger, params.tempo);
     }
 
     this.reportLatency(ctx);
@@ -391,14 +430,14 @@ class Sound extends ServiceBase<State> {
     return periodicWaveCache.get(name)!;
   }
 
-  private playTrigger(ctx: AudioContext, trigger: string) {
+  private playTrigger(ctx: AudioContext, trigger: string, tempo?: unknown) {
     if (
       this.state.generator === "drums" &&
       DRUM_TYPES.includes(trigger as DrumType)
     ) {
       this.playDrum(ctx, trigger as DrumType);
     } else {
-      this.playNoteByName(ctx, trigger);
+      this.playNoteByName(ctx, trigger, tempo);
     }
   }
 
@@ -416,7 +455,7 @@ class Sound extends ServiceBase<State> {
     }
   }
 
-  private playNoteByName(ctx: AudioContext, note: string) {
+  private playNoteByName(ctx: AudioContext, note: string, tempo?: unknown) {
     if (this.state.generator === "drums") {
       const drumType = this.state.drumMap[note];
       if (!drumType) {
@@ -426,11 +465,30 @@ class Sound extends ServiceBase<State> {
     } else {
       const freq = noteNameToFrequency(note);
       if (freq > 0) {
-        this.playSynthNote(ctx, freq, 1, this.state.noteDuration);
+        this.playSynthNote(ctx, freq, 1, this.noteSeconds(tempo));
       }
     }
   }
 
+  /**
+   * How long a named note is held, in seconds: at the tempo its input carried,
+   * else at the one held in the tempo slot now.
+   */
+  private noteSeconds(tempo?: unknown): number {
+    if (this.state.noteDurationUnit !== "beats") {
+      return this.state.noteDuration;
+    }
+    const bpm = [tempo, this.app.slots?.()?.get(this.state.tempoSlot)]
+      .map(Number)
+      .find((value) => Number.isFinite(value) && value > 0);
+    return (this.state.noteDuration * 60) / (bpm ?? DEFAULT_TEMPO_BPM);
+  }
+
+  /**
+   * A note held for `durationSec`: it rises over the attack — cut short where
+   * the note is shorter — and fades over the release once it is let go, so a
+   * long release carries it into whatever is played next.
+   */
   private playSynthNote(
     ctx: AudioContext,
     frequency: number,
@@ -438,8 +496,7 @@ class Sound extends ServiceBase<State> {
     durationSec: number,
   ) {
     const now = ctx.currentTime;
-    const attack = 0.01;
-    const release = 0.03;
+    const { attack, release } = this.state;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -451,16 +508,21 @@ class Sound extends ServiceBase<State> {
     osc.frequency.value = frequency;
 
     const peak = velocity * this.state.volume;
-    const sustainEnd = Math.max(now + attack, now + durationSec - release);
+    const letGo = now + durationSec;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(peak, now + attack);
-    gain.gain.setValueAtTime(peak, sustainEnd);
-    gain.gain.linearRampToValueAtTime(0, now + durationSec);
+    if (attack <= durationSec) {
+      gain.gain.linearRampToValueAtTime(peak, now + attack);
+      gain.gain.setValueAtTime(peak, letGo);
+    } else {
+      // Let go before it reached full volume: it fades from where it got to.
+      gain.gain.linearRampToValueAtTime(peak * (durationSec / attack), letGo);
+    }
+    gain.gain.linearRampToValueAtTime(0, letGo + release);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + durationSec);
+    osc.stop(letGo + release);
   }
 }
 

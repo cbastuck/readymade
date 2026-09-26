@@ -289,6 +289,24 @@ describe("Timeline – own clock", () => {
     timeline.destroy();
   });
 
+  it("puts the tempo it counted at on its frames, and only when counting beats", () => {
+    const { timeline, app, slots } = createTimeline();
+    slots.set("tempo", 90);
+    timeline.configure({ fps: 10, unit: "beats", play: true });
+    vi.advanceTimersByTime(200);
+    expect(frames(app).at(-1).tempo).toBe(90);
+    slots.set("tempo", 140);
+    vi.advanceTimersByTime(100);
+    expect(frames(app).at(-1).tempo).toBe(140);
+    timeline.destroy();
+
+    const seconds = createTimeline();
+    seconds.timeline.configure({ fps: 10, play: true });
+    vi.advanceTimersByTime(200);
+    expect(frames(seconds.app).at(-1)).not.toHaveProperty("tempo");
+    seconds.timeline.destroy();
+  });
+
   it("counts beats at 120 BPM when no tempo is held", () => {
     const { timeline, app } = createTimeline();
     timeline.configure({ fps: 10, unit: "beats", play: true });
@@ -447,6 +465,13 @@ describe("Timeline – driven", () => {
 });
 
 describe("Timeline – an animated object", () => {
+  it("passes its driver's tempo on, since it counts in its driver's beats", () => {
+    const { timeline } = createTimeline();
+    timeline.configure({ clock: "input", object: { type: "rect" } });
+    expect(timeline.process({ t: 1, tempo: 96 })).toMatchObject({ type: "rect", tempo: 96 });
+    expect(timeline.process({ t: 1.5 })).not.toHaveProperty("tempo");
+  });
+
   const image = { type: "image", url: "star.svg", height: "20%" };
   const keyframes = {
     rotate: [

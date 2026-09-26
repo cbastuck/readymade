@@ -18,7 +18,7 @@ Sound receives note events from the pipeline and plays them through the browser'
 
 | Mode | Description |
 |---|---|
-| `synth` | Oscillator-based synthesis. Converts note names (e.g. `"C4"`) to Hz using standard MIDI tuning (A4 = 440 Hz). Configurable waveform and note duration. Also accepts `NoteFrame` objects from the Game of Life pipeline. |
+| `synth` | Oscillator-based synthesis. Converts note names (e.g. `"C4"`) to Hz using standard MIDI tuning (A4 = 440 Hz). Configurable waveform and envelope (see *Envelope*). Also accepts `NoteFrame` objects from the Game of Life pipeline. |
 | `drums` | Synthesises kick, snare, and hi-hat patterns using only the Web Audio API — no sample files required. Note names are mapped to drum types via `drumMap`. |
 
 The service passes the incoming data through unchanged after triggering audio playback.
@@ -36,9 +36,30 @@ A note is started the moment its input arrives. It is heard after the latency th
 | `generator.type` | `"synth"` \| `"drums"` | `"synth"` | Generator mode |
 | `volume` | `number` | `1.0` | Master volume (0–1) |
 | `waveType` | `string` | `"sine"` | Oscillator waveform for `synth` mode. One of `sine`, `triangle`, `square`, `sawtooth`, `organ`, `soft`, `fifth` |
-| `noteDuration` | `number` | `0.2` | Note duration in seconds for `synth` mode |
+| `noteDuration` | `number` | `0.3` | How long a `synth` note is held before its release, in `noteDurationUnit` |
+| `noteDurationUnit` | `"s"` \| `"beats"` | `"s"` | Seconds, or beats of a tempo (see *Envelope*) |
+| `attack` | `number` | `0.01` | Seconds a `synth` note takes to rise to full volume |
+| `release` | `number` | `0.03` | Seconds a `synth` note takes to fade once it is no longer held |
+| `tempoSlot` | `string` | `"tempo"` | The slot a tempo in BPM is read from when the input carries none |
 | `drumMap` | `object` | `{ C4: "kick", D4: "snare", E4: "hihat" }` | Map of note name → drum type for `drums` mode |
 | `trigger` | `string` \| `null` | `null` | What to play for an input that names no note of its own, such as a Timer tick: a note name, or in `drums` mode also `"kick"`, `"snare"` or `"hihat"`. Unset, such an input plays nothing. A note the input names always wins. |
+
+### Envelope
+
+A `synth` note rises from silence to full volume over `attack`, is held until
+`noteDuration` has passed since it started, and then fades out over `release`.
+The release comes after the note, so a long one carries it into whatever is
+played next: a pad is a slow attack, a note held for the length of its chord
+and a long release. A note let go before its attack is over fades from where it
+got to.
+
+With `noteDurationUnit` `"beats"` the note is held for beats of a tempo, read
+as each note starts. The tempo is the input's `tempo` where it carries one (a
+[Timeline](./timeline.md) counting beats puts it on every frame), otherwise
+the one held in the slot `tempoSlot` names, as [Timer](./timer.md#beats) reads
+it, and 120 BPM when there is neither. A Sound inside a
+[Tracks](./tracks.md) track cannot see the slots around it, so there the tempo
+has to come with the input.
 
 ### Custom waveforms
 
@@ -52,7 +73,8 @@ A note is started the moment its input arrives. It is heard after the latency th
 |---|---|
 | `{ note: "C4" }` | Single note |
 | `[{ note: "C4" }, { note: "E4" }]` | Chord (multiple simultaneous notes) |
-| `{ notes: [{ frequency, velocity, duration }] }` | `NoteFrame` from [Game of Life](./game-of-life.md) |
+| `{ notes: [{ note: "C4" }, …], tempo? }` | Chord, held in beats of the `tempo` it carries |
+| `{ notes: [{ frequency, velocity, duration }] }` | `NoteFrame` from [Game of Life](./game-of-life.md) (`synth` only) |
 | Anything else | Plays `trigger`, if one is set |
 
 ---

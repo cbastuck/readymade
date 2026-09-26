@@ -11,9 +11,17 @@ import SoundDescriptor from "../Sound";
 
 class StubParam {
   value = 0;
-  setValueAtTime() {}
-  exponentialRampToValueAtTime() {}
-  linearRampToValueAtTime() {}
+  /** Every change scheduled, as [what, value, when]. */
+  calls: Array<[string, number, number]> = [];
+  setValueAtTime(value: number, time: number) {
+    this.calls.push(["set", value, time]);
+  }
+  exponentialRampToValueAtTime(value: number, time: number) {
+    this.calls.push(["exp", value, time]);
+  }
+  linearRampToValueAtTime(value: number, time: number) {
+    this.calls.push(["linear", value, time]);
+  }
 }
 
 class StubNode {
@@ -22,9 +30,12 @@ class StubNode {
   Q = new StubParam();
   type = "";
   buffer: unknown = null;
+  stoppedAt: number | null = null;
   connect() {}
   start() {}
-  stop() {}
+  stop(time: number) {
+    this.stoppedAt = time;
+  }
   setPeriodicWave() {}
 }
 
@@ -36,12 +47,16 @@ class StubAudioContext {
   sampleRate = 44100;
   destination = {};
   created: string[] = [];
+  gains: StubNode[] = [];
+  oscillators: StubNode[] = [];
   constructor() {
     contexts.push(this);
   }
   createOscillator() {
     this.created.push("oscillator");
-    return new StubNode();
+    const node = new StubNode();
+    this.oscillators.push(node);
+    return node;
   }
   createBufferSource() {
     this.created.push("noise");
@@ -51,7 +66,9 @@ class StubAudioContext {
     return new StubNode();
   }
   createGain() {
-    return new StubNode();
+    const node = new StubNode();
+    this.gains.push(node);
+    return node;
   }
   createBuffer(_channels: number, length: number) {
     return { getChannelData: () => new Float32Array(length) };
@@ -65,8 +82,13 @@ class StubAudioContext {
   }
 }
 
-function createSound() {
-  const app = { notify: vi.fn(), next: vi.fn(), sendAction: vi.fn() };
+function createSound(slots?: Map<string, unknown>) {
+  const app = {
+    notify: vi.fn(),
+    next: vi.fn(),
+    sendAction: vi.fn(),
+    ...(slots ? { slots: () => slots } : {}),
+  };
   const sound = SoundDescriptor.create(
     app as any,
     "test-board",
@@ -193,6 +215,79 @@ describe("Sound – audio context", () => {
     // Once: the listener goes with the gesture that used it.
     window.dispatchEvent(new Event("pointerdown"));
     expect(ctx.resumed).toBe(before + 1);
+    sound.destroy();
+  });
+});
+
+describe("Sound – envelope", () => {
+  it("rises over the attack, holds for the duration, then fades over the release", () => {
+    const { sound } = createSound();
+    sound.configure({
+      generator: "synth",
+      volume: 0.5,
+      attack: 0.4,
+      noteDuration: 2,
+      release: 1,
+    });
+    sound.process({ note: "A3" });
+    const [gain] = contexts[0].gains;
+    expect(gain.gain.calls).toEqual([
+      ["set", 0, 0],
+      ["linear", 0.5, 0.4],
+      ["set", 0.5, 2],
+      ["linear", 0, 3],
+    ]);
+    // Sounding through its release, not cut at the end of the duration.
+    expect(contexts[0].oscillators[0].stoppedAt).toBe(3);
+    sound.destroy();
+  });
+
+  it("fades from where it got to when let go before the attack is over", () => {
+    const { sound } = createSound();
+    sound.configure({ generator: "synth", volume: 1, attack: 1, noteDuration: 0.25, release: 0.5 });
+    sound.process({ note: "A3" });
+    expect(contexts[0].gains[0].gain.calls).toEqual([
+      ["set", 0, 0],
+      ["linear", 0.25, 0.25],
+      ["linear", 0, 0.75],
+    ]);
+    sound.destroy();
+  });
+
+  it("holds a note for beats of the tempo held in the tempo slot", () => {
+    const slots = new Map<string, unknown>([["tempo", 90]]);
+    const { sound, app } = createSound(slots);
+    sound.configure({ generator: "synth", noteDuration: 3, noteDurationUnit: "beats", release: 0 });
+    expect(app.notify).toHaveBeenCalledWith(sound, {
+      noteDuration: 3,
+      release: 0,
+      noteDurationUnit: "beats",
+    });
+    sound.process({ note: "A3" });
+    // Three beats at 90 BPM.
+    expect(contexts[0].oscillators[0].stoppedAt).toBeCloseTo(2);
+    // Read as each note starts: a tempo change applies to the next one.
+    slots.set("tempo", 180);
+    sound.process({ note: "A3" });
+    expect(contexts[0].oscillators[1].stoppedAt).toBeCloseTo(1);
+    sound.destroy();
+  });
+
+  it("plays a list of named notes, held in beats of the tempo it carries", () => {
+    // A slot says 60, the input says 120: what came with the notes wins.
+    const slots = new Map<string, unknown>([["tempo", 60]]);
+    const { sound } = createSound(slots);
+    sound.configure({ generator: "synth", noteDuration: 4, noteDurationUnit: "beats", release: 0 });
+    sound.process({ notes: [{ note: "A3" }, { note: "C4" }], tempo: 120 });
+    expect(contexts[0].oscillators.map((o) => o.stoppedAt)).toEqual([2, 2]);
+    sound.destroy();
+  });
+
+  it("plays every note of a chord with the same envelope", () => {
+    const { sound } = createSound();
+    sound.configure({ generator: "synth", noteDuration: 1, release: 0.5 });
+    sound.process([{ note: "A3" }, { note: "C4" }, { note: "E4" }]);
+    expect(contexts[0].oscillators.map((o) => o.stoppedAt)).toEqual([1.5, 1.5, 1.5]);
     sound.destroy();
   });
 });
