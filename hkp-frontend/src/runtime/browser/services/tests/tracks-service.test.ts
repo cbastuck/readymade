@@ -95,6 +95,19 @@ describe("Tracks service", () => {
     ]);
   });
 
+  it("hands on only the reduced answer, never a track's own", async () => {
+    // A track's answer is collected for the reduce; pushing it onward as well
+    // would reach the services after Tracks once per track, unreduced.
+    const { service, app } = createTracks();
+    service.configure({
+      tracks: [answering("a", 1), answering("b", 2)],
+      reduce: reducer("params.results[0] + params.results[1]"),
+    });
+
+    expect(await service.process({})).toBe(3);
+    expect(app.next).not.toHaveBeenCalled();
+  });
+
   it("leaves a hole where a track had nothing to say", async () => {
     const { service } = createTracks();
     service.configure({

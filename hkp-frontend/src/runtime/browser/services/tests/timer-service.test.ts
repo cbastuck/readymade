@@ -10,7 +10,7 @@
  *    restarts silently when value/unit changes while already running
  *  - One-shot mode via configure(start) and via process()
  *  - process(): passthrough for periodic, delay then fire for one-shot,
- *    dropped if already sleeping
+ *    each input delayed on its own
  *  - until condition: auto-stops after triggerCount is exceeded
  *  - notify contract: running, counter, periodicValue, periodicUnit, oneShotDelay
  *  - destroy(): clears timer
@@ -21,6 +21,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import TimerDescriptor from "../base/Timer";
+import { createSlotStore } from "../../../slots";
 
 const TimerService = TimerDescriptor.service;
 
@@ -591,20 +592,26 @@ describe("Timer service – process() one-shot mode", () => {
     expect(result).toEqual({ n: 1, triggerCount: 1 });
   });
 
-  it("drops second process() call that arrives while already sleeping", async () => {
-    const { timer, app } = createTimer();
+  it("delays a call that arrives while an earlier one is still waiting", async () => {
+    const { timer } = createTimer();
     timer.configure({ oneShotDelay: 500, oneShotDelayUnit: "ms" });
 
+    let second: any;
     const p1 = timer.process({ call: 1 });
-    // Second call arrives before first has resolved
-    const p2 = timer.process({ call: 2 });
-    vi.advanceTimersByTime(500);
+    vi.advanceTimersByTime(200);
+    // Second call arrives before the first has resolved
+    const p2 = timer.process({ call: 2 }).then((r) => (second = r));
 
-    const [r1, r2] = await Promise.all([p1, p2]);
-    // First call completes normally, second is dropped (returns params unchanged)
-    expect(r1.triggerCount).toBe(1);
-    // Dropped call returns params without triggerCount increment applied in sleep path
-    expect(r2).toEqual({ call: 2 });
+    vi.advanceTimersByTime(300);
+    expect((await p1).call).toBe(1);
+    await Promise.resolve();
+    // Not let through early: it waits its own full delay
+    expect(second).toBeUndefined();
+
+    vi.advanceTimersByTime(200);
+    await p2;
+    expect(second.call).toBe(2);
+    expect(second.triggerCount).toBe(2);
   });
 });
 
@@ -691,5 +698,171 @@ describe("Timer service – destroy()", () => {
   it("calling destroy on a stopped timer is safe", () => {
     const { timer } = createTimer();
     expect(() => timer.destroy()).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// beats – durations measured at a tempo held in a slot
+// ---------------------------------------------------------------------------
+
+describe("Timer service – beats", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "setInterval", "clearTimeout", "clearInterval", "Date"],
+    });
+  });
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  function createTimerWithSlots() {
+    const slots = createSlotStore();
+    const app = { ...createMockApp(), slots: () => slots };
+    const timer = new TimerService(app, "test-board", {}, "timer-1");
+    return { timer, app, slots };
+  }
+
+  it("delays by beats of the tempo held in the slot", async () => {
+    const { timer, slots } = createTimerWithSlots();
+    slots.set("tempo", 120); // 500 ms a beat
+    timer.configure({ oneShotDelay: 0.5, oneShotDelayUnit: "beats" });
+
+    let done = false;
+    const p = timer.process({}).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(249);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await p;
+    expect(done).toBe(true);
+  });
+
+  it("reads the tempo on each wait, so a change applies to the next one", async () => {
+    const { timer, slots } = createTimerWithSlots();
+    slots.set("tempo", 60); // 1000 ms a beat
+    timer.configure({ oneShotDelay: 1, oneShotDelayUnit: "beats" });
+
+    const first = timer.process({});
+    await vi.advanceTimersByTimeAsync(1000);
+    await first;
+
+    slots.set("tempo", 240); // 250 ms a beat
+    let done = false;
+    const second = timer.process({}).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(250);
+    await second;
+    expect(done).toBe(true);
+  });
+
+  it("reads the slot it is told to", async () => {
+    const { timer, app, slots } = createTimerWithSlots();
+    slots.set("tempo", 60);
+    slots.set("half-time", 30); // 2000 ms a beat
+    timer.configure({ tempoSlot: "half-time", oneShotDelay: 1, oneShotDelayUnit: "beats" });
+    expect(app.notify).toHaveBeenCalledWith(timer, { tempoSlot: "half-time" });
+
+    let done = false;
+    const p = timer.process({}).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await p;
+    expect(done).toBe(true);
+  });
+
+  it("counts 120 BPM where no tempo is held", async () => {
+    const { timer } = createTimerWithSlots();
+    timer.configure({ oneShotDelay: 1, oneShotDelayUnit: "beats" });
+
+    let done = false;
+    const p = timer.process({}).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(499);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await p;
+    expect(done).toBe(true);
+  });
+
+  it("ticks periodically in beats, each interval at the tempo held when it begins", () => {
+    const { timer, app, slots } = createTimerWithSlots();
+    slots.set("tempo", 120);
+    timer.configure({
+      periodic: true,
+      periodicValue: 4, // a bar of 4/4: 2000 ms at 120
+      periodicUnit: "beats",
+      start: true,
+    });
+    expect(timer.running).toBe(true);
+
+    vi.advanceTimersByTime(2000);
+    expect(app.next).toHaveBeenCalledTimes(1);
+
+    // Already scheduled at 120, so the tick after this one is still 2000 ms
+    // away; the one after that is measured at the new tempo.
+    slots.set("tempo", 60);
+    vi.advanceTimersByTime(2000);
+    expect(app.next).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(3999);
+    expect(app.next).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(1);
+    expect(app.next).toHaveBeenCalledTimes(3);
+  });
+
+  it("measures the grid from when an immediate first tick fired", () => {
+    // A busy page fires the immediate tick late; the second tick is one full
+    // interval after the first, however late the first one was.
+    const { timer, app, slots } = createTimerWithSlots();
+    slots.set("tempo", 120);
+    timer.configure({
+      periodic: true,
+      periodicValue: 4,
+      periodicUnit: "beats",
+      start: true,
+      immediate: true,
+    });
+    expect(timer.running).toBe(true);
+
+    vi.advanceTimersByTime(1);
+    expect(app.next).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1999);
+    expect(app.next).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1);
+    expect(app.next).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not tick at all when stopped before an immediate tick fired", () => {
+    const { timer, app } = createTimerWithSlots();
+    timer.configure({
+      periodic: true,
+      periodicValue: 1,
+      periodicUnit: "beats",
+      start: true,
+      immediate: true,
+    });
+    timer.configure({ stop: true });
+    vi.advanceTimersByTime(5000);
+    expect(app.next).not.toHaveBeenCalled();
+  });
+
+  it("stops ticking in beats when stopped, and at its until", () => {
+    const { timer, app } = createTimerWithSlots();
+    timer.configure({
+      periodic: true,
+      periodicValue: 1,
+      periodicUnit: "beats",
+      until: { triggerCount: 2 },
+      start: true,
+    });
+    vi.advanceTimersByTime(5000);
+    expect(app.next).toHaveBeenCalledTimes(2);
+    expect(timer.running).toBe(false);
+
+    timer.configure({ start: true });
+    vi.advanceTimersByTime(500);
+    expect(app.next).toHaveBeenCalledTimes(3);
+    timer.configure({ stop: true });
+    expect(timer.running).toBe(false);
+    vi.advanceTimersByTime(5000);
+    expect(app.next).toHaveBeenCalledTimes(3);
   });
 });

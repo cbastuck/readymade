@@ -10,7 +10,7 @@ type NoteFrame = { notes: NoteEvent[] };
  * Service Name: Sound
  * Input:  { note: string } | Array<{ note: string }> | NoteFrame
  * Output: pass-through
- * Config: generator.type ("synth" | "drums"), volume, waveType, noteDuration
+ * Config: generator.type ("synth" | "drums"), volume, waveType, noteDuration, trigger
  *
  * Two generator modes:
  *
@@ -22,6 +22,10 @@ type NoteFrame = { notes: NoteEvent[] };
  *   drums  — Synthesises kick, snare, and hi-hat purely via Web Audio API
  *             (no sample files). Notes are mapped to drum types via
  *             drumMap (default: C4→kick, D4→snare, E4→hihat).
+ *
+ * trigger — what to play for an input that names no note of its own (e.g. a
+ *           Timer tick): a note name, or in drums mode also a drum name.
+ *           Unset, such an input plays nothing.
  */
 
 const serviceId = "hookup.to/service/sound";
@@ -47,6 +51,7 @@ const CUSTOM_WAVES: Record<string, { real: number[]; imag: number[] }> = {
   },
 };
 export type DrumType = "kick" | "snare" | "hihat";
+export const DRUM_TYPES: DrumType[] = ["kick", "snare", "hihat"];
 
 type State = {
   volume: number;
@@ -54,6 +59,7 @@ type State = {
   waveType: WaveType;
   noteDuration: number; // seconds, used in synth mode
   drumMap: Record<string, DrumType>; // note name → drum type
+  trigger: string | null; // played for input that names no note
 };
 
 const DEFAULT_DRUM_MAP: Record<string, DrumType> = {
@@ -170,11 +176,83 @@ function synthesizeHihat(ctx: AudioContext, volume: number) {
   noiseSource.stop(now + duration);
 }
 
+// ── Shared audio context ─────────────────────────────────────────────────────
+
+// One context for every Sound instance: each context is its own audio graph and
+// output stream, and browsers cap how many may be open at once.
+//
+// Opened as soon as a Sound exists rather than on the first note: constructing
+// a context opens the audio device, which blocks for a noticeable time (~150 ms
+// measured in Chromium), and paid on the first note that is a first note played
+// late. A context opened before the page has had a user gesture starts
+// suspended, so it is resumed on the first gesture anywhere on the page — the
+// press that starts playback, at the latest.
+//
+// Closed a while after the last instance is destroyed rather than at once, so
+// a pipeline rebuilt around its Sounds does not reopen the device.
+let sharedCtx: AudioContext | null = null;
+const periodicWaveCache = new Map<string, PeriodicWave>();
+const liveInstances = new Set<object>();
+const CLOSE_AFTER_MS = 5000;
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+const GESTURES = ["pointerdown", "keydown", "touchstart"] as const;
+
+function resumeOnGesture() {
+  if (sharedCtx?.state === "suspended") {
+    sharedCtx.resume();
+  }
+  for (const gesture of GESTURES) {
+    window.removeEventListener(gesture, resumeOnGesture, true);
+  }
+}
+
+function sharedAudioContext(): AudioContext {
+  if (closeTimer) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+  if (!sharedCtx || sharedCtx.state === "closed") {
+    sharedCtx = new AudioContext({ latencyHint: "interactive" });
+    periodicWaveCache.clear();
+  }
+  if (sharedCtx.state === "suspended") {
+    sharedCtx.resume();
+  }
+  return sharedCtx;
+}
+
+/** Opens the shared context ahead of the first note, where the page has audio. */
+function warmAudioContext() {
+  if (typeof AudioContext === "undefined") {
+    return;
+  }
+  const ctx = sharedAudioContext();
+  if (ctx.state === "suspended" && typeof window !== "undefined") {
+    for (const gesture of GESTURES) {
+      window.addEventListener(gesture, resumeOnGesture, true);
+    }
+  }
+}
+
+function releaseAudioContext(owner: object) {
+  liveInstances.delete(owner);
+  if (liveInstances.size > 0 || !sharedCtx || closeTimer) {
+    return;
+  }
+  closeTimer = setTimeout(() => {
+    closeTimer = null;
+    if (liveInstances.size === 0 && sharedCtx) {
+      sharedCtx.close();
+      sharedCtx = null;
+      periodicWaveCache.clear();
+    }
+  }, CLOSE_AFTER_MS);
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 class Sound extends ServiceBase<State> {
-  private ctx: AudioContext | null = null;
-  private periodicWaveCache = new Map<string, PeriodicWave>();
+  private reportedLatencyMs: number | null = null;
 
   constructor(
     app: AppInstance,
@@ -188,7 +266,10 @@ class Sound extends ServiceBase<State> {
       waveType: "sine",
       noteDuration: 0.3,
       drumMap: { ...DEFAULT_DRUM_MAP },
+      trigger: null,
     });
+    liveInstances.add(this);
+    warmAudioContext();
   }
 
   configure(config: any) {
@@ -221,12 +302,14 @@ class Sound extends ServiceBase<State> {
     if (config.drumMap !== undefined) {
       this.state.drumMap = config.drumMap;
     }
+    if (config.trigger !== undefined) {
+      this.state.trigger = config.trigger || null;
+      this.app.notify(this, { trigger: this.state.trigger });
+    }
   }
 
   destroy() {
-    this.ctx?.close();
-    this.ctx = null;
-    this.periodicWaveCache.clear();
+    releaseAudioContext(this);
   }
 
   process(params: any): any {
@@ -268,33 +351,69 @@ class Sound extends ServiceBase<State> {
     // Single { note: string } object
     if (params.note) {
       this.playNoteByName(ctx, params.note);
+    } else if (this.state.trigger) {
+      this.playTrigger(ctx, this.state.trigger);
     }
 
+    this.reportLatency(ctx);
     return params;
   }
 
   // ── Private ──────────────────────────────────────────────────────────────
 
+  /**
+   * How long after a note starts it is heard, as the browser reports it: the
+   * context's own buffering plus the output device's. Reported when it
+   * changes; a Bluetooth device typically adds far more than wired speakers.
+   */
+  private reportLatency(ctx: AudioContext) {
+    const ms = Math.round(
+      ((ctx.baseLatency ?? 0) + (ctx.outputLatency ?? 0)) * 1000,
+    );
+    if (ms !== this.reportedLatencyMs) {
+      this.reportedLatencyMs = ms;
+      this.app.notify(this, { outputLatencyMs: ms });
+    }
+  }
+
   private audioContext(): AudioContext {
-    if (!this.ctx || this.ctx.state === "closed") {
-      this.ctx = new AudioContext();
-      this.periodicWaveCache.clear();
-    }
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
-    return this.ctx;
+    return sharedAudioContext();
   }
 
   private getPeriodicWave(ctx: AudioContext, name: string): PeriodicWave {
-    if (!this.periodicWaveCache.has(name)) {
+    if (!periodicWaveCache.has(name)) {
       const { real, imag } = CUSTOM_WAVES[name];
-      this.periodicWaveCache.set(
+      periodicWaveCache.set(
         name,
         ctx.createPeriodicWave(new Float32Array(real), new Float32Array(imag)),
       );
     }
-    return this.periodicWaveCache.get(name)!;
+    return periodicWaveCache.get(name)!;
+  }
+
+  private playTrigger(ctx: AudioContext, trigger: string) {
+    if (
+      this.state.generator === "drums" &&
+      DRUM_TYPES.includes(trigger as DrumType)
+    ) {
+      this.playDrum(ctx, trigger as DrumType);
+    } else {
+      this.playNoteByName(ctx, trigger);
+    }
+  }
+
+  private playDrum(ctx: AudioContext, drumType: DrumType) {
+    switch (drumType) {
+      case "kick":
+        synthesizeKick(ctx, this.state.volume);
+        break;
+      case "snare":
+        synthesizeSnare(ctx, this.state.volume);
+        break;
+      case "hihat":
+        synthesizeHihat(ctx, this.state.volume);
+        break;
+    }
   }
 
   private playNoteByName(ctx: AudioContext, note: string) {
@@ -303,17 +422,7 @@ class Sound extends ServiceBase<State> {
       if (!drumType) {
         return;
       }
-      switch (drumType) {
-        case "kick":
-          synthesizeKick(ctx, this.state.volume);
-          break;
-        case "snare":
-          synthesizeSnare(ctx, this.state.volume);
-          break;
-        case "hihat":
-          synthesizeHihat(ctx, this.state.volume);
-          break;
-      }
+      this.playDrum(ctx, drumType);
     } else {
       const freq = noteNameToFrequency(note);
       if (freq > 0) {

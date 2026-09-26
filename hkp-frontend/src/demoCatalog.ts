@@ -214,6 +214,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     icon: "🗳️",
     tags: ["Needs Node", "SQL"],
   },
+  {
+    slug: "nested-rhythm",
+    label: "Nested Rhythm",
+    description:
+      "A drum groove timed by nothing but nesting: hi-hats in a Beat, a snare between two Beats, a kick at the top of the Bar. Every wait is in beats, and the tempo is one slot in the outermost scope that every level inherits. Turn the tempo and watch the playhead move down through the levels.",
+    icon: "🥁",
+    tags: ["Audio"],
+  },
 ];
 
 export const ALL_DEMO_TAGS = Array.from(

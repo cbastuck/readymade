@@ -40,6 +40,14 @@ Browser Sub-Service embeds a complete inner pipeline (a `BrowserRuntimeScope`) i
 | `stopPropagation` | `boolean` | `false` | Whether what the pipeline produced leaves this service — see [SubService](./sub-service.md) |
 | `scope` | `{ slots }` | `{ slots: "own" }` | Which cells a [`hold`](./hold.md) inside reaches |
 
+### Commands
+
+| Command | Description |
+|---|---|
+| `cancel` | Ends every pass running inside this scope and the scopes nested in it. A pass ends at the service it is in: that service finishes (a waiting [Timer](./timer.md) waits out its delay), then nothing after it runs and nothing leaves the scope. Passes started afterwards run normally, and nothing is rebuilt. It does not stop a service that emits of its own accord, such as a periodic Timer, which has its own `stop`. **Browser only.** |
+
+A board keeps a scope's pipeline as its services currently are, including changes sent straight to a service inside it by its [scoped address](../concepts/scopes.md).
+
 ### Pipeline entry shape
 
 ```json

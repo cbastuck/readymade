@@ -27,6 +27,18 @@ The Timer service produces trigger events on a time-based schedule. It supports 
 
 Setting `immediate: true` in either mode causes the first tick to fire almost instantly (1 ms) before the regular schedule begins.
 
+### As a delay
+
+A one-shot Timer placed in a pipeline also delays what flows through it: `process` waits `oneShotDelay`, then passes its input on with `triggerCount` added. Each input waits on its own, so one arriving while an earlier one is still waiting is not dropped or let through early, but held for its full delay too. A periodic Timer passes its input straight through. The [Nested Rhythm](../boards/nested-rhythm-demo-board.md) board times a whole drum groove this way.
+
+### Beats
+
+**Browser only.** `"beats"` as `periodicUnit` or `oneShotDelayUnit` measures a duration in beats of a tempo held in a [slot](./hold.md#where-its-cells-live), named by `tempoSlot`. `oneShotDelay: 0.5` in beats is an eighth note; `periodicValue: 4` is a bar of 4/4. The slot holds a number of beats per minute, usually written by a [Hold](./hold.md) given a `value`. With no tempo held, a beat is counted at 120 BPM.
+
+The slot is read each time a duration is needed rather than when the Timer is configured. A delay picks up a new tempo on its next wait. A periodic Timer in beats schedules one tick at a time, each at the tempo held when its interval starts, so a change applies from the tick after the one already scheduled. Because the tempo is looked up rather than configured, it can sit in the outermost of several nested [scopes](../concepts/scopes.md) and reach every Timer inside the ones that inherit its slots.
+
+`"bpm"` is different: it is a *rate* for a periodic Timer (`periodicValue: 120, periodicUnit: "bpm"` ticks 120 times a minute) and reads no slot.
+
 ---
 
 ## Configuration
@@ -35,9 +47,10 @@ Setting `immediate: true` in either mode causes the first tick to fire almost in
 |---|---|---|---|
 | `periodic` | `boolean` | `false` | When `true`, the timer fires repeatedly at the configured interval. When `false`, fires once. |
 | `periodicValue` | `number` | `1` | Numeric amount for the repeating interval. Interpreted in `periodicUnit`. |
-| `periodicUnit` | `string` | `"s"` | Time unit for `periodicValue`. Accepts any [moment.js duration unit](https://momentjs.com/docs/#/durations/): `"ms"`, `"s"`, `"m"`, `"h"`, `"d"`, etc. |
+| `periodicUnit` | `string` | `"s"` | Time unit for `periodicValue`. Accepts any [moment.js duration unit](https://momentjs.com/docs/#/durations/): `"ms"`, `"s"`, `"m"`, `"h"`, `"d"`, etc., as well as the rates `"bpm"` and `"hz"` and, in the browser, `"beats"`. |
 | `oneShotDelay` | `number` | `0` | Delay before a one-shot timer fires. |
-| `oneShotDelayUnit` | `string` | `"ms"` | Time unit for `oneShotDelay`. Accepts `"ms"` or `"s"`. |
+| `oneShotDelayUnit` | `string` | `"ms"` | Time unit for `oneShotDelay`: `"ms"`, `"s"`, `"beats"`, or any moment.js unit. |
+| `tempoSlot` | `string` | `"tempo"` | **Browser only.** The slot a `"beats"` duration reads its tempo from, in BPM. See *Beats* below. |
 | `immediate` | `boolean` | — | When `true`, fires one tick immediately (after ~1 ms) in addition to the normal schedule. |
 | `counter` | `number` | — | Overrides the internal trigger counter to a specific value. |
 | `running` | `boolean` | — | Setting to `false` stops the timer. Setting to `true` starts it if `start` is not otherwise specified. |

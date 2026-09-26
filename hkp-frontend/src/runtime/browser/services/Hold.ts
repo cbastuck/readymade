@@ -3,7 +3,7 @@
  * Service ID: hookup.to/service/hold
  * Service Name: Hold
  * Modes: none — either a slot with a declared role, or a property that discriminates
- * Key Config: slot + op, or property
+ * Key Config: slot + op (+ value), or property
  * IO: in=any -> out=the held value, or null while nothing is held
  *
  * Sample-and-hold: a pipeline entered from two sides — a producer that runs on
@@ -27,6 +27,11 @@
  * producer cannot hold null: an input carrying the property as null reads like
  * any other.
  *
+ * A writing end given a `value` writes it into its slot when configured, as
+ * though that value had arrived as input — so a board can set what a slot
+ * holds from the start, and a control can change it. The board keeps the
+ * value, so the slot holds it again after a reload.
+ *
  * Mirrors hkp-node's src/services/hold.ts, hkp-python's services/hold.py and
  * hkp-rt's services/hold.h.
  */
@@ -44,6 +49,8 @@ type State = {
   property: string;
   slot: string;
   op: "read" | "write";
+  /** Written into the slot on configure; only a slot's writing end has one. */
+  value?: unknown;
 };
 
 class Hold extends ServiceBase<State> {
@@ -84,6 +91,16 @@ class Hold extends ServiceBase<State> {
 
     if (config.op === "read" || config.op === "write") {
       this.state.op = config.op;
+    }
+
+    if (
+      config.value !== undefined &&
+      this.state.slot &&
+      this.state.op === "write"
+    ) {
+      this.state.value = config.value;
+      this.write(config.value);
+      this.writeCount += 1;
     }
 
     if (config.action === "clear") {
@@ -197,9 +214,12 @@ class Hold extends ServiceBase<State> {
    * act on is one a board keeps and a reader has to discount.
    */
   private arrangement(): Partial<State> {
-    return this.state.slot
-      ? { slot: this.state.slot, op: this.state.op }
-      : { property: this.state.property };
+    if (!this.state.slot) {
+      return { property: this.state.property };
+    }
+    return this.state.op === "write" && this.state.value !== undefined
+      ? { slot: this.state.slot, op: this.state.op, value: this.state.value }
+      : { slot: this.state.slot, op: this.state.op };
   }
 
   /** What this Hold is doing, for its panel. */

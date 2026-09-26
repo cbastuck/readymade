@@ -147,7 +147,14 @@ export class BrowserTracks extends ServiceBase<State> {
     if (!reducer || this.state.reduce.length === 0) {
       return results;
     }
-    return reducer.next(null, { input, results }, null, false);
+    return reducer.next(null, { input, results }, null, false, false);
+  }
+
+  /** Ends every pass running inside any track or the reduce. */
+  cancelInFlight(): void {
+    for (const scope of this._scopes.values()) {
+      scope.cancelInFlight();
+    }
   }
 
   /**
@@ -263,7 +270,8 @@ export class BrowserTracks extends ServiceBase<State> {
       return null;
     }
     try {
-      return await scope.next(null, input, null, false);
+      // Collected for the reduce, so not reported through onResult as well.
+      return await scope.next(null, input, null, false, false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.pushErrorNotification(`track '${track.name}' failed: ${message}`);
