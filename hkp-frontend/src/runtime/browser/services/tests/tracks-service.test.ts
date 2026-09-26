@@ -185,6 +185,24 @@ describe("Tracks service", () => {
     expect(await service.process({})).toEqual([1, 2]);
   });
 
+  it("reports what runs inside a track under the address through it", async () => {
+    // Outside, an instanceId names nothing: two tracks may hold services of
+    // one name, and so may the runtime. Whoever watches a nested service (the
+    // overview) listens at `<tracks>.<instanceId>`, as it does inside a
+    // SubService.
+    const { service, app } = createTracks();
+    service.configure({ tracks: [answering("a", 1)] });
+    await service.process({});
+
+    const states = app.notify.mock.calls
+      .filter(([, n]) => n?.__internal)
+      .map(([svc, n]) => [svc.address, n.__internal.state]);
+    expect(states).toEqual([
+      ["tracks-1.a", "call-process"],
+      ["tracks-1.a", "call-process-finished"],
+    ]);
+  });
+
   it("passes its input through when bypassed", async () => {
     const { service } = createTracks();
     service.configure({ tracks: [answering("a", 1)] });

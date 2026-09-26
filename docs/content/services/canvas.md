@@ -116,6 +116,8 @@ Renders a text string.
 | `y` | `number \| string` | centred | Y position of the image centre |
 | `height` | `number \| string` | natural | Rendered height (aspect-ratio preserved) |
 | `opacity` | `number` | `1` | Alpha (0–1) |
+| `rotate` | `number` | `0` | Turn in degrees, about the image's own centre |
+| `scale` | `number` | `1` | Scale factor, about the image's own centre |
 | `unscaled` | `boolean` | `false` | Draw at natural pixel size |
 | `onClick` | `action` | — | Click handler |
 

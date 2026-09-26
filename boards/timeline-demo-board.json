@@ -411,6 +411,7 @@
           "gap": 12,
           "paddingX": 16,
           "paddingY": 12,
+          "align": "center",
           "items": [
             {
               "type": "canvas",

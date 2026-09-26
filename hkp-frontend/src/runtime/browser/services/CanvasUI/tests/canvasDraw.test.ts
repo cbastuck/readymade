@@ -217,6 +217,33 @@ describe("drawImage", () => {
     expect(ctx.scale).toHaveBeenCalledWith(2, 2);
     expect(ctx.drawImage).toHaveBeenCalledWith(img, -150, -75, 300, 150);
   });
+
+  const clickRect = async (transform: Record<string, unknown>) => {
+    const registerClickHandler = vi.fn();
+    const dim = makeDim({ imageCache: { "pic.png": img }, registerClickHandler });
+    await drawImage(
+      ctxWithTransforms(),
+      { url: "pic.png", height: "50%", onClick: { action: "x" }, ...transform },
+      dim,
+    );
+    return registerClickHandler.mock.calls[0][0];
+  };
+
+  it("is clickable where it is drawn untransformed", async () => {
+    expect(await clickRect({})).toEqual({ x: 50, y: 75, width: 300, height: 150 });
+  });
+
+  it("is clickable over the area it is scaled to, about its centre", async () => {
+    expect(await clickRect({ scale: 0.5 })).toEqual({ x: 125, y: 112.5, width: 150, height: 75 });
+  });
+
+  it("is clickable over the box enclosing it when turned", async () => {
+    const rect = await clickRect({ rotate: 90 });
+    expect(rect.x).toBeCloseTo(125);
+    expect(rect.y).toBeCloseTo(0);
+    expect(rect.width).toBeCloseTo(150);
+    expect(rect.height).toBeCloseTo(300);
+  });
 });
 
 describe("update", () => {

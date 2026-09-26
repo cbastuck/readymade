@@ -630,6 +630,21 @@ describe("Timeline – arranging by placements", () => {
     expect(progress).toEqual([0, 0.4, 0.8, 1]);
     timeline.destroy();
   });
+
+  it("reports the end of a placement it leaves its stretch by, then emits null", () => {
+    const { timeline } = createTimeline();
+    timeline.configure({
+      clock: "input",
+      length: 1,
+      placements: [{ name: "a", at: 0.5, duration: 0.5 }],
+    });
+    timeline.process({ t: 0.9 });
+    const frame = timeline.process({ t: 1.1 });
+    expect(frame.t).toBe(1);
+    expect(frame.actions).toEqual([]);
+    expect(frame.placements.a).toEqual({ progress: 1, elapsed: 0.5 });
+    expect(timeline.process({ t: 1.2 })).toBeNull();
+  });
 });
 
 describe("Timeline – placed", () => {

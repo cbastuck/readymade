@@ -213,6 +213,30 @@ export function drawRect(
   ctx.restore();
 }
 
+/**
+ * The axis-aligned box around a rect turned (in degrees) and scaled about its
+ * own centre: exact for a scale alone, the box enclosing the turned rect
+ * otherwise.
+ */
+export function transformedBounds(
+  rect: { x: number; y: number; width: number; height: number },
+  rotate: number,
+  scale: number,
+): { x: number; y: number; width: number; height: number } {
+  if (!rotate && scale === 1) {
+    return rect;
+  }
+  const radians = (rotate * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(radians));
+  const sin = Math.abs(Math.sin(radians));
+  const s = Math.abs(scale);
+  const width = (rect.width * cos + rect.height * sin) * s;
+  const height = (rect.width * sin + rect.height * cos) * s;
+  const centerX = rect.x + rect.width / 2;
+  const centerY = rect.y + rect.height / 2;
+  return { x: centerX - width / 2, y: centerY - height / 2, width, height };
+}
+
 export async function drawImage(
   ctx: CanvasRenderingContext2D,
   data: any,
@@ -261,7 +285,7 @@ export async function drawImage(
     height: unscaled ? img.height : scaledHeight,
   };
   if (onClickHandler) {
-    dim.registerClickHandler(rect, onClickHandler);
+    dim.registerClickHandler(transformedBounds(rect, Number(rotate), Number(scale)), onClickHandler);
   }
   ctx.save();
   if (opacity !== undefined) {

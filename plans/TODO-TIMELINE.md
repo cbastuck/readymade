@@ -14,7 +14,7 @@ The service (time, actions, object and keyframes) is built in `Timeline.ts`
 and `timeline-core.ts`, and so is the demo board, `boards/timeline-demo-board.json`. Tests are in
 `tests/timeline-service.test.ts` and `tests/timeline-board.test.ts`. There is
 the timeline UI (`TimelineUI/`), tested in `tests/timeline-ui-model.test.ts`
-and `tests/timeline-ui.test.tsx` but not yet seen in the app. No docs page yet. Performance and frame rate are judged on
+and `tests/timeline-ui.test.tsx` but not yet seen in the app. The docs page is `docs/content/services/timeline.md`. Performance and frame rate are judged on
 the prototype, not in advance.
 
 ---
@@ -281,7 +281,7 @@ shared slots (a palette, a tempo in beats) making the pieces read as one.
 6. ~~Placements~~ (built 2026-09-26: service, editor section, placed
    timeline's status, demo board moved over).
 7. Canvas `group`, and a board where an outer level moves a whole block.
-8. Docs page, vocabulary check, and the performance judgement.
+8. ~~Docs page~~ (written 2026-09-26), vocabulary check, and the performance judgement.
 
 ---
 

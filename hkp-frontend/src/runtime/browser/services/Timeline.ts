@@ -329,13 +329,13 @@ class Timeline extends ServiceBase<State> {
     const ended = due(placementEnds(this.state.placements, extent)) as number[];
 
     const outside = !loop && length > 0 && raw > length;
-    if (outside && actions.length === 0) {
+    if (outside && actions.length === 0 && ended.length === 0) {
       this.lastDriven = null;
       return null;
     }
 
-    // Outside its stretch only to deliver what fell due on the way out, so the
-    // time reported is the edge it left by.
+    // Outside its stretch only to deliver what fell due on the way out (actions,
+    // or the end of a placement), so the time reported is the edge it left by.
     const own = outside ? length : wrap(raw, extent);
     this.app.notify(this, { t: own });
     this.lastDriven = { t: own, frameIn };

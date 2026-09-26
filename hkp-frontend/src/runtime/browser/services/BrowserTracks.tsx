@@ -44,6 +44,7 @@ import ServiceBase from "./ServiceBase";
 import BrowserRegistry from "../BrowserRegistry";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
 import { addService, configureService } from "../BrowserRuntimeApi";
+import { joinAddress } from "../../board/address";
 
 const serviceId = "tracks";
 const serviceName = "Tracks";
@@ -321,13 +322,21 @@ export class BrowserTracks extends ServiceBase<State> {
       }
     };
 
-    // Notifications from inside reach the outer app, so a nested service's
-    // panel updates like any other; nesting deeper composes the same way.
+    // Notifications from inside reach the outer app under a scoped address,
+    // as a SubService forwards them: an instanceId is unique only inside its
+    // own pipeline, so outside it names nothing — and whoever listens for a
+    // nested service (the overview) listens at `<tracks>.<instanceId>`. The
+    // track's name is not part of the path; an address runs through services,
+    // and a track is a pipeline of this one. An inner scope has already
+    // prefixed its own, so nesting deeper composes the same way.
     const outerNotify = this.app.notify.bind(this.app);
     const innerNotify = scope.app.notify.bind(scope.app);
     scope.app.notify = (svc: any, notification: any) => {
       innerNotify(svc, notification);
-      outerNotify(svc, notification);
+      outerNotify(
+        { ...svc, address: joinAddress(this.uuid, svc.address ?? svc.uuid) },
+        notification,
+      );
     };
 
     for (const entry of pipeline) {
