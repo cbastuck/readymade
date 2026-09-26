@@ -254,3 +254,8 @@ to drag and resize), and one for the actions.
 per image, onto one Canvas. Two blocks write the motions once (**Pop** and
 **Fly**) and each use names the placement it plays under. The Show's
 placements say when each plays and for how long.
+
+`boards/night-groove-demo-board.json` puts a drum groove under the same sky.
+Its Show counts in beats at a tempo held in a slot, and places drums and
+images alike. Each drum is a looping timeline whose actions are its hits,
+followed by a Sound.

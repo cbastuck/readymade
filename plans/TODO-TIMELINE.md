@@ -264,8 +264,15 @@ flight is squeezed into two and a half.
 The sky is a timeline too, its colour keyframed. The images are inline SVG data
 URLs. The facade is the canvas with Play, Pause and Stop.
 
+`night-groove-demo-board.json` (2026-09-26) puts a drum groove under the same
+sky: the Show counts in beats at a tempo held in a slot, and places drums and
+images alike. A drum is a Drum block, a looping timeline whose actions are its
+hits, a Filter and a Sound. The moon takes the name `kick`, so one placement is
+both heard and seen. Hits sound on the first frame after their moment (60 fps,
+so up to ~17 ms late); scheduling them ahead on the audio clock is not built.
+
 Still to show: an outer level transforming a whole block (needs `group`), and
-shared slots (a palette, a tempo in beats) making the pieces read as one.
+a shared palette making the pieces read as one.
 
 ---
 
