@@ -174,6 +174,8 @@ export type BoardView = {
 export type BoardLinkage = {
   units: PlacedUnit[];
   views: BoardView[];
+  /** The board's blocks and where they were expanded; see `blocks.ts`. */
+  blocks?: import("./blocks").BlockLinkage;
 };
 
 export type Projection = {

@@ -1,6 +1,6 @@
 {
   "boardName": "Nested Rhythm",
-  "description": "A drum groove built from nested sub-services, where a pipeline's length in time is the sum of the waits inside it.\n\nFour patterns \u2014 Straight, Shuffle, Four on the floor and Funk \u2014 each a **Bar** made of smaller blocks: a Beat of two hi-hats, Two beats with a snare between them, and so on. The Shuffle is the Straight bar with a swung Beat; the Funk pushes kicks onto the \"and\" with a block that is sixteenth hi-hats with a kick in the middle.\n\nEvery wait is measured in beats. The tempo and the chosen pattern are slots in the outermost scope, the **Groove**. Each bar reads the pattern and a Switch routes the bar into it; every scope inside inherits the Groove's slots, so a Beat reads the tempo from its surroundings without knowing where it is set.",
+  "description": "A drum groove built from nested sub-services, where a pipeline's length in time is the sum of the waits inside it.\n\nFour patterns — Straight, Shuffle, Four on the floor and Funk — each a **Bar** made of smaller blocks: a Beat of two hi-hats, Two beats with a snare between them, and so on. The Shuffle is the Straight bar with a swung Beat; the Funk pushes kicks onto the \"and\" with a block that is sixteenth hi-hats with a kick in the middle.\n\nEvery wait is measured in beats. The tempo and the chosen pattern are slots in the outermost scope, the **Groove**. Each bar reads the pattern and a Switch routes the bar into it; every scope inside inherits the Groove's slots, so a Beat reads the tempo from its surroundings without knowing where it is set.",
   "runtimes": [
     {
       "id": "ui",
@@ -81,265 +81,25 @@
                           },
                           "pipeline": [
                             {
-                              "serviceId": "hookup.to/service/sound",
-                              "instanceId": "kick",
+                              "block": "hit",
                               "serviceName": "Kick",
-                              "state": {
-                                "generator": "drums",
+                              "params": {
                                 "trigger": "kick",
                                 "volume": 0.9
                               }
                             },
                             {
-                              "serviceId": "sub-service",
+                              "block": "two-beats",
                               "instanceId": "half-1",
-                              "serviceName": "Two beats",
-                              "state": {
-                                "scope": {
-                                  "slots": "inherit"
-                                },
-                                "pipeline": [
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-1",
-                                    "serviceName": "Beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.5
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.35
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "snare",
-                                    "serviceName": "Snare",
-                                    "state": {
-                                      "generator": "drums",
-                                      "trigger": "snare",
-                                      "volume": 0.7
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-2",
-                                    "serviceName": "Beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.5
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.35
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  }
-                                ]
+                              "params": {
+                                "beat": "beat"
                               }
                             },
                             {
-                              "serviceId": "sub-service",
+                              "block": "two-beats",
                               "instanceId": "half-2",
-                              "serviceName": "Two beats",
-                              "state": {
-                                "scope": {
-                                  "slots": "inherit"
-                                },
-                                "pipeline": [
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-1",
-                                    "serviceName": "Beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.5
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.35
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "snare",
-                                    "serviceName": "Snare",
-                                    "state": {
-                                      "generator": "drums",
-                                      "trigger": "snare",
-                                      "volume": 0.7
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-2",
-                                    "serviceName": "Beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.5
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.35
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  }
-                                ]
+                              "params": {
+                                "beat": "beat"
                               }
                             }
                           ]
@@ -360,275 +120,33 @@
                           },
                           "pipeline": [
                             {
-                              "serviceId": "hookup.to/service/sound",
-                              "instanceId": "kick-1",
+                              "block": "hit",
                               "serviceName": "Kick",
-                              "state": {
-                                "generator": "drums",
+                              "params": {
                                 "trigger": "kick",
                                 "volume": 0.9
                               }
                             },
                             {
-                              "serviceId": "sub-service",
+                              "block": "two-beats",
                               "instanceId": "half-1",
-                              "serviceName": "Two beats",
-                              "state": {
-                                "scope": {
-                                  "slots": "inherit"
-                                },
-                                "pipeline": [
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-1",
-                                    "serviceName": "Swung beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.5
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-long",
-                                          "serviceName": "Wait two thirds",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.6667,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.3
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-short",
-                                          "serviceName": "Wait a third",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.3333,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "snare",
-                                    "serviceName": "Snare",
-                                    "state": {
-                                      "generator": "drums",
-                                      "trigger": "snare",
-                                      "volume": 0.7
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-2",
-                                    "serviceName": "Swung beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.5
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-long",
-                                          "serviceName": "Wait two thirds",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.6667,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.3
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-short",
-                                          "serviceName": "Wait a third",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.3333,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  }
-                                ]
+                              "params": {
+                                "beat": "swung-beat"
                               }
                             },
                             {
-                              "serviceId": "hookup.to/service/sound",
-                              "instanceId": "kick-3",
+                              "block": "hit",
                               "serviceName": "Kick",
-                              "state": {
-                                "generator": "drums",
+                              "params": {
                                 "trigger": "kick",
                                 "volume": 0.8
                               }
                             },
                             {
-                              "serviceId": "sub-service",
+                              "block": "two-beats",
                               "instanceId": "half-2",
-                              "serviceName": "Two beats",
-                              "state": {
-                                "scope": {
-                                  "slots": "inherit"
-                                },
-                                "pipeline": [
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-1",
-                                    "serviceName": "Swung beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.5
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-long",
-                                          "serviceName": "Wait two thirds",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.6667,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.3
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-short",
-                                          "serviceName": "Wait a third",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.3333,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "snare",
-                                    "serviceName": "Snare",
-                                    "state": {
-                                      "generator": "drums",
-                                      "trigger": "snare",
-                                      "volume": 0.7
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-2",
-                                    "serviceName": "Swung beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.5
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-long",
-                                          "serviceName": "Wait two thirds",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.6667,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.3
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-short",
-                                          "serviceName": "Wait a third",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.3333,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  }
-                                ]
+                              "params": {
+                                "beat": "swung-beat"
                               }
                             }
                           ]
@@ -649,255 +167,19 @@
                           },
                           "pipeline": [
                             {
-                              "serviceId": "sub-service",
+                              "block": "two-beats",
                               "instanceId": "half-1",
-                              "serviceName": "Two beats",
-                              "state": {
-                                "scope": {
-                                  "slots": "inherit"
-                                },
-                                "pipeline": [
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-1",
-                                    "serviceName": "Beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "kick",
-                                          "serviceName": "Kick",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "kick",
-                                            "volume": 0.9
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.45
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "snare",
-                                    "serviceName": "Snare",
-                                    "state": {
-                                      "generator": "drums",
-                                      "trigger": "snare",
-                                      "volume": 0.6
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-2",
-                                    "serviceName": "Beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "kick",
-                                          "serviceName": "Kick",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "kick",
-                                            "volume": 0.9
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.45
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  }
-                                ]
+                              "params": {
+                                "beat": "floor-beat",
+                                "snare": 0.6
                               }
                             },
                             {
-                              "serviceId": "sub-service",
+                              "block": "two-beats",
                               "instanceId": "half-2",
-                              "serviceName": "Two beats",
-                              "state": {
-                                "scope": {
-                                  "slots": "inherit"
-                                },
-                                "pipeline": [
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-1",
-                                    "serviceName": "Beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "kick",
-                                          "serviceName": "Kick",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "kick",
-                                            "volume": 0.9
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.45
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "snare",
-                                    "serviceName": "Snare",
-                                    "state": {
-                                      "generator": "drums",
-                                      "trigger": "snare",
-                                      "volume": 0.6
-                                    }
-                                  },
-                                  {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-2",
-                                    "serviceName": "Beat",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "kick",
-                                          "serviceName": "Kick",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "kick",
-                                            "volume": 0.9
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.45
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait an eighth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.5,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  }
-                                ]
+                              "params": {
+                                "beat": "floor-beat",
+                                "snare": 0.6
                               }
                             }
                           ]
@@ -927,218 +209,28 @@
                                 },
                                 "pipeline": [
                                   {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "kick",
+                                    "block": "hit",
                                     "serviceName": "Kick",
-                                    "state": {
-                                      "generator": "drums",
+                                    "params": {
                                       "trigger": "kick",
                                       "volume": 0.9
                                     }
                                   },
                                   {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-1",
-                                    "serviceName": "Sixteenths",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.45
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.2
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-3",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.3
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-3",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-4",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.2
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-4",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
+                                    "block": "sixteenths",
+                                    "instanceId": "beat-1"
                                   },
                                   {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "snare",
+                                    "block": "hit",
                                     "serviceName": "Snare",
-                                    "state": {
-                                      "generator": "drums",
+                                    "params": {
                                       "trigger": "snare",
                                       "volume": 0.7
                                     }
                                   },
                                   {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-2",
-                                    "serviceName": "Kick on the and",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.45
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.2
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "kick",
-                                          "serviceName": "Kick",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "kick",
-                                            "volume": 0.8
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-3",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.3
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-3",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-4",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.2
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-4",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
+                                    "block": "kick-on-the-and",
+                                    "instanceId": "beat-2"
                                   }
                                 ]
                               }
@@ -1153,208 +245,20 @@
                                 },
                                 "pipeline": [
                                   {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-3",
-                                    "serviceName": "Kick on the and",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.45
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.2
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "kick",
-                                          "serviceName": "Kick",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "kick",
-                                            "volume": 0.8
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-3",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.3
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-3",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-4",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.2
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-4",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
+                                    "block": "kick-on-the-and",
+                                    "instanceId": "beat-1"
                                   },
                                   {
-                                    "serviceId": "hookup.to/service/sound",
-                                    "instanceId": "snare",
+                                    "block": "hit",
                                     "serviceName": "Snare",
-                                    "state": {
-                                      "generator": "drums",
+                                    "params": {
                                       "trigger": "snare",
                                       "volume": 0.7
                                     }
                                   },
                                   {
-                                    "serviceId": "sub-service",
-                                    "instanceId": "beat-4",
-                                    "serviceName": "Sixteenths",
-                                    "state": {
-                                      "scope": {
-                                        "slots": "inherit"
-                                      },
-                                      "pipeline": [
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-1",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.45
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-1",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-2",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.2
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-2",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-3",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.3
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-3",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/sound",
-                                          "instanceId": "hihat-4",
-                                          "serviceName": "Hi-hat",
-                                          "state": {
-                                            "generator": "drums",
-                                            "trigger": "hihat",
-                                            "volume": 0.2
-                                          }
-                                        },
-                                        {
-                                          "serviceId": "hookup.to/service/timer",
-                                          "instanceId": "wait-4",
-                                          "serviceName": "Wait a sixteenth",
-                                          "state": {
-                                            "periodic": false,
-                                            "oneShotDelay": 0.25,
-                                            "oneShotDelayUnit": "beats"
-                                          }
-                                        }
-                                      ]
-                                    }
+                                    "block": "sixteenths",
+                                    "instanceId": "beat-2"
                                   }
                                 ]
                               }
@@ -1373,6 +277,278 @@
       }
     ]
   },
+  "blocks": [
+    {
+      "id": "hit",
+      "name": "Hit",
+      "serviceId": "hookup.to/service/sound",
+      "description": "One drum sound, played the moment it is reached. Takes no time, so it sounds together with whatever follows it.",
+      "params": {
+        "trigger": "kick",
+        "volume": 0.8
+      },
+      "state": {
+        "generator": "drums",
+        "trigger": "{{param.trigger}}",
+        "volume": "{{param.volume}}"
+      }
+    },
+    {
+      "id": "note",
+      "name": "Note",
+      "serviceId": "sub-service",
+      "description": "A hit, then a wait: the sound and how long it lasts, in beats, before the next thing plays.",
+      "params": {
+        "trigger": "hihat",
+        "volume": 0.5,
+        "beats": 0.5
+      },
+      "state": {
+        "scope": {
+          "slots": "inherit"
+        },
+        "pipeline": [
+          {
+            "block": "hit",
+            "instanceId": "hit",
+            "params": {
+              "trigger": "{{param.trigger}}",
+              "volume": "{{param.volume}}"
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/timer",
+            "instanceId": "wait",
+            "serviceName": "Wait",
+            "state": {
+              "periodic": false,
+              "oneShotDelay": "{{param.beats}}",
+              "oneShotDelayUnit": "beats"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "beat",
+      "name": "Beat",
+      "serviceId": "sub-service",
+      "description": "One beat as two eighth-note hi-hats, the first accented.",
+      "state": {
+        "scope": {
+          "slots": "inherit"
+        },
+        "pipeline": [
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.5,
+              "beats": 0.5
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.35,
+              "beats": 0.5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "floor-beat",
+      "name": "Kick beat",
+      "serviceId": "sub-service",
+      "description": "One beat as a kick on the beat and a hi-hat on the off-beat.",
+      "state": {
+        "scope": {
+          "slots": "inherit"
+        },
+        "pipeline": [
+          {
+            "block": "note",
+            "params": {
+              "trigger": "kick",
+              "volume": 0.9,
+              "beats": 0.5
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.45,
+              "beats": 0.5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "swung-beat",
+      "name": "Swung beat",
+      "serviceId": "sub-service",
+      "description": "One beat as two hi-hats split two thirds to one third: the eighths of a shuffle.",
+      "state": {
+        "scope": {
+          "slots": "inherit"
+        },
+        "pipeline": [
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.5,
+              "beats": 0.6667
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.3,
+              "beats": 0.3333
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sixteenths",
+      "name": "Sixteenths",
+      "serviceId": "sub-service",
+      "description": "One beat as four sixteenth-note hi-hats.",
+      "state": {
+        "scope": {
+          "slots": "inherit"
+        },
+        "pipeline": [
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.45,
+              "beats": 0.25
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.2,
+              "beats": 0.25
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.3,
+              "beats": 0.25
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.2,
+              "beats": 0.25
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kick-on-the-and",
+      "name": "Kick on the and",
+      "serviceId": "sub-service",
+      "description": "Sixteenths with a kick on the \"and\" — the off-beat in the middle of the beat.",
+      "state": {
+        "scope": {
+          "slots": "inherit"
+        },
+        "pipeline": [
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.45,
+              "beats": 0.25
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.2,
+              "beats": 0.25
+            }
+          },
+          {
+            "block": "hit",
+            "serviceName": "Kick",
+            "params": {
+              "trigger": "kick",
+              "volume": 0.8
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.3,
+              "beats": 0.25
+            }
+          },
+          {
+            "block": "note",
+            "params": {
+              "trigger": "hihat",
+              "volume": 0.2,
+              "beats": 0.25
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "two-beats",
+      "name": "Two beats",
+      "serviceId": "sub-service",
+      "description": "Half a bar: a beat, a snare on the backbeat, and the beat again. Which beat is a parameter.",
+      "params": {
+        "beat": "beat",
+        "snare": 0.7
+      },
+      "state": {
+        "scope": {
+          "slots": "inherit"
+        },
+        "pipeline": [
+          {
+            "block": "{{param.beat}}",
+            "instanceId": "beat-1"
+          },
+          {
+            "block": "hit",
+            "instanceId": "snare",
+            "serviceName": "Snare",
+            "params": {
+              "trigger": "snare",
+              "volume": "{{param.snare}}"
+            }
+          },
+          {
+            "block": "{{param.beat}}",
+            "instanceId": "beat-2"
+          }
+        ]
+      }
+    }
+  ],
   "facade": {
     "layout": "single",
     "panels": [

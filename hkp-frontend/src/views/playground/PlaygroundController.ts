@@ -424,6 +424,7 @@ export function usePlaygroundController(
       registry = {},
       unit,
       units,
+      blocks,
     } = initialBord as PlaygroundState & UnitDocument;
 
     setAcceptedSyncSenders(accepted);
@@ -450,6 +451,9 @@ export function usePlaygroundController(
       // declares neither — an empty composition, silently.
       unit,
       units,
+      // Blocks likewise: a use of one names a definition that only the board
+      // holds, and a runtime handed the use unexpanded has no service to make.
+      blocks,
     };
   };
 

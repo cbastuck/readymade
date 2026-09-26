@@ -90,10 +90,11 @@ is the one worth being pedantic in.
 | **Unit** | An ordinary board that also declares what it imports and exports, so another board can be made of it. → `concepts/units.md` | `hkp-frontend/src/runtime/board/units.ts#UnitDeclaration` |
 | **Composition** | An ordinary board that lists the units it is assembled from. | `hkp-frontend/src/runtime/board/units.ts#UnitEntry` |
 | **Projection** | Assembling composition and units into one board, qualifying exactly one thing: the runtime id. | `hkp-frontend/src/runtime/board/units.ts#projectUnits` |
-| **Linkage** | What linking produced, kept while the board is open: the units it was assembled from and the views they contribute. | `hkp-frontend/src/runtime/board/units.ts#BoardLinkage` |
+| **Linkage** | What linking produced, kept while the board is open: the units it was assembled from, the views they contribute, and where its blocks were expanded. | `hkp-frontend/src/runtime/board/units.ts#BoardLinkage` |
 | **Unit origin** | Where a `uri` is looked up — a sibling URL, a file beside the composition, the files opened together, saved boards. There is no registry. | `hkp-frontend/src/core/linkUnits.ts#UnitOrigin` |
 | **Unlink** | Splitting a running board back into the documents it came from, as a three-way merge rather than a copy. | `hkp-frontend/src/runtime/board/units.ts#unlinkProjection` |
 | **Topic** | The named channel units talk over, since they are never chained to each other. | `docs/content/services/queue.md`, `hkp-node/src/services/queue.ts` |
+| **Block** | A configured service — usually a sub-service and its pipeline — defined once in a board's `blocks` and used wherever a pipeline names it (`{ "block": "note", "params": {…} }`). Expanded on load, written back as the use on save; no runtime sees one. | `hkp-frontend/src/runtime/board/blocks.ts#BlockDefinition`, `hkp-frontend/src/runtime/board/blocks.ts#linkBlocks` |
 
 ---
 

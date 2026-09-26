@@ -91,7 +91,7 @@ export default function HoldPanel({ state, onLocalChange, configure }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 pb-2">
       <div className="flex items-center gap-2 text-xs">
         <span className="text-neutral-500">tell the sides apart by</span>
         <Select
@@ -162,7 +162,6 @@ export default function HoldPanel({ state, onLocalChange, configure }: Props) {
       </div>
 
       <div className="border border-gray-300 p-2">
-        <h3 className="tracking-[6px]">Held</h3>
         <pre
           style={{
             fontSize: 12,
