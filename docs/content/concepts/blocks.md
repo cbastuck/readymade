@@ -1,7 +1,7 @@
 # Blocks
 
-A configured service — usually a sub-service and the pipeline inside it —
-defined once in a board and used wherever a pipeline names it.
+A configured sub-service — and the pipeline inside it — defined once in a board
+and used wherever a pipeline names it.
 
 ---
 
@@ -56,6 +56,18 @@ A **definition is a preset used by reference**: the same fields — `id`, `name`
 without the `"preset"` marker, since `blocks` already says what it is. `params`
 declares every parameter the state refers to, with the value it has when a use
 says nothing.
+
+**A block is a sub-service** (`sub-service`, or `hookup.to/service/sub-service`)
+whose state has a `pipeline`; a definition naming any other service is refused
+when the board opens. A use is refreshed — its params changed, its block's
+definition applied or an edit cancelled — by configuring the running service
+with its definition, and a sub-service configured with a pipeline rebuilds it in
+every runtime (`services/sub-service.md`), so what a definition no longer says
+is gone from every use. The sub-service's own fields are applied only when named,
+so each use is configured with all of them, filled in with their defaults where
+the definition leaves them out. Other services take a configure as a patch, and
+would keep what a definition dropped. A single service is made a block by
+wrapping it in a sub-service.
 
 A **use** stands where a service would. It carries the id the service would
 have (`instanceId` in a pipeline, `uuid` in a runtime's own list), and a use

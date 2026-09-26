@@ -236,6 +236,31 @@ describe("block definitions", () => {
       'Not a block: "serviceId" is missing',
     );
   });
+
+  it("are sub-services, under either spelling", () => {
+    for (const serviceId of ["sub-service", "hookup.to/service/sub-service"]) {
+      expect(
+        parseBlockDefinition({ name: "Note", serviceId, state: { pipeline: [] } }).serviceId,
+      ).toBe(serviceId);
+    }
+  });
+
+  it("refuse any other service", () => {
+    expect(() =>
+      parseBlockDefinition({
+        name: "Hit",
+        serviceId: "hookup.to/service/sound",
+        params: { trigger: "kick" },
+        state: { trigger: "{{param.trigger}}" },
+      }),
+    ).toThrow('Not a block: "serviceId" must name a sub-service');
+  });
+
+  it("refuse a sub-service without a pipeline", () => {
+    expect(() =>
+      parseBlockDefinition({ name: "Note", serviceId: "sub-service", state: { pipeline: "x" } }),
+    ).toThrow('Not a block: "state.pipeline" is missing or not an array');
+  });
 });
 
 describe("applying a preset", () => {

@@ -32,7 +32,7 @@ import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import PresetMenu from "./PresetMenu";
 import SavePresetDialog from "./SavePresetDialog";
 import RunParamsDialog from "../runtime-ui/RunParamsDialog";
-import { useServiceAddress } from "hkp-frontend/src/runtime/ui/BlockUse";
+import { useServiceAddress, useServiceRuntimeId } from "hkp-frontend/src/runtime/ui/BlockUse";
 import { toCanonicalServiceId } from "hkp-frontend/src/types";
 
 type Props = {
@@ -110,13 +110,18 @@ export default function ServiceSettings({
   // service the board can find a runtime for. A panel rendered outside a
   // board's runtimes — a nested pipeline's own list — has no runtime to name,
   // and offering the action there would be offering one that fails.
-  const runtimeId = useMemo(
-    () =>
-      Object.entries(boardContext?.services ?? {}).find(([, list]) =>
-        list.some((svc) => svc.uuid === service.uuid),
-      )?.[0] ?? null,
-    [boardContext?.services, service.uuid],
-  );
+  //
+  // A uuid is unique only within its runtime, so the runtime the panel is
+  // drawn for is asked first; only a panel drawn without one is looked up.
+  const frameRuntimeId = useServiceRuntimeId();
+  const runtimeId = useMemo(() => {
+    const services = boardContext?.services ?? {};
+    const lists = (id: string) => services[id]?.some((svc) => svc.uuid === service.uuid);
+    if (frameRuntimeId && lists(frameRuntimeId)) {
+      return frameRuntimeId;
+    }
+    return Object.keys(services).find(lists) ?? null;
+  }, [boardContext?.services, service.uuid, frameRuntimeId]);
   const onBoard = runtimeId !== null;
 
   // A sub-service is a pipeline somebody built, which is what a block is made
@@ -127,7 +132,7 @@ export default function ServiceSettings({
     toCanonicalServiceId(service.serviceId ?? "") === "sub-service";
   const makeBlock = () => {
     boardContext
-      ?.makeBlock(address)
+      ?.makeBlock(address, frameRuntimeId ?? runtimeId ?? undefined)
       .then((made) =>
         toast.success(`"${made.name}" is now a block of this board`, {
           description: "Add it again from the Building Blocks sidebar.",

@@ -68,6 +68,21 @@ The default is the reusable case: a block whose slot names leaked into its
 surroundings would clash with a second copy of itself. Two Holds that must meet
 across the boundary need it to say `"inherit"`.
 
+### What a configure replaces
+
+In every runtime, a configure naming `pipeline` **replaces the whole pipeline**:
+the services inside are rebuilt from the entries given, so whatever an entry no
+longer says is gone rather than left over from before. Whatever runs inside
+restarts — a Timer's schedule, say. The one exception is a pipeline that differs
+only in names, which the browser renames in place without rebuilding.
+
+Every other field is applied **only when present**: a configure that does not
+mention `stopPropagation` or `scope` leaves them as they were. To put one back,
+name it with its default.
+
+[Blocks](../concepts/blocks.md) rely on both: a use is refreshed by configuring
+it with its whole definition, its own fields filled in with the defaults above.
+
 ---
 
 ## Addressing what is inside

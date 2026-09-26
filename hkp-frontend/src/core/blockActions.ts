@@ -25,24 +25,44 @@ import { BlockDefinition, presetFromService } from "./presets";
 import { BoardLinkage } from "../runtime/board/units";
 
 /**
- * Re-instantiates one use with new params and configures the running service
- * with the result, by the use's own address. A block's state names exactly the
- * keys its definition does, so a configure is a replace; for a sub-service it
- * rebuilds only the use's own pipeline, and its siblings keep running.
+ * Sets these params on one use, keeping the others it has, re-instantiates it
+ * and configures the running service with the result, by the use's own
+ * address. A block's state names exactly the keys its definition does, so a
+ * configure is a replace; for a sub-service it rebuilds only the use's own
+ * pipeline, and its siblings keep running.
  *
  * Linkage is updated only once the running service took it: what saving
- * writes must be what is running.
+ * writes must be what is running. The params are read from `latestLinkage`
+ * rather than from what a panel last rendered, and written onto whatever the
+ * linkage is by the time the service answered — so two changes made while an
+ * earlier one is still on its way both land, provided they are not started
+ * before it finishes (see `BoardContext`, which queues them).
+ *
+ * `isCurrent` says whether the board the change was made on is still the one
+ * open. Keys are paths, and the next board may well have a use at the same
+ * one: a change that outlived its board is dropped rather than applied there,
+ * both before it starts and once its service answered.
  */
 export async function setBlockParams(
   key: string,
-  params: Record<string, unknown>,
+  changed: Record<string, unknown>,
   boardContext: BoardContextState,
+  latestLinkage: () => BoardLinkage | undefined,
   setLinkage: Dispatch<SetStateAction<BoardLinkage | undefined>>,
+  isCurrent: () => boolean = () => true,
 ): Promise<void> {
-  const blocks = boardContext.linkage?.blocks;
+  if (!isCurrent()) {
+    return;
+  }
+  const blocks = latestLinkage()?.blocks;
   if (!blocks) {
     throw new Error("setBlockParams: this board has no blocks");
   }
+  const current = blocks.placed.find((entry) => entry.key === key);
+  if (!current) {
+    throw new Error(`setBlockParams: no use of a block is placed at ${key}`);
+  }
+  const params = { ...current.use.params, ...changed };
   const { linkage, service, diagnostics } = withUseParams(blocks, key, params);
   const errors = diagnostics.filter((entry) => entry.level === "error");
   if (errors.length) {
@@ -55,12 +75,21 @@ export async function setBlockParams(
     console.warn(`Block params: ${entry.message}`);
   }
   const placed = linkage.placed.find((entry) => entry.key === key)!;
-  const running = findService(boardContext, placed.address);
+  const running = findService(boardContext, placed.address, placed.runtimeId);
   if (!running) {
     throw new Error(`setBlockParams: nothing is running at "${placed.address}"`);
   }
   await running.configure(service.state);
-  setLinkage((prev) => (prev ? { ...prev, blocks: linkage } : prev));
+  if (!isCurrent()) {
+    return;
+  }
+  // Re-derived from what the linkage is now, not replaced with what it was:
+  // anything else that changed while the service was answering is kept.
+  setLinkage((prev) =>
+    prev?.blocks?.placed.some((entry) => entry.key === key)
+      ? { ...prev, blocks: withUseParams(prev.blocks, key, params).linkage }
+      : prev,
+  );
 }
 
 /** Turns one use into an ordinary copy of what it expanded to, from here on. */
@@ -84,6 +113,7 @@ export function detachBlockUse(
  */
 export async function makeBlock(
   address: string,
+  runtimeId: string | undefined,
   boardContext: BoardContextState,
   setLinkage: Dispatch<SetStateAction<BoardLinkage | undefined>>,
 ): Promise<BlockDefinition> {
@@ -95,12 +125,12 @@ export async function makeBlock(
   const services = blocks
     ? collapseBlocks(serialized.services, blocks)
     : serialized.services;
-  const path = findEntryPath(services, address);
+  const path = findEntryPath(services, address, runtimeId);
   if (!path) {
     throw new Error(`makeBlock: nothing on the board is at "${address}"`);
   }
-  const runtimeId = path[0] as string;
-  const runtime = boardContext.runtimes.find((entry) => entry.id === runtimeId);
+  const holderId = path[0] as string;
+  const runtime = boardContext.runtimes.find((entry) => entry.id === holderId);
   const document = runtime?.unit ?? "";
   const entry = entryAt(services, path);
   const name = entry.serviceName || entry.serviceId;
@@ -115,7 +145,7 @@ export async function makeBlock(
     id = `${definition.id}-${n}`;
   }
   const made: BlockDefinition = { ...definition, id };
-  const linkage = withBlockFrom(blocks, { runtimeId, document, path, definition: made });
+  const linkage = withBlockFrom(blocks, { runtimeId: holderId, document, path, definition: made });
   setLinkage((prev) => ({
     units: prev?.units ?? [],
     views: prev?.views ?? [],
@@ -176,7 +206,7 @@ async function refresh(
       continue;
     }
     const next = withUseParams(current, key, placed.use.params ?? {});
-    const running = findService(boardContext, placed.address);
+    const running = findService(boardContext, placed.address, placed.runtimeId);
     if (!running) {
       console.warn(`Block: nothing is running at "${placed.address}" to refresh`);
       continue;

@@ -1,6 +1,9 @@
 /**
- * Blocks: a configured service — usually a sub-service and its pipeline —
- * defined once in a board and used wherever a pipeline names it.
+ * Blocks: a configured sub-service and its pipeline, defined once in a board
+ * and used wherever a pipeline names it. Only a sub-service: a use is
+ * refreshed by configuring it with its definition, which rebuilds a
+ * sub-service's pipeline but only patches any other service
+ * (see `parseBlockDefinition`).
  *
  * A definition is a preset used by reference instead of copied: `serviceId`,
  * `name`, `state`, plus the `params` its state refers to as `{{param.x}}`. A
@@ -29,7 +32,7 @@
  */
 
 import type { BlockDefinition } from "../../core/presets";
-import { RuntimeServiceMap } from "../../types";
+import { RuntimeServiceMap, toCanonicalServiceId } from "../../types";
 import { substituteParams, referencedParams } from "./params";
 import { Diagnostic } from "./units";
 
@@ -84,13 +87,16 @@ export type BlockLinkage = {
   editing?: string;
 };
 
+/** Everything a use may say; an object saying anything else is data. */
+const USE_KEYS = new Set(["block", "instanceId", "uuid", "serviceName", "params"]);
+
 export function isBlockUse(value: unknown): value is BlockUse {
   return (
     !!value &&
     typeof value === "object" &&
     !Array.isArray(value) &&
     typeof (value as any).block === "string" &&
-    (value as any).serviceId === undefined
+    Object.keys(value).every((key) => USE_KEYS.has(key))
   );
 }
 
@@ -141,6 +147,19 @@ function nameOfUse(definition: BlockDefinition, use: BlockUse): string {
 }
 
 /**
+ * What a sub-service is when its state does not say otherwise, in every
+ * runtime. A sub-service takes these fields as a patch — only its pipeline is
+ * rebuilt — so a use is configured with each of them named: re-instantiating
+ * one after its working copy changed a field the definition leaves out puts
+ * that field back.
+ */
+const SUB_SERVICE_DEFAULTS = {
+  mode: "pipeline",
+  stopPropagation: false,
+  scope: { slots: "own" },
+};
+
+/**
  * What one use produces, one level deep: the definition's service with the
  * use's params in it. Uses nested in the definition stay uses.
  */
@@ -152,13 +171,17 @@ function instantiate(
   missing: Set<string>,
 ): Record<string, any> {
   const params = { ...definition.params, ...use.params };
+  const state = substituteParams(definition.state, params, missing);
   return {
     // A runtime's own services are addressed by `uuid`, entries of a nested
     // pipeline by `instanceId`.
     ...(topLevel ? { uuid: id } : { instanceId: id }),
     serviceId: definition.serviceId,
     serviceName: nameOfUse(definition, use),
-    state: substituteParams(definition.state, params, missing),
+    state:
+      toCanonicalServiceId(definition.serviceId) === "sub-service"
+        ? { ...SUB_SERVICE_DEFAULTS, ...state }
+        : state,
   };
 }
 
@@ -253,8 +276,12 @@ function walk(
     const taken = new Set(
       value.map(entryId).filter((id): id is string => !!id),
     );
+    // A runtime's own list holds nothing but services, so a use there is one
+    // whatever the document defines. Deeper, an array may as well be data a
+    // service holds, and is read for uses only in a document that has blocks.
+    const usesHere = path.length === 1 || ctx.definitions.size > 0;
     return value.map((element, index) => {
-      if (isBlockUse(element)) {
+      if (usesHere && isBlockUse(element)) {
         const id = element.instanceId ?? element.uuid ?? freshId(element.block, taken);
         return expandUse(element, id, path, stack, parent, ctx);
       }

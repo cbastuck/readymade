@@ -166,12 +166,25 @@ export function parsePreset(value: unknown): Preset {
 /**
  * Reads a block definition: a preset in everything but the format marker,
  * which the board's `blocks` field already says. See `runtime/board/blocks`.
+ *
+ * A block is a sub-service: a use is refreshed by configuring it with its
+ * definition, and a sub-service configured with a pipeline rebuilds it in
+ * every runtime, so what a definition leaves out of it is gone from each use.
+ * Other services take a configure as a patch, which would leave behind what a
+ * definition no longer says.
  */
 export function parseBlockDefinition(value: unknown): BlockDefinition {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     fail("not a JSON object", "block");
   }
-  return parsePresetBody(value as Record<string, any>, "block");
+  const definition = parsePresetBody(value as Record<string, any>, "block");
+  if (toCanonicalServiceId(definition.serviceId) !== "sub-service") {
+    fail('"serviceId" must name a sub-service', "block");
+  }
+  if (!Array.isArray(definition.state.pipeline)) {
+    fail('"state.pipeline" is missing or not an array', "block");
+  }
+  return definition;
 }
 
 /** Everything a preset is, apart from the marker saying it is one. */

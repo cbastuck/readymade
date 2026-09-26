@@ -163,6 +163,12 @@ may stand instead — an entry with `block` and no `serviceId`:
 Opening the board expands it into the service the block defines, and saving
 writes it back as it is written here. → `concepts/blocks.md`
 
+A use says nothing but `block`, `instanceId` or `uuid`, `serviceName` and
+`params`; an object saying anything else is data. Below a runtime's own list —
+where a service may hold arrays of data of its own — entries are read as uses
+only in a document that defines blocks, so a board without any opens with its
+services' state untouched.
+
 ### `serviceId` is the one that matters
 
 It is what the registry resolves. When a board names an id the registry no

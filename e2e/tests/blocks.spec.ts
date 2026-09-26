@@ -36,12 +36,21 @@ const board = {
     {
       id: "hit",
       name: "Hit",
-      serviceId: "hookup.to/service/sound",
+      serviceId: "sub-service",
       params: { trigger: "kick", volume: 0.8 },
       state: {
-        generator: "drums",
-        trigger: "{{param.trigger}}",
-        volume: "{{param.volume}}",
+        scope: { slots: "inherit" },
+        pipeline: [
+          {
+            serviceId: "hookup.to/service/sound",
+            instanceId: "sound",
+            state: {
+              generator: "drums",
+              trigger: "{{param.trigger}}",
+              volume: "{{param.volume}}",
+            },
+          },
+        ],
       },
     },
     {
@@ -147,11 +156,13 @@ test.describe("a use on the running board", () => {
       "0.25",
     );
     // And the service itself, not only what linkage holds for it: the Sound
-    // panel inside — mounted, though a use shows only its bar — reports what
-    // it was configured with.
-    await expect(
-      uses(page, "hit").last().locator(".hkp-block-locked"),
-    ).toContainText("25%");
+    // inside the hit, a level further in, reports what it was configured with.
+    await uses(page, "hit")
+      .last()
+      .getByRole("button", { name: "Open Hit as its own level" })
+      .first()
+      .click();
+    await expect(page.locator("#service-frame-sound").last()).toContainText("25%");
 
     const saved = await save(page);
     expect(saved.services.rt[0].state.pipeline[0]).toEqual({

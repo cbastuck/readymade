@@ -577,6 +577,30 @@ describe("Timer service – process() one-shot mode", () => {
     expect(r2.triggerCount).toBe(2);
   });
 
+  it("a zero delay passes straight on without waiting for a timeout", async () => {
+    const { timer } = createTimer();
+    timer.configure({ oneShotDelay: 0, oneShotDelayUnit: "ms" });
+
+    // No timers are advanced: a call that scheduled one would never resolve.
+    const results = await Promise.all([
+      timer.process({ call: 1 }),
+      timer.process({ call: 2 }),
+    ]);
+    expect(results).toEqual([
+      { call: 1, triggerCount: 1 },
+      { call: 2, triggerCount: 2 },
+    ]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("a delay that rounds to under a millisecond counts as zero", async () => {
+    const { timer } = createTimer();
+    timer.configure({ oneShotDelay: 0.4, oneShotDelayUnit: "ms" });
+
+    expect(await timer.process({})).toEqual({ triggerCount: 1 });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("oneShotDelayUnit 's' multiplies delay by 1000", async () => {
     const { timer, app } = createTimer();
     timer.configure({ oneShotDelay: 2, oneShotDelayUnit: "s" });

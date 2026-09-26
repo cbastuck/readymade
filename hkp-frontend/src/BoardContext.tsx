@@ -205,12 +205,13 @@ type BoardContextAPI = {
 
   /**
    * The two edits a use of a block takes on the running board — see
-   * `runtime/board/blocks`. `key` is the use's placement in `linkage.blocks`.
+   * `runtime/board/blocks`. `key` is the use's placement in `linkage.blocks`;
+   * `changed` are the params set on it, and the others it has stay.
    */
-  setBlockParams: (key: string, params: Record<string, unknown>) => Promise<void>;
+  setBlockParams: (key: string, changed: Record<string, unknown>) => Promise<void>;
   detachBlockUse: (key: string) => void;
-  /** Turns the service at `address` into a block of this board, and it into the first use. */
-  makeBlock: (address: string) => Promise<BlockDefinition>;
+  /** Turns the service at `address` on `runtimeId` into a block of this board, and it into the first use. */
+  makeBlock: (address: string, runtimeId?: string) => Promise<BlockDefinition>;
   /** Unlocks one use as the working copy of its block, until applied or cancelled. */
   editBlock: (key: string) => void;
   applyBlockEdit: () => Promise<void>;
@@ -488,9 +489,15 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const setFacade: Dispatch<SetStateAction<FacadeDescriptor | undefined>> = (
       value,
     ) => dispatch({ type: "setFacade", value });
+    // The linkage as last set, ahead of the render that shows it: a change
+    // started right after another one finished has to start from it.
+    const latestLinkageRef = useRef<BoardLinkage | undefined>(undefined);
     const setLinkage: Dispatch<SetStateAction<BoardLinkage | undefined>> = (
       value,
-    ) => dispatch({ type: "setLinkage", value });
+    ) => {
+      latestLinkageRef.current = resolveSetStateAction(latestLinkageRef.current, value);
+      dispatch({ type: "setLinkage", value: latestLinkageRef.current });
+    };
     const setIsFetching: Dispatch<SetStateAction<boolean>> = (value) =>
       dispatch({ type: "setIsFetching", value });
     const setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>> = (
@@ -557,30 +564,55 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
 
     // --- Wired operations ---
 
-    const fetchBoard = async () => {
-      const cancellation = { cancelled: false };
-      inFlightFetchesRef.current.add(cancellation);
+    // Which board is open, counted: bumped whenever replacing one begins or
+    // ends, so work started on the board before can tell it no longer applies.
+    // While a replacement runs, no board is open to apply anything to.
+    const boardGenerationRef = useRef(0);
+    const replacingBoardsRef = useRef(0);
+    const replacingBoard = async <T,>(replace: () => Promise<T>): Promise<T> => {
+      boardGenerationRef.current++;
+      replacingBoardsRef.current++;
       try {
-        await fetchBoardOp(
-          getRefs(),
-          waitForUserLogin,
-          buildContextValue,
-          cancellation,
-        );
-        rebaseAfterLoad();
+        return await replace();
       } finally {
-        inFlightFetchesRef.current.delete(cancellation);
+        replacingBoardsRef.current--;
+        boardGenerationRef.current++;
       }
     };
+    /** Whether the board open now is the one open when this was called. */
+    const stillOnThisBoard = () => {
+      const generation = boardGenerationRef.current;
+      return () =>
+        replacingBoardsRef.current === 0 &&
+        boardGenerationRef.current === generation;
+    };
+
+    const fetchBoard = () =>
+      replacingBoard(async () => {
+        const cancellation = { cancelled: false };
+        inFlightFetchesRef.current.add(cancellation);
+        try {
+          await fetchBoardOp(
+            getRefs(),
+            waitForUserLogin,
+            buildContextValue,
+            cancellation,
+          );
+          rebaseAfterLoad();
+        } finally {
+          inFlightFetchesRef.current.delete(cancellation);
+        }
+      });
     const removeRuntime = (runtime: RuntimeDescriptor) =>
       removeRuntimeOp(runtime, getRefs());
-    const clearBoard = async (newBoardNameArg?: string) => {
-      cancelUserLoginWait();
-      // What the board it is leaving was changed to is read now or never: once
-      // its runtimes are gone there is nothing left to serialise.
-      await snapshots.flush();
-      return clearBoardOp(newBoardNameArg, getRefs(), removeRuntime);
-    };
+    const clearBoard = (newBoardNameArg?: string) =>
+      replacingBoard(async () => {
+        cancelUserLoginWait();
+        // What the board it is leaving was changed to is read now or never: once
+        // its runtimes are gone there is nothing left to serialise.
+        await snapshots.flush();
+        return clearBoardOp(newBoardNameArg, getRefs(), removeRuntime);
+      });
 
     const addRuntime = (rtClass: RuntimeClass) =>
       addRuntimeOp(rtClass, getRefs(), waitForUserLogin, (err) => {
@@ -639,25 +671,43 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const serializeBoard = () => serializeBoardOp(getRefs());
     const serializeBoardDocuments = () =>
       serializeBoardDocumentsOp(getRefs(), providerStateRef.current.linkage);
-    const setBoardState = async (
+    const setBoardState = (
       newState: BoardDescriptor,
       origin?: UnitOrigin,
-    ) => {
-      await snapshots.flush();
-      await setBoardStateOp(
-        newState,
-        getRefs(),
-        waitForUserLogin,
-        removeRuntime,
-        origin,
+    ) =>
+      replacingBoard(async () => {
+        await snapshots.flush();
+        await setBoardStateOp(
+          newState,
+          getRefs(),
+          waitForUserLogin,
+          removeRuntime,
+          origin,
+        );
+        rebaseAfterLoad();
+      });
+    // One change of params at a time, each started once the one before has
+    // been taken: each reads the params the last one left. Each belongs to the
+    // board it was made on, and is dropped once that board is replaced.
+    const blockParamsQueueRef = useRef<Promise<void>>(Promise.resolve());
+    const setBlockParams = (key: string, changed: Record<string, unknown>) => {
+      const isCurrent = stillOnThisBoard();
+      const run = blockParamsQueueRef.current.then(() =>
+        setBlockParamsOp(
+          key,
+          changed,
+          buildContextValue(),
+          () => latestLinkageRef.current,
+          setLinkage,
+          isCurrent,
+        ),
       );
-      rebaseAfterLoad();
+      blockParamsQueueRef.current = run.catch(() => {});
+      return run;
     };
-    const setBlockParams = (key: string, params: Record<string, unknown>) =>
-      setBlockParamsOp(key, params, buildContextValue(), setLinkage);
     const detachBlockUse = (key: string) => detachBlockUseOp(key, setLinkage);
-    const makeBlock = (address: string) =>
-      makeBlockOp(address, buildContextValue(), setLinkage);
+    const makeBlock = (address: string, runtimeId?: string) =>
+      makeBlockOp(address, runtimeId, buildContextValue(), setLinkage);
     const editBlock = (key: string) => editBlockOp(key, setLinkage);
     const applyBlockEdit = () => applyBlockEditOp(buildContextValue(), setLinkage);
     const cancelBlockEdit = () => cancelBlockEditOp(buildContextValue(), setLinkage);

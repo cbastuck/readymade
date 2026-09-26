@@ -161,7 +161,7 @@ Types are shared across runtimes:
 Runtime order = chain order. Services within a runtime are ordered top-to-bottom; that order
 is their wiring.
 
-A board may also define `blocks` — services (usually sub-services) written once and used by
+A board may also define `blocks` — sub-services written once and used by
 reference: any pipeline entry `{ "block": "<id>", "params": {…} }` stands for one. Uses are
 expanded when the board loads and written back as uses when it saves; while running, a use's
 inside is frozen and only its params vary (`docs/content/concepts/blocks.md`). Use `"HKP_RUNTIME_HOST"` as a placeholder in remote URLs when the host

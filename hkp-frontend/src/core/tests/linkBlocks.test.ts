@@ -12,13 +12,20 @@ import { unlinkBoardDocuments } from "../boardPersistence";
 
 vi.mock("sonner", () => ({ toast: { warning: vi.fn(), error: vi.fn() } }));
 
+function hitPipeline(state: Record<string, unknown>) {
+  return [{ serviceId: "hookup.to/service/sound", instanceId: "sound", state }];
+}
+
 const hit = {
   id: "hit",
   name: "Hit",
-  serviceId: "hookup.to/service/sound",
+  serviceId: "sub-service",
   params: { trigger: "kick" },
-  state: { trigger: "{{param.trigger}}" },
+  state: { pipeline: hitPipeline({ trigger: "{{param.trigger}}" }) },
 };
+
+/** What the sound inside an expanded use of `hit` was configured with. */
+const soundIn = (entry: any) => entry.state.pipeline[0].state;
 
 function board(extra: Partial<UnitBoard> = {}): UnitBoard {
   return {
@@ -36,7 +43,8 @@ describe("linkBlocks", () => {
     const linked = linkBlocks(source);
     expect(linked.diagnostics).toEqual([]);
     expect(linked.board.blocks).toBeUndefined();
-    expect(linked.board.services.ui[0]).toMatchObject({ uuid: "kick", state: { trigger: "kick" } });
+    expect(linked.board.services.ui[0]).toMatchObject({ uuid: "kick" });
+    expect(soundIn(linked.board.services.ui[0])).toEqual({ trigger: "kick" });
     const saved = unlinkBlocks(linked.board, linked.linkage);
     expect(saved.blocks).toEqual([{ ...hit, tags: undefined }]);
     expect(saved.services).toEqual(source.services);
@@ -67,7 +75,13 @@ describe("blocks in units", () => {
     services: {
       intake: [{ block: "hit", uuid: "bell", params: { trigger: "{{param.trigger}}" } } as any],
     },
-    blocks: [{ ...hit, name: "Shop hit", state: { trigger: "{{param.trigger}}", shop: true } }],
+    blocks: [
+      {
+        ...hit,
+        name: "Shop hit",
+        state: { pipeline: hitPipeline({ trigger: "{{param.trigger}}", shop: true }) },
+      },
+    ],
   };
   const composition: UnitBoard = {
     boardName: "Mall",
@@ -90,7 +104,7 @@ describe("blocks in units", () => {
     expect(linked.diagnostics).toEqual([]);
     // The unit's parameter reached the use; the block's own reference to
     // `trigger` is the block's parameter, which the unit never touched.
-    expect(linked.board.services["shop.intake"][0].state).toEqual({ trigger: "snare", shop: true });
+    expect(soundIn(linked.board.services["shop.intake"][0])).toEqual({ trigger: "snare", shop: true });
   });
 
   it("saves each document with its own blocks and its uses as written", async () => {

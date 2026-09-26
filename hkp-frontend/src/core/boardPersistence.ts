@@ -441,6 +441,9 @@ export async function clearBoard(
   refs.setServices({});
   refs.setRegistry({});
   refs.setFacade(undefined);
+  // What the cleared board was linked from — its units and its blocks — would
+  // otherwise be written into whatever is built next.
+  refs.setLinkage(undefined);
   refs.setBoardNameState(newBoardNameArg || "");
 }
 

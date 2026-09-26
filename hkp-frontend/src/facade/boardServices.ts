@@ -83,8 +83,12 @@ function findNestedInScope(
  * params. Said once per address, not on every render that asks.
  */
 const refusedAddresses = new Set<string>();
-function isInsideUse(boardContext: BoardContextState, address: string): boolean {
-  const use = blockUseContaining(boardContext.linkage?.blocks, address);
+function isInsideUse(
+  boardContext: BoardContextState,
+  address: string,
+  runtimeId?: string,
+): boolean {
+  const use = blockUseContaining(boardContext.linkage?.blocks, address, runtimeId);
   if (!use) {
     return false;
   }
@@ -98,17 +102,26 @@ function isInsideUse(boardContext: BoardContextState, address: string): boolean 
   return true;
 }
 
+/**
+ * The service an address names. An address is unique only within its runtime,
+ * so a caller that knows which runtime holds the service says so; without one
+ * the first runtime holding the address answers.
+ */
 export function findService(
   boardContext: BoardContextState,
   uuid: string,
+  runtimeId?: string,
 ): ServiceInstance | null {
-  if (isInsideUse(boardContext, uuid)) {
+  if (isInsideUse(boardContext, uuid, runtimeId)) {
     return null;
   }
   // Only browser scopes expose findServiceInstance — a browser service is a
   // live object in this process, so a hit hands back the real instance. Remote
   // runtime engines have no such function, and fall through to the proxy below.
-  for (const scope of Object.values(boardContext.scopes)) {
+  for (const [scopeRuntimeId, scope] of Object.entries(boardContext.scopes)) {
+    if (runtimeId && scopeRuntimeId !== runtimeId) {
+      continue;
+    }
     const svc = (scope as any).findServiceInstance?.(uuid)?.[0];
     if (svc) {
       return svc;
@@ -128,13 +141,16 @@ export function findService(
   // dialled — the runtime walks the rest of it. The state a board holds is the
   // root's; a nested service's arrives when it first reports.
   const root = addressRoot(uuid);
-  for (const [runtimeId, svcs] of Object.entries(boardContext.services)) {
+  for (const [holderId, svcs] of Object.entries(boardContext.services)) {
+    if (runtimeId && holderId !== runtimeId) {
+      continue;
+    }
     const desc = svcs.find((s) => s.uuid === root);
     if (!desc) {
       continue;
     }
-    const runtime = boardContext.runtimes.find((rt) => rt.id === runtimeId);
-    const scope = boardContext.scopes[runtimeId];
+    const runtime = boardContext.runtimes.find((rt) => rt.id === holderId);
+    const scope = boardContext.scopes[holderId];
     const api = runtimeApiFor(boardContext, runtime?.type);
     if (!runtime?.url || !scope || !api) {
       continue;

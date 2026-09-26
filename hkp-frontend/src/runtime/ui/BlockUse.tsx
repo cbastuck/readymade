@@ -71,6 +71,17 @@ export function useServiceAddress(): string | null {
   return useContext(ServiceAddressContext);
 }
 
+/**
+ * The runtime holding the service whose panel this is drawn in. An address is
+ * unique only within its runtime, so the two travel together: a pipeline drawn
+ * inside a panel is on the runtime of the service it belongs to.
+ */
+const ServiceRuntimeContext = createContext<string | undefined>(undefined);
+
+export function useServiceRuntimeId(): string | undefined {
+  return useContext(ServiceRuntimeContext);
+}
+
 /** Whether this is being drawn inside a use of a block. */
 export function useInsideBlockUse(): boolean {
   return useContext(BlockLockContext);
@@ -127,18 +138,22 @@ type Props = {
  */
 export default function BlockUseFrame({
   address,
-  runtimeId,
+  runtimeId: ownRuntimeId,
   level,
   onRemove,
   locked = false,
   children,
 }: Props) {
   const inside = useInsideBlockUse() || locked;
+  const inherited = useContext(ServiceRuntimeContext);
+  const runtimeId = ownRuntimeId ?? inherited;
   const use = usePlacedUse(address, runtimeId);
   const addressed = (
-    <ServiceAddressContext.Provider value={address}>
-      {children}
-    </ServiceAddressContext.Provider>
+    <ServiceRuntimeContext.Provider value={runtimeId}>
+      <ServiceAddressContext.Provider value={address}>
+        {children}
+      </ServiceAddressContext.Provider>
+    </ServiceRuntimeContext.Provider>
   );
   if (!use && !inside) {
     return addressed;
@@ -230,7 +245,7 @@ function UseBar({
       return;
     }
     void board
-      ?.setBlockParams(placed.key, { ...placed.use.params, [name]: value })
+      ?.setBlockParams(placed.key, { [name]: value })
       .catch((err) => console.error("Could not change the block's params", err));
   };
 

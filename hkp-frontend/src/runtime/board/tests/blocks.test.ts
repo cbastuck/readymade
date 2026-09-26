@@ -228,6 +228,37 @@ describe("expanding", () => {
     expect(services).toEqual(plain);
     expect(placed).toEqual([]);
   });
+
+  it("reads data a service holds as data in a board without blocks", () => {
+    const holding = {
+      ui: [
+        {
+          uuid: "table",
+          serviceId: "data-table",
+          state: { rows: [{ block: "center" }, { block: "left", uuid: "r1" }] },
+        },
+      ],
+    };
+    const { services, placed, diagnostics } = expandBlocks(holding, {});
+    expect(services).toEqual(holding);
+    expect(placed).toEqual([]);
+    expect(diagnostics).toEqual([]);
+  });
+
+  it("reads an object saying more than a use can as data", () => {
+    const holding = bar([
+      { serviceId: "monitor", instanceId: "m", state: { items: [{ block: "note", label: "x" }] } },
+    ]);
+    const { services, placed, diagnostics } = expandBlocks(holding, definitions);
+    expect(services).toEqual(holding);
+    expect(placed).toEqual([]);
+    expect(diagnostics).toEqual([]);
+  });
+
+  it("still reports an unknown use in a runtime's own services without blocks", () => {
+    const { diagnostics } = expandBlocks({ ui: [{ block: "note", uuid: "a" } as any] }, {});
+    expect(diagnostics).toMatchObject([{ level: "error", code: "block-unknown" }]);
+  });
 });
 
 describe("saving", () => {
