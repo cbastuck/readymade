@@ -4,9 +4,14 @@ import {
   COLUMN_SPACING,
   LAYER_SPACING,
   ROW_SPACING,
+  OverviewNode,
   buildScene,
 } from "../graph";
 import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
+
+/** The node a service is, found by its own name — unique in these boards. */
+const named = (scene: { nodes: OverviewNode[] }, uuid: string) =>
+  scene.nodes.find((n) => n.uuid === uuid);
 
 const runtime = (id: string, name: string): RuntimeDescriptor =>
   ({ id, name, type: "browser" }) as unknown as RuntimeDescriptor;
@@ -26,10 +31,10 @@ describe("buildScene", () => {
       { ui: [service("a"), service("b")], node: [service("c")] },
     );
 
-    expect(scene.byUuid.get("a")!.x).toBe(0);
-    expect(scene.byUuid.get("b")!.x).toBe(0);
-    expect(scene.byUuid.get("c")!.x).toBe(COLUMN_SPACING);
-    expect(scene.byUuid.get("b")!.y - scene.byUuid.get("a")!.y).toBe(
+    expect(named(scene, "a")!.x).toBe(0);
+    expect(named(scene, "b")!.x).toBe(0);
+    expect(named(scene, "c")!.x).toBe(COLUMN_SPACING);
+    expect(named(scene, "b")!.y - named(scene, "a")!.y).toBe(
       ROW_SPACING,
     );
   });
@@ -42,8 +47,8 @@ describe("buildScene", () => {
 
     // Where the chain leaves one runtime is where the next one picks it up, so
     // the handoff is a step across rather than the height of the board.
-    expect(scene.byUuid.get("c")!.y).toBe(scene.byUuid.get("b")!.y);
-    expect(scene.runtimes[1].y).toBe(scene.byUuid.get("c")!.y - ROW_SPACING);
+    expect(named(scene, "c")!.y).toBe(named(scene, "b")!.y);
+    expect(scene.runtimes[1].y).toBe(named(scene, "c")!.y - ROW_SPACING);
   });
 
   it("hands over from the last service a runtime itself holds", () => {
@@ -61,7 +66,7 @@ describe("buildScene", () => {
 
     // The chain leaves from the host: what runs next is fed by the pipeline,
     // not by the scope, whatever the scope holds.
-    expect(scene.byUuid.get("c")!.y).toBe(scene.byUuid.get("host")!.y);
+    expect(named(scene, "c")!.y).toBe(named(scene, "host")!.y);
   });
 
   it("puts a nested pipeline behind the service hosting it", () => {
@@ -86,20 +91,20 @@ describe("buildScene", () => {
 
     // A pipeline starts level with the service holding it, a layer back, so
     // stepping into a service reads as a move in depth and nothing else.
-    expect(scene.byUuid.get("inner")!.y).toBe(scene.byUuid.get("host")!.y);
-    expect(scene.byUuid.get("deeper-host")!.y).toBe(
-      scene.byUuid.get("inner")!.y + ROW_SPACING,
+    expect(named(scene, "inner")!.y).toBe(named(scene, "host")!.y);
+    expect(named(scene, "deeper-host")!.y).toBe(
+      named(scene, "inner")!.y + ROW_SPACING,
     );
-    expect(scene.byUuid.get("deepest")!.y).toBe(
-      scene.byUuid.get("deeper-host")!.y,
+    expect(named(scene, "deepest")!.y).toBe(
+      named(scene, "deeper-host")!.y,
     );
 
-    expect(scene.byUuid.get("host")!.z).toBe(0);
-    expect(scene.byUuid.get("inner")!.z).toBe(LAYER_SPACING);
-    expect(scene.byUuid.get("deepest")!.z).toBe(2 * LAYER_SPACING);
+    expect(named(scene, "host")!.z).toBe(0);
+    expect(named(scene, "inner")!.z).toBe(LAYER_SPACING);
+    expect(named(scene, "deepest")!.z).toBe(2 * LAYER_SPACING);
     // The host stays where it was; what it contains is placed behind it.
-    expect(scene.byUuid.get("host")!.depth).toBe(0);
-    expect(scene.byUuid.get("inner")!.depth).toBe(1);
+    expect(named(scene, "host")!.depth).toBe(0);
+    expect(named(scene, "inner")!.depth).toBe(1);
   });
 
   it("finds every pipeline a service holds, whatever it files them under", () => {
@@ -133,7 +138,7 @@ describe("buildScene", () => {
 
     // An endpoint's two entry points, a track each, and what reduces them:
     // all of them are pipelines, and none of them is called `pipeline`.
-    expect([...scene.byUuid.keys()].sort()).toEqual([
+    expect(scene.nodes.map((n) => n.uuid).sort()).toEqual([
       "carry",
       "delete",
       "insert",
@@ -145,11 +150,11 @@ describe("buildScene", () => {
 
     // Which one a service is in, said by the name its host files it under —
     // the field, or what the thing holding it calls itself.
-    expect(scene.byUuid.get("keep-list")!.pipeline).toBe("onProcess");
-    expect(scene.byUuid.get("serve-list")!.pipeline).toBe("onRequest");
-    expect(scene.byUuid.get("insert")!.pipeline).toBe("keep");
-    expect(scene.byUuid.get("delete")!.pipeline).toBe("drop");
-    expect(scene.byUuid.get("carry")!.pipeline).toBe("reduce");
+    expect(named(scene, "keep-list")!.pipeline).toBe("onProcess");
+    expect(named(scene, "serve-list")!.pipeline).toBe("onRequest");
+    expect(named(scene, "insert")!.pipeline).toBe("keep");
+    expect(named(scene, "delete")!.pipeline).toBe("drop");
+    expect(named(scene, "carry")!.pipeline).toBe("reduce");
   });
 
   it("tells apart pipelines the board leaves unnamed", () => {
@@ -176,9 +181,9 @@ describe("buildScene", () => {
     // A case names itself by what it matches rather than by a name, so the
     // two are told apart by where they are in the list. Without that both
     // would answer to `pipeline`, and one plate would be drawn around both.
-    expect(scene.byUuid.get("first")!.pipeline).toBe("cases 1");
-    expect(scene.byUuid.get("second")!.pipeline).toBe("cases 2");
-    expect(scene.byUuid.get("fallback")!.pipeline).toBe("default");
+    expect(named(scene, "first")!.pipeline).toBe("cases 1");
+    expect(named(scene, "second")!.pipeline).toBe("cases 2");
+    expect(named(scene, "fallback")!.pipeline).toBe("default");
   });
 
   it("keeps a host's pipelines apart, in place and in what connects them", () => {
@@ -205,9 +210,9 @@ describe("buildScene", () => {
         (edge) => edge.kind === "contains" && edge.from === "serve",
       ),
     ).toHaveLength(2);
-    expect(scene.byUuid.get("keep-list")!.y).toBe(scene.byUuid.get("serve")!.y);
-    expect(scene.byUuid.get("serve-list")!.y).toBe(
-      scene.byUuid.get("keep-list")!.y + ROW_SPACING,
+    expect(named(scene, "keep-list")!.y).toBe(named(scene, "serve")!.y);
+    expect(named(scene, "serve-list")!.y).toBe(
+      named(scene, "keep-list")!.y + ROW_SPACING,
     );
   });
 
@@ -228,8 +233,8 @@ describe("buildScene", () => {
       ],
     });
 
-    expect(scene.byUuid.get("leaf")!.ancestry).toEqual(["host", "mid"]);
-    expect(scene.byUuid.get("host")!.ancestry).toEqual([]);
+    expect(named(scene, "leaf")!.ancestry).toEqual(["host", "mid"]);
+    expect(named(scene, "host")!.ancestry).toEqual([]);
   });
 
   it("chains the end of one runtime to the start of the next, skipping empty ones", () => {
@@ -258,7 +263,7 @@ describe("buildScene", () => {
 
     expect(scene.edges).toContainEqual({
       from: "host",
-      to: "inner",
+      to: "host.inner",
       kind: "contains",
     });
     expect(scene.edges).toContainEqual({
@@ -268,7 +273,7 @@ describe("buildScene", () => {
     });
     // A nested service is not wired to what follows its host.
     expect(
-      scene.edges.some((e) => e.from === "inner" && e.to === "after"),
+      scene.edges.some((e) => e.from === "host.inner" && e.to === "after"),
     ).toBe(false);
   });
 
@@ -276,5 +281,36 @@ describe("buildScene", () => {
     const scene = buildScene([], {});
     expect(scene.nodes).toEqual([]);
     expect(scene.radius).toBeGreaterThan(0);
+  });
+
+  it("tells apart services of the same name in two copies of one block", () => {
+    // A block reused twice holds services of the same names; found by name
+    // alone, one would stand in for the other — drawn in one place, and lit
+    // whenever either ran.
+    const beat = (uuid: string) => ({
+      instanceId: uuid,
+      serviceId: "sub-service",
+      state: { pipeline: [{ instanceId: "hihat", serviceId: "sound" }] },
+    });
+    const scene = buildScene([runtime("ui", "Browser")], {
+      ui: [service("bar", { state: { pipeline: [beat("beat-1"), beat("beat-2")] } })],
+    });
+
+    const hihats = scene.nodes.filter((n) => n.uuid === "hihat");
+    expect(hihats.map((n) => n.key)).toEqual([
+      "bar.beat-1.hihat",
+      "bar.beat-2.hihat",
+    ]);
+    expect(scene.byKey.size).toBe(scene.nodes.length);
+    expect(scene.edges).toContainEqual({
+      from: "bar.beat-1",
+      to: "bar.beat-1.hihat",
+      kind: "contains",
+    });
+    expect(scene.edges).toContainEqual({
+      from: "bar.beat-2",
+      to: "bar.beat-2.hihat",
+      kind: "contains",
+    });
   });
 });

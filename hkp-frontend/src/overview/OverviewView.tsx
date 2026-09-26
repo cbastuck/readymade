@@ -23,7 +23,7 @@ import { canPlay, play, useRunParams } from "hkp-frontend/src/core/play";
 import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
 import { ActivityTracker } from "./activity";
 import { Camera, createCamera, orbit, pan, project, zoom } from "./camera";
-import { OverviewNode, buildScene } from "./graph";
+import { OverviewNode, buildScene, keyOf } from "./graph";
 import { ServicesByRuntime, readBoardShape } from "./shape";
 import { HitTarget, defaultPalette, hitTest, render } from "./render";
 import { useOverview } from "./OverviewContext";
@@ -85,12 +85,16 @@ function accentColor(): string {
  */
 function revealService(
   node: OverviewNode,
-  labelFor: (uuid: string) => string,
+  labelFor: (key: string) => string,
   navigation: ReturnType<typeof useNestedNavigation>,
 ) {
   if (navigation) {
     node.ancestry.forEach((hostUuid, depth) => {
-      navigation.open(hostUuid, labelFor(hostUuid), depth);
+      navigation.open(
+        hostUuid,
+        labelFor(keyOf(node.ancestry.slice(0, depth), hostUuid)),
+        depth,
+      );
     });
     if (node.ancestry.length === 0) {
       navigation.goTo(0);
@@ -140,8 +144,8 @@ export default function OverviewView() {
   const hoveredRef = useRef<string | null>(null);
   const [hovered, setHovered] = useState<OverviewNode | null>(null);
   const selectedRef = useRef<string | null>(null);
-  const [selectedUuid, setSelectedUuid] = useState<string | null>(null);
-  selectedRef.current = selectedUuid;
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  selectedRef.current = selectedKey;
 
   // What the tracker knows about the selected node, sampled rather than
   // watched: it is written to on every call a service takes, which on a board
@@ -208,7 +212,7 @@ export default function OverviewView() {
   }, [boardContext?.runtimes, boardContext?.services, reported]);
 
   const labelFor = useCallback(
-    (uuid: string) => scene?.byUuid.get(uuid)?.label ?? "Pipeline",
+    (key: string) => scene?.byKey.get(key)?.label ?? "Pipeline",
     [scene],
   );
 
@@ -298,8 +302,8 @@ export default function OverviewView() {
           activity: trackerRef.current ?? IDLE_ACTIVITY,
           palette,
           now: performance.now(),
-          hoveredUuid: hoveredRef.current,
-          selectedUuid: selectedRef.current,
+          hoveredKey: hoveredRef.current,
+          selectedKey: selectedRef.current,
         });
       }
       frame = requestAnimationFrame(draw);
@@ -355,15 +359,15 @@ export default function OverviewView() {
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
     const hit = hitTest(hitsRef.current, x, y);
-    const uuid = hit?.uuid ?? null;
+    const key = hit?.key ?? null;
     // Moving within the same card changes nothing that is drawn from state —
     // the tooltip is placed from the node's projected position, not the
     // pointer — so only crossing into a different card is worth a render.
-    if (uuid === hoveredRef.current) {
+    if (key === hoveredRef.current) {
       return;
     }
-    hoveredRef.current = uuid;
-    const node = uuid ? scene?.byUuid.get(uuid) : undefined;
+    hoveredRef.current = key;
+    const node = key ? scene?.byKey.get(key) : undefined;
     setHovered(node ?? null);
   };
 
@@ -383,7 +387,7 @@ export default function OverviewView() {
     );
     // Selecting rather than leaving: what a node is takes reading, and going
     // to it is one of the things the panel then offers.
-    setSelectedUuid(hit?.uuid ?? null);
+    setSelectedKey(hit?.key ?? null);
   };
 
   const playBoard = useCallback(
@@ -423,12 +427,12 @@ export default function OverviewView() {
   }, [visible]);
 
   useEffect(() => {
-    if (!visible || !selectedUuid) {
+    if (!visible || !selectedKey) {
       setSelectedActivity({ processing: false, now: 0 });
       return;
     }
     const sample = () => {
-      const activity = trackerRef.current?.get(selectedUuid);
+      const activity = trackerRef.current?.get(selectedKey);
       setSelectedActivity({
         activity: activity ? { ...activity } : undefined,
         processing: activity?.startedAt !== undefined,
@@ -438,15 +442,15 @@ export default function OverviewView() {
     sample();
     const timer = setInterval(sample, 250);
     return () => clearInterval(timer);
-  }, [visible, selectedUuid]);
+  }, [visible, selectedKey]);
 
   // A node stops existing when the board it was on changes shape under the
   // view; the panel must not go on describing it.
   useEffect(() => {
-    if (selectedUuid && scene && !scene.byUuid.has(selectedUuid)) {
-      setSelectedUuid(null);
+    if (selectedKey && scene && !scene.byKey.has(selectedKey)) {
+      setSelectedKey(null);
     }
-  }, [scene, selectedUuid]);
+  }, [scene, selectedKey]);
 
   useEffect(() => {
     if (!visible) {
@@ -456,7 +460,7 @@ export default function OverviewView() {
       if (event.key === "Escape") {
         // The panel is what was opened last, so it is what closes first.
         if (selectedRef.current) {
-          setSelectedUuid(null);
+          setSelectedKey(null);
           return;
         }
         overview?.hide();
@@ -473,8 +477,8 @@ export default function OverviewView() {
     return null;
   }
 
-  const selected = selectedUuid
-    ? (scene.byUuid.get(selectedUuid) ?? null)
+  const selected = selectedKey
+    ? (scene.byKey.get(selectedKey) ?? null)
     : null;
 
   const hoveredPoint =
@@ -689,10 +693,10 @@ export default function OverviewView() {
                 {hovered.depth > 0 ? ` · level ${hovered.depth}` : ""}
                 {hovered.bypassed ? " · bypassed" : ""}
               </div>
-              {trackerRef.current?.get(hovered.uuid) && (
+              {trackerRef.current?.get(hovered.key) && (
                 <div style={{ color: palette.textMuted }}>
-                  {trackerRef.current.get(hovered.uuid)?.calls} calls · last{" "}
-                  {trackerRef.current.get(hovered.uuid)?.lastOut?.summary}
+                  {trackerRef.current.get(hovered.key)?.calls} calls · last{" "}
+                  {trackerRef.current.get(hovered.key)?.lastOut?.summary}
                 </div>
               )}
             </div>
@@ -712,7 +716,7 @@ export default function OverviewView() {
             now={selectedActivity.now}
             palette={palette}
             onOpenInPlayground={() => openInPlayground(selected)}
-            onClose={() => setSelectedUuid(null)}
+            onClose={() => setSelectedKey(null)}
           />
         )}
       </div>

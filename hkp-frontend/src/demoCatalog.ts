@@ -218,7 +218,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     slug: "nested-rhythm",
     label: "Nested Rhythm",
     description:
-      "A drum groove timed by nothing but nesting: hi-hats in a Beat, a snare between two Beats, a kick at the top of the Bar. Every wait is in beats, and the tempo is one slot in the outermost scope that every level inherits. Turn the tempo and watch the playhead move down through the levels.",
+      "A drum groove timed by nothing but nesting: four patterns — Straight, Shuffle, Four on the floor, Funk — each a bar built from small blocks like a Beat of two hi-hats. Every wait is in beats; tempo and pattern are slots in the outermost scope that every level inherits. Switch patterns and watch the playhead move down through the levels.",
     icon: "🥁",
     tags: ["Audio"],
   },

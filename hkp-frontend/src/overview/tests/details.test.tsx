@@ -39,7 +39,7 @@ function renderPanel(uuid: string, overrides: Record<string, unknown> = {}) {
   const onClose = vi.fn();
   render(
     <OverviewDetails
-      node={scene.byUuid.get(uuid)!}
+      node={scene.nodes.find((n) => n.uuid === uuid)!}
       scene={scene}
       runtimeLabel="NodeJS 1"
       processing={false}

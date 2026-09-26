@@ -23,7 +23,6 @@
  * a scope that runs and reports nothing.
  */
 import { RuntimeScope } from "hkp-frontend/src/types";
-import { joinAddress } from "hkp-frontend/src/runtime/board/address";
 import { OverviewEdge, OverviewNode } from "./graph";
 import { previewValue } from "./preview";
 
@@ -113,7 +112,8 @@ type Registration = {
 };
 
 export class ActivityTracker {
-  private byUuid = new Map<string, NodeActivity>();
+  /** By node key: a uuid alone would merge copies of one nested block. */
+  private byKey = new Map<string, NodeActivity>();
   private pulses: Pulse[] = [];
   private outgoing = new Map<string, string[]>();
   private registrations: Registration[] = [];
@@ -152,13 +152,10 @@ export class ActivityTracker {
       // at its own address, and says so by leaving this out.
       const target: Registration["target"] = { uuid: node.uuid };
       if (node.ancestry.length > 0) {
-        target.address = [...node.ancestry, node.uuid].reduce(
-          (path, part) => joinAddress(path, part),
-          "",
-        );
+        target.address = node.key;
       }
       const callback = (notification: any) =>
-        this.onNotification(node.uuid, notification);
+        this.onNotification(node.key, notification);
       app.registerNotificationTarget(target, callback);
       this.registrations.push({ app, target, callback });
     }
@@ -173,23 +170,23 @@ export class ActivityTracker {
     this.registrations = [];
   }
 
-  private entry(uuid: string): NodeActivity {
-    let found = this.byUuid.get(uuid);
+  private entry(key: string): NodeActivity {
+    let found = this.byKey.get(key);
     if (!found) {
       found = { litUntil: 0, calls: 0 };
-      this.byUuid.set(uuid, found);
+      this.byKey.set(key, found);
     }
     return found;
   }
 
-  private onNotification(uuid: string, notification: any) {
+  private onNotification(key: string, notification: any) {
     const internal = notification?.__internal;
     if (!internal) {
       return;
     }
 
     const now = performance.now();
-    const activity = this.entry(uuid);
+    const activity = this.entry(key);
 
     if (internal.state === "call-process") {
       activity.startedAt = now;
@@ -214,14 +211,14 @@ export class ActivityTracker {
       if (activity.lastStopped) {
         return;
       }
-      for (const to of this.outgoing.get(uuid) ?? []) {
-        this.pulses.push({ from: uuid, to, startedAt: now });
+      for (const to of this.outgoing.get(key) ?? []) {
+        this.pulses.push({ from: key, to, startedAt: now });
       }
     }
   }
 
-  get(uuid: string): NodeActivity | undefined {
-    return this.byUuid.get(uuid);
+  get(key: string): NodeActivity | undefined {
+    return this.byKey.get(key);
   }
 
   /** Drops pulses that have arrived, and returns the ones still travelling. */
@@ -237,7 +234,7 @@ export class ActivityTracker {
     if (this.pulses.length > 0) {
       return false;
     }
-    for (const activity of this.byUuid.values()) {
+    for (const activity of this.byKey.values()) {
       if (activity.startedAt !== undefined || activity.litUntil > now) {
         return false;
       }

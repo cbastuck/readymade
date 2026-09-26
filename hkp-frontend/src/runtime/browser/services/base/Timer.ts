@@ -319,7 +319,10 @@ class Timer {
       return params;
     }
 
-    await sleep(this.toMs(this.oneShotDelay, this.oneShotDelayUnit));
+    // Rounded, not left to setTimeout, which truncates: delays that are
+    // fractions of a beat (a swung third, say) would each come out short, and
+    // a chain of them would lose a millisecond at every step.
+    await sleep(Math.round(this.toMs(this.oneShotDelay, this.oneShotDelayUnit)));
 
     const result = this.nextTimerArgument(params);
     this.app.notify(this, { counter: result.triggerCount });

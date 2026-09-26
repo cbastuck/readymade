@@ -80,7 +80,8 @@ export function defaultPalette(
 
 /** Where a node ended up on screen, so a click can be matched back to it. */
 export type HitTarget = {
-  uuid: string;
+  /** The node's key; see OverviewNode.key. */
+  key: string;
   x: number;
   y: number;
   width: number;
@@ -329,8 +330,8 @@ export type RenderOptions = {
   activity: ActivityTracker;
   palette: Palette;
   now: number;
-  hoveredUuid?: string | null;
-  selectedUuid?: string | null;
+  hoveredKey?: string | null;
+  selectedKey?: string | null;
 };
 
 export function render(
@@ -344,8 +345,8 @@ export function render(
     activity,
     palette,
     now,
-    hoveredUuid,
-    selectedUuid,
+    hoveredKey,
+    selectedKey,
   } = options;
 
   ctx.save();
@@ -359,7 +360,7 @@ export function render(
   for (const node of scene.nodes) {
     const point = project(camera, node, viewport);
     if (point) {
-      projected.set(node.uuid, point);
+      projected.set(node.key, point);
     }
   }
 
@@ -558,7 +559,7 @@ export function render(
     }
     const column = topLevelByRuntime.get(runtime.id) ?? [];
     const tail = column.length
-      ? projected.get(column[column.length - 1].uuid)
+      ? projected.get(column[column.length - 1].key)
       : undefined;
 
     // The colour the board gave the runtime, or the appearance default it left
@@ -572,7 +573,7 @@ export function render(
     if (colour) {
       const points = (nodes: typeof scene.nodes) =>
         nodes
-          .map((node) => projected.get(node.uuid))
+          .map((node) => projected.get(node.key))
           .filter((point): point is Station => !!point);
 
       const held = [...pipelines].filter(([key]) =>
@@ -692,7 +693,7 @@ export function render(
 
   // ── nodes ────────────────────────────────────────────────────────────────
   for (const node of scene.nodes) {
-    const point = projected.get(node.uuid);
+    const point = projected.get(node.key);
     if (!point) {
       continue;
     }
@@ -702,7 +703,7 @@ export function render(
     const top = point.y - height / 2;
 
     hits.push({
-      uuid: node.uuid,
+      key: node.key,
       x: left,
       y: top,
       width,
@@ -710,15 +711,15 @@ export function render(
       depth: point.depth,
     });
 
-    const state = activity.get(node.uuid);
+    const state = activity.get(node.key);
     // Fully lit while the call is in flight, fading back over the cooldown.
     const heat = state
       ? state.startedAt !== undefined
         ? 1
         : Math.max(0, (state.litUntil - now) / COOLDOWN_MS)
       : 0;
-    const hovered = hoveredUuid === node.uuid;
-    const selected = selectedUuid === node.uuid;
+    const hovered = hoveredKey === node.key;
+    const selected = selectedKey === node.key;
 
     drawables.push({
       depth: point.depth,

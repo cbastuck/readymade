@@ -11,7 +11,7 @@
 import { CornerUpRight } from "lucide-react";
 
 import { NodeActivity, Payload } from "./activity";
-import { OverviewNode, OverviewScene } from "./graph";
+import { OverviewNode, OverviewScene, keyOf } from "./graph";
 import { Palette } from "./render";
 
 type Props = {
@@ -158,7 +158,11 @@ export default function OverviewDetails({
 }: Props) {
   // Where this sits, named the way the board names it rather than by uuid.
   const path = [
-    ...node.ancestry.map((uuid) => scene.byUuid.get(uuid)?.label ?? uuid),
+    ...node.ancestry.map(
+      (uuid, depth) =>
+        scene.byKey.get(keyOf(node.ancestry.slice(0, depth), uuid))?.label ??
+        uuid,
+    ),
     node.label,
   ];
 

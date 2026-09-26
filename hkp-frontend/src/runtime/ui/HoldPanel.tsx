@@ -91,98 +91,91 @@ export default function HoldPanel({ state, onLocalChange, configure }: Props) {
   };
 
   return (
-  <div className="flex flex-col gap-2">
-    <div className="flex items-center gap-2 text-xs">
-      <span className="text-neutral-500">tell the sides apart by</span>
-      <Select
-        title="tell the sides apart by"
-        value={bySlot ? "declared role" : "input property"}
-        options={["input property", "declared role"]}
-        onChange={(value: string) =>
-          useArrangement(value === "declared role" ? "slot" : "property")
-        }
-      />
-    </div>
-
-    {bySlot ? (
-      <>
-        <InputField
-          label="Slot"
-          value={slot}
-          onChange={(value) => {
-            setSlot(value);
-            configure({ slot: value });
-          }}
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-neutral-500">tell the sides apart by</span>
+        <Select
+          title="tell the sides apart by"
+          value={bySlot ? "declared role" : "input property"}
+          options={["input property", "declared role"]}
+          onChange={(value: string) =>
+            useArrangement(value === "declared role" ? "slot" : "property")
+          }
         />
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-neutral-500">this end</span>
-          <Select
-            title="this end"
-            value={op}
-            options={["write", "read"]}
-            onChange={(value: string) => {
-              setOp(value as "read" | "write");
-              configure({ op: value });
+      </div>
+
+      {bySlot ? (
+        <>
+          <InputField
+            label="Slot"
+            value={slot}
+            onChange={(value) => {
+              setSlot(value);
+              configure({ slot: value });
             }}
           />
-        </div>
-        <div style={{ fontSize: 12, opacity: 0.7 }}>
-          Two Holds naming one slot are its two ends. A write stores its
-          input and passes it on unchanged; a read emits what is held, and
-          stops while nothing is. Nothing looks at the value, so the two ends
-          may sit in pipelines that never meet — both renaming the slot is
-          what keeps them paired.
-        </div>
-      </>
-    ) : (
-      <>
-        <InputField
-          label="Property"
-          value={property}
-          onChange={(value) => {
-            setProperty(value);
-            configure({ property: value });
-          }}
-        />
-        <div style={{ fontSize: 12, opacity: 0.7 }}>
-          An input carrying this property replaces what is held. Every call
-          emits the held value under the same name, and stops while nothing
-          is held. The arrangement for two sides sharing one pipeline, where
-          the value is all there is to tell them apart.
-        </div>
-      </>
-    )}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-neutral-500">this end</span>
+            <Select
+              title="this end"
+              value={op}
+              options={["write", "read"]}
+              onChange={(value: string) => {
+                setOp(value as "read" | "write");
+                configure({ op: value });
+              }}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <InputField
+            label="Property"
+            value={property}
+            onChange={(value) => {
+              setProperty(value);
+              configure({ property: value });
+            }}
+          />
+          <div style={{ fontSize: 12, opacity: 0.7 }}>
+            An input carrying this property replaces what is held. Every call
+            emits the held value under the same name, and stops while nothing is
+            held. The arrangement for two sides sharing one pipeline, where the
+            value is all there is to tell them apart.
+          </div>
+        </>
+      )}
 
-    <div className="flex items-center justify-between">
-      {/* Which side has been calling — a producer that has stopped writing
+      <div className="flex items-center justify-between">
+        {/* Which side has been calling — a producer that has stopped writing
           shows up here as reads without writes. */}
-      <span style={{ fontSize: 12, opacity: 0.7 }}>
-        reads: {readCount} · writes: {writeCount}
-      </span>
-      <Button
-        className="hkp-svc-btn"
-        disabled={!hasHeld}
-        onClick={() => configure({ action: "clear" })}
-      >
-        Clear
-      </Button>
-    </div>
+        <span style={{ fontSize: 12, opacity: 0.7 }}>
+          reads: {readCount} · writes: {writeCount}
+        </span>
+        <Button
+          className="hkp-svc-btn"
+          disabled={!hasHeld}
+          onClick={() => configure({ action: "clear" })}
+        >
+          Clear
+        </Button>
+      </div>
 
-    <div className="border border-gray-300 p-2">
-      <h3 className="tracking-[6px]">Held</h3>
-      <pre
-        style={{
-          fontSize: 12,
-          margin: 0,
-          maxHeight: 160,
-          overflow: "auto",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-        }}
-      >
-        {hasHeld ? JSON.stringify(held, null, 2) : "nothing held yet"}
-      </pre>
+      <div className="border border-gray-300 p-2">
+        <h3 className="tracking-[6px]">Held</h3>
+        <pre
+          style={{
+            fontSize: 12,
+            margin: 0,
+            maxHeight: 160,
+            overflow: "auto",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+          {hasHeld ? JSON.stringify(held, null, 2) : "nothing held yet"}
+        </pre>
+      </div>
     </div>
-  </div>
   );
 }

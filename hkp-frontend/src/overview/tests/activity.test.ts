@@ -86,11 +86,12 @@ describe("ActivityTracker", () => {
     targets.get("host.inner")!({
       __internal: { state: "call-process-finished", data: { tick: 1 } },
     });
-    // Reported under the address, but it is the service that lit up — the
-    // card and the panel both know it by the name its own pipeline gives it.
-    expect(tracker.get("inner")!.calls).toBe(1);
-    expect(tracker.get("inner")!.lastOut!.summary).toBe("object 1");
-    expect(tracker.get("host.inner")).toBeUndefined();
+    // Reported under the address, and kept under it: a name is only unique
+    // within its own pipeline, so two copies of one block would otherwise
+    // light each other up.
+    expect(tracker.get("host.inner")!.calls).toBe(1);
+    expect(tracker.get("host.inner")!.lastOut!.summary).toBe("object 1");
+    expect(tracker.get("inner")).toBeUndefined();
   });
 
   it("keeps what a call was given as well as what it answered", () => {

@@ -20,6 +20,7 @@
  * a flat list can only show one at a time laid out in depth.
  */
 import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
+import { joinAddress } from "hkp-frontend/src/runtime/board/address";
 
 /** Distance between runtime columns. */
 export const COLUMN_SPACING = 460;
@@ -36,6 +37,7 @@ export type OverviewEdgeKind =
   /** A service to the pipeline it hosts. */
   | "contains";
 
+/** Edges name the nodes they join by key; see OverviewNode.key. */
 export type OverviewEdge = {
   from: string;
   to: string;
@@ -43,6 +45,15 @@ export type OverviewEdge = {
 };
 
 export type OverviewNode = {
+  /**
+   * What tells this node from every other on the board: its address, the path
+   * through the services hosting it (`groove.patterns.straight.kick`). A uuid
+   * is only unique within its own pipeline — two copies of one block hold
+   * services of the same names — so it cannot be what a node is found by.
+   * Also the address a scope reports this service's activity under.
+   */
+  key: string;
+  /** What the service is called where it lives. */
   uuid: string;
   label: string;
   serviceId: string;
@@ -51,7 +62,7 @@ export type OverviewNode = {
   depth: number;
   /** Position within its own pipeline. */
   index: number;
-  /** The service hosting this one, if any. */
+  /** The key of the service hosting this one, if any. */
   parent?: string;
   /**
    * Which of that host's pipelines it sits in — `onRequest`, a track's name —
@@ -88,7 +99,7 @@ export type OverviewScene = {
   runtimes: OverviewRuntime[];
   nodes: OverviewNode[];
   edges: OverviewEdge[];
-  byUuid: Map<string, OverviewNode>;
+  byKey: Map<string, OverviewNode>;
   /** Middle of everything placed, so a camera can start pointed at the board. */
   center: { x: number; y: number; z: number };
   /** Half the diagonal of what was placed, for framing the initial view. */
@@ -176,6 +187,11 @@ function pipelinesOf(service: any): NestedPipeline[] {
   });
 }
 
+/** A node's key, from the uuids of the services hosting it and its own. */
+export function keyOf(ancestry: string[], uuid: string): string {
+  return [...ancestry, uuid].reduce((path, part) => joinAddress(path, part), "");
+}
+
 function labelOf(service: any, fallback: string): string {
   return (
     service?.serviceName ||
@@ -246,7 +262,9 @@ export function buildScene(
 
         const nested = pipelinesOf(service);
         const hostRow = row;
+        const key = keyOf(ancestry, uuid);
         const node: OverviewNode = {
+          key,
           uuid,
           label: labelOf(service, service?.serviceId ?? uuid),
           serviceId: service?.serviceId ?? "",
@@ -267,12 +285,12 @@ export function buildScene(
         }
         row += 1;
         nodes.push(node);
-        placed.push(uuid);
+        placed.push(key);
 
         if (placed.length > 1) {
           edges.push({
             from: placed[placed.length - 2],
-            to: uuid,
+            to: key,
             kind: "sequence",
           });
         }
@@ -291,10 +309,10 @@ export function buildScene(
             held.name,
             depth + 1,
             [...ancestry, uuid],
-            uuid,
+            key,
           );
           if (inner.length > 0) {
-            edges.push({ from: uuid, to: inner[0], kind: "contains" });
+            edges.push({ from: key, to: inner[0], kind: "contains" });
           }
         });
       });
@@ -318,12 +336,12 @@ export function buildScene(
       continue;
     }
     if (previousTail) {
-      edges.push({ from: previousTail.uuid, to: top[0].uuid, kind: "handoff" });
+      edges.push({ from: previousTail.key, to: top[0].key, kind: "handoff" });
     }
     previousTail = top[top.length - 1];
   }
 
-  const byUuid = new Map(nodes.map((n) => [n.uuid, n]));
+  const byKey = new Map(nodes.map((n) => [n.key, n]));
 
   const placed = [
     ...nodes.map((n) => ({ x: n.x, y: n.y, z: n.z })),
@@ -334,7 +352,7 @@ export function buildScene(
       runtimes: runtimeNodes,
       nodes,
       edges,
-      byUuid,
+      byKey,
       center: { x: 0, y: 0, z: 0 },
       radius: COLUMN_SPACING,
     };
@@ -361,5 +379,5 @@ export function buildScene(
     ROW_SPACING,
   );
 
-  return { runtimes: runtimeNodes, nodes, edges, byUuid, center, radius };
+  return { runtimes: runtimeNodes, nodes, edges, byKey, center, radius };
 }
