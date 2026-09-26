@@ -72,3 +72,30 @@ describe("the overview's bar", () => {
     );
   });
 });
+
+describe("the overview's layout control", () => {
+  it("opens side by side, and says which layout is on", () => {
+    window.localStorage.removeItem("hkp-overview-layout");
+    renderOverview();
+
+    expect(screen.getByLabelText("Lay nested pipelines side by side").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByLabelText("Stack nested pipelines below their host").getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("switches layout, and remembers the choice for next time", () => {
+    window.localStorage.removeItem("hkp-overview-layout");
+    renderOverview();
+
+    fireEvent.click(screen.getByLabelText("Stack nested pipelines below their host"));
+    expect(screen.getByLabelText("Stack nested pipelines below their host").getAttribute("aria-pressed")).toBe("true");
+    expect(window.localStorage.getItem("hkp-overview-layout")).toBe("stacked");
+  });
+
+  it("opens in the layout last chosen", () => {
+    window.localStorage.setItem("hkp-overview-layout", "stacked");
+    renderOverview();
+
+    expect(screen.getByLabelText("Stack nested pipelines below their host").getAttribute("aria-pressed")).toBe("true");
+    window.localStorage.removeItem("hkp-overview-layout");
+  });
+});

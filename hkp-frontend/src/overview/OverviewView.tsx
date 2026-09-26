@@ -23,12 +23,38 @@ import { canPlay, play, useRunParams } from "hkp-frontend/src/core/play";
 import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
 import { ActivityTracker } from "./activity";
 import { Camera, createCamera, orbit, pan, project, zoom } from "./camera";
-import { OverviewNode, buildScene, keyOf } from "./graph";
+import { OverviewLayout, OverviewNode, buildScene, keyOf } from "./graph";
 import { ServicesByRuntime, readBoardShape } from "./shape";
 import { HitTarget, defaultPalette, hitTest, render } from "./render";
 import { useOverview } from "./OverviewContext";
 import OverviewDetails from "./OverviewDetails";
+import OverviewLayoutControls from "./OverviewLayoutControls";
 import { NodeActivity } from "./activity";
+
+const LAYOUT_KEY = "hkp-overview-layout";
+
+/**
+ * The layout this viewer last chose. Kept in the browser as a convenience,
+ * and read defensively: storage can be unavailable, and then the overview
+ * simply opens side by side.
+ */
+function readLayout(): OverviewLayout {
+  try {
+    return window.localStorage.getItem(LAYOUT_KEY) === "stacked"
+      ? "stacked"
+      : "lanes";
+  } catch {
+    return "lanes";
+  }
+}
+
+function writeLayout(layout: OverviewLayout) {
+  try {
+    window.localStorage.setItem(LAYOUT_KEY, layout);
+  } catch {
+    // Not remembered, which costs one click next time.
+  }
+}
 
 /** Stands in before the board is being listened to, so a frame drawn in
  *  between shows every node idle rather than allocating a tracker to say so. */
@@ -198,43 +224,71 @@ export default function OverviewView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, boardContext?.runtimes, boardContext?.services]);
 
+  const [layout, setLayoutState] = useState<OverviewLayout>(readLayout);
+
   const scene = useMemo(() => {
     if (!boardContext) {
       return null;
     }
     // The descriptors draw the board straight away; what the services report
     // replaces them a moment later, and is what carries the nesting.
-    return buildScene(boardContext.runtimes, reported ?? boardContext.services);
+    return buildScene(
+      boardContext.runtimes,
+      reported ?? boardContext.services,
+      layout,
+    );
     // The scene is rebuilt whenever the board's shape changes. Configuration
     // that leaves the shape alone does not touch these slices, and depending on
     // the whole context instead would rebuild it on every board render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardContext?.runtimes, boardContext?.services, reported]);
+  }, [boardContext?.runtimes, boardContext?.services, reported, layout]);
 
   const labelFor = useCallback(
     (key: string) => scene?.byKey.get(key)?.label ?? "Pipeline",
     [scene],
   );
 
+  // Whether the camera has been flown since it was last framed.
+  const cameraMovedRef = useRef(false);
+
   const resetCamera = useCallback(() => {
     if (scene) {
       cameraRef.current = createCamera(scene.center, scene.radius);
+      cameraMovedRef.current = false;
     }
   }, [scene]);
 
-  // The camera is framed once per board and then left alone — a board that
+  // The camera frames the board, and goes on framing it as the scene changes
+  // until someone flies it — from then on it is left alone, since a board that
   // grows a service while being watched must not throw away where the camera
-  // was put. Which board it was framed for is remembered rather than compared
-  // against the camera being unset, so loading a different board frames again.
+  // was put. Framing only once would frame the wrong thing: the descriptors
+  // draw the board first and carry no nesting, and the shape the services
+  // report replaces them a moment later, so the first scene of a nested board
+  // is a fraction of it. Which board it was framed for is remembered rather
+  // than compared against the camera being unset, so loading a different
+  // board frames again.
   const framedBoardRef = useRef<string | null>(null);
+
+  // A different layout puts everything somewhere else, so where the camera was
+  // flown to no longer frames anything in particular: it frames the board again.
+  const setLayout = useCallback((next: OverviewLayout) => {
+    cameraMovedRef.current = false;
+    setLayoutState(next);
+    writeLayout(next);
+  }, []);
   const boardName = boardContext?.boardName ?? "";
   useEffect(() => {
     if (!scene) {
       return;
     }
-    if (!cameraRef.current || framedBoardRef.current !== boardName) {
+    if (
+      !cameraRef.current ||
+      framedBoardRef.current !== boardName ||
+      !cameraMovedRef.current
+    ) {
       cameraRef.current = createCamera(scene.center, scene.radius);
       framedBoardRef.current = boardName;
+      cameraMovedRef.current = false;
     }
   }, [scene, boardName]);
 
@@ -349,6 +403,7 @@ export default function OverviewView() {
       drag.x = event.clientX;
       drag.y = event.clientY;
       drag.moved += Math.abs(dx) + Math.abs(dy);
+      cameraMovedRef.current = true;
       cameraRef.current = drag.panning
         ? pan(camera, dx, dy)
         : orbit(camera, dx, dy);
@@ -420,6 +475,7 @@ export default function OverviewView() {
       event.preventDefault();
       if (cameraRef.current) {
         cameraRef.current = zoom(cameraRef.current, event.deltaY);
+        cameraMovedRef.current = true;
       }
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
@@ -602,6 +658,11 @@ export default function OverviewView() {
             drag orbit · shift-drag pan · wheel zoom · click to inspect · R
             reset
           </span>
+          <OverviewLayoutControls
+            layout={layout}
+            onChange={setLayout}
+            palette={palette}
+          />
           <button
             type="button"
             onClick={() => overview?.hide()}

@@ -5,25 +5,47 @@
  * The board's own structure supplies the axes, so nothing here is laid out by
  * force or by hand:
  *
- *   X — the runtime chain. Runtimes are called in order, left to right.
+ *   X — the runtime chain. Runtimes are called in order, left to right, and
+ *       within a runtime the pipelines of one nesting level stand side by
+ *       side in lanes.
  *   Y — position within a pipeline. Services are called top to bottom, and a
  *       runtime starts on the row the one before it handed over from, so the
  *       board reads as one flow stepping down and across.
  *   Z — nesting depth, away from the camera. A sub-pipeline sits behind the
  *       service hosting it.
  *
- * A pipeline is walked depth-first. A nested service starts level with the one
- * that hosts it, one layer further back, so what a host contains reads as a
- * step into the board rather than a step down it; the rows below are taken by
- * the rest of that pipeline, and what follows the host resumes under them. The
- * result reads as the board does — a column per runtime — with the levels that
- * a flat list can only show one at a time laid out in depth.
+ * A nested pipeline starts level with the service hosting it, one layer
+ * further back, so what a host contains reads as a step into the board rather
+ * than a step down it. What follows the host goes on the next row as though
+ * nothing were nested: the two are a layer apart, so they do not meet.
+ *
+ * What can meet is two pipelines on the same layer — the two copies of a block
+ * a pipeline holds, a Switch's cases, an endpoint's two entries. Those stand
+ * side by side rather than one under the other: each takes as many lanes as
+ * what it holds needs, and the next starts in the lane after. Stacked, a board
+ * made of nested blocks grows a row for every service it holds, however deep,
+ * and comes out a strip far taller than anything around it is wide; side by
+ * side it stays about as tall as its longest pipeline, and blocks run in the
+ * order they are called, left to right. A runtime is as wide as its widest
+ * layer, and the next one starts after it; a board with no nesting is a
+ * column per runtime, as it always was.
+ *
+ * That is the `lanes` layout. The `stacked` one keeps every runtime a single
+ * column instead: what a host holds takes the rows below it, what follows the
+ * host resumes under them, and a host's second pipeline goes under its first.
+ * It reads as the playground's list does, one level opened after another, at
+ * the cost of height on a board made of nested blocks.
  */
 import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
 import { joinAddress } from "hkp-frontend/src/runtime/board/address";
 
-/** Distance between runtime columns. */
+/** Distance from one runtime's last lane to the next runtime. */
 export const COLUMN_SPACING = 460;
+/** Distance between pipelines standing side by side on one layer. */
+export const LANE_SPACING = 280;
+
+/** How pipelines that would meet on one layer are kept apart; see above. */
+export type OverviewLayout = "lanes" | "stacked";
 /** Distance between consecutive services in a pipeline. */
 export const ROW_SPACING = 120;
 /** Distance between nesting levels. */
@@ -212,7 +234,9 @@ function uuidOf(service: any): string | undefined {
 export function buildScene(
   runtimes: Array<RuntimeDescriptor>,
   services: { [runtimeId: string]: Array<ServiceDescriptor> },
+  layout: OverviewLayout = "lanes",
 ): OverviewScene {
+  const stacked = layout === "stacked";
   const nodes: OverviewNode[] = [];
   const edges: OverviewEdge[] = [];
   const runtimeNodes: OverviewRuntime[] = [];
@@ -224,35 +248,47 @@ export function buildScene(
   // saying least, since the columns are already in the order they are called.
   let columnStart = 0;
 
-  runtimes.forEach((runtime, column) => {
-    const x = column * COLUMN_SPACING;
+  // Where the next runtime's column starts: after the widest layer of the one
+  // before it.
+  let columnX = 0;
+
+  runtimes.forEach((runtime) => {
+    const x0 = columnX;
     runtimeNodes.push({
       id: runtime.id,
       label: runtime.name || runtime.id,
       type: String(runtime.type ?? ""),
       color: runtime.state?.color,
-      x,
+      x: x0,
       y: (columnStart - 1) * ROW_SPACING,
       z: 0,
     });
 
-    // One cursor for the whole column: depth-first placement puts a nested
-    // service on the row after its host, rather than restarting at the top of
-    // the column and overlapping what is already there.
-    let row = columnStart;
     // The row the chain leaves this runtime on, which is where the next one
-    // picks it up. A nested pipeline can be placed below it, so it is the last
-    // service the runtime itself holds rather than the cursor's final value.
+    // picks it up: the last service the runtime itself holds.
     let handoffRow = columnStart;
+    // Stacked, one cursor for the whole column: every service takes the next
+    // row, however deep it is, so nothing nested lands on a row already used.
+    let row = columnStart;
 
+    /**
+     * Places a pipeline in `lane`, its first service on `startRow`, and what
+     * its services hold one layer back in the lanes from `lane` on. Answers
+     * with what it placed and how many lanes it and what it holds take.
+     * Stacked, there is one lane and the column's cursor says the rows.
+     */
     const walk = (
       pipeline: Array<any>,
       name: string | undefined,
       depth: number,
       ancestry: string[],
       parent: string | undefined,
-    ): string[] => {
+      lane: number,
+      startRow: number,
+    ): { placed: string[]; width: number } => {
       const placed: string[] = [];
+      // Lanes taken so far by what this pipeline's services hold.
+      let held = 0;
 
       pipeline.forEach((service, index) => {
         const uuid = uuidOf(service);
@@ -261,7 +297,8 @@ export function buildScene(
         }
 
         const nested = pipelinesOf(service);
-        const hostRow = row;
+        const hostRow = stacked ? row : startRow + placed.length;
+        row = hostRow + 1;
         const key = keyOf(ancestry, uuid);
         const node: OverviewNode = {
           key,
@@ -276,14 +313,13 @@ export function buildScene(
           ancestry,
           bypassed: !!(service?.bypass ?? service?.state?.bypass),
           state: service?.state,
-          x,
+          x: x0 + lane * LANE_SPACING,
           y: hostRow * ROW_SPACING,
           z: depth * LAYER_SPACING,
         };
         if (depth === 0) {
           handoffRow = hostRow;
         }
-        row += 1;
         nodes.push(node);
         placed.push(key);
 
@@ -295,33 +331,47 @@ export function buildScene(
           });
         }
 
-        nested.forEach((held, order) => {
-          // The first is level with its host rather than under it: the two are
-          // a layer apart, so sharing the row costs nothing and says that
-          // stepping into a service is not the same move as going on to the
-          // next one. A second pipeline of the same host is a layer apart from
-          // nothing, so it takes the rows under the first.
-          if (order === 0) {
+        // Every pipeline this service holds starts one layer back. Side by side,
+        // each starts level with it in the next lanes free on that layer: the
+        // first directly behind this pipeline, the rest beside it. Stacked,
+        // the first starts level with it and the rest take the rows under the
+        // first — a layer apart from nothing, so they cannot share its rows.
+        nested.forEach((pipelineHeld, order) => {
+          if (stacked && order === 0) {
             row = hostRow;
           }
           const inner = walk(
-            held.entries,
-            held.name,
+            pipelineHeld.entries,
+            pipelineHeld.name,
             depth + 1,
             [...ancestry, uuid],
             key,
+            stacked ? lane : lane + held,
+            hostRow,
           );
-          if (inner.length > 0) {
-            edges.push({ from: key, to: inner[0], kind: "contains" });
+          if (!stacked) {
+            held += inner.width;
+          }
+          if (inner.placed.length > 0) {
+            edges.push({ from: key, to: inner.placed[0], kind: "contains" });
           }
         });
       });
 
-      return placed;
+      return { placed, width: Math.max(1, held) };
     };
 
-    walk(services[runtime.id] ?? [], undefined, 0, [], undefined);
+    const { width } = walk(
+      services[runtime.id] ?? [],
+      undefined,
+      0,
+      [],
+      undefined,
+      0,
+      columnStart,
+    );
     columnStart = handoffRow;
+    columnX = x0 + (width - 1) * LANE_SPACING + COLUMN_SPACING;
   });
 
   // Runtimes are chained, so what leaves the last service of one arrives at the

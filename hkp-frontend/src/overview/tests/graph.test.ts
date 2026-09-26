@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   COLUMN_SPACING,
+  LANE_SPACING,
   LAYER_SPACING,
   ROW_SPACING,
   OverviewNode,
@@ -202,7 +203,8 @@ describe("buildScene", () => {
     // start of the second, and they are not drawn on top of each other.
     expect(
       scene.edges.filter(
-        (edge) => edge.from === "keep-list" && edge.to === "serve-list",
+        (edge) =>
+          edge.from === "serve.keep-list" && edge.to === "serve.serve-list",
       ),
     ).toHaveLength(0);
     expect(
@@ -210,10 +212,86 @@ describe("buildScene", () => {
         (edge) => edge.kind === "contains" && edge.from === "serve",
       ),
     ).toHaveLength(2);
+    // Side by side on their layer, both level with their host: one under the
+    // other would push everything nested after them down with them.
     expect(named(scene, "keep-list")!.y).toBe(named(scene, "serve")!.y);
-    expect(named(scene, "serve-list")!.y).toBe(
-      named(scene, "keep-list")!.y + ROW_SPACING,
+    expect(named(scene, "serve-list")!.y).toBe(named(scene, "keep-list")!.y);
+    expect(named(scene, "serve-list")!.x).toBe(
+      named(scene, "keep-list")!.x + LANE_SPACING,
     );
+  });
+
+  it("goes on with a pipeline on the next row, whatever its services hold", () => {
+    // What follows a host is a layer in front of what the host holds, so the
+    // two do not meet and the pipeline is as tall as it is long.
+    const scene = buildScene([runtime("ui", "Browser")], {
+      ui: [
+        service("host", {
+          state: {
+            pipeline: [
+              { instanceId: "a", serviceId: "x" },
+              { instanceId: "b", serviceId: "x" },
+              { instanceId: "c", serviceId: "x" },
+            ],
+          },
+        }),
+        service("after"),
+      ],
+    });
+    expect(named(scene, "after")!.y).toBe(named(scene, "host")!.y + ROW_SPACING);
+  });
+
+  it("lays copies of a block side by side, in the order they are called", () => {
+    // A bar of two halves of two beats: the beats on the back layer run left
+    // to right, one lane each, and nothing on one layer shares a place.
+    const beat = (uuid: string) => ({
+      instanceId: uuid,
+      serviceId: "sub-service",
+      state: {
+        pipeline: [
+          { instanceId: "hihat", serviceId: "sound" },
+          { instanceId: "wait", serviceId: "timer" },
+        ],
+      },
+    });
+    const half = (uuid: string) => ({
+      instanceId: uuid,
+      serviceId: "sub-service",
+      state: {
+        pipeline: [beat("beat-1"), { instanceId: "snare", serviceId: "sound" }, beat("beat-2")],
+      },
+    });
+    const scene = buildScene([runtime("ui", "Browser")], {
+      ui: [service("bar", { state: { pipeline: [half("half-1"), half("half-2")] } })],
+    });
+
+    const hats = scene.nodes.filter((n) => n.uuid === "hihat");
+    expect(hats.map((n) => n.key)).toEqual([
+      "bar.half-1.beat-1.hihat",
+      "bar.half-1.beat-2.hihat",
+      "bar.half-2.beat-1.hihat",
+      "bar.half-2.beat-2.hihat",
+    ]);
+    expect(hats.map((n) => n.x)).toEqual([0, 1, 2, 3].map((l) => l * LANE_SPACING));
+
+    const places = scene.nodes.map((n) => `${n.x}:${n.y}:${n.z}`);
+    expect(new Set(places).size).toBe(places.length);
+  });
+
+  it("starts the next runtime after the widest layer of the one before", () => {
+    const scene = buildScene([runtime("ui", "Browser"), runtime("node", "Node")], {
+      ui: [
+        service("host", {
+          state: {
+            onProcess: [{ instanceId: "p", serviceId: "x" }],
+            onRequest: [{ instanceId: "q", serviceId: "x" }],
+          },
+        }),
+      ],
+      node: [service("c")],
+    });
+    expect(named(scene, "c")!.x).toBe(LANE_SPACING + COLUMN_SPACING);
+    expect(scene.runtimes[1].x).toBe(LANE_SPACING + COLUMN_SPACING);
   });
 
   it("records what has to be opened to reach a nested service", () => {
@@ -311,6 +389,74 @@ describe("buildScene", () => {
       from: "bar.beat-2",
       to: "bar.beat-2.hihat",
       kind: "contains",
+    });
+  });
+
+  describe("stacked", () => {
+    it("puts a host's second pipeline under its first, not beside it", () => {
+      const scene = buildScene(
+        [runtime("node", "Node")],
+        {
+          node: [
+            service("serve", {
+              state: {
+                onProcess: [{ instanceId: "keep-list", serviceId: "hold" }],
+                onRequest: [{ instanceId: "serve-list", serviceId: "hold" }],
+              },
+            }),
+          ],
+        },
+        "stacked",
+      );
+      expect(named(scene, "keep-list")!.y).toBe(named(scene, "serve")!.y);
+      expect(named(scene, "serve-list")!.y).toBe(
+        named(scene, "keep-list")!.y + ROW_SPACING,
+      );
+      expect(named(scene, "serve-list")!.x).toBe(named(scene, "keep-list")!.x);
+    });
+
+    it("resumes what follows a host under everything it holds", () => {
+      const scene = buildScene(
+        [runtime("ui", "Browser")],
+        {
+          ui: [
+            service("host", {
+              state: {
+                pipeline: [
+                  { instanceId: "a", serviceId: "x" },
+                  { instanceId: "b", serviceId: "x" },
+                  { instanceId: "c", serviceId: "x" },
+                ],
+              },
+            }),
+            service("after"),
+          ],
+        },
+        "stacked",
+      );
+      expect(named(scene, "after")!.y).toBe(named(scene, "c")!.y + ROW_SPACING);
+    });
+
+    it("keeps a runtime one column wide, whatever it holds", () => {
+      const scene = buildScene(
+        [runtime("ui", "Browser"), runtime("node", "Node")],
+        {
+          ui: [
+            service("host", {
+              state: {
+                onProcess: [{ instanceId: "p", serviceId: "x" }],
+                onRequest: [{ instanceId: "q", serviceId: "x" }],
+              },
+            }),
+          ],
+          node: [service("c")],
+        },
+        "stacked",
+      );
+      expect(new Set(scene.nodes.filter((n) => n.runtimeId === "ui").map((n) => n.x))).toEqual(
+        new Set([0]),
+      );
+      expect(named(scene, "c")!.x).toBe(COLUMN_SPACING);
     });
   });
 });
