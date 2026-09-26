@@ -29,8 +29,9 @@ import {
  * inside belongs to its definition, and saving writes the use back as it was
  * written. So the inside is locked, not merely styled — an edit made there
  * would be thrown away on save, which is the one outcome worse than not being
- * able to make it. What a use does take is drawn above its panel: its params,
- * and detaching it into an ordinary copy.
+ * able to make it. What a use does take is drawn in its place: a bar with its
+ * params, and detaching it into an ordinary copy. The panel itself is only
+ * shown once the use is edited or detached, or when a level is opened on it.
  *
  * The lock is `inert`, which takes a subtree out of reach without stopping
  * anything in it — the same way NestedNavigation parks the levels behind the
@@ -146,7 +147,11 @@ export default function BlockUseFrame({
   // service until the edit is applied to the block, or cancelled.
   if (use?.editing) {
     return (
-      <div className="inline-flex flex-col" data-block-use={use.placed.use.block}>
+      <div
+        className="inline-flex flex-col p-1 rounded"
+        data-block-use={use.placed.use.block}
+        style={{ border: editFrame.border, background: editFrame.background }}
+      >
         <EditBar use={use} />
         <BlockLockContext.Provider value={false}>{addressed}</BlockLockContext.Provider>
       </div>
@@ -165,9 +170,17 @@ export default function BlockUseFrame({
         level && <OpenLevel level={level} />
       )}
       <BlockLockContext.Provider value={true}>
-        {/* Dimmed as well as out of reach: a panel that ignores its controls
-            has to say so before somebody tries them. */}
-        <div inert className="hkp-block-locked" style={{ opacity: 0.7 }}>
+        {/* A use shows its bar and not its panel: nothing in the panel can be
+            changed, and the bar already says what can. The panel stays
+            mounted all the same, because a level opened on the use is drawn
+            from it. Inside a use, a panel is shown on the level it was
+            opened on, dimmed as well as out of reach: a panel that ignores
+            its controls has to say so before somebody tries them. */}
+        <div
+          inert
+          className="hkp-block-locked"
+          style={use ? { display: "none" } : { opacity: 0.7 }}
+        >
           {addressed}
         </div>
       </BlockLockContext.Provider>
@@ -225,10 +238,8 @@ function UseBar({
     <div
       className="hkp-block-use-bar flex flex-col gap-1 mb-1 px-2 py-1 rounded"
       style={{
-        // As wide as the panel below it and no wider: contained, the bar adds
-        // nothing to the column's width, so the panel decides it and the bar
-        // stretches to fill it.
-        contain: "inline-size",
+        // The bar is all a use shows, so it is as wide as what it says.
+        minWidth: 180,
         fontSize,
         border: "1px solid var(--hkp-accent)",
         background: "var(--hkp-accent-dim)",
@@ -324,7 +335,17 @@ export function BlockEditActions() {
   );
 }
 
-/** What a use being edited as its block's working copy wears instead of its bar. */
+/** How a use being edited as its block's working copy is marked out. */
+const editFrame = {
+  border: "1px dashed var(--hkp-accent)",
+  background: "var(--hkp-accent-dim)",
+};
+
+/**
+ * What a use being edited as its block's working copy wears instead of its
+ * bar. Above the panel it is the heading of the frame both share; in a
+ * level's header it stands alone, and is framed itself.
+ */
 function EditBar({ use, inline = false }: { use: UseInfo; inline?: boolean }) {
   const board = useBoardContext();
   const fontSize = useIsMobileHost() ? 16 : 12;
@@ -344,10 +365,8 @@ function EditBar({ use, inline = false }: { use: UseInfo; inline?: boolean }) {
       style={{
         // Above a panel it is as wide as the panel; in a level's header, as
         // wide as what it says.
-        ...(inline ? {} : { contain: "inline-size" as const }),
+        ...(inline ? editFrame : { contain: "inline-size" as const }),
         fontSize,
-        border: "1px dashed var(--hkp-accent)",
-        background: "var(--hkp-accent-dim)",
       }}
     >
       <Pencil size={14} strokeWidth={1.5} style={{ color: "var(--hkp-accent)" }} />

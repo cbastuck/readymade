@@ -91,9 +91,10 @@ the params set on it since. Nothing running is compared against anything. That
 is what makes the model small, and it rests on one rule: **the inside of a use
 belongs to its definition.** So:
 
-- **It is locked on screen.** A use wears a bar — the block's name, its params,
-  its actions — and its panel is out of reach (`inert`) and dimmed, as is every
-  level opened inside it. An edit made there would be thrown away on save, which
+- **It is locked on screen.** A use shows a bar — the block's name, its params,
+  its actions — in place of its panel, which appears only once the use is
+  edited or detached. A level opened on it shows what is inside, out of reach
+  (`inert`) and dimmed. An edit made there would be thrown away on save, which
   is worse than not being able to make it.
 - **Nothing addresses it.** A facade widget or a Configurator naming a service
   inside a use is refused when it is called, and warned about when the board is

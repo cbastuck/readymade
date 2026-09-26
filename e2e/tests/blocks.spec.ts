@@ -125,10 +125,10 @@ test.describe("a use on the running board", () => {
     await expect(first.getByLabel("trigger")).toHaveValue("kick");
     // The default fills in what the use does not say.
     await expect(first.getByLabel("volume")).toHaveValue("0.5");
-    await expect(first.locator(".hkp-block-locked").first()).toHaveAttribute(
-      "inert",
-      "",
-    );
+    // Its panel is not shown, and out of reach should it be.
+    const panel = first.locator(".hkp-block-locked").first();
+    await expect(panel).toBeHidden();
+    await expect(panel).toHaveAttribute("inert", "");
   });
 
   test("params changed on a use are what the board saves", async ({ page }) => {
@@ -137,7 +137,7 @@ test.describe("a use on the running board", () => {
     await volume.press("Enter");
 
     // The running use took them: its hit, one level in, now plays at 25%.
-    // The bar's, which comes first: the panel's own is inside the lock.
+    // The bar's: the panel's own is hidden with the rest of the panel.
     await uses(page, "note")
       .first()
       .getByRole("button", { name: "Open Note as its own level" })
@@ -147,10 +147,11 @@ test.describe("a use on the running board", () => {
       "0.25",
     );
     // And the service itself, not only what linkage holds for it: the Sound
-    // panel inside reports what it was configured with.
+    // panel inside — mounted, though a use shows only its bar — reports what
+    // it was configured with.
     await expect(
-      uses(page, "hit").last().locator(".hkp-block-locked").getByText("25%"),
-    ).toBeVisible();
+      uses(page, "hit").last().locator(".hkp-block-locked"),
+    ).toContainText("25%");
 
     const saved = await save(page);
     expect(saved.services.rt[0].state.pipeline[0]).toEqual({
