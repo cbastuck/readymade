@@ -1,6 +1,7 @@
-import { Maximize2, Pause, Play, Radio, Square } from "lucide-react";
+import { FoldVertical, Pause, Play, Radio, Square, UnfoldVertical } from "lucide-react";
 
-import { formatTime, placementNote, TimelineView } from "./model";
+import { ImageButton } from "./parts";
+import { formatTime, placementNote, TimelineView, withImage } from "./model";
 
 /**
  * Play, pause and stop for a timeline keeping its own clock, and where it is.
@@ -15,7 +16,8 @@ export default function Transport({
   readOnly = false,
   configure,
   onFollow,
-  onExpand,
+  expanded,
+  onToggleExpanded,
 }: {
   view: TimelineView;
   cursor: number;
@@ -24,7 +26,8 @@ export default function Transport({
   readOnly?: boolean;
   configure: (config: Record<string, unknown>) => void;
   onFollow: () => void;
-  onExpand?: () => void;
+  expanded: boolean;
+  onToggleExpanded: () => void;
 }) {
   const own = view.clock === "own";
   const note = placementNote(view);
@@ -86,16 +89,17 @@ export default function Transport({
           read-only
         </span>
       )}
-      {onExpand && (
-        <button
-          type="button"
-          className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
-          title={readOnly ? "Look through the timeline" : "Open the timeline editor"}
-          onClick={onExpand}
-        >
-          <Maximize2 size={14} />
-        </button>
+      {!readOnly && (
+        <ImageButton onImage={(url) => configure({ object: withImage(view.object, url) })} />
       )}
+      <button
+        type="button"
+        className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+        title={expanded ? "Back to the compact view" : "Show the timeline's rows"}
+        onClick={onToggleExpanded}
+      >
+        {expanded ? <FoldVertical size={14} /> : <UnfoldVertical size={14} />}
+      </button>
     </div>
   );
 }

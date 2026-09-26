@@ -132,7 +132,7 @@ Decided 2026-09-26, built the same day:
 
 | Question | Decision |
 |---|---|
-| Surface | **Panel + expand.** The panel: transport, a preview, the ruler and one lane with every keyframe and action on it. The expand button opens a wide editor (a dialog) with one lane per property and the actions lane. |
+| Surface | **Panel + expand, in place** (changed 2026-09-26 from a dialog; being tried out). Compact: transport, a preview, the ruler and one lane with every keyframe and action, placements beneath. Expanded, the panel grows (its resizing switched off) to a row per property (value at the playhead, ◆, keyframes), per placed name (name, start, duration, bars) and for the actions. No drop area and no help text: an image button in the transport picks the image, and a strip under the rows shows a picked keyframe's ease or action's data. |
 | Setting values | **Fields at the playhead.** A property that is not animated has a fixed value on the object, and its field changes that. Its ◆ button sets a keyframe at the playhead, and from then on a value typed there sets a keyframe there. Pressing ◆ on a keyframe takes it away; taking the last one away leaves its value as the object's. Direct manipulation on the preview (drag to move, handles to turn and scale) is later, on the same preview. |
 | Scrubbing | **Moves the whole board.** An own clock sought while paused emits a frame at once (marked `jump`). A driven timeline's playhead is its driver's: scrubbing pins it for editing, and "live" follows the driver again. |
 | Showing edits | Editing the object or keyframes re-emits the current frame, so the canvas shows the change while paused. Not before the timeline has emitted anything, since a board configures its services while it loads. |

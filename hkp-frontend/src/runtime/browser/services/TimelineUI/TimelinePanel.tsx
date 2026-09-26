@@ -1,30 +1,24 @@
 import { Bars, Lane, Marker, Playhead, Preview, Ruler } from "./parts";
-import Transport from "./Transport";
 import { displayLength, formatTime, objectAt, TimelineView, withImage } from "./model";
 
 /**
- * The Timeline as it sits on the board: where it is, what it draws there, and
+ * The Timeline as it sits on the board: what it draws at the playhead, and
  * one row with everything placed on it — keyframes of every property and the
- * actions. Editing them is the editor's; this is for watching and scrubbing.
+ * actions — with the names it places beneath. For watching and scrubbing;
+ * editing is in its rows.
  */
 export default function TimelinePanel({
   view,
   cursor,
-  pinned,
   readOnly,
   configure,
   onScrub,
-  onFollow,
-  onExpand,
 }: {
   view: TimelineView;
   cursor: number;
-  pinned: boolean;
   readOnly: boolean;
   configure: (config: Record<string, unknown>) => void;
   onScrub?: (t: number) => void;
-  onFollow: () => void;
-  onExpand: () => void;
 }) {
   const length = displayLength(view);
   const markers: Marker[] = [
@@ -36,21 +30,11 @@ export default function TimelinePanel({
 
   return (
     <div className="flex flex-col gap-2 pb-2">
-      <Transport
-        view={view}
-        cursor={cursor}
-        length={length}
-        pinned={pinned}
-        readOnly={readOnly}
-        configure={configure}
-        onFollow={onFollow}
-        onExpand={onExpand}
-      />
       {view.object && (
         <Preview
           drawable={objectAt(view, cursor)}
-          width={300}
-          height={170}
+          width={288}
+          height={160}
           onImage={
             readOnly ? undefined : (url) => configure({ object: withImage(view.object, url) })
           }
@@ -73,16 +57,6 @@ export default function TimelinePanel({
         )}
         <Playhead t={cursor} length={length} />
       </div>
-      {!view.object && !readOnly && (
-        <Preview
-          drawable={null}
-          width={300}
-          height={44}
-          onImage={(url) => configure({ object: withImage(null, url) })}
-        >
-          Drop an image here to animate it on this timeline
-        </Preview>
-      )}
     </div>
   );
 }

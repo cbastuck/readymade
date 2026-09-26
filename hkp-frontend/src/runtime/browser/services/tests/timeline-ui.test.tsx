@@ -5,7 +5,7 @@
  */
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import TimelineDescriptor from "../Timeline";
 import BlockUseFrame from "../../../ui/BlockUse";
@@ -62,8 +62,8 @@ function fieldOf(property: string): HTMLInputElement {
 }
 
 function openEditor() {
-  fireEvent.click(screen.getByTitle("Open the timeline editor"));
-  return screen.findByText("properties");
+  fireEvent.click(screen.getByTitle("Show the timeline's rows"));
+  return screen.findByText("actions");
 }
 
 // jsdom has no PointerEvent, and the plain Event it falls back to carries no
@@ -118,9 +118,19 @@ describe("the Timeline panel", () => {
     await screen.findByText(/^2\.00/);
   });
 
-  it("offers to take a dropped image when it has nothing to animate", async () => {
+  it("offers to choose an image to animate", async () => {
     await renderTimeline({ length: 4 });
-    expect(screen.getByText(/Drop an image here/)).toBeTruthy();
+    expect(screen.getByTitle("Choose an image to animate")).toBeTruthy();
+  });
+
+  it("grows to show its rows in place, and back", async () => {
+    await renderTimeline({ length: 4, object: image });
+    expect(screen.queryByText("actions")).toBeNull();
+    await openEditor();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByText("rotate")).toBeTruthy();
+    fireEvent.click(screen.getByTitle("Back to the compact view"));
+    await waitFor(() => expect(screen.queryByText("actions")).toBeNull());
   });
 });
 
@@ -188,9 +198,9 @@ describe("the Timeline editor", () => {
     expect(service.state.actions).toEqual([{ at: 0, data: {} }]);
 
     const data = await screen.findByText(/emits/);
-    const textarea = data.parentElement!.querySelector("textarea")!;
-    fireEvent.change(textarea, { target: { value: '{"scene":"b"}' } });
-    fireEvent.blur(textarea);
+    const field = data.parentElement!.querySelector("input")!;
+    fireEvent.change(field, { target: { value: '{"scene":"b"}' } });
+    fireEvent.blur(field);
     expect(service.state.actions).toEqual([{ at: 0, data: { scene: "b" } }]);
   });
 });
@@ -198,29 +208,36 @@ describe("the Timeline editor", () => {
 describe("placing names", () => {
   it("places a name at the playhead, and moves and stretches its bar", async () => {
     const { service } = await renderTimeline({ length: 4 });
-    await screen.findByText("Drop an image here to animate it on this timeline");
-    fireEvent.click(screen.getByTitle("Open the timeline editor"));
-    const name = await screen.findByPlaceholderText("place a name at the playhead");
+    await openEditor();
+    const name = await screen.findByPlaceholderText("+ place a name at the playhead");
     fireEvent.change(name, { target: { value: "star" } });
     fireEvent.keyDown(name, { key: "Enter" });
     expect(service.state.placements).toEqual([{ name: "star", at: 0, duration: 1 }]);
 
-    const editor = within(screen.getByRole("dialog"));
-    const bar = await editor.findByTitle("star: 0.00 for 1.00");
+    const bar = await screen.findByTitle("star: 0.00 for 1.00");
     const lane = bar.parentElement as HTMLElement;
     fireEvent.pointerDown(bar, { clientX: 0, pointerId: 1 });
     fireEvent.pointerMove(lane, { clientX: 100, pointerId: 1 });
     fireEvent.pointerUp(lane, { pointerId: 1 });
     expect(service.state.placements).toEqual([{ name: "star", at: 1, duration: 1 }]);
 
-    const edge = (await editor.findByTitle("star: 1.00 for 1.00")).querySelector(
+    const edge = (await screen.findByTitle("star: 1.00 for 1.00")).querySelector(
       "[title='Drag to change how long it plays']",
     ) as HTMLElement;
     fireEvent.pointerDown(edge, { clientX: 200, pointerId: 1 });
     fireEvent.pointerMove(lane, { clientX: 300, pointerId: 1 });
     fireEvent.pointerUp(lane, { pointerId: 1 });
     expect(service.state.placements).toEqual([{ name: "star", at: 1, duration: 2 }]);
-    expect(await screen.findByText('placement of "star"')).toBeTruthy();
+    await waitFor(() =>
+      expect((screen.getByTitle("Lasts") as HTMLInputElement).value).toBe("2"),
+    );
+    expect((screen.getByTitle("Starts at") as HTMLInputElement).value).toBe("1");
+
+    const lasts = screen.getByTitle("Lasts") as HTMLInputElement;
+    fireEvent.focus(lasts);
+    fireEvent.change(lasts, { target: { value: "0.5" } });
+    fireEvent.blur(lasts);
+    expect(service.state.placements).toEqual([{ name: "star", at: 1, duration: 0.5 }]);
   });
 });
 
@@ -263,8 +280,9 @@ describe("a Timeline inside a use of a block", () => {
 
   it("can still be opened, and shows itself read-only", async () => {
     const { configure } = await renderTimeline(state, { insideBlockUse: true });
-    const expand = screen.getByTitle("Look through the timeline");
+    const expand = screen.getByTitle("Show the timeline's rows");
     expect(expand.closest("[inert]")).toBeNull();
+    expect(screen.queryByTitle("Choose an image to animate")).toBeNull();
     expect((screen.getByTitle("Play") as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText("read-only")).toBeTruthy();
 
@@ -272,33 +290,33 @@ describe("a Timeline inside a use of a block", () => {
     pressAt(ruler, 0.5);
 
     fireEvent.click(expand);
-    await screen.findByText(/inside a use of a block/);
+    await screen.findByText("properties");
     expect(fieldOf("rotate").readOnly).toBe(true);
     const row = screen.getByText("height").parentElement as HTMLElement;
     expect((row.querySelector("button") as HTMLButtonElement).disabled).toBe(true);
     expect(
       (screen.getByTitle("Place an action at the playhead") as HTMLButtonElement).disabled,
     ).toBe(true);
-    expect(screen.queryByPlaceholderText("another property")).toBeNull();
+    expect(screen.queryByPlaceholderText("+ property")).toBeNull();
 
     expect(configure).not.toHaveBeenCalled();
   });
 
   it("shows a picked keyframe or action without offering to change it", async () => {
     const { configure, service } = await renderTimeline(state, { insideBlockUse: true });
-    fireEvent.click(screen.getByTitle("Look through the timeline"));
-    await screen.findByText(/inside a use of a block/);
+    fireEvent.click(screen.getByTitle("Show the timeline's rows"));
+    await screen.findByText("properties");
 
     const diamond = screen.getByTitle("360 at 2.00");
     fireEvent.pointerDown(diamond, { clientX: 200, pointerId: 1 });
     fireEvent.pointerMove(diamond.parentElement!, { clientX: 300, pointerId: 1 });
     fireEvent.pointerUp(diamond.parentElement!, { pointerId: 1 });
     expect(await screen.findByText("rotate at 2.00: 360")).toBeTruthy();
-    expect(screen.queryByText("Remove")).toBeNull();
+    expect(screen.queryByTitle("Remove")).toBeNull();
 
     fireEvent.pointerDown(screen.getByTitle('{"a":1} at 1.00'), { pointerId: 1 });
-    const textarea = (await screen.findByText(/emits/)).parentElement!.querySelector("textarea")!;
-    expect(textarea.readOnly).toBe(true);
+    const data = (await screen.findByText(/emits/)).parentElement!.querySelector("input")!;
+    expect(data.readOnly).toBe(true);
 
     expect(service.state.keyframes.rotate[1].at).toBe(2);
     expect(configure).not.toHaveBeenCalled();

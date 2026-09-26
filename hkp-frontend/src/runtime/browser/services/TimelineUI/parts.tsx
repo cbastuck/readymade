@@ -1,3 +1,4 @@
+import { ImagePlus } from "lucide-react";
 import {
   CSSProperties,
   KeyboardEvent,
@@ -542,3 +543,31 @@ export function Bars({
     </div>
   );
 }
+
+/** Picks an image file for the timeline to animate. */
+export function ImageButton({ onImage }: { onImage: (url: string) => void }) {
+  const picker = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <button
+        type="button"
+        className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+        title="Choose an image to animate"
+        onClick={() => picker.current?.click()}
+      >
+        <ImagePlus size={14} />
+      </button>
+      <input
+        ref={picker}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          readImage(event.target.files?.[0], onImage);
+          event.target.value = "";
+        }}
+      />
+    </>
+  );
+}
+
