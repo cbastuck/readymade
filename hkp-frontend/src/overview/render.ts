@@ -12,7 +12,12 @@
  * turning into overlapping type.
  */
 import { Camera, Viewport, project } from "./camera";
-import { ActivityTracker, COOLDOWN_MS, PULSE_MS } from "./activity";
+import {
+  ActivityTracker,
+  heatOf,
+  PULSE_MS,
+  STOPPED_HEAT,
+} from "./activity";
 import { OverviewScene } from "./graph";
 
 /** Card size in world units, before perspective. */
@@ -712,12 +717,9 @@ export function render(
     });
 
     const state = activity.get(node.key);
-    // Fully lit while the call is in flight, fading back over the cooldown.
-    const heat = state
-      ? state.startedAt !== undefined
-        ? 1
-        : Math.max(0, (state.litUntil - now) / COOLDOWN_MS)
-      : 0;
+    // Fully lit while the call is in flight, fading back over the cooldown;
+    // barely, after a call that passed nothing on.
+    const heat = state ? heatOf(state, now) : 0;
     const hovered = hoveredKey === node.key;
     const selected = selectedKey === node.key;
 
@@ -752,7 +754,9 @@ export function render(
         // What is selected is being read about on the side, so it is marked
         // more firmly than what the pointer merely happens to be over.
         ctx.strokeStyle =
-          selected || hovered || heat > 0 ? palette.accent : palette.cardBorder;
+          selected || hovered || heat > STOPPED_HEAT
+            ? palette.accent
+            : palette.cardBorder;
         ctx.lineWidth = selected ? 2.5 : hovered ? 2 : 1;
         ctx.setLineDash(node.bypassed ? [3, 3] : []);
         ctx.stroke();

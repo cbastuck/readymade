@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { ActivityTracker, PULSE_MS, describeResult } from "../activity";
+import {
+  ActivityTracker,
+  PULSE_MS,
+  STOPPED_COOLDOWN_MS,
+  STOPPED_HEAT,
+  describeResult,
+  heatOf,
+} from "../activity";
 import { buildScene } from "../graph";
 import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
 
@@ -137,6 +144,38 @@ describe("ActivityTracker", () => {
     expect(tracker.get("a")!.startedAt).toBeUndefined();
     expect(tracker.get("a")!.litUntil).toBeGreaterThan(performance.now());
     expect(tracker.get("a")!.lastOut!.summary).toBe("object 1");
+  });
+
+  it("only flickers a node whose call passed nothing on", () => {
+    // Asked, and answered null — a Timeline outside its placement, a Filter
+    // that blocked: the view says it ran, but not as loudly as a call that
+    // produced something.
+    const { tracker, targets } = trackerOnBoard();
+    targets.get("a")!({ __internal: { state: "call-process", data: 1 } });
+    expect(heatOf(tracker.get("a")!, performance.now())).toBe(1);
+
+    targets.get("a")!({
+      __internal: { state: "call-process-finished", data: null },
+    });
+    const now = performance.now();
+    const heat = heatOf(tracker.get("a")!, now);
+    expect(heat).toBeGreaterThan(0);
+    expect(heat).toBeLessThanOrEqual(STOPPED_HEAT);
+    expect(heatOf(tracker.get("a")!, now + STOPPED_COOLDOWN_MS)).toBe(0);
+    expect(tracker.isQuiet(now + STOPPED_COOLDOWN_MS)).toBe(true);
+  });
+
+  it("lets a glow fade out though a later call passed nothing on", () => {
+    const { tracker, targets } = trackerOnBoard();
+    targets.get("a")!({
+      __internal: { state: "call-process-finished", data: { ok: true } },
+    });
+    targets.get("a")!({
+      __internal: { state: "call-process-finished", data: null },
+    });
+    expect(heatOf(tracker.get("a")!, performance.now())).toBeGreaterThan(
+      STOPPED_HEAT,
+    );
   });
 
   it("sends a pulse onward only when something was passed on", () => {

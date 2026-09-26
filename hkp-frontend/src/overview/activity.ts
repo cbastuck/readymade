@@ -28,6 +28,15 @@ import { previewValue } from "./preview";
 
 /** How long a node stays lit after the call that lit it returned. */
 export const COOLDOWN_MS = 800;
+/**
+ * How long, and how brightly, a node flickers after a call that passed nothing
+ * on. It was asked — a Filter that blocked, a Timeline outside its placement —
+ * and the view says so, but faintly. Lit as fully as a call that produced
+ * something, a service asked every frame and answering null every frame would
+ * look as busy as the ones doing the work.
+ */
+export const STOPPED_COOLDOWN_MS = 250;
+export const STOPPED_HEAT = 0.25;
 /** How long a pulse takes to travel one edge. */
 export const PULSE_MS = 520;
 
@@ -36,6 +45,8 @@ export type NodeActivity = {
   startedAt?: number;
   /** When the node stops being lit, if no further call arrives. */
   litUntil: number;
+  /** When the faint flicker of a call that passed nothing on is over. */
+  stoppedUntil?: number;
   /** How many calls this node has been given since the view opened. */
   calls: number;
   /** What the last call was given, and what it answered with. */
@@ -189,8 +200,9 @@ export class ActivityTracker {
     const activity = this.entry(key);
 
     if (internal.state === "call-process") {
+      // Lit while in flight by `startedAt`; how long after is up to what the
+      // call answers.
       activity.startedAt = now;
-      activity.litUntil = now + COOLDOWN_MS;
       activity.calls += 1;
       // What the runtime handed the service: the input it is about to work
       // on, and the half of what a service did that a result cannot explain
@@ -201,16 +213,18 @@ export class ActivityTracker {
 
     if (internal.state === "call-process-finished") {
       activity.startedAt = undefined;
-      activity.litUntil = now + COOLDOWN_MS;
       activity.lastOut = capture(internal.data, now);
       activity.lastStopped =
         internal.data === null || internal.data === undefined;
 
       // Nothing was passed on, so nothing travels onward either — which is
-      // what a stopped pipeline looks like from the outside.
+      // what a stopped pipeline looks like from the outside. Only a flicker:
+      // an earlier call's glow, still fading, is left to fade.
       if (activity.lastStopped) {
+        activity.stoppedUntil = now + STOPPED_COOLDOWN_MS;
         return;
       }
+      activity.litUntil = now + COOLDOWN_MS;
       for (const to of this.outgoing.get(key) ?? []) {
         this.pulses.push({ from: key, to, startedAt: now });
       }
@@ -235,10 +249,28 @@ export class ActivityTracker {
       return false;
     }
     for (const activity of this.byKey.values()) {
-      if (activity.startedAt !== undefined || activity.litUntil > now) {
+      if (heatOf(activity, now) > 0) {
         return false;
       }
     }
     return true;
   }
+}
+
+/**
+ * How lit a node is, from 0 to 1: fully while a call is in flight, fading back
+ * over the cooldown after one that passed something on, and only as far as
+ * STOPPED_HEAT after one that did not.
+ */
+export function heatOf(activity: NodeActivity, now: number): number {
+  if (activity.startedAt !== undefined) {
+    return 1;
+  }
+  const lit = Math.max(0, (activity.litUntil - now) / COOLDOWN_MS);
+  const stopped =
+    activity.stoppedUntil === undefined
+      ? 0
+      : Math.max(0, (activity.stoppedUntil - now) / STOPPED_COOLDOWN_MS) *
+        STOPPED_HEAT;
+  return Math.max(lit, stopped);
 }
