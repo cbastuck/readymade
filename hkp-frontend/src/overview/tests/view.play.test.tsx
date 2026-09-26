@@ -1,5 +1,5 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 import { BoardCtx, BoardContextState } from "hkp-frontend/src/BoardContext";
 import { OverviewProvider, useOverview } from "../OverviewContext";
@@ -11,91 +11,86 @@ beforeAll(() => {
   HTMLCanvasElement.prototype.getContext = () => null;
 });
 
+beforeEach(() => {
+  localStorage.clear();
+});
+
 /**
- * The bar, with a board under it. Nothing is drawn in here — that needs a
- * browser — so this is about the controls around the canvas: whether pressing
- * play starts the board, and whether what it was given comes back.
+ * The overview is switched to in the toolbar, and its one choice of its own —
+ * the layout — floats over the view, so the toolbar is the same either way.
+ * Nothing is drawn in here — that needs a browser — so this is about the
+ * control and the keys.
  */
+
+let api: ReturnType<typeof useOverview>;
+function Probe() {
+  api = useOverview();
+  return null;
+}
+
 function renderOverview() {
-  const processRuntime = vi.fn();
   const boardContext = {
     boardName: "Test Board",
     runtimes: [{ id: "ui", name: "Browser", type: "browser" }],
     services: { ui: [{ uuid: "timer", serviceId: "timer" }] },
     scopes: { ui: { id: "ui" } },
-    runtimeApis: { browser: { processRuntime } },
+    runtimeApis: {},
   } as unknown as BoardContextState;
-
-  function Opener() {
-    const overview = useOverview();
-    return (
-      <button onClick={() => overview?.show()} data-testid="open">
-        open
-      </button>
-    );
-  }
 
   render(
     <BoardCtx.Provider value={boardContext}>
       <OverviewProvider>
-        <Opener />
-        <OverviewView />
+        <Probe />
+        {/* Mounted where the board is, as BoardEntryPoint mounts it. */}
+        <OverviewShown />
       </OverviewProvider>
     </BoardCtx.Provider>,
   );
-  fireEvent.click(screen.getByTestId("open"));
-  return { processRuntime };
 }
 
-describe("the overview's bar", () => {
-  it("runs the board from the top, with nothing on the input", () => {
-    const { processRuntime } = renderOverview();
+function OverviewShown() {
+  return useOverview()?.visible ? <OverviewView /> : null;
+}
 
-    fireEvent.click(screen.getByLabelText("Run the board"));
-    expect(processRuntime).toHaveBeenCalledTimes(1);
-    expect(processRuntime.mock.calls[0][1]).toBeUndefined();
-  });
+const sideBySide = () => screen.getByLabelText("Lay nested pipelines side by side");
+const stacked = () => screen.getByLabelText("Stack nested pipelines below their host");
 
-  it("offers what it was last given here as the next press", () => {
-    const { processRuntime } = renderOverview();
-
-    fireEvent.click(screen.getByLabelText("Run the board"), { altKey: true });
-    fireEvent.click(screen.getByText("Process Runtime"));
-    expect(processRuntime).toHaveBeenCalledTimes(1);
-
-    // Written once, and from then on a press away — a board is usually worth
-    // watching with the same input arriving again.
-    fireEvent.click(screen.getByLabelText("Run the board again"));
-    expect(processRuntime).toHaveBeenCalledTimes(2);
-    expect(processRuntime.mock.calls[1][1]).toEqual(
-      processRuntime.mock.calls[0][1],
-    );
-  });
-});
-
-describe("the overview's layout control", () => {
-  it("opens side by side, and says which layout is on", () => {
-    window.localStorage.removeItem("hkp-overview-layout");
+describe("the overview's layout control, on the view", () => {
+  it("is only there while the overview is on", () => {
     renderOverview();
+    expect(screen.queryByLabelText("Lay nested pipelines side by side")).toBeNull();
 
-    expect(screen.getByLabelText("Lay nested pipelines side by side").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByLabelText("Stack nested pipelines below their host").getAttribute("aria-pressed")).toBe("false");
+    act(() => api!.show());
+    expect(sideBySide().getAttribute("aria-pressed")).toBe("true");
+    expect(stacked().getAttribute("aria-pressed")).toBe("false");
   });
 
   it("switches layout, and remembers the choice for next time", () => {
-    window.localStorage.removeItem("hkp-overview-layout");
     renderOverview();
+    act(() => api!.show());
 
-    fireEvent.click(screen.getByLabelText("Stack nested pipelines below their host"));
-    expect(screen.getByLabelText("Stack nested pipelines below their host").getAttribute("aria-pressed")).toBe("true");
-    expect(window.localStorage.getItem("hkp-overview-layout")).toBe("stacked");
+    fireEvent.click(stacked());
+    expect(stacked().getAttribute("aria-pressed")).toBe("true");
+    expect(api!.layout).toBe("stacked");
+    expect(localStorage.getItem("hkp-overview-layout")).toBe("stacked");
   });
 
   it("opens in the layout last chosen", () => {
-    window.localStorage.setItem("hkp-overview-layout", "stacked");
+    localStorage.setItem("hkp-overview-layout", "stacked");
     renderOverview();
+    act(() => api!.show());
+    expect(stacked().getAttribute("aria-pressed")).toBe("true");
+  });
+});
 
-    expect(screen.getByLabelText("Stack nested pipelines below their host").getAttribute("aria-pressed")).toBe("true");
-    window.localStorage.removeItem("hkp-overview-layout");
+describe("the overview's keys", () => {
+  it("leaves switching back to the toolbar: Escape does not close it", () => {
+    renderOverview();
+    act(() => api!.show());
+    expect(document.querySelector("canvas")).not.toBeNull();
+
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(api!.visible).toBe(true);
+    expect(document.querySelector("canvas")).not.toBeNull();
   });
 });

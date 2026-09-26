@@ -1,13 +1,16 @@
 /**
- * How the overview lays the board out, in its bar.
+ * How the overview lays the board out, floating over its top-right corner.
  *
- * Built like the board's own view controls in the toolbar (FacadeViewControls)
- * — a group of icon buttons, the active one filled — but painted from the
- * overview's palette, since the bar it sits in is painted from it too.
+ * Built like the board's view controls in the toolbar (FacadeViewControls) — a
+ * group of icon buttons, the active one filled — but kept on the overview
+ * rather than beside them, so the toolbar stays the same whichever way the
+ * board is being looked at. Painted from the overview's palette, since it sits
+ * on the scene rather than on the page.
  */
 import { Columns3, Rows3 } from "lucide-react";
 
 import { OverviewLayout } from "./graph";
+import { useOverview } from "./OverviewContext";
 import { Palette } from "./render";
 
 const LAYOUTS: Array<{
@@ -32,32 +35,35 @@ const LAYOUTS: Array<{
 ];
 
 type Props = {
-  layout: OverviewLayout;
-  onChange: (layout: OverviewLayout) => void;
   palette: Palette;
 };
 
-export default function OverviewLayoutControls({
-  layout,
-  onChange,
-  palette,
-}: Props) {
+export default function OverviewLayoutControls({ palette }: Props) {
+  const overview = useOverview();
+  if (!overview) {
+    return null;
+  }
+
   return (
     <div
       role="group"
       aria-label="Overview layout"
       style={{
+        position: "absolute",
+        top: 10,
+        right: 10,
         display: "flex",
         alignItems: "center",
         gap: 2,
         padding: 2,
         borderRadius: 9,
+        background: palette.card,
         border: `1px solid ${palette.cardBorder}`,
-        flexShrink: 0,
+        boxShadow: "0 2px 8px rgba(34, 38, 43, 0.10)",
       }}
     >
       {LAYOUTS.map(({ id, Icon, title, label }) => {
-        const active = layout === id;
+        const active = overview.layout === id;
         return (
           <button
             key={id}
@@ -65,7 +71,7 @@ export default function OverviewLayoutControls({
             title={title}
             aria-label={label}
             aria-pressed={active}
-            onClick={() => onChange(id)}
+            onClick={() => overview.setLayout(id)}
             style={{
               width: 26,
               height: 24,

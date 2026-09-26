@@ -17,7 +17,6 @@ import { useThemeControl } from "../../ui-components/ThemeContext";
 import { HKP_DND_RUNTIME_CLASS_TYPE } from "../../components/DropTypes";
 import NestedNavProvider from "../../runtime/ui/NestedNavigation";
 import { OverviewProvider } from "../../overview/OverviewContext";
-import OverviewView from "../../overview/OverviewView";
 import OverviewToolbarButton from "../../overview/OverviewToolbarButton";
 import { PlayProvider } from "../../core/play";
 import { FacadeViewProvider } from "../../facade/FacadeViewContext";
@@ -116,10 +115,6 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                       onChangeBoardname={props.onChangeBoardname}
                       emptySlot={props.emptySlot}
                     />
-
-                    {/* Covers the window rather than taking a pane, and reads the levels
-                from here so clicking a node can open the one it sits on. */}
-                    <OverviewView />
                   </NestedNavProvider>
                 </div>
 

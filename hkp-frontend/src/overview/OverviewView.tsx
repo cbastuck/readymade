@@ -7,23 +7,23 @@
  * half: nothing here is editable, and in exchange the whole board is visible
  * while it runs, including the levels a flat list keeps folded away.
  *
- * It covers the window rather than taking a pane, and the board stays mounted
- * underneath it: panels register the channel their service reports on when they
- * mount, and services that draw have nowhere to draw once they are gone. Coming
- * back finds the board exactly as it was left.
+ * It is the board seen another way rather than a place of its own: it takes
+ * the runtimes' place wherever they are shown — beside the facade, or as the
+ * whole board where there is no facade — and is switched to and from in the
+ * toolbar. Its own choice, the layout, floats over the scene instead, so the
+ * toolbar does not change when the view does. The runtimes stay mounted
+ * underneath it: panels register the channel their service reports on when
+ * they mount, and services that draw have nowhere to draw once they are gone.
+ * Coming back finds the board exactly as it was left.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Play, X } from "lucide-react";
 
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
-import RunParamsDialog from "hkp-frontend/src/ui-components/runtime-ui/RunParamsDialog";
-import { canPlay, play, useRunParams } from "hkp-frontend/src/core/play";
 import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
 import { ActivityTracker } from "./activity";
 import { Camera, createCamera, orbit, pan, project, zoom } from "./camera";
-import { OverviewLayout, OverviewNode, buildScene, keyOf } from "./graph";
+import { OverviewNode, buildScene, keyOf } from "./graph";
 import { ServicesByRuntime, readBoardShape } from "./shape";
 import { HitTarget, defaultPalette, hitTest, render } from "./render";
 import { useOverview } from "./OverviewContext";
@@ -31,29 +31,17 @@ import OverviewDetails from "./OverviewDetails";
 import OverviewLayoutControls from "./OverviewLayoutControls";
 import { NodeActivity } from "./activity";
 
-const LAYOUT_KEY = "hkp-overview-layout";
-
-/**
- * The layout this viewer last chose. Kept in the browser as a convenience,
- * and read defensively: storage can be unavailable, and then the overview
- * simply opens side by side.
- */
-function readLayout(): OverviewLayout {
-  try {
-    return window.localStorage.getItem(LAYOUT_KEY) === "stacked"
-      ? "stacked"
-      : "lanes";
-  } catch {
-    return "lanes";
+/** Whether a key pressed here was typed into something that takes text. */
+function isEditable(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
   }
-}
-
-function writeLayout(layout: OverviewLayout) {
-  try {
-    window.localStorage.setItem(LAYOUT_KEY, layout);
-  } catch {
-    // Not remembered, which costs one click next time.
-  }
+  return (
+    target.isContentEditable ||
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT"
+  );
 }
 
 /** Stands in before the board is being listened to, so a frame drawn in
@@ -154,15 +142,6 @@ export default function OverviewView() {
   const navigation = useNestedNavigation();
   const theme = useTheme();
 
-  // Where a dialog the view opens goes: inside the view rather than on the
-  // body, which is underneath it. State rather than a ref because the element
-  // does not exist on the render that would have to pass it on.
-  const [root, setRoot] = useState<HTMLDivElement | null>(null);
-  const [askingForData, setAskingForData] = useState(false);
-  // What the board was last run with, shared with the toolbar's own controls:
-  // an input written in one place is a press away in the other.
-  const [lastParams, setLastParams] = useRunParams();
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cameraRef = useRef<Camera | null>(null);
   const hitsRef = useRef<HitTarget[]>([]);
@@ -184,8 +163,9 @@ export default function OverviewView() {
 
   const visible = !!overview?.visible;
 
-  // The chrome is painted from the same palette the scene is, so the bar and
-  // the tooltip cannot end up describing a different view than the canvas.
+  // The chrome is painted from the same palette the scene is, so the layout
+  // control and the tooltip cannot end up describing a different view than
+  // the canvas.
   // The theme comes into it for one thing only: what a runtime that was never
   // given a colour stands on, which is the same appearance default the board
   // itself is drawn with.
@@ -224,7 +204,8 @@ export default function OverviewView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, boardContext?.runtimes, boardContext?.services]);
 
-  const [layout, setLayoutState] = useState<OverviewLayout>(readLayout);
+  // Chosen on the view, and kept in the context so it outlives closing it.
+  const layout = overview?.layout ?? "lanes";
 
   const scene = useMemo(() => {
     if (!boardContext) {
@@ -270,12 +251,11 @@ export default function OverviewView() {
   const framedBoardRef = useRef<string | null>(null);
 
   // A different layout puts everything somewhere else, so where the camera was
-  // flown to no longer frames anything in particular: it frames the board again.
-  const setLayout = useCallback((next: OverviewLayout) => {
+  // flown to no longer frames anything in particular: it frames the board
+  // again. Before the framing below, which reads this in the same commit.
+  useEffect(() => {
     cameraMovedRef.current = false;
-    setLayoutState(next);
-    writeLayout(next);
-  }, []);
+  }, [layout]);
   const boardName = boardContext?.boardName ?? "";
   useEffect(() => {
     if (!scene) {
@@ -445,15 +425,6 @@ export default function OverviewView() {
     setSelectedKey(hit?.key ?? null);
   };
 
-  const playBoard = useCallback(
-    (params?: unknown) => {
-      if (boardContext) {
-        play(boardContext, params);
-      }
-    },
-    [boardContext],
-  );
-
   const openInPlayground = useCallback(
     (node: OverviewNode) => {
       overview?.hide();
@@ -500,6 +471,16 @@ export default function OverviewView() {
     return () => clearInterval(timer);
   }, [visible, selectedKey]);
 
+  // The overview is the board seen whole, and a level drilled into covers the
+  // board — this included — so it opens on the top level.
+  useEffect(() => {
+    if (visible) {
+      navigation?.goTo(0);
+    }
+    // Only on opening: the details panel opens levels on its way out.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
   // A node stops existing when the board it was on changes shape under the
   // view; the panel must not go on describing it.
   useEffect(() => {
@@ -513,13 +494,18 @@ export default function OverviewView() {
       return;
     }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        // The panel is what was opened last, so it is what closes first.
-        if (selectedRef.current) {
-          setSelectedKey(null);
-          return;
-        }
-        overview?.hide();
+      // Typing belongs to where it is typed: with the facade on screen beside
+      // the overview, an R written into one of its fields is not a request to
+      // reset the camera.
+      if (isEditable(event.target)) {
+        return;
+      }
+      // Escape closes the panel and nothing more: switching back to the
+      // runtimes is the toolbar's, and Escape already means something to the
+      // facade around this.
+      if (event.key === "Escape" && selectedRef.current) {
+        setSelectedKey(null);
+        return;
       }
       if (event.key === "r" || event.key === "R") {
         resetCamera();
@@ -527,7 +513,7 @@ export default function OverviewView() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [visible, overview, resetCamera]);
+  }, [visible, resetCamera]);
 
   if (!visible || !scene || !boardContext) {
     return null;
@@ -545,136 +531,18 @@ export default function OverviewView() {
         })
       : null;
 
-  const playable = canPlay(boardContext);
-  const armed = playable && lastParams !== undefined;
-
-  return createPortal(
+  return (
     <div
-      ref={setRoot}
       style={{
-        position: "fixed",
+        // Fills whatever holds it — the pane beside the facade, or the board —
+        // which gives it a size to fill.
+        position: "absolute",
         inset: 0,
-        zIndex: 1000,
         background: palette.background,
         display: "flex",
         flexDirection: "column",
       }}
     >
-      <div
-        style={{
-          // Three columns rather than a row, so that what runs the board is in
-          // the middle of the bar and not merely after what is to its left —
-          // the same place it is in the toolbar this view is covering. The
-          // outer two share what is left over, which is what centres the
-          // middle, and they give way rather than overlap as the bar narrows.
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
-          alignItems: "center",
-          gap: 12,
-          padding: "8px 14px",
-          borderBottom: `1px solid ${palette.cardBorder}`,
-          background: palette.card,
-          color: palette.textMuted,
-          fontFamily: "monospace",
-          fontSize: 12,
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            minWidth: 0,
-            overflow: "hidden",
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 600,
-              color: palette.text,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {boardContext.boardName || "Board"}
-          </span>
-          <span style={{ opacity: 0.6, whiteSpace: "nowrap" }}>
-            {scene.nodes.length} services · {scene.runtimes.length} runtimes
-          </span>
-        </div>
-
-        <button
-          type="button"
-          disabled={!playable}
-          title={
-            !playable
-              ? "Nothing on this board to run yet"
-              : armed
-                ? "Run the board again with what it was last given — hold Alt to write a new input"
-                : "Run the board from the top — hold Alt to write an input"
-          }
-          aria-label={armed ? "Run the board again" : "Run the board"}
-          aria-keyshortcuts="Alt+Enter"
-          onClick={(event) => {
-            // Any modifier, not one in particular: which key means "this, but"
-            // is a habit that differs by platform and by person, and none of
-            // them means anything else on a button that does one thing.
-            if (event.altKey || event.shiftKey || event.metaKey) {
-              setAskingForData(true);
-              return;
-            }
-            playBoard(lastParams);
-          }}
-          style={{
-            ...barButton(palette, playable),
-            // Carrying an input marks itself the way the toolbar's own control
-            // marks a way back: the press does something more than the plain
-            // one, and there is no room in an icon to say what.
-            color: armed ? palette.accent : palette.text,
-          }}
-        >
-          <Play size={15} strokeWidth={1.75} />
-        </button>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            gap: 12,
-            minWidth: 0,
-          }}
-        >
-          <span
-            style={{
-              opacity: 0.45,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            drag orbit · shift-drag pan · wheel zoom · click to inspect · R
-            reset
-          </span>
-          <OverviewLayoutControls
-            layout={layout}
-            onChange={setLayout}
-            palette={palette}
-          />
-          <button
-            type="button"
-            onClick={() => overview?.hide()}
-            title="Close the overview"
-            aria-label="Close the overview"
-            style={barButton(palette, true)}
-          >
-            <X size={15} strokeWidth={1.75} />
-          </button>
-        </div>
-      </div>
-
       <div
         style={{
           display: "flex",
@@ -726,7 +594,12 @@ export default function OverviewView() {
             <div
               style={{
                 position: "absolute",
-                left: Math.min(hoveredPoint.x + 14, window.innerWidth - 260),
+                // Kept inside the view, which is not the window's width when
+                // it shares the board with the facade.
+                left: Math.min(
+                  hoveredPoint.x + 14,
+                  (canvasRef.current?.clientWidth ?? window.innerWidth) - 260,
+                ),
                 top: hoveredPoint.y + 14,
                 pointerEvents: "none",
                 background: palette.card,
@@ -762,6 +635,8 @@ export default function OverviewView() {
               )}
             </div>
           )}
+
+          <OverviewLayoutControls palette={palette} />
         </div>
 
         {selected && (
@@ -782,46 +657,6 @@ export default function OverviewView() {
         )}
       </div>
 
-      <RunParamsDialog
-        open={askingForData}
-        onClose={() => setAskingForData(false)}
-        onRun={(params) => {
-          setAskingForData(false);
-          setLastParams(params);
-          playBoard(params);
-        }}
-        target="the first service of the first runtime"
-        container={root}
-      />
-    </div>,
-    document.body,
+    </div>
   );
-}
-
-/**
- * One control in the bar: a mark, with what it does in its title.
- *
- * Icons rather than words, and the same square the toolbar's own controls are,
- * because this bar is read across — the board's name, what is on it, how to
- * move around it — and a row of words to be scanned past is a worse place to
- * lose the name than a row of marks is.
- */
-function barButton(
-  palette: ReturnType<typeof defaultPalette>,
-  enabled: boolean,
-): React.CSSProperties {
-  return {
-    width: 26,
-    height: 26,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    borderRadius: 7,
-    border: `1px solid ${palette.cardBorder}`,
-    background: "transparent",
-    color: palette.text,
-    cursor: enabled ? "pointer" : "default",
-    opacity: enabled ? 1 : 0.4,
-  };
 }
