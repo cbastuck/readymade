@@ -3,6 +3,7 @@ import {
   drawText,
   drawCircle,
   drawRect,
+  drawImage,
   update,
   DrawContext,
 } from "../canvasDraw";
@@ -178,6 +179,46 @@ describe("drawRect", () => {
 
 // ─── update ──────────────────────────────────────────────────────────────────
 
+describe("drawImage", () => {
+  // An image already in the cache is drawn without being loaded.
+  const img = { width: 200, height: 100 } as HTMLImageElement;
+  const withImage = () => makeDim({ imageCache: { "pic.png": img } });
+  const ctxWithTransforms = () =>
+    Object.assign(makeCtx(), {
+      drawImage: vi.fn(),
+      translate: vi.fn(),
+      rotate: vi.fn(),
+      scale: vi.fn(),
+    }) as any;
+
+  it("draws at its centre, sized by height, with no transform by default", async () => {
+    const ctx = ctxWithTransforms();
+    await drawImage(ctx, { url: "pic.png", centerX: "50%", centerY: "50%", height: "50%" }, withImage());
+    // 50% of 300 is 150 high, so 300 wide, centred on (200, 150).
+    expect(ctx.drawImage).toHaveBeenCalledWith(img, 50, 75, 300, 150);
+    expect(ctx.rotate).not.toHaveBeenCalled();
+  });
+
+  it("centres vertically by the height it is drawn at", async () => {
+    const ctx = ctxWithTransforms();
+    await drawImage(ctx, { url: "pic.png", height: "50%" }, withImage());
+    expect(ctx.drawImage).toHaveBeenCalledWith(img, 50, 75, 300, 150);
+  });
+
+  it("rotates and scales about its own centre", async () => {
+    const ctx = ctxWithTransforms();
+    await drawImage(
+      ctx,
+      { url: "pic.png", centerX: "50%", centerY: "50%", height: "50%", rotate: 90, scale: 2 },
+      withImage(),
+    );
+    expect(ctx.translate).toHaveBeenCalledWith(200, 150);
+    expect(ctx.rotate).toHaveBeenCalledWith(Math.PI / 2);
+    expect(ctx.scale).toHaveBeenCalledWith(2, 2);
+    expect(ctx.drawImage).toHaveBeenCalledWith(img, -150, -75, 300, 150);
+  });
+});
+
 describe("update", () => {
   it("clears the canvas with fillRect when clearOnRedraw is true", async () => {
     const canvas = makeCanvas();
@@ -207,6 +248,24 @@ describe("update", () => {
     const canvas = makeCanvas();
     await expect(update(canvas, null, true, {}, vi.fn())).resolves.toBeUndefined();
     await expect(update(canvas, undefined, true, {}, vi.fn())).resolves.toBeUndefined();
+  });
+
+  it("draws nested lists as one, in order, skipping holes", async () => {
+    const canvas = makeCanvas();
+    await update(
+      canvas,
+      [
+        { type: "text", text: "a" },
+        [{ type: "text", text: "b" }, [{ type: "text", text: "c" }]],
+        null,
+        { type: "text", text: "d" },
+      ],
+      false,
+      {},
+      vi.fn(),
+    );
+    const drawn = (canvas._ctx.fillText as any).mock.calls.map(([t]: [string]) => t);
+    expect(drawn).toEqual(["a", "b", "c", "d"]);
   });
 
   it("handles a single object input by wrapping it in an array and drawing it", async () => {

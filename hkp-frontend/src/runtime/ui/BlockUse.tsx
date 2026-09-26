@@ -1,7 +1,9 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -38,6 +40,13 @@ import {
  * one in front. A level opened from inside a use is portalled elsewhere in the
  * document, out from under that attribute, so the lock also travels as
  * context: whatever is rendered inside a use locks itself, wherever it lands.
+ *
+ * A panel's frame may take the lock over (`useFrameBlockLock`): it then keeps
+ * its own controls out of reach and still offers what only reads — the
+ * configuration, the documentation. A panel whose frame does not stays locked
+ * whole. The frame may hand it on once more, to the panel drawn in its body
+ * (`usePanelBlockLock`), which then keeps its own controls out of reach and
+ * can still offer what only reads — a view of the details, say.
  */
 
 /**
@@ -85,6 +94,62 @@ export function useServiceRuntimeId(): string | undefined {
 /** Whether this is being drawn inside a use of a block. */
 export function useInsideBlockUse(): boolean {
   return useContext(BlockLockContext);
+}
+
+/**
+ * Hands the lock of the use a panel is drawn in to that panel's frame. Returns
+ * a release. Every frame that takes it locks itself, so a frame nested in
+ * another one taking it as well opens nothing.
+ */
+const LockHandOverContext = createContext<(() => () => void) | null>(null);
+
+/**
+ * For a service's frame: takes over the lock of the use it is drawn in, and
+ * says whether it is locked. While it is, the frame is what keeps the panel
+ * out of reach, so it must lock everything in it that writes. `enabled` false
+ * leaves the lock where it is — for a frame that draws nothing of its own.
+ */
+export function useFrameBlockLock(enabled = true): boolean {
+  const locked = useInsideBlockUse();
+  const handOver = useContext(LockHandOverContext);
+  // Before paint: the frame is drawn locked from the start, so the panel
+  // need not stay out of reach behind it for a frame.
+  useLayoutEffect(
+    () => (enabled && handOver ? handOver() : undefined),
+    [enabled, handOver],
+  );
+  return locked;
+}
+
+/**
+ * Counts who has taken a lock over. The lock stays where it is while nobody
+ * has; the answer's second half takes it and returns a release.
+ */
+export function useLockHandOver(): [number, () => () => void] {
+  const [taken, setTaken] = useState(0);
+  const handOver = useCallback(() => {
+    setTaken((count) => count + 1);
+    return () => setTaken((count) => count - 1);
+  }, []);
+  return [taken, handOver];
+}
+
+/** The hand-over a locked frame offers the panel drawn in its body. */
+export const PanelLockHandOverContext = createContext<(() => () => void) | null>(null);
+
+/**
+ * For a service's panel: takes over the lock its frame holds, and says whether
+ * it is locked. While it is, the panel is what keeps itself out of reach, so it
+ * must lock everything in it that writes. Only a frame that took the use's lock
+ * over offers it; anywhere else the panel stays locked whole, and this only
+ * says so.
+ */
+export function usePanelBlockLock(): boolean {
+  const locked = useInsideBlockUse();
+  const handOver = useContext(PanelLockHandOverContext);
+  // Before paint, as the frame's: drawn read-only from the start.
+  useLayoutEffect(() => (handOver ? handOver() : undefined), [handOver]);
+  return locked;
 }
 
 type UseInfo = {
@@ -148,10 +213,16 @@ export default function BlockUseFrame({
   const inherited = useContext(ServiceRuntimeContext);
   const runtimeId = ownRuntimeId ?? inherited;
   const use = usePlacedUse(address, runtimeId);
+  // How many frames drawn directly in the panel have taken its lock over.
+  const [handedOver, handOver] = useLockHandOver();
+  // Only a locked panel has a lock to hand over.
+  const lockedHere = !use?.editing && (!!use || inside);
   const addressed = (
     <ServiceRuntimeContext.Provider value={runtimeId}>
       <ServiceAddressContext.Provider value={address}>
-        {children}
+        <LockHandOverContext.Provider value={lockedHere ? handOver : null}>
+          {children}
+        </LockHandOverContext.Provider>
       </ServiceAddressContext.Provider>
     </ServiceRuntimeContext.Provider>
   );
@@ -190,9 +261,10 @@ export default function BlockUseFrame({
             mounted all the same, because a level opened on the use is drawn
             from it. Inside a use, a panel is shown on the level it was
             opened on, dimmed as well as out of reach: a panel that ignores
-            its controls has to say so before somebody tries them. */}
+            its controls has to say so before somebody tries them. A frame
+            that took the lock over keeps its panel out of reach itself. */}
         <div
-          inert
+          inert={handedOver === 0}
           className="hkp-block-locked"
           style={use ? { display: "none" } : { opacity: 0.7 }}
         >

@@ -1,0 +1,434 @@
+{
+  "boardName": "Timeline Demo",
+  "description": "Images animated by keyframes, each on a timeline of its own, all driven by one clock.\n\nThe **Show** timeline keeps the clock: eight seconds, looping. Every frame goes into the **Scene**, one track per image, and the tracks' answers are drawn on one canvas, the first track at the back.\n\nEach image sits on a timeline that holds one object — the image — and keyframes for its properties: where it is, how big, how far turned, how opaque. The timeline eases each property from one keyframe to the next and emits the image as it is at that moment, which is exactly what the canvas draws.\n\nThe motions are written once, as blocks. **Pop** makes an image appear with an overshoot, turn a full circle and fade; **Fly** carries one across the sky. Every star, the planet, the rocket and the comet is a use of one of the two, and says only which image, where, and when: its offset in the Show's time is where its own timeline starts, and outside its stretch it draws nothing. Even the sky is a timeline, its colour keyframed from night to dusk and back.",
+  "blocks": [
+    {
+      "id": "pop",
+      "name": "Pop",
+      "serviceId": "sub-service",
+      "description": "An image that appears with an overshoot, turns a full circle and fades — three seconds of its own, starting where its offset says in the time driving it.",
+      "params": {
+        "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpolygon%20points='50.0%2C4.0%2061.2%2C34.6%2093.7%2C35.8%2068.1%2C55.9%2077.0%2C87.2%2050.0%2C69.0%2023.0%2C87.2%2031.9%2C55.9%206.3%2C35.8%2038.8%2C34.6'%20fill='%23facc15'%20stroke='%23fef08a'%20stroke-width='3'%20stroke-linejoin='round'/%3E%3C/svg%3E",
+        "x": "50%",
+        "y": "50%",
+        "size": "16%",
+        "offset": 0
+      },
+      "state": {
+        "pipeline": [
+          {
+            "serviceId": "hookup.to/service/timeline",
+            "instanceId": "motion",
+            "serviceName": "Motion",
+            "state": {
+              "clock": "input",
+              "offset": "{{param.offset}}",
+              "length": 3,
+              "object": {
+                "type": "image",
+                "url": "{{param.image}}",
+                "height": "{{param.size}}",
+                "centerX": "{{param.x}}",
+                "centerY": "{{param.y}}"
+              },
+              "keyframes": {
+                "scale": [
+                  {
+                    "at": 0,
+                    "value": 0,
+                    "ease": "out"
+                  },
+                  {
+                    "at": 0.5,
+                    "value": 1.25,
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 0.8,
+                    "value": 1
+                  }
+                ],
+                "rotate": [
+                  {
+                    "at": 0,
+                    "value": 0,
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 3,
+                    "value": 360
+                  }
+                ],
+                "opacity": [
+                  {
+                    "at": 0,
+                    "value": 1
+                  },
+                  {
+                    "at": 2.2,
+                    "value": 1,
+                    "ease": "in"
+                  },
+                  {
+                    "at": 3,
+                    "value": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "fly",
+      "name": "Fly",
+      "serviceId": "sub-service",
+      "description": "An image that travels from one place to another over four seconds, easing in and out, tilting as it climbs and levelling off as it arrives.",
+      "params": {
+        "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpath%20d='M8%2050%20L24%2038%20L24%2062%20Z'%20fill='%23f97316'/%3E%3Cpath%20d='M24%2036%20L70%2036%20Q94%2050%2070%2064%20L24%2064%20Z'%20fill='%23e2e8f0'/%3E%3Ccircle%20cx='62'%20cy='50'%20r='7'%20fill='%2338bdf8'%20stroke='%2364748b'%20stroke-width='2'/%3E%3Cpath%20d='M30%2036%20L20%2022%20L44%2036%20Z%20M30%2064%20L20%2078%20L44%2064%20Z'%20fill='%23ef4444'/%3E%3C/svg%3E",
+        "fromX": "0%",
+        "fromY": "80%",
+        "toX": "100%",
+        "toY": "20%",
+        "size": "14%",
+        "offset": 0
+      },
+      "state": {
+        "pipeline": [
+          {
+            "serviceId": "hookup.to/service/timeline",
+            "instanceId": "motion",
+            "serviceName": "Motion",
+            "state": {
+              "clock": "input",
+              "offset": "{{param.offset}}",
+              "length": 4,
+              "object": {
+                "type": "image",
+                "url": "{{param.image}}",
+                "height": "{{param.size}}"
+              },
+              "keyframes": {
+                "centerX": [
+                  {
+                    "at": 0,
+                    "value": "{{param.fromX}}",
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 4,
+                    "value": "{{param.toX}}"
+                  }
+                ],
+                "centerY": [
+                  {
+                    "at": 0,
+                    "value": "{{param.fromY}}",
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 4,
+                    "value": "{{param.toY}}"
+                  }
+                ],
+                "rotate": [
+                  {
+                    "at": 0,
+                    "value": -40,
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 4,
+                    "value": -5
+                  }
+                ],
+                "scale": [
+                  {
+                    "at": 0,
+                    "value": 0.6,
+                    "ease": "out"
+                  },
+                  {
+                    "at": 2,
+                    "value": 1.1,
+                    "ease": "in"
+                  },
+                  {
+                    "at": 4,
+                    "value": 0.8
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "show",
+        "serviceId": "hookup.to/service/timeline",
+        "serviceName": "Show",
+        "state": {
+          "clock": "own",
+          "unit": "s",
+          "fps": 30,
+          "length": 8,
+          "loop": true,
+          "running": true
+        }
+      },
+      {
+        "uuid": "scene",
+        "serviceId": "tracks",
+        "serviceName": "Scene",
+        "state": {
+          "run": "serial",
+          "tracks": [
+            {
+              "name": "sky",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/timeline",
+                  "instanceId": "sky",
+                  "serviceName": "Sky",
+                  "state": {
+                    "clock": "input",
+                    "object": {
+                      "type": "rect",
+                      "x": 0,
+                      "y": 0,
+                      "width": "100%",
+                      "height": "100%"
+                    },
+                    "keyframes": {
+                      "color": [
+                        {
+                          "at": 0,
+                          "value": "#0b1026",
+                          "ease": "in-out"
+                        },
+                        {
+                          "at": 4.5,
+                          "value": "#312e81",
+                          "ease": "in-out"
+                        },
+                        {
+                          "at": 8,
+                          "value": "#0b1026"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "planet",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "planet",
+                  "params": {
+                    "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cellipse%20cx='50'%20cy='50'%20rx='47'%20ry='13'%20fill='none'%20stroke='%23fde68a'%20stroke-width='4'%20transform='rotate%28-20%2050%2050%29'/%3E%3Ccircle%20cx='50'%20cy='50'%20r='28'%20fill='%23fb923c'/%3E%3Cpath%20d='M26%2044%20Q50%2036%2074%2044'%20stroke='%23fdba74'%20stroke-width='5'%20fill='none'/%3E%3Cpath%20d='M24%2056%20Q50%2064%2076%2056'%20stroke='%23ea580c'%20stroke-width='4'%20fill='none'/%3E%3C/svg%3E",
+                    "x": "50%",
+                    "y": "50%",
+                    "size": "45%",
+                    "offset": 4.5
+                  }
+                }
+              ]
+            },
+            {
+              "name": "star-1",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "star-1",
+                  "params": {
+                    "x": "18%",
+                    "y": "25%",
+                    "offset": 0
+                  }
+                }
+              ]
+            },
+            {
+              "name": "star-2",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "star-2",
+                  "params": {
+                    "x": "80%",
+                    "y": "30%",
+                    "offset": 0.7,
+                    "size": "12%"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "star-3",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "star-3",
+                  "params": {
+                    "x": "35%",
+                    "y": "70%",
+                    "offset": 1.4,
+                    "size": "10%"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "star-4",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "star-4",
+                  "params": {
+                    "x": "65%",
+                    "y": "75%",
+                    "offset": 2.1
+                  }
+                }
+              ]
+            },
+            {
+              "name": "rocket",
+              "pipeline": [
+                {
+                  "block": "fly",
+                  "instanceId": "rocket",
+                  "params": {
+                    "offset": 2.5
+                  }
+                }
+              ]
+            },
+            {
+              "name": "comet",
+              "pipeline": [
+                {
+                  "block": "fly",
+                  "instanceId": "comet",
+                  "params": {
+                    "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpolygon%20points='50.0%2C4.0%2061.2%2C34.6%2093.7%2C35.8%2068.1%2C55.9%2077.0%2C87.2%2050.0%2C69.0%2023.0%2C87.2%2031.9%2C55.9%206.3%2C35.8%2038.8%2C34.6'%20fill='%23facc15'%20stroke='%23fef08a'%20stroke-width='3'%20stroke-linejoin='round'/%3E%3C/svg%3E",
+                    "fromX": "100%",
+                    "fromY": "10%",
+                    "toX": "0%",
+                    "toY": "40%",
+                    "size": "7%",
+                    "offset": 5.5
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": {
+          "clearOnRedraw": true,
+          "resizable": true,
+          "size": [
+            600,
+            400
+          ]
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "main",
+        "title": "Timeline",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "canvas",
+              "serviceUuid": "canvas"
+            },
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Play",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "show",
+                      "configure": {
+                        "play": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Pause",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "show",
+                      "configure": {
+                        "pause": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Stop",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "show",
+                      "configure": {
+                        "stop": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "tone": "muted",
+              "fontSize": 12,
+              "placeholder": "Each image runs on a timeline of its own: one object and keyframes for where it is, how big, how far turned and how opaque. Two blocks, Pop and Fly, write the motions once; every star, the planet, the rocket and the comet is a use of one of them, placed in the Show's time by its offset."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

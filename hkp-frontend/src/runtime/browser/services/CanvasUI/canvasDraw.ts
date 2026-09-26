@@ -233,6 +233,8 @@ export async function drawImage(
     centerY,
     x,
     y,
+    rotate = 0,
+    scale = 1,
   } = data;
   const img = (
     url
@@ -248,7 +250,7 @@ export async function drawImage(
     : canvasCenterX - scaledWidth / 2;
   const cy = centerY
     ? toAbsolute(centerY, canvasHeight) - scaledHeight / 2
-    : canvasCenterY - img.height / 2;
+    : canvasCenterY - scaledHeight / 2;
 
   const imgX = x === undefined ? cx : toAbsolute(x, canvasWidth);
   const imgY = y === undefined ? cy : toAbsolute(y, canvasHeight);
@@ -265,7 +267,16 @@ export async function drawImage(
   if (opacity !== undefined) {
     ctx.globalAlpha = opacity;
   }
-  ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
+  if (rotate || scale !== 1) {
+    // Turned (in degrees) and scaled about the image's own centre, so that
+    // animating either leaves the image where it is.
+    ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    ctx.rotate((Number(rotate) * Math.PI) / 180);
+    ctx.scale(Number(scale), Number(scale));
+    ctx.drawImage(img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
+  } else {
+    ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
+  }
   ctx.restore();
 }
 
@@ -446,8 +457,11 @@ export async function update(
     return;
   }
 
-  const dataArray =
-    Array.isArray(objectOrArray) || ArrayBuffer.isView(objectOrArray)
+  // Nested lists are drawn as one, in order: several pipelines answering
+  // together (e.g. Tracks) answer with a list of their lists.
+  const dataArray = Array.isArray(objectOrArray)
+    ? objectOrArray.flat(Infinity)
+    : ArrayBuffer.isView(objectOrArray)
       ? objectOrArray
       : [objectOrArray];
   const ctx = canvas.getContext("2d");

@@ -107,7 +107,10 @@ belongs to its definition.** So:
   its actions — in place of its panel, which appears only once the use is
   edited or detached. A level opened on it shows what is inside, out of reach
   (`inert`) and dimmed. An edit made there would be thrown away on save, which
-  is worse than not being able to make it.
+  is worse than not being able to make it. What only reads stays reachable: a
+  service's configuration opens read-only, and a panel that locks its own
+  controls instead (the Timeline's, whose editor opens as a read-only view)
+  keeps what shows details.
 - **Nothing addresses it.** A facade widget or a Configurator naming a service
   inside a use is refused when it is called, and warned about when the board is
   opened. A use is addressed as a whole. This is a board rule, not a security

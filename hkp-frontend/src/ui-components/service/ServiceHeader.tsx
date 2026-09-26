@@ -19,6 +19,8 @@ type Props = {
   onConfig: () => void;
   onCustomEntry: (item: CustomMenuEntry) => void;
   onChangeName: (newName: string) => void;
+  /** Keeps everything that writes out of reach; what only reads stays. */
+  readOnly?: boolean;
 };
 
 export default function ServiceHeader({
@@ -34,10 +36,26 @@ export default function ServiceHeader({
   onConfig,
   onCustomEntry,
   onChangeName,
+  readOnly = false,
 }: Props) {
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
   const bypassDisabled = showBypassOnlyIfExplicit && bypass === undefined;
+  const bypassSwitch = (
+    <BypassSwitch
+      bypass={!!bypass}
+      onChange={onBypass}
+      disabled={bypassDisabled}
+    />
+  );
+  // Still showing whether the service is bypassed, just out of reach.
+  const bypassControl = readOnly ? (
+    <span inert style={{ display: "flex" }}>
+      {bypassSwitch}
+    </span>
+  ) : (
+    bypassSwitch
+  );
 
   if (isPlayground) {
     return (
@@ -62,19 +80,18 @@ export default function ServiceHeader({
           helpUrl={helpUrl}
           onConfig={onConfig}
           onCustomEntry={onCustomEntry}
+          readOnly={readOnly}
         />
 
         {/* Service name — flex: 1 */}
-        <ServiceName service={service} onRename={onChangeName} />
+        <ServiceName
+          service={service}
+          readOnly={readOnly}
+          onRename={onChangeName}
+        />
 
         {/* Power / bypass button */}
-        {!bypassDisabled && (
-          <BypassSwitch
-            bypass={!!bypass}
-            onChange={onBypass}
-            disabled={bypassDisabled}
-          />
-        )}
+        {!bypassDisabled && bypassControl}
       </div>
     );
   }
@@ -90,13 +107,14 @@ export default function ServiceHeader({
         helpUrl={helpUrl}
         onConfig={onConfig}
         onCustomEntry={onCustomEntry}
+        readOnly={readOnly}
       />
-      <ServiceName service={service} onRename={onChangeName} />
-      <BypassSwitch
-        bypass={!!bypass}
-        onChange={onBypass}
-        disabled={bypassDisabled}
+      <ServiceName
+        service={service}
+        readOnly={readOnly}
+        onRename={onChangeName}
       />
+      {bypassControl}
     </div>
   );
 }

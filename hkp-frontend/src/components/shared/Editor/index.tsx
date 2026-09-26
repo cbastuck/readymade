@@ -93,6 +93,7 @@ type Props = {
   style?: object;
   initialWidth?: number;
   autofocus?: boolean;
+  readOnly?: boolean;
   onChange?: (updated: string | undefined) => void;
 };
 
@@ -114,6 +115,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     style = {},
     initialWidth = 300,
     autofocus = false,
+    readOnly = false,
     onChange,
   }: Props,
   ref,
@@ -183,6 +185,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
         onChange={onChange}
         language={language}
         value={value}
+        options={{ readOnly }}
       />
     </div>
   );

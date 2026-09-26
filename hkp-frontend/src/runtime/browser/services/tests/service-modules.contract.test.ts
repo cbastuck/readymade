@@ -62,7 +62,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "BrowserTracks.tsx",
   "Switch.tsx",
   "Thrower.tsx",
-  "Timeline.tsx",
+  "Timeline.ts",
   "TriggerPad.ts",
   "UuidGenerator.ts",
   "WorkflowBoardBuilder.ts",

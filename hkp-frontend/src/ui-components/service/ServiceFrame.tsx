@@ -27,6 +27,11 @@ import {
 } from "hkp-frontend/src/components/DropTypes";
 import { assureJSON } from "hkp-frontend/src/common";
 import { copyToClipboard } from "hkp-frontend/src/clipboard";
+import {
+  PanelLockHandOverContext,
+  useFrameBlockLock,
+  useLockHandOver,
+} from "hkp-frontend/src/runtime/ui/BlockUse";
 
 const DOCS_SERVICES_URL = "https://hookitapp.com/documentation/services";
 
@@ -68,6 +73,18 @@ export default function ServiceFrame({
     null,
   );
   const cardRef = useRef<HTMLDivElement>(null);
+  // Inside a use of a block the frame keeps the panel out of reach itself,
+  // so what only reads — the configuration above all — stays reachable.
+  const locked = useFrameBlockLock(!frameless);
+  // A panel may take the lock on in turn, keeping its own controls out of
+  // reach and still showing what only reads; else its body stays locked whole.
+  const [panelTookLock, handPanelLock] = useLockHandOver();
+  const bodyLocked = locked && panelTookLock === 0;
+  const body = (
+    <PanelLockHandOverContext.Provider value={locked ? handPanelLock : null}>
+      {children}
+    </PanelLockHandOverContext.Provider>
+  );
 
   const onNotification = (notification: any) => {
     const { bypass, __internal } = notification || {};
@@ -276,6 +293,7 @@ export default function ServiceFrame({
           type="text"
           aria-label="Service name"
           value={nameDraft}
+          readOnly={locked}
           onChange={(e) => setNameDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -332,6 +350,27 @@ export default function ServiceFrame({
     </>
   );
 
+  // Locked, the configuration is shown and not applied.
+  const configActions = locked
+    ? []
+    : [{ label: "Apply Changes", onAction: onApplyConfig }];
+
+  // Injecting pushes data through the board, so it stays out of reach too.
+  const plug = (
+    <ServiceOutputPlug
+      isActive={signalOutput}
+      data={recentProgressData}
+      onInject={onInject}
+    />
+  );
+  const outputPlug = locked ? (
+    <div inert style={{ display: "contents" }}>
+      {plug}
+    </div>
+  ) : (
+    plug
+  );
+
   const dragData = filterPrivateMembers(
     service,
   ) as unknown as ServiceInstanceDropType;
@@ -367,6 +406,7 @@ export default function ServiceFrame({
                 type={HKP_DND_SERVICE_TYPE}
                 value={dragData}
                 dragImageRef={cardRef}
+                disabled={locked}
               >
                 <ServiceHeader
                   showBypassOnlyIfExplicit={!!showBypassOnlyIfExplicit}
@@ -381,14 +421,16 @@ export default function ServiceFrame({
                   onConfig={onConfig}
                   onCustomEntry={onCustomEntry}
                   onChangeName={onChangeName}
+                  readOnly={locked}
                 />
               </DragSource>
 
               <div
                 data-service-body
+                inert={bodyLocked}
                 style={{ display: frameCollapsed ? "none" : undefined }}
               >
-                {children}
+                {body}
               </div>
             </div>
 
@@ -397,18 +439,13 @@ export default function ServiceFrame({
               value={filteredServiceConfig}
               isOpen={configVisible}
               onClose={onCloseConfig}
-              actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
+              readOnly={locked}
+              actions={configActions}
             >
               {configDetails}
             </EditorDialog>
           </div>
-          {!isTouch && (
-            <ServiceOutputPlug
-              isActive={signalOutput}
-              data={recentProgressData}
-              onInject={onInject}
-            />
-          )}
+          {!isTouch && outputPlug}
         </div>
       </div>
     );
@@ -435,6 +472,7 @@ export default function ServiceFrame({
             style={{ cursor }}
             type={HKP_DND_SERVICE_TYPE}
             value={dragData}
+            disabled={locked}
           >
             <ServiceHeader
               showBypassOnlyIfExplicit={!!showBypassOnlyIfExplicit}
@@ -449,6 +487,7 @@ export default function ServiceFrame({
               onConfig={onConfig}
               onCustomEntry={onCustomEntry}
               onChangeName={onChangeName}
+              readOnly={locked}
             />
           </DragSource>
           <EditorDialog
@@ -456,28 +495,24 @@ export default function ServiceFrame({
             value={filteredServiceConfig}
             isOpen={configVisible}
             onClose={onCloseConfig}
-            actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
+            readOnly={locked}
+            actions={configActions}
           >
             {configDetails}
           </EditorDialog>
 
           <div
+            inert={bodyLocked}
             style={{
               position: "relative",
               display: frameCollapsed ? "none" : undefined,
               paddingBottom: theme.serviceContentPaddingBottom || undefined,
             }}
           >
-            {children}
+            {body}
           </div>
         </div>
-        {!isTouch && (
-          <ServiceOutputPlug
-            isActive={signalOutput}
-            data={recentProgressData}
-            onInject={onInject}
-          />
-        )}
+        {!isTouch && outputPlug}
       </div>
     </div>
   );

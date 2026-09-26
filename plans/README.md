@@ -15,6 +15,7 @@ plan is deleted.
 | [TODO-QUEUE.md](TODO-QUEUE.md) | The `queue` service and what board units still need from it | service built; units open |
 | [TODO-SCOPES.md](TODO-SCOPES.md) | SubService as a boundary: stopping propagation, slots, dotted addressing | designed 2026-09-20, not built |
 | [TODO-SECRETS.md](TODO-SECRETS.md) | Secrets resolved at point of use and bound to a destination | Prio A built; Prio B open |
+| [TODO-TIMELINE.md](TODO-TIMELINE.md) | A timeline animating one object by keyframes, driven by time as a value; nested timelines and blocks composing one animation on one canvas | decided 2026-09-26; service, keyframes, demo board and UI built |
 | [TODO-TEST.md](TODO-TEST.md) | Manual per-change test checklists that the automated suites do not cover | living checklist |
 | [TODO-WORKFLOW-PLATFORM.md](TODO-WORKFLOW-PLATFORM.md) | Stateful, human-in-the-loop business-process boards — the gaps G1–G13 and their phases | in progress |
 

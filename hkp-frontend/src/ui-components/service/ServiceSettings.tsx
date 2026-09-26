@@ -44,6 +44,11 @@ type Props = {
   helpUrl: string;
   onConfig: () => void;
   onCustomEntry: (item: CustomMenuEntry) => void;
+  /**
+   * Offers only what reads: the configuration (shown, not applied), collapsing
+   * and the documentation.
+   */
+  readOnly?: boolean;
 };
 
 function DragHandle() {
@@ -98,6 +103,7 @@ export default function ServiceSettings({
   onDelete,
   onConfig,
   onCustomEntry,
+  readOnly = false,
 }: Props) {
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
@@ -123,11 +129,13 @@ export default function ServiceSettings({
     return Object.keys(services).find(lists) ?? null;
   }, [boardContext?.services, service.uuid, frameRuntimeId]);
   const onBoard = runtimeId !== null;
+  const writable = !readOnly;
 
   // A sub-service is a pipeline somebody built, which is what a block is made
   // of: made one, it becomes the first use of it and can be used again.
   const address = useServiceAddress() ?? service.uuid;
   const canMakeBlock =
+    writable &&
     !!boardContext?.makeBlock &&
     toCanonicalServiceId(service.serviceId ?? "") === "sub-service";
   const makeBlock = () => {
@@ -195,7 +203,7 @@ export default function ServiceSettings({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {onBoard && (
+        {writable && onBoard && (
           <>
             <DropdownMenuItem
               onClick={() => runFromHere()}
@@ -220,7 +228,7 @@ export default function ServiceSettings({
           <span>Configuration</span>
         </DropdownMenuItem>
 
-        {onBoard && (
+        {writable && onBoard && (
           <PresetMenu
             service={service}
             onSave={() => setSavePresetOpen(true)}
@@ -259,13 +267,17 @@ export default function ServiceSettings({
             <span>Documentation</span>
           </a>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onDelete} className="text-base">
-          <MenuIcon icon={Trash} />
-          <span>Delete</span>
-        </DropdownMenuItem>
+        {writable && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-base">
+              <MenuIcon icon={Trash} />
+              <span>Delete</span>
+            </DropdownMenuItem>
+          </>
+        )}
 
-        {customMenuEntries && (
+        {writable && customMenuEntries && (
           <>
             <DropdownMenuSeparator />
             {customMenuEntries.map((item: CustomMenuEntry) => (
