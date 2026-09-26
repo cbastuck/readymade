@@ -7,7 +7,11 @@ import "../../BrowserRegistry";
 import SoundDescriptor from "../Sound";
 import { BrowserSubService } from "../BrowserSubService";
 import { createSlotStore } from "../../../slots";
-import board from "../../../../../../boards/nested-rhythm-demo-board.json";
+import document from "../../../../../../boards/nested-rhythm-demo-board.json";
+import { linkBlocks } from "../../../../core/linkBlocks";
+
+// The board as it runs: its blocks expanded, the way loading it does.
+const board = linkBlocks(document as any).board as any;
 
 /**
  * The Nested Rhythm demo board: a groove whose timing is nothing but where each
@@ -260,7 +264,8 @@ describe("the Nested Rhythm demo board", () => {
       app.notify.mock.calls.map(([svc]: any[]) => svc.address).filter(Boolean),
     );
     expect(addresses).toContain("groove.patterns.straight.kick");
-    expect(addresses).toContain("groove.patterns.straight.half-1.beat-1.hihat-1");
+    // A note is a block of its own, so the hi-hat in it is one level further in.
+    expect(addresses).toContain("groove.patterns.straight.half-1.beat-1.note-1.hit");
     groove.destroy();
   });
 

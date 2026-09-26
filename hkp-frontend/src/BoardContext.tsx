@@ -83,6 +83,15 @@ import {
   setServiceName as setServiceNameOp,
 } from "./core/serviceOperations";
 import {
+  applyBlockEdit as applyBlockEditOp,
+  cancelBlockEdit as cancelBlockEditOp,
+  detachBlockUse as detachBlockUseOp,
+  editBlock as editBlockOp,
+  makeBlock as makeBlockOp,
+  setBlockParams as setBlockParamsOp,
+} from "./core/blockActions";
+import type { BlockDefinition } from "./core/presets";
+import {
   ApplyPresetResult,
   Preset,
   applyPreset as applyPresetOp,
@@ -193,6 +202,19 @@ type BoardContextAPI = {
     instanceId: string,
     newName: string,
   ) => void;
+
+  /**
+   * The two edits a use of a block takes on the running board — see
+   * `runtime/board/blocks`. `key` is the use's placement in `linkage.blocks`.
+   */
+  setBlockParams: (key: string, params: Record<string, unknown>) => Promise<void>;
+  detachBlockUse: (key: string) => void;
+  /** Turns the service at `address` into a block of this board, and it into the first use. */
+  makeBlock: (address: string) => Promise<BlockDefinition>;
+  /** Unlocks one use as the working copy of its block, until applied or cancelled. */
+  editBlock: (key: string) => void;
+  applyBlockEdit: () => Promise<void>;
+  cancelBlockEdit: () => Promise<void>;
 };
 
 export type EngineState = {
@@ -489,6 +511,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       boardNameRef,
       runtimesRef: asRef(providerStateRef.current.runtimes),
       servicesRef: asRef(providerStateRef.current.services),
+      linkageRef: asRef(providerStateRef.current.linkage),
       registryRef: asRef(providerStateRef.current.registry),
       scopesRef: asRef(providerStateRef.current.scopes),
       availableRuntimeEnginesRef: asRef(
@@ -630,6 +653,14 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       );
       rebaseAfterLoad();
     };
+    const setBlockParams = (key: string, params: Record<string, unknown>) =>
+      setBlockParamsOp(key, params, buildContextValue(), setLinkage);
+    const detachBlockUse = (key: string) => detachBlockUseOp(key, setLinkage);
+    const makeBlock = (address: string) =>
+      makeBlockOp(address, buildContextValue(), setLinkage);
+    const editBlock = (key: string) => editBlockOp(key, setLinkage);
+    const applyBlockEdit = () => applyBlockEditOp(buildContextValue(), setLinkage);
+    const cancelBlockEdit = () => cancelBlockEditOp(buildContextValue(), setLinkage);
     const flushSnapshots = useCallback(
       () => snapshotsRef.current?.flush() ?? Promise.resolve(),
       [],
@@ -967,6 +998,12 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       isActionAvailable,
       setRuntimeName,
       setServiceName,
+      setBlockParams,
+      detachBlockUse,
+      makeBlock,
+      editBlock,
+      applyBlockEdit,
+      cancelBlockEdit,
       addAvailableRuntime,
       updateAvailableRuntime,
       removeAvailableRuntime,

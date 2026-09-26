@@ -2,7 +2,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import {
   applyPreset,
+  parseBlockDefinition,
   parsePreset,
+  presetState,
   parsePresetFile,
   presetFetchUrl,
   presetFromService,
@@ -193,6 +195,46 @@ describe("making a preset from a service", () => {
     expect(preset.state.__hkpMount).toBeUndefined();
     // The reference, not a value: nothing ever resolved one into service state.
     expect(preset.state.headers.authorization).toBe("Bearer {{secret.demo}}");
+  });
+});
+
+describe("parameters", () => {
+  const withParams = parsePreset({
+    preset: "v1",
+    name: "Beep",
+    serviceId: "sound",
+    params: { volume: 0.5, note: "C" },
+    state: { volume: "{{param.volume}}", label: "Note {{param.note}}" },
+  });
+
+  it("are substituted with their defaults when a preset is applied", () => {
+    expect(presetState(withParams)).toEqual({ volume: 0.5, label: "Note C" });
+  });
+
+  it("must be an object", () => {
+    expect(() =>
+      parsePreset({ preset: "v1", name: "X", serviceId: "s", state: {}, params: [] }),
+    ).toThrow(/"params" is not an object/);
+  });
+});
+
+describe("block definitions", () => {
+  it("are presets without the format marker", () => {
+    const definition = parseBlockDefinition({
+      name: "Note",
+      serviceId: "sub-service",
+      params: { beats: 0.5 },
+      state: { pipeline: [], __hkpMount: "http://x/hosted/1" },
+    });
+    expect(definition).toMatchObject({ id: "note", name: "Note", params: { beats: 0.5 } });
+    // Like a preset, a definition carries nothing bound to a board.
+    expect(definition.state).toEqual({ pipeline: [] });
+  });
+
+  it("say what is wrong with one that is not", () => {
+    expect(() => parseBlockDefinition({ name: "Note", state: {} })).toThrow(
+      'Not a block: "serviceId" is missing',
+    );
   });
 });
 

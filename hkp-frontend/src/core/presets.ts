@@ -60,6 +60,7 @@ import {
 } from "../types";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { referencedSecrets } from "./secrets";
+import { substituteParams } from "../runtime/board/params";
 
 /** The only format version there is. */
 export const PRESET_FORMAT = "v1";
@@ -119,6 +120,13 @@ export type Preset = {
   runtimes?: RuntimeClassType[];
   /** Display information for the aliases `state` refers to, keyed by alias. */
   secrets?: Record<string, PresetSecret>;
+  /**
+   * The parameters `state` refers to as `{{param.name}}`, each with the value
+   * it has when nobody gives it one. Applying a preset substitutes these; a
+   * block (`runtime/board/blocks`) — a preset used by reference rather than
+   * copied — takes its uses' values instead.
+   */
+  params?: Record<string, unknown>;
 };
 
 /** A preset file holds one preset, or several. */
@@ -129,8 +137,8 @@ function isBoardField(key: string): boolean {
   return key.startsWith("__hkp");
 }
 
-function fail(reason: string): never {
-  throw new Error(`Not a preset: ${reason}`);
+function fail(reason: string, what = "preset"): never {
+  throw new Error(`Not a ${what}: ${reason}`);
 }
 
 /**
@@ -152,14 +160,39 @@ export function parsePreset(value: unknown): Preset {
         : `unknown format "${raw.preset}" (this build reads "${PRESET_FORMAT}")`,
     );
   }
+  return { ...parsePresetBody(raw), preset: PRESET_FORMAT };
+}
+
+/**
+ * Reads a block definition: a preset in everything but the format marker,
+ * which the board's `blocks` field already says. See `runtime/board/blocks`.
+ */
+export function parseBlockDefinition(value: unknown): BlockDefinition {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    fail("not a JSON object", "block");
+  }
+  return parsePresetBody(value as Record<string, any>, "block");
+}
+
+/** Everything a preset is, apart from the marker saying it is one. */
+function parsePresetBody(
+  raw: Record<string, any>,
+  what = "preset",
+): Omit<Preset, "preset"> {
   if (typeof raw.serviceId !== "string" || !raw.serviceId) {
-    fail('"serviceId" is missing');
+    fail('"serviceId" is missing', what);
   }
   if (typeof raw.name !== "string" || !raw.name) {
-    fail('"name" is missing');
+    fail('"name" is missing', what);
   }
   if (!raw.state || typeof raw.state !== "object" || Array.isArray(raw.state)) {
-    fail('"state" is missing or not an object');
+    fail('"state" is missing or not an object', what);
+  }
+  if (
+    raw.params !== undefined &&
+    (!raw.params || typeof raw.params !== "object" || Array.isArray(raw.params))
+  ) {
+    fail('"params" is not an object', what);
   }
   const state: Record<string, any> = {};
   for (const [key, entry] of Object.entries(raw.state)) {
@@ -172,13 +205,24 @@ export function parsePreset(value: unknown): Preset {
   }
   return {
     ...raw,
-    preset: PRESET_FORMAT,
     id: typeof raw.id === "string" && raw.id ? raw.id : slug(raw.name),
     name: raw.name,
     serviceId: raw.serviceId,
     tags: normalizeTags(raw.tags),
     state,
-  } as Preset;
+  } as Omit<Preset, "preset">;
+}
+
+/**
+ * A block definition is a preset used by reference instead of copied. Only the
+ * format marker is optional: inside a board's `blocks` there is no doubt what
+ * the document is.
+ */
+export type BlockDefinition = Omit<Preset, "preset"> & { preset?: string };
+
+/** The state a preset configures a service with: its parameters substituted. */
+export function presetState(preset: Preset): Record<string, any> {
+  return substituteParams(preset.state, preset.params ?? {});
 }
 
 /**
@@ -519,7 +563,7 @@ export async function applyPreset(
   // configuration, reads the defaults, and never hears about the configure that
   // follows: the preset is applied and the panel says otherwise.
   await api.configureService(scope, created, {
-    ...preset.state,
+    ...presetState(preset),
     ...carried,
   });
 

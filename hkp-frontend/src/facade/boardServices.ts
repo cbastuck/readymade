@@ -4,6 +4,7 @@ import {
   isScopedAddress,
   splitAddress,
 } from "hkp-frontend/src/runtime/board/address";
+import { blockUseContaining } from "hkp-frontend/src/runtime/board/blocks";
 import {
   RuntimeApi,
   RuntimeClassType,
@@ -76,10 +77,34 @@ function findNestedInScope(
   return owner.service.findNested(owner.rest) ?? null;
 }
 
+/**
+ * Whether an address reaches inside a use of a block, which the board refuses:
+ * a use's inside belongs to its definition, and what varies per use is its
+ * params. Said once per address, not on every render that asks.
+ */
+const refusedAddresses = new Set<string>();
+function isInsideUse(boardContext: BoardContextState, address: string): boolean {
+  const use = blockUseContaining(boardContext.linkage?.blocks, address);
+  if (!use) {
+    return false;
+  }
+  if (!refusedAddresses.has(address)) {
+    refusedAddresses.add(address);
+    console.error(
+      `"${address}" is inside a use of block "${use.use.block}" (${use.address}); ` +
+        `a use is addressed as a whole, and varied through its params`,
+    );
+  }
+  return true;
+}
+
 export function findService(
   boardContext: BoardContextState,
   uuid: string,
 ): ServiceInstance | null {
+  if (isInsideUse(boardContext, uuid)) {
+    return null;
+  }
   // Only browser scopes expose findServiceInstance — a browser service is a
   // live object in this process, so a hit hands back the real instance. Remote
   // runtime engines have no such function, and fall through to the proxy below.
@@ -142,6 +167,9 @@ export function processService(
   uuid: string,
   payload: unknown,
 ): void {
+  if (isInsideUse(boardContext, uuid)) {
+    return;
+  }
   // Which runtime holds the service is not asked, it is discovered: only a
   // browser scope implements findServiceInstance, because only there is the
   // service a live object in this process. A hit therefore means "local", and

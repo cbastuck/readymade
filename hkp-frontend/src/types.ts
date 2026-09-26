@@ -242,6 +242,12 @@ export type ServiceClass = {
  */
 export type ServiceClassWithPreset = ServiceClass & {
   preset?: { id: string; serviceId: ServiceURI };
+  /**
+   * A block of this board this entry stands for: adding it places a use of the
+   * block — a reference — where a preset would apply a copy. See
+   * `runtime/board/blocks`.
+   */
+  block?: { id: string };
 };
 
 export type ServiceRegistry = Array<ServiceClass>;

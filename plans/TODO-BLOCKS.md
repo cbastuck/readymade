@@ -19,9 +19,8 @@ of a pipeline and sits inside one.
 { "block": "note", "instanceId": "kick", "params": { "trigger": "kick", "volume": 0.9 } }
 ```
 
-**State:** designed 2026-09-26. A prototype exists, uncommitted, on
-`nesting_audio`, and implements a model this plan replaces — see *What the
-prototype already has*.
+**State:** designed 2026-09-26; phases 1–5 built on `nesting_audio`, with what
+is left under *Still to build* and *Open*.
 
 ---
 
@@ -163,85 +162,99 @@ and *use* (reference, a block). So, wherever there is a choice:
 
 ## Work
 
-### 1 — Core (`runtime/board/blocks.ts`)
+### 1 — Core
 
-- ☐ `BlockDefinition` = `Preset` + `params`, validated by the preset parser
-- ☐ Replace the prototype's `collapseBlocks` comparison with unconditional
-  write-back of the outermost attached uses. Placements gain `parent`, and a
-  use's live params become the source of truth
-- ☐ Collision-free ids for uses written without one. The prototype's
-  `<block>-<index>` can collide with an authored sibling
-- ☐ A use's **address** (its dotted path of entry ids), for refusal, panels and
-  param changes
-- ☐ Diagnostics: unknown block, cycle, param with no value, **param a use passes
-  that the block does not declare**. Reported through the shared path, whose
-  messages stop saying "Board units:"
-- ☐ Units: expansion per document, with each unit's own definitions and
-  placements carrying the unit. Linkage holds blocks per document, and
-  collapse runs before `unlinkProjection`. Test: unit params never touch
-  `blocks`
-- ☐ Tests: carried over from the prototype, minus break-off; plus units, ids,
-  the address, and param change
+- ☑ `BlockDefinition` is `Preset` without the marker, read by `parseBlockDefinition`
+  (`core/presets.ts`); presets gained `params`, substituted on apply
+  (`presetState`) — both application paths, `applyPreset` and palette creation
+- ☑ Unconditional write-back of the outermost attached uses (`collapseBlocks`);
+  placements carry `parent`, `address` and `document`
+- ☑ Collision-free ids for uses written without one (`freshId`), never written back
+- ☑ A use's address; `blockUseAt` / `blockUseContaining`
+- ☑ Diagnostics: unknown, cycle, duplicate, invalid definition, param with no
+  value, param undeclared — by a use or referred to by a definition. Reported by
+  `reportLinkDiagnostics` (renamed from `reportUnitDiagnostics`), "Board linking:"
+- ☑ Units: each document's own blocks (`core/linkBlocks.ts`), unit uses resolved
+  against the unit's, written back into the unit; unit params never touch
+  `blocks` (tested)
+- ☑ Tests: `runtime/board/tests/blocks.test.ts`, `core/tests/linkBlocks.test.ts`,
+  `core/tests/block-use.integration.test.ts`, preset params in `presets.test.ts`
 
 ### 2 — Every path a board arrives or leaves by
 
-The prototype already hit this once: `PlaygroundController` picked fields and
-dropped `blocks` (fixed).
-
-- ☐ Audit each arrival path for field-picking: Meander, mobile, restoring drafts,
-  file drop (`EmptyBoard`), share links, the coordinator attaching to a cloud board
-- ☐ Share link (`onCreateBoardLink`) and board source (`showBoardSource`) carry
-  the documents — `serializeBoardDocuments` — instead of `serializeBoard`
-- ☐ Deploying stays flat: a coordinator gets the link output, like a bundle.
-  Say so in the docs
+- ☑ Audit: the playground controller was the one place picking fields (fixed in
+  the prototype); `forkBoard` (templates) now carries `blocks`; Meander, mobile,
+  drafts, file drop and share links pass the whole descriptor; native backends
+  store boards as opaque JSON; `partnerBoard` derives a board to hand on and is
+  flat by design
+- ☑ Share link and board source keep the board's own blocks
+  (`serializeSharedBoard` → `unlinkBlocks(…, { ownOnly: true })`). A unit's uses
+  stay expanded there: a link carries no unit for them to name. Not
+  `serializeBoardDocuments` as planned — that would have made a composition's
+  share link depend on its units being findable
+- ☑ Deploying stays flat — documented in `concepts/blocks.md`
 - ☐ The planned copy & paste carries the definitions the copied uses need
   (its plan, `TODO-COPY-PASTE`, is not on this branch — add it there)
-- ☐ The demo-board regression checks **expanded** services against the registry.
-  Today a definition naming an unknown `serviceId` passes it
-- ☐ e2e: open → play → save → uses written back; param change survives
-  save; detach survives save. The manual run from the prototype is the script
+- ☑ The demo-board regression links blocks, fails on link errors, and checks
+  every nested `serviceId` against the registry (it checked top-level ones only)
+- ☑ e2e `e2e/tests/blocks.spec.ts` (web): lock, params into the running service
+  and the save, detach, edit/apply with a param-driven and a plain field, make
+  block + palette drop
 
 ### 3 — Running board UI
 
-- ☐ Lock and badge an attached use's inside: desktop pipeline, `NestedNavigation`,
-  mobile
-- ☐ The use's panel: its params, with editors inferred from the defaults'
-  types, and **Detach**
-- ☐ Refusal in `facade/boardServices.ts`, and link-time warnings for facade widgets
-  and Configurator targets
+- ☑ Lock and badge (`runtime/ui/BlockUse.tsx`): desktop pipelines and levels,
+  top-level services, the mobile service sheet (panel inert, config editor and
+  sub-pipeline edits off)
+- ☑ The use's bar: params with editors from the defaults' types (16px on mobile),
+  Open, Edit block, Detach, Remove
+- ☑ Refusal in `findService` / `processService` — reads refused as well, since
+  notifications go through `findService`; link-time warnings for facade widgets
+  and Configurator targets (a Configurator inside the same use is left alone)
 
 ### 4 — Authoring
 
-- ☐ Make block from a sub-service
-- ☐ The board's blocks in the Building Blocks sidebar; dragging one adds a use
-  with default params
-- ☐ Edit definition in place, apply and cancel
+- ☑ Make block, in a sub-service's menu (`makeBlock`); uses already inside it stay uses
+- ☑ The board's blocks in the Building Blocks sidebar; a drop adds a use through
+  `addService` (a palette card with `block` beside `preset` — the two verbs on
+  one card type)
+- ☑ Edit definition in place: Edit block → working copy (`linkage.blocks.editing`)
+  → Apply / Cancel, on the use's bar and on a level opened on it
 
 ### 5 — Docs
 
-- ☐ `docs/content/concepts/blocks.md`: the model, the frozen rule, what is and is
-  not saved
-- ☐ `docs/content/board-json.md`: the `blocks` field and the use entry
-- ☐ The nested-rhythm board's docs page, and the parts of the board's own
-  description the blocks change
-- ☐ `testing.md` if a new e2e spec lands. The vocabulary entry exists
+- ☑ `concepts/blocks.md`, `board-json.md`, `concepts/presets.md` (params, the
+  other verb), the nested-rhythm page and board description, `testing.md`,
+  `CLAUDE.md`, the vocabulary entry
 
----
+### Still to build
+
+- ☐ Offer blocks in a sub-pipeline's own service selector, so a use can be added
+  inside a pipeline and not only to a runtime
+- ☐ Applying an edit closes a level open on the working copy (its pipeline is
+  rebuilt); keep the level open
+- ☐ A use moved to another pipeline is written back expanded — found by id only
+  within the pipeline it was placed in
+- ☐ Mobile drills only into remote runtimes' sub-services (the `subservices`
+  capability), so nested browser uses are reachable there only through the
+  service UI — pre-existing, not a blocks gap, but it shows here
+- ☐ Remote runtimes: re-instantiating a use by address rebuilds only that use —
+  verified for the browser runtime; hkp-node, hkp-python and hkp-rt untested
 
 ## Open
 
-- **Param declarations.** `name: default` is enough to infer an editor. A panel will
-  want labels and ranges (a knob for volume, 0–1). An object form
-  (`{ default, label, min, max }`) would also be what parametrised presets need.
-  Decide before the use panel is built.
+- **Param declarations.** `name: default` is what the bar infers its editors
+  from (number, text, checkbox). Labels and ranges — a knob for a volume, 0–1 —
+  need more: an object form (`{ default, label, min, max }`), which parametrised
+  presets would want too.
 - **Re-instantiating a use by address on every runtime.** Browser SubService and
   Switch resolve nested addresses (`findNested`), and hkp-node's SubService does
   too. Verify that `configure({ pipeline })` rebuilds only that use in each
   runtime's SubService (hkp-node, hkp-python, hkp-rt). Also verify that
   Switch and Tracks case entries are reachable when their case has not run yet.
-- **Param-driven fields during a definition edit** belong to the use (decided
-  above as a rule, not yet tried). If it reads wrong in practice, the
-  alternative is that they edit the param's default.
+- **Param-driven fields during a definition edit** belong to the use — built and
+  covered by the e2e spec. If it reads wrong in practice, the alternative is that
+  they edit the param's default.
 - **The consolidation itself**: the unified document's name, `from` for files,
   and whether presets gain the *use* verb or blocks the *apply* verb first.
 - **`{{param.x}}` and `scope.params`** (`TODO-SCOPES`, *Open*). Blocks are one
@@ -274,23 +287,3 @@ the context for free.
 
 **Edits inside a use changing the definition.** Every accidental tweak rewrites
 every use, and restarts all of them.
-
----
-
-## What the prototype already has
-
-Uncommitted on `nesting_audio`:
-
-- `hkp-frontend/src/runtime/board/blocks.ts` — expansion, typed params, nested
-  uses, block-valued params, diagnostics and paths are **kept**. The
-  `collapseBlocks` comparison (`stillExpansion`, the rename and bypass rules) is
-  **replaced** by the write-back above
-- `hkp-frontend/src/runtime/board/tests/blocks.test.ts` — the expansion tests stay;
-  the break-off tests become detach and param tests
-- `hkp-frontend/src/core/boardPersistence.ts` — expand in `linkBoardDocument`,
-  collapse first in `unlinkBoardDocuments`
-- `hkp-frontend/src/types.ts#BoardDescriptor` `blocks`, and `BoardLinkage.blocks`
-- `hkp-frontend/src/views/playground/PlaygroundController.ts` — passes `blocks` through
-- `boards/nested-rhythm-demo-board.json` — rewritten with eight blocks, 79.7 → 23.6 KB.
-  Checked in the running playground: every pattern plays the same sounds as
-  the original board, and a save writes every use back unchanged

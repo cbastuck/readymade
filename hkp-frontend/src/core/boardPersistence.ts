@@ -14,10 +14,15 @@ import {
   chainUnitOrigins,
   defaultUnitOrigin,
   linkBoard,
-  reportUnitDiagnostics,
+  reportLinkDiagnostics,
 } from "./linkUnits";
 import { BoardLinkage, unlinkProjection, UnitBoard } from "../runtime/board/units";
-import { linkBlocks, unlinkBlocks } from "../runtime/board/blocks";
+import {
+  checkAddressesIntoUses,
+  linkBlocks,
+  unlinkBlocks,
+  withUnitBlocks,
+} from "./linkBlocks";
 import { getLocalBoard } from "../views/playground/common";
 import { loadSavedBoardViaPlatform } from "../platform/PlatformContext";
 import { toast } from "sonner";
@@ -197,8 +202,18 @@ export async function linkBoardDocument(
   }
   // Blocks are expanded in the projection, from the definitions of the board
   // being opened: what runs never sees a use of one.
-  const blocks = linkBlocks({ ...projection.board, blocks: board.blocks });
-  reportUnitDiagnostics([...projection.diagnostics, ...blocks.diagnostics], board);
+  const blocks = linkBlocks(
+    { ...projection.board, blocks: board.blocks },
+    projection.units,
+  );
+  const intoUses = checkAddressesIntoUses(blocks.board, blocks.linkage, [
+    blocks.board.facade,
+    ...projection.views.map((view) => view.facade),
+  ]);
+  reportLinkDiagnostics(
+    [...projection.diagnostics, ...blocks.diagnostics, ...intoUses],
+    board,
+  );
   return {
     board: blocks.board,
     // Nothing to remember about a board that is only itself.
@@ -470,7 +485,7 @@ export function unlinkBoardDocuments(
     units: units.map((entry) => ({
       name: entry.unit.name,
       uri: entry.unit.uri,
-      board: entry.board,
+      board: withUnitBlocks(entry.unit.name, entry.board, linkage.blocks),
     })),
   };
 }

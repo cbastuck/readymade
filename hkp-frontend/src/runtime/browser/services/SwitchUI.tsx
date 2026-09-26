@@ -90,6 +90,10 @@ export default function SwitchUI(props: ServiceUIProps) {
   ): ServiceInstance =>
     ({
       uuid: `${service.uuid}-branch-${branch}`,
+      // A branch is not a service: what runs in it reports under the Switch,
+      // so the panels below listen under the Switch's address, not under this
+      // proxy's invented uuid — which names nothing and hears nothing.
+      address: service.address ?? service.uuid,
       serviceId: "hookup.to/service/switch",
       serviceName: label,
       state: { pipeline },

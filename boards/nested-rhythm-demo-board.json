@@ -1,6 +1,6 @@
 {
   "boardName": "Nested Rhythm",
-  "description": "A drum groove built from nested sub-services, where a pipeline's length in time is the sum of the waits inside it.\n\nFour patterns — Straight, Shuffle, Four on the floor and Funk — each a **Bar** made of smaller blocks: a Beat of two hi-hats, Two beats with a snare between them, and so on. The Shuffle is the Straight bar with a swung Beat; the Funk pushes kicks onto the \"and\" with a block that is sixteenth hi-hats with a kick in the middle.\n\nEvery wait is measured in beats. The tempo and the chosen pattern are slots in the outermost scope, the **Groove**. Each bar reads the pattern and a Switch routes the bar into it; every scope inside inherits the Groove's slots, so a Beat reads the tempo from its surroundings without knowing where it is set.",
+  "description": "A drum groove built from nested sub-services, where a pipeline's length in time is the sum of the waits inside it.\n\nFour patterns — Straight, Shuffle, Four on the floor and Funk — each a **Bar** made of smaller blocks, each defined once in the board and used wherever it recurs: a Note is a hit and a wait, a Beat two Notes, Two beats a beat with a snare between, and so on. The Shuffle is the Straight bar with a swung Beat; the Funk pushes kicks onto the \"and\" with a block that is sixteenth hi-hats with a kick in the middle.\n\nEvery wait is measured in beats. The tempo and the chosen pattern are slots in the outermost scope, the **Groove**. Each bar reads the pattern and a Switch routes the bar into it; every scope inside inherits the Groove's slots, so a Beat reads the tempo from its surroundings without knowing where it is set.",
   "runtimes": [
     {
       "id": "ui",
@@ -82,6 +82,7 @@
                           "pipeline": [
                             {
                               "block": "hit",
+                              "instanceId": "kick",
                               "serviceName": "Kick",
                               "params": {
                                 "trigger": "kick",
@@ -121,6 +122,7 @@
                           "pipeline": [
                             {
                               "block": "hit",
+                              "instanceId": "kick-1",
                               "serviceName": "Kick",
                               "params": {
                                 "trigger": "kick",
@@ -136,6 +138,7 @@
                             },
                             {
                               "block": "hit",
+                              "instanceId": "kick-3",
                               "serviceName": "Kick",
                               "params": {
                                 "trigger": "kick",
@@ -210,6 +213,7 @@
                                 "pipeline": [
                                   {
                                     "block": "hit",
+                                    "instanceId": "kick",
                                     "serviceName": "Kick",
                                     "params": {
                                       "trigger": "kick",
@@ -222,6 +226,7 @@
                                   },
                                   {
                                     "block": "hit",
+                                    "instanceId": "snare",
                                     "serviceName": "Snare",
                                     "params": {
                                       "trigger": "snare",
@@ -250,6 +255,7 @@
                                   },
                                   {
                                     "block": "hit",
+                                    "instanceId": "snare",
                                     "serviceName": "Snare",
                                     "params": {
                                       "trigger": "snare",

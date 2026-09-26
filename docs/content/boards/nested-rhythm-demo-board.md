@@ -31,20 +31,27 @@ Groove                     (scope: own slots)
 ├─ Which pattern           (Hold ← slot "pattern")
 └─ Patterns                (Switch)
    ├─ Straight             (inherits slots)
-   │  ├─ Kick
-   │  ├─ Two beats
-   │  │  ├─ Beat
-   │  │  │  ├─ Hi-hat
-   │  │  │  ├─ Wait an eighth   (Timer, ½ beat)
-   │  │  │  ├─ Hi-hat
-   │  │  │  └─ Wait an eighth   (Timer, ½ beat)
-   │  │  ├─ Snare
-   │  │  └─ Beat
-   │  └─ Two beats
+   │  ├─ Kick                   Hit
+   │  ├─ Two beats              Two beats, of Beat
+   │  │  ├─ Beat                Beat
+   │  │  │  ├─ Note             Note: hi-hat, ½ beat
+   │  │  │  │  ├─ Hit           (Sound)
+   │  │  │  │  └─ Wait          (Timer, ½ beat)
+   │  │  │  └─ Note             Note: quieter hi-hat, ½ beat
+   │  │  ├─ Snare               Hit
+   │  │  └─ Beat                Beat
+   │  └─ Two beats              Two beats, of Beat
    ├─ Shuffle
    ├─ Four on the floor
    └─ Funk
 ```
+
+The names on the right are [blocks](../concepts/blocks.md): each is defined
+once in the board and used wherever it recurs, with what varies — which drum,
+how loud, how many beats — given at each use. A **Hit** is one drum; a **Note**
+is a Hit and then a wait; a **Beat** is two Notes; **Two beats** is a beat, a
+Snare and the beat again, and is told which beat to repeat. The board writes
+each of them down once, so the four patterns are a few lines each.
 
 A Timer that is not periodic holds whatever it is given for its delay, then
 passes it on. A sub-service answers once its pipeline has, so **a
@@ -66,8 +73,9 @@ thing. What makes them different is which blocks they are made of:
 | **Funk** | 1, the "and" of 2, the "and" of 3 | 2, 4 | every sixteenth | the Beat is four sixteenths; a second block, *Kick on the and*, puts a kick halfway through them |
 
 The Shuffle is the clearest case of what nesting buys: it is the Straight bar
-with one block swapped. Changing the two waits inside the Beat swings every
-hi-hat in the bar, because every beat of the bar is that block.
+with one block swapped — *Two beats*, told to repeat the Swung beat instead of
+the Beat. Changing the two waits inside the Swung beat swings every hi-hat in
+the bar, because every beat of the bar is that block.
 
 The Funk's two halves reuse *Kick on the and* in different places: the first
 half is Kick, Sixteenths, Snare, *Kick on the and*; the second is *Kick on the
@@ -133,6 +141,8 @@ of what you hear.
 ## Try it
 
 Press **Play**, then switch between the patterns and turn **Tempo**. Open the
-Shuffle's Swung beat in the playground and change its two waits, ⅗ and ⅖ for
-a lighter swing, or ¾ and ¼ for a dotted feel. Or delete the Snare from one
-Two beats and hear the backbeat thin out to beat 4 only.
+Shuffle in the playground, choose **Edit block** on one of its Swung beats, and
+set the beats of its two Notes to ⅗ and ⅖ for a lighter swing, or ¾ and ¼ for a
+dotted feel. **Apply**, and every swung beat in the bar takes it. Or **Detach**
+one Two beats, delete its Snare, and hear the backbeat thin out to beat 4 only —
+in that bar alone, since the others still follow the block.

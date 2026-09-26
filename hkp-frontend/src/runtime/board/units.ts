@@ -129,6 +129,8 @@ export type Diagnostic = {
   unit?: string;
   /** The reference that produced it, where one did. */
   uri?: string;
+  /** Which block it concerns, for a diagnostic about blocks. */
+  block?: string;
 };
 
 /** A unit as it was placed into the projection. */

@@ -159,7 +159,12 @@ Types are shared across runtimes:
 ```
 
 Runtime order = chain order. Services within a runtime are ordered top-to-bottom; that order
-is their wiring. Use `"HKP_RUNTIME_HOST"` as a placeholder in remote URLs when the host
+is their wiring.
+
+A board may also define `blocks` — services (usually sub-services) written once and used by
+reference: any pipeline entry `{ "block": "<id>", "params": {…} }` stands for one. Uses are
+expanded when the board loads and written back as uses when it saves; while running, a use's
+inside is frozen and only its params vary (`docs/content/concepts/blocks.md`). Use `"HKP_RUNTIME_HOST"` as a placeholder in remote URLs when the host
 isn't known at design time.
 
 Runtime ids are unique **per user**, not globally — hkp-node namespaces runtimes by the
@@ -317,7 +322,7 @@ meander-ios/           iOS-specific native layer
 | Where                          | What it holds                                                                                                                                                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `docs/content/introduction.md` | The first-read narrative: what Readymade is, what people build with it, and the shape of a board                                                                                                                                                 |
-| `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, presets, units, mounts, coordinator, cloud boards, logging)                                                                                                          |
+| `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, presets, blocks, units, mounts, coordinator, cloud boards, logging)                                                                                                          |
 | `docs/content/services/`       | One page per service                                                                                                                                                                                                                             |
 | `docs/content/boards/`         | One page per demo board — what the app does and what each runtime contributes. The runtime/service breakdown below it is generated from the board document at build time, so only the prose lives here. A file here is what puts a board in the docs; its name must match the board's file in `boards/` |
 | `docs/content/board-json.md`   | The serialisation format: what a board document contains, field by field, and what it deliberately does not                                                                                                                                      |

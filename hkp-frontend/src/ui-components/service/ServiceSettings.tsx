@@ -8,7 +8,9 @@ import {
   StepForward,
   Trash,
   FileCog,
+  Boxes,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   DropdownMenu,
@@ -30,6 +32,8 @@ import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import PresetMenu from "./PresetMenu";
 import SavePresetDialog from "./SavePresetDialog";
 import RunParamsDialog from "../runtime-ui/RunParamsDialog";
+import { useServiceAddress } from "hkp-frontend/src/runtime/ui/BlockUse";
+import { toCanonicalServiceId } from "hkp-frontend/src/types";
 
 type Props = {
   service: ServiceDescriptor;
@@ -115,6 +119,23 @@ export default function ServiceSettings({
   );
   const onBoard = runtimeId !== null;
 
+  // A sub-service is a pipeline somebody built, which is what a block is made
+  // of: made one, it becomes the first use of it and can be used again.
+  const address = useServiceAddress() ?? service.uuid;
+  const canMakeBlock =
+    !!boardContext?.makeBlock &&
+    toCanonicalServiceId(service.serviceId ?? "") === "sub-service";
+  const makeBlock = () => {
+    boardContext
+      ?.makeBlock(address)
+      .then((made) =>
+        toast.success(`"${made.name}" is now a block of this board`, {
+          description: "Add it again from the Building Blocks sidebar.",
+        }),
+      )
+      .catch((err) => toast.error("Could not make a block", { description: err.message }));
+  };
+
   /**
    * Runs the pipeline from this service onward, this service included, with
    * whatever the caller passes as its input. The services before it are left
@@ -199,6 +220,13 @@ export default function ServiceSettings({
             service={service}
             onSave={() => setSavePresetOpen(true)}
           />
+        )}
+
+        {canMakeBlock && (
+          <DropdownMenuItem onClick={makeBlock} className="text-base">
+            <MenuIcon icon={Boxes} />
+            <span>Make block</span>
+          </DropdownMenuItem>
         )}
 
         <DropdownMenuSeparator />
