@@ -7,6 +7,7 @@ import BoardProvider, {
   BoardCtx,
 } from "hkp-frontend/src/BoardContext";
 import BrowserRegistry from "hkp-frontend/src/runtime/browser/BrowserRegistry";
+import { linkBlocks } from "hkp-frontend/src/core/linkBlocks";
 import { allowedServices } from "hkp-frontend/src/runtime/browser/BrowserRegistry";
 import {
   BoardDescriptor,
@@ -94,6 +95,20 @@ function serviceIdsForRuntime(board: BoardDescriptor, runtimeId: string) {
   return (board.services[runtimeId] || []).map((service) => service.serviceId);
 }
 
+/** Every service a pipeline names, however deep it sits in sub-pipelines. */
+function nestedServiceIds(value: unknown, found: string[] = []): string[] {
+  if (Array.isArray(value)) {
+    value.forEach((entry) => nestedServiceIds(entry, found));
+  } else if (value && typeof value === "object") {
+    const entry = value as Record<string, unknown>;
+    if (typeof entry.serviceId === "string") {
+      found.push(entry.serviceId);
+    }
+    Object.values(entry).forEach((inner) => nestedServiceIds(inner, found));
+  }
+  return found;
+}
+
 function getBoardByFileName(fileName: string): BoardDescriptor {
   const match = boardEntries.find((entry) => entry.fileName === fileName);
   if (!match) {
@@ -148,17 +163,26 @@ describe("demo boards regression", () => {
 
     for (const { fileName, board } of boardEntries) {
       it(`${fileName} resolves browser service modules`, () => {
-        for (const runtime of board.runtimes) {
+        // As it runs: a use of a block names no service itself, and the
+        // services its definition names are what the runtime is handed.
+        const linked = linkBlocks(board);
+        expect(
+          linked.diagnostics.filter((entry) => entry.level === "error"),
+          `${fileName} does not link`,
+        ).toEqual([]);
+        for (const runtime of linked.board.runtimes) {
           if (runtime.type !== "browser") {
             continue;
           }
 
-          for (const service of board.services[runtime.id] || []) {
-            const module = browserRegistry.findServiceModule(service.serviceId);
-            const allowlisted = allowedServices.includes(service.serviceId);
+          for (const serviceId of nestedServiceIds(
+            linked.board.services[runtime.id] || [],
+          )) {
+            const module = browserRegistry.findServiceModule(serviceId);
+            const allowlisted = allowedServices.includes(serviceId);
             expect(
               module || allowlisted,
-              `${fileName} references missing browser service: ${service.serviceId}`,
+              `${fileName} references missing browser service: ${serviceId}`,
             ).toBeTruthy();
           }
         }

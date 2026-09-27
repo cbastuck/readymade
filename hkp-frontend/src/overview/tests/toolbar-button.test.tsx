@@ -4,6 +4,10 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { BoardCtx, BoardContextState } from "hkp-frontend/src/BoardContext";
 import { OverviewProvider, useOverview } from "../OverviewContext";
 import OverviewToolbarButton from "../OverviewToolbarButton";
+import {
+  FacadeViewProvider,
+  useFacadeView,
+} from "hkp-frontend/src/facade/FacadeViewContext";
 
 /**
  * The toolbar's overview control opens the view, and once the view has been
@@ -53,10 +57,24 @@ describe("the toolbar's overview control", () => {
     ).toBeDefined();
   });
 
-  it("stands down while the view is the thing on screen", () => {
+  it("switches back to the runtimes while the overview is on", () => {
     renderToolbar();
     act(() => api!.show());
-    expect(screen.queryByRole("button")).toBeNull();
+    const toggle = screen.getByRole("button", { name: "Show the runtimes" });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(toggle);
+    expect(screen.getByTestId("visible").textContent).toBe("false");
+    expect(
+      screen.getByRole("button", { name: "Show overview" }).getAttribute("aria-pressed"),
+    ).toBe("false");
+  });
+
+  it("says how the overview is flown, in its title", () => {
+    renderToolbar();
+    expect(
+      screen.getByRole("button", { name: "Show overview" }).getAttribute("title"),
+    ).toContain("drag to orbit");
   });
 
   it("is offered and refused on a board with nothing on it yet", () => {
@@ -72,5 +90,37 @@ describe("the toolbar's overview control", () => {
     renderToolbar(emptyBoard);
     act(() => api!.setRevealed({ uuid: "m1", label: "Map" }));
     expect(screen.getByRole("button", { name: "Show overview" })).toBeDefined();
+  });
+
+  it("brings the board back beside the facade when the facade was all there was", () => {
+    // Otherwise pressing it would change nothing on screen: the overview takes
+    // the runtimes' place, and the runtimes were not being shown.
+    localStorage.clear();
+    const withFacade = {
+      ...board,
+      runtimes: [{ id: "ui" }],
+      facade: { layout: "single", panels: [] },
+    } as unknown as BoardContextState;
+    let facadeView: ReturnType<typeof useFacadeView>;
+    function FacadeProbe() {
+      facadeView = useFacadeView();
+      return null;
+    }
+    render(
+      <BoardCtx.Provider value={withFacade}>
+        <FacadeViewProvider boardName="Toggle Board">
+          <OverviewProvider>
+            <Probe />
+            <FacadeProbe />
+            <OverviewToolbarButton />
+          </OverviewProvider>
+        </FacadeViewProvider>
+      </BoardCtx.Provider>,
+    );
+    expect(facadeView!.mode).toBe("facade");
+
+    fireEvent.click(screen.getByRole("button", { name: "Show overview" }));
+    expect(facadeView!.mode).toBe("split");
+    expect(screen.getByTestId("visible").textContent).toBe("true");
   });
 });

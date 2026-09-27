@@ -55,6 +55,7 @@ import {
   RuntimeClass,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
+import { unlinkBlocks } from "../../core/linkBlocks";
 import { restoreCoordinators, withCoordinatorEngines } from "../../common";
 import { AppCtx } from "../../AppContext";
 import { PlaygroundProps } from "./Playground.types";
@@ -424,6 +425,7 @@ export function usePlaygroundController(
       registry = {},
       unit,
       units,
+      blocks,
     } = initialBord as PlaygroundState & UnitDocument;
 
     setAcceptedSyncSenders(accepted);
@@ -450,6 +452,9 @@ export function usePlaygroundController(
       // declares neither — an empty composition, silently.
       unit,
       units,
+      // Blocks likewise: a use of one names a definition that only the board
+      // holds, and a runtime handed the use unexpanded has no service to make.
+      blocks,
     };
   };
 
@@ -567,15 +572,29 @@ export function usePlaygroundController(
     return true;
   };
 
+  /**
+   * The board as one document to hand to somebody: flat, since a link carries
+   * no units to resolve, but with its own blocks still blocks — a shared board
+   * is exactly the one that has to stay reusable.
+   */
+  const serializeSharedBoard = async () => {
+    const state = boardProviderRef.current?.state;
+    const data = await state?.serializeBoard();
+    if (!data) {
+      return null;
+    }
+    const { runtimes, services, blocks } = unlinkBlocks(
+      data,
+      state?.linkage?.blocks,
+      { ownOnly: true },
+    );
+    return { runtimes, services, ...(blocks ? { blocks } : {}) };
+  };
+
   const onCreateBoardLink = async () => {
-    const data = await boardProviderRef.current?.state.serializeBoard();
+    const data = await serializeSharedBoard();
     if (data) {
-      const url = createBoardLink(
-        JSON.stringify({
-          runtimes: data.runtimes,
-          services: data.services,
-        }),
-      );
+      const url = createBoardLink(JSON.stringify(data));
       try {
         navigator.clipboard.writeText(url);
         appContext?.pushNotification({
@@ -610,14 +629,9 @@ export function usePlaygroundController(
       onCreateBoardLink();
       return true;
     } else if (action.type === "showBoardSource") {
-      boardProviderRef.current?.state.serializeBoard().then((data) => {
+      serializeSharedBoard().then((data) => {
         if (data) {
-          createBoardSrcLink(
-            JSON.stringify({
-              runtimes: data.runtimes,
-              services: data.services,
-            }),
-          );
+          createBoardSrcLink(JSON.stringify(data));
         }
       });
       return true;

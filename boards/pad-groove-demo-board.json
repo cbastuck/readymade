@@ -1,0 +1,644 @@
+{
+  "boardName": "Pad Groove",
+  "description": "A four-chord song with no picture: a pad, a bass line and a drum groove, all arranged on one timeline.\n\nThe **Song** is a timeline that counts in **beats** — eight bars, thirty-two beats, looping — at the tempo held in the **Tempo** slot. Its placements say when each part plays: the `pad` throughout, the `hats` from the third bar, the `bass` and the `kick` from the fifth, the `snare` from the seventh and a `fill` in the last two beats.\n\nEvery part is a track in the **Band**, and a use of one of two blocks. **Notes** is a timeline that loops a few beats of its own with an action for every note, and a synth that plays the notes a frame carries — several at one moment are a chord. The pad is Notes with a soft wave, a slow attack and a long release, one chord a bar, held for the bar and fading into the next; the bass is Notes with a triangle wave and short notes. **Drum** is the Night Groove's: a loop of hits and a drum.\n\nThe pad and the bass each loop four bars, and the bass comes in where the pad's loop starts over, so their chords agree. Note lengths are in beats too, so turning the tempo stretches the chords with the bars.",
+  "blocks": [
+    {
+      "id": "notes",
+      "name": "Notes",
+      "serviceId": "sub-service",
+      "description": "Notes on a loop of their own: each is an action on a timeline of `length` beats, and every frame some fall in plays them together on one synth — several notes at one moment are a chord. Each note is held for `hold` beats of the tempo the frame carries. It plays while its name is placed and repeats for as long as the placement lasts.",
+      "params": {
+        "name": "notes",
+        "length": 4,
+        "notes": [
+          {
+            "at": 0,
+            "data": {
+              "note": "A3"
+            }
+          }
+        ],
+        "wave": "soft",
+        "volume": 0.3,
+        "attack": 0.01,
+        "hold": 1,
+        "release": 0.1
+      },
+      "state": {
+        "pipeline": [
+          {
+            "serviceId": "hookup.to/service/timeline",
+            "instanceId": "loop",
+            "serviceName": "Loop",
+            "state": {
+              "clock": "input",
+              "length": "{{param.length}}",
+              "loop": true,
+              "actions": "{{param.notes}}",
+              "placement": "{{param.name}}"
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/filter",
+            "instanceId": "on-a-note",
+            "serviceName": "On a note",
+            "state": {
+              "conditions": [
+                "params.actions.length > 0"
+              ]
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/map",
+            "instanceId": "the-notes",
+            "serviceName": "Notes and tempo",
+            "state": {
+              "mode": "replace",
+              "template": {
+                "notes=": "params.actions",
+                "tempo=": "params.tempo"
+              }
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/sound",
+            "instanceId": "synth",
+            "serviceName": "Synth",
+            "state": {
+              "generator": "synth",
+              "waveType": "{{param.wave}}",
+              "volume": "{{param.volume}}",
+              "attack": "{{param.attack}}",
+              "noteDuration": "{{param.hold}}",
+              "noteDurationUnit": "beats",
+              "release": "{{param.release}}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "drum",
+      "name": "Drum",
+      "serviceId": "sub-service",
+      "description": "One drum on a loop of its own: the hits lie on a timeline of `length` beats, and every frame one falls in plays the drum. It plays while its name is placed and repeats for as long as the placement lasts.",
+      "params": {
+        "name": "drum",
+        "sound": "kick",
+        "volume": 0.8,
+        "length": 1,
+        "hits": [
+          {
+            "at": 0
+          }
+        ]
+      },
+      "state": {
+        "pipeline": [
+          {
+            "serviceId": "hookup.to/service/timeline",
+            "instanceId": "loop",
+            "serviceName": "Loop",
+            "state": {
+              "clock": "input",
+              "length": "{{param.length}}",
+              "loop": true,
+              "actions": "{{param.hits}}",
+              "placement": "{{param.name}}"
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/filter",
+            "instanceId": "on-a-hit",
+            "serviceName": "On a hit",
+            "state": {
+              "conditions": [
+                "params.actions.length > 0"
+              ]
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/sound",
+            "instanceId": "sound",
+            "serviceName": "Sound",
+            "state": {
+              "generator": "drums",
+              "trigger": "{{param.sound}}",
+              "volume": "{{param.volume}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "tempo",
+        "serviceId": "hookup.to/service/hold",
+        "serviceName": "Tempo",
+        "state": {
+          "slot": "tempo",
+          "op": "write",
+          "value": 96
+        }
+      },
+      {
+        "uuid": "song",
+        "serviceId": "hookup.to/service/timeline",
+        "serviceName": "Song",
+        "state": {
+          "clock": "own",
+          "unit": "beats",
+          "tempoSlot": "tempo",
+          "fps": 60,
+          "length": 32,
+          "loop": true,
+          "running": false,
+          "placements": [
+            {
+              "name": "pad",
+              "at": 0,
+              "duration": 32
+            },
+            {
+              "name": "hats",
+              "at": 8,
+              "duration": 24
+            },
+            {
+              "name": "bass",
+              "at": 16,
+              "duration": 16
+            },
+            {
+              "name": "kick",
+              "at": 16,
+              "duration": 16
+            },
+            {
+              "name": "snare",
+              "at": 24,
+              "duration": 6
+            },
+            {
+              "name": "fill",
+              "at": 30,
+              "duration": 2
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "band",
+        "serviceId": "tracks",
+        "serviceName": "Band",
+        "state": {
+          "run": "serial",
+          "tracks": [
+            {
+              "name": "pad",
+              "pipeline": [
+                {
+                  "block": "notes",
+                  "instanceId": "pad",
+                  "serviceName": "Pad",
+                  "params": {
+                    "name": "pad",
+                    "length": 16,
+                    "notes": [
+                      {
+                        "at": 0,
+                        "data": {
+                          "note": "A3"
+                        }
+                      },
+                      {
+                        "at": 0,
+                        "data": {
+                          "note": "C4"
+                        }
+                      },
+                      {
+                        "at": 0,
+                        "data": {
+                          "note": "E4"
+                        }
+                      },
+                      {
+                        "at": 0,
+                        "data": {
+                          "note": "G4"
+                        }
+                      },
+                      {
+                        "at": 4,
+                        "data": {
+                          "note": "F3"
+                        }
+                      },
+                      {
+                        "at": 4,
+                        "data": {
+                          "note": "A3"
+                        }
+                      },
+                      {
+                        "at": 4,
+                        "data": {
+                          "note": "C4"
+                        }
+                      },
+                      {
+                        "at": 4,
+                        "data": {
+                          "note": "E4"
+                        }
+                      },
+                      {
+                        "at": 8,
+                        "data": {
+                          "note": "G3"
+                        }
+                      },
+                      {
+                        "at": 8,
+                        "data": {
+                          "note": "C4"
+                        }
+                      },
+                      {
+                        "at": 8,
+                        "data": {
+                          "note": "E4"
+                        }
+                      },
+                      {
+                        "at": 8,
+                        "data": {
+                          "note": "G4"
+                        }
+                      },
+                      {
+                        "at": 12,
+                        "data": {
+                          "note": "G3"
+                        }
+                      },
+                      {
+                        "at": 12,
+                        "data": {
+                          "note": "B3"
+                        }
+                      },
+                      {
+                        "at": 12,
+                        "data": {
+                          "note": "D4"
+                        }
+                      },
+                      {
+                        "at": 12,
+                        "data": {
+                          "note": "G4"
+                        }
+                      }
+                    ],
+                    "wave": "soft",
+                    "volume": 0.09,
+                    "attack": 0.8,
+                    "hold": 4,
+                    "release": 1.6
+                  }
+                }
+              ]
+            },
+            {
+              "name": "bass",
+              "pipeline": [
+                {
+                  "block": "notes",
+                  "instanceId": "bass",
+                  "serviceName": "Bass",
+                  "params": {
+                    "name": "bass",
+                    "length": 16,
+                    "notes": [
+                      {
+                        "at": 0,
+                        "data": {
+                          "note": "A2"
+                        }
+                      },
+                      {
+                        "at": 1.5,
+                        "data": {
+                          "note": "A2"
+                        }
+                      },
+                      {
+                        "at": 2.5,
+                        "data": {
+                          "note": "A2"
+                        }
+                      },
+                      {
+                        "at": 3.5,
+                        "data": {
+                          "note": "A3"
+                        }
+                      },
+                      {
+                        "at": 4,
+                        "data": {
+                          "note": "F2"
+                        }
+                      },
+                      {
+                        "at": 5.5,
+                        "data": {
+                          "note": "F2"
+                        }
+                      },
+                      {
+                        "at": 6.5,
+                        "data": {
+                          "note": "F2"
+                        }
+                      },
+                      {
+                        "at": 7.5,
+                        "data": {
+                          "note": "F3"
+                        }
+                      },
+                      {
+                        "at": 8,
+                        "data": {
+                          "note": "C3"
+                        }
+                      },
+                      {
+                        "at": 9.5,
+                        "data": {
+                          "note": "C3"
+                        }
+                      },
+                      {
+                        "at": 10.5,
+                        "data": {
+                          "note": "C3"
+                        }
+                      },
+                      {
+                        "at": 11.5,
+                        "data": {
+                          "note": "C4"
+                        }
+                      },
+                      {
+                        "at": 12,
+                        "data": {
+                          "note": "G2"
+                        }
+                      },
+                      {
+                        "at": 13.5,
+                        "data": {
+                          "note": "G2"
+                        }
+                      },
+                      {
+                        "at": 14.5,
+                        "data": {
+                          "note": "G2"
+                        }
+                      },
+                      {
+                        "at": 15.5,
+                        "data": {
+                          "note": "G3"
+                        }
+                      }
+                    ],
+                    "wave": "triangle",
+                    "volume": 0.45,
+                    "attack": 0.01,
+                    "hold": 0.4,
+                    "release": 0.12
+                  }
+                }
+              ]
+            },
+            {
+              "name": "hats",
+              "pipeline": [
+                {
+                  "block": "drum",
+                  "instanceId": "hats",
+                  "serviceName": "Hi-hats",
+                  "params": {
+                    "name": "hats",
+                    "sound": "hihat",
+                    "volume": 0.35,
+                    "length": 1,
+                    "hits": [
+                      {
+                        "at": 0
+                      },
+                      {
+                        "at": 0.5
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "kick",
+              "pipeline": [
+                {
+                  "block": "drum",
+                  "instanceId": "kick",
+                  "serviceName": "Kick",
+                  "params": {
+                    "name": "kick",
+                    "sound": "kick",
+                    "volume": 0.9,
+                    "length": 4,
+                    "hits": [
+                      {
+                        "at": 0
+                      },
+                      {
+                        "at": 2.5
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "snare",
+              "pipeline": [
+                {
+                  "block": "drum",
+                  "instanceId": "snare",
+                  "serviceName": "Snare",
+                  "params": {
+                    "name": "snare",
+                    "sound": "snare",
+                    "volume": 0.7,
+                    "length": 2,
+                    "hits": [
+                      {
+                        "at": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "fill",
+              "pipeline": [
+                {
+                  "block": "drum",
+                  "instanceId": "fill",
+                  "serviceName": "Fill",
+                  "params": {
+                    "name": "fill",
+                    "sound": "snare",
+                    "volume": 0.5,
+                    "length": 2,
+                    "hits": [
+                      {
+                        "at": 0
+                      },
+                      {
+                        "at": 0.5
+                      },
+                      {
+                        "at": 1
+                      },
+                      {
+                        "at": 1.25
+                      },
+                      {
+                        "at": 1.5
+                      },
+                      {
+                        "at": 1.75
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "main",
+        "title": "Pad Groove",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "align": "center",
+          "items": [
+            {
+              "direction": "row",
+              "gap": 16,
+              "align": "center",
+              "items": [
+                {
+                  "type": "knob",
+                  "label": "Tempo",
+                  "unit": "BPM",
+                  "min": 60,
+                  "max": 140,
+                  "defaultValue": 96,
+                  "action": {
+                    "serviceUuid": "tempo",
+                    "configure": {
+                      "value": "{{value}}"
+                    }
+                  }
+                },
+                {
+                  "direction": "row",
+                  "gap": 10,
+                  "align": "center",
+                  "items": [
+                    {
+                      "type": "button",
+                      "label": "Play",
+                      "actions": [
+                        {
+                          "type": "configure",
+                          "serviceUuid": "song",
+                          "configure": {
+                            "play": true
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "button",
+                      "label": "Pause",
+                      "actions": [
+                        {
+                          "type": "configure",
+                          "serviceUuid": "song",
+                          "configure": {
+                            "pause": true
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "button",
+                      "label": "Stop",
+                      "actions": [
+                        {
+                          "type": "configure",
+                          "serviceUuid": "song",
+                          "configure": {
+                            "stop": true
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "tone": "muted",
+              "fontSize": 12,
+              "placeholder": "One timeline, counting beats, arranges the song: its placements say when the pad, the bass and each drum come in. A part is a short loop of notes or hits; several notes at one moment are a chord. Turn the tempo and everything follows, chords included."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

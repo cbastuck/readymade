@@ -8,7 +8,9 @@ import {
   StepForward,
   Trash,
   FileCog,
+  Boxes,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   DropdownMenu,
@@ -30,6 +32,8 @@ import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import PresetMenu from "./PresetMenu";
 import SavePresetDialog from "./SavePresetDialog";
 import RunParamsDialog from "../runtime-ui/RunParamsDialog";
+import { useServiceAddress, useServiceRuntimeId } from "hkp-frontend/src/runtime/ui/BlockUse";
+import { toCanonicalServiceId } from "hkp-frontend/src/types";
 
 type Props = {
   service: ServiceDescriptor;
@@ -40,6 +44,11 @@ type Props = {
   helpUrl: string;
   onConfig: () => void;
   onCustomEntry: (item: CustomMenuEntry) => void;
+  /**
+   * Offers only what reads: the configuration (shown, not applied), collapsing
+   * and the documentation.
+   */
+  readOnly?: boolean;
 };
 
 function DragHandle() {
@@ -94,6 +103,7 @@ export default function ServiceSettings({
   onDelete,
   onConfig,
   onCustomEntry,
+  readOnly = false,
 }: Props) {
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
@@ -106,14 +116,38 @@ export default function ServiceSettings({
   // service the board can find a runtime for. A panel rendered outside a
   // board's runtimes — a nested pipeline's own list — has no runtime to name,
   // and offering the action there would be offering one that fails.
-  const runtimeId = useMemo(
-    () =>
-      Object.entries(boardContext?.services ?? {}).find(([, list]) =>
-        list.some((svc) => svc.uuid === service.uuid),
-      )?.[0] ?? null,
-    [boardContext?.services, service.uuid],
-  );
+  //
+  // A uuid is unique only within its runtime, so the runtime the panel is
+  // drawn for is asked first; only a panel drawn without one is looked up.
+  const frameRuntimeId = useServiceRuntimeId();
+  const runtimeId = useMemo(() => {
+    const services = boardContext?.services ?? {};
+    const lists = (id: string) => services[id]?.some((svc) => svc.uuid === service.uuid);
+    if (frameRuntimeId && lists(frameRuntimeId)) {
+      return frameRuntimeId;
+    }
+    return Object.keys(services).find(lists) ?? null;
+  }, [boardContext?.services, service.uuid, frameRuntimeId]);
   const onBoard = runtimeId !== null;
+  const writable = !readOnly;
+
+  // A sub-service is a pipeline somebody built, which is what a block is made
+  // of: made one, it becomes the first use of it and can be used again.
+  const address = useServiceAddress() ?? service.uuid;
+  const canMakeBlock =
+    writable &&
+    !!boardContext?.makeBlock &&
+    toCanonicalServiceId(service.serviceId ?? "") === "sub-service";
+  const makeBlock = () => {
+    boardContext
+      ?.makeBlock(address, frameRuntimeId ?? runtimeId ?? undefined)
+      .then((made) =>
+        toast.success(`"${made.name}" is now a block of this board`, {
+          description: "Add it again from the Building Blocks sidebar.",
+        }),
+      )
+      .catch((err) => toast.error("Could not make a block", { description: err.message }));
+  };
 
   /**
    * Runs the pipeline from this service onward, this service included, with
@@ -169,7 +203,7 @@ export default function ServiceSettings({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {onBoard && (
+        {writable && onBoard && (
           <>
             <DropdownMenuItem
               onClick={() => runFromHere()}
@@ -194,11 +228,18 @@ export default function ServiceSettings({
           <span>Configuration</span>
         </DropdownMenuItem>
 
-        {onBoard && (
+        {writable && onBoard && (
           <PresetMenu
             service={service}
             onSave={() => setSavePresetOpen(true)}
           />
+        )}
+
+        {canMakeBlock && (
+          <DropdownMenuItem onClick={makeBlock} className="text-base">
+            <MenuIcon icon={Boxes} />
+            <span>Make block</span>
+          </DropdownMenuItem>
         )}
 
         <DropdownMenuSeparator />
@@ -226,13 +267,17 @@ export default function ServiceSettings({
             <span>Documentation</span>
           </a>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onDelete} className="text-base">
-          <MenuIcon icon={Trash} />
-          <span>Delete</span>
-        </DropdownMenuItem>
+        {writable && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-base">
+              <MenuIcon icon={Trash} />
+              <span>Delete</span>
+            </DropdownMenuItem>
+          </>
+        )}
 
-        {customMenuEntries && (
+        {writable && customMenuEntries && (
           <>
             <DropdownMenuSeparator />
             {customMenuEntries.map((item: CustomMenuEntry) => (

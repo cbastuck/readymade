@@ -132,7 +132,7 @@ Board drift is covered twice, at different depths, and both are worth keeping:
 | | `demo-boards.regression.test.tsx` (vitest) | `shipped-boards.spec.ts` (Playwright) |
 |---|---|---|
 | Where | jsdom, no browser | the real app in a real browser |
-| Asserts | the JSON is a valid descriptor, ids and uuids are unique, every browser `serviceId` resolves in the registry, and the board restores through `BoardProvider` | every declared service actually renders, and nothing threw |
+| Asserts | the JSON is a valid descriptor, ids and uuids are unique, every browser `serviceId` resolves in the registry — nested ones too, as the board's blocks expand to them — and the board restores through `BoardProvider` | every declared service actually renders, and nothing threw |
 | Costs | seconds | about a minute |
 
 The first fails with the name of the service that went missing; the second
@@ -187,6 +187,7 @@ trusting it:
 | Fake platform host | `e2e/support/fakeNativeHost.ts`, `e2e/support/test.ts` |
 | Board drift, without a browser | `hkp-frontend/src/runtime/browser/tests/demo-boards.regression.test.tsx` |
 | Board drift, in a browser | `e2e/tests/smoke/shipped-boards.spec.ts` |
+| Blocks on the running board: the lock, params, detach, editing, making one | `e2e/tests/blocks.spec.ts` |
 | What CI covers | `.github/workflows/run-all-tests.yml` |
 | Why CI covers only part of it | [Repository](./repository.md) |
 | Manual checklists for a change | `plans/TODO-TEST.md` |

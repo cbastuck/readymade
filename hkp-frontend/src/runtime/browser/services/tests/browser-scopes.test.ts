@@ -226,6 +226,37 @@ describe("changing what leaves a scope", () => {
   });
 });
 
+describe("what a scope hands on", () => {
+  it("answers a call by returning, and only by returning", async () => {
+    // Pushing the same answer onward as well would run everything after the
+    // scope twice — and twice again for every scope nested inside it.
+    const app = makeApp(createSlotStore());
+    const scope = new BrowserSubService(app, "board", {} as any, "scope");
+    scope.configure({
+      pipeline: [{ serviceId: "hookup.to/service/monitor", instanceId: "m" }],
+    } as any);
+    await (scope as any)._scopeBuilding;
+
+    expect(await scope.process({ carried: true })).toEqual({ carried: true });
+    expect(app.next).not.toHaveBeenCalled();
+  });
+
+  it("pushes onward what a service inside emits on its own", async () => {
+    // The other route out, which stays open: a Timer ticking inside a scope
+    // has no call to answer, so its result leaves by being pushed.
+    const app = makeApp(createSlotStore());
+    const scope = new BrowserSubService(app, "board", {} as any, "scope");
+    scope.configure({
+      pipeline: [{ serviceId: "hookup.to/service/monitor", instanceId: "m" }],
+    } as any);
+    await (scope as any)._scopeBuilding;
+
+    const inner = scope.getInnerInstance("m")!;
+    await (scope as any)._scope.next(inner, { tick: 1 }, null, false);
+    expect(app.next).toHaveBeenCalledWith(scope, { tick: 1 });
+  });
+});
+
 describe("changing which cells a scope holds in", () => {
   it("re-points the store and leaves the built scope alone", async () => {
     // The cheap half of the change is the point: a scope may be holding a

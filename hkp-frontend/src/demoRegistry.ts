@@ -29,6 +29,7 @@ import uuidGeneratorBoard from "../../boards/uuid-generator-demo-board.json";
 import courtBookingBoard from "../../boards/court-booking-demo-board.json";
 import rssAggregatorBoard from "../../boards/rss-demo-board.json";
 import meetingPollBoard from "../../boards/meeting-poll-demo-board.json";
+import nestedRhythmBoard from "../../boards/nested-rhythm-demo-board.json";
 
 const REGISTRY: Record<string, BoardDescriptor> = {
   "alpaca-markets": alpacaBoard as BoardDescriptor,
@@ -60,6 +61,7 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   "court-booking": courtBookingBoard as BoardDescriptor,
   "rss-aggregator": rssAggregatorBoard as BoardDescriptor,
   "meeting-poll": meetingPollBoard as BoardDescriptor,
+  "nested-rhythm": nestedRhythmBoard as BoardDescriptor,
 };
 
 export function findDemoBoard(slug: string): BoardDescriptor | undefined {

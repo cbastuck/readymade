@@ -7,6 +7,7 @@ type Props = {
   value?: any;
   type: string;
   dragImageRef?: RefObject<HTMLElement | null>;
+  disabled?: boolean;
 };
 export default function DragSource({
   className,
@@ -15,12 +16,13 @@ export default function DragSource({
   children,
   style = {},
   dragImageRef,
+  disabled = false,
 }: Props) {
   return (
     <div
       className={className}
       style={style}
-      draggable={true}
+      draggable={!disabled}
       onDragStart={(ev) => {
         ev.dataTransfer.setData(type, JSON.stringify(value));
         const img = dragImageRef?.current;

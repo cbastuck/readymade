@@ -21,6 +21,14 @@ type Props = {
   onRemove: (instanceId: string) => void;
   /** Persist a new order. Called once on drop. */
   onReorder: (entries: PipelineEntry[]) => void;
+  /**
+   * The pipeline belongs to a block's definition — it is a use, or inside
+   * one — and is drilled into but not changed: no adding, removing or
+   * reordering (see `runtime/board/blocks`).
+   */
+  locked?: boolean;
+  /** The name of the block an entry is a use of, if it is one. */
+  blockOf?: (entry: PipelineEntry) => string | undefined;
 };
 
 function move<T>(arr: T[], from: number, to: number): T[] {
@@ -47,6 +55,8 @@ export default function MobileSubPipeline({
   onAdd,
   onRemove,
   onReorder,
+  locked = false,
+  blockOf,
 }: Props) {
   // ── Long-press drag-to-reorder ───────────────────────────────
   // `dragIndex` is the entry being dragged (in the *original* order).
@@ -208,7 +218,7 @@ export default function MobileSubPipeline({
                 }}
               >
                 {/* Drag handle — long-press to reorder */}
-                <div
+                {!locked && <div
                   onPointerDown={(e) => handlePointerDown(originalIndex, e.clientY)}
                   onPointerMove={(e) => handlePointerMove(e.clientY)}
                   onPointerUp={handlePointerUp}
@@ -227,7 +237,7 @@ export default function MobileSubPipeline({
                   title="Long-press and drag to reorder"
                 >
                   <GripIcon color={M.textMuted} />
-                </div>
+                </div>}
 
                 {/* Body — tap to drill in */}
                 <button
@@ -283,14 +293,14 @@ export default function MobileSubPipeline({
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {entry.serviceId}
+                      {blockOf?.(entry) ? `Block · ${blockOf(entry)}` : entry.serviceId}
                     </div>
                   </div>
                   <MobileIcon name="chevronRight" size={15} color={M.textMuted} />
                 </button>
 
                 {/* Remove */}
-                <button
+                {!locked && <button
                   onClick={() => onRemove(entry.instanceId)}
                   disabled={dragIndex !== null}
                   title="Remove sub-service"
@@ -308,14 +318,14 @@ export default function MobileSubPipeline({
                   }}
                 >
                   <MobileIcon name="trash" size={15} color={M.textMuted} />
-                </button>
+                </button>}
               </div>
             );
           })}
         </div>
       )}
 
-      <button
+      {!locked && <button
         onClick={onAdd}
         style={{
           width: "100%",
@@ -336,7 +346,7 @@ export default function MobileSubPipeline({
       >
         <MobileIcon name="plus" size={15} color={M.tealDark} />
         Add sub-service
-      </button>
+      </button>}
     </div>
   );
 }

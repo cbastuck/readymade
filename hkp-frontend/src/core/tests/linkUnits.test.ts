@@ -6,7 +6,7 @@ import {
   defaultUnitOrigin,
   isUnitLinkError,
   nativeFileUnitOrigin,
-  reportUnitDiagnostics,
+  reportLinkDiagnostics,
   resolveUnitFileUrl,
   UnitLinkError,
   isComposition,
@@ -217,7 +217,7 @@ describe("the error a failed link throws", () => {
 
     let thrown: unknown = null;
     try {
-      reportUnitDiagnostics(diagnostics, root);
+      reportLinkDiagnostics(diagnostics, root);
     } catch (err) {
       thrown = err;
     }

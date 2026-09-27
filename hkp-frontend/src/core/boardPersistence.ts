@@ -14,9 +14,15 @@ import {
   chainUnitOrigins,
   defaultUnitOrigin,
   linkBoard,
-  reportUnitDiagnostics,
+  reportLinkDiagnostics,
 } from "./linkUnits";
 import { BoardLinkage, unlinkProjection, UnitBoard } from "../runtime/board/units";
+import {
+  checkAddressesIntoUses,
+  linkBlocks,
+  unlinkBlocks,
+  withUnitBlocks,
+} from "./linkBlocks";
 import { getLocalBoard } from "../views/playground/common";
 import { loadSavedBoardViaPlatform } from "../platform/PlatformContext";
 import { toast } from "sonner";
@@ -194,13 +200,31 @@ export async function linkBoardDocument(
         ` [${projection.board.runtimes.map((rt) => rt.id).join(", ")}]`,
     );
   }
-  reportUnitDiagnostics(projection.diagnostics, board);
+  // Blocks are expanded in the projection, from the definitions of the board
+  // being opened: what runs never sees a use of one.
+  const blocks = linkBlocks(
+    { ...projection.board, blocks: board.blocks },
+    projection.units,
+  );
+  const intoUses = checkAddressesIntoUses(blocks.board, blocks.linkage, [
+    blocks.board.facade,
+    ...projection.views.map((view) => view.facade),
+  ]);
+  reportLinkDiagnostics(
+    [...projection.diagnostics, ...blocks.diagnostics, ...intoUses],
+    board,
+  );
   return {
-    board: projection.board,
+    board: blocks.board,
     // Nothing to remember about a board that is only itself.
-    linkage: projection.units.length
-      ? { units: projection.units, views: projection.views }
-      : undefined,
+    linkage:
+      projection.units.length || blocks.linkage
+        ? {
+            units: projection.units,
+            views: projection.views,
+            blocks: blocks.linkage,
+          }
+        : undefined,
   };
 }
 
@@ -417,6 +441,9 @@ export async function clearBoard(
   refs.setServices({});
   refs.setRegistry({});
   refs.setFacade(undefined);
+  // What the cleared board was linked from — its units and its blocks — would
+  // otherwise be written into whatever is built next.
+  refs.setLinkage(undefined);
   refs.setBoardNameState(newBoardNameArg || "");
 }
 
@@ -449,16 +476,19 @@ export function unlinkBoardDocuments(
   board: BoardDescriptor,
   linkage: BoardLinkage | undefined,
 ): BoardDocuments {
+  // Blocks first: collapsing them reads the board as it ran, before the
+  // projection is split into the documents it came from.
+  const collapsed = unlinkBlocks(board, linkage?.blocks);
   if (!linkage?.units.length) {
-    return { composition: board as UnitBoard, units: [] };
+    return { composition: collapsed as UnitBoard, units: [] };
   }
-  const { composition, units } = unlinkProjection(board, linkage.units);
+  const { composition, units } = unlinkProjection(collapsed, linkage.units);
   return {
     composition,
     units: units.map((entry) => ({
       name: entry.unit.name,
       uri: entry.unit.uri,
-      board: entry.board,
+      board: withUnitBlocks(entry.unit.name, entry.board, linkage.blocks),
     })),
   };
 }
