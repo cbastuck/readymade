@@ -68,7 +68,8 @@ test.describe("with a face in view", () => {
     await expect.poll(() => sent.length, { timeout: 30_000 }).toBe(1);
     const request = sent[0];
     expect(request.method()).toBe("POST");
-    expect(request.url()).toBe("https://ntfy.sh/readymade-face-alert");
+    // A topic of this board's own, made when it opened — never a shared one.
+    expect(request.url()).toMatch(/^https:\/\/ntfy\.sh\/readymade-[a-z0-9]{20}$/);
     expect(request.postData()).toBe("Someone is in front of the camera");
     expect(request.headers()["title"]).toBe("Face Alert");
     expect(request.headers()["priority"]).toBe("high");

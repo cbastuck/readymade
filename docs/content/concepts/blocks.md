@@ -87,6 +87,25 @@ which may refer to the outer block's — that is how *Note* passes `trigger` to
 *Hit*. A parameter may even name a block, `{ "block": "{{param.beat}}" }`, so
 one definition can be told which block to repeat.
 
+### A value made for each use
+
+A param's default may contain `{{random}}`:
+
+```json
+"params": { "topic": "readymade-{{random}}" }
+```
+
+Each use that does not give the param a value of its own gets one made —
+20 lowercase letters and digits, about 103 bits — the first time it is
+expanded, and **keeps it**: the value is written into the use's `params`, so
+saving the board saves it and the board opens with the same one next time. It
+shows on the use's bar, where it can be copied or replaced; typing
+`{{random}}` there makes a new one. For what must differ between copies and
+must not be guessable — an ntfy topic, a channel name — where a fixed default
+would put every copy of a board on the same one. A use inside another block's
+definition is not saved on its own, so it gets a new value each time the board
+opens. Applying a preset makes one for the copy the same way.
+
 A unit's parameters (`concepts/units.md`) share the syntax and not the scope:
 they are substituted into a unit's services — including the params its uses pass
 — and never into its `blocks`.

@@ -651,3 +651,44 @@ describe("adopting a definition from the library", () => {
     expect(findSameDefinition([reordered], note)?.id).toBe("x");
   });
 });
+
+describe("a param made at random", () => {
+  const notify: BlockDefinition = {
+    id: "notify",
+    name: "Notify",
+    serviceId: "sub-service",
+    params: { topic: "readymade-{{random}}", title: "Hello" },
+    state: {
+      pipeline: [
+        { serviceId: "map", instanceId: "m", state: { url: "https://ntfy.sh/{{param.topic}}" } },
+      ],
+    },
+  };
+  const own = { "": [notify] };
+  const board = (uses: unknown[]) => ({ ui: uses }) as any;
+
+  it("is made once per use, kept in the use, and saved with it", () => {
+    const source = board([
+      { block: "notify", uuid: "a" },
+      { block: "notify", uuid: "b" },
+    ]);
+    const { services, placed } = expandBlocks(source, own);
+    const topics = placed.map((entry) => entry.use.params?.topic as string);
+    expect(topics[0]).toMatch(/^readymade-[a-z0-9]{20}$/);
+    expect(topics[1]).toMatch(/^readymade-[a-z0-9]{20}$/);
+    expect(topics[0]).not.toBe(topics[1]);
+    // What runs says what the use keeps.
+    expect(services.ui[0].state.pipeline[0].state.url).toBe(`https://ntfy.sh/${topics[0]}`);
+    // And saving writes it, so the board opens with the same topic next time.
+    const saved = collapseBlocks(services, { definitions: own, placed });
+    expect(saved.ui[0]).toEqual({ block: "notify", uuid: "a", params: { topic: topics[0] } });
+  });
+
+  it("is left alone where the use gives the param a value", () => {
+    const { placed } = expandBlocks(
+      board([{ block: "notify", uuid: "a", params: { topic: "mine" } }]),
+      own,
+    );
+    expect(placed[0].use.params).toEqual({ topic: "mine" });
+  });
+});

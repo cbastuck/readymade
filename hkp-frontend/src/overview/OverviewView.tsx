@@ -96,6 +96,11 @@ function accentColor(): string {
  * opened, so the hosts are opened outermost first — each one renders the level
  * the next is found on. The panel therefore does not exist yet when the last
  * one is asked for, and is waited for rather than assumed.
+ *
+ * Each level is asked for by the service it has to hold — the next host down,
+ * or the service itself — rather than by its host alone: a host with several
+ * pipelines, a Switch's cases, opens each under a name of its own panel's
+ * making, and which of them leads on is only known from what is inside.
  */
 function revealService(
   node: OverviewNode,
@@ -104,8 +109,9 @@ function revealService(
 ) {
   if (navigation) {
     node.ancestry.forEach((hostUuid, depth) => {
-      navigation.open(
+      navigation.openHolding(
         hostUuid,
+        node.ancestry[depth + 1] ?? node.uuid,
         labelFor(keyOf(node.ancestry.slice(0, depth), hostUuid)),
         depth,
       );

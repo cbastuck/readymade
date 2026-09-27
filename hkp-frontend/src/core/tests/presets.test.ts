@@ -8,6 +8,7 @@ import {
   parseBlockDefinition,
   PresetStorage,
   PresetStoredFile,
+  presetsPersisted,
   updatePresetFromOrigin,
   parsePreset,
   presetState,
@@ -501,6 +502,54 @@ describe("presets kept by the host", () => {
     expect(savedPresets().map((p) => p.id)).toEqual(["elevenlabs"]);
   });
 
+  it("moves a legacy preset beside a file that already has its name, rather than dropping it", async () => {
+    savePreset(parsePreset(PRESET));
+    const { storage, files } = memoryStorage([
+      // Somebody else's file under the name the preset would be given.
+      { file: "http-client--elevenlabs.json", source: "{ not a preset" },
+    ]);
+    await attachPresetStorage(storage);
+    expect(files.get("http-client--elevenlabs.json")).toBe("{ not a preset");
+    expect(JSON.parse(files.get("http-client--elevenlabs-2.json")!).id).toBe("elevenlabs");
+    expect(savedPresets().map((p) => p.id)).toEqual(["elevenlabs"]);
+    expect(window.localStorage.getItem("hkp-presets")).toBeNull();
+  });
+
+  it("keeps local storage while any legacy preset failed to move", async () => {
+    savePreset(parsePreset(PRESET));
+    savePreset(parsePreset({ ...PRESET, id: "other" }));
+    const { storage } = memoryStorage();
+    storage.write = vi.fn(async (file: string) => {
+      if (file.includes("other")) {
+        throw new Error("disk full");
+      }
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await attachPresetStorage(storage);
+    expect(window.localStorage.getItem("hkp-presets")).not.toBeNull();
+  });
+
+  it("lands writes to one file in the order they were made", async () => {
+    const { storage, files } = memoryStorage();
+    await attachPresetStorage(storage);
+    // The first write is slow; the second must not be overtaken by it.
+    let release!: () => void;
+    const slow = new Promise<void>((resolve) => (release = resolve));
+    const write = storage.write;
+    let calls = 0;
+    storage.write = vi.fn(async (file: string, source: string) => {
+      if (calls++ === 0) {
+        await slow;
+      }
+      return write(file, source);
+    });
+    savePreset(parsePreset({ ...PRESET, name: "first" }));
+    savePreset(parsePreset({ ...PRESET, name: "second" }));
+    release();
+    expect(await presetsPersisted()).toBe(true);
+    expect(JSON.parse(files.get("http-client--elevenlabs.json")!).name).toBe("second");
+  });
+
   it("keeps presets in local storage when the host cannot list its store", async () => {
     savePreset(parsePreset(PRESET));
     await attachPresetStorage({
@@ -553,6 +602,20 @@ describe("presets imported from a URL", () => {
     expect(savedPresets()[0].origin).toBe("https://example.com/p.json");
   });
 
+  it("are not reported updated when the update could not be stored", async () => {
+    vi.stubGlobal("fetch", respond(PRESET));
+    const { storage } = memoryStorage();
+    storage.write = vi.fn(async () => {
+      throw new Error("read-only");
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await attachPresetStorage(storage);
+    await expect(
+      updatePresetFromOrigin({ ...parsePreset(PRESET), origin: "https://example.com/p.json" }),
+    ).rejects.toThrow(/could not be stored/);
+    await attachPresetStorage(null);
+  });
+
   it("say so when the address no longer holds them", async () => {
     vi.stubGlobal("fetch", respond({ ...PRESET, id: "something-else" }));
     await expect(
@@ -576,6 +639,17 @@ describe("presets used as blocks", () => {
     expect(isUsableAsBlock(parsePreset({ ...PIPELINE, params: undefined }))).toBe(false);
     expect(isUsableAsBlock(parsePreset({ ...PIPELINE, serviceId: "map" }))).toBe(false);
     expect(isUsableAsBlock(parsePreset(PRESET))).toBe(false);
+  });
+
+  it("make what asks to be random when applied, a new value for each copy", () => {
+    const preset = parsePreset({
+      ...PIPELINE,
+      params: { topic: "t-{{random}}" },
+      state: { url: "{{param.topic}}" },
+    });
+    const first = presetState(preset).url;
+    expect(first).toMatch(/^t-[a-z0-9]{20}$/);
+    expect(presetState(preset).url).not.toBe(first);
   });
 
   it("include the shipped ntfy notification", () => {

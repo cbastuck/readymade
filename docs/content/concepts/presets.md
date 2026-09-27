@@ -312,7 +312,9 @@ own once it differs (after *Edit block*). Without `params` there is nothing to
 vary per use, and a drop applies the preset as above. The build ships one:
 **ntfy notification**, which sends its input as a push notification through
 [ntfy](https://ntfy.sh), with the topic, title, priority, tags and server as
-params.
+params. Its topic defaults to `readymade-{{random}}`: every use is given a
+topic of its own ([a value made for each use](blocks.md)), since anyone who
+knows an ntfy.sh topic can read it.
 
 **Picking one is the playground's job.** A service's menu has a *Presets*
 submenu listing what is available for that service and nothing else. The menu

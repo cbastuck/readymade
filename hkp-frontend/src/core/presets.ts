@@ -60,7 +60,7 @@ import {
 } from "../types";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { referencedSecrets } from "./secrets";
-import { substituteParams } from "../runtime/board/params";
+import { generatedParams, substituteParams } from "../runtime/board/params";
 
 /** The only format version there is. */
 export const PRESET_FORMAT = "v1";
@@ -259,9 +259,14 @@ export function isUsableAsBlock(preset: Preset): boolean {
   }
 }
 
-/** The state a preset configures a service with: its parameters substituted. */
+/**
+ * The state a preset configures a service with: its parameters substituted,
+ * and a value made for each that asks for one (`{{random}}`) — applying is a
+ * copy, so the copy gets its own.
+ */
 export function presetState(preset: Preset): Record<string, any> {
-  return substituteParams(preset.state, preset.params ?? {});
+  const params = preset.params ?? {};
+  return substituteParams(preset.state, { ...params, ...generatedParams(params) });
 }
 
 /**
@@ -435,6 +440,14 @@ type HeldPreset = { preset: Preset; file: string };
 let storage: PresetStorage | null = null;
 /** What the host's store held when it was last read, and what has changed since. */
 let held: HeldPreset[] | null = null;
+/**
+ * Every file name the host's store has, read or written — including files
+ * that are not presets, which `held` never holds. A new file is never given
+ * one of these names: writing it would replace a file that is somebody else's.
+ */
+let knownFiles = new Set<string>();
+/** Per file, the write in flight: the next one waits for it (see `persistFile`). */
+const writes = new Map<string, Promise<boolean>>();
 
 function isSame(a: Pick<Preset, "serviceId" | "id">, b: Pick<Preset, "serviceId" | "id">) {
   return (
@@ -446,6 +459,17 @@ function isSame(a: Pick<Preset, "serviceId" | "id">, b: Pick<Preset, "serviceId"
 /** The name a preset is stored under when it arrives without one. */
 export function presetFileName(preset: Pick<Preset, "serviceId" | "id">): string {
   return `${slug(toCanonicalServiceId(preset.serviceId))}--${slug(preset.id) || "preset"}.json`;
+}
+
+/** `presetFileName`, or the first variant of it no file has yet. */
+function freeFileName(preset: Pick<Preset, "serviceId" | "id">): string {
+  const base = presetFileName(preset);
+  let file = base;
+  for (let n = 2; knownFiles.has(file); n++) {
+    file = base.replace(/\.json$/, `-${n}.json`);
+  }
+  knownFiles.add(file);
+  return file;
 }
 
 /** Local storage's list, read like any other: an entry that does not parse is skipped. */
@@ -493,8 +517,35 @@ function readStoredFiles(files: PresetStoredFile[]): HeldPreset[] {
   });
 }
 
-/** Writes one stored file as it now stands: its presets, or nothing if none is left. */
-async function persistFile(file: string): Promise<boolean> {
+/**
+ * Writes one stored file as it now stands: its presets, or nothing if none is
+ * left. Writes to one file run one after another, each reading what the file
+ * holds when its turn comes, so a slow earlier write can never land after —
+ * and undo — a later one.
+ */
+function persistFile(file: string): Promise<boolean> {
+  const previous = writes.get(file) ?? Promise.resolve(true);
+  const next = previous.then(() => writeFile(file));
+  writes.set(file, next);
+  void next.then(() => {
+    if (writes.get(file) === next) {
+      writes.delete(file);
+    }
+  });
+  return next;
+}
+
+/**
+ * Resolves once every write started so far has finished, with whether all of
+ * them succeeded. For a caller that must not report a change as kept before
+ * it is.
+ */
+export async function presetsPersisted(): Promise<boolean> {
+  const results = await Promise.all([...writes.values()]);
+  return results.every(Boolean);
+}
+
+async function writeFile(file: string): Promise<boolean> {
   if (!storage || !held) {
     return false;
   }
@@ -554,17 +605,20 @@ export async function attachPresetStorage(next: PresetStorage | null): Promise<v
     return;
   }
   const read = readStoredFiles(files);
+  knownFiles = new Set(files.map(({ file }) => file));
   const legacy = readLocalPresets().filter(
     (preset) => !read.some((entry) => isSame(entry.preset, preset)),
   );
-  const taken = new Set(files.map(({ file }) => file));
-  const moved = legacy.map((preset) => ({ preset, file: presetFileName(preset) }))
-    .filter(({ file }) => !taken.has(file));
+  // Each under a name no file has: one already there — another preset, or a
+  // file that is not a preset at all — is left as it is.
+  const moved = legacy.map((preset) => ({ preset, file: freeFileName(preset) }));
   held = [...read, ...moved];
   let allMoved = true;
   for (const { file } of moved) {
     allMoved = (await persistFile(file)) && allMoved;
   }
+  // Cleared only once every legacy preset is in a file: what failed to move
+  // is read from here again next time.
   if (moved.length && allMoved) {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -614,7 +668,7 @@ export function savePreset(preset: Preset): Preset[] {
     // Replaced in the file it was in, so a preset refiled from a file holding
     // several stays with them.
     const existing = held.find((entry) => isSame(entry.preset, preset));
-    const file = existing?.file ?? presetFileName(preset);
+    const file = existing?.file ?? freeFileName(preset);
     held = existing
       ? held.map((entry) => (entry === existing ? { preset, file } : entry))
       : [...held, { preset, file }];
@@ -672,6 +726,10 @@ export async function updatePresetFromOrigin(preset: Preset): Promise<Preset> {
     );
   }
   savePreset(next);
+  // Reported as updated only once it is: the person may close the app next.
+  if (!(await presetsPersisted())) {
+    throw new Error(`Preset "${next.name}" was fetched but could not be stored`);
+  }
   return next;
 }
 

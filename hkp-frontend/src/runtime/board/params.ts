@@ -70,3 +70,36 @@ export function referencedParams(value: unknown): string[] {
   walk(value);
   return [...found];
 }
+
+/**
+ * `{{random}}` in a parameter's value: a value nobody chose, made once for
+ * whoever takes it. For what must differ between two uses of the same
+ * document and must not be guessable — an ntfy topic, a channel name — where
+ * a fixed default would put every copy of a board on the same one.
+ */
+const RANDOM = /\{\{\s*random\s*\}\}/g;
+
+/** 20 lowercase letters and digits: about 103 bits, and valid in a URL path, a topic, a file name. */
+export function randomToken(): string {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((byte) => alphabet[byte % alphabet.length]).join("");
+}
+
+/**
+ * The parameters whose value asks for something random, each with one made.
+ * Only those: the caller decides where the made values are kept, since a value
+ * made again on every read would be a different one each time.
+ */
+export function generatedParams(
+  params: Record<string, unknown>,
+): Record<string, unknown> {
+  const made: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(params)) {
+    if (typeof value === "string" && value.match(RANDOM)) {
+      made[name] = value.replace(RANDOM, () => randomToken());
+    }
+  }
+  return made;
+}

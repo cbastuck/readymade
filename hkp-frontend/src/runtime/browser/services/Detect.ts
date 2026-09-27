@@ -159,9 +159,12 @@ class Detect extends ServiceBase<State> {
       return null;
     }
 
-    const bitmap = image instanceof Blob ? await createImageBitmap(image) : null;
-    const source = bitmap ?? (image as Drawable);
+    let bitmap: ImageBitmap | null = null;
     try {
+      // Inside the try: a Blob that is not an image a browser can decode is a
+      // frame this service reports it cannot read, not a failed pipeline.
+      bitmap = image instanceof Blob ? await createImageBitmap(image) : null;
+      const source = bitmap ?? (image as Drawable);
       const frame = sizeOf(source);
       const result = detector.detect(source);
       const faces: Face[] = result.detections.map((detection) => ({

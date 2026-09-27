@@ -94,6 +94,21 @@ describe("Detect", () => {
     await vi.waitFor(() => expect(created.options).toEqual([{ minDetectionConfidence: 0.8 }]));
   });
 
+  it("reports a Blob it cannot decode, and stops, rather than failing the pipeline", async () => {
+    const { service, app } = makeDetect();
+    vi.stubGlobal("createImageBitmap", vi.fn(async () => {
+      throw new Error("The source image could not be decoded.");
+    }));
+    try {
+      await expect(service.process(new Blob(["not an image"]))).resolves.toBeNull();
+      expect(app.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({ action: "notification" }),
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("finds the image where Camera puts it, or takes the input as one", () => {
     const blob = new Blob(["x"], { type: "image/png" });
     expect(imageOf(blob)).toBe(blob);

@@ -33,7 +33,7 @@
 
 import type { BlockDefinition } from "../../core/presets";
 import { RuntimeServiceMap, toCanonicalServiceId } from "../../types";
-import { substituteParams, referencedParams } from "./params";
+import { generatedParams, substituteParams, referencedParams } from "./params";
 import { Diagnostic } from "./units";
 
 export type { BlockDefinition };
@@ -237,6 +237,13 @@ function expandUse(
         ...where,
       });
     }
+  }
+  // A value the definition asks to be made (`{{random}}`) is made once, for
+  // this use, and kept in its params — which saving writes back, so the board
+  // keeps it and every later expansion reads it rather than making another.
+  const made = generatedParams({ ...definition.params, ...use.params });
+  if (Object.keys(made).length) {
+    use = { ...use, params: { ...use.params, ...made } };
   }
   const missing = new Set<string>();
   const instance = instantiate(definition, use, id, arrayPath.length === 1, missing);

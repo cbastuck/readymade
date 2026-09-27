@@ -27,7 +27,7 @@ One [browser runtime](../concepts/runtime.md).
 7. The **ntfy notification** [block](../concepts/blocks.md) sends it — the one
    the build ships in its [preset library](../concepts/presets.md), copied into
    this board so it opens anywhere. Its topic, title, priority and tags are the
-   block's params, set on its bar.
+   block's params, set on its bar; the topic is made at random for this board.
 
 Steps 3 to 5 are the design, and each is a different question: *what is there*,
 *is that new*, *is it too soon*. None of them is specific to faces — the same
@@ -42,6 +42,9 @@ the picture worth showing is the one after Detect.
 
 ## Try it
 
-Pick a topic of your own — anyone who knows a topic on ntfy.sh can read it —
-and set it as `topic` on the ntfy block's bar in the board view. Subscribe to it
-in the ntfy app, open the board, allow the camera, and look into it.
+Open the board and allow the camera. The ntfy block is given a random topic of
+its own the first time the board opens — anyone who knows a topic on ntfy.sh can
+read it, so a shared default would tell strangers when someone is in front of
+your camera. Copy it from `topic` on the block's bar in the board view,
+subscribe to it in the ntfy app, and **save the board** so it keeps that topic.
+Then look into the camera.

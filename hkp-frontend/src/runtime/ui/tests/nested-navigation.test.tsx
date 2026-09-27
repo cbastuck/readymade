@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
-import NestedNavProvider from "../NestedNavigation";
+import NestedNavProvider, { useNestedNavigation } from "../NestedNavigation";
 import SubServicePipelineUI from "../SubServicePipelineUI";
 import { MobileHostContext } from "hkp-frontend/src/MobileHostContext";
 import { ServiceInstance } from "hkp-frontend/src/types";
@@ -182,6 +182,67 @@ describe("nested pipeline navigation", () => {
     fireEvent.click(openButton("Iterator"));
 
     expect(trail().queryByText("…")).toBeNull();
+  });
+
+  it("opens, from outside, the pipeline of a host that holds a given service", () => {
+    // A host with several pipelines opens each under an id of its panel's own
+    // making, which the overview cannot know: all it knows is the path. So a
+    // level is asked for by what it must hold, through a host holding a Switch
+    // whose second case holds the service being gone to.
+    const branch = (index: number, pipeline: Array<Record<string, unknown>>) =>
+      ({
+        ...host(`sw-branch-${index}`, `Case ${index}`, pipeline),
+        address: "outer.sw",
+      }) as ServiceInstance;
+    const SwitchUI = () => (
+      <>
+        <SubServicePipelineUI
+          service={branch(0, [{ serviceId: "map", instanceId: "m1" }])}
+          findServiceUI={findServiceUI}
+          levelLabel="Switch · case 0"
+        />
+        <SubServicePipelineUI
+          service={branch(1, [{ serviceId: "map", instanceId: "m2" }])}
+          findServiceUI={findServiceUI}
+          levelLabel="Switch · case 1"
+        />
+      </>
+    );
+    const Reveal = () => {
+      const navigation = useNestedNavigation();
+      return (
+        <button
+          onClick={() => {
+            navigation?.openHolding("outer", "sw", "Outer", 0);
+            navigation?.openHolding("sw", "m2", "Switch", 1);
+          }}
+        >
+          reveal
+        </button>
+      );
+    };
+
+    render(
+      <NestedNavProvider rootLabel="Board">
+        <Reveal />
+        <SubServicePipelineUI
+          service={host("outer", "Outer", [
+            { serviceId: "switch", instanceId: "sw" },
+          ])}
+          findServiceUI={() => SwitchUI as any}
+        />
+      </NestedNavProvider>,
+    );
+
+    fireEvent.click(screen.getByText("reveal"));
+
+    expect(screen.getByText("panel:m2")).toBeTruthy();
+    expect(screen.queryByText("panel:m1")).toBeNull();
+    // Claimed by the case that holds it, the level is named as that case's own
+    // button would name it.
+    expect(trail().getByText("Outer")).toBeTruthy();
+    expect(trail().getByText("Switch · case 1")).toBeTruthy();
+    expect(trail().queryByText("Switch")).toBeNull();
   });
 
   it("offers nothing to open where there is nowhere to open it", () => {

@@ -1,6 +1,6 @@
 {
   "boardName": "Face Alert",
-  "description": "Watches the camera and sends a push notification through ntfy when a face appears. Detect reports faces on every frame; Changes turns 'a face is there' into 'a face appeared'; Debounce keeps a face that flickers in and out from sending several. Set the ntfy topic on the notification block's bar and subscribe to it in the ntfy app.",
+  "description": "Watches the camera and sends a push notification through ntfy when a face appears. Detect reports faces on every frame; Changes turns 'a face is there' into 'a face appeared'; Debounce keeps a face that flickers in and out from sending several. The notification block gets a random ntfy topic of its own the first time the board opens; it is on the block's bar, to subscribe to in the ntfy app. Save the board to keep it.",
   "facade": {
     "layout": "single",
     "panels": [
@@ -35,7 +35,7 @@
             },
             {
               "type": "text",
-              "placeholder": "A notification is sent when a face appears, at most once every 30 seconds. Set the ntfy topic on the notification block in the board view."
+              "placeholder": "A notification is sent when a face appears, at most once every 30 seconds, to the ntfy topic on the notification block's bar in the board view — random, and kept once the board is saved."
             }
           ]
         }
@@ -116,7 +116,6 @@
         "block": "ntfy-notification",
         "uuid": "notify",
         "params": {
-          "topic": "readymade-face-alert",
           "title": "Face Alert",
           "priority": "high",
           "tags": "bust_in_silhouette"
@@ -134,8 +133,8 @@
       "id": "ntfy-notification",
       "name": "ntfy notification",
       "serviceId": "sub-service",
-      "version": 1,
-      "description": "Sends a push notification through ntfy. The message is the input's `message` field, or the input itself when it is a string; it is POSTed to <server>/<topic> with the title, priority and tags as headers, and ntfy's reply is passed on. Anyone who knows a topic on ntfy.sh can read it, so pick one that is hard to guess and subscribe to it in the ntfy app.",
+      "version": 2,
+      "description": "Sends a push notification through ntfy. The message is the input's `message` field, or the input itself when it is a string; it is POSTed to <server>/<topic> with the title, priority and tags as headers, and ntfy's reply is passed on. Anyone who knows a topic on ntfy.sh can read it, so each use is given a random one of its own — shown on its bar, where it can be copied to subscribe in the ntfy app, or replaced.",
       "homepage": "https://docs.ntfy.sh/publish/",
       "tags": [
         "Messaging"
@@ -144,7 +143,7 @@
         "browser"
       ],
       "params": {
-        "topic": "readymade-notifications",
+        "topic": "readymade-{{random}}",
         "title": "Readymade",
         "priority": "default",
         "tags": "",

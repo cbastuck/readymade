@@ -134,10 +134,27 @@ test.describe("a use on the running board", () => {
     await expect(first.getByLabel("trigger")).toHaveValue("kick");
     // The default fills in what the use does not say.
     await expect(first.getByLabel("volume")).toHaveValue("0.5");
-    // Its panel is not shown, and out of reach should it be.
+    // Its panel is not shown, and out of reach should it be. Not by one
+    // `inert` over the whole panel: the frame inside takes the lock over, so
+    // what only reads (its configuration) stays reachable — every control that
+    // writes is then inert where it sits, or disabled.
     const panel = first.locator(".hkp-block-locked").first();
     await expect(panel).toBeHidden();
-    await expect(panel).toHaveAttribute("inert", "");
+    const controls = await panel.evaluate(
+      (root) => root.querySelectorAll("input, select, textarea, button").length,
+    );
+    expect(controls).toBeGreaterThan(0);
+    const reachable = await panel.evaluate((root) =>
+      [...root.querySelectorAll("input, select, textarea, button")]
+        .filter(
+          (control) =>
+            !control.closest("[inert]") &&
+            !(control as HTMLInputElement).disabled &&
+            !control.closest("[data-service-header]"),
+        )
+        .map((control) => control.outerHTML.slice(0, 80)),
+    );
+    expect(reachable).toEqual([]);
   });
 
   test("params changed on a use are what the board saves", async ({ page }) => {
@@ -397,14 +414,17 @@ test.describe("a block from the library", () => {
     expect(saved.blocks[0]).toMatchObject({
       id: "ntfy-notification",
       serviceId: "sub-service",
-      params: { topic: "readymade-notifications" },
+      params: { topic: "readymade-{{random}}" },
     });
     expect(saved.blocks[0]).not.toHaveProperty("preset");
+    // Each use was given a topic of its own, and keeps it.
+    const topic = { topic: expect.stringMatching(/^readymade-[a-z0-9]{20}$/) };
     expect(saved.services.rt).toEqual([
       expect.objectContaining({ uuid: "log" }),
-      { block: "ntfy-notification", uuid: expect.any(String) },
-      { block: "ntfy-notification", uuid: expect.any(String) },
+      { block: "ntfy-notification", uuid: expect.any(String), params: topic },
+      { block: "ntfy-notification", uuid: expect.any(String), params: topic },
     ]);
+    expect(saved.services.rt[1].params.topic).not.toBe(saved.services.rt[2].params.topic);
   });
 });
 
