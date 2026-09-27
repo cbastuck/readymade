@@ -6,15 +6,17 @@ import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 type Props = {
   draggable?: boolean;
   service: ServiceDescriptor;
+  readOnly?: boolean;
   onRename: (newName: string) => void;
 };
-export default function ServiceName({ service, onRename }: Props) {
+export default function ServiceName({ service, readOnly, onRename }: Props) {
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
 
   if (isPlayground) {
     return (
       <div
+        inert={readOnly}
         style={{
           flex: 1,
           minWidth: 0,
@@ -31,7 +33,7 @@ export default function ServiceName({ service, onRename }: Props) {
   }
 
   return (
-    <div className="w-full flex mb-4 font-sans">
+    <div inert={readOnly} className="w-full flex mb-4 font-sans">
       <Editable value={service.serviceName} onChange={onRename} />
     </div>
   );

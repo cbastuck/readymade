@@ -242,6 +242,12 @@ export type ServiceClass = {
  */
 export type ServiceClassWithPreset = ServiceClass & {
   preset?: { id: string; serviceId: ServiceURI };
+  /**
+   * A block of this board this entry stands for: adding it places a use of the
+   * block — a reference — where a preset would apply a copy. See
+   * `runtime/board/blocks`.
+   */
+  block?: { id: string };
 };
 
 export type ServiceRegistry = Array<ServiceClass>;
@@ -609,6 +615,12 @@ export type BoardDescriptor = {
    */
   unit?: import("./runtime/board/units").UnitDeclaration;
   units?: Array<import("./runtime/board/units").UnitEntry>;
+  /**
+   * Services defined once and used wherever a pipeline names them. Expanded
+   * when the board is linked and collapsed again when it is saved, so no
+   * runtime sees one. See `runtime/board/blocks`.
+   */
+  blocks?: Array<import("./runtime/board/blocks").BlockDefinition>;
 };
 
 export function isRuntimeDescriptorConfig(data: any): data is RuntimeDescriptor & { services: any[] } {

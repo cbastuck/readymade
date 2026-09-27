@@ -4,6 +4,7 @@ import SwitchUI from "./SwitchUI";
 import BrowserRegistry from "../BrowserRegistry";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
 import { addService, configureService } from "../BrowserRuntimeApi";
+import { joinAddress, splitAddress } from "../../board/address";
 import {
   parseExpression,
   evalExpression,
@@ -31,6 +32,11 @@ import {
  * are jsep expressions over { params } — e.g. "params.next",
  * "params.kind == 'audio'". An empty matched pipeline passes the input
  * through unchanged.
+ *
+ * A case is a branch of the pipeline the Switch sits in, not a scope of its
+ * own: its services hold values in the slots of whatever holds the Switch,
+ * report what they do outward under `<switch>.<instanceId>`, and are reached
+ * by that address — so an instanceId must be unique across all the cases.
  */
 
 const serviceId = "hookup.to/service/switch";
@@ -143,6 +149,28 @@ class Switch extends ServiceBase<State> {
     this._teardownScopes();
   }
 
+  /** Ends every pass running inside any case; see BrowserRuntimeScope. */
+  cancelInFlight(): void {
+    for (const scope of this._scopes) {
+      scope?.cancelInFlight();
+    }
+  }
+
+  /** The service a scoped address names inside one of the cases, however deep. */
+  findNested(address: string): any {
+    const segments = splitAddress(address);
+    if (segments.length === 0) {
+      return null;
+    }
+    const here = this.getInnerInstance(segments[0]);
+    if (!here || segments.length === 1) {
+      return segments.length === 1 ? here : null;
+    }
+    return typeof here.findNested === "function"
+      ? here.findNested(segments.slice(1).join("."))
+      : null;
+  }
+
   getInnerInstance(instanceId: string): any {
     for (const scope of this._scopes) {
       const svc = scope?.findServiceInstance(instanceId)[0];
@@ -253,7 +281,8 @@ class Switch extends ServiceBase<State> {
     if (!scope) {
       return params;
     }
-    const result = await scope.next(null, params, null, false);
+    // Answered by returning, so not reported through onResult as well.
+    const result = await scope.next(null, params, null, false, false);
     return this.state.ignoreInnerResult ? params : result;
   }
 
@@ -300,6 +329,24 @@ class Switch extends ServiceBase<State> {
     scope.app.getRuntimeVariable = () => this.app.getRuntimeVariable();
     scope.app.setRuntimeVariable = (key: string, value: any) =>
       this.app.setRuntimeVariable(key, value);
+
+    // A branch sees the cells around the Switch, as the pipeline it branches
+    // from does. Delegated before any service is added, so one that holds a
+    // value while being configured holds it there.
+    scope.delegateSlots(() => this.app.slots?.() ?? null);
+
+    // What happens inside a case is reported outward under the address
+    // through this Switch, as a sub-service reports its pipeline — which is
+    // what lets a panel or the overview outside see it.
+    const outerNotify = this.app.notify.bind(this.app);
+    const innerNotify = scope.app.notify.bind(scope.app);
+    scope.app.notify = (svc: any, notification: any) => {
+      innerNotify(svc, notification);
+      outerNotify(
+        { ...svc, address: joinAddress(this.uuid, svc.address ?? svc.uuid) },
+        notification,
+      );
+    };
 
     for (const entry of pipeline) {
       const descriptor = await addService(

@@ -23,12 +23,20 @@
  * a scope that runs and reports nothing.
  */
 import { RuntimeScope } from "hkp-frontend/src/types";
-import { joinAddress } from "hkp-frontend/src/runtime/board/address";
 import { OverviewEdge, OverviewNode } from "./graph";
 import { previewValue } from "./preview";
 
 /** How long a node stays lit after the call that lit it returned. */
 export const COOLDOWN_MS = 800;
+/**
+ * How long, and how brightly, a node flickers after a call that passed nothing
+ * on. It was asked — a Filter that blocked, a Timeline outside its placement —
+ * and the view says so, but faintly. Lit as fully as a call that produced
+ * something, a service asked every frame and answering null every frame would
+ * look as busy as the ones doing the work.
+ */
+export const STOPPED_COOLDOWN_MS = 250;
+export const STOPPED_HEAT = 0.25;
 /** How long a pulse takes to travel one edge. */
 export const PULSE_MS = 520;
 
@@ -37,6 +45,8 @@ export type NodeActivity = {
   startedAt?: number;
   /** When the node stops being lit, if no further call arrives. */
   litUntil: number;
+  /** When the faint flicker of a call that passed nothing on is over. */
+  stoppedUntil?: number;
   /** How many calls this node has been given since the view opened. */
   calls: number;
   /** What the last call was given, and what it answered with. */
@@ -113,7 +123,8 @@ type Registration = {
 };
 
 export class ActivityTracker {
-  private byUuid = new Map<string, NodeActivity>();
+  /** By node key: a uuid alone would merge copies of one nested block. */
+  private byKey = new Map<string, NodeActivity>();
   private pulses: Pulse[] = [];
   private outgoing = new Map<string, string[]>();
   private registrations: Registration[] = [];
@@ -152,13 +163,10 @@ export class ActivityTracker {
       // at its own address, and says so by leaving this out.
       const target: Registration["target"] = { uuid: node.uuid };
       if (node.ancestry.length > 0) {
-        target.address = [...node.ancestry, node.uuid].reduce(
-          (path, part) => joinAddress(path, part),
-          "",
-        );
+        target.address = node.key;
       }
       const callback = (notification: any) =>
-        this.onNotification(node.uuid, notification);
+        this.onNotification(node.key, notification);
       app.registerNotificationTarget(target, callback);
       this.registrations.push({ app, target, callback });
     }
@@ -173,27 +181,28 @@ export class ActivityTracker {
     this.registrations = [];
   }
 
-  private entry(uuid: string): NodeActivity {
-    let found = this.byUuid.get(uuid);
+  private entry(key: string): NodeActivity {
+    let found = this.byKey.get(key);
     if (!found) {
       found = { litUntil: 0, calls: 0 };
-      this.byUuid.set(uuid, found);
+      this.byKey.set(key, found);
     }
     return found;
   }
 
-  private onNotification(uuid: string, notification: any) {
+  private onNotification(key: string, notification: any) {
     const internal = notification?.__internal;
     if (!internal) {
       return;
     }
 
     const now = performance.now();
-    const activity = this.entry(uuid);
+    const activity = this.entry(key);
 
     if (internal.state === "call-process") {
+      // Lit while in flight by `startedAt`; how long after is up to what the
+      // call answers.
       activity.startedAt = now;
-      activity.litUntil = now + COOLDOWN_MS;
       activity.calls += 1;
       // What the runtime handed the service: the input it is about to work
       // on, and the half of what a service did that a result cannot explain
@@ -204,24 +213,26 @@ export class ActivityTracker {
 
     if (internal.state === "call-process-finished") {
       activity.startedAt = undefined;
-      activity.litUntil = now + COOLDOWN_MS;
       activity.lastOut = capture(internal.data, now);
       activity.lastStopped =
         internal.data === null || internal.data === undefined;
 
       // Nothing was passed on, so nothing travels onward either — which is
-      // what a stopped pipeline looks like from the outside.
+      // what a stopped pipeline looks like from the outside. Only a flicker:
+      // an earlier call's glow, still fading, is left to fade.
       if (activity.lastStopped) {
+        activity.stoppedUntil = now + STOPPED_COOLDOWN_MS;
         return;
       }
-      for (const to of this.outgoing.get(uuid) ?? []) {
-        this.pulses.push({ from: uuid, to, startedAt: now });
+      activity.litUntil = now + COOLDOWN_MS;
+      for (const to of this.outgoing.get(key) ?? []) {
+        this.pulses.push({ from: key, to, startedAt: now });
       }
     }
   }
 
-  get(uuid: string): NodeActivity | undefined {
-    return this.byUuid.get(uuid);
+  get(key: string): NodeActivity | undefined {
+    return this.byKey.get(key);
   }
 
   /** Drops pulses that have arrived, and returns the ones still travelling. */
@@ -237,11 +248,29 @@ export class ActivityTracker {
     if (this.pulses.length > 0) {
       return false;
     }
-    for (const activity of this.byUuid.values()) {
-      if (activity.startedAt !== undefined || activity.litUntil > now) {
+    for (const activity of this.byKey.values()) {
+      if (heatOf(activity, now) > 0) {
         return false;
       }
     }
     return true;
   }
+}
+
+/**
+ * How lit a node is, from 0 to 1: fully while a call is in flight, fading back
+ * over the cooldown after one that passed something on, and only as far as
+ * STOPPED_HEAT after one that did not.
+ */
+export function heatOf(activity: NodeActivity, now: number): number {
+  if (activity.startedAt !== undefined) {
+    return 1;
+  }
+  const lit = Math.max(0, (activity.litUntil - now) / COOLDOWN_MS);
+  const stopped =
+    activity.stoppedUntil === undefined
+      ? 0
+      : Math.max(0, (activity.stoppedUntil - now) / STOPPED_COOLDOWN_MS) *
+        STOPPED_HEAT;
+  return Math.max(lit, stopped);
 }

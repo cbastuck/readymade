@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { readBoardShape } from "../shape";
-import { buildScene } from "../graph";
+import { OverviewNode, buildScene } from "../graph";
 import {
   RuntimeApiMap,
   RuntimeDescriptor,
@@ -14,6 +14,10 @@ import {
  * descriptor the board holds — which is why the overview has to ask for it
  * rather than read what it already has.
  */
+
+/** The node a service is, found by its own name — unique in these boards. */
+const named = (scene: { nodes: OverviewNode[] }, uuid: string) =>
+  scene.nodes.find((n) => n.uuid === uuid);
 
 const runtime = {
   id: "rt",
@@ -100,14 +104,14 @@ describe("readBoardShape", () => {
     const board = source(vi.fn().mockResolvedValue(joinReported));
 
     const flat = buildScene(board.runtimes, board.services);
-    expect(flat.byUuid.get("map-1")).toBeUndefined();
+    expect(named(flat, "map-1")).toBeUndefined();
     expect(flat.edges).toHaveLength(0);
 
     const nested = buildScene(board.runtimes, await readBoardShape(board));
-    expect(nested.byUuid.get("map-1")!.ancestry).toEqual(["join-1"]);
+    expect(named(nested, "map-1")!.ancestry).toEqual(["join-1"]);
     expect(nested.edges).toContainEqual({
       from: "join-1",
-      to: "map-1",
+      to: "join-1.map-1",
       kind: "contains",
     });
   });

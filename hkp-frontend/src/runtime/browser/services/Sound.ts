@@ -1,27 +1,39 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import SoundUI from "./SoundUI";
-type NoteEvent = { frequency: number; velocity: number; duration: number };
-type NoteFrame = { notes: NoteEvent[] };
+type NoteEvent =
+  | { frequency: number; velocity: number; duration: number }
+  | { note: string };
+type NoteFrame = { notes: NoteEvent[]; tempo?: number };
 
 /**
  * Service Documentation
  * Service ID: hookup.to/service/sound
  * Service Name: Sound
- * Input:  { note: string } | Array<{ note: string }> | NoteFrame
+ * Input:  { note: string } | Array<{ note: string }> | { notes, tempo? }
  * Output: pass-through
- * Config: generator.type ("synth" | "drums"), volume, waveType, noteDuration
+ * Config: generator.type ("synth" | "drums"), volume, waveType, noteDuration, noteDurationUnit, attack, release, tempoSlot, trigger
  *
  * Two generator modes:
  *
  *   synth  — Oscillator-based. Converts note names (e.g. "C4") to Hz
  *             using standard MIDI tuning (A4 = 440 Hz). Configurable
- *             waveType and noteDuration. Also accepts NoteFrame objects
- *             from the game-of-life pipeline.
+ *             waveType and an envelope: a note rises over `attack`, is held
+ *             for `noteDuration`, then fades over `release`. The duration is
+ *             in seconds or in beats: of the `tempo` the input carries (a
+ *             Timeline counting beats puts it on its frames), else of the
+ *             tempo held in the slot `tempoSlot` names, as Timer measures
+ *             beats — read as each note starts. Also accepts
+ *             `{ notes: [...] }`, each entry a note name (`{ note }`) or, in
+ *             synth mode, a frequency (the game-of-life's NoteFrame).
  *
  *   drums  — Synthesises kick, snare, and hi-hat purely via Web Audio API
  *             (no sample files). Notes are mapped to drum types via
  *             drumMap (default: C4→kick, D4→snare, E4→hihat).
+ *
+ * trigger — what to play for an input that names no note of its own (e.g. a
+ *           Timer tick): a note name, or in drums mode also a drum name.
+ *           Unset, such an input plays nothing.
  */
 
 const serviceId = "hookup.to/service/sound";
@@ -47,14 +59,25 @@ const CUSTOM_WAVES: Record<string, { real: number[]; imag: number[] }> = {
   },
 };
 export type DrumType = "kick" | "snare" | "hihat";
+export const DRUM_TYPES: DrumType[] = ["kick", "snare", "hihat"];
 
 type State = {
   volume: number;
   generator: GeneratorType;
   waveType: WaveType;
-  noteDuration: number; // seconds, used in synth mode
+  /** How long a synth note is held, in `noteDurationUnit`, before its release. */
+  noteDuration: number;
+  noteDurationUnit: "s" | "beats";
+  /** Seconds a synth note takes to rise to full volume. */
+  attack: number;
+  /** Seconds a synth note takes to fade once it is no longer held. */
+  release: number;
+  tempoSlot: string;
   drumMap: Record<string, DrumType>; // note name → drum type
+  trigger: string | null; // played for input that names no note
 };
+
+const DEFAULT_TEMPO_BPM = 120;
 
 const DEFAULT_DRUM_MAP: Record<string, DrumType> = {
   C4: "kick",
@@ -170,11 +193,83 @@ function synthesizeHihat(ctx: AudioContext, volume: number) {
   noiseSource.stop(now + duration);
 }
 
+// ── Shared audio context ─────────────────────────────────────────────────────
+
+// One context for every Sound instance: each context is its own audio graph and
+// output stream, and browsers cap how many may be open at once.
+//
+// Opened as soon as a Sound exists rather than on the first note: constructing
+// a context opens the audio device, which blocks for a noticeable time (~150 ms
+// measured in Chromium), and paid on the first note that is a first note played
+// late. A context opened before the page has had a user gesture starts
+// suspended, so it is resumed on the first gesture anywhere on the page — the
+// press that starts playback, at the latest.
+//
+// Closed a while after the last instance is destroyed rather than at once, so
+// a pipeline rebuilt around its Sounds does not reopen the device.
+let sharedCtx: AudioContext | null = null;
+const periodicWaveCache = new Map<string, PeriodicWave>();
+const liveInstances = new Set<object>();
+const CLOSE_AFTER_MS = 5000;
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+const GESTURES = ["pointerdown", "keydown", "touchstart"] as const;
+
+function resumeOnGesture() {
+  if (sharedCtx?.state === "suspended") {
+    sharedCtx.resume();
+  }
+  for (const gesture of GESTURES) {
+    window.removeEventListener(gesture, resumeOnGesture, true);
+  }
+}
+
+function sharedAudioContext(): AudioContext {
+  if (closeTimer) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+  if (!sharedCtx || sharedCtx.state === "closed") {
+    sharedCtx = new AudioContext({ latencyHint: "interactive" });
+    periodicWaveCache.clear();
+  }
+  if (sharedCtx.state === "suspended") {
+    sharedCtx.resume();
+  }
+  return sharedCtx;
+}
+
+/** Opens the shared context ahead of the first note, where the page has audio. */
+function warmAudioContext() {
+  if (typeof AudioContext === "undefined") {
+    return;
+  }
+  const ctx = sharedAudioContext();
+  if (ctx.state === "suspended" && typeof window !== "undefined") {
+    for (const gesture of GESTURES) {
+      window.addEventListener(gesture, resumeOnGesture, true);
+    }
+  }
+}
+
+function releaseAudioContext(owner: object) {
+  liveInstances.delete(owner);
+  if (liveInstances.size > 0 || !sharedCtx || closeTimer) {
+    return;
+  }
+  closeTimer = setTimeout(() => {
+    closeTimer = null;
+    if (liveInstances.size === 0 && sharedCtx) {
+      sharedCtx.close();
+      sharedCtx = null;
+      periodicWaveCache.clear();
+    }
+  }, CLOSE_AFTER_MS);
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 class Sound extends ServiceBase<State> {
-  private ctx: AudioContext | null = null;
-  private periodicWaveCache = new Map<string, PeriodicWave>();
+  private reportedLatencyMs: number | null = null;
 
   constructor(
     app: AppInstance,
@@ -187,8 +282,15 @@ class Sound extends ServiceBase<State> {
       generator: "drums",
       waveType: "sine",
       noteDuration: 0.3,
+      noteDurationUnit: "s",
+      attack: 0.01,
+      release: 0.03,
+      tempoSlot: "tempo",
       drumMap: { ...DEFAULT_DRUM_MAP },
+      trigger: null,
     });
+    liveInstances.add(this);
+    warmAudioContext();
   }
 
   configure(config: any) {
@@ -221,12 +323,30 @@ class Sound extends ServiceBase<State> {
     if (config.drumMap !== undefined) {
       this.state.drumMap = config.drumMap;
     }
+    const envelope: Partial<State> = {};
+    for (const key of ["noteDuration", "attack", "release"] as const) {
+      const value = Number(config[key]);
+      if (config[key] !== undefined && Number.isFinite(value) && value >= 0) {
+        this.state[key] = envelope[key] = value;
+      }
+    }
+    if (config.noteDurationUnit === "s" || config.noteDurationUnit === "beats") {
+      this.state.noteDurationUnit = envelope.noteDurationUnit = config.noteDurationUnit;
+    }
+    if (typeof config.tempoSlot === "string" && config.tempoSlot) {
+      this.state.tempoSlot = envelope.tempoSlot = config.tempoSlot;
+    }
+    if (Object.keys(envelope).length > 0) {
+      this.app.notify(this, envelope);
+    }
+    if (config.trigger !== undefined) {
+      this.state.trigger = config.trigger || null;
+      this.app.notify(this, { trigger: this.state.trigger });
+    }
   }
 
   destroy() {
-    this.ctx?.close();
-    this.ctx = null;
-    this.periodicWaveCache.clear();
+    releaseAudioContext(this);
   }
 
   process(params: any): any {
@@ -236,12 +356,14 @@ class Sound extends ServiceBase<State> {
 
     const ctx = this.audioContext();
 
-    // NoteFrame from game-of-life pipeline: { notes: NoteEvent[] }
-    // Only synth mode can play frequency-based notes; drums mode requires note names.
+    // A list of notes: named ones play as a note input does; frequencies (the
+    // game-of-life's NoteFrame) only in synth mode, since drums need a name.
     if (params.notes && Array.isArray(params.notes)) {
-      if (this.state.generator === "synth") {
-        const noteFrame = params as NoteFrame;
-        for (const note of noteFrame.notes) {
+      const { notes, tempo } = params as NoteFrame;
+      for (const note of notes) {
+        if ("note" in note) {
+          this.playNoteByName(ctx, note.note, tempo);
+        } else if (this.state.generator === "synth") {
           this.playSynthNote(
             ctx,
             note.frequency,
@@ -267,61 +389,106 @@ class Sound extends ServiceBase<State> {
 
     // Single { note: string } object
     if (params.note) {
-      this.playNoteByName(ctx, params.note);
+      this.playNoteByName(ctx, params.note, params.tempo);
+    } else if (this.state.trigger) {
+      this.playTrigger(ctx, this.state.trigger, params.tempo);
     }
 
+    this.reportLatency(ctx);
     return params;
   }
 
   // ── Private ──────────────────────────────────────────────────────────────
 
+  /**
+   * How long after a note starts it is heard, as the browser reports it: the
+   * context's own buffering plus the output device's. Reported when it
+   * changes; a Bluetooth device typically adds far more than wired speakers.
+   */
+  private reportLatency(ctx: AudioContext) {
+    const ms = Math.round(
+      ((ctx.baseLatency ?? 0) + (ctx.outputLatency ?? 0)) * 1000,
+    );
+    if (ms !== this.reportedLatencyMs) {
+      this.reportedLatencyMs = ms;
+      this.app.notify(this, { outputLatencyMs: ms });
+    }
+  }
+
   private audioContext(): AudioContext {
-    if (!this.ctx || this.ctx.state === "closed") {
-      this.ctx = new AudioContext();
-      this.periodicWaveCache.clear();
-    }
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
-    return this.ctx;
+    return sharedAudioContext();
   }
 
   private getPeriodicWave(ctx: AudioContext, name: string): PeriodicWave {
-    if (!this.periodicWaveCache.has(name)) {
+    if (!periodicWaveCache.has(name)) {
       const { real, imag } = CUSTOM_WAVES[name];
-      this.periodicWaveCache.set(
+      periodicWaveCache.set(
         name,
         ctx.createPeriodicWave(new Float32Array(real), new Float32Array(imag)),
       );
     }
-    return this.periodicWaveCache.get(name)!;
+    return periodicWaveCache.get(name)!;
   }
 
-  private playNoteByName(ctx: AudioContext, note: string) {
+  private playTrigger(ctx: AudioContext, trigger: string, tempo?: unknown) {
+    if (
+      this.state.generator === "drums" &&
+      DRUM_TYPES.includes(trigger as DrumType)
+    ) {
+      this.playDrum(ctx, trigger as DrumType);
+    } else {
+      this.playNoteByName(ctx, trigger, tempo);
+    }
+  }
+
+  private playDrum(ctx: AudioContext, drumType: DrumType) {
+    switch (drumType) {
+      case "kick":
+        synthesizeKick(ctx, this.state.volume);
+        break;
+      case "snare":
+        synthesizeSnare(ctx, this.state.volume);
+        break;
+      case "hihat":
+        synthesizeHihat(ctx, this.state.volume);
+        break;
+    }
+  }
+
+  private playNoteByName(ctx: AudioContext, note: string, tempo?: unknown) {
     if (this.state.generator === "drums") {
       const drumType = this.state.drumMap[note];
       if (!drumType) {
         return;
       }
-      switch (drumType) {
-        case "kick":
-          synthesizeKick(ctx, this.state.volume);
-          break;
-        case "snare":
-          synthesizeSnare(ctx, this.state.volume);
-          break;
-        case "hihat":
-          synthesizeHihat(ctx, this.state.volume);
-          break;
-      }
+      this.playDrum(ctx, drumType);
     } else {
       const freq = noteNameToFrequency(note);
       if (freq > 0) {
-        this.playSynthNote(ctx, freq, 1, this.state.noteDuration);
+        this.playSynthNote(ctx, freq, 1, this.noteSeconds(tempo));
       }
     }
   }
 
+  /**
+   * How long a named note is held, in seconds: at the tempo its input carried,
+   * else at the one held in the tempo slot now.
+   */
+  private noteSeconds(tempo?: unknown): number {
+    if (this.state.noteDurationUnit !== "beats") {
+      return this.state.noteDuration;
+    }
+    const bpm = [tempo, this.app.slots?.()?.get(this.state.tempoSlot)]
+      .map(Number)
+      .find((value) => Number.isFinite(value) && value > 0);
+    return (this.state.noteDuration * 60) / (bpm ?? DEFAULT_TEMPO_BPM);
+  }
+
+  /**
+   * A note held for `durationSec`: it rises over the attack — cut short where
+   * the note is shorter — and fades over the release once it is let go, so a
+   * long release carries it into whatever is played next.
+   */
   private playSynthNote(
     ctx: AudioContext,
     frequency: number,
@@ -329,8 +496,7 @@ class Sound extends ServiceBase<State> {
     durationSec: number,
   ) {
     const now = ctx.currentTime;
-    const attack = 0.01;
-    const release = 0.03;
+    const { attack, release } = this.state;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -342,16 +508,21 @@ class Sound extends ServiceBase<State> {
     osc.frequency.value = frequency;
 
     const peak = velocity * this.state.volume;
-    const sustainEnd = Math.max(now + attack, now + durationSec - release);
+    const letGo = now + durationSec;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(peak, now + attack);
-    gain.gain.setValueAtTime(peak, sustainEnd);
-    gain.gain.linearRampToValueAtTime(0, now + durationSec);
+    if (attack <= durationSec) {
+      gain.gain.linearRampToValueAtTime(peak, now + attack);
+      gain.gain.setValueAtTime(peak, letGo);
+    } else {
+      // Let go before it reached full volume: it fades from where it got to.
+      gain.gain.linearRampToValueAtTime(peak * (durationSec / attack), letGo);
+    }
+    gain.gain.linearRampToValueAtTime(0, letGo + release);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + durationSec);
+    osc.stop(letGo + release);
   }
 }
 

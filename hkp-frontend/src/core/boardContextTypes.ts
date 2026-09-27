@@ -132,6 +132,8 @@ export type BoardStateRefs = {
   setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>>;
   setFacade: Dispatch<SetStateAction<FacadeDescriptor | undefined>>;
   setLinkage: Dispatch<SetStateAction<BoardLinkage | undefined>>;
+  /** What linking produced; absent on hosts that build a partial refs bundle. */
+  linkageRef?: RefObject<BoardLinkage | undefined>;
 };
 
 export function getRuntimeScopeApi(

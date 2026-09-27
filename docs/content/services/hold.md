@@ -90,6 +90,7 @@ While `property` is unset, Hold holds nothing and passes its input through uncha
 | `slot` | `string` | `""` | The cell to hold in. Set, `op` says which end this Hold is and the value is not inspected. |
 | `op` | `"read"` \| `"write"` | `"read"` | Which end. Only read with a `slot`. |
 | `property` | `string` | `""` | The property to hold, when there is no slot. An input carrying it writes; every call reads. |
+| `value` | any | — | **Browser only.** On a writing end (`slot` + `op: "write"`), written into the slot when configured, as though it had arrived as input. The board keeps it, so the slot holds it again after a reload. How a board sets a value nothing in its pipelines produces — a tempo, a limit — and how a facade control changes it. Ignored on a reading end. |
 | `action` | `"clear"` | — | Forgets the held value and resets the counts. |
 
 State reports the arrangement in use and not the other one, so a board keeps only the
@@ -168,7 +169,7 @@ wherever it runs.
 |---|---|
 | The runtime | Every service in it shares one set, so two Holds naming `document` meet. |
 | An endpoint ([`http-server-subservices`](./http.md)) | Its own, shared by its two entry pipelines — so two endpoints on a runtime may both call a slot `document` without meeting. |
-| A [scope](../concepts/scopes.md) (`sub-service`) | Its own by default, or the runtime's with `scope: { slots: "inherit" }`. |
+| A [scope](../concepts/scopes.md) (`sub-service`) | Its own by default, or with `scope: { slots: "inherit" }` those of whatever holds the scope — the enclosing scope, or the runtime. A chain of inheriting scopes reaches outward one level at a time. |
 | Nothing | A Hold that reaches no store still holds, for itself alone, rather than dropping what it was given. |
 
 The default is worth saying plainly: **a scope keeps its cells to itself**. A reusable

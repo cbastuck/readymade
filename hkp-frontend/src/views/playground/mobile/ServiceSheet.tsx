@@ -4,6 +4,11 @@ import BottomSheet from "./BottomSheet";
 import JsonEditor from "./JsonEditor";
 import MobileIcon from "./MobileIcon";
 import MobileSubPipeline, { PipelineEntry } from "./MobileSubPipeline";
+import BlockUseFrame from "../../../runtime/ui/BlockUse";
+import {
+  blockUseAt,
+  blockUseContaining,
+} from "../../../runtime/board/blocks";
 import AddServiceSheet from "./AddServiceSheet";
 import { M, SERVICE_UI_ZOOM } from "./tokens";
 import {
@@ -244,6 +249,21 @@ export default function ServiceSheet({
   const activePipeline: PipelineEntry[] = active.state?.pipeline ?? [];
   const pathIds = useMemo(() => path.map((c) => c.instanceId), [path]);
 
+  // Where this level is, as the board addresses it, and whether it belongs to
+  // a block: a use, or inside one, is drilled into but not changed here.
+  const blocks = boardContext?.linkage?.blocks;
+  const activeAddress = [service?.uuid ?? "", ...pathIds].join(".");
+  const activeUse = blockUseAt(blocks, activeAddress, runtime?.id);
+  const insideUse = blockUseContaining(blocks, activeAddress, runtime?.id);
+  const locked = !!activeUse || !!insideUse;
+  const blockOf = (entry: PipelineEntry) => {
+    const use = blockUseAt(blocks, `${activeAddress}.${entry.instanceId}`, runtime?.id);
+    return use
+      ? (blocks?.definitions[use.document]?.find((d) => d.id === use.use.block)?.name ??
+          use.use.block)
+      : undefined;
+  };
+
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) { return; }
@@ -340,6 +360,10 @@ export default function ServiceSheet({
   };
 
   const openConfig = async () => {
+    // A block's inside is its definition's; its config is not edited here.
+    if (locked) {
+      return;
+    }
     if (!boardContext || !service || !runtime) { return; }
     configReturnTo.current = uiExpanded ? "ui" : "root";
     let config: any = {};
@@ -504,12 +528,19 @@ export default function ServiceSheet({
       return <NotAvailable reason={reason ?? "Service UI not available"} />;
     }
     return (
-      <UI
-        service={editable(instance)}
-        showBypassOnlyIfExplicit={!isRuntimeBrowserClassType(runtime.type)}
-        draggable={false}
-        onServiceAction={handleServiceAction}
-      />
+      <BlockUseFrame
+        address={activeAddress}
+        runtimeId={runtime.id}
+        locked={!!insideUse}
+        onRemove={() => handleServiceAction({ action: "remove", service: instance })}
+      >
+        <UI
+          service={editable(instance)}
+          showBypassOnlyIfExplicit={!isRuntimeBrowserClassType(runtime.type)}
+          draggable={false}
+          onServiceAction={handleServiceAction}
+        />
+      </BlockUseFrame>
     );
   };
 
@@ -613,6 +644,8 @@ export default function ServiceSheet({
           onAdd={() => setAddPickerOpen(true)}
           onRemove={(id) => removeSub(id)}
           onReorder={(entries) => reorderSub(entries)}
+          locked={locked}
+          blockOf={blockOf}
         />
       </div>
     ) : null;
@@ -774,7 +807,9 @@ export default function ServiceSheet({
             <div style={{ flexShrink: 0, paddingTop: 8 }}>
               <button
                 onClick={() => { setUiExpanded(false); openConfig(); }}
+                disabled={locked}
                 style={{
+                  opacity: locked ? 0.45 : 1,
                   width: "100%",
                   height: 40,
                   border: `1.5px solid ${M.teal}`,
@@ -829,7 +864,9 @@ export default function ServiceSheet({
               </button>
               <button
                 onClick={openConfig}
+                disabled={locked}
                 style={{
+                  opacity: locked ? 0.45 : 1,
                   flex: 1,
                   height: 46,
                   border: `1.5px solid ${M.teal}`,

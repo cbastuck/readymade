@@ -71,6 +71,7 @@ A JSON document naming a service and carrying its state:
 | `tags`        | no       | What it *is* — the second axis the browser files it under                   |
 | `runtimes`    | no       | The runtime classes it suits — a hint shown to a person, never a restriction |
 | `secrets`     | no       | Display information for the aliases `state` refers to, keyed by alias       |
+| `params`      | no       | Defaults for the `{{param.name}}` references in `state`, substituted when the preset is applied |
 
 A file holds one preset, or several under `{"presets": [ … ]}`.
 
@@ -295,3 +296,8 @@ services. What it needs is a way to say what it is, which is what tags are for.
 That is a different thing from [units](units.md), which assemble whole
 *runtimes* into a board. A preset never crosses a service boundary; a unit never
 reaches inside one.
+
+And it is the same document as a [block](blocks.md), with the other verb: a
+preset is *applied* — copied, independent from then on — while a block is
+*used*, and every use follows its definition. A block is read as a preset without
+the format marker, and `params` means the same in both.

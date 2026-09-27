@@ -70,15 +70,15 @@ function renderScene() {
 describe("render", () => {
   it("hands back a target for every node it drew, nesting included", () => {
     const { scene, hits } = renderScene();
-    expect(hits.map((h) => h.uuid).sort()).toEqual(
-      scene.nodes.map((n) => n.uuid).sort(),
+    expect(hits.map((h) => h.key).sort()).toEqual(
+      scene.nodes.map((n) => n.key).sort(),
     );
   });
 
   it("draws what is further away smaller", () => {
     const { hits } = renderScene();
-    const top = hits.find((h) => h.uuid === "join-1")!;
-    const nested = hits.find((h) => h.uuid === "map-1")!;
+    const top = hits.find((h) => h.key === "join-1")!;
+    const nested = hits.find((h) => h.key === "join-1.map-1")!;
 
     expect(nested.depth).toBeGreaterThan(top.depth);
     expect(nested.width).toBeLessThan(top.width);

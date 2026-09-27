@@ -12,6 +12,8 @@ import Board from "./Board";
 import LoadIndicator from "./LoadIndicator";
 import FacadeRenderer from "../../facade/FacadeRenderer";
 import { useFacadeView } from "../../facade/FacadeViewContext";
+import { useOverview } from "../../overview/OverviewContext";
+import OverviewView from "../../overview/OverviewView";
 import { FacadeDescriptor } from "../../facade/types";
 
 /** What the editor starts from on a board that declares no facade yet. */
@@ -49,6 +51,8 @@ export default function BoardEntryPoint({
   // with it. The choice is kept rather than reset: the tab comes back on the
   // view it was left on.
   const facadeView = useFacadeView();
+  const overview = useOverview();
+  const showOverview = !!overview?.visible;
   const activeView =
     views.find((view) => view.id === activeViewId) ?? views[0] ?? null;
   const facade = activeView?.facade ?? boardContext.facade;
@@ -104,12 +108,39 @@ export default function BoardEntryPoint({
     );
   }
 
+  // The board is looked at as its runtimes or as the overview, in the same
+  // place either way. The runtimes stay mounted — and laid out at their size,
+  // only hidden — while the overview is on, and at the same place in the tree
+  // either way, so switching remounts nothing: their panels keep reporting and
+  // anything drawing keeps its size.
   const boardContent = (
-    <Board
-      boardContext={boardContext}
-      description={description}
-      boardName={boardName}
-    />
+    <div
+      style={
+        showOverview
+          ? {
+              position: "relative",
+              overflow: "hidden",
+              // Beside the facade the pane gives it a height; as the whole
+              // board, a column that fills the canvas does.
+              height: "100%",
+              flex: 1,
+              minHeight: 0,
+            }
+          : undefined
+      }
+    >
+      <div
+        inert={showOverview}
+        style={showOverview ? { visibility: "hidden" } : undefined}
+      >
+        <Board
+          boardContext={boardContext}
+          description={description}
+          boardName={boardName}
+        />
+      </div>
+      {showOverview && <OverviewView />}
+    </div>
   );
 
   // The editor is where a facade is started, so it opens on a board that has
@@ -179,13 +210,25 @@ export default function BoardEntryPoint({
     );
   }
 
+  // As the whole board the overview needs the canvas's height, which the
+  // runtimes' flow of panels does not ask for; the same elements either way,
+  // so nothing under them remounts.
+  const fill: React.CSSProperties = {
+    flex: 1,
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
+  };
   return (
-    <div style={t.w100} className={className}>
-      <div style={s(t.fs16, t.ls1, t.tc)}>
-        <div>{boardContent}</div>
+    <div
+      style={showOverview ? { ...t.w100, ...fill } : t.w100}
+      className={className}
+    >
+      <div style={showOverview ? fill : s(t.fs16, t.ls1, t.tc)}>
+        <div style={showOverview ? fill : undefined}>{boardContent}</div>
       </div>
-      <VSpacer />
-      {saveReminder}
+      {!showOverview && <VSpacer />}
+      {!showOverview && saveReminder}
     </div>
   );
 }

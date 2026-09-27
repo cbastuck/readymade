@@ -23,6 +23,7 @@ Everything else is optional:
 | `facade` | the app-like surface of widgets drawn over the board |
 | `unit` | what this board imports and exports, if it is used as a unit |
 | `units` | the boards this one is assembled from → `concepts/units.md` |
+| `blocks` | services defined once and used by reference wherever a pipeline names them → `concepts/blocks.md` |
 | `registry` | what a runtime reported it could build. Written by machinery, not authored |
 
 ```json
@@ -150,6 +151,24 @@ separator between a unit's name and its runtime ids (`concepts/units.md`).
 A flat uuid is always tried first, so a board whose service uuid happens to
 contain a dot goes on meaning that service. See `concepts/scopes.md`.
 
+### An entry may name a block instead
+
+Anywhere a service instance may stand, a **use** of one of the board's `blocks`
+may stand instead — an entry with `block` and no `serviceId`:
+
+```json
+{ "block": "note", "instanceId": "kick", "params": { "trigger": "kick" } }
+```
+
+Opening the board expands it into the service the block defines, and saving
+writes it back as it is written here. → `concepts/blocks.md`
+
+A use says nothing but `block`, `instanceId` or `uuid`, `serviceName` and
+`params`; an object saying anything else is data. Below a runtime's own list —
+where a service may hold arrays of data of its own — entries are read as uses
+only in a document that defines blocks, so a board without any opens with its
+services' state untouched.
+
 ### `serviceId` is the one that matters
 
 It is what the registry resolves. When a board names an id the registry no
@@ -219,6 +238,7 @@ actually changed.
 | Reading and writing one | `hkp-frontend/src/core/boardPersistence.ts` |
 | Facade shape | `hkp-frontend/src/facade/types.ts` |
 | Unit and composition shape | `hkp-frontend/src/runtime/board/units.ts` |
+| Blocks and their uses | `hkp-frontend/src/runtime/board/blocks.ts`, `hkp-frontend/src/core/linkBlocks.ts` |
 | Example boards | `boards/` |
 
 ---

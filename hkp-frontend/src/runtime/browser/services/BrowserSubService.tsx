@@ -117,8 +117,14 @@ export class BrowserSubService extends ServiceBase<State> {
     appendService?: { serviceId: string; instanceId?: string; serviceName?: string; state?: Record<string, any> };
     removeService?: string;
     configureService?: { instanceId: string; state: Record<string, any> };
+    cancel?: boolean;
   }): void {
     let changed = false;
+
+    // A command, not state: ends what is running inside, keeps what is built.
+    if (config.cancel === true) {
+      this.cancelInFlight();
+    }
 
     if (config.mode !== undefined) {
       this.state.mode = config.mode;
@@ -264,7 +270,8 @@ export class BrowserSubService extends ServiceBase<State> {
       // and it does not become the input again because the pipeline was empty.
       return this.state.stopPropagation ? null : input;
     }
-    const result = await this._scope.next(null, input, null, false);
+    // Answered by returning, so not reported through onResult as well.
+    const result = await this._scope.next(null, input, null, false, false);
     return this.state.stopPropagation ? null : result;
   }
 
@@ -275,8 +282,8 @@ export class BrowserSubService extends ServiceBase<State> {
    * to itself takes effect without rebuilding the pipeline, and so that a scope
    * inside a scope reaches outward the same way one level at a time.
    */
-  private _applySlots(): void {
-    this._scope?.delegateSlots(() =>
+  private _applySlots(scope: BrowserRuntimeScope | null = this._scope): void {
+    scope?.delegateSlots(() =>
       this.state.scope.slots === "inherit"
         ? (this.app.slots?.() ?? null)
         : this._slots,
@@ -300,6 +307,36 @@ export class BrowserSubService extends ServiceBase<State> {
       store,
       inherited: store !== null && store === this.app.slots?.(),
     };
+  }
+
+  /**
+   * What a board keeps of this scope: the pipeline as its services are now.
+   *
+   * A service inside can be configured without going through this one — a
+   * facade control addressing it by its scoped address reaches the live
+   * instance directly — so the stored pipeline alone would save what the
+   * services were built with, not what they were changed to since.
+   */
+  getConfiguration = async (): Promise<Partial<State> & { bypass: boolean }> => {
+    const pipeline = await Promise.all(
+      this.state.pipeline.map(async (entry) => {
+        const live = this.getInnerInstance(entry.instanceId) as any;
+        if (!live?.getConfiguration) {
+          return entry;
+        }
+        return { ...entry, state: await live.getConfiguration() };
+      }),
+    );
+    return { ...this.state, pipeline, bypass: this.bypass };
+  };
+
+  /**
+   * Ends every pass running inside this scope, at any depth; see
+   * BrowserRuntimeScope.cancelInFlight. Also what a scope around this one
+   * calls when it is cancelled.
+   */
+  cancelInFlight(): void {
+    this._scope?.cancelInFlight();
   }
 
   /** Returns the real inner ServiceInstance for a given instanceId, once built. */
@@ -380,7 +417,6 @@ export class BrowserSubService extends ServiceBase<State> {
         return; // superseded by a newer configure() call
       }
       this._scope = scope;
-      this._applySlots();
       // Let the UI know inner instances are now available for wiring.
       this.app.notify(this as any, { __innerScopeReady: true });
     })();
@@ -396,6 +432,10 @@ export class BrowserSubService extends ServiceBase<State> {
       },
       registry,
     );
+    // Before any service is added: a service may hold a value while it is
+    // being configured (a Hold given a value to write), and it has to land in
+    // the cells the scope will go on using, not in ones replaced after.
+    this._applySlots(scope);
 
     // Forward async results from the inner pipeline (e.g. Timer ticks) to the
     // outer pipeline so downstream services see the output.

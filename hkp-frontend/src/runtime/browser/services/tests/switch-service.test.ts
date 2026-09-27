@@ -9,10 +9,18 @@
  *    (backward compatible with the old identity Switch)
  *  - Empty matched pipeline passes input through
  *  - ignoreInnerResult returns the original input
+ *  - A case is a branch, not a scope: it holds in the slots around the
+ *    Switch, reports outward under <switch>.<instanceId>, and is reachable by
+ *    that address; answering by returning only
  */
 
 import { describe, it, expect, vi } from "vitest";
+// The registry first, as the app loads it: Switch and the registry import each
+// other, and entered from the Switch side the registry would list services
+// that are not defined yet.
+import "../../BrowserRegistry";
 import SwitchDescriptor from "../Switch";
+import { createSlotStore } from "../../../slots";
 
 function createMockApp() {
   return {
@@ -194,5 +202,53 @@ describe("Switch service", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("Switch service – a case is a branch of the pipeline around it", () => {
+  const holdCase = (op: "read" | "write") => ({
+    when: "true",
+    pipeline: [
+      {
+        serviceId: "hookup.to/service/hold",
+        instanceId: `hold-${op}`,
+        state: { slot: "shared", op },
+      },
+    ],
+  });
+
+  it("holds in the slots of whatever holds the Switch", async () => {
+    const slots = createSlotStore();
+    const app = { ...createMockApp(), slots: () => slots };
+    const service = SwitchDescriptor.create(app as any, "b", {} as any, "sw") as any;
+    service.configure({ cases: [holdCase("write")] });
+
+    await service.process({ written: true });
+    expect(slots.get("shared")).toEqual({ written: true });
+  });
+
+  it("reports outward under its address, answers by returning only, and is found by it", async () => {
+    const { service, app } = createSwitch();
+    service.configure({ cases: [routeCase("a", "A")] });
+    service.configure({
+      cases: [
+        {
+          when: "true",
+          pipeline: [
+            {
+              serviceId: "hookup.to/service/map",
+              instanceId: "route",
+              state: { mode: "replace", template: { route: "A" } },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(await service.process({})).toEqual({ route: "A" });
+    expect(app.next).not.toHaveBeenCalled();
+    const addresses = app.notify.mock.calls.map(([svc]: any[]) => svc.address);
+    expect(addresses).toContain("switch-1.route");
+    expect(service.findNested("route")).toBe(service.getInnerInstance("route"));
   });
 });

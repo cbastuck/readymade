@@ -290,5 +290,81 @@ describe("board persistence integration", () => {
         expect(getCtx()!.facade).toBeUndefined();
       });
     });
+
+    it("drops a change of block params queued on the board it replaced", async () => {
+      const api = makeApi();
+      const { getCtx } = renderBoard(api);
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+      // Two boards with a use at the same place, so the same key.
+      const withUse = (boardName: string) =>
+        ({
+          boardName,
+          runtimes: [],
+          services: { rt: [{ block: "note", uuid: "a" }] },
+          blocks: [
+            {
+              id: "note",
+              name: "Note",
+              serviceId: "sub-service",
+              params: { trigger: "hihat" },
+              state: { pipeline: [] },
+            },
+          ],
+        }) as any;
+
+      await act(async () => {
+        await getCtx()!.setBoardState(withUse("First"));
+      });
+      await waitFor(() => expect(getCtx()!.boardName).toBe("First"));
+      const key = getCtx()!.linkage!.blocks!.placed[0].key;
+
+      let change: Promise<void> | undefined;
+      await act(async () => {
+        const ctx = getCtx()!;
+        change = ctx.setBlockParams(key, { trigger: "snare" });
+        await ctx.setBoardState(withUse("Second"));
+      });
+
+      // Had it run, it would have found no service at "a" and failed; had it
+      // found one, it would have been the second board's.
+      await expect(change).resolves.toBeUndefined();
+      await waitFor(() => expect(getCtx()!.boardName).toBe("Second"));
+      expect(getCtx()!.linkage!.blocks!.placed[0]).toMatchObject({ key });
+      expect(getCtx()!.linkage!.blocks!.placed[0].use.params).toBeUndefined();
+    });
+
+    it("forgets the blocks of the board it cleared", async () => {
+      const api = makeApi();
+      const { getCtx } = renderBoard(api);
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+
+      await act(async () => {
+        await getCtx()!.setBoardState({
+          boardName: "Block Board",
+          runtimes: [],
+          services: {},
+          blocks: [
+            {
+              id: "note",
+              name: "Note",
+              serviceId: "hookup.to/service/sub-service",
+              state: { pipeline: [] },
+            },
+          ],
+        } as any);
+      });
+
+      await waitFor(() => {
+        expect(getCtx()!.linkage?.blocks?.definitions[""]).toHaveLength(1);
+      });
+
+      await act(async () => {
+        await getCtx()!.clearBoard("Empty Board");
+      });
+
+      await waitFor(() => {
+        expect(getCtx()!.linkage).toBeUndefined();
+      });
+    });
   });
 });

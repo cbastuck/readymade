@@ -1,0 +1,742 @@
+{
+  "boardName": "Night Groove",
+  "description": "The Timeline demo's night sky with a drum groove under it, both played by one clock.\n\nThe **Show** is a timeline that counts in **beats**: four bars, sixteen beats, looping, at the tempo held in the **Tempo** slot. Its placements arrange sound and picture alike, by name: the hi-hats from the first beat, the `kick` from the second bar, the `snare` from the third and a `fill` in the last two beats; the stars pop in one a beat over the first bar, the rocket launches with the kick, the planet arrives with the snare and the comet crosses with the fill.\n\nEvery frame goes to the **Band** first, then to the **Scene**. Each Band track is a use of **Drum**: a timeline that loops a few beats of its own, with an action wherever the drum is hit, and a Sound that plays when a frame carries one. The Scene draws what the Timeline demo draws, stretched from seconds to beats, and a **moon** that takes the name `kick` too — placed once, the kick is heard and the moon beats with it.\n\nNothing is scheduled: sound and picture are both worked out from the time in each frame, so Pause silences the band and holds the picture together, and turning the tempo speeds up both.",
+  "blocks": [
+    {
+      "id": "drum",
+      "name": "Drum",
+      "serviceId": "sub-service",
+      "description": "One drum on a loop of its own: the hits lie on a timeline of `length` beats, and every frame one falls in plays the drum. It plays while its name is placed and repeats for as long as the placement lasts.",
+      "params": {
+        "name": "drum",
+        "sound": "kick",
+        "volume": 0.8,
+        "length": 1,
+        "hits": [
+          {
+            "at": 0
+          }
+        ]
+      },
+      "state": {
+        "pipeline": [
+          {
+            "serviceId": "hookup.to/service/timeline",
+            "instanceId": "loop",
+            "serviceName": "Loop",
+            "state": {
+              "clock": "input",
+              "length": "{{param.length}}",
+              "loop": true,
+              "actions": "{{param.hits}}",
+              "placement": "{{param.name}}"
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/filter",
+            "instanceId": "on-a-hit",
+            "serviceName": "On a hit",
+            "state": {
+              "conditions": [
+                "params.actions.length > 0"
+              ]
+            }
+          },
+          {
+            "serviceId": "hookup.to/service/sound",
+            "instanceId": "sound",
+            "serviceName": "Sound",
+            "state": {
+              "generator": "drums",
+              "trigger": "{{param.sound}}",
+              "volume": "{{param.volume}}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "pop",
+      "name": "Pop",
+      "serviceId": "sub-service",
+      "description": "An image that appears with an overshoot, turns a full circle and fades — three beats of its own, stretched to fit wherever its name is placed.",
+      "params": {
+        "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpolygon%20points='50.0%2C4.0%2061.2%2C34.6%2093.7%2C35.8%2068.1%2C55.9%2077.0%2C87.2%2050.0%2C69.0%2023.0%2C87.2%2031.9%2C55.9%206.3%2C35.8%2038.8%2C34.6'%20fill='%23facc15'%20stroke='%23fef08a'%20stroke-width='3'%20stroke-linejoin='round'/%3E%3C/svg%3E",
+        "x": "50%",
+        "y": "50%",
+        "size": "16%",
+        "name": "pop"
+      },
+      "state": {
+        "pipeline": [
+          {
+            "serviceId": "hookup.to/service/timeline",
+            "instanceId": "motion",
+            "serviceName": "Motion",
+            "state": {
+              "clock": "input",
+              "length": 3,
+              "object": {
+                "type": "image",
+                "url": "{{param.image}}",
+                "height": "{{param.size}}",
+                "centerX": "{{param.x}}",
+                "centerY": "{{param.y}}"
+              },
+              "keyframes": {
+                "scale": [
+                  {
+                    "at": 0,
+                    "value": 0,
+                    "ease": "out"
+                  },
+                  {
+                    "at": 0.5,
+                    "value": 1.25,
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 0.8,
+                    "value": 1
+                  }
+                ],
+                "rotate": [
+                  {
+                    "at": 0,
+                    "value": 0,
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 3,
+                    "value": 360
+                  }
+                ],
+                "opacity": [
+                  {
+                    "at": 0,
+                    "value": 1
+                  },
+                  {
+                    "at": 2.2,
+                    "value": 1,
+                    "ease": "in"
+                  },
+                  {
+                    "at": 3,
+                    "value": 0
+                  }
+                ]
+              },
+              "placement": "{{param.name}}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "fly",
+      "name": "Fly",
+      "serviceId": "sub-service",
+      "description": "An image that travels from one place to another, easing in and out, tilting as it climbs and levelling off as it arrives — four beats of its own, stretched to fit wherever its name is placed.",
+      "params": {
+        "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpath%20d='M8%2050%20L24%2038%20L24%2062%20Z'%20fill='%23f97316'/%3E%3Cpath%20d='M24%2036%20L70%2036%20Q94%2050%2070%2064%20L24%2064%20Z'%20fill='%23e2e8f0'/%3E%3Ccircle%20cx='62'%20cy='50'%20r='7'%20fill='%2338bdf8'%20stroke='%2364748b'%20stroke-width='2'/%3E%3Cpath%20d='M30%2036%20L20%2022%20L44%2036%20Z%20M30%2064%20L20%2078%20L44%2064%20Z'%20fill='%23ef4444'/%3E%3C/svg%3E",
+        "fromX": "0%",
+        "fromY": "80%",
+        "toX": "100%",
+        "toY": "20%",
+        "size": "14%",
+        "name": "fly"
+      },
+      "state": {
+        "pipeline": [
+          {
+            "serviceId": "hookup.to/service/timeline",
+            "instanceId": "motion",
+            "serviceName": "Motion",
+            "state": {
+              "clock": "input",
+              "length": 4,
+              "object": {
+                "type": "image",
+                "url": "{{param.image}}",
+                "height": "{{param.size}}"
+              },
+              "keyframes": {
+                "centerX": [
+                  {
+                    "at": 0,
+                    "value": "{{param.fromX}}",
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 4,
+                    "value": "{{param.toX}}"
+                  }
+                ],
+                "centerY": [
+                  {
+                    "at": 0,
+                    "value": "{{param.fromY}}",
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 4,
+                    "value": "{{param.toY}}"
+                  }
+                ],
+                "rotate": [
+                  {
+                    "at": 0,
+                    "value": -40,
+                    "ease": "in-out"
+                  },
+                  {
+                    "at": 4,
+                    "value": -5
+                  }
+                ],
+                "scale": [
+                  {
+                    "at": 0,
+                    "value": 0.6,
+                    "ease": "out"
+                  },
+                  {
+                    "at": 2,
+                    "value": 1.1,
+                    "ease": "in"
+                  },
+                  {
+                    "at": 4,
+                    "value": 0.8
+                  }
+                ]
+              },
+              "placement": "{{param.name}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "tempo",
+        "serviceId": "hookup.to/service/hold",
+        "serviceName": "Tempo",
+        "state": {
+          "slot": "tempo",
+          "op": "write",
+          "value": 120
+        }
+      },
+      {
+        "uuid": "show",
+        "serviceId": "hookup.to/service/timeline",
+        "serviceName": "Show",
+        "state": {
+          "clock": "own",
+          "unit": "beats",
+          "tempoSlot": "tempo",
+          "fps": 60,
+          "length": 16,
+          "loop": true,
+          "running": false,
+          "placements": [
+            {
+              "name": "hats",
+              "at": 0,
+              "duration": 16
+            },
+            {
+              "name": "star-1",
+              "at": 0,
+              "duration": 4
+            },
+            {
+              "name": "star-2",
+              "at": 1,
+              "duration": 4
+            },
+            {
+              "name": "star-3",
+              "at": 2,
+              "duration": 4
+            },
+            {
+              "name": "star-4",
+              "at": 3,
+              "duration": 4
+            },
+            {
+              "name": "kick",
+              "at": 4,
+              "duration": 12
+            },
+            {
+              "name": "rocket",
+              "at": 4,
+              "duration": 8
+            },
+            {
+              "name": "snare",
+              "at": 8,
+              "duration": 6
+            },
+            {
+              "name": "planet",
+              "at": 8,
+              "duration": 6
+            },
+            {
+              "name": "star-1",
+              "at": 12,
+              "duration": 2
+            },
+            {
+              "name": "fill",
+              "at": 14,
+              "duration": 2
+            },
+            {
+              "name": "comet",
+              "at": 14,
+              "duration": 2
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "band",
+        "serviceId": "tracks",
+        "serviceName": "Band",
+        "state": {
+          "run": "serial",
+          "tracks": [
+            {
+              "name": "hats",
+              "pipeline": [
+                {
+                  "block": "drum",
+                  "instanceId": "hats",
+                  "serviceName": "Hi-hats",
+                  "params": {
+                    "name": "hats",
+                    "sound": "hihat",
+                    "volume": 0.35,
+                    "length": 1,
+                    "hits": [
+                      {
+                        "at": 0
+                      },
+                      {
+                        "at": 0.5
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "kick",
+              "pipeline": [
+                {
+                  "block": "drum",
+                  "instanceId": "kick",
+                  "serviceName": "Kick",
+                  "params": {
+                    "name": "kick",
+                    "sound": "kick",
+                    "volume": 0.9,
+                    "length": 1,
+                    "hits": [
+                      {
+                        "at": 0
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "snare",
+              "pipeline": [
+                {
+                  "block": "drum",
+                  "instanceId": "snare",
+                  "serviceName": "Snare",
+                  "params": {
+                    "name": "snare",
+                    "sound": "snare",
+                    "volume": 0.7,
+                    "length": 2,
+                    "hits": [
+                      {
+                        "at": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "fill",
+              "pipeline": [
+                {
+                  "block": "drum",
+                  "instanceId": "fill",
+                  "serviceName": "Fill",
+                  "params": {
+                    "name": "fill",
+                    "sound": "snare",
+                    "volume": 0.5,
+                    "length": 2,
+                    "hits": [
+                      {
+                        "at": 0
+                      },
+                      {
+                        "at": 0.5
+                      },
+                      {
+                        "at": 1
+                      },
+                      {
+                        "at": 1.25
+                      },
+                      {
+                        "at": 1.5
+                      },
+                      {
+                        "at": 1.75
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "reduce": [
+            {
+              "serviceId": "hookup.to/service/map",
+              "instanceId": "carry",
+              "serviceName": "The frame",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "=": "params.input"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "scene",
+        "serviceId": "tracks",
+        "serviceName": "Scene",
+        "state": {
+          "run": "serial",
+          "tracks": [
+            {
+              "name": "sky",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/timeline",
+                  "instanceId": "sky",
+                  "serviceName": "Sky",
+                  "state": {
+                    "clock": "input",
+                    "object": {
+                      "type": "rect",
+                      "x": 0,
+                      "y": 0,
+                      "width": "100%",
+                      "height": "100%"
+                    },
+                    "keyframes": {
+                      "color": [
+                        {
+                          "at": 0,
+                          "value": "#0b1026",
+                          "ease": "in-out"
+                        },
+                        {
+                          "at": 8,
+                          "value": "#312e81",
+                          "ease": "in-out"
+                        },
+                        {
+                          "at": 16,
+                          "value": "#0b1026"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "moon",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/timeline",
+                  "instanceId": "moon",
+                  "serviceName": "Moon",
+                  "state": {
+                    "clock": "input",
+                    "length": 1,
+                    "loop": true,
+                    "object": {
+                      "type": "circle",
+                      "x": "84%",
+                      "y": "18%",
+                      "color": "#fde68a"
+                    },
+                    "keyframes": {
+                      "radius": [
+                        {
+                          "at": 0,
+                          "value": "10%",
+                          "ease": "out"
+                        },
+                        {
+                          "at": 0.4,
+                          "value": "7%"
+                        }
+                      ]
+                    },
+                    "placement": "kick"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "planet",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "planet",
+                  "params": {
+                    "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cellipse%20cx='50'%20cy='50'%20rx='47'%20ry='13'%20fill='none'%20stroke='%23fde68a'%20stroke-width='4'%20transform='rotate%28-20%2050%2050%29'/%3E%3Ccircle%20cx='50'%20cy='50'%20r='28'%20fill='%23fb923c'/%3E%3Cpath%20d='M26%2044%20Q50%2036%2074%2044'%20stroke='%23fdba74'%20stroke-width='5'%20fill='none'/%3E%3Cpath%20d='M24%2056%20Q50%2064%2076%2056'%20stroke='%23ea580c'%20stroke-width='4'%20fill='none'/%3E%3C/svg%3E",
+                    "x": "50%",
+                    "y": "50%",
+                    "size": "45%",
+                    "name": "planet"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "star-1",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "star-1",
+                  "params": {
+                    "x": "18%",
+                    "y": "25%",
+                    "name": "star-1"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "star-2",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "star-2",
+                  "params": {
+                    "x": "80%",
+                    "y": "30%",
+                    "size": "12%",
+                    "name": "star-2"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "star-3",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "star-3",
+                  "params": {
+                    "x": "35%",
+                    "y": "70%",
+                    "size": "10%",
+                    "name": "star-3"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "star-4",
+              "pipeline": [
+                {
+                  "block": "pop",
+                  "instanceId": "star-4",
+                  "params": {
+                    "x": "65%",
+                    "y": "75%",
+                    "name": "star-4"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "rocket",
+              "pipeline": [
+                {
+                  "block": "fly",
+                  "instanceId": "rocket",
+                  "params": {
+                    "name": "rocket"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "comet",
+              "pipeline": [
+                {
+                  "block": "fly",
+                  "instanceId": "comet",
+                  "params": {
+                    "image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpolygon%20points='50.0%2C4.0%2061.2%2C34.6%2093.7%2C35.8%2068.1%2C55.9%2077.0%2C87.2%2050.0%2C69.0%2023.0%2C87.2%2031.9%2C55.9%206.3%2C35.8%2038.8%2C34.6'%20fill='%23facc15'%20stroke='%23fef08a'%20stroke-width='3'%20stroke-linejoin='round'/%3E%3C/svg%3E",
+                    "fromX": "100%",
+                    "fromY": "10%",
+                    "toX": "0%",
+                    "toY": "40%",
+                    "size": "7%",
+                    "name": "comet"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": {
+          "clearOnRedraw": true,
+          "resizable": true,
+          "size": [
+            600,
+            400
+          ]
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "main",
+        "title": "Night Groove",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "align": "center",
+          "items": [
+            {
+              "type": "canvas",
+              "serviceUuid": "canvas"
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "align": "center",
+              "items": [
+                {
+                  "type": "knob",
+                  "label": "Tempo",
+                  "unit": "BPM",
+                  "min": 60,
+                  "max": 180,
+                  "defaultValue": 120,
+                  "action": {
+                    "serviceUuid": "tempo",
+                    "configure": {
+                      "value": "{{value}}"
+                    }
+                  }
+                },
+                {
+                  "direction": "row",
+                  "gap": 10,
+                  "align": "center",
+                  "items": [
+                    {
+                      "type": "button",
+                      "label": "Play",
+                      "actions": [
+                        {
+                          "type": "configure",
+                          "serviceUuid": "show",
+                          "configure": {
+                            "play": true
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "button",
+                      "label": "Pause",
+                      "actions": [
+                        {
+                          "type": "configure",
+                          "serviceUuid": "show",
+                          "configure": {
+                            "pause": true
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "button",
+                      "label": "Stop",
+                      "actions": [
+                        {
+                          "type": "configure",
+                          "serviceUuid": "show",
+                          "configure": {
+                            "stop": true
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "tone": "muted",
+              "fontSize": 12,
+              "placeholder": "One timeline, counting beats, plays both: its placements say when each drum and each image comes in. A drum is a short loop of hits; an image is a timeline of keyframes. The moon takes the kick's name, so it beats when the kick plays. Turn the tempo and both follow."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

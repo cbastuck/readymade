@@ -1,7 +1,13 @@
 import { ReactElement, useMemo, useRef, useState } from "react";
 
 import ServiceWithDropBars from "./ServiceWithDropBars";
-import { RuntimeDescriptor, ServiceClass, ServiceInstance } from "../types";
+import BlockUseFrame from "./ui/BlockUse";
+import {
+  RuntimeDescriptor,
+  ServiceClass,
+  ServiceInstance,
+  toCanonicalServiceId,
+} from "../types";
 import { useThemeControl } from "../ui-components/ThemeContext";
 import { useBoardContext } from "../BoardContext";
 import { useEditReportingService } from "../core/editedServices";
@@ -132,7 +138,21 @@ export default function ServiceUiContainer(props: Props) {
               onDrop={onArrangeService}
               onDropServiceClass={onDropServiceClass}
             >
-              {serviceElement}
+              <BlockUseFrame
+                address={services[pos].uuid}
+                runtimeId={runtime.id}
+                level={
+                  toCanonicalServiceId(services[pos].serviceId ?? "") === "sub-service"
+                    ? {
+                        id: services[pos].uuid,
+                        label: services[pos].serviceName || "Sub-service",
+                      }
+                    : undefined
+                }
+                onRemove={() => boardContext?.removeService(services[pos], runtime)}
+              >
+                {serviceElement}
+              </BlockUseFrame>
             </ServiceWithDropBars>
           </div>
         );

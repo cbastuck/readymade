@@ -95,6 +95,19 @@ describe("Tracks service", () => {
     ]);
   });
 
+  it("hands on only the reduced answer, never a track's own", async () => {
+    // A track's answer is collected for the reduce; pushing it onward as well
+    // would reach the services after Tracks once per track, unreduced.
+    const { service, app } = createTracks();
+    service.configure({
+      tracks: [answering("a", 1), answering("b", 2)],
+      reduce: reducer("params.results[0] + params.results[1]"),
+    });
+
+    expect(await service.process({})).toBe(3);
+    expect(app.next).not.toHaveBeenCalled();
+  });
+
   it("leaves a hole where a track had nothing to say", async () => {
     const { service } = createTracks();
     service.configure({
@@ -170,6 +183,24 @@ describe("Tracks service", () => {
 
     service.configure({ track: "a", removeService: "a-2" });
     expect(await service.process({})).toEqual([1, 2]);
+  });
+
+  it("reports what runs inside a track under the address through it", async () => {
+    // Outside, an instanceId names nothing: two tracks may hold services of
+    // one name, and so may the runtime. Whoever watches a nested service (the
+    // overview) listens at `<tracks>.<instanceId>`, as it does inside a
+    // SubService.
+    const { service, app } = createTracks();
+    service.configure({ tracks: [answering("a", 1)] });
+    await service.process({});
+
+    const states = app.notify.mock.calls
+      .filter(([, n]) => n?.__internal)
+      .map(([svc, n]) => [svc.address, n.__internal.state]);
+    expect(states).toEqual([
+      ["tracks-1.a", "call-process"],
+      ["tracks-1.a", "call-process-finished"],
+    ]);
   });
 
   it("passes its input through when bypassed", async () => {

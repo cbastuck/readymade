@@ -20,6 +20,8 @@ type Props = {
   additionalHeaderButtons?: Array<any>;
   actions?: Array<Action>;
   autofocus?: boolean;
+  /** Shows the value without letting it be edited. */
+  readOnly?: boolean;
   children?: ReactNode;
   onClose: () => void;
 };
@@ -33,6 +35,7 @@ export default function EditorDialog({
   additionalHeaderButtons,
   actions,
   autofocus,
+  readOnly,
   children,
   onClose,
 }: Props) {
@@ -98,6 +101,7 @@ export default function EditorDialog({
             value={v}
             language={language || "json"}
             autofocus={autofocus}
+            readOnly={readOnly}
           />
         </div>
 

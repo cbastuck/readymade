@@ -162,3 +162,38 @@ describe("what a board keeps of a Hold", () => {
     });
   });
 });
+
+describe("a writing end given a value", () => {
+  it("writes it into the slot when configured, before anything arrives", () => {
+    // What lets a board say what a slot holds from the start: a tempo, a
+    // limit — something the pipelines read but nothing in them produces.
+    const slots = createSlotStore();
+    const { service: writer } = makeHold(
+      { slot: "tempo", op: "write", value: 120 },
+      slots,
+    );
+    expect(slots.get("tempo")).toBe(120);
+
+    writer.configure({ value: 90 });
+    expect(slots.get("tempo")).toBe(90);
+  });
+
+  it("keeps the value in what the board saves, so a reload holds it again", async () => {
+    const slots = createSlotStore();
+    const { service } = makeHold({ slot: "tempo", op: "write", value: 120 }, slots);
+    expect(await service.getConfiguration()).toEqual({
+      slot: "tempo",
+      op: "write",
+      value: 120,
+      bypass: false,
+    });
+  });
+
+  it("is not a reading end's to be given", () => {
+    const slots = createSlotStore();
+    slots.set("tempo", 100);
+    const { service } = makeHold({ slot: "tempo", op: "read", value: 120 }, slots);
+    expect(slots.get("tempo")).toBe(100);
+    expect(service.state.value).toBeUndefined();
+  });
+});

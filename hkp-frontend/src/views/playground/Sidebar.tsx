@@ -8,6 +8,7 @@ import {
   GripVertical,
   Search,
   Settings,
+  Boxes,
 } from "lucide-react";
 import { useBoardContext } from "../../BoardContext";
 import {
@@ -34,6 +35,9 @@ const SUB_SERVICE_ID = "sub-service";
 
 /** Distinct per card: one service can appear once plus once per preset of it. */
 function paletteKey(svc: ServiceClassWithPreset): string {
+  if (svc.block) {
+    return `block:${svc.block.id}`;
+  }
   return svc.preset ? `${svc.serviceId}:${svc.preset.id}` : svc.serviceId;
 }
 
@@ -117,6 +121,9 @@ function ServiceCard({ svc }: { svc: ServiceClassWithPreset }) {
   // made of other services. It is dragged and dropped like any primitive; the
   // icon is the only place it says what it is made of.
   const composed = !!svc.preset;
+  // A block of this board is used by reference rather than copied, and says
+  // so with the same mark its uses carry on the board.
+  const block = !!svc.block;
   return (
     <div
       draggable
@@ -130,7 +137,13 @@ function ServiceCard({ svc }: { svc: ServiceClassWithPreset }) {
         className="hkp-palette-card-icon"
         style={{ color: "var(--text-dim)" }}
       >
-        {composed ? <Layers size={13} /> : <Package size={13} />}
+        {block ? (
+          <Boxes size={13} style={{ color: "var(--hkp-accent)" }} />
+        ) : composed ? (
+          <Layers size={13} />
+        ) : (
+          <Package size={13} />
+        )}
       </div>
       <div className="hkp-palette-card-body">
         <div className="hkp-palette-card-name">{svc.serviceName}</div>
@@ -462,11 +475,43 @@ export default function Sidebar() {
       }
     }
 
+    // The board's own blocks, where the runtime has the service each one is
+    // made of. Those of the board being opened: a unit's blocks are for its
+    // own runtimes.
+    const boardBlocks = boardContext.linkage?.blocks?.definitions[""] ?? [];
+    for (const group of typeMap.values()) {
+      for (const definition of boardBlocks) {
+        const host = group.find(
+          (svc) =>
+            !svc.preset &&
+            !svc.block &&
+            toCanonicalServiceId(svc.serviceId) ===
+              toCanonicalServiceId(definition.serviceId),
+        );
+        if (!host) {
+          continue;
+        }
+        group.unshift({
+          serviceId: host.serviceId,
+          serviceName: definition.name,
+          description: definition.description,
+          version: host.version,
+          capabilities: host.capabilities,
+          block: { id: definition.id },
+        });
+      }
+    }
+
     return Array.from(typeMap.entries()).map(([type, services]) => ({
       type,
       services,
     }));
-  }, [boardContext?.runtimes, boardContext?.registry, subServicePresets]);
+  }, [
+    boardContext?.runtimes,
+    boardContext?.registry,
+    boardContext?.linkage?.blocks,
+    subServicePresets,
+  ]);
 
   const hasRuntimes = (boardContext?.runtimes.length ?? 0) > 0;
 

@@ -15,7 +15,9 @@ export default function TimerUI(props: ServiceUIProps) {
   const { service } = props;
 
   const modes = ["oneshot", "periodic"];
-  const units = ["ms", "s", "m", "h", "d", "bpm", "hz"];
+  // "beats" is measured at the tempo held in the timer's tempo slot; a
+  // fraction of a beat is entered through the value popover.
+  const units = ["ms", "s", "m", "h", "d", "bpm", "hz", "beats"];
 
   const [periodic, setPeriodic] = useState(false);
   const mode = periodic ? "periodic" : "oneshot";
@@ -153,7 +155,7 @@ export default function TimerUI(props: ServiceUIProps) {
               onChange={onDelayChanged}
               onUnit={onDelayUnit}
               min={0}
-              max={1000}
+              max={delayUnit === "beats" ? 16 : 1000}
             />
             <Button
               className="hkp-svc-btn"
@@ -180,7 +182,9 @@ export default function TimerUI(props: ServiceUIProps) {
                     ? 300
                     : intervalUnit === "hz"
                       ? 30
-                      : 100
+                      : intervalUnit === "beats"
+                        ? 16
+                        : 100
               }
             />
             <div className="flex gap-[5px]">

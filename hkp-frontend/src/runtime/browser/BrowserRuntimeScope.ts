@@ -31,6 +31,11 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   registry: BrowserRegistry;
   authenticatedUser: User | null = null;
   isDisposing: boolean = false;
+  /**
+   * Which passes are still wanted: each pass remembers the value it started
+   * under, and one that finds it changed ends where it is. See cancelInFlight.
+   */
+  private passGeneration = 0;
   state: { [key: string]: any } = {};
   /**
    * The run each service is currently being called in, keyed by service uuid.
@@ -224,16 +229,21 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     return m ? m.service : null;
   };
 
-  // service parameter can be null, then starts with the first service
+  // service parameter can be null, then starts with the first service.
+  // reportResult: false when the caller consumes the returned result itself, so
+  // the run does not also leave through onResult — which would hand the same
+  // result onward a second time.
   next = async (
     service: InstanceId | null,
     params: any,
     context?: ProcessContext | null,
     advanceBeforeProcess: boolean = true,
+    reportResult: boolean = true,
   ) => {
     if (this.isDisposing) {
       return null;
     }
+    const generation = this.passGeneration;
 
     const services = this.serviceInstances;
     const [svc_, position] = this.findServiceInstance(service?.uuid || null);
@@ -254,7 +264,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       !!services[i] && result !== null;
       ++i
     ) {
-      if (this.isDisposing) {
+      if (this.isDisposing || generation !== this.passGeneration) {
         return null;
       }
       svc = services[i];
@@ -279,10 +289,29 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       }
     }
 
-    if (!this.isDisposing) {
+    if (generation !== this.passGeneration) {
+      return null;
+    }
+    if (reportResult && !this.isDisposing) {
       this.onResult(svc ? svc.uuid : null, result, context);
     }
     return result;
+  };
+
+  /**
+   * Ends every pass running in this scope, and in the scopes of the services
+   * in it, at any depth.
+   *
+   * A pass ends at the service it is in: that one finishes — a waiting Timer
+   * waits out its delay — and then nothing after it runs and nothing leaves.
+   * Passes started afterwards are not affected. What stops a service emitting
+   * of its own accord, such as a periodic Timer, is that service's to say.
+   */
+  cancelInFlight = () => {
+    this.passGeneration += 1;
+    for (const svc of this.serviceInstances) {
+      (svc as { cancelInFlight?: () => void }).cancelInFlight?.();
+    }
   };
 
   rearrangeServices = (rearranged: Array<ServiceDescriptor>) => {

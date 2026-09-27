@@ -15,6 +15,12 @@ import {
   type ServiceLookup,
 } from "../rest/UIRegistry";
 import { joinAddress } from "../board/address";
+import BlockUseFrame, {
+  BlockEditActions,
+  useServiceAddress,
+  useInsideBlockUse,
+} from "./BlockUse";
+import { toCanonicalServiceId } from "hkp-frontend/src/types";
 import RuntimeRestServiceUI from "../rest/RuntimeRestServiceUI";
 import ServiceWithDropBars from "../ServiceWithDropBars";
 import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
@@ -84,6 +90,7 @@ export default function SubServicePipelineUI({
   const navigation = useNestedNavigation();
   const depth = useLevelDepth();
   const inlineHops = useInlineHops();
+  const locked = useInsideBlockUse();
 
   const label =
     levelLabel || service.serviceName || service.serviceId || "Pipeline";
@@ -113,65 +120,72 @@ export default function SubServicePipelineUI({
     service.configure({ appendService: { serviceId: svc.serviceId } });
   };
 
-  const selector = (idPrefix: string, compact = false) => (
-    <ServiceSelector
-      id={`${idPrefix}-${service.uuid}`}
-      registry={registry}
-      onAddService={append}
-      compact={compact}
-    />
-  );
+  // Inside a use of a block the pipeline is its definition's: nothing is added
+  // to it here.
+  const selector = (idPrefix: string, compact = false) =>
+    locked ? null : (
+      <ServiceSelector
+        id={`${idPrefix}-${service.uuid}`}
+        registry={registry}
+        onAddService={append}
+        compact={compact}
+      />
+    );
 
   return (
     <div className="w-full flex flex-col">
       {/* Where the content can be shown, and the two places it can be shown in:
           here inside the panel, or on a level of its own. */}
       {(!hostFolds || !collapsed) && (
-      <div className="flex w-full items-center gap-2 mt-1">
-        {!hostFolds && (
-          <>
-            <span
-              className="text-gray-400 whitespace-nowrap"
-              style={{ fontSize: 12 }}
-            >
-              Show nested sevices
-            </span>
+        <div className="flex w-full items-center gap-2 mt-1">
+          {!hostFolds && (
+            <>
+              <span
+                className="text-gray-400 whitespace-nowrap"
+                style={{ fontSize: 12 }}
+              >
+                Show nested sevices
+              </span>
 
-            <button
-              className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
-              onClick={() => setCollapsed((c) => !c)}
-              aria-label={collapsed ? "Show content inline" : "Hide inline content"}
-              title={collapsed ? "Show content inline" : "Hide inline content"}
-            >
-              {collapsed ? (
-                <ChevronRight size={14} strokeWidth={1.5} />
-              ) : (
-                <ChevronDown size={14} strokeWidth={1.5} />
-              )}
-            </button>
-          </>
-        )}
+              <button
+                className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+                onClick={() => setCollapsed((c) => !c)}
+                aria-label={
+                  collapsed ? "Show content inline" : "Hide inline content"
+                }
+                title={
+                  collapsed ? "Show content inline" : "Hide inline content"
+                }
+              >
+                {collapsed ? (
+                  <ChevronRight size={14} strokeWidth={1.5} />
+                ) : (
+                  <ChevronDown size={14} strokeWidth={1.5} />
+                )}
+              </button>
+            </>
+          )}
 
-        {/* A host that owns the fold puts this beside its own control, where
+          {/* A host that owns the fold puts this beside its own control, where
             it reads as one of the things that can be done to a pipeline rather
             than as a lone button on a row of its own. */}
-        {navigation && !hostFolds && (
-          <button
-            className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
-            onClick={() =>
-              navigation.open(service.uuid, label, depth, inlineHops > 0)
-            }
-            aria-label={`Open ${label} as its own level`}
-            title={`Open ${label} as its own level`}
-          >
-            <Maximize2 size={14} strokeWidth={1.5} />
-          </button>
-        )}
+          {navigation && !hostFolds && (
+            <button
+              className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+              onClick={() =>
+                navigation.open(service.uuid, label, depth, inlineHops > 0)
+              }
+              aria-label={`Open ${label} as its own level`}
+              title={`Open ${label} as its own level`}
+            >
+              <Maximize2 size={14} strokeWidth={1.5} />
+            </button>
+          )}
 
-        {!collapsed && (
-          <div className="flex ml-auto">{selector("sub-pipeline", true)}</div>
-        )}
-      </div>
+          {!collapsed && (
+            <div className="flex ml-auto">{selector("sub-pipeline", true)}</div>
+          )}
+        </div>
       )}
 
       {/* Shown here rather than opened, so anything nested inside it is one
@@ -201,6 +215,8 @@ export default function SubServicePipelineUI({
             <InlineHopsContext.Provider value={0}>
               <PipelineLevel
                 label={label}
+                inBlock={locked}
+                actions={<BlockEditActions />}
                 selector={selector("sub-pipeline-level", true)}
                 isEmpty={pipeline.length === 0}
               >
@@ -232,11 +248,17 @@ export default function SubServicePipelineUI({
  */
 function PipelineLevel({
   label,
+  inBlock,
+  actions,
   selector,
   isEmpty,
   children,
 }: {
   label: string;
+  /** Whether the level shows the inside of a block's use, and so is locked. */
+  inBlock: boolean;
+  /** What the host has to say on its own level — e.g. applying a block edit. */
+  actions?: React.ReactNode;
   selector: React.ReactNode;
   isEmpty: boolean;
   children: React.ReactNode;
@@ -272,7 +294,12 @@ function PipelineLevel({
             compact ? "py-1" : "py-2"
           }`}
         >
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+            {/* Tagged the way a runtime's header tags its type. */}
+            {inBlock && <span className="hkp-rt-badge">block</span>}
+          </div>
+          {actions}
           <div className="flex ml-auto">{selector}</div>
         </div>
 
@@ -288,6 +315,42 @@ function PipelineLevel({
       </div>
     </div>
   );
+}
+
+/**
+ * A live instance as a panel below is handed it: its own name and configure,
+ * everything else the instance's.
+ *
+ * A spread alone copies the instance's own fields and none of its class's
+ * methods — so a nested host drawn from it has no `getInnerInstance`, finds no
+ * live instance for what it holds, and every panel from there down falls back
+ * to a proxy reading the state its parent last stored. Changes made to those
+ * services by any other way than their own panel then never show: the panel
+ * re-reads the stale copy each time it is drawn. The methods are bound to the
+ * instance, so they act on it and not on the copy.
+ */
+function liveCopy(
+  instance: ServiceInstance,
+  overrides: Partial<ServiceInstance>,
+): ServiceInstance {
+  const copy: Record<string, unknown> = { ...instance };
+  for (
+    let proto = Object.getPrototypeOf(instance);
+    proto && proto !== Object.prototype;
+    proto = Object.getPrototypeOf(proto)
+  ) {
+    for (const name of Object.getOwnPropertyNames(proto)) {
+      const member = (instance as any)[name];
+      if (
+        name !== "constructor" &&
+        !(name in copy) &&
+        typeof member === "function"
+      ) {
+        copy[name] = member.bind(instance);
+      }
+    }
+  }
+  return Object.assign(copy, overrides) as unknown as ServiceInstance;
 }
 
 /**
@@ -314,6 +377,9 @@ function PipelineStrip({
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const dragCountRef = useRef(0);
+  // Inside a use of a block the order is its definition's, like the rest.
+  const locked = useInsideBlockUse();
+  const hostAddress = useServiceAddress() ?? service.address ?? service.uuid;
 
   const findDescriptor = (serviceId: string): ServiceClass | undefined =>
     registry.find((entry) => entry.serviceId === serviceId);
@@ -427,11 +493,21 @@ function PipelineStrip({
         // Keep configure() pointing at the proxy so config changes are persisted.
         const realInstance = getActualInstance?.(entry.instanceId);
         const subServiceInstance: ServiceInstance = realInstance
-          ? {
-              ...realInstance,
-              serviceName: entry.serviceName ?? realInstance.serviceName,
+          ? liveCopy(realInstance, {
+              // The name the pipeline gives it, then the registry's — an
+              // instance may carry no more than its id.
+              serviceName:
+                entry.serviceName ??
+                descriptor?.serviceName ??
+                realInstance.serviceName,
+              // A service that keeps no `state` of its own (Timer) is shown
+              // what its host last reported, which is where a frame looks for
+              // whether it is bypassed.
+              ...((realInstance as any).state === undefined
+                ? { state: entry.state }
+                : {}),
               configure: configureProxy,
-            }
+            })
           : proxyInstance;
 
         // Look the service up the way a top-level one is looked up: by id
@@ -478,10 +554,26 @@ function PipelineStrip({
             <ServiceWithDropBars
               index={pos}
               isFirst={pos === 0}
-              isDragging={isDragging}
-              onDrop={rearrange}
+              isDragging={isDragging && !locked}
+              onDrop={locked ? () => {} : rearrange}
             >
-              <div className="px-0.5">{uiElement}</div>
+              <div className="px-0.5">
+                <BlockUseFrame
+                  address={joinAddress(hostAddress, entry.instanceId)}
+                  level={
+                    toCanonicalServiceId(entry.serviceId) === "sub-service"
+                      ? {
+                          id: subServiceInstance.uuid,
+                          label:
+                            subServiceInstance.serviceName || entry.serviceId,
+                        }
+                      : undefined
+                  }
+                  onRemove={() => remove(entry.instanceId)}
+                >
+                  {uiElement}
+                </BlockUseFrame>
+              </div>
             </ServiceWithDropBars>
           </div>
         );

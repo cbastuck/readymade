@@ -45,6 +45,9 @@ three separate breakages were found by hand in two days:
 | `http-client` | hkp-rt supported only `url`; node/python added `__hkpMount` + `path` | All three now share the contract |
 | runtime lifecycle | hkp-node reaped on last disconnect; hkp-python and hkp-rt never reaped | Resolved: `garbageCollected` is declared in the create payload, default persist, honoured by all three |
 | `POST /runtimes` with an existing id | hkp-node reused the running runtime; hkp-python and hkp-rt rebuilt it | Resolved: `POST` provisions (create-or-replace) everywhere, `GET` attaches, and the client says which it means |
+| `timer` | Browser only (2026-09-25): unit `"beats"` for `periodicUnit`/`oneShotDelayUnit`, measured at a BPM read from the slot named by `tempoSlot` (default `"tempo"`, 120 BPM when empty) on every wait; a periodic beats timer schedules tick by tick. hkp-rt's timer takes `delay` in µs, not the browser's value/unit pair, so porting starts from that gap | Open — built for `boards/nested-rhythm-demo-board.json` |
+| `hold` | Browser only (2026-09-25): `value` on a slot's writing end is written into the slot on configure, and kept in state so a reload holds it again | Open — same board |
+| `sub-service` | Browser only (2026-09-25): `cancel` command ends every pass in flight inside the scope, at any depth (a pass generation per `BrowserRuntimeScope`; Tracks forwards it too). hkp-node/python/hkp-rt have no way to end a pass in flight | Open — same board's Stop |
 
 Each was found by loading a board and reading an error — or worse, by a 500 with
 an uncaught `Unknown serviceId`.

@@ -200,23 +200,28 @@ export type UnitLinkError = Error & {
   missing: string[];
 };
 
-/** True for the error `reportUnitDiagnostics` throws, which carries a remedy. */
+/** True for the error `reportLinkDiagnostics` throws, which carries a remedy. */
 export function isUnitLinkError(error: unknown): error is UnitLinkError {
   return (
     error instanceof Error && Array.isArray((error as UnitLinkError).missing)
   );
 }
 
-export function reportUnitDiagnostics(
+/**
+ * Says what linking found — about units and about blocks alike. Errors are
+ * raised, since a board with a hole in it would otherwise start, run, and go
+ * wrong later somewhere that cannot explain why; warnings are shown.
+ */
+export function reportLinkDiagnostics(
   diagnostics: Diagnostic[],
   board?: UnitBoard,
 ): void {
   for (const entry of diagnostics) {
     const where = entry.unit ? `[${entry.unit}] ` : "";
     if (entry.level === "error") {
-      console.error(`Board units: ${where}${entry.message}`);
+      console.error(`Board linking: ${where}${entry.message}`);
     } else {
-      console.warn(`Board units: ${where}${entry.message}`);
+      console.warn(`Board linking: ${where}${entry.message}`);
     }
   }
 
@@ -252,7 +257,7 @@ export function reportUnitDiagnostics(
     toast.warning(
       warnings.length === 1
         ? warnings[0].message
-        : `${warnings.length} things to check in this board's units`,
+        : `${warnings.length} things to check in this board`,
       warnings.length === 1
         ? undefined
         : {

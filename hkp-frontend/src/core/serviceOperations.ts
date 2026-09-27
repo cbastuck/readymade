@@ -7,6 +7,8 @@ import {
   isRuntimeBrowserClassType,
 } from "../types";
 import { presetsForService } from "../presetRegistry";
+import { presetState } from "./presets";
+import { withNewUse } from "../runtime/board/blocks";
 import { reorderService } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 
@@ -31,9 +33,24 @@ export async function addService(
         (entry) => entry.id === service.preset!.id,
       )
     : undefined;
+  // A block is used, not applied: what is created is what a use of it
+  // expands to, and linkage records the use so saving writes it back.
+  const blocks = refs.linkageRef?.current?.blocks;
+  const blockDocument = runtime.unit ?? "";
+  const definition = service.block
+    ? blocks?.definitions[blockDocument]?.find((entry) => entry.id === service.block!.id)
+    : undefined;
+  if (service.block && (!blocks || !definition)) {
+    throw new Error(`No block "${service.block.id}" to add to runtime "${runtime.id}"`);
+  }
+
   const created = await api.addService(
     scope,
-    preset ? { ...service, serviceName: preset.name } : service,
+    preset
+      ? { ...service, serviceName: preset.name }
+      : definition
+        ? { ...service, serviceId: definition.serviceId, serviceName: definition.name }
+        : service,
     prototype?.uuid,
   );
 
@@ -47,8 +64,22 @@ export async function addService(
   // the one the create answered with and a sub-service configured from a preset
   // shows as empty while its runtime holds the whole pipeline.
   let svc = created;
-  if (created && preset) {
-    await api.configureService(scope, created, preset.state);
+  if (created && definition && blocks) {
+    const placed = withNewUse(blocks, {
+      runtimeId: runtime.id,
+      document: blockDocument,
+      arrayPath: [runtime.id],
+      use: { block: definition.id, uuid: created.uuid },
+      id: created.uuid,
+    });
+    await api.configureService(scope, created, placed.service.state);
+    refs.setLinkage((prev) => (prev ? { ...prev, blocks: placed.linkage } : prev));
+    const state = await Promise.resolve(
+      api.getServiceConfig?.(scope, created),
+    ).catch(() => null);
+    svc = { ...created, serviceName: placed.service.serviceName, ...(state ? { state } : {}) };
+  } else if (created && preset) {
+    await api.configureService(scope, created, presetState(preset));
     const state = await Promise.resolve(
       api.getServiceConfig?.(scope, created),
     ).catch(() => null);
@@ -81,7 +112,7 @@ export async function addService(
       prototype,
       prototype.state || prototype,
     );
-  } else if (svc && !preset && isRuntimeBrowserClassType(runtime.type)) {
+  } else if (svc && !preset && !definition && isRuntimeBrowserClassType(runtime.type)) {
     // Initialise a freshly inserted browser service with an initial configure,
     // symmetric with restore (which configures every service on load). Without
     // it, a service that establishes a side effect in configure() — e.g.
