@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 const MAX_HISTORY = 10;
-import { X, Pin, PinOff, Maximize } from "lucide-react";
+import { X, Pin, PinOff, Maximize, Minimize } from "lucide-react";
 
 import {
   Popover,
@@ -18,8 +18,9 @@ import {
 import { useTheme } from "../ThemeContext";
 import FlowInspectorPopup from "./FlowInspectorPopup";
 import FlowWaveIcon from "./FlowWaveIcon";
+import "../settings/settings.css";
+import "./flow-inspector.css";
 
-import Button from "../Button";
 import EditorDialog from "../EditorDialog";
 
 type Props = {
@@ -32,6 +33,15 @@ type Props = {
    * centred on.
    */
   offsetTop?: number;
+};
+
+// Sizing inline rather than through utilities: it has to beat the primitive's
+// own classes whatever order the stylesheets load in.
+const frameStyle: React.CSSProperties = {
+  width: "min(460px, 94vw)",
+  padding: 0,
+  borderRadius: 14,
+  overflow: "hidden",
 };
 
 // Typed Data objects (FloatRingBuffer etc.) carry a Symbol tag, which
@@ -54,6 +64,9 @@ export default function ServiceOutputPlug({
   const [isOpen, setIsOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Which remembered output is shown, 0 being the latest; the popover and the
+  // expanded view share it.
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [history, setHistory] = useState<any[]>(() =>
     data != null ? [safeClone(data)] : [],
   );
@@ -63,6 +76,7 @@ export default function ServiceOutputPlug({
       return;
     }
     setHistory((prev) => [safeClone(data), ...prev].slice(0, MAX_HISTORY));
+    setSelectedIndex(0);
   }, [data]);
 
   const onOpen = () => setIsOpen(true);
@@ -80,13 +94,14 @@ export default function ServiceOutputPlug({
       <EditorDialog
         title="Flow Inspector"
         isOpen={true}
-        value={data}
+        value={history[selectedIndex]}
         additionalHeaderButtons={[
-          <MaximizeButton
-            variant="ghost"
-            active={true}
+          <ToolButton
+            label="Back to popover"
             onClick={() => setIsFullscreen(false)}
-          />,
+          >
+            <Minimize size={16} />
+          </ToolButton>,
         ]}
         onClose={onClose}
       />
@@ -123,55 +138,58 @@ export default function ServiceOutputPlug({
         </ContextMenuContent>
       </ContextMenu>
 
-      <PopoverContent className="w-[450px]">
-        <div className="flex items-center">
-          <h2 className="font-medium leading-none w-full text-left">
-            Flow Inspector
-          </h2>
-          <div className="flex">
-            <MaximizeButton onClick={onMaximize} />
-            <StickyButton isSticky={isSticky} onClick={onSticky} />
-            <CloseButton onClick={onClose} />
+      <PopoverContent className="hkp-set" style={frameStyle}>
+        <div className="hkp-flow-header">
+          <h2 className="hkp-set-pane-title hkp-flow-title">Flow Inspector</h2>
+          <div className="hkp-flow-tools">
+            <ToolButton label="Expand" onClick={onMaximize}>
+              <Maximize size={15} />
+            </ToolButton>
+            <ToolButton
+              label={isSticky ? "Unpin" : "Keep open"}
+              pressed={isSticky}
+              onClick={onSticky}
+            >
+              {isSticky ? <PinOff size={15} /> : <Pin size={15} />}
+            </ToolButton>
+            <ToolButton label="Close" onClick={onClose}>
+              <X size={16} />
+            </ToolButton>
           </div>
         </div>
 
-        <FlowInspectorPopup history={history} onInject={onInject} />
+        <FlowInspectorPopup
+          history={history}
+          selectedIndex={selectedIndex}
+          onSelectIndex={setSelectedIndex}
+          onInject={onInject}
+        />
       </PopoverContent>
     </Popover>
   );
 }
 
-function CloseButton({ onClick }: any) {
+function ToolButton({
+  label,
+  pressed,
+  onClick,
+  children,
+}: {
+  label: string;
+  pressed?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
   return (
-    <div className="text-right">
-      <Button className="w-9 p-2 m-0" onClick={onClick}>
-        <X />
-      </Button>
-    </div>
-  );
-}
-
-function MaximizeButton({ onClick, variant = "outline", active = false }: any) {
-  return (
-    <div className="text-right">
-      <Button className="w-9 p-2 m-0" variant={variant} onClick={onClick}>
-        <Maximize className={active ? "stroke-sky-600" : "currentColor"} />
-      </Button>
-    </div>
-  );
-}
-
-function StickyButton({ isSticky, onClick }: any) {
-  const theme = useTheme();
-  return (
-    <div className="text-right">
-      <Button
-        className="w-9 p-2 m-0"
-        style={{ backgroundColor: isSticky ? theme.accentColor : undefined }}
-        onClick={onClick}
-      >
-        {isSticky ? <PinOff /> : <Pin />}
-      </Button>
-    </div>
+    <button
+      type="button"
+      className="hkp-set-icon-btn hkp-set-icon-btn--neutral"
+      aria-label={label}
+      aria-pressed={pressed}
+      title={label}
+      onClick={onClick}
+    >
+      {children}
+    </button>
   );
 }

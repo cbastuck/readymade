@@ -1,16 +1,30 @@
 import { ReactNode, useId, useRef } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
-import { Button } from "hkp-frontend/src/ui-components/primitives/button";
+import { SettingsButton } from "hkp-frontend/src/ui-components/settings/kit";
 
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
+import "./editor-dialog.css";
 
 type Action = { label: string; onAction: (buf: string | object) => void };
+// Sizing inline rather than through utilities: it has to beat the primitive's
+// own classes whatever order the stylesheets load in.
+const frameStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  width: "min(1280px, 92vw)",
+  maxWidth: "none",
+  height: "min(900px, 86vh)",
+  padding: 0,
+  gap: 0,
+  overflow: "hidden",
+  borderRadius: 16,
+};
+
 type Props = {
   title: string;
   description?: string;
@@ -18,6 +32,7 @@ type Props = {
   language?: string;
   isOpen: boolean;
   additionalHeaderButtons?: Array<any>;
+  /** The first is the dialog's main action: drawn as primary, at the right. */
   actions?: Array<Action>;
   autofocus?: boolean;
   /** Shows the value without letting it be edited. */
@@ -69,33 +84,37 @@ export default function EditorDialog({
 
   const v = typeof value === "string" ? value : JSON.stringify(value, null, 2);
 
+  const [mainAction, ...otherActions] = actions ?? [];
+  // Room in the header for the buttons the primitive draws at its right.
+  const headerPaddingRight = 56 + 32 * (additionalHeaderButtons?.length ?? 0);
+
   return (
     <Dialog open={isOpen} onOpenChange={onChangeDialogOpen}>
       <DialogContent
-        className="flex h-[80vh] w-[80vw] max-w-[80vw] flex-col gap-0 overflow-hidden p-0"
+        className="hkp-set hkp-set-dialog hkp-edit-dialog"
+        style={frameStyle}
         onPointerDownOutside={avoidDefaultDomBehavior}
         onInteractOutside={avoidDefaultDomBehavior}
         additionalHeaderButtons={additionalHeaderButtons}
         aria-describedby={description ? descriptionId : undefined}
       >
-        <DialogHeader className="shrink-0 border-b px-4 py-3 pr-16">
-          <DialogTitle className="h-6 pt-2">{title}</DialogTitle>
+        <div
+          className="hkp-set-pane-header"
+          style={{ paddingRight: headerPaddingRight }}
+        >
+          <DialogPrimitive.Title className="hkp-set-pane-title">
+            {title}
+          </DialogPrimitive.Title>
           {description && (
             <DialogDescription id={descriptionId} className="sr-only">
               {description}
             </DialogDescription>
           )}
-        </DialogHeader>
+        </div>
 
-        {/* Optional content slot */}
-        {children && (
-          <div className="shrink-0 px-4 py-2 text-sm text-muted-foreground">
-            {children}
-          </div>
-        )}
+        {children && <div className="hkp-edit-dialog-details">{children}</div>}
 
-        {/* Editor — fills remaining space */}
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="hkp-edit-dialog-editor">
           <Editor
             ref={editor}
             value={v}
@@ -105,18 +124,22 @@ export default function EditorDialog({
           />
         </div>
 
-        {actions && actions.length > 0 && (
-          <div className="flex shrink-0 justify-end gap-2 border-t px-4 py-3">
-            {actions.map((action) => (
-              <Button
+        {mainAction && (
+          <div className="hkp-edit-dialog-footer">
+            {otherActions.map((action) => (
+              <SettingsButton
                 key={action.label}
-                variant="outline"
-                size="sm"
                 onClick={() => onButton(action)}
               >
                 {action.label}
-              </Button>
+              </SettingsButton>
             ))}
+            <SettingsButton
+              variant="primary"
+              onClick={() => onButton(mainAction)}
+            >
+              {mainAction.label}
+            </SettingsButton>
           </div>
         )}
       </DialogContent>
