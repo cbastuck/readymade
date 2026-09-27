@@ -38,6 +38,7 @@
 #include "./services/text_generation.h"
 #include "./services/speech_to_text.h"
 #include "./services/text_to_speech.h"
+#include "./services/audio_encode.h"
 
 #if HKP_MP4_TO_WAV_ENABLED
   #include "./services/mp4_to_wav.h"
@@ -78,6 +79,7 @@ using ServiceTypes = Registry::TypeList<
   ,TextGeneration
   ,SpeechToText
   ,TextToSpeech
+  ,AudioEncode
 #if HKP_MP4_TO_WAV_ENABLED
   ,Mp4ToWav
 #endif

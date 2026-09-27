@@ -119,6 +119,10 @@ public:
     return headers;
   }
 
+  // The connection itself, for a response that outlives this request/response
+  // exchange — a stream (see HttpStreamListener). Use only on its strand.
+  boost::beast::tcp_stream& tcpStream() { return stream_; }
+
   void sendHtmlResponse(const std::string& html);
   void sendJsonResponseWithCors(const json& data);
   void sendCorsPreflightResponse();

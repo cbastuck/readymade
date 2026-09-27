@@ -57,6 +57,9 @@ add_executable(hkp-rt-service-tests
   service_tracks.test.cpp
   http_response_origin.test.cpp
   http_server_lifecycle.test.cpp
+  http_stream.test.cpp
+  stream_broadcast.test.cpp
+  service_audio_encode.test.cpp
   runtime_no_input.test.cpp
 )
 target_include_directories(hkp-rt-service-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lib/src)

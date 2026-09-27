@@ -48,7 +48,10 @@ export function makeNull(): Null {
   return { type: NullSymbol };
 }
 
-export type Data = FloatRingBuffer | Null | TextData;
+// Raw bytes, as hkp-rt sends BinaryData: the payload is the bytes themselves.
+export type BinaryData = Uint8Array;
+
+export type Data = FloatRingBuffer | Null | TextData | BinaryData;
 
 export function isFloatRingBuffer(data: any): data is FloatRingBuffer {
   return data?.type === FloatRingBufferSymbol;

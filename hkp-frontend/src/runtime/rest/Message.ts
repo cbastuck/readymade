@@ -128,6 +128,13 @@ export function deserializeYasMessage(buffer: ArrayBuffer): Message {
       data: makeNull(),
       sender,
     };
+  } else if (dataType === DataTypeId.BinaryData) {
+    // No inner YAS object: hkp-rt writes the bytes straight after the header.
+    return {
+      purpose,
+      data: new Uint8Array(buffer.slice(offset)),
+      sender,
+    };
   } else if (dataType === DataTypeId.String) {
     //const data = new TextDecoder().decode(buffer.slice(offset));
     //console.log("deserializeYasMessage: String data type", data);

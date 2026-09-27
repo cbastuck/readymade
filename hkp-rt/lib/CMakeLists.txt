@@ -63,6 +63,25 @@ if(NOT IOS)
     endif()
 endif()
 
+# ── mp3 encoding for audio-encode (LAME) ─────────────────────────────────────
+# Found the way fdk-aac is above. Without it, audio-encode still registers and
+# encodes wav; mp3 reports that it is not compiled in. macOS only for now: the
+# mobile manifests do not carry mp3lame.
+if(NOT IOS AND NOT ANDROID)
+    if(VCPKG_INSTALLED_DIR AND VCPKG_TARGET_TRIPLET)
+        find_package(mp3lame CONFIG QUIET
+            HINTS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}"
+        )
+    endif()
+    if(TARGET mp3lame::mp3lame)
+        message(STATUS "hkp-rt-lib: audio-encode mp3 enabled (LAME)")
+        list(APPEND PLATFORM_DEFINES "HKP_MP3_ENABLED")
+        set(_HKP_MP3 ON)
+    else()
+        message(STATUS "hkp-rt-lib: audio-encode mp3 disabled (mp3lame not found; add it to the vcpkg manifest and rm build/CMakeCache.txt)")
+    endif()
+endif()
+
 add_library(${PROJECT_NAME} STATIC)
 target_sources(${PROJECT_NAME}
     PRIVATE
@@ -91,10 +110,12 @@ target_sources(${PROJECT_NAME}
       src/services/http_server/http_server_impl.cpp
       src/services/http_server/http_listener.cpp
       src/services/http_server/http_session.cpp
+      src/services/http_server/http_stream_listener.cpp
       src/services/http_client.cpp
       src/services/text_generation.cpp
       src/services/speech_to_text.cpp
       src/services/text_to_speech.cpp
+      src/services/audio_encode.cpp
       src/services/tts_inflect.cpp
       src/services/websocket_writer.cpp
       src/services/writer_session.cpp
@@ -145,6 +166,10 @@ if(IOS)
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_IOS" "IS_APPLE" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
   find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
   target_link_libraries(${PROJECT_NAME} PUBLIC ${COREFOUNDATION_FRAMEWORK})
+endif()
+
+if(_HKP_MP3)
+  target_link_libraries(${PROJECT_NAME} PRIVATE mp3lame::mp3lame)
 endif()
 
 if(_HKP_MP4_TO_WAV)

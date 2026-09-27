@@ -21,6 +21,7 @@ public:
 
   Data processFrom(const Service&, Data data, bool,
                    std::function<void(Data)>) override { return data; }
+  void post(std::function<void()> fn) override { fn(); }
   void scheduleProcessFrom(const Service&, Data, bool) override {}
   bool isConnected(const Service&) const override { return true; }
   void sendData(Data, MessagePurpose, const std::string&,

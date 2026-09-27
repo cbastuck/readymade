@@ -1,0 +1,151 @@
+{
+  "boardName": "Live Radio",
+  "description": "Your microphone as a radio station. The hkp-rt runtime captures the mic, encodes it to MP3 as it arrives, and streams it to anyone who opens the stream URL — a browser tab, VLC, or a phone scanning the QR code. Everyone hears the same stream, and people can join or leave at any time. Press Start, then open the URL.\n\nThe microphone runs on the audio thread, which only stores the samples and signals. Encoding and sending happen on the runtime's event loop, and every listener's connection is written to asynchronously, so a slow listener only falls behind itself.\n\nNeeds hkp-rt on port 8887, built with mp3 (HKP_MP3_ENABLED, on by default on macOS). The encoder's channels must match what the Microphone panel reports under Channels: 1 for a built-in mic, 2 for most interfaces.",
+  "runtimes": [
+    {
+      "id": "rt",
+      "name": "hkp-rt",
+      "type": "rest",
+      "url": "http://127.0.0.1:8887",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "rt": [
+      {
+        "uuid": "mic",
+        "serviceId": "core-input",
+        "serviceName": "Microphone",
+        "state": {
+          "bypass": true,
+          "deferPropagation": true,
+          "preferredSampleRate": 48000
+        }
+      },
+      {
+        "uuid": "radio",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Radio",
+        "state": {
+          "bypass": true,
+          "port": 8890,
+          "stream": {
+            "path": "/live.mp3",
+            "contentType": "audio/mpeg",
+            "burstBytes": 0,
+            "maxQueueBytes": 32768
+          },
+          "onProcess": [
+            {
+              "instanceId": "encode",
+              "serviceId": "audio-encode",
+              "serviceName": "MP3",
+              "state": {
+                "format": "mp3",
+                "stream": true,
+                "sampleRate": 48000,
+                "channels": 1,
+                "bitrate": 128,
+                "quality": 5
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "end",
+        "serviceId": "stopper",
+        "serviceName": "End Of Chain"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "station",
+        "title": "Live Radio",
+        "layout": {
+          "direction": "column",
+          "padding": 24,
+          "gap": 16,
+          "align": "center",
+          "justify": "center",
+          "fill": true,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 12,
+              "align": "center",
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": { "serviceUuid": "radio", "path": "status" },
+                  "statusColors": { "online": "#22c55e", "offline": "#6b7280" }
+                },
+                {
+                  "type": "text",
+                  "source": { "serviceUuid": "radio", "path": "listeners" },
+                  "label": "Listening:",
+                  "placeholder": "0"
+                }
+              ]
+            },
+            {
+              "type": "qr-code",
+              "source": { "serviceUuid": "radio", "path": "streamUrl" },
+              "caption": "Scan to listen"
+            },
+            {
+              "type": "text",
+              "source": { "serviceUuid": "radio", "path": "streamUrl" },
+              "placeholder": "Press Start to go on air",
+              "mono": true,
+              "copyable": true
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Start",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "radio",
+                      "configure": { "bypass": false }
+                    },
+                    {
+                      "type": "configure",
+                      "serviceUuid": "mic",
+                      "configure": { "bypass": false }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Stop",
+                  "actions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "mic",
+                      "configure": { "bypass": true }
+                    },
+                    {
+                      "type": "configure",
+                      "serviceUuid": "radio",
+                      "configure": { "bypass": true }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

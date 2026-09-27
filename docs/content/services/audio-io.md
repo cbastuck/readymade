@@ -86,7 +86,9 @@ processing pipeline.
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `preferredInputDeviceName` | `string` | `""` | Name of the desired input device. If empty or not found, the system default is used. |
-| `deferPropagation` | `boolean` | `false` | When `true`, captured data is not forwarded downstream until explicitly triggered |
+| `preferredSampleRate` | `number` | device default | Sample rate to set the device to |
+| `preferredBufferSize` | `number` | `512` | Frames per device callback |
+| `deferPropagation` | `boolean` | `false` | Which thread the services after this one run on — see below |
 
 The `configure` response includes read-only fields populated by the
 service:
@@ -95,6 +97,25 @@ service:
 |---|---|---|
 | `currentDeviceName` | `string` | Name of the device actually opened |
 | `availableDevices` | `string[]` | All input devices currently visible to CoreAudio |
+| `sampleRate` | `number` | The rate the device actually runs at |
+| `channels` | `number` | How many channels the samples are interleaved across — what a service reading them, such as [Audio Encode](./audio-encode.md), is configured to match |
+
+### Which thread runs the pipeline
+
+CoreAudio calls back on its **realtime audio thread**, and the samples go into
+the ring buffer there.
+
+- **`deferPropagation: false`** — the services after this one run right there,
+  inside the callback. Lowest latency, and only sound when everything after this
+  service is realtime-safe: no allocation, no locks, no I/O.
+- **`deferPropagation: true`** — the callback only signals, and the rest of the
+  pipeline runs on the runtime's event loop. The ring buffer carries the samples
+  across, so a pass that starts late reads everything that arrived in between;
+  signals that arrive before a pass has started count as one. Use it whenever
+  something downstream encodes, sends, or otherwise does real work.
+
+Either way the callback itself does nothing but append and signal: it never
+allocates, locks or logs.
 
 ### Output
 

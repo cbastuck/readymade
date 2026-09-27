@@ -46,6 +46,11 @@ public:
   virtual void scheduleProcessFrom(const Service& svc, Data data,
                                    bool advanceBefore = true) = 0;
 
+  // Run `fn` on the host's event loop — the thread pipelines run on. Safe to
+  // call from any thread; it may allocate, so not from a realtime one (see
+  // RealtimeWakeup for how a realtime thread gets here).
+  virtual void post(std::function<void()> fn) = 0;
+
   // True if `svc` belongs to this host's immediate service list.
   virtual bool isConnected(const Service& svc) const = 0;
 

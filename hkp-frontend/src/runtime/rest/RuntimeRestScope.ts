@@ -79,7 +79,16 @@ export default class RuntimeRestScope implements RuntimeScope {
       this.runtimeOutput.onmessage = async (event) => {
         const isBinary = typeof event.data !== "string";
         if (isBinary) {
-          const message = deserializeYasMessage(await event.data.arrayBuffer());
+          let message;
+          try {
+            message = deserializeYasMessage(await event.data.arrayBuffer());
+          } catch (err) {
+            // A frame this client cannot read is dropped, not thrown: this is
+            // an event handler, so a throw here is an unhandled rejection per
+            // frame, and a runtime streaming results sends many.
+            console.warn("RuntimeRestScope.runtimeOutput: dropping frame", err);
+            return;
+          }
           if (
             message.purpose === MessagePurpose.RESULT ||
             message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE ||

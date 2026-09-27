@@ -160,6 +160,17 @@ REGISTRY: dict[str, Component] = {
             "desktop only."
         ),
     ),
+    "mp3lame": C(
+        "LGPL-2.0-only", "https://lame.sourceforge.io/", DESKTOP, "static",
+        scope=["audio-encode"],
+        via="hkp-rt/lib/CMakeLists.txt — audio-encode's mp3 format (HKP_MP3_ENABLED)",
+        notes=(
+            "REVIEW: statically linked. LGPL asks that users can relink against a modified "
+            "LAME; with the whole program's source published that is available, but confirm "
+            "it for the binary distributions. In the vcpkg manifest for osx only, so this "
+            "affects macOS builds only for now."
+        ),
+    ),
     "ffmpeg": C(
         "LGPL-2.1-or-later", "https://ffmpeg.org/", [], "not linked",
         scope=UNUSED,
@@ -407,6 +418,7 @@ SCOPE_MARKERS = {
     "inflect": "inflect/engine.h",
     "minimp4": "minimp4.h",
     "fdk-aac": "fdk-aac/",
+    "mp3lame": "lame/lame.h",
     "inja": "inja.h",
 }
 
