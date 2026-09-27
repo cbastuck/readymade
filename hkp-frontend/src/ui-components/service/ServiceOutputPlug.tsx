@@ -26,6 +26,12 @@ type Props = {
   isActive?: boolean;
   data: any;
   onInject: (data: any) => void;
+  /**
+   * How far the plug sits below the top of what it is drawn beside — a
+   * service card's header by default; none beside a use's bar, which it is
+   * centred on.
+   */
+  offsetTop?: number;
 };
 
 // Typed Data objects (FloatRingBuffer etc.) carry a Symbol tag, which
@@ -38,7 +44,12 @@ function safeClone(data: any): any {
   }
 }
 
-export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
+export default function ServiceOutputPlug({
+  isActive,
+  data,
+  onInject,
+  offsetTop = 18,
+}: Props) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
@@ -92,8 +103,9 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
           <PopoverTrigger asChild>
             <button
               type="button"
+              aria-label="Inspect output"
               style={{
-                marginTop: 18,
+                marginTop: offsetTop,
                 marginLeft: 4,
                 zIndex: 1,
               }}

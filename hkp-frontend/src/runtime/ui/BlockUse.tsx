@@ -7,7 +7,15 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Boxes, Check, Maximize2, Pencil, Trash2, Unlink, X } from "lucide-react";
+import {
+  Boxes,
+  Check,
+  Maximize2,
+  Pencil,
+  Trash2,
+  Unlink,
+  X,
+} from "lucide-react";
 
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
@@ -150,7 +158,9 @@ export function useUsePlugSlot(): UsePlugSlot | null {
 }
 
 /** The hand-over a locked frame offers the panel drawn in its body. */
-export const PanelLockHandOverContext = createContext<(() => () => void) | null>(null);
+export const PanelLockHandOverContext = createContext<
+  (() => () => void) | null
+>(null);
 
 /**
  * For a service's panel: takes over the lock its frame holds, and says whether
@@ -230,6 +240,7 @@ export default function BlockUseFrame({
   const use = usePlacedUse(address, runtimeId);
   // How many frames drawn directly in the panel have taken its lock over.
   const [handedOver, handOver] = useLockHandOver();
+  // Beside the use, where its frame draws its output plug.
   const [plugSlot, setPlugSlot] = useState<HTMLElement | null>(null);
   // Only a locked panel has a lock to hand over.
   const lockedHere = !use?.editing && (!!use || inside);
@@ -255,7 +266,9 @@ export default function BlockUseFrame({
         style={{ border: editFrame.border, background: editFrame.background }}
       >
         <EditBar use={use} />
-        <BlockLockContext.Provider value={false}>{addressed}</BlockLockContext.Provider>
+        <BlockLockContext.Provider value={false}>
+          {addressed}
+        </BlockLockContext.Provider>
       </div>
     );
   }
@@ -314,7 +327,9 @@ function OpenLevel({ level }: { level: { id: string; label: string } }) {
   return (
     <button
       className="hkp-svc-btn hkp-svc-btn--icon flex items-center self-start"
-      onClick={() => navigation.open(level.id, level.label, depth, inlineHops > 0)}
+      onClick={() =>
+        navigation.open(level.id, level.label, depth, inlineHops > 0)
+      }
       aria-label={`Open ${level.label} as its own level`}
       title={`Open ${level.label} as its own level`}
     >
@@ -347,7 +362,9 @@ function UseBar({
     }
     void board
       ?.setBlockParams(placed.key, { [name]: value })
-      .catch((err) => console.error("Could not change the block's params", err));
+      .catch((err) =>
+        console.error("Could not change the block's params", err),
+      );
   };
 
   return (
@@ -362,7 +379,11 @@ function UseBar({
       }}
     >
       <div className="flex items-center gap-2">
-        <Boxes size={14} strokeWidth={1.5} style={{ color: "var(--hkp-accent)" }} />
+        <Boxes
+          size={14}
+          strokeWidth={1.5}
+          style={{ color: "var(--hkp-accent)" }}
+        />
         <span className="truncate" title={definition?.description}>
           Block · {definition?.name ?? placed.use.block}
         </span>
@@ -401,7 +422,10 @@ function UseBar({
         </div>
       </div>
       {Object.keys(declared).length > 0 && (
-        <div className="grid gap-x-2 gap-y-1" style={{ gridTemplateColumns: "auto 1fr" }}>
+        <div
+          className="grid gap-x-2 gap-y-1"
+          style={{ gridTemplateColumns: "auto 1fr" }}
+        >
           {Object.keys(declared).map((name) => (
             <React.Fragment key={name}>
               <label htmlFor={`${placed.key}-${name}`} className="opacity-70">
@@ -485,7 +509,11 @@ function EditBar({ use, inline = false }: { use: UseInfo; inline?: boolean }) {
         fontSize,
       }}
     >
-      <Pencil size={14} strokeWidth={1.5} style={{ color: "var(--hkp-accent)" }} />
+      <Pencil
+        size={14}
+        strokeWidth={1.5}
+        style={{ color: "var(--hkp-accent)" }}
+      />
       <span
         className="truncate"
         title="Changes made here apply to every use of the block once applied"
@@ -543,11 +571,14 @@ function ParamField({
   const [text, setText] = useState(String(value ?? ""));
   useEffect(() => setText(String(value ?? "")), [value]);
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (settle.current) {
-      clearTimeout(settle.current);
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (settle.current) {
+        clearTimeout(settle.current);
+      }
+    },
+    [],
+  );
 
   if (kind === "boolean") {
     return (
@@ -587,6 +618,7 @@ function ParamField({
       type={kind === "number" ? "number" : "text"}
       step={kind === "number" ? stepOf(fallback as number) : undefined}
       value={text}
+      spellCheck={false}
       disabled={disabled}
       onChange={(event) => {
         const next = event.target.value;

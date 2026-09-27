@@ -127,6 +127,11 @@ export type Preset = {
    * copied — takes its uses' values instead.
    */
   params?: Record<string, unknown>;
+  /**
+   * The URL this preset was imported from, as it was typed. What updating it
+   * reads again; a preset from a disk or saved from a service has none.
+   */
+  origin?: string;
 };
 
 /** A preset file holds one preset, or several. */
@@ -233,6 +238,27 @@ function parsePresetBody(
  */
 export type BlockDefinition = Omit<Preset, "preset"> & { preset?: string };
 
+/**
+ * Whether a preset is offered to be *used* — placed as a block, copied into the
+ * board once and varied per use through its params — rather than applied.
+ *
+ * A pipeline that declares params is written to be placed several times with
+ * different values, and a use's params are edited from its bar without opening
+ * the pipeline. Without params there is nothing to vary per use, and a copy the
+ * board can change freely is the more useful thing to drop.
+ */
+export function isUsableAsBlock(preset: Preset): boolean {
+  if (!preset.params || !Object.keys(preset.params).length) {
+    return false;
+  }
+  try {
+    parseBlockDefinition(preset);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** The state a preset configures a service with: its parameters substituted. */
 export function presetState(preset: Preset): Record<string, any> {
   return substituteParams(preset.state, preset.params ?? {});
@@ -304,13 +330,19 @@ export function presetFetchUrl(url: string): string {
   return url;
 }
 
-/** Fetches a preset file from the web. */
+/**
+ * Fetches a preset file from the web. Each preset remembers the address, so it
+ * can be read again from there when someone asks for the newer version.
+ */
 export async function loadPresetsFromUrl(url: string): Promise<Preset[]> {
   const res = await fetch(presetFetchUrl(url));
   if (!res.ok) {
     throw new Error(`Could not fetch preset: ${res.status} ${res.statusText}`);
   }
-  return parsePresetFile(await res.text());
+  return parsePresetFile(await res.text()).map((preset) => ({
+    ...preset,
+    origin: url,
+  }));
 }
 
 /** Reads a preset file a person picked or dropped. */
@@ -370,20 +402,54 @@ export function presetFromService(
 }
 
 /* ------------------------------------------------------------------ *
- * Presets this browser keeps
+ * The presets this device keeps
  * ------------------------------------------------------------------ */
+
+/** A preset file as a host stores it: its name, and its text. */
+export type PresetStoredFile = { file: string; source: string };
+
+/**
+ * Where the presets this device keeps are written.
+ *
+ * The host's business, the way where boards are saved is: the web keeps them in
+ * local storage, the native app as files in a folder — which is what makes a
+ * file dropped into that folder a preset the next time the app starts. Files,
+ * not records, because a preset *is* a file: one picked from a disk or fetched
+ * from a URL is stored as it arrived, and a file holding several presets stays
+ * one file.
+ */
+export interface PresetStorage {
+  /** Every file in the store. */
+  list(): Promise<PresetStoredFile[]>;
+  /** Writes a file, replacing one of the same name. */
+  write(file: string, source: string): Promise<void>;
+  remove(file: string): Promise<void>;
+}
 
 const STORAGE_KEY = "hkp-presets";
 
-/**
- * Presets saved on this device.
- *
- * A place to put one that is not yet a file anybody else has — the working
- * configuration a person wants back tomorrow. Saving to disk is the other half
- * of the same action and is what makes it shareable; this is what makes it
- * immediately reachable from the menu it was saved in.
- */
-export function savedPresets(): Preset[] {
+/** A preset held on this device, and the stored file it is in. */
+type HeldPreset = { preset: Preset; file: string };
+
+/** The store the presets are written to; local storage until a host says otherwise. */
+let storage: PresetStorage | null = null;
+/** What the host's store held when it was last read, and what has changed since. */
+let held: HeldPreset[] | null = null;
+
+function isSame(a: Pick<Preset, "serviceId" | "id">, b: Pick<Preset, "serviceId" | "id">) {
+  return (
+    a.id === b.id &&
+    toCanonicalServiceId(a.serviceId) === toCanonicalServiceId(b.serviceId)
+  );
+}
+
+/** The name a preset is stored under when it arrives without one. */
+export function presetFileName(preset: Pick<Preset, "serviceId" | "id">): string {
+  return `${slug(toCanonicalServiceId(preset.serviceId))}--${slug(preset.id) || "preset"}.json`;
+}
+
+/** Local storage's list, read like any other: an entry that does not parse is skipped. */
+function readLocalPresets(): Preset[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -407,15 +473,122 @@ export function savedPresets(): Preset[] {
   }
 }
 
-function writeSavedPresets(presets: Preset[]): void {
+function writeLocalPresets(presets: Preset[]): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
   } catch (err) {
     console.error("Could not store presets", err);
   }
+}
+
+/** Reads the host's files; a file that is not a preset is reported and left alone. */
+function readStoredFiles(files: PresetStoredFile[]): HeldPreset[] {
+  return files.flatMap(({ file, source }) => {
+    try {
+      return parsePresetFile(source).map((preset) => ({ preset, file }));
+    } catch (err) {
+      console.warn(`Preset file "${file}" skipped: ${(err as Error).message}`);
+      return [];
+    }
+  });
+}
+
+/** Writes one stored file as it now stands: its presets, or nothing if none is left. */
+async function persistFile(file: string): Promise<boolean> {
+  if (!storage || !held) {
+    return false;
+  }
+  const inFile = held.filter((entry) => entry.file === file).map((entry) => entry.preset);
+  try {
+    if (!inFile.length) {
+      await storage.remove(file);
+    } else if (inFile.length === 1) {
+      await storage.write(file, serializePreset(inFile[0]));
+    } else {
+      await storage.write(file, `${JSON.stringify({ presets: inFile }, null, 2)}\n`);
+    }
+  } catch (err) {
+    console.error(`Could not store preset file "${file}"`, err);
+    return false;
+  }
+  return true;
+}
+
+function notify(): void {
   for (const listener of listeners) {
     listener();
   }
+}
+
+/**
+ * Makes a host's store the one presets are kept in, and reads it.
+ *
+ * Called once the host is known (`PlatformProvider`); until the read finishes
+ * the list is what local storage held, and whoever listens hears when it is
+ * replaced. Presets a build before this one kept in local storage are moved
+ * into the host's store the first time, so switching stores loses nothing.
+ */
+export async function attachPresetStorage(next: PresetStorage | null): Promise<void> {
+  if (next === storage) {
+    return;
+  }
+  storage = next;
+  held = null;
+  if (!next) {
+    notify();
+    return;
+  }
+  let files: PresetStoredFile[];
+  try {
+    files = await next.list();
+  } catch (err) {
+    // A host that cannot list its store cannot be trusted to write to it
+    // either: presets stay where they were rather than going nowhere.
+    console.error("Could not read the preset library; keeping presets in local storage", err);
+    if (storage === next) {
+      storage = null;
+    }
+    return;
+  }
+  if (storage !== next) {
+    return;
+  }
+  const read = readStoredFiles(files);
+  const legacy = readLocalPresets().filter(
+    (preset) => !read.some((entry) => isSame(entry.preset, preset)),
+  );
+  const taken = new Set(files.map(({ file }) => file));
+  const moved = legacy.map((preset) => ({ preset, file: presetFileName(preset) }))
+    .filter(({ file }) => !taken.has(file));
+  held = [...read, ...moved];
+  let allMoved = true;
+  for (const { file } of moved) {
+    allMoved = (await persistFile(file)) && allMoved;
+  }
+  if (moved.length && allMoved) {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Left behind, it is read again and found already moved.
+    }
+  }
+  notify();
+}
+
+/**
+ * Presets saved on this device.
+ *
+ * A place to put one that is not yet a file anybody else has — the working
+ * configuration a person wants back tomorrow, or one imported from a disk or a
+ * URL. Saving to disk is the other half of the same action and is what makes it
+ * shareable; this is what makes it immediately reachable from the menu it was
+ * saved in.
+ */
+export function savedPresets(): Preset[] {
+  if (storage && held) {
+    return held.map((entry) => entry.preset);
+  }
+  return readLocalPresets();
 }
 
 const listeners = new Set<() => void>();
@@ -437,21 +610,68 @@ export function subscribePresets(listener: () => void): () => void {
 
 /** Saves a preset on this device, replacing one of the same id and service. */
 export function savePreset(preset: Preset): Preset[] {
-  const rest = savedPresets().filter(
-    (entry) =>
-      !(entry.id === preset.id && entry.serviceId === preset.serviceId),
-  );
-  const next = [...rest, preset];
-  writeSavedPresets(next);
+  if (storage && held) {
+    // Replaced in the file it was in, so a preset refiled from a file holding
+    // several stays with them.
+    const existing = held.find((entry) => isSame(entry.preset, preset));
+    const file = existing?.file ?? presetFileName(preset);
+    held = existing
+      ? held.map((entry) => (entry === existing ? { preset, file } : entry))
+      : [...held, { preset, file }];
+    void persistFile(file);
+    notify();
+    return savedPresets();
+  }
+  const next = [
+    ...readLocalPresets().filter(
+      (entry) => !(entry.id === preset.id && entry.serviceId === preset.serviceId),
+    ),
+    preset,
+  ];
+  writeLocalPresets(next);
+  notify();
   return next;
 }
 
 /** Forgets a preset saved on this device. */
 export function removeSavedPreset(serviceId: string, id: string): Preset[] {
-  const next = savedPresets().filter(
+  if (storage && held) {
+    const existing = held.find((entry) => isSame(entry.preset, { serviceId, id }));
+    if (existing) {
+      held = held.filter((entry) => entry !== existing);
+      void persistFile(existing.file);
+      notify();
+    }
+    return savedPresets();
+  }
+  const next = readLocalPresets().filter(
     (entry) => !(entry.id === id && entry.serviceId === serviceId),
   );
-  writeSavedPresets(next);
+  writeLocalPresets(next);
+  notify();
+  return next;
+}
+
+/**
+ * Reads a preset again from the address it was imported from, and keeps what
+ * is there now in place of the copy this device held.
+ *
+ * Only ever asked for: a preset imported from a URL stays as it arrived until
+ * someone decides to take the author's newer version. A board that already
+ * holds a copy of it — a block used from the library — keeps its own.
+ */
+export async function updatePresetFromOrigin(preset: Preset): Promise<Preset> {
+  if (!preset.origin) {
+    throw new Error(`Preset "${preset.name}" was not imported from a URL`);
+  }
+  const fetched = await loadPresetsFromUrl(preset.origin);
+  const next = fetched.find((entry) => isSame(entry, preset));
+  if (!next) {
+    throw new Error(
+      `${preset.origin} no longer holds preset "${preset.id}" for ${preset.serviceId}`,
+    );
+  }
+  savePreset(next);
   return next;
 }
 

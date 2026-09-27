@@ -9,6 +9,8 @@ import {
   expandBlocks,
   findEntryPath,
   usesToRefresh,
+  findSameDefinition,
+  withAdoptedDefinition,
   withBlockFrom,
   withNewUse,
   outermostUses,
@@ -600,5 +602,52 @@ describe("wrapping services that include uses", () => {
     const outer = blockUseAt(made, "wrapper", "ui")!;
     expect(blockUseAt(made, "wrapper.b1", "ui")?.parent).toBe(outer.key);
     expect(outermostUses(made).map((placed) => placed.address)).toEqual(["wrapper"]);
+  });
+});
+
+describe("adopting a definition from the library", () => {
+  const library: BlockDefinition = {
+    preset: "v1",
+    origin: "https://example.com/note.json",
+    ...note,
+  };
+
+  it("copies it into a board without blocks, as a board-local definition", () => {
+    const { linkage, id } = withAdoptedDefinition(undefined, "", library);
+    expect(id).toBe("note");
+    expect(linkage.definitions[""]).toHaveLength(1);
+    // The board's copy carries neither the preset marker nor the library's bookkeeping.
+    expect(linkage.definitions[""][0]).not.toHaveProperty("preset");
+    expect(linkage.definitions[""][0]).not.toHaveProperty("origin");
+    expect(linkage.placed).toEqual([]);
+  });
+
+  it("uses the copy the board already holds, under whatever id it has there", () => {
+    const board: BlockLinkage = {
+      definitions: { "": [{ ...note, id: "my-note" }] },
+      placed: [],
+    };
+    const { linkage, id } = withAdoptedDefinition(board, "", library);
+    expect(id).toBe("my-note");
+    expect(linkage).toBe(board);
+    expect(findSameDefinition(board.definitions[""], library)?.id).toBe("my-note");
+  });
+
+  it("gives a different definition a free id rather than replacing the board's own", () => {
+    const board: BlockLinkage = {
+      definitions: { "": [{ ...note, name: "Another note" }] },
+      placed: [],
+    };
+    const { linkage, id } = withAdoptedDefinition(board, "", library);
+    expect(id).toBe("note-2");
+    expect(linkage.definitions[""].map((entry) => entry.id)).toEqual(["note", "note-2"]);
+    expect(linkage.definitions[""][0].name).toBe("Another note");
+  });
+
+  it("compares what a definition says, not how its keys are ordered", () => {
+    const reordered = JSON.parse(
+      JSON.stringify({ state: note.state, params: note.params, serviceId: note.serviceId, name: note.name, id: "x" }),
+    );
+    expect(findSameDefinition([reordered], note)?.id).toBe("x");
   });
 });

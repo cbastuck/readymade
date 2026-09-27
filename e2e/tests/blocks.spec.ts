@@ -327,6 +327,87 @@ test.describe("making a block", () => {
   });
 });
 
+test.describe("a block from the library", () => {
+  const libraryBoard = {
+    boardName: "Blocks library e2e",
+    runtimes: [{ id: "rt", name: "Browser", type: "browser", state: {} }],
+    services: {
+      rt: [
+        {
+          uuid: "log",
+          serviceId: "hookup.to/service/monitor",
+          serviceName: "Log",
+        },
+      ],
+    },
+  };
+
+  test.beforeEach(async ({ seedBoard, openBoard, page }) => {
+    await seedBoard("blocks-library-e2e", libraryBoard);
+    await openBoard("blocks-library-e2e");
+    await expect(page.locator("#service-frame-log")).toBeVisible({
+      timeout: 20_000,
+    });
+  });
+
+  test("the shipped ntfy block is copied into the board once, and each drop is a use of it", async ({
+    page,
+  }) => {
+    const card = () =>
+      page.locator(".hkp-palette-card", { hasText: "ntfy notification" }).first();
+    const runtime = page.locator(".hkp-runtime-container").first();
+
+    const names = () => page.locator(".hkp-palette-card-name").allTextContents();
+    const before = await names();
+
+    await card().dragTo(runtime);
+    await expect(uses(page, "ntfy-notification")).toHaveCount(1);
+    // The card stays where it was dropped from — the board's copy gets no card
+    // of its own while it says what the library's does.
+    expect(await names()).toEqual(before);
+
+    // What the use passes on is inspectable from beside its bar, where its
+    // hidden panel's plug is drawn.
+    const plug = uses(page, "ntfy-notification")
+      .first()
+      .getByRole("button", { name: "Inspect output" });
+    await expect(plug).toBeVisible();
+    if (process.env.HKP_E2E_SCREENSHOT) {
+      await page.screenshot({ path: process.env.HKP_E2E_SCREENSHOT });
+    }
+    await plug.click();
+    await expect(page.getByText("Flow Inspector").first()).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await card().dragTo(runtime);
+    await expect(uses(page, "ntfy-notification")).toHaveCount(2);
+
+    await page.keyboard.press(
+      process.platform === "darwin" ? "Meta+s" : "Control+s",
+    );
+    const key = "hkp-playground-Blocks library e2e";
+    await expect
+      .poll(() => page.evaluate((k) => localStorage.getItem(k), key))
+      .not.toBeNull();
+    const item = JSON.parse(
+      (await page.evaluate((k) => localStorage.getItem(k), key))!,
+    );
+    const saved = JSON.parse(item.source ?? JSON.stringify(item));
+    expect(saved.blocks).toHaveLength(1);
+    expect(saved.blocks[0]).toMatchObject({
+      id: "ntfy-notification",
+      serviceId: "sub-service",
+      params: { topic: "readymade-notifications" },
+    });
+    expect(saved.blocks[0]).not.toHaveProperty("preset");
+    expect(saved.services.rt).toEqual([
+      expect.objectContaining({ uuid: "log" }),
+      { block: "ntfy-notification", uuid: expect.any(String) },
+      { block: "ntfy-notification", uuid: expect.any(String) },
+    ]);
+  });
+});
+
 test.describe("inside a Switch case", () => {
   const demo = JSON.parse(
     fs.readFileSync(new URL("../../boards/nested-rhythm-demo-board.json", import.meta.url), "utf8"),

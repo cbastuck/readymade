@@ -1,8 +1,14 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import {
   applyPreset,
+  attachPresetStorage,
+  isUsableAsBlock,
+  loadPresetsFromUrl,
   parseBlockDefinition,
+  PresetStorage,
+  PresetStoredFile,
+  updatePresetFromOrigin,
   parsePreset,
   presetState,
   parsePresetFile,
@@ -12,8 +18,10 @@ import {
   removeSavedPreset,
   savePreset,
   savedPresets,
+  subscribePresets,
 } from "../presets";
 import { setSecretStore } from "../secrets";
+import { builtInPresets } from "../../presetRegistry";
 import type { BoardStateRefs } from "../boardContextTypes";
 import type { RuntimeDescriptor, ServiceDescriptor } from "../../types";
 
@@ -413,5 +421,167 @@ describe("applying a preset", () => {
     expect(result.secrets).toEqual(["elevenlabs"]);
     expect(api.configureService).toHaveBeenCalled();
     setSecretStore(null);
+  });
+});
+
+/** A host's preset folder, kept in memory. */
+function memoryStorage(initial: PresetStoredFile[] = []) {
+  const files = new Map(initial.map(({ file, source }) => [file, source]));
+  const storage: PresetStorage = {
+    list: vi.fn(async () => [...files].map(([file, source]) => ({ file, source }))),
+    write: vi.fn(async (file: string, source: string) => {
+      files.set(file, source);
+    }),
+    remove: vi.fn(async (file: string) => {
+      files.delete(file);
+    }),
+  };
+  return { storage, files };
+}
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+describe("presets kept by the host", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(async () => {
+    await attachPresetStorage(null);
+    window.localStorage.clear();
+  });
+
+  it("reads every preset in the host's files, several to a file among them", async () => {
+    const { storage } = memoryStorage([
+      { file: "one.json", source: JSON.stringify(PRESET) },
+      {
+        file: "two.json",
+        source: JSON.stringify({ presets: [{ ...PRESET, id: "a" }, { ...PRESET, id: "b" }] }),
+      },
+      { file: "junk.json", source: "{ not json" },
+    ]);
+    await attachPresetStorage(storage);
+    expect(savedPresets().map((p) => p.id).sort()).toEqual(["a", "b", "elevenlabs"]);
+  });
+
+  it("writes a saved preset as a file of its own, and deletes it when forgotten", async () => {
+    const { storage, files } = memoryStorage();
+    await attachPresetStorage(storage);
+    savePreset(parsePreset(PRESET));
+    await flush();
+    expect([...files.keys()]).toEqual(["http-client--elevenlabs.json"]);
+    expect(JSON.parse(files.get("http-client--elevenlabs.json")!).id).toBe("elevenlabs");
+
+    removeSavedPreset("http-client", "elevenlabs");
+    await flush();
+    expect(files.size).toBe(0);
+    expect(savedPresets()).toEqual([]);
+  });
+
+  it("rewrites a file holding several presets rather than splitting it", async () => {
+    const { storage, files } = memoryStorage([
+      {
+        file: "pair.json",
+        source: JSON.stringify({ presets: [{ ...PRESET, id: "a" }, { ...PRESET, id: "b" }] }),
+      },
+    ]);
+    await attachPresetStorage(storage);
+    savePreset({ ...parsePreset({ ...PRESET, id: "a" }), tags: ["Speech"] });
+    removeSavedPreset("http-client", "b");
+    await flush();
+    expect([...files.keys()]).toEqual(["pair.json"]);
+    const kept = JSON.parse(files.get("pair.json")!);
+    expect(kept.id).toBe("a");
+    expect(kept.tags).toEqual(["Speech"]);
+  });
+
+  it("moves what local storage held into the host's store, once", async () => {
+    savePreset(parsePreset(PRESET));
+    const { storage, files } = memoryStorage();
+    await attachPresetStorage(storage);
+    expect([...files.keys()]).toEqual(["http-client--elevenlabs.json"]);
+    expect(window.localStorage.getItem("hkp-presets")).toBeNull();
+    expect(savedPresets().map((p) => p.id)).toEqual(["elevenlabs"]);
+  });
+
+  it("keeps presets in local storage when the host cannot list its store", async () => {
+    savePreset(parsePreset(PRESET));
+    await attachPresetStorage({
+      list: async () => {
+        throw new Error("no such route");
+      },
+      write: vi.fn(),
+      remove: vi.fn(),
+    });
+    expect(savedPresets().map((p) => p.id)).toEqual(["elevenlabs"]);
+    expect(window.localStorage.getItem("hkp-presets")).not.toBeNull();
+  });
+
+  it("tells whoever listens once the host's presets are read", async () => {
+    const { storage } = memoryStorage([{ file: "one.json", source: JSON.stringify(PRESET) }]);
+    const heard = vi.fn();
+    const unsubscribe = subscribePresets(heard);
+    await attachPresetStorage(storage);
+    unsubscribe();
+    expect(heard).toHaveBeenCalled();
+  });
+});
+
+describe("presets imported from a URL", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.localStorage.clear();
+  });
+
+  const respond = (body: unknown) =>
+    vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+
+  it("remember the address they were typed as", async () => {
+    vi.stubGlobal("fetch", respond(PRESET));
+    const [preset] = await loadPresetsFromUrl("https://github.com/o/r/blob/main/p.json");
+    expect(preset.origin).toBe("https://github.com/o/r/blob/main/p.json");
+  });
+
+  it("are updated from there only when asked", async () => {
+    vi.stubGlobal("fetch", respond(PRESET));
+    const [preset] = await loadPresetsFromUrl("https://example.com/p.json");
+    savePreset(preset);
+
+    vi.stubGlobal("fetch", respond({ ...PRESET, name: "ElevenLabs v2" }));
+    expect(savedPresets()[0].name).toBe("ElevenLabs");
+    await updatePresetFromOrigin(savedPresets()[0]);
+    expect(savedPresets()).toHaveLength(1);
+    expect(savedPresets()[0].name).toBe("ElevenLabs v2");
+    expect(savedPresets()[0].origin).toBe("https://example.com/p.json");
+  });
+
+  it("say so when the address no longer holds them", async () => {
+    vi.stubGlobal("fetch", respond({ ...PRESET, id: "something-else" }));
+    await expect(
+      updatePresetFromOrigin({ ...parsePreset(PRESET), origin: "https://example.com/p.json" }),
+    ).rejects.toThrow(/no longer holds/);
+  });
+});
+
+describe("presets used as blocks", () => {
+  const PIPELINE = {
+    preset: "v1",
+    id: "notify",
+    name: "Notify",
+    serviceId: "sub-service",
+    params: { topic: "t" },
+    state: { pipeline: [{ serviceId: "map", instanceId: "m", state: { url: "{{param.topic}}" } }] },
+  };
+
+  it("are sub-service pipelines that declare params", () => {
+    expect(isUsableAsBlock(parsePreset(PIPELINE))).toBe(true);
+    expect(isUsableAsBlock(parsePreset({ ...PIPELINE, params: undefined }))).toBe(false);
+    expect(isUsableAsBlock(parsePreset({ ...PIPELINE, serviceId: "map" }))).toBe(false);
+    expect(isUsableAsBlock(parsePreset(PRESET))).toBe(false);
+  });
+
+  it("include the shipped ntfy notification", () => {
+    const ntfy = builtInPresets().find((preset) => preset.id === "ntfy-notification");
+    expect(ntfy).toBeDefined();
+    expect(isUsableAsBlock(ntfy!)).toBe(true);
+    expect(Object.keys(ntfy!.params!)).toEqual(["topic", "title", "priority", "tags", "server"]);
   });
 });

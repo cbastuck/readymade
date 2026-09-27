@@ -668,6 +668,75 @@ export function withNewUse(
   };
 }
 
+/** A value with its object keys in order, so two spellings of one document compare equal. */
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(canonical);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonical((value as Record<string, unknown>)[key])]),
+    );
+  }
+  return value;
+}
+
+/**
+ * What a definition says, apart from what it is called in one document and the
+ * bookkeeping of the library it came from.
+ */
+function definitionContent(definition: BlockDefinition): string {
+  const { id: _id, preset: _preset, origin: _origin, ...content } = definition;
+  return JSON.stringify(canonical(content));
+}
+
+/** The definition in a document saying exactly what `definition` says, whatever its id there. */
+export function findSameDefinition(
+  definitions: BlockDefinition[] | undefined,
+  definition: BlockDefinition,
+): BlockDefinition | undefined {
+  const content = definitionContent(definition);
+  return (definitions ?? []).find((entry) => definitionContent(entry) === content);
+}
+
+/**
+ * A definition from outside a document — a block from the preset library —
+ * copied into it, so a use there can name it. The board then holds its own
+ * copy: it opens anywhere without the library, and a later change to the
+ * library's version leaves it as it was.
+ *
+ * Copied once: a definition the document already holds under any id is the one
+ * used again. One that differs but has the id taken is given a free one, since
+ * the document's own block of that name is not this one.
+ */
+export function withAdoptedDefinition(
+  linkage: BlockLinkage | undefined,
+  document: BlockDocument,
+  definition: BlockDefinition,
+): { linkage: BlockLinkage; id: string } {
+  const current = linkage ?? { definitions: {}, placed: [] };
+  const existing = current.definitions[document] ?? [];
+  const same = findSameDefinition(existing, definition);
+  if (same) {
+    return { linkage: current, id: same.id };
+  }
+  const { preset: _preset, origin: _origin, ...copy } = definition;
+  const taken = new Set(existing.map((entry) => entry.id));
+  let id = definition.id;
+  for (let n = 2; taken.has(id); n++) {
+    id = `${definition.id}-${n}`;
+  }
+  return {
+    linkage: {
+      ...current,
+      definitions: { ...current.definitions, [document]: [...existing, { ...copy, id }] },
+    },
+    id,
+  };
+}
+
 /**
  * A configured service turned into a block: `definition` is added to its
  * document, and the service at `path` becomes the definition's first use —
