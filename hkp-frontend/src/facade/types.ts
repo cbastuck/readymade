@@ -339,6 +339,18 @@ export type CameraWidget = {
   mirror?: boolean;
 };
 
+// What a Detect service sees: the last frame it looked at, with what it found
+// outlined — the same view as its panel's. A service's own surface embedded in
+// a panel, like `camera`; pair it with a camera widget whose `preview` is false
+// to show the frame once, as the board understands it.
+export type DetectWidget = {
+  type: "detect";
+  serviceUuid: string;
+  // Width the frame is drawn at; its height follows the frame's proportions.
+  // Defaults to 320.
+  width?: number;
+};
+
 export type XYPadWidget = {
   type: "xy-pad";
   serviceUuid: string;
@@ -577,6 +589,7 @@ export type FacadeWidget =
   | LayoutWidget
   | CanvasWidget
   | CameraWidget
+  | DetectWidget
   | XYPadWidget
   | DataTableWidget
   | RepeatWidget

@@ -69,6 +69,8 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "XYPad.ts",
   "MicrophoneMonitor.ts",
   "Debounce.ts",
+  "Changes.ts",
+  "Detect.ts",
   "Encode.ts",
 ]);
 

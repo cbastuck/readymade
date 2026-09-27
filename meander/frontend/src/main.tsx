@@ -23,6 +23,12 @@ const isMeanderMobileNative =
   (window as any).__MEANDER_ANDROID__ === true;
 const Root = isMeanderMobileNative ? MobileApp : App;
 
+// The desktop window keeps its own title bar above the page, so the toolbar
+// under it is kept lower than on the web, where it is the only bar.
+if (!isMeanderMobileNative) {
+  document.documentElement.style.setProperty("--hkp-toolbar-height", "40px");
+}
+
 // Before anything can load a board: a board's `{{secret.…}}` references are
 // resolved as it is restored, and a store registered later would leave the
 // first board opened with its credentials unset.
