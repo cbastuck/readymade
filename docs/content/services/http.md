@@ -243,7 +243,10 @@ the handler produced, and answered `206` with a `content-range`. That is what a
 player dragging a scrubber sends, and a server that ignores it re-sends the whole
 file each time.
 
-Available on hkp-node and hkp-python.
+Available on hkp-node, hkp-python and hkp-rt. hkp-rt does not honour `Range` on
+an answer. An hkp-rt pipeline sends a page by putting it in the envelope, e.g. a
+[Static](./static.md) whose `out` is
+`{ "meta": { "status": 200, "contentType": "text/html; charset=utf-8" }, "body": "<!doctype html>…" }`.
 
 ### The two ways in
 

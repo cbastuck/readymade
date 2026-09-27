@@ -79,17 +79,20 @@ it. Jumping `currentTime` to the live edge on a plain `<audio>` works in both
 engines, but it skips audibly and races Chrome's 2 s blocks. A player page that
 fetches the stream and feeds it to Media Source Extensions (`audio/mpeg` is
 supported by both; `ManagedMediaSource` is the one iOS Safari requires) gets
-under a second. The prototype is described in the reply of 2026-09-27; it was
-not kept in the repo. Open question: where that page should live (see below).
+under a second. It is now part of the board — see the first item under Open.
 
 ## Open
 
-- **A low-latency player page.** Prototyped and measured (above), not built
-  into the board yet. The open decision is whether the endpoint serves it for
-  its stream, or the board serves it from `onRequest` (which needs an hkp-rt
-  service that answers with `text/html`).
+- **The player page is board content**, decided 2026-09-27 (option B). hkp-rt
+  gained the answer envelope that hkp-node and hkp-python already had, and the
+  board's `onRequest` is a Static holding the page. Measured when served from
+  hkp-rt: Chrome 0.3 s and WebKit 0.4–0.5 s buffered; Stop/Listen drops and
+  restores the listener. Still to check: iOS Safari (ManagedMediaSource) on a
+  real phone, and whether a page kept in a Static's state is comfortable
+  enough to edit.
 
-- **Latency tuning.** Measure first. The possible levers are: a smaller device
+- **Further latency tuning.** Measured (above): hkp-rt adds ~60 ms and the
+  player the rest. Only worth pursuing below ~0.5 s. The levers are: a smaller device
   buffer, a lower LAME `quality` number for speed, disabling the bit reservoir
   (cleaner joins at some cost in quality), and `burstBytes`. The player's own
   buffering will probably dominate.

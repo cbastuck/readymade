@@ -68,6 +68,11 @@ public:
   void do_close(bool notify = true);
 
   void sendDataSync(Data& data, bool useEventStream = false);
+
+  // Answers with the response envelope `data` holds and answers true, or
+  // answers false and sends nothing when `data` is not one. See
+  // answerEnvelope() in the .cpp for what makes a value an envelope.
+  bool sendAnswerEnvelope(const Data& data);
   void sendDataAsync(json data);
 
   std::string getRequestPath() const

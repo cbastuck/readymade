@@ -674,7 +674,9 @@ bool HttpServerSubservices::stop()
   }
   m_host.clear();
   m_url.clear();
-  sendNotification(json{{"status", "offline"}, {"streamUrl", ""}});
+  // Everything that named where to connect goes with the server, as getState
+  // already reports it.
+  sendNotification(json{{"status", "offline"}, {MOUNT_FIELD, ""}, {"streamUrl", ""}});
   const bool stopped = m_impl->stop();
   // After the server's thread has stopped, so the connections are closed here
   // rather than by handlers that would not run until a restart.

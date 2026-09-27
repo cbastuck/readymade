@@ -30,6 +30,9 @@ browser except the controls.
      passes on only the frames that are finished, as whole frames, so a
      listener can join between any two chunks.
 
+   - **Player page**, a [Static](../services/static.md) in `onRequest`, answers
+     every other request with a small web page that plays the stream (see
+     below).
 3. **End Of Chain**, a [Stopper](../services/stopper.md). The endpoint has
    already written each chunk to its listeners. Without the Stopper, the chunk
    would also become the runtime's result and be sent to the browser forty
@@ -51,10 +54,36 @@ touching the rest.
   oldest unsent audio and jumps back near the live edge, so neither the stream
   nor anyone else waits for it.
 
+## The player page
+
+A browser that opens the `.mp3` directly decides for itself how much to buffer,
+and it never catches up afterwards. Measured on this board:
+
+| Player | Behind live |
+| --- | --- |
+| Chrome, `.mp3` opened directly | 2.3 s |
+| Safari, `.mp3` opened directly | 5.4 s |
+| Chrome, player page | 0.3–0.5 s |
+| Safari (WebKit), player page | 0.4–0.5 s |
+| VLC, default settings | ~1.4 s (`--network-caching=200` brings it down) |
+
+The page fetches the stream itself and passes each piece to the browser's Media
+Source Extensions (`ManagedMediaSource` on iOS) as it arrives. It keeps about
+0.4 s buffered, plays 5% faster when it drifts behind, and jumps only when it
+has fallen more than two seconds behind. Stop closes its connection, so a
+stopped listener is not counted; Listen starts again at the live edge. A browser
+without Media Source Extensions falls back to a plain `<audio>` element.
+
+The page is board content: it sits in the Static's `out` as an
+[answer envelope](../services/http.md#what-a-handler-may-answer-with) and can be
+edited like any other state. It plays `/live.mp3`, so if you rename the stream's
+`path`, change the `STREAM` constant in the page too.
+
 ## The facade
 
-A status dot for the endpoint, a listener count, a QR code and the copyable
-stream URL, and Start/Stop buttons. Start brings up the endpoint before the
+A status dot for the endpoint, a listener count, a QR code for the player page,
+the page's address and the raw stream URL (for VLC), both copyable, and
+Start/Stop buttons. Start brings up the endpoint before the
 microphone, so the first samples have somewhere to go; Stop does the reverse.
 
 ## Try it
