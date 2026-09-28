@@ -18,6 +18,7 @@ import {
   User,
 } from "hkp-frontend/src/types";
 import RuntimeRestScope from "./RuntimeRestScope";
+import { isBinaryData } from "./Data";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 import { startedRun } from "../processContext";
 
@@ -452,6 +453,14 @@ export async function processRuntime(
     )
   ) {
     // if sending failed, we probably don't have a runtimeOutput, we send a REST request
+    if (isBinaryData(payload)) {
+      // A JSON body cannot carry bytes, and a body the runtime misreads is
+      // worse than none: this pass is dropped until the socket is open.
+      console.warn(
+        `processRuntime: ${runtime.id} has no open socket; dropping ${payload.byteLength} bytes`,
+      );
+      return;
+    }
     const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
       method: "POST",
       headers: {

@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { DataTypeId } from "../Data";
-import { MessagePurpose, deserializeYasMessage } from "../Message";
+import { DataTypeId, makeNull, passesNothing } from "../Data";
+import {
+  MessagePurpose,
+  deserializeYasMessage,
+  serializeYasMessage,
+} from "../Message";
 
 // A frame laid out the way hkp-rt's Message::serialize writes one: YAS header,
 // purpose, data type, sender, then the payload.
@@ -34,5 +38,57 @@ describe("deserializeYasMessage", () => {
     expect(() =>
       deserializeYasMessage(frame(DataTypeId.CustomData, "x", new Uint8Array([0]))),
     ).toThrow(/unsupported type/);
+  });
+});
+
+// jsdom's Blob has no arrayBuffer().
+function readBlob(blob: Blob): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+describe("serializeYasMessage", () => {
+  it("writes binary data the way the runtimes frame it", async () => {
+    // What a runtime's result is forwarded as when it is bytes: framed exactly
+    // as hkp-rt writes one, so every runtime reads it the same way.
+    const bytes = new Uint8Array([0xff, 0xfb, 0x90, 0x00, 1, 2, 3]);
+    const blob = serializeYasMessage(bytes, "", MessagePurpose.RESULT);
+    const written = new Uint8Array(await readBlob(blob));
+
+    expect(written).toEqual(
+      new Uint8Array(frame(DataTypeId.BinaryData, "", bytes)),
+    );
+    expect(deserializeYasMessage(written.buffer).data).toEqual(bytes);
+  });
+
+  it("writes a view by its own bytes, not its whole buffer", async () => {
+    const backing = new Uint8Array([9, 9, 1, 2, 3, 9]);
+    const view = backing.subarray(2, 5);
+    const blob = serializeYasMessage(view, "", MessagePurpose.RESULT);
+    const message = deserializeYasMessage(await readBlob(blob));
+
+    expect(message.data).toEqual(new Uint8Array([1, 2, 3]));
+  });
+});
+
+describe("passesNothing", () => {
+  it("is true for null and for a Null a remote runtime sends", () => {
+    expect(passesNothing(null)).toBe(true);
+    // What a runtime's Null result decodes to.
+    const nothing = deserializeYasMessage(
+      frame(DataTypeId.Null, "", new Uint8Array([0])),
+    ).data;
+    expect(passesNothing(nothing)).toBe(true);
+    expect(passesNothing(makeNull())).toBe(true);
+  });
+
+  it("is false for anything else, empty or falsy included", () => {
+    for (const result of [undefined, 0, "", false, {}, [], new Uint8Array()]) {
+      expect(passesNothing(result)).toBe(false);
+    }
   });
 });

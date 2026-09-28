@@ -170,6 +170,14 @@ For a deployed board the same chaining is done by the coordinator
 including the case where the next runtime is a browser runtime it must reach
 over the bridge.
 
+Either way the result passes **through whoever runs the board** — runtimes do
+not dial each other — and it travels on the sockets each runtime already has to
+it. What cannot be JSON goes as a YAS frame: a `FloatRingBuffer`, and bytes,
+which arrive in the next runtime as bytes (`Uint8Array` in the browser, a
+`Buffer` in hkp-node, `BinaryData` in hkp-rt and hkp-python) — an encoder's
+output handed to a server in another runtime, say. Everything else is JSON.
+Results enter the next runtime in the order they were produced.
+
 ---
 
 ## What crosses a runtime boundary

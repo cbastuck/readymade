@@ -59,6 +59,7 @@ add_executable(hkp-rt-service-tests
   http_server_lifecycle.test.cpp
   http_stream.test.cpp
   stream_broadcast.test.cpp
+  message.test.cpp
   service_audio_encode.test.cpp
   service_websocket_writer.test.cpp
   runtime_no_input.test.cpp

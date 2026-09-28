@@ -54,7 +54,7 @@ a pipeline trigger.
 Sends what passes through to a WebSocket somewhere else, one message per pass,
 and hands the pass on unchanged. It connects **outward**, so a runtime behind a
 NAT can feed a server that could never reach it. For example, a home machine
-can stream to a relay in the cloud ([Live Radio (Cloud Relay)](../boards/live-radio-cloud-demo-board.md)).
+can stream to a relay in the cloud ([Live Radio (Cloud, direct)](../boards/live-radio-cloud-direct-demo-board.md)).
 
 ### Configuration
 

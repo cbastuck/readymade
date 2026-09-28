@@ -4,6 +4,7 @@ import {
   FloatRingBuffer,
   FloatRingBufferSymbol,
   getDataTypeId,
+  isBinaryData,
   isFloatRingBuffer,
   isNull,
   makeNull,
@@ -83,8 +84,13 @@ export function serializeYasMessage(
     return new Blob([header, payload]);
   }
 
-  // If data is not a FloatRingBuffer, we throw an error
-  throw new Error("serializeYasMessage: data is not a FloatRingBuffer");
+  // No inner YAS object: the bytes run to the end of the frame, as hkp-rt,
+  // hkp-node and hkp-python write and read them.
+  if (isBinaryData(data)) {
+    return new Blob([header, data as Uint8Array<ArrayBuffer>]);
+  }
+
+  throw new Error("serializeYasMessage: unsupported data type");
 }
 
 export function deserializeYasMessage(buffer: ArrayBuffer): Message {

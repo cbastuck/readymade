@@ -14,7 +14,9 @@ uploads a single stream however many people listen.
 ## How it works
 
 Two [REST runtimes](../concepts/runtime.md): hkp-rt at home, hkp-node in the
-cloud.
+cloud. The relay follows the home runtime, so what the home runtime produces is
+what the relay is given — [the chain](../concepts/runtime.md#the-chain), as on
+any board. The MP3 frames travel as bytes all the way.
 
 ### Home (hkp-rt)
 
@@ -22,50 +24,39 @@ cloud.
    audio thread only appends and signals; everything after it runs on the
    runtime's event loop.
 2. [Audio Encode](../services/audio-encode.md) in `stream` mode: one MP3
-   encoder for the whole broadcast, emitting whole frames.
-3. [websocket-writer](../services/websocket.md#websocket-writer) sends each
-   chunk to the relay over a WebSocket it opens itself. Its `url` is
-   `hkp-mount://relay/radio`, a reference to the relay's endpoint that the board
-   resolves once the relay has an address, plus the `path` `/live.mp3`. The
-   `Authorization` header carries the ingest key from the secret `radio-ingest`.
-   If the connection drops, it reconnects on its own. About a second of audio
-   waits while it does; anything older is dropped.
-4. **End Of Chain**, a [Stopper](../services/stopper.md): nothing needs to go on
-   to the browser.
+   encoder for the whole broadcast, emitting whole frames. They are the home
+   runtime's result, and go on to the relay.
 
 ### Relay (hkp-node)
 
 1. [http-server-subservices](../services/http.md#streaming) declares a `stream`
-   at `/live.mp3` with `ingestKey` `{{secret.radio-ingest}}`. The home runtime's
-   WebSocket on that path is the stream's source. A GET on it is a listener.
+   at `/live.mp3` and passes each pass it is given to everyone connected there.
    Every other request is answered by `onRequest`:
    - **Player page**, a [Map](../services/map.md) answering with the page as an
      [answer envelope](../services/http.md#what-a-handler-may-answer-with).
+2. **End Of Chain**, a [Stopper](../services/stopper.md): nothing needs to go
+   back.
 
 The relay's address is a mount (`/hosted/<id>`): it stays the same across
-restarts and redeploys and cannot be guessed. The key decides who may
-broadcast; the address is all a listener needs.
+restarts and redeploys and cannot be guessed, and it is all a listener needs.
 
-## Latency
+## The window is part of the path
 
-Measured on loopback with the relay on hkp-node:
+Runtimes do not dial each other: a result goes from one runtime to whoever runs
+the board, and from there to the next. Here that is this window, on the same
+machine as the home runtime, so the detour costs next to nothing — but the
+board has to stay open while it is on air, and every frame passes through the
+window's main thread. If the uplink stalls, the frames wait rather than being
+dropped, and listeners fall behind for good.
 
-| Listener | Behind live |
-| --- | --- |
-| Chrome, player page | 0.3 s buffered |
-| WebKit (Safari), player page | 0.4–0.5 s buffered |
-
-Add the network: one hop up from home to the relay and one down to the
-listener.
+[Live Radio (Cloud, direct)](./live-radio-cloud-direct-demo-board.md) connects
+the home runtime to the relay itself instead, and keeps at most about a second
+waiting: pick it when latency has to stay bounded on a poor uplink, or when the
+window may be busy.
 
 ## Try it
 
 1. Run hkp-rt at home on port 8887 and hkp-node somewhere reachable. Point the
    **Relay** runtime's URL at the hkp-node server.
-2. Load the board. When asked, give the secret `radio-ingest` a value; any long
-   random string will do.
-3. Press Start. The uplink dot turns green once the home runtime is connected.
-4. Share the QR code or the player address.
-
-If the relay sits behind a reverse proxy, make sure the proxy passes WebSocket
-upgrades on `/hosted/`. The stream itself asks nginx not to buffer it.
+2. Load the board and press Start.
+3. Share the QR code or the player address.

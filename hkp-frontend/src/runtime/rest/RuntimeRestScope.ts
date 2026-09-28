@@ -18,7 +18,7 @@ import {
   deserializeYasMessage,
   serializeYasMessage,
 } from "./Message";
-import { TextSymbol, isData } from "./Data";
+import { TextSymbol, isBinaryData, isData } from "./Data";
 
 /** Append the bearer token to a WebSocket URL as ?access_token= for auth. */
 export function withAccessToken(
@@ -188,7 +188,8 @@ export default class RuntimeRestScope implements RuntimeScope {
     if (!this.runtimeOutput || this.runtimeOutput.readyState !== WebSocket.OPEN) {
       return false;
     }
-    if (isData(params)) {
+    // Bytes go as bytes too: JSON would spell each one out as a numbered key.
+    if (isData(params) || isBinaryData(params)) {
       // The binary frame has no `type` field, so the purpose carries the
       // distinction the JSON branch below gets from `type`: a resolveResult is
       // a NOTIFICATION addressed to the pending request named in `sender`,

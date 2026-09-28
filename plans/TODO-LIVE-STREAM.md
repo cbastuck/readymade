@@ -99,7 +99,7 @@ codes, pings) and reuse the mount upgrade path hkp-node already had.
   form and its hello message are unchanged; `WriterSession` is gone.
 - **hkp-rt answer envelope** (from the player-page work) serves the page on
   hkp-rt; on hkp-node a `map` serves it.
-- **Board:** `live-radio-cloud-demo-board.json`.
+- **Board:** `live-radio-cloud-direct-demo-board.json` (was `live-radio-cloud-demo-board.json` until the chained relay below took that name).
 
 Verified end to end on loopback, with the real mic → hkp-rt → hkp-node →
 listeners:
@@ -118,8 +118,46 @@ Not verified:
   address": the relay comes out of bypass after load, and a remote service's
   later reports never reached board state, so the coordinator had nothing to
   resolve. Fixed 2026-09-28 (`withReportedMount()`, REST scope report targets);
-  covered by unit tests, not yet seen working in the app;
+  the writer then showed the resolved `ws://…/hosted/…/live.mp3` target in the
+  app;
 - a reverse proxy in front of the relay.
+
+## Two cloud boards: chained and direct (decided 2026-09-28)
+
+The user's call: the relay should not be a special mode of the endpoint, and
+the natural path is the board's own chain — hkp-rt's result goes on to the
+hkp-node runtime that follows it. Both variants are kept, chosen by need:
+
+- **Chained** (`live-radio-cloud-demo-board.json`, the default):
+  `mic → encode` | `radio (stream) → stopper`. No writer, no mount reference,
+  no secret. The result passes through whoever runs the board (the window,
+  loopback here, so ~1 ms), with no bound: a stalled uplink makes listeners
+  fall behind rather than skip, and a busy main thread can delay frames.
+- **Direct** (`live-radio-cloud-direct-demo-board.json`): the writer connects
+  to the relay itself, bounded to ~1 s, independent of the window.
+
+Latency in normal operation was expected to be the same for both; the
+difference is under a poor uplink or a busy window.
+
+Steps:
+1. **Chain carries bytes** — done 2026-09-28. Bytes cross a runtime boundary as
+   YAS BinaryData (raw bytes after the sender): the frontend writes a
+   `Uint8Array` that way (`Message.ts`), hkp-node reads and writes it on the
+   runtime socket (`src/yas.ts`, `server.ts`) and its coordinator routes it
+   between runtimes (`session.ts`), hkp-rt reads it (`message.cpp`; it already
+   wrote it). Order: hkp-node starts each pass synchronously in arrival order,
+   so no serialization was added; pinned by
+   `hkp-node/tests/runtime-socket-binary.test.ts`. The REST fallback (socket
+   not open) drops bytes with a warning, since JSON cannot carry them. A binary
+   frame carries no run context, so its pass starts a trace of its own. Not
+   yet run in the app.
+2. **Direct variant, recomposed** — open. A `websocket-server` input service on
+   hkp-node (same id as hkp-rt's), reached through a mount and guarded by the
+   ingest key, emitting each message into the pipeline; the source, `ingestKey`
+   and upgrade path removed from `http-server-subservices`, which keeps only the
+   fan-out. Board: `… → websocket-writer → stopper` | `websocket-server → radio`.
+3. **Measure both** with the player, normally and with a throttled uplink, and
+   say in the board docs when to pick which — open.
 
 ## Open
 

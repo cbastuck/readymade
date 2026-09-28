@@ -15,6 +15,8 @@ export function getDataTypeId(data: Data): DataTypeId {
     return DataTypeId.FloatRingBuffer;
   } else if (isNull(data)) {
     return DataTypeId.Null;
+  } else if (isBinaryData(data)) {
+    return DataTypeId.BinaryData;
   }
   // Add other data types as needed
   throw new Error("Unsupported data type");
@@ -59,6 +61,18 @@ export function isFloatRingBuffer(data: any): data is FloatRingBuffer {
 
 export function isNull(data: any): data is Null {
   return data?.type === NullSymbol;
+}
+
+/**
+ * Whether a result says "nothing to pass on": `null` from a browser runtime, a
+ * Null from a remote one. Either stops the chain before the next runtime.
+ */
+export function passesNothing(result: unknown): boolean {
+  return result === null || isNull(result);
+}
+
+export function isBinaryData(data: any): data is BinaryData {
+  return data instanceof Uint8Array;
 }
 
 export function isData(data: any): data is Data {
