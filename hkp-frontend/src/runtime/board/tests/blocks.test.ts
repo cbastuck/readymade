@@ -14,6 +14,7 @@ import {
   outermostUses,
   blockUseAt,
   blockUseContaining,
+  withServicesWrapped,
   withUseParams,
 } from "../blocks";
 
@@ -512,5 +513,92 @@ describe("editing a definition on a working copy", () => {
     expect(blockUseContaining(editing, "bar.b1.on")).toBeUndefined();
     // The use inside the copy is still a use, and its inside still closed.
     expect(blockUseContaining(editing, "bar.b1.on.hit")?.address).toBe("bar.b1.on");
+  });
+});
+
+describe("wrapping services that include uses", () => {
+  // A runtime whose own list holds a use of "beat" beside a plain service.
+  function runtime() {
+    const source = {
+      ui: [
+        { uuid: "pad", serviceId: "hookup.to/service/trigger-pad", state: {} },
+        { block: "beat", uuid: "b1", params: { accent: 0.8 } },
+      ],
+    };
+    const expansion = expandBlocks(source, definitions);
+    const linkage: BlockLinkage = { definitions, placed: expansion.placed };
+    return { ...expansion, linkage };
+  }
+
+  /** What the runtime holds once `pad` and `b1` were wrapped in `wrapper`. */
+  function wrapped(services: any) {
+    return {
+      ui: [
+        {
+          uuid: "wrapper",
+          serviceId: "sub-service",
+          state: {
+            scope: { slots: "inherit" },
+            pipeline: services.ui.map(({ uuid, ...entry }: any) => ({
+              ...entry,
+              instanceId: uuid,
+            })),
+          },
+        },
+      ],
+    };
+  }
+
+  it("follows the uses into the sub-service, so they save as uses there", () => {
+    const { services, linkage } = runtime();
+    const moved = withServicesWrapped(linkage, "ui", ["pad", "b1"], "wrapper");
+    expect(blockUseAt(moved, "wrapper.b1", "ui")?.use).toEqual({
+      block: "beat",
+      uuid: "b1",
+      params: { accent: 0.8 },
+    });
+    // The uses inside the moved one move with it, and keep it as their parent.
+    const inner = moved.placed.filter((placed) => placed.address.startsWith("wrapper.b1."));
+    expect(inner.map((placed) => placed.address).sort()).toEqual([
+      "wrapper.b1.off",
+      "wrapper.b1.on",
+    ]);
+    const outer = blockUseAt(moved, "wrapper.b1", "ui")!;
+    expect(inner.every((placed) => placed.parent === outer.key)).toBe(true);
+
+    const saved = collapseBlocks(wrapped(services) as any, moved) as any;
+    expect(saved.ui[0].state.pipeline[1]).toEqual({
+      block: "beat",
+      uuid: "b1",
+      params: { accent: 0.8 },
+    });
+  });
+
+  it("leaves the uses of other runtimes, and outside the run, where they were", () => {
+    const { linkage } = runtime();
+    const moved = withServicesWrapped(linkage, "node", ["b1"], "wrapper");
+    expect(moved.placed).toEqual(linkage.placed);
+    const notInRun = withServicesWrapped(linkage, "ui", ["pad"], "wrapper");
+    expect(notInRun.placed).toEqual(linkage.placed);
+  });
+
+  it("makes the wrapper a block with the moved use inside it", () => {
+    const { services, linkage } = runtime();
+    const moved = withServicesWrapped(linkage, "ui", ["pad", "b1"], "wrapper");
+    const saved = collapseBlocks(wrapped(services) as any, moved) as any;
+    const made = withBlockFrom(moved, {
+      runtimeId: "ui",
+      document: "",
+      path: ["ui", { id: "wrapper" }],
+      definition: {
+        id: "groove",
+        name: "Groove",
+        serviceId: "sub-service",
+        state: saved.ui[0].state,
+      },
+    });
+    const outer = blockUseAt(made, "wrapper", "ui")!;
+    expect(blockUseAt(made, "wrapper.b1", "ui")?.parent).toBe(outer.key);
+    expect(outermostUses(made).map((placed) => placed.address)).toEqual(["wrapper"]);
   });
 });

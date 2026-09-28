@@ -106,6 +106,11 @@ import {
 } from "./core/blockActions";
 import type { BlockDefinition } from "./core/presets";
 import {
+  WrapOptions,
+  Wrapped,
+  wrapServices as wrapServicesOp,
+} from "./core/wrapActions";
+import {
   ApplyPresetResult,
   Preset,
   applyPreset as applyPresetOp,
@@ -216,6 +221,17 @@ type BoardContextAPI = {
   detachBlockUse: (key: string) => void;
   /** Turns the service at `address` on `runtimeId` into a block of this board, and it into the first use. */
   makeBlock: (address: string, runtimeId?: string) => Promise<BlockDefinition>;
+  /**
+   * Replaces a contiguous run of a runtime's own services with one sub-service
+   * holding them, where they were — and, asked to, makes it a block of this
+   * board (see `core/wrapActions`). Throws `WrapRefused` when it cannot be done
+   * without changing what the board does.
+   */
+  wrapServices: (
+    runtimeId: string,
+    uuids: string[],
+    options?: WrapOptions,
+  ) => Promise<Wrapped>;
   /** Unlocks one use as the working copy of its block, until applied or cancelled. */
   editBlock: (key: string) => void;
   applyBlockEdit: () => Promise<void>;
@@ -773,6 +789,15 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const detachBlockUse = (key: string) => detachBlockUseOp(key, setLinkage);
     const makeBlock = (address: string, runtimeId?: string) =>
       makeBlockOp(address, runtimeId, buildContextValue(), setLinkage);
+    const wrapServices = (runtimeId: string, uuids: string[], options?: WrapOptions) =>
+      wrapServicesOp(
+        runtimeId,
+        uuids,
+        getRefs(),
+        () => providerStateRef.current.facade,
+        () => latestLinkageRef.current ?? providerStateRef.current.linkage,
+        options,
+      );
     const editBlock = (key: string) => editBlockOp(key, setLinkage);
     const applyBlockEdit = () => applyBlockEditOp(buildContextValue(), setLinkage);
     const cancelBlockEdit = () => cancelBlockEditOp(buildContextValue(), setLinkage);
@@ -1197,6 +1222,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setBlockParams,
       detachBlockUse,
       makeBlock,
+      wrapServices,
       editBlock,
       applyBlockEdit,
       cancelBlockEdit,

@@ -71,3 +71,60 @@ describe("SelectionProvider", () => {
     expect(selected()).toBe("node");
   });
 });
+
+function PickedReadout() {
+  const selection = useSelection();
+  return (
+    <>
+      <div data-testid="picked">
+        {selection?.selectedServices?.uuids.join(",") ?? ""}
+      </div>
+      <button
+        onClick={() =>
+          selection?.selectServices?.({
+            runtimeId: "ui",
+            anchor: "a",
+            uuids: ["a", "b"],
+          })
+        }
+      >
+        pick services
+      </button>
+      <button onClick={() => selection?.selectRuntime("ui")}>pick ui</button>
+      <button onClick={() => selection?.selectRuntime("node")}>pick node</button>
+    </>
+  );
+}
+
+describe("picked services", () => {
+  const picked = () => screen.getByTestId("picked").textContent;
+  const renderPicked = () =>
+    render(
+      <SelectionProvider runtimeIds={["ui", "node"]}>
+        <PickedReadout />
+      </SelectionProvider>,
+    );
+
+  it("keeps them while their runtime stays selected", () => {
+    renderPicked();
+    fireEvent.click(screen.getByText("pick services"));
+    fireEvent.click(screen.getByText("pick ui"));
+    expect(picked()).toBe("a,b");
+  });
+
+  it("lets them go when another runtime is selected", () => {
+    renderPicked();
+    fireEvent.click(screen.getByText("pick services"));
+    fireEvent.click(screen.getByText("pick node"));
+    expect(picked()).toBe("");
+    fireEvent.click(screen.getByText("pick ui"));
+    expect(picked()).toBe("");
+  });
+
+  it("lets them go on Escape", () => {
+    renderPicked();
+    fireEvent.click(screen.getByText("pick services"));
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(picked()).toBe("");
+  });
+});

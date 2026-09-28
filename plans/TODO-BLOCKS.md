@@ -220,6 +220,14 @@ and *use* (reference, a block). So, wherever there is a choice:
   one card type)
 - ☑ Edit definition in place: Edit block → working copy (`linkage.blocks.editing`)
   → Apply / Cancel, on the use's bar and on a level opened on it
+- ☑ Make block from picked services (2026-09-28): shift-click picks a run of a
+  runtime's own services (`SelectionContext`), the runtime header and a picked
+  service's menu offer Wrap in SubService / Make block; `core/wrapActions`
+  wraps the run where it was (`scope.slots: "inherit"`), refuses a reference cut
+  by the new boundary, rewrites facade addresses (refused for a block), and
+  follows moved uses (`withServicesWrapped`). Any top-level service offers Make
+  block on its own. The runtime menu's Wrap in SubService goes through the same
+  op
 
 ### 5 — Docs
 
@@ -228,6 +236,10 @@ and *use* (reference, a block). So, wherever there is a choice:
   `CLAUDE.md`, the vocabulary entry
 
 ### Still to build
+
+- ☐ Picking services inside a sub-pipeline (only a runtime's own list today);
+  wrapping there would configure the container's `pipeline` instead of adding
+  and removing top-level services
 
 - ☐ Offer blocks in a sub-pipeline's own service selector, so a use can be added
   inside a pipeline and not only to a runtime

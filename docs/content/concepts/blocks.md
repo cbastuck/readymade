@@ -143,6 +143,37 @@ service into its first use — nothing about what runs changes. Blocks already
 inside it stay uses. The board's blocks then appear in the **Building Blocks**
 sidebar, and dropping one on a runtime adds a new use with its default params.
 
+Services that are not yet in a sub-service are made a block in one step.
+**Shift-click** a service's header to pick it, and shift-click another in the
+same runtime to pick everything between the two — always a run, since a
+runtime's order is its wiring and a run with a gap in it could not be wrapped
+without rewiring what was left out. While services are picked, the runtime's
+header offers **Wrap in SubService** and **Make block**; so does the menu of any
+picked service. Make block asks for a name, wraps the run in a sub-service
+where it was, and makes that the block's first use. On its own, any service at
+the top of a runtime offers Make block in its menu, wrapping just itself. Escape,
+or selecting another runtime, lets the picked services go.
+
+Wrapping keeps the board doing what it did:
+
+- The services are recreated inside the sub-service from the configuration they
+  report, under their own ids — so what they were set to carries over, and what
+  they only held while running (a recording, a timer's position) starts again.
+- The sub-service reads the runtime's slots (`scope.slots: "inherit"`), so a
+  Hold or a tempo reader inside reaches the cells it reached before.
+- A service inside a sub-service finds others by id only within it. A
+  Configurator or ProcessRouter whose target is on the other side of the new
+  boundary, or an `hkp-mount://` reference to a service in the run, would stop
+  resolving, so the wrap is **refused** and says which. A reference with both
+  ends in the run moves with it.
+- A facade addressing a service in the run is rewritten to reach it through the
+  sub-service (`the-hit` becomes `<sub-service>.the-hit`). A block's inside is
+  not addressable, so Make block refuses such a run instead.
+- Uses of blocks in the run stay uses, inside the new sub-service.
+
+Only services at the top of a runtime can be picked; a sub-pipeline's own
+services cannot yet.
+
 ---
 
 ## Where a board goes
@@ -193,11 +224,13 @@ expected to become one.
 | Definitions read as presets; presets with params | `hkp-frontend/src/core/presets.ts` (`parseBlockDefinition`, `presetState`) |
 | Linking into a board and its units, and back out; address checks | `hkp-frontend/src/core/linkBlocks.ts` |
 | What a person does to a use | `hkp-frontend/src/core/blockActions.ts` |
+| Wrapping picked services, and making a block of them | `hkp-frontend/src/runtime/board/wrap.ts` (what may be wrapped), `hkp-frontend/src/core/wrapActions.ts` (doing it), `hkp-frontend/src/ui-components/runtime-ui/WrapSelection.tsx` |
+| Picking services | `hkp-frontend/src/selection/SelectionContext.tsx`, `hkp-frontend/src/runtime/ServiceUiContainer.tsx` |
 | Adding a use from the palette | `hkp-frontend/src/core/serviceOperations.ts` (`addService`) |
 | The bar, the lock, the edit bar | `hkp-frontend/src/runtime/ui/BlockUse.tsx` |
 | Refusing addresses into a use | `hkp-frontend/src/facade/boardServices.ts` |
 | Worked example | `boards/nested-rhythm-demo-board.json` |
-| Tests | `runtime/board/tests/blocks.test.ts`, `core/tests/linkBlocks.test.ts`, `core/tests/block-use.integration.test.ts`, `e2e/tests/blocks.spec.ts` |
+| Tests | `runtime/board/tests/blocks.test.ts`, `runtime/board/tests/wrap.test.ts`, `core/tests/linkBlocks.test.ts`, `core/tests/block-use.integration.test.ts`, `core/tests/wrap-services.integration.test.ts`, `e2e/tests/blocks.spec.ts` |
 
 ---
 

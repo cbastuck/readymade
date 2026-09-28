@@ -363,3 +363,148 @@ test.describe("inside a Switch case", () => {
     await expect(page.getByText("90%")).toBeVisible();
   });
 });
+
+test.describe("wrapping picked services", () => {
+  const BOARD = "Blocks wrap e2e";
+  const hits = {
+    boardName: BOARD,
+    runtimes: [{ id: "rt", name: "Browser", type: "browser", state: {} }],
+    services: {
+      rt: [
+        {
+          uuid: "pass",
+          serviceId: "hookup.to/service/map",
+          serviceName: "Pass",
+          state: { template: { "=": "params" } },
+        },
+        {
+          uuid: "on-a-hit",
+          serviceId: "hookup.to/service/filter",
+          serviceName: "On a hit",
+          state: { conditions: ["params.actions.length > 0"] },
+        },
+        {
+          uuid: "the-hit",
+          serviceId: "hookup.to/service/map",
+          serviceName: "The hit",
+          state: { template: { "=": "params.actions[0]" } },
+        },
+        {
+          uuid: "after",
+          serviceId: "hookup.to/service/map",
+          serviceName: "After",
+          state: { template: { hit: { "=": "params" } } },
+        },
+      ],
+    },
+  };
+
+  const header = (page: Page, uuid: string) =>
+    page.locator(`#service-frame-${uuid} [data-service-header]`).first();
+
+  async function pick(page: Page, ...uuids: string[]) {
+    for (const uuid of uuids) {
+      await header(page, uuid).click({ modifiers: ["Shift"] });
+    }
+  }
+
+  async function saved(page: Page): Promise<any> {
+    await page.keyboard.press(
+      process.platform === "darwin" ? "Meta+s" : "Control+s",
+    );
+    const key = `hkp-playground-${BOARD}`;
+    await expect
+      .poll(() => page.evaluate((k) => localStorage.getItem(k), key))
+      .not.toBeNull();
+    const item = JSON.parse(
+      (await page.evaluate((k) => localStorage.getItem(k), key))!,
+    );
+    return item.source ? JSON.parse(item.source) : item;
+  }
+
+  test.beforeEach(async ({ seedBoard, openBoard, page }) => {
+    await seedBoard("blocks-wrap-e2e", hits);
+    await openBoard("blocks-wrap-e2e");
+    await expect(page.locator("#service-frame-the-hit")).toBeVisible({
+      timeout: 20_000,
+    });
+  });
+
+  test("shift-click picks a run, and the run is wrapped where it was", async ({
+    page,
+  }) => {
+    await pick(page, "on-a-hit", "the-hit");
+    const bar = page.getByTestId("service-selection-bar");
+    await expect(bar).toContainText("2 services selected");
+    await expect(page.locator(".hkp-service-card--selected")).toHaveCount(2);
+    // The name was shift-clicked, and is not being renamed.
+    await expect(
+      page.locator("#service-frame-on-a-hit [data-service-header] input"),
+    ).toHaveCount(0);
+    // Hovered, as the one just clicked is, a picked card still shows it.
+    await header(page, "the-hit").hover();
+    await expect(page.locator("#service-frame-the-hit .hkp-service-card")).toHaveCSS(
+      "box-shadow",
+      /0px 0px 0px 2px/,
+    );
+
+    await bar.getByRole("button", { name: "Wrap in SubService" }).click();
+    await expect(page.getByText("On a hit + The hit")).toBeVisible();
+    await expect(bar).toHaveCount(0);
+
+    const board = await saved(page);
+    const [first, wrapper, last] = board.services.rt;
+    expect(board.services.rt).toHaveLength(3);
+    expect(first.uuid).toBe("pass");
+    expect(last.uuid).toBe("after");
+    expect(wrapper).toMatchObject({
+      serviceName: "On a hit + The hit",
+      state: { scope: { slots: "inherit" } },
+    });
+    expect(
+      wrapper.state.pipeline.map((entry: any) => [entry.instanceId, entry.serviceName]),
+    ).toEqual([
+      ["on-a-hit", "On a hit"],
+      ["the-hit", "The hit"],
+    ]);
+  });
+
+  test("a run with a gap is not offered: shift-click stretches to a whole run", async ({
+    page,
+  }) => {
+    await pick(page, "pass", "the-hit");
+    await expect(page.getByTestId("service-selection-bar")).toContainText(
+      "3 services selected",
+    );
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("service-selection-bar")).toHaveCount(0);
+  });
+
+  test("a picked run made a block is saved as its first use", async ({ page }) => {
+    await pick(page, "on-a-hit", "the-hit");
+    await page
+      .getByTestId("service-selection-bar")
+      .getByRole("button", { name: "Make block" })
+      .click();
+    const name = page.getByRole("textbox", { name: "Block name" });
+    await name.fill("Hit");
+    await name.press("Enter");
+    await expect(uses(page, "hit")).toHaveCount(1);
+    // The use shows its bar in place of its panel, and its output beside it.
+    const output = uses(page, "hit").locator("[data-use-output] > *").first();
+    await expect(output).toBeVisible();
+    await expect(output).not.toHaveAttribute("inert", "");
+
+    const board = await saved(page);
+    expect(board.services.rt).toEqual([
+      expect.objectContaining({ uuid: "pass" }),
+      { block: "hit", uuid: expect.any(String) },
+      expect.objectContaining({ uuid: "after" }),
+    ]);
+    expect(board.blocks).toHaveLength(1);
+    expect(board.blocks[0]).toMatchObject({ id: "hit", name: "Hit", serviceId: "sub-service" });
+    expect(
+      board.blocks[0].state.pipeline.map((entry: any) => entry.instanceId),
+    ).toEqual(["on-a-hit", "the-hit"]);
+  });
+});

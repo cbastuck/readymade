@@ -1195,3 +1195,14 @@ blockquote:after {
   padding: 6px 12px;
   border-radius: 8px;
 }
+
+/* A service picked for a whole-selection action (wrap, make block). A shadow
+   rather than an outline, which --processing animates. Important because the
+   classic theme's card sets its own shadow inline; the playground rules name
+   :hover as well, since the card hover lift sets its shadow !important too and
+   a card is usually hovered right after being picked. */
+.hkp-service-card--selected,
+[data-theme="playground"] .hkp-service-card.hkp-service-card--selected,
+[data-theme="playground"] .hkp-service-card.hkp-service-card--selected:hover {
+  box-shadow: 0 0 0 2px var(--hkp-accent, #0abcfb) !important;
+}

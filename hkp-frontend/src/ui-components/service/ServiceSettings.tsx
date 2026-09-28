@@ -9,6 +9,7 @@ import {
   Trash,
   FileCog,
   Boxes,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,6 +23,8 @@ import {
 } from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 import {
   CustomMenuEntry,
+  isRuntimeBrowserClassType,
+  isRuntimeRestClassType,
   ServiceDescriptor,
   toCanonicalRuntimeClassType,
 } from "hkp-frontend/src/types";
@@ -34,6 +37,9 @@ import SavePresetDialog from "./SavePresetDialog";
 import RunParamsDialog from "../runtime-ui/RunParamsDialog";
 import { useServiceAddress, useServiceRuntimeId } from "hkp-frontend/src/runtime/ui/BlockUse";
 import { toCanonicalServiceId } from "hkp-frontend/src/types";
+import { isScopedAddress } from "hkp-frontend/src/runtime/board/address";
+import { useSelection } from "hkp-frontend/src/selection/SelectionContext";
+import { useWrapActions } from "../runtime-ui/WrapSelection";
 
 type Props = {
   service: ServiceDescriptor;
@@ -138,6 +144,25 @@ export default function ServiceSettings({
     writable &&
     !!boardContext?.makeBlock &&
     toCanonicalServiceId(service.serviceId ?? "") === "sub-service";
+  // At the top of a runtime a service can be wrapped with the ones picked
+  // beside it, and any service there can be made a block: wrapped on its own
+  // first, since a block is a sub-service.
+  const selection = useSelection();
+  const { wrap, askToMakeBlock, dialog: makeBlockDialog } = useWrapActions();
+  const runtimeType = boardContext?.runtimes.find((rt) => rt.id === runtimeId)?.type;
+  const canWrap =
+    writable &&
+    runtimeId !== null &&
+    !isScopedAddress(address) &&
+    !!runtimeType &&
+    (isRuntimeBrowserClassType(runtimeType) || isRuntimeRestClassType(runtimeType));
+  const pickedHere =
+    selection?.selectedServices?.runtimeId === runtimeId &&
+    selection.selectedServices.uuids.includes(service.uuid)
+      ? selection.selectedServices.uuids
+      : [];
+  const wrapsPicked = canWrap && pickedHere.length > 1;
+  const canMakeBlockOfItself = canWrap && !wrapsPicked && !canMakeBlock;
   const makeBlock = () => {
     boardContext
       ?.makeBlock(address, frameRuntimeId ?? runtimeId ?? undefined)
@@ -235,11 +260,38 @@ export default function ServiceSettings({
           />
         )}
 
-        {canMakeBlock && (
+        {canMakeBlock && !wrapsPicked && (
           <DropdownMenuItem onClick={makeBlock} className="text-base">
             <MenuIcon icon={Boxes} />
             <span>Make block</span>
           </DropdownMenuItem>
+        )}
+        {canMakeBlockOfItself && (
+          <DropdownMenuItem
+            onClick={() => askToMakeBlock(runtimeId!, [service.uuid])}
+            className="text-base"
+          >
+            <MenuIcon icon={Boxes} />
+            <span>Make block</span>
+          </DropdownMenuItem>
+        )}
+        {wrapsPicked && (
+          <>
+            <DropdownMenuItem
+              onClick={() => wrap(runtimeId!, pickedHere)}
+              className="text-base"
+            >
+              <MenuIcon icon={Layers} />
+              <span>Wrap {pickedHere.length} services in SubService</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => askToMakeBlock(runtimeId!, pickedHere)}
+              className="text-base"
+            >
+              <MenuIcon icon={Boxes} />
+              <span>Make block from {pickedHere.length} services</span>
+            </DropdownMenuItem>
+          </>
         )}
 
         <DropdownMenuSeparator />
@@ -303,6 +355,7 @@ export default function ServiceSettings({
         target="this service"
       />
     )}
+    {makeBlockDialog}
     {savePresetOpen && (
       <SavePresetDialog
         service={service}
