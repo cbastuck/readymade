@@ -1,0 +1,56 @@
+{
+  "boardName": "Trigger Pad Recorder",
+  "description": "The Trigger Pad with a timeline after it: hits pass straight through to the speaker, and while recording they are kept at the moment they were played, to play back later — faster, slower, or layered over in a second take.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "audio-input-svc",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Audio Input",
+        "state": { "timeslice": 2000 }
+      },
+      {
+        "uuid": "trigger-pad-svc",
+        "serviceId": "hookup.to/service/trigger-pad",
+        "serviceName": "Trigger Pad"
+      },
+      {
+        "uuid": "recorder",
+        "serviceId": "hookup.to/service/timeline",
+        "serviceName": "Recorder",
+        "state": {
+          "clock": "own",
+          "length": 0,
+          "loop": false,
+          "fps": 60,
+          "recordMode": "overdub"
+        }
+      },
+      {
+        "uuid": "on-a-hit",
+        "serviceId": "hookup.to/service/filter",
+        "serviceName": "On a hit",
+        "state": { "conditions": ["params.actions.length > 0"] }
+      },
+      {
+        "uuid": "the-hit",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "The hit",
+        "state": { "template": { "=": "params.actions[0]" } }
+      },
+      {
+        "uuid": "audio-output-svc",
+        "serviceId": "hookup.to/service/audio-output",
+        "serviceName": "Audio Output"
+      }
+    ]
+  }
+}

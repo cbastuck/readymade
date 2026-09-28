@@ -3,12 +3,13 @@ import { Plus, Trash2 } from "lucide-react";
 
 import Select from "hkp-frontend/src/ui-components/Select";
 import { Ease, Placement } from "../timeline-core";
-import { Bars, Field, KeyButton, Lane, Playhead, Ruler } from "./parts";
+import { Bars, Field, KeyButton, Lane, LoopShade, LoopStrip, Playhead, Ruler } from "./parts";
 import {
   addAction,
   addPlacement,
   displayLength,
   EASES,
+  describeData,
   formatTime,
   formatValue,
   indexOfPlacement,
@@ -31,6 +32,8 @@ import {
   TimelineView,
   toggleKey,
   valueOf,
+  setLoop,
+  shownLoop,
 } from "./model";
 
 /** The width of the column naming each row, so every lane spans the same time. */
@@ -65,6 +68,7 @@ export default function TimelineRows({ view, cursor, readOnly, configure, onScru
   const [selection, setSelection] = useState<Selection>(null);
   const [extra, setExtra] = useState<string[]>([]);
   const length = displayLength(view);
+  const loop = shownLoop(view);
   const properties = view.object ? propertiesOf(view, extra) : [];
 
   /** Configures placements and keeps the one edited selected, wherever sorting puts it. */
@@ -81,7 +85,16 @@ export default function TimelineRows({ view, cursor, readOnly, configure, onScru
 
       <div className="relative flex flex-col gap-1">
         <Row label={<Muted>{view.object ? "properties" : "no object"}</Muted>}>
-          <Ruler length={length} onScrub={onScrub} />
+          <div className="flex flex-col gap-0.5">
+            <LoopStrip
+              range={loop}
+              active={view.loop}
+              length={length}
+              onChange={readOnly ? undefined : (range) => configure(setLoop(range))}
+              onToggle={readOnly ? undefined : () => configure({ loop: !view.loop })}
+            />
+            <Ruler length={length} onScrub={onScrub} />
+          </div>
         </Row>
 
         {properties.map((property) => {
@@ -260,7 +273,7 @@ export default function TimelineRows({ view, cursor, readOnly, configure, onScru
             markers={view.actions.map((a, index) => ({
               at: a.at,
               shape: "action",
-              title: `${JSON.stringify(a.data)} at ${formatTime(a.at)}`,
+              title: `${describeData(a.data).text} at ${formatTime(a.at)}`,
               selected: selection?.kind === "action" && selection.index === index,
             }))}
             onSelect={(index) => setSelection({ kind: "action", index })}
@@ -272,6 +285,7 @@ export default function TimelineRows({ view, cursor, readOnly, configure, onScru
           />
         </Row>
 
+        {view.loop && loop && <LoopShade range={loop} length={length} inset={LABEL + 8} />}
         <Playhead t={cursor} length={length} inset={LABEL + 8} />
       </div>
 
@@ -343,6 +357,24 @@ function Settings({
           onChange={(event) => configure({ loop: event.target.checked })}
         />
         loop
+      </label>
+      <label className="flex items-center gap-1" title="Where the loop starts over from">
+        from
+        <Field
+          width={40}
+          value={formatValue(view.loopStart)}
+          readOnly={readOnly}
+          onCommit={(text) => configure({ loopStart: Math.max(0, Number(text) || 0) })}
+        />
+      </label>
+      <label className="flex items-center gap-1" title="Where the loop starts over; 0 is the length">
+        to
+        <Field
+          width={40}
+          value={formatValue(view.loopEnd)}
+          readOnly={readOnly}
+          onCommit={(text) => configure({ loopEnd: Math.max(0, Number(text) || 0) })}
+        />
       </label>
       {view.clock === "own" ? (
         <>
@@ -480,14 +512,14 @@ function Selected({
     if (!action) {
       return null;
     }
-    const text =
-      draft?.index === selection.index ? draft.text : JSON.stringify(action.data ?? null);
+    const data = describeData(action.data);
+    const text = draft?.index === selection.index ? draft.text : data.text;
     return (
       <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-mid)" }}>
         <span style={{ color: "var(--text)" }}>action at {formatTime(action.at)} emits</span>
         <input
           value={text}
-          readOnly={readOnly}
+          readOnly={readOnly || !data.editable}
           className="flex-1 rounded px-1 py-0.5 font-mono text-xs"
           style={{
             background: "transparent",

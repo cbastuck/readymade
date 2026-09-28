@@ -3,8 +3,8 @@
  * Service ID: hookup.to/service/timeline
  * Service Name: Timeline
  * Modes: clock "own" | "input"
- * Key Config: clock, object, keyframes, actions, placements, placement, length, loop, unit, tempoSlot, fps, speed, running, play, pause, stop, seek
- * IO: in=a frame { t, placements? } (clock "input") -> out={ ...object, ...values, t, actions, placements? } every frame, null outside its stretch
+ * Key Config: clock, object, keyframes, actions, placements, placement, length, loop, loopStart, loopEnd, unit, tempoSlot, fps, speed, running, recording, recordMode, play, pause, stop, seek
+ * IO: in=a frame { t, placements? } (clock "input"), anything (clock "own") -> out={ ...object, ...values, t, actions, placements? } every frame, null outside its stretch
  *
  * Actions placed on a time axis: when time reaches an action, the action's
  * data leaves on the output. Time is a value, not a schedule — nothing is set
@@ -16,9 +16,10 @@
  *
  * - `"own"` — the timeline keeps time itself, emitting `fps` frames a second
  *   while it plays. Measured in seconds or in beats of the tempo held in the
- *   slot `tempoSlot` names, as Timer measures them. Input is ignored.
- *   Counting beats, its frames carry the `tempo` they were counted at, so
- *   what follows can turn beats into time without a view of the slot.
+ *   slot `tempoSlot` names, as Timer measures them. Counting beats, its
+ *   frames carry the `tempo` they were counted at, so what follows can turn
+ *   beats into time without a view of the slot. Its input is an action
+ *   happening now (see *Recording*).
  * - `"input"` — the timeline is driven by the frames it is given. Without a
  *   `placement` its time is theirs: `t`, in whatever unit the driver counts.
  *   After the end of a stretch that does not loop, it emits null, so what
@@ -51,6 +52,23 @@
  * down through nested timelines. A `tempo` is passed on either way: a driven
  * timeline counts in its driver's beats.
  *
+ * **Recording.** Whatever arrives at an own clock's input is an action
+ * happening now. Playing, the clock moves to that moment — the exact one, not
+ * the last frame's — and the input leaves as an action due in the frame that
+ * takes it there. While `recording`, it also stays, as `{ at, data }` at that
+ * moment, so it plays again whenever time reaches it: slower or faster with
+ * `speed`, again on every pass of a loop. Stopped or paused, an input passes
+ * through on a frame for where the timeline stands, and nothing is recorded.
+ * `recordMode` says what happens to the actions already there: `"overdub"`
+ * keeps them, `"replace"` clears those that time passes over while recording,
+ * so they neither fire nor stay. Stopping or pausing ends a recording.
+ *
+ * **A loop range.** A looping timeline repeats `[loopStart, loopEnd)` —
+ * the whole of it by default (`loopEnd` 0 is the length). Time before the
+ * range plays once, on the way in; what lies past its end does not play while
+ * the timeline loops. An own clock set past the end — sought there, or
+ * standing there when it plays or the range changes — goes to its start.
+ *
  * **A jump is not a wrap.** A frame after a seek carries `jump: true`. A
  * driven timeline seeing time go backwards *without* it takes it for the
  * driver starting over — a loop, a stop and play — settles what it still owed
@@ -63,6 +81,8 @@ import TimelineUI from "./TimelineUI";
 import {
   dueActions,
   Extent,
+  insertAction,
+  loopRange,
   Keyframes,
   normalizeActions,
   normalizeKeyframes,
@@ -74,6 +94,7 @@ import {
   restOfPass,
   TimelineAction,
   valuesAt,
+  withoutDue,
   wrap,
 } from "./timeline-core";
 
@@ -91,6 +112,10 @@ type State = {
   /** In the timeline's unit; 0 is unbounded. */
   length: number;
   loop: boolean;
+  /** Where a loop starts over from. */
+  loopStart: number;
+  /** Where a loop starts over; 0 is the length. */
+  loopEnd: number;
   /** How an own clock counts: seconds or beats. */
   unit: "s" | "beats";
   tempoSlot: string;
@@ -99,6 +124,10 @@ type State = {
   /** How fast an own clock runs. */
   speed: number;
   running: boolean;
+  /** Whether what arrives at a playing own clock's input stays, as actions. */
+  recording: boolean;
+  /** What a recording does to the actions already there: keeps them, or clears those it passes over. */
+  recordMode: "overdub" | "replace";
   /** When each name plays on this timeline, and for how long. */
   placements: Placement[];
   /** The name a driven timeline takes from its driver's placements; "" takes none. */
@@ -165,11 +194,15 @@ class Timeline extends ServiceBase<State> {
       actions: [],
       length: 0,
       loop: false,
+      loopStart: 0,
+      loopEnd: 0,
       unit: "s",
       tempoSlot: "tempo",
       fps: 30,
       speed: 1,
       running: false,
+      recording: false,
+      recordMode: "overdub",
       placements: [],
       placement: "",
     });
@@ -214,6 +247,14 @@ class Timeline extends ServiceBase<State> {
       this.state.loop = changed.loop = config.loop;
     }
 
+    if (isNumber(config.loopStart) && config.loopStart >= 0) {
+      this.state.loopStart = changed.loopStart = config.loopStart;
+    }
+
+    if (isNumber(config.loopEnd) && config.loopEnd >= 0) {
+      this.state.loopEnd = changed.loopEnd = config.loopEnd;
+    }
+
     if (config.unit === "s" || config.unit === "beats") {
       this.state.unit = changed.unit = config.unit;
     }
@@ -231,6 +272,14 @@ class Timeline extends ServiceBase<State> {
 
     if (isNumber(config.speed)) {
       this.state.speed = changed.speed = config.speed;
+    }
+
+    if (typeof config.recording === "boolean") {
+      this.state.recording = changed.recording = config.recording;
+    }
+
+    if (config.recordMode === "overdub" || config.recordMode === "replace") {
+      this.state.recordMode = changed.recordMode = config.recordMode;
     }
 
     if (config.placements !== undefined) {
@@ -260,6 +309,15 @@ class Timeline extends ServiceBase<State> {
       this.refresh();
     }
 
+    if (
+      changed.loop !== undefined ||
+      changed.loopStart !== undefined ||
+      changed.loopEnd !== undefined ||
+      changed.length !== undefined
+    ) {
+      this.intoLoop();
+    }
+
     if (isNumber(config.seek)) {
       this.seek(config.seek);
     }
@@ -276,7 +334,7 @@ class Timeline extends ServiceBase<State> {
 
   process(input: unknown): Frame | null {
     if (this.state.clock !== "input") {
-      return null;
+      return this.live(input);
     }
 
     const frameIn =
@@ -373,8 +431,57 @@ class Timeline extends ServiceBase<State> {
     this.halt();
   }
 
+  /**
+   * An input to an own clock: an action happening now. Playing, the clock
+   * moves to this moment and, recording, keeps the input there; stopped, the
+   * input passes through on the frame for where the timeline stands.
+   */
+  private live(input: unknown): Frame | null {
+    if (input === undefined || input === null) {
+      return null;
+    }
+    if (!this.ticker) {
+      const frame = this.frame(wrap(this.pos, this.extent()), [input], {});
+      if (this.state.unit === "beats") {
+        frame.tempo = this.tempo();
+      }
+      this.hasEmitted = true;
+      return frame;
+    }
+    const { to, ends } = this.reached(Date.now());
+    const frame = this.step(to);
+    frame.actions.push(input);
+    if (this.state.recording) {
+      this.state.actions = insertAction(this.state.actions, {
+        at: wrap(to, this.extent()),
+        data: input,
+      });
+      this.app.notify(this, { actions: this.state.actions });
+    }
+    if (ends) {
+      this.halt();
+    }
+    return frame;
+  }
+
   private extent(): Extent {
-    return { length: this.state.length, loop: this.state.loop };
+    const { length, loop, loopStart, loopEnd } = this.state;
+    return { length, loop, loopStart, loopEnd };
+  }
+
+  /**
+   * Takes an own clock standing past the end of its loop to the loop's start:
+   * set there rather than travelled, so what sits at the start fires.
+   */
+  private intoLoop() {
+    const range = loopRange(this.extent());
+    if (this.state.clock !== "own" || !range || this.pos < range.end) {
+      return;
+    }
+    this.pos = range.start;
+    this.posIsFresh = true;
+    this.jumpPending = true;
+    this.app.notify(this, { t: this.pos });
   }
 
   private play() {
@@ -386,6 +493,7 @@ class Timeline extends ServiceBase<State> {
       // Played through to its end: playing again is from the start.
       this.rewind();
     }
+    this.intoLoop();
     this.lastTick = Date.now();
     this.startTicker();
     this.state.running = true;
@@ -403,6 +511,10 @@ class Timeline extends ServiceBase<State> {
     if (this.state.running) {
       this.state.running = false;
       this.app.notify(this, { running: false });
+    }
+    if (this.state.recording) {
+      this.state.recording = false;
+      this.app.notify(this, { recording: false });
     }
   }
 
@@ -428,6 +540,7 @@ class Timeline extends ServiceBase<State> {
     this.pos = Math.max(0, to);
     this.posIsFresh = true;
     this.jumpPending = true;
+    this.intoLoop();
     if (this.ticker) {
       this.app.notify(this, { t: wrap(this.pos, this.extent()) });
     } else {
@@ -465,27 +578,48 @@ class Timeline extends ServiceBase<State> {
   }
 
   private tick() {
-    const now = Date.now();
-    const seconds = (now - this.lastTick) / 1000;
-    this.lastTick = now;
-
-    const perSecond = this.state.unit === "beats" ? this.tempo() / 60 : 1;
-    let to = this.pos + seconds * perSecond * this.state.speed;
-
-    const { length, loop } = this.state;
-    const ends = !loop && length > 0 && to >= length;
-    if (ends) {
-      to = length;
-    }
+    const { to, ends } = this.reached(Date.now());
     this.emit(to);
     if (ends) {
       this.halt();
     }
   }
 
+  /** Where a playing own clock has got to by `now`, and whether that is its end. */
+  private reached(now: number): { to: number; ends: boolean } {
+    const seconds = (now - this.lastTick) / 1000;
+    this.lastTick = now;
+
+    const perSecond = this.state.unit === "beats" ? this.tempo() / 60 : 1;
+    const to = this.pos + seconds * perSecond * this.state.speed;
+
+    const { length, loop } = this.state;
+    const ends = !loop && length > 0 && to >= length;
+    return { to: ends ? length : to, ends };
+  }
+
   /** Moves an own clock to `to`, emitting the frame that takes it there. */
   private emit(to: number) {
+    const frame = this.step(to);
+    if (!this.bypass) {
+      this.app.next(this, frame);
+    }
+  }
+
+  /**
+   * Moves an own clock to `to` and returns the frame that takes it there. A
+   * recording that replaces clears what it passes over first, so that neither
+   * fires.
+   */
+  private step(to: number): Frame {
     const extent = this.extent();
+    if (this.state.recording && this.state.recordMode === "replace") {
+      const kept = withoutDue(this.state.actions, this.pos, to, extent, this.posIsFresh);
+      if (kept !== this.state.actions) {
+        this.state.actions = kept;
+        this.app.notify(this, { actions: kept });
+      }
+    }
     const actions = dueActions(
       this.state.actions,
       this.pos,
@@ -500,7 +634,9 @@ class Timeline extends ServiceBase<State> {
       extent,
       this.posIsFresh,
     ) as number[];
-    this.pos = to;
+    // Kept within the loop, so a range that changes applies from where the
+    // timeline is rather than from how far it has travelled.
+    this.pos = wrap(to, extent);
     this.posIsFresh = false;
     this.hasEmitted = true;
 
@@ -513,9 +649,7 @@ class Timeline extends ServiceBase<State> {
       frame.tempo = this.tempo();
     }
     this.app.notify(this, { t: frame.t });
-    if (!this.bypass) {
-      this.app.next(this, frame);
-    }
+    return frame;
   }
 
   /**

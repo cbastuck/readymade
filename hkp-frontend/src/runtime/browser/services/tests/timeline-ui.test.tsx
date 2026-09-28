@@ -322,3 +322,50 @@ describe("a Timeline inside a use of a block", () => {
     expect(configure).not.toHaveBeenCalled();
   });
 });
+
+describe("the loop range", () => {
+  it("shows the whole length as the range where none is set", async () => {
+    await renderTimeline({ length: 4 });
+    expect(screen.getByTitle("loop 0.00 – 4.00 (off)")).toBeTruthy();
+  });
+
+  it("is drawn on the strip above the ruler, and drawing it loops it", async () => {
+    const { service } = await renderTimeline({ length: 4 });
+    const strip = screen.getByTitle("Drag to set the loop range");
+    fireEvent.pointerDown(strip, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerMove(strip, { clientX: 300, pointerId: 1 });
+    fireEvent.pointerUp(strip, { pointerId: 1 });
+    expect(service.state).toMatchObject({ loop: true, loopStart: 1, loopEnd: 3 });
+    expect(await screen.findByTitle("loop 1.00 – 3.00")).toBeTruthy();
+  });
+
+  it("moves with the range, and each edge with itself", async () => {
+    const { service } = await renderTimeline({ length: 4, loop: true, loopStart: 1, loopEnd: 2 });
+    const strip = screen.getByTitle("Drag to set the loop range");
+    const range = screen.getByTitle("loop 1.00 – 2.00");
+    fireEvent.pointerDown(range, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerMove(strip, { clientX: 200, pointerId: 1 });
+    fireEvent.pointerUp(strip, { pointerId: 1 });
+    expect(service.state).toMatchObject({ loopStart: 2, loopEnd: 3 });
+
+    const end = (await screen.findByTitle("loop 2.00 – 3.00")).lastElementChild as HTMLElement;
+    fireEvent.pointerDown(end, { clientX: 300, pointerId: 1 });
+    fireEvent.pointerMove(strip, { clientX: 350, pointerId: 1 });
+    fireEvent.pointerUp(strip, { pointerId: 1 });
+    expect(service.state).toMatchObject({ loopStart: 2, loopEnd: 3.5 });
+  });
+
+  it("switches looping off and on when the range is pressed", async () => {
+    const { service } = await renderTimeline({ length: 4, loop: true, loopStart: 1, loopEnd: 2 });
+    pressAt(screen.getByTitle("loop 1.00 – 2.00"), 0.375);
+    expect(service.state.loop).toBe(false);
+    pressAt(await screen.findByTitle("loop 1.00 – 2.00 (off)"), 0.375);
+    expect(service.state.loop).toBe(true);
+  });
+
+  it("is looped from the transport too", async () => {
+    const { service } = await renderTimeline({ length: 4 });
+    fireEvent.click(screen.getByTitle("Loop"));
+    expect(service.state.loop).toBe(true);
+  });
+});
