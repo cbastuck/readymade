@@ -29,26 +29,35 @@ cloud.
    encoder for the whole broadcast, emitting whole frames.
 3. [websocket-writer](../services/websocket.md#websocket-writer) sends each
    chunk to the relay over a WebSocket it opens itself. Its `url` is
-   `hkp-mount://relay/radio`, a reference to the relay's endpoint that the board
-   resolves once the relay has an address, plus the `path` `/live.mp3`. The
-   `Authorization` header carries the ingest key from the secret `radio-ingest`.
-   If the connection drops, it reconnects on its own. About a second of audio
-   waits while it does; anything older is dropped.
+   `hkp-mount://relay/ingest`, a reference to the relay's reader that the board
+   resolves once the relay has an address. The `Authorization` header carries
+   the key from the secret `radio-ingest`. If the connection drops, it
+   reconnects on its own. About a second of audio waits while it does; anything
+   older is dropped.
 4. **End Of Chain**, a [Stopper](../services/stopper.md): nothing needs to go on
    to the browser.
 
 ### Relay (hkp-node)
 
-1. [http-server-subservices](../services/http.md#streaming) declares a `stream`
-   at `/live.mp3` with `ingestKey` `{{secret.radio-ingest}}`. The home runtime's
-   WebSocket on that path is the stream's source. A GET on it is a listener.
+1. **Uplink**, a [websocket-reader](../services/websocket.md#on-hkp-node), takes
+   the home runtime's connection, but only with the key `{{secret.radio-ingest}}`,
+   and only one at a time (`exclusive`): a reconnecting home runtime replaces
+   its old connection. Each message it receives is a pass through the services
+   after it.
+2. [http-server-subservices](../services/http.md#streaming) declares a `stream`
+   at `/live.mp3` and passes each pass it is given to everyone connected there.
    Every other request is answered by `onRequest`:
    - **Player page**, a [Map](../services/map.md) answering with the page as an
      [answer envelope](../services/http.md#what-a-handler-may-answer-with).
+3. **End Of Chain**, a [Stopper](../services/stopper.md).
 
-The relay's address is a mount (`/hosted/<id>`): it stays the same across
-restarts and redeploys and cannot be guessed. The key decides who may
-broadcast; the address is all a listener needs.
+From **Radio** on, the relay is the same as in
+[Live Radio (Cloud Relay)](./live-radio-cloud-demo-board.md); only how the
+stream arrives differs.
+
+Both addresses are mounts (`/hosted/<id>`): they stay the same across restarts
+and redeploys and cannot be guessed. The key decides who may broadcast; the
+player address is all a listener needs.
 
 ## Latency
 

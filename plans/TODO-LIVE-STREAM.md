@@ -89,9 +89,8 @@ passes whole frames on without parsing MP3. They also give a back channel (close
 codes, pings) and reuse the mount upgrade path hkp-node already had.
 
 - **hkp-node `http-server-subservices`:** a port of the `stream` feature
-  (`src/services/stream.ts`), plus a **source**: a WebSocket on the stream path,
-  accepted only with `ingestKey` (bearer header or `?key=`), one at a time, with
-  a new source replacing the old.
+  (`src/services/stream.ts`). It first also took a **source** (a WebSocket on
+  the stream path, `ingestKey`); step 2 below moved that into `websocket-reader`.
 - **hkp-rt `websocket-writer`:** rebuilt on `url` (ws/wss/http(s)/mount reference
   + `path`) and `headers` resolved from secrets. It writes asynchronously on its
   own thread, reconnects with backoff, pings to detect dead connections, and
@@ -150,12 +149,19 @@ Steps:
    `hkp-node/tests/runtime-socket-binary.test.ts`. The REST fallback (socket
    not open) drops bytes with a warning, since JSON cannot carry them. A binary
    frame carries no run context, so its pass starts a trace of its own. Not
-   yet run in the app.
-2. **Direct variant, recomposed** — open. A `websocket-server` input service on
-   hkp-node (same id as hkp-rt's), reached through a mount and guarded by the
-   ingest key, emitting each message into the pipeline; the source, `ingestKey`
-   and upgrade path removed from `http-server-subservices`, which keeps only the
-   fan-out. Board: `… → websocket-writer → stopper` | `websocket-server → radio`.
+   yet run in the app — since run in the app by the user, working.
+2. **Direct variant, recomposed** — done 2026-09-28. hkp-node gained
+   `websocket-reader` (`src/services/websocket-reader.ts`): the same id and job
+   as hkp-rt's (accept connections, hand each message on), served at a mount
+   instead of a port, admitting only a client with `key` (bearer or `?key=`,
+   unset = nobody), `exclusive` for one client at a time with the newest
+   winning. Named reader rather than server because hkp-rt's `websocket-server`
+   (registered as `websocket-socket`) is the one that sends. The source,
+   `ingestKey` and upgrade path are gone from `http-server-subservices`; it only
+   fans out. Board: `mic → encode → websocket-writer (hkp-mount://relay/ingest)
+   → stopper` | `ingest (websocket-reader) → radio → stopper`. Loopback with the
+   real mic: 7.0 s of valid MP3 in a 7 s capture, writer `connected`, one
+   reader connection, nothing dropped. Not yet run in the app.
 3. **Measure both** with the player, normally and with a throttled uplink, and
    say in the board docs when to pick which — open.
 

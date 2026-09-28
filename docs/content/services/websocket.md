@@ -1,6 +1,6 @@
 # WebSocket
 
-Four hkp-rt services for bidirectional WebSocket communication: reader, writer, server, and client.
+Four hkp-rt services for bidirectional WebSocket communication: reader, writer, server, and client. hkp-node has the reader.
 
 ---
 
@@ -9,6 +9,7 @@ Four hkp-rt services for bidirectional WebSocket communication: reader, writer, 
 | Runtime | Service IDs |
 |---|---|
 | hkp-rt | `websocket-reader`, `websocket-writer`, `websocket-server`, `websocket-client` |
+| hkp-node | `websocket-reader` |
 
 These services are not available in the browser runtime. For browser-side
 WebSocket connectivity use [Input](./input.md) and [Output](./output.md).
@@ -22,7 +23,7 @@ The four services cover the two axes of WebSocket communication:
 | | Accepts connections (passive) | Initiates connections (active) |
 |---|---|---|
 | **Receives data** | `websocket-reader` | `websocket-client` |
-| **Sends data** | `websocket-writer` | `websocket-server` |
+| **Sends data** | `websocket-server` | `websocket-writer` |
 
 Mix and match based on which side initiates and which side produces data.
 
@@ -46,6 +47,29 @@ a pipeline trigger.
 
 - **Input**: ignored
 - **Output**: each received WebSocket message, parsed as JSON if valid
+
+### On hkp-node
+
+hkp-node binds no ports: the reader is served at a mount its runtime assigns,
+published in `__hkpMount` like every hkp-node endpoint, and a
+[websocket-writer](#websocket-writer) points at it with
+`hkp-mount://<runtime>/<service>`. Because that address is public, a client
+must present a key.
+
+| Property | Type | Description |
+|---|---|---|
+| `key` | `string` | What a client must present, as `Authorization: Bearer <key>` or `?key=<key>`; usually `{{secret.<alias>}}`. Unset, nobody is let in |
+| `exclusive` | `boolean` | One client at a time: a new one closes the one before, which is what a client reconnecting after its network dropped looks like from here. Default `false`, every client's messages are handed on |
+| `mountName` | `string` | Names the mount; renaming it rotates the address |
+
+Each message is a pass of its own through the services after the reader and
+on to the next runtime, in the order they arrive: a binary message as bytes
+(a `Buffer`), a text message parsed as JSON where it is JSON and as a string
+otherwise. What passes through the reader itself is handed on unchanged.
+
+State reports `connections`: each client's `address`, `seconds` connected,
+`messages` and `bytesReceived`. `host`, `port` and `path` are accepted and
+ignored, so a board written for hkp-rt still loads.
 
 ---
 
@@ -142,6 +166,18 @@ Browser Output sends to a WebSocket URL; hkp-rt websocket-reader receives:
 Browser:  Timer → Map → Output (ws://hkp-rt:9000/in)
 hkp-rt:   websocket-reader (port 9000) → FFT → monitor
 ```
+
+### Relay: hkp-rt at home → hkp-node in the cloud
+
+The writer connects outward, so the home machine needs no open port; the
+reader's key decides who may feed the relay:
+
+```
+hkp-rt:   core-input → audio-encode → websocket-writer (hkp-mount://relay/ingest) → stopper
+hkp-node: websocket-reader "ingest" (key) → http-server-subservices (stream) → stopper
+```
+
+See [Live Radio (Cloud, direct)](../boards/live-radio-cloud-direct-demo-board.md).
 
 ### Bridge: hkp-rt → browser
 
