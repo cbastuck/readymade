@@ -76,8 +76,10 @@ without Media Source Extensions falls back to a plain `<audio>` element.
 
 The page is board content: it sits in the Static's `out` as an
 [answer envelope](../services/http.md#what-a-handler-may-answer-with) and can be
-edited like any other state. It plays `/live.mp3`, so if you rename the stream's
-`path`, change the `STREAM` constant in the page too.
+edited like any other state. It plays `live.mp3` next to wherever it is served,
+so if you rename the stream's `path`, change that name in the page too. To let
+people outside your network listen, see
+[Live Radio (Cloud Relay)](./live-radio-cloud-demo-board.md).
 
 ## The facade
 

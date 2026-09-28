@@ -81,6 +81,46 @@ fetches the stream and feeds it to Media Source Extensions (`audio/mpeg` is
 supported by both; `ManagedMediaSource` is the one iOS Safari requires) gets
 under a second. It is now part of the board — see the first item under Open.
 
+## Cloud relay — built 2026-09-28
+
+Decided by the user: the relay is hkp-node, and the uplink is a WebSocket rather
+than Icecast's HTTP `PUT`. WebSocket messages keep chunk boundaries, so the relay
+passes whole frames on without parsing MP3. They also give a back channel (close
+codes, pings) and reuse the mount upgrade path hkp-node already had.
+
+- **hkp-node `http-server-subservices`:** a port of the `stream` feature
+  (`src/services/stream.ts`), plus a **source**: a WebSocket on the stream path,
+  accepted only with `ingestKey` (bearer header or `?key=`), one at a time, with
+  a new source replacing the old.
+- **hkp-rt `websocket-writer`:** rebuilt on `url` (ws/wss/http(s)/mount reference
+  + `path`) and `headers` resolved from secrets. It writes asynchronously on its
+  own thread, reconnects with backoff, pings to detect dead connections, and
+  keeps a bounded drop-oldest queue (16 KB by default). The `host`/`port`/`path`
+  form and its hello message are unchanged; `WriterSession` is gone.
+- **hkp-rt answer envelope** (from the player-page work) serves the page on
+  hkp-rt; on hkp-node a `map` serves it.
+- **Board:** `live-radio-cloud-demo-board.json`.
+
+Verified end to end on loopback, with the real mic → hkp-rt → hkp-node →
+listeners:
+- the relay stream decodes (48 kHz mono, 128 kbps, real-time rate);
+- through the relay, the player page buffers 0.3 s in Chrome and 0.4–0.5 s in
+  WebKit;
+- the listener count is exact;
+- switching the relay off and on: the writer retried three times, reconnected,
+  and resumed.
+
+Not verified:
+- `wss://` against a real TLS server (it compiles, and uses http-client's
+  certificate setup and host-name verification);
+- the frontend coordinator writing the relay's address onto the hkp-rt writer
+  in the running app. The first try in the app stuck at "waiting for the
+  address": the relay comes out of bypass after load, and a remote service's
+  later reports never reached board state, so the coordinator had nothing to
+  resolve. Fixed 2026-09-28 (`withReportedMount()`, REST scope report targets);
+  covered by unit tests, not yet seen working in the app;
+- a reverse proxy in front of the relay.
+
 ## Open
 
 - **The player page is board content**, decided 2026-09-27 (option B). hkp-rt

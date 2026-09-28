@@ -12,7 +12,7 @@ plan is deleted.
 | [TODO-CLOUD-COORDINATOR.md](TODO-CLOUD-COORDINATOR.md) | A coordinator, not a browser tab, owns a deployed board and provisions its runtimes | decided Aug 2026; partly built |
 | [TODO-CONSOLIDATION.md](TODO-CONSOLIDATION.md) | Aligning service ids and contracts across runtimes, so a mismatch is reported rather than absorbed | open |
 | [TODO-DEBUGGING.md](TODO-DEBUGGING.md) | Stopping a running board and walking it one invocation at a time, from the overview | designed, not built |
-| [TODO-LIVE-STREAM.md](TODO-LIVE-STREAM.md) | Microphone streamed live as MP3 from hkp-rt: the realtime handoff, a stream encoder, an endpoint's stream | built 2026-09-27 on macOS; manual checks and other targets open |
+| [TODO-LIVE-STREAM.md](TODO-LIVE-STREAM.md) | Microphone streamed live as MP3 from hkp-rt: the realtime handoff, a stream encoder, an endpoint's stream, a low-latency player page, and a cloud relay on hkp-node fed over a WebSocket | built 2026-09-27/28 on macOS; wss, in-app mount resolution and other targets open |
 | [TODO-QUEUE.md](TODO-QUEUE.md) | The `queue` service and what board units still need from it | service built; units open |
 | [TODO-SCOPES.md](TODO-SCOPES.md) | SubService as a boundary: stopping propagation, slots, dotted addressing | designed 2026-09-20, not built |
 | [TODO-SECRETS.md](TODO-SECRETS.md) | Secrets resolved at point of use and bound to a destination | Prio A built; Prio B open |

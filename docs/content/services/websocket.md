@@ -51,22 +51,43 @@ a pipeline trigger.
 
 ## websocket-writer
 
-Connects to an existing WebSocket server and sends each upstream pipeline
-value as a JSON message.
+Sends what passes through to a WebSocket somewhere else, one message per pass,
+and hands the pass on unchanged. It connects **outward**, so a runtime behind a
+NAT can feed a server that could never reach it. For example, a home machine
+can stream to a relay in the cloud ([Live Radio (Cloud Relay)](../boards/live-radio-cloud-demo-board.md)).
 
 ### Configuration
 
 | Property | Type | Description |
 |---|---|---|
-| `host` | `string` | Remote server hostname |
-| `port` | `string` | Remote server port |
-| `path` | `string` | URL path on the remote server |
+| `url` | `string` | `ws://…` or `wss://…`. An `http(s)://` address is taken to mean the WebSocket at the same place. `hkp-mount://<runtime>/<service>` names an endpoint instead (see below) |
+| `path` | `string` | Appended to a mount's address, e.g. `/live.mp3` |
+| `headers` | `object` | Sent with the handshake; `{{secret.<alias>}}` in a value is resolved for the host being connected to |
+| `maxQueueBytes` | `number` | How much may wait while the connection is slow or down (default 16384, about a second at 128 kbit/s); past it the oldest messages are dropped |
+
+**Nothing waits on the network.** Each pass is queued and handed on at once. A
+thread of the service's own connects, writes one message at a time, and
+reconnects with backoff (0.5 s, doubling to 10 s) when the connection drops.
+Keep-alive pings detect a connection that died without closing. For anything
+live, the newest data is what matters, which is why the queue drops the oldest.
+
+**A mount reference** works like [http-client](./http.md#calling-an-endpoint-whose-address-is-assigned-at-load-time):
+the board's coordinator writes the endpoint's address into `__hkpMount`, and the
+writer connects to that address plus `path`. Until then its status is `waiting`.
 
 ### Input / Output
 
-- **Input**: any JSON value — serialised and sent
-- **Output**: `null` by default (terminates pipeline); the original input
-  if `flow: "pass"` is set
+- **Input**: bytes are sent as binary messages; text and JSON as text
+  messages; MixedData's binary as bytes; a ring buffer as its serialised samples
+- **Output**: the input, unchanged
+
+State reports `status` (`idle`, `waiting`, `connecting`, `connected`,
+`reconnecting`), the last `error`, the `target` actually dialled, and
+`sentBytes`, `droppedMessages` and `reconnects`.
+
+**The older form.** Boards that give `host`, `port` and `path` instead of `url`
+connect over plain `ws://` and open with the `{"type":"writer"}` hello that
+hkp-rt's own websocket-server uses to pair a writer.
 
 ---
 

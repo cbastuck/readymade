@@ -60,6 +60,7 @@ add_executable(hkp-rt-service-tests
   http_stream.test.cpp
   stream_broadcast.test.cpp
   service_audio_encode.test.cpp
+  service_websocket_writer.test.cpp
   runtime_no_input.test.cpp
 )
 target_include_directories(hkp-rt-service-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lib/src)

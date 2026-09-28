@@ -118,7 +118,6 @@ target_sources(${PROJECT_NAME}
       src/services/audio_encode.cpp
       src/services/tts_inflect.cpp
       src/services/websocket_writer.cpp
-      src/services/writer_session.cpp
       src/services/peer_server/peer_registry.cpp
       src/services/peer_server/peer_ws_session.cpp
       src/services/peer_server/peer_server_session.cpp

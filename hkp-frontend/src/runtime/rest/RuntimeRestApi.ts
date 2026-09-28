@@ -574,6 +574,7 @@ export async function configureService(
 
   const data = await res.json();
   scope.onConfig?.(service.uuid, { state: data }); // TODO: this only works for full state due to see RuntimeRestScope scope.onConfig = ...
+  (scope as RuntimeRestScope).emitReport?.(service.uuid, data);
 
   return data;
 }

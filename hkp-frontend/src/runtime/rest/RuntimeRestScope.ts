@@ -122,6 +122,7 @@ export default class RuntimeRestScope implements RuntimeScope {
             this.onResult(null, message.data, context);
           } else if (message.purpose === MessagePurpose.NOTIFICATION) {
             this.app.notify({ uuid: message.sender }, message.data);
+            this.emitReport(message.sender, message.data);
           } else {
             console.log(
               "RuntimeRestScope.runtimeOutput.onmessage unknown message purpose",
@@ -142,6 +143,7 @@ export default class RuntimeRestScope implements RuntimeScope {
                 data = value;
               }
               this.app.notify({ uuid: instanceId }, data);
+              this.emitReport(instanceId, data);
             }
           } else if (msg.type === "result") {
             this.onResult(null, msg.data, null);
@@ -240,6 +242,30 @@ export default class RuntimeRestScope implements RuntimeScope {
   emitLog(entry: LogEntry) {
     for (const target of this.logTargets) {
       target(entry);
+    }
+  }
+
+  /**
+   * What this runtime's services report — notifications, and the state a
+   * configure is answered with — for whoever keeps a view of them beyond the
+   * service's own panel.
+   */
+  private reportTargets = new Set<
+    (serviceUuid: string, report: unknown) => void
+  >();
+
+  registerReportTarget(
+    target: (serviceUuid: string, report: unknown) => void,
+  ): () => void {
+    this.reportTargets.add(target);
+    return () => {
+      this.reportTargets.delete(target);
+    };
+  }
+
+  emitReport(serviceUuid: string, report: unknown) {
+    for (const target of this.reportTargets) {
+      target(serviceUuid, report);
     }
   }
 

@@ -122,6 +122,18 @@ export interface RuntimeScope {
    * carries its own entries to the coordinator over its own connection.
    */
   registerLogTarget?: (target: (entry: LogEntry) => void) => () => void;
+
+  /**
+   * Where what a service on this runtime reports goes: its notifications and
+   * the state it answers a configure with.
+   *
+   * Optional because only a scope proxying a remote runtime has such reports
+   * to hand on — a service this browser hosts is the live object, and whoever
+   * wants its state reads it there.
+   */
+  registerReportTarget?: (
+    target: (serviceUuid: string, report: unknown) => void,
+  ) => () => void;
 }
 
 export type ExternalInput = {

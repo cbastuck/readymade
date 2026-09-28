@@ -354,7 +354,22 @@ are streamed; anything else a pass produces is not. The state reports the
 are — address, user agent, time connected, bytes sent; setting `stream` to `null` ends
 it and lets them go.
 
-Available on hkp-rt.
+**A source can feed the stream from elsewhere** (hkp-node). A WebSocket on the
+stream's path is its source: a runtime behind a NAT connects out to the endpoint
+(see [websocket-writer](./websocket.md#websocket-writer)), and every binary
+message it sends goes to the listeners as it is. Only a source presenting
+`ingestKey` is accepted, as `Authorization: Bearer <key>` or `?key=<key>`. The
+value is usually a `{{secret.<alias>}}` reference. Without an `ingestKey`,
+nothing may feed the stream. There is one source at a time: a new one replaces
+the old, which is what a source reconnecting after a dropped network looks like.
+The state reports the `source`: its address, how long it has been connected, and
+the bytes received.
+
+On hkp-node the stream answers through the reverse proxy in front of the server
+too. It sends `X-Accel-Buffering: no`, so nginx passes it on at once instead of
+collecting it first.
+
+Available on hkp-rt (fed by passes) and hkp-node (fed by passes or a source).
 
 ### The older spelling
 
