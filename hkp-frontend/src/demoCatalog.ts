@@ -199,6 +199,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "SQL"],
   },
   {
+    slug: "swimlanes",
+    label: "Swimlanes",
+    description:
+      "Five SQL-backed lanes composed from independent facade widgets. Create cards where a lane permits it, edit or delete them anywhere, and drag them between or within lanes to reorder them.",
+    icon: "🗂️",
+    tags: ["Needs Node", "SQL"],
+  },
+  {
     slug: "rss-aggregator",
     label: "RSS Aggregator",
     description:

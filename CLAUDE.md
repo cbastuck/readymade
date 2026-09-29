@@ -253,6 +253,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `canvas`           | Embeds a Canvas service's drawing surface                                  |
 | `camera`           | Live camera; the frame it captures goes down the pipeline                   |
 | `calendar`         | A day as a calendar: hours down the side, one column per bookable thing     |
+| `swimlane`         | One ordered card lane; compose several with a shared drag group             |
 | `xy-pad`           | Embeds an XY Pad service                                                   |
 | `qr-code`          | Displays a QR code from a service notification                             |
 | `message-list`     | Scrolling message thread with optional inline composer                     |
