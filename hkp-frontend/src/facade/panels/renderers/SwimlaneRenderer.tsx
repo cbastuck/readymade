@@ -97,11 +97,19 @@ const controlStyle = {
 function CardEditor({
   state,
   laneTitle,
+  editorTitle,
+  titleLabel,
+  descriptionLabel,
+  saveLabel,
   onClose,
   onSave,
 }: {
   state: EditorState;
   laneTitle: string;
+  editorTitle?: string;
+  titleLabel?: string;
+  descriptionLabel?: string;
+  saveLabel?: string;
   onClose: () => void;
   onSave: (title: string, description: string) => void;
 }) {
@@ -126,23 +134,24 @@ function CardEditor({
     <Dialog open={state !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[460px]">
         <DialogTitle>
-          {state?.mode === "edit" ? "Edit card" : `Add to ${laneTitle}`}
+          {editorTitle ??
+            (state?.mode === "edit" ? "Edit card" : `Add to ${laneTitle}`)}
         </DialogTitle>
         <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
           <label style={{ display: "grid", gap: 6, fontSize: 12 }}>
-            Title
+            {titleLabel ?? "Title"}
             <input
               autoFocus
-              aria-label="Card title"
+              aria-label={titleLabel ?? "Card title"}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               style={{ ...controlStyle, padding: "9px 10px", cursor: "text" }}
             />
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 12 }}>
-            Description
+            {descriptionLabel ?? "Description"}
             <textarea
-              aria-label="Card description"
+              aria-label={descriptionLabel ?? "Card description"}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={5}
@@ -169,7 +178,7 @@ function CardEditor({
                 fontWeight: 600,
               }}
             >
-              {state?.mode === "edit" ? "Save" : "Add card"}
+              {saveLabel ?? (state?.mode === "edit" ? "Save" : "Add card")}
             </button>
           </DialogFooter>
         </form>
@@ -190,7 +199,10 @@ export function SwimlaneRenderer({
   const [editor, setEditor] = useState<EditorState>(null);
 
   const group = widget.dragGroup ?? widget.source.serviceUuid;
-  const accepts = dragged?.group === group && !!widget.moveActions?.length;
+  const canDrag = widget.allowDrag ?? !!widget.moveActions?.length;
+  const canAccept = widget.acceptDrops ?? !!widget.moveActions?.length;
+  const accepts =
+    dragged?.group === group && canAccept && !!widget.moveActions?.length;
 
   const act = (actions: WidgetAction[] | undefined, operation: Row, confirm?: string) =>
     run({
@@ -369,7 +381,7 @@ export function SwimlaneRenderer({
                 />
               ) : null}
               <article
-                draggable={!!widget.moveActions?.length}
+                draggable={canDrag}
                 data-card-id={String(card.id)}
                 onDragStart={(event) => beginDrag(event, card)}
                 onDragEnd={() => {
@@ -387,7 +399,9 @@ export function SwimlaneRenderer({
                 }}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "18px minmax(0, 1fr) auto",
+                  gridTemplateColumns: canDrag
+                    ? "18px minmax(0, 1fr) auto"
+                    : "minmax(0, 1fr) auto",
                   alignItems: "start",
                   gap: 6,
                   padding: "9px 8px",
@@ -396,14 +410,16 @@ export function SwimlaneRenderer({
                   background: "hsl(var(--card))",
                   boxShadow: "0 1px 2px rgb(0 0 0 / 0.08)",
                   opacity: dragged?.group === group && same(dragged.cardId, card.id) ? 0.45 : 1,
-                  cursor: widget.moveActions?.length ? "grab" : "default",
+                  cursor: canDrag ? "grab" : "default",
                 }}
               >
-                <GripVertical
-                  size={15}
-                  aria-hidden="true"
-                  style={{ marginTop: 2, color: "hsl(var(--muted-foreground))" }}
-                />
+                {canDrag ? (
+                  <GripVertical
+                    size={15}
+                    aria-hidden="true"
+                    style={{ marginTop: 2, color: "hsl(var(--muted-foreground))" }}
+                  />
+                ) : null}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, overflowWrap: "anywhere" }}>
                     {card.title || "Untitled card"}
@@ -476,6 +492,10 @@ export function SwimlaneRenderer({
         key={editor ? `${editor.mode}:${editor.mode === "edit" ? editor.card.id : "new"}` : "closed"}
         state={editor}
         laneTitle={widget.title}
+        editorTitle={widget.editorTitle}
+        titleLabel={widget.titleLabel}
+        descriptionLabel={widget.descriptionLabel}
+        saveLabel={widget.saveLabel}
         onClose={() => setEditor(null)}
         onSave={save}
       />

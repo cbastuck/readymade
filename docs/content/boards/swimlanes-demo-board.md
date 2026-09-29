@@ -87,6 +87,17 @@ actual effects stay explicit as `createActions`, `editActions`,
 `deleteActions` and `moveActions`. Their templates are filled from the
 operation object before the normal facade action runner processes them.
 
+For an unrestricted board, `moveActions` continues to make a lane both
+draggable and a drop target. A workflow can separate those capabilities with
+`allowDrag` and `acceptDrops`: a review lane can supply the card being dragged,
+while a drop-only destination owns the approval action. This makes the drop a
+domain command rather than pretending the facade has already moved persisted
+state.
+
+The generic editor wording can also be adapted without introducing a new
+widget. `editorTitle`, `titleLabel`, `descriptionLabel` and `saveLabel` let a
+mail board call a card's fields **Subject** and **Body**, for example.
+
 ## Try it
 
 Run hkp-node on port 8080 and open **Swimlanes** from the demo list. The schema
