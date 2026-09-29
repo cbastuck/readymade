@@ -514,6 +514,41 @@ export type CalendarWidget = {
   confirm?: string;
 };
 
+// One column in a kanban-style board. Several swimlanes become one board by
+// sharing a source and dragGroup in an ordinary facade row; the facade remains
+// responsible for composition instead of a larger widget owning its children.
+//
+// Source rows use the conventional fields below by default. A board whose
+// domain already names them differently can map those fields without reshaping
+// its query merely for the UI.
+export type SwimlaneWidget = {
+  type: "swimlane";
+  laneId: string | number;
+  title: string;
+  source: FacadeWidgetSource;
+  dragGroup?: string;
+  allowCreate?: boolean;
+  emptyLabel?: string;
+  width?: number | string;
+  minWidth?: number;
+  maxHeight?: number;
+  cardIdField?: string;
+  laneIdField?: string;
+  titleField?: string;
+  descriptionField?: string;
+  positionField?: string;
+  // Each list is interpolated against an operation object. For example a move
+  // exposes {{item.cardId}}, {{item.fromLaneId}}, {{item.toLaneId}},
+  // {{item.fromPosition}} and {{item.toPosition}}; `item.card` is the complete
+  // source row. Create/edit/delete carry the same operation discriminator and
+  // the values relevant to them.
+  createActions?: WidgetAction[];
+  editActions?: WidgetAction[];
+  deleteActions?: WidgetAction[];
+  moveActions?: WidgetAction[];
+  deleteConfirm?: string;
+};
+
 // A set of audio files played as one sitting — the widget for a board whose
 // output is something a person listens to rather than looks at.
 //
@@ -594,7 +629,8 @@ export type FacadeWidget =
   | DataTableWidget
   | RepeatWidget
   | AudioPlayerWidget
-  | CalendarWidget;
+  | CalendarWidget
+  | SwimlaneWidget;
 
 // ---------------------------------------------------------------------------
 // Layout tree — panels declare their structure declaratively.

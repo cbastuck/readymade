@@ -291,6 +291,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `camera`           | Live camera; the frame it captures goes down the pipeline                   |
 | `detect`           | What a Detect service sees: its last frame, with what it found outlined     |
 | `calendar`         | A day as a calendar: hours down the side, one column per bookable thing     |
+| `swimlane`         | One ordered card lane; compose several with a shared drag group             |
 | `xy-pad`           | Embeds an XY Pad service                                                   |
 | `qr-code`          | Displays a QR code from a service notification                             |
 | `message-list`     | Scrolling message thread with optional inline composer                     |

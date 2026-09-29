@@ -1,0 +1,187 @@
+{
+  "boardName": "Swimlanes",
+  "description": "A small work board composed from five independent Swimlane facade widgets. Every lane reads the same SQL query; moving, creating, editing and deleting cards enter ordered SQL pipelines and finish by reading the board again. Backlog and Ready can create cards, while the other lanes only accept cards moved into them. After a card moves, a Monitor shows the event that could be sent to another board; replace or follow it with an HTTP Client targeting an hkp-mount:// endpoint to invoke another composed board without coupling the swimlanes to that board.",
+  "runtimes": [
+    {
+      "id": "work",
+      "name": "Work board",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "work": [
+      {
+        "uuid": "move-card",
+        "serviceId": "sql",
+        "serviceName": "Move or reorder a card",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "swimlanes-demo",
+          "schema": "CREATE TABLE IF NOT EXISTS kanban_card (\n  id          INTEGER PRIMARY KEY,\n  lane_id     TEXT NOT NULL,\n  title       TEXT NOT NULL,\n  description TEXT NOT NULL DEFAULT '',\n  sort_key    REAL NOT NULL,\n  created     TEXT NOT NULL DEFAULT (datetime('now')),\n  updated     TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE INDEX IF NOT EXISTS kanban_card_lane_order\n  ON kanban_card(lane_id, sort_key, id);\nCREATE TABLE IF NOT EXISTS kanban_meta (\n  key   TEXT PRIMARY KEY,\n  value TEXT NOT NULL\n);\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 1, 'backlog', 'Collect launch feedback', 'Pull the notes from the beta group into one place.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 2, 'backlog', 'Sketch mobile navigation', 'Keep the first pass deliberately rough.', 2048\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 3, 'ready', 'Add empty states', 'Say what belongs in a lane before its first card arrives.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 4, 'doing', 'Build swimlane widget', 'Independent facade widgets sharing one drag group.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 5, 'review', 'Check database ordering', 'Moving twice should never duplicate or lose a card.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 6, 'done', 'Agree on the starter scope', 'Create, edit, delete, move and reorder.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_meta (key, value) VALUES ('starter-seeded', '1');",
+          "statement": "WITH\n  moving AS (\n    SELECT id FROM kanban_card WHERE id = $cardId\n  ),\n  destination AS (\n    SELECT id, row_number() OVER (ORDER BY sort_key, id) - 1 AS old_slot\n      FROM kanban_card\n     WHERE lane_id = $toLaneId AND id <> $cardId\n  ),\n  ranked AS (\n    SELECT id,\n           CASE WHEN old_slot < $toPosition THEN old_slot ELSE old_slot + 1 END AS new_slot\n      FROM destination\n    UNION ALL\n    SELECT id, min(max($toPosition, 0), (SELECT count(*) FROM destination))\n      FROM moving\n  )\nUPDATE kanban_card\n   SET lane_id = CASE WHEN id = $cardId THEN $toLaneId ELSE lane_id END,\n       sort_key = (SELECT (new_slot + 1) * 1024 FROM ranked WHERE ranked.id = kanban_card.id),\n       updated = CASE WHEN id = $cardId THEN datetime('now') ELSE updated END\n WHERE $operation = 'move'\n   AND EXISTS (SELECT 1 FROM moving)\n   AND id IN (SELECT id FROM ranked)"
+        }
+      },
+      {
+        "uuid": "after-move",
+        "serviceId": "sub-service",
+        "serviceName": "After a card moves",
+        "state": {
+          "pipeline": [
+            {
+              "uuid": "move-event",
+              "serviceId": "monitor",
+              "serviceName": "Move event",
+              "state": {}
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "create-card",
+        "serviceId": "sql",
+        "serviceName": "Create a card",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "swimlanes-demo",
+          "statement": "INSERT INTO kanban_card (lane_id, title, description, sort_key)\nSELECT $laneId, trim($title), $description,\n       coalesce((SELECT max(sort_key) + 1024 FROM kanban_card WHERE lane_id = $laneId), 1024)\n WHERE $operation = 'create'\n   AND trim($title) <> ''"
+        }
+      },
+      {
+        "uuid": "edit-card",
+        "serviceId": "sql",
+        "serviceName": "Edit a card",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "swimlanes-demo",
+          "statement": "UPDATE kanban_card\n   SET title = trim($title),\n       description = $description,\n       updated = datetime('now')\n WHERE $operation = 'edit'\n   AND id = $cardId\n   AND trim($title) <> ''"
+        }
+      },
+      {
+        "uuid": "delete-card",
+        "serviceId": "sql",
+        "serviceName": "Delete a card",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "swimlanes-demo",
+          "statement": "DELETE FROM kanban_card\n WHERE $operation = 'delete'\n   AND id = $cardId"
+        }
+      },
+      {
+        "uuid": "read-board",
+        "serviceId": "sql",
+        "serviceName": "Read the board",
+        "state": {
+          "mode": "query",
+          "database": "swimlanes-demo",
+          "schema": "CREATE TABLE IF NOT EXISTS kanban_card (\n  id          INTEGER PRIMARY KEY,\n  lane_id     TEXT NOT NULL,\n  title       TEXT NOT NULL,\n  description TEXT NOT NULL DEFAULT '',\n  sort_key    REAL NOT NULL,\n  created     TEXT NOT NULL DEFAULT (datetime('now')),\n  updated     TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE INDEX IF NOT EXISTS kanban_card_lane_order\n  ON kanban_card(lane_id, sort_key, id);\nCREATE TABLE IF NOT EXISTS kanban_meta (\n  key   TEXT PRIMARY KEY,\n  value TEXT NOT NULL\n);\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 1, 'backlog', 'Collect launch feedback', 'Pull the notes from the beta group into one place.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 2, 'backlog', 'Sketch mobile navigation', 'Keep the first pass deliberately rough.', 2048\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 3, 'ready', 'Add empty states', 'Say what belongs in a lane before its first card arrives.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 4, 'doing', 'Build swimlane widget', 'Independent facade widgets sharing one drag group.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 5, 'review', 'Check database ordering', 'Moving twice should never duplicate or lose a card.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_card (id, lane_id, title, description, sort_key)\nSELECT 6, 'done', 'Agree on the starter scope', 'Create, edit, delete, move and reorder.', 1024\n WHERE NOT EXISTS (SELECT 1 FROM kanban_meta WHERE key = 'starter-seeded');\nINSERT OR IGNORE INTO kanban_meta (key, value) VALUES ('starter-seeded', '1');",
+          "statement": "SELECT\n  id AS cardId,\n  lane_id AS laneId,\n  title,\n  description,\n  row_number() OVER (PARTITION BY lane_id ORDER BY sort_key, id) - 1 AS position,\n  sort_key AS sortKey,\n  created,\n  updated\nFROM kanban_card\nORDER BY lane_id, sort_key, id"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "read-board",
+        "payload": {}
+      }
+    ],
+    "panels": [
+      {
+        "id": "board",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 14,
+          "paddingY": 12,
+          "fill": true,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Drag cards between lanes or within a lane to reorder them. Backlog and Ready accept new cards; every card can be edited or deleted.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "swimlane",
+                  "laneId": "backlog",
+                  "title": "Backlog",
+                  "dragGroup": "work",
+                  "allowCreate": true,
+                  "source": { "serviceUuid": "read-board", "path": "rows" },
+                  "createActions": [{ "type": "process", "serviceUuid": "create-card", "payload": "{{item}}" }],
+                  "editActions": [{ "type": "process", "serviceUuid": "edit-card", "payload": "{{item}}" }],
+                  "deleteActions": [{ "type": "process", "serviceUuid": "delete-card", "payload": "{{item}}" }],
+                  "moveActions": [{ "type": "process", "serviceUuid": "move-card", "payload": "{{item}}" }]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "ready",
+                  "title": "Ready",
+                  "dragGroup": "work",
+                  "allowCreate": true,
+                  "source": { "serviceUuid": "read-board", "path": "rows" },
+                  "createActions": [{ "type": "process", "serviceUuid": "create-card", "payload": "{{item}}" }],
+                  "editActions": [{ "type": "process", "serviceUuid": "edit-card", "payload": "{{item}}" }],
+                  "deleteActions": [{ "type": "process", "serviceUuid": "delete-card", "payload": "{{item}}" }],
+                  "moveActions": [{ "type": "process", "serviceUuid": "move-card", "payload": "{{item}}" }]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "doing",
+                  "title": "In progress",
+                  "dragGroup": "work",
+                  "source": { "serviceUuid": "read-board", "path": "rows" },
+                  "editActions": [{ "type": "process", "serviceUuid": "edit-card", "payload": "{{item}}" }],
+                  "deleteActions": [{ "type": "process", "serviceUuid": "delete-card", "payload": "{{item}}" }],
+                  "moveActions": [{ "type": "process", "serviceUuid": "move-card", "payload": "{{item}}" }]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "review",
+                  "title": "Review",
+                  "dragGroup": "work",
+                  "source": { "serviceUuid": "read-board", "path": "rows" },
+                  "editActions": [{ "type": "process", "serviceUuid": "edit-card", "payload": "{{item}}" }],
+                  "deleteActions": [{ "type": "process", "serviceUuid": "delete-card", "payload": "{{item}}" }],
+                  "moveActions": [{ "type": "process", "serviceUuid": "move-card", "payload": "{{item}}" }]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "done",
+                  "title": "Done",
+                  "dragGroup": "work",
+                  "source": { "serviceUuid": "read-board", "path": "rows" },
+                  "editActions": [{ "type": "process", "serviceUuid": "edit-card", "payload": "{{item}}" }],
+                  "deleteActions": [{ "type": "process", "serviceUuid": "delete-card", "payload": "{{item}}" }],
+                  "moveActions": [{ "type": "process", "serviceUuid": "move-card", "payload": "{{item}}" }]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      { "source": { "serviceUuid": "move-card", "path": "error" } },
+      { "source": { "serviceUuid": "create-card", "path": "error" } },
+      { "source": { "serviceUuid": "edit-card", "path": "error" } },
+      { "source": { "serviceUuid": "delete-card", "path": "error" } },
+      { "source": { "serviceUuid": "read-board", "path": "error" } }
+    ]
+  }
+}
