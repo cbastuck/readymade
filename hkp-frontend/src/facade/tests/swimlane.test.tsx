@@ -162,6 +162,30 @@ describe("composed swimlanes", () => {
     );
   });
 
+  it("uses domain wording in the shared card editor", () => {
+    render(
+      <SwimlaneDragProvider>
+        <LayoutNode
+          item={lane("backlog", "Drafts", {
+            editorTitle: "Review generated email",
+            titleLabel: "Subject",
+            descriptionLabel: "Body",
+            saveLabel: "Save draft",
+          })}
+          boardContext={boardContext}
+          panelContext={{ knobValues: {}, onKnobChange: () => {} }}
+        />
+      </SwimlaneDragProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit First" }));
+
+    expect(screen.getByText("Review generated email")).toBeTruthy();
+    expect(screen.getByLabelText("Subject")).toBeTruthy();
+    expect(screen.getByLabelText("Body")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeTruthy();
+  });
+
   it("confirms a deletion before sending the card", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Delete Active" }));
@@ -212,6 +236,44 @@ describe("composed swimlanes", () => {
         },
       ]),
     );
+  });
+
+  it("separates a draggable source from a drop-only command lane", async () => {
+    processed.length = 0;
+    const commandLayout: LayoutItem = {
+      direction: "row",
+      items: [
+        lane("backlog", "Review", {
+          allowDrag: true,
+          acceptDrops: false,
+          moveActions: undefined,
+        }),
+        lane("done", "Approve", {
+          allowDrag: false,
+          acceptDrops: true,
+          moveActions: actions("approve"),
+        }),
+      ],
+    };
+    const { container } = render(
+      <SwimlaneDragProvider>
+        <LayoutNode
+          item={commandLayout}
+          boardContext={boardContext}
+          panelContext={{ knobValues: {}, onKnobChange: () => {} }}
+        />
+      </SwimlaneDragProvider>,
+    );
+    const card = container.querySelector<HTMLElement>('[data-card-id="1"]')!;
+    const destination = screen.getByRole("region", { name: "Approve" });
+    const dataTransfer = transfer();
+
+    expect(card.getAttribute("draggable")).toBe("true");
+    fireEvent.dragStart(card, { dataTransfer });
+    fireEvent.dragOver(destination, { dataTransfer });
+    fireEvent.drop(destination, { dataTransfer });
+
+    await waitFor(() => expect(processed[0]?.uuid).toBe("approve"));
   });
 
   it("numbers a same-lane drop after removing the dragged card", async () => {

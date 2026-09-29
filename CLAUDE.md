@@ -298,6 +298,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `status-indicator` | Coloured dot driven by a service notification                              |
 | `text`             | Whatever a service is saying, as text — a reason, a summary, a count       |
 | `data-table`       | Rows from a service; an array replaces the table, an object appends a row  |
+| `line-chart`       | One or more live or query-backed time series                               |
 | `file-pick`        | File chooser that sends the file to a service                              |
 | `audio-player`     | Plays a service's list of audio files through, one after the next          |
 

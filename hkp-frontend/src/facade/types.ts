@@ -39,7 +39,9 @@ export type SetStateAction = {
 // *is*, this says do this now. Without it a board could only reach a service by
 // writing into its configuration, which meant anything a button had to cause
 // was smuggled in as a config field the service read as a command.
-// `$$input` and { "$state": ... } are substituted the same way.
+// `$$input`, { "$state": ... }, { "$now": true } and { "$uuid": true } are
+// resolved when the action runs. The last two let the exact identity and time
+// of an event be stored and forwarded together.
 export type ProcessAction = {
   type: "process";
   serviceUuid: string;
@@ -93,11 +95,12 @@ export type ConfirmAction = {
 //     or "if that failed" cannot be written honestly until process answers
 //     back — a step saying it afterwards would only be saying it was sent.
 //   * **Substituting its own values.** Every value a step carries is written by
-//     a board author, and authors write `$$input`, `{ "$state": … }` and, inside
-//     a repeat, "{{item.…}}". Only the last is already resolved when the step
-//     is reached; the other two are each branch's own job in executeActions,
-//     and a branch that skips them hands a service the reference object rather
-//     than the value.
+//     a board author, and authors write `$$input`, `{ "$state": … }`, action-time
+//     references (`{ "$now": true }`, `{ "$uuid": true }`) and, inside a
+//     repeat, "{{item.…}}". Only the last is already resolved when the step is
+//     reached; the others are each branch's own job in executeActions, and a
+//     branch that skips them hands a service the reference object rather than
+//     the value.
 //   * **What it does when it cannot do it.** A facade is shown by hosts that
 //     offer different things, so every step needs an answer for the host that
 //     offers nothing. Where nothing is at stake, do nothing and let the rest
@@ -134,6 +137,9 @@ export type TextInputWidget = {
   type: "text-input";
   label?: string;
   placeholder?: string;
+  // A larger free-text composer. Enter adds a line; Ctrl/Cmd+Enter submits.
+  multiline?: boolean;
+  rows?: number;
   // What the field starts out holding, for a board that has a sensible answer
   // and would rather work on first load than wait to be told. Unlike a
   // placeholder this is a real value: it is what submitting sends. Pair it with
@@ -369,6 +375,21 @@ export type LineChartWidget = {
   normalize?: boolean;
   // When set, only this symbol's data is plotted (for one-chart-per-symbol layouts).
   symbol?: string;
+  // Several named series on one chart, where all other rows should be ignored.
+  // `symbol` remains the single-series shorthand and wins when both are set.
+  symbols?: string[];
+  // Field mappings for query rows that do not speak the market-tick vocabulary.
+  // Defaults preserve the original contract: symbol, price and time.
+  seriesField?: string;
+  valueField?: string;
+  timeField?: string;
+  // Optional per-point text shown once in the hover card. This keeps domain
+  // context such as a daily journal in the query rather than in the chart.
+  contextField?: string;
+  contextLabel?: string;
+  // Printed beside the latest value. The chart never interprets the unit.
+  unit?: string;
+  emptyLabel?: string;
 };
 
 // Rows arrive from a service notification. A notification carrying an object is
@@ -527,6 +548,11 @@ export type SwimlaneWidget = {
   title: string;
   source: FacadeWidgetSource;
   dragGroup?: string;
+  // Source and destination permissions are separate for workflows where a
+  // drop is a command (for example, approving an email), not a free move.
+  // Both keep the original moveActions-driven behaviour when omitted.
+  allowDrag?: boolean;
+  acceptDrops?: boolean;
   allowCreate?: boolean;
   emptyLabel?: string;
   width?: number | string;
@@ -537,6 +563,11 @@ export type SwimlaneWidget = {
   titleField?: string;
   descriptionField?: string;
   positionField?: string;
+  // Optional domain wording for the otherwise generic card editor.
+  editorTitle?: string;
+  titleLabel?: string;
+  descriptionLabel?: string;
+  saveLabel?: string;
   // Each list is interpolated against an operation object. For example a move
   // exposes {{item.cardId}}, {{item.fromLaneId}}, {{item.toLaneId}},
   // {{item.fromPosition}} and {{item.toPosition}}; `item.card` is the complete

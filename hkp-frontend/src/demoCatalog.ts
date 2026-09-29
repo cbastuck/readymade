@@ -215,6 +215,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "SQL"],
   },
   {
+    slug: "health-log",
+    label: "Private Health Log",
+    description:
+      "Keep your own timestamped blood-glucose, blood-pressure and weight history in SQLite, inspect it as tables and time-series charts, and expose each new event to an optional analytics board.",
+    icon: "🩺",
+    tags: ["Needs Node", "SQL", "Personal Data"],
+  },
+  {
     slug: "rss-aggregator",
     label: "RSS Aggregator",
     description:

@@ -1,0 +1,25 @@
+{
+  "boardName": "SYN Mail Desk",
+  "description": "A human-in-the-loop view of the existing SYN application. The original booking and hotels units still provide IMAP intake, conversation processing, generated follow-ups, SMTP delivery and hotel matching. Their facades are hidden in this composition and replaced by the Mail Desk unit's swimlanes. Moving a generated draft to Waiting for user response marks that artifact approved; the unchanged booking dispatcher then sends it, files the outbound message and advances the conversation. The card remains in review until that succeeds.",
+  "units": [
+    {
+      "uri": "syn-booking-unit-board.json",
+      "as": "booking",
+      "view": false
+    },
+    {
+      "uri": "syn-hotels-unit-board.json",
+      "as": "hotels",
+      "view": false,
+      "params": {
+        "requestsTopic": "booking.ready"
+      }
+    },
+    {
+      "uri": "syn-mail-desk-unit-board.json",
+      "as": "mail-desk"
+    }
+  ],
+  "runtimes": [],
+  "services": {}
+}
