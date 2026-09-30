@@ -3,12 +3,15 @@
  * Service ID: sql
  * Service Name: SQL
  * Runtime: browser
- * Modes: query | run | exec
+ * Modes: query | run | exec | databases | export | import
  * Key Config: statement, schema, mode, emit, database
  * IO: in=JSON (the statement's named parameters) -> out=JSON
- *     query -> { rows, count }
- *     run   -> { changes, lastInsertRowid }
- *     exec  -> { executed: true }
+ *     query     -> { rows, count }
+ *     run       -> { changes, lastInsertRowid }
+ *     exec      -> { executed: true }
+ *     databases -> { rows: [{ name, bytes }], count }   (in: ignored)
+ *     export    -> the database as SQL text             (in: ignored)
+ *     import    -> { executed: true }                   (in: SQL text)
  *
  * The browser implementation of the `sql` service hkp-node also provides,
  * sharing its state contract and its results, so a board moves its tables
@@ -30,6 +33,12 @@
  * board writes no parameter list at all. Values are always bound, never
  * interpolated.
  *
+ * **A database can leave as SQL and arrive as SQL.** `export` hands on the
+ * whole database as an SQLite dump and `import` runs one arriving as input,
+ * in this runtime and in hkp-node alike (`sql-dump.ts`), which is how tables
+ * built in a browser move to a server. `databases` lists what there is to
+ * export.
+ *
  * **What it hands onward is separate from what it did.** By default the result
  * travels. `emit: "input"` passes the input through untouched instead, so
  * several statements can act on one request in turn. The result is reported
@@ -39,7 +48,8 @@ import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import ServiceBase from "./ServiceBase";
 import SqlUI from "./SqlUI";
-import { EMITS, MODES, SqlEmit, SqlMode } from "./sql-modes";
+import { EMITS, MODES, STATEMENT_MODES, SqlEmit, SqlMode } from "./sql-modes";
+import { codeOf, dumpDatabase, refuseImport } from "./sql-dump";
 import {
   DEFAULT_DATABASE,
   Database,
@@ -64,21 +74,6 @@ type State = {
 const NAMED_PARAMETER = /[$:@]([A-Za-z_][A-Za-z0-9_]*)/g;
 
 /**
- * The statement with its literals and comments blanked out.
- *
- * A parameter is only a parameter in code. `'a@x'` is an email address, and
- * scanning the raw text would read `@x` as a parameter, bind a value SQLite
- * never asked for, and fail the statement.
- */
-function code(sql: string): string {
-  return sql
-    .replace(/'(?:[^']|'')*'/g, " ")
-    .replace(/"(?:[^"]|"")*"/g, " ")
-    .replace(/--[^\n]*/g, " ")
-    .replace(/\/\*[\s\S]*?\*\//g, " ");
-}
-
-/**
  * A value SQLite can store. Booleans and objects have no column type, and a
  * board should not have to convert them by hand on the way in.
  */
@@ -99,6 +94,43 @@ function bindable(value: unknown): SqlValue {
     return value;
   }
   return JSON.stringify(value);
+}
+
+/**
+ * Runs SQL text that arrived as input — a dump, typically — against the
+ * database, once `refuseImport` has agreed to it.
+ *
+ * A dump is one transaction, and a failure part way leaves it open, so it is
+ * rolled back here: nothing of a dump that did not load stays behind. The dump
+ * also turns foreign keys off for the connection, and every other statement
+ * expects them on.
+ */
+function importInto(db: Database, input: unknown): void {
+  const text =
+    typeof input === "string"
+      ? input
+      : input instanceof Uint8Array
+        ? new TextDecoder().decode(input)
+        : null;
+  if (text === null || !text.trim()) {
+    throw new Error("an import needs SQL text as its input");
+  }
+  const refused = refuseImport(text);
+  if (refused) {
+    throw new Error(refused);
+  }
+  try {
+    db.exec(text);
+  } catch (err) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      // No transaction was open: the text did not begin one.
+    }
+    throw err;
+  } finally {
+    db.exec("PRAGMA foreign_keys = ON");
+  }
 }
 
 class Sql extends ServiceBase<State> {
@@ -171,8 +203,20 @@ class Sql extends ServiceBase<State> {
    */
   async process(input: any): Promise<any> {
     const { mode, statement, emit } = this.state;
-    if (!statement.trim() && mode !== "exec") {
+    if (!statement.trim() && STATEMENT_MODES.includes(mode)) {
       return this.fail("sql has no statement to run");
+    }
+
+    if (mode === "databases") {
+      // Opens nothing: listing the databases is not a reason to create one.
+      try {
+        const rows = await sqlDatabases().list();
+        const result = { rows, count: rows.length };
+        this.app.notify(this, result);
+        return emit === "input" ? input : result;
+      } catch (err) {
+        return this.fail(`databases failed: ${sqliteMessage(err)}`);
+      }
     }
 
     const name = this.state.database || DEFAULT_DATABASE;
@@ -187,6 +231,13 @@ class Sql extends ServiceBase<State> {
     }
 
     try {
+      if (mode === "export") {
+        const dump = dumpDatabase(db);
+        // Reported as what was exported, not as the dump itself: the text
+        // travels to the next service, and a panel has no use for a copy.
+        this.app.notify(this, { exported: name, bytes: dump.length });
+        return emit === "input" ? input : dump;
+      }
       const result = this.execute(db, input);
       // Reported either way: what the statement did is this service's own
       // news. Only what travels to the next service is `emit`'s to decide.
@@ -216,6 +267,10 @@ class Sql extends ServiceBase<State> {
       db.exec(statement || schema);
       return { executed: true };
     }
+    if (mode === "import") {
+      importInto(db, input);
+      return { executed: true };
+    }
 
     const params = this.parameters(input);
     if (mode === "run") {
@@ -239,7 +294,9 @@ class Sql extends ServiceBase<State> {
         ? (input as Record<string, unknown>)
         : {};
     const params: SqlParams = {};
-    for (const match of code(this.state.statement).matchAll(NAMED_PARAMETER)) {
+    for (const match of codeOf(this.state.statement).matchAll(
+      NAMED_PARAMETER,
+    )) {
       params[match[0]] = bindable(record[match[1]]);
     }
     return params;

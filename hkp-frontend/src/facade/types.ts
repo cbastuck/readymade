@@ -115,12 +115,35 @@ export type ConfirmAction = {
 //   * **Naming.** The `type` is the whole discriminator, and its fields are
 //     flat. BoardAction's nested `action` predates this and is not the pattern
 //     to copy: it forces every reader to learn where a step's real verb lives.
+// Asks the person for a value before the rest of the actions run — the
+// value-shaped sibling of `confirm`. What they enter becomes `$$input` for the
+// actions after it, the way a text-input's text is for its own; cancelling ends
+// the sequence there, as declining a confirm does. So a cell of a table, which
+// has no value of its own to send, can still send one: the person's.
+//
+// `question` and `defaultValue` are substituted like a payload, and inside a
+// repeat or a table's `cellActions` they may name the item — "{{item.value}}"
+// starts the field at the value being changed. Where nobody can be asked, such
+// as a facade's init actions, the answer is cancel.
+export type PromptAction = {
+  type: "prompt";
+  question: string;
+  defaultValue?: unknown;
+  // A field several lines high, for a value that is text to write rather than a
+  // word to change.
+  multiline?: boolean;
+  // What the two buttons say. Default: "Save" / "Cancel".
+  agree?: string;
+  decline?: string;
+};
+
 export type WidgetAction =
   | ConfigureAction
   | SetStateAction
   | ProcessAction
   | BoardAction
-  | ConfirmAction;
+  | ConfirmAction
+  | PromptAction;
 
 export type MessageListWidget = {
   type: "message-list";
@@ -418,6 +441,12 @@ export type DataTableWidget = {
   // Facade state key the picked rows are written to, as an array. Default:
   // "selection".
   selectionState?: string;
+  // Makes every cell a control: clicking one runs these actions, substituted
+  // with the cell as the item — "{{item.value}}" is what it shows,
+  // "{{item.column}}" the column it is in, "{{item.row.<column>}}" any value of
+  // its row. With a `prompt` first, that is an editor: ask for the new value,
+  // then hand it to whatever writes it.
+  cellActions?: WidgetAction[];
 };
 
 // A state reference used in widget props to read from facade state.

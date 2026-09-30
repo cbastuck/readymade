@@ -48,11 +48,21 @@ export type Database = {
 export type SqlPersistence = {
   load(name: string): Promise<Uint8Array | undefined>;
   save(name: string, bytes: Uint8Array): Promise<void>;
+  /** Every database kept, with the size of its snapshot. */
+  list(): Promise<DatabaseInfo[]>;
 };
+
+/** A database as a list of them shows it. */
+export type DatabaseInfo = { name: string; bytes: number };
 
 export type DatabaseStore = {
   /** The database of this name, opened on first use and kept open. */
   open(name: string): Promise<Database>;
+  /**
+   * Every database there is: those kept in storage, and those opened here
+   * that already hold something. Sorted by name.
+   */
+  list(): Promise<DatabaseInfo[]>;
   /** Writes every database changed since it was last kept. */
   flush(): Promise<void>;
   /** Keeps what changed, then closes every open database. For tests. */
@@ -335,6 +345,28 @@ export function createDatabaseStore({
       }
       return (await pending).wrapped;
     },
+    list: async () => {
+      const found = new Map<string, number>();
+      for (const info of persistence ? await persistence.list() : []) {
+        found.set(info.name, info.bytes);
+      }
+      // What is open here is newer than its snapshot, and may have none yet.
+      // One opened only to be looked at holds no pages and is not listed:
+      // looking for a database is not creating it.
+      for (const [name, handle] of ready) {
+        const bytes = Number(
+          handle.db.selectValue(
+            "SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()",
+          ),
+        );
+        if (bytes > 0 || found.has(name)) {
+          found.set(name, bytes);
+        }
+      }
+      return [...found]
+        .map(([name, bytes]) => ({ name, bytes }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
     flush: keep,
     closeAll: async () => {
       await keep();
@@ -407,6 +439,29 @@ export function indexedDbPersistence(): SqlPersistence | null {
   };
 
   return {
+    list: async () => {
+      const idb = await connect();
+      const found: DatabaseInfo[] = [];
+      await new Promise<void>((resolve, reject) => {
+        const cursor = idb
+          .transaction(IDB_STORE, "readonly")
+          .objectStore(IDB_STORE)
+          .openCursor();
+        cursor.onsuccess = () => {
+          const at = cursor.result;
+          if (!at) {
+            resolve();
+            return;
+          }
+          if (typeof at.key === "string" && at.value instanceof Uint8Array) {
+            found.push({ name: at.key, bytes: at.value.byteLength });
+          }
+          at.continue();
+        };
+        cursor.onerror = () => reject(cursor.error);
+      });
+      return found;
+    },
     load: async (name) => {
       const idb = await connect();
       const value = await request(

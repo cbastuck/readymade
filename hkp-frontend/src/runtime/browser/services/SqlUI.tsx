@@ -25,7 +25,13 @@ const MODE_LABELS: Record<string, string> = {
   query: "Query",
   run: "Run",
   exec: "Exec",
+  databases: "Databases",
+  export: "Export",
+  import: "Import",
 };
+
+/** Modes that run what the panel's statement field holds. */
+const USES_STATEMENT = new Set(["query", "run", "exec"]);
 
 const EMIT_LABELS: Record<string, string> = {
   result: "Result",
@@ -34,6 +40,9 @@ const EMIT_LABELS: Record<string, string> = {
 
 /** One line saying what the last statement did. */
 function describe(result: any): string | null {
+  if (typeof result?.exported === "string") {
+    return `exported ${result.exported} (${result.bytes} characters)`;
+  }
   if (typeof result?.count === "number") {
     return `${result.count} row${result.count === 1 ? "" : "s"}`;
   }
@@ -56,13 +65,22 @@ export default function SqlUI(props: ServiceUIProps) {
   const [error, setError] = useState("");
 
   const update = (config: any) => {
-    if (typeof config?.mode === "string" && (MODES as readonly string[]).includes(config.mode)) {
+    if (
+      typeof config?.mode === "string" &&
+      (MODES as readonly string[]).includes(config.mode)
+    ) {
       setMode(config.mode);
     }
-    if (typeof config?.emit === "string" && (EMITS as readonly string[]).includes(config.emit)) {
+    if (
+      typeof config?.emit === "string" &&
+      (EMITS as readonly string[]).includes(config.emit)
+    ) {
       setEmit(config.emit);
     }
-    if (config?.database !== undefined && needsUpdate(config.database, database)) {
+    if (
+      config?.database !== undefined &&
+      needsUpdate(config.database, database)
+    ) {
       setDatabase(config.database);
     }
     if (
@@ -119,18 +137,20 @@ export default function SqlUI(props: ServiceUIProps) {
           onChange={(value) => configure({ database: value })}
         />
 
-        <div className="flex flex-col gap-1">
-          <GroupLabel className="hkp-svc-field-label" size={4}>
-            Statement
-          </GroupLabel>
-          <div className="h-[140px] w-full">
-            <Editor
-              value={statement}
-              onChange={(value) => configure({ statement: value || "" })}
-              language="sql"
-            />
+        {USES_STATEMENT.has(mode) ? (
+          <div className="flex flex-col gap-1">
+            <GroupLabel className="hkp-svc-field-label" size={4}>
+              Statement
+            </GroupLabel>
+            <div className="h-[140px] w-full">
+              <Editor
+                value={statement}
+                onChange={(value) => configure({ statement: value || "" })}
+                language="sql"
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="flex flex-col gap-1">
           <GroupLabel className="hkp-svc-field-label" size={4}>

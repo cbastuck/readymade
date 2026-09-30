@@ -71,6 +71,12 @@ data that looks right until the day it doesn't.
 | `query` (default) | Runs a statement and returns its rows | `{ rows: [...], count }` |
 | `run` | Runs a statement that changes rows | `{ changes, lastInsertRowid }` |
 | `exec` | Runs statements for their effect — DDL, `PRAGMA`, several at once | `{ executed: true }` |
+| `databases` | Lists the databases there are to name | `{ rows: [{ name, bytes }], count }` |
+| `export` | Writes the whole database as SQL | the dump, as text |
+| `import` | Runs SQL text arriving as **input** — a dump, typically | `{ executed: true }` |
+
+`databases`, `export` and `import` need no `statement`. See
+[Moving a database](#moving-a-database) for the last two.
 
 ---
 
@@ -178,8 +184,8 @@ only one of them can be first.
 |---|---|---|---|
 | `mode` | `string` | `"query"` | One of the three above |
 | `emit` | `string` | `"result"` | `"result"` passes the answer on, `"input"` passes the request through |
-| `database` | `string` | `""` | Which database; services naming the same one share its tables. Empty: derived from the board's title (hkp-node), `default` (browser) |
-| `statement` | `string` | `""` | The SQL to run |
+| `database` | `string` | `""` | Which database; services naming the same one share its tables. Empty: derived from the board's title (hkp-node), `default` (browser). Ignored by `databases` |
+| `statement` | `string` | `""` | The SQL to run (`query`, `run`, `exec`) |
 | `schema` | `string` | `""` | `CREATE TABLE …` applied once per board |
 | `lastCount` | `number` | — | Read-only: rows returned, or rows changed |
 | `error` | `string` | — | Read-only: why the last pass produced nothing |
@@ -190,7 +196,7 @@ only one of them can be first.
 
 | | Shape |
 |---|---|
-| **Input** | JSON carrying the values the statement names |
+| **Input** | JSON carrying the values the statement names; for `import`, SQL text (or its UTF-8 bytes) |
 | **Output** | see the mode table above |
 
 **The answer is returned, not pushed.** SQLite replies inside the call, so
@@ -273,6 +279,74 @@ does on hkp-node.
   travel as a JSON number without being rounded.
 - The panel's **Run** button tries the statement with no parameters and shows
   what it did; it does not call the rest of the pipeline.
+
+---
+
+## Moving a database
+
+`export` and `import` carry a database from one runtime to another as SQL
+text — most usefully from a browser, where tables are one person's, to
+hkp-node, where a board can keep them for everyone. Both runtimes write and
+read the same format, so a database exported by either loads into the other.
+
+### The dump
+
+An ordinary SQLite dump: what `sqlite3 file .dump` writes, and what
+`sqlite3 file < dump.sql` reads, so a dump is also a file to keep, read and
+diff. The tables with their rows, then indexes, triggers and views, all in one
+transaction:
+
+```sql
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS booking (id INTEGER PRIMARY KEY, member TEXT NOT NULL, …);
+INSERT INTO "booking"("id","member",…) VALUES(1,'you@club.example',…);
+CREATE UNIQUE INDEX IF NOT EXISTS one_per_slot ON booking(court, day, hour);
+COMMIT;
+```
+
+Values are written by SQLite itself, so each comes back exactly — text with its
+quotes and line breaks, blobs as `X'…'`, reals to the last digit — and
+`AUTOINCREMENT` counters come along, so an id used by a row since deleted is
+not handed out again. Every `CREATE` says `IF NOT EXISTS`, which is what lets a
+dump load into a database whose board has already made its (empty) tables from
+its `schema`.
+
+A database with a virtual table (full-text search, say) cannot be exported:
+its rows live in tables of the module's own, and a dump that recreated both
+would load them twice.
+
+`export` reports `{ exported, bytes }` rather than the dump: the text travels
+to the next service — [Download](./download.md), in a browser — and a panel has
+no use for a second copy.
+
+### Importing
+
+`import` runs the text it is given against the database `database` names,
+creating the database if there is none:
+
+- **All or nothing.** A dump is one transaction; if any statement fails — a row
+  colliding with one already there, typically — it is rolled back and the
+  notice says which. A text that begins no transaction of its own is run
+  statement by statement, and what ran before a failure stays.
+- **It is refused anything that reaches past its database.** An import is text
+  from outside the board, and on hkp-node possibly from a mounted endpoint
+  nobody signed in to, so it may not use `ATTACH`, `DETACH`, `VACUUM`,
+  `load_extension`, or any `PRAGMA` but `foreign_keys`. Those words inside
+  string literals and comments are data and pass. The same rule holds in both
+  runtimes, so a dump one accepts the other accepts too.
+- **Foreign keys are on again afterwards.** A dump turns them off to load
+  tables in any order; every statement after it expects them on.
+
+[SQL Explorer](../boards/sql-explorer-board.md) exports a browser database;
+[SQL Import](../boards/sql-import-board.md) loads a dump into hkp-node.
+
+### Listing
+
+`databases` lists the databases a board could name. In a browser, every one
+kept in this browser, and any opened here that already holds something. On
+hkp-node, the owner's named databases — not a board's derived one, whose file
+is named for a hash of its title and cannot be named back, and not `shared`.
 
 ---
 

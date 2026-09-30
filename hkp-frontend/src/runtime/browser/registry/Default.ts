@@ -12,6 +12,8 @@ import OutputDescriptor from "../services/Output";
 import FetcherDesriptor from "../services/Fetcher";
 import HttpClientDescriptor from "../services/HttpClient";
 import SqlDescriptor from "../services/Sql";
+import DownloadDescriptor from "../services/Download";
+import FileSourceDescriptor from "../services/FileSource";
 import InjectorDescriptor from "../services/Injector";
 
 // Data analysis
@@ -124,6 +126,8 @@ export const defaultRegistry: Array<ServiceModule> = [
   FetcherDesriptor,
   HttpClientDescriptor,
   SqlDescriptor,
+  DownloadDescriptor,
+  FileSourceDescriptor,
 
   // Actor
   CanvasDescriptor,

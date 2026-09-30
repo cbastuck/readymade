@@ -89,6 +89,64 @@ describe("data-table rows", () => {
     expect(await screen.findByText("b")).toBeTruthy();
     expect(screen.queryByText("a")).toBeNull();
   });
+
+  it("takes its columns from the table that replaced the last one", async () => {
+    // One table widget showing whichever table was asked for last.
+    const { notify } = renderTable({ source: { serviceUuid: "svc" } });
+
+    notify([{ member: "anna", court: 1 }]);
+    expect(await screen.findByText("member")).toBeTruthy();
+
+    notify([{ what: "booked anna" }]);
+    expect(await screen.findByText("what")).toBeTruthy();
+    expect(screen.queryByText("member")).toBeNull();
+    expect(screen.queryByText("court")).toBeNull();
+
+    // An empty table says nothing about columns, so the last ones stay.
+    notify([]);
+    expect(screen.getByText("what")).toBeTruthy();
+  });
+
+  it("runs its cell actions with the cell clicked as the item", async () => {
+    const { notify, setState, container } = renderTable({
+      source: { serviceUuid: "svc" },
+      cellActions: [
+        {
+          type: "set-state",
+          key: "picked",
+          value: "{{item.row.id}}/{{item.column}}={{item.value}}",
+        },
+      ],
+    });
+    notify([
+      { id: 1, member: "anna" },
+      { id: 2, member: "ben" },
+    ]);
+
+    fireEvent.click(await screen.findByRole("button", { name: "ben" }));
+    await waitFor(() =>
+      expect(setState).toHaveBeenCalledWith("picked", "2/member=ben"),
+    );
+    // Only the rows there are: the padding below them is not a control.
+    expect(container.querySelectorAll('td [role="button"]')).toHaveLength(4);
+  });
+
+  it("leaves its cells plain without cell actions", async () => {
+    const { notify } = renderTable({ source: { serviceUuid: "svc" } });
+    notify([{ id: 1, member: "anna" }]);
+    expect(await screen.findByText("anna")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "anna" })).toBeNull();
+  });
+
+  it("still gathers columns from rows appended one at a time", async () => {
+    const { notify } = renderTable({ source: { serviceUuid: "svc" } });
+
+    notify({ event: "first" });
+    notify({ event: "second", extra: "x" });
+
+    expect(await screen.findByText("extra")).toBeTruthy();
+    expect(screen.getByText("event")).toBeTruthy();
+  });
 });
 
 describe("data-table selection", () => {

@@ -232,6 +232,22 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["SQL"],
   },
   {
+    slug: "sql-explorer",
+    label: "SQL Explorer",
+    description:
+      "Every SQL database this browser keeps: pick one to see its tables, a table to see its rows — click a value to change it, tick rows to delete them — and export any of them as an ordinary SQL dump, the file hkp-node imports to carry on with the same tables.",
+    icon: "🗄️",
+    tags: ["SQL", "Utility"],
+  },
+  {
+    slug: "sql-import",
+    label: "SQL Import",
+    description:
+      "Pick an SQL dump, name a database, send it: hkp-node imports it in one transaction, all of it or none, and every board there naming that database carries on with its tables.",
+    icon: "📥",
+    tags: ["SQL", "Needs Node"],
+  },
+  {
     slug: "rss-aggregator",
     label: "RSS Aggregator",
     description:

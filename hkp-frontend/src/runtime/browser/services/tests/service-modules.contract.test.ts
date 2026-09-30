@@ -73,6 +73,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "Detect.ts",
   "Encode.ts",
   "Sql.ts",
+  "Download.ts",
 ]);
 
 type LoadedServiceModule = {

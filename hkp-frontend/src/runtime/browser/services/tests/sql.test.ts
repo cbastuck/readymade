@@ -229,8 +229,25 @@ describe("the browser SQL database store", () => {
       save: async (name, bytes) => {
         kept.set(name, bytes);
       },
+      list: async () =>
+        [...kept].map(([name, bytes]) => ({ name, bytes: bytes.byteLength })),
     };
   }
+
+  it("lists what is kept and what is open with something in it", async () => {
+    const persistence = memoryPersistence();
+    persistence.kept.set("kept-only", new Uint8Array(4096));
+    const store = createDatabaseStore({ persistence, saveDelayMs: 60_000 });
+    (await store.open("fresh")).exec("CREATE TABLE t (n INTEGER)");
+    // Opened to be looked at: holds nothing, and is not a database yet.
+    await store.open("looked-at");
+    expect((await store.list()).map((db) => db.name)).toEqual([
+      "fresh",
+      "kept-only",
+    ]);
+    expect((await store.list())[0].bytes).toBeGreaterThan(0);
+    await store.closeAll();
+  });
 
   it("keeps a database between stores through its persistence", async () => {
     const persistence = memoryPersistence();
