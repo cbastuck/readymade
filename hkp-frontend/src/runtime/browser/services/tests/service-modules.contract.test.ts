@@ -70,6 +70,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "MicrophoneMonitor.ts",
   "Debounce.ts",
   "Encode.ts",
+  "Sql.ts",
 ]);
 
 type LoadedServiceModule = {
@@ -161,7 +162,7 @@ describe("runtime browser services module contracts", () => {
       // Browser-only services are named under the hookup.to prefix. A service
       // that exists in more than one runtime carries the same bare id
       // everywhere, so a board reads the same wherever it runs.
-      const shared = ["sub-service", "tracks", "http-client"];
+      const shared = ["sub-service", "tracks", "http-client", "sql"];
       if (!shared.includes(descriptor.serviceId)) {
         expect(descriptor.serviceId, `${modulePath} serviceId`).toContain(
           "hookup.to/service/",

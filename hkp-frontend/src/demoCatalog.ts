@@ -199,6 +199,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "SQL"],
   },
   {
+    slug: "court-booking-browser",
+    label: "Court Booking (Browser)",
+    description:
+      "The same court timetable with nothing to install: SQLite runs in the browser and keeps the bookings between visits. The club rules are still unique indexes — what it gives up is the club, since the tables belong to this browser alone.",
+    icon: "🎾",
+    tags: ["SQL"],
+  },
+  {
     slug: "rss-aggregator",
     label: "RSS Aggregator",
     description:
