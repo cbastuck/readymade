@@ -11,6 +11,7 @@ import WebsocketClientDescriptor from "../services/WebsocketClient";
 import OutputDescriptor from "../services/Output";
 import FetcherDesriptor from "../services/Fetcher";
 import HttpClientDescriptor from "../services/HttpClient";
+import SqlDescriptor from "../services/Sql";
 import InjectorDescriptor from "../services/Injector";
 
 // Data analysis
@@ -122,6 +123,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   InjectorDescriptor,
   FetcherDesriptor,
   HttpClientDescriptor,
+  SqlDescriptor,
 
   // Actor
   CanvasDescriptor,

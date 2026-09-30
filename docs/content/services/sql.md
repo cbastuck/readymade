@@ -9,6 +9,13 @@ A board's own SQL database. Tables, columns and meaning all belong to the board.
 | Runtime | Service ID |
 |---|---|
 | Node.js (hkp-node) | `sql` |
+| Browser | `sql` |
+
+Both are SQLite and share one contract — modes, parameters, results — so a
+statement written for one runs unchanged on the other. What differs is **whose
+tables they are**: on hkp-node they belong to a tenant on a server, and every
+person using the board sees the same rows; in the browser they belong to that
+browser alone. See [In the browser](#in-the-browser).
 
 ---
 
@@ -171,6 +178,7 @@ only one of them can be first.
 |---|---|---|---|
 | `mode` | `string` | `"query"` | One of the three above |
 | `emit` | `string` | `"result"` | `"result"` passes the answer on, `"input"` passes the request through |
+| `database` | `string` | `""` | Which database; services naming the same one share its tables. Empty: derived from the board's title (hkp-node), `default` (browser) |
 | `statement` | `string` | `""` | The SQL to run |
 | `schema` | `string` | `""` | `CREATE TABLE …` applied once per board |
 | `lastCount` | `number` | — | Read-only: rows returned, or rows changed |
@@ -208,6 +216,63 @@ everything in memory instead, which is what a throwaway run wants.
 Files are created `0600` under a `0700` directory, in WAL mode with foreign keys
 on. Because a board's data is one file, copying it takes that board's data and
 nothing else.
+
+---
+
+## In the browser
+
+The browser's `sql` runs SQLite compiled to WebAssembly
+([`@sqlite.org/sqlite-wasm`](https://sqlite.org/wasm)), in the page. A board
+whose only reason for a server was its tables can drop the server: move the
+`sql` services into a browser runtime and nothing else changes — not the
+statements, not the facade. [Court Booking (Browser)](../boards/court-booking-browser-demo-board.md)
+is exactly that.
+
+**What it gives up is sharing.** The tables are this browser's. Two people on
+two devices see two databases, so a board whose point is that several people
+see the same rows — a booking sheet for a club, a poll — still wants hkp-node.
+A board kept by one person for themselves loses nothing.
+
+### Where it lives
+
+A database lives in memory while the page runs and is kept as a **snapshot in
+the browser's IndexedDB** (`hkp-sql`, one entry per database name): written
+right after a pass changes it, then read back the next time the name is opened.
+Clearing the site's data clears the tables.
+
+Three consequences of keeping snapshots rather than writing a file in place:
+
+- A change reaches storage a few milliseconds after the statement returns, not
+  with it. Leaving the page in that window can lose it.
+- Every pass that changes something writes the whole database. That is nothing
+  for the tables a board keeps for one person; it is the wrong tool for
+  megabytes.
+- Two tabs holding the same database each work on their own copy, and the last
+  one to write it wins. Keep one board using a database open at a time.
+
+### Which database a `sql` sees
+
+`database` names it, with the same rules as hkp-node — so a board valid in one
+runtime is valid in the other. There are no tenants in a browser, so services
+naming the same database share it across every board open in that browser.
+
+Left empty, the name is **`default`**, not the board's title: a browser service
+does not know the title of the board it is on. Every board that leaves it empty
+shares `default`, which is the sharper edge of the two — name the database.
+
+### Loading
+
+The engine is about 900 KB of WebAssembly, loaded the first time a `sql` runs
+rather than with the page, so boards without one never download it. That first
+pass is the only one that waits; after it, SQLite answers inside the call as it
+does on hkp-node.
+
+### Differences in results
+
+- An integer beyond ±2⁵³ comes back as its decimal **string**, since it cannot
+  travel as a JSON number without being rounded.
+- The panel's **Run** button tries the statement with no parameters and shows
+  what it did; it does not call the rest of the pipeline.
 
 ---
 
