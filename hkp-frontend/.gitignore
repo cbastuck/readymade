@@ -30,3 +30,5 @@ _.git
 
 .env
 public/back
+# TypeScript build state (tsc -b)
+*.tsbuildinfo
