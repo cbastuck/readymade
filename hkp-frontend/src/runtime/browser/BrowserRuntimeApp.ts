@@ -158,6 +158,9 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       // scope exists, and a board can be torn down under a live service.
       return scope.coordinator ?? undefined;
     },
+    // Read through for the same reason: an asset edited while the board runs
+    // is what a service resolving it next should see.
+    assets: () => scope.assets?.() ?? [],
   };
 
   return app;

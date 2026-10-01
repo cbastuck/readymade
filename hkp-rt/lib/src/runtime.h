@@ -41,6 +41,17 @@ public:
   // from every service's state and reachable only through here.
   SecretVault& secrets() override { return m_vault; }
 
+  // The descriptors of the assets this runtime's services reference, and the
+  // content they resolve to.
+  AssetStore* assets() override { return &m_assets; }
+
+  // Takes in descriptors, or null for an asset that was deleted. Merges, like
+  // secrets, because a client edits one asset at a time.
+  void setAssets(const std::map<std::string, nlohmann::json>& entries)
+  {
+    m_assets.merge(entries);
+  }
+
   // The cells services in this runtime hold values in between passes.
   //
   // A runtime is the outermost thing a slot name can mean, so two services
@@ -155,6 +166,7 @@ private:
   std::string m_boardName;
   std::list<std::shared_ptr<Service>> m_services; // TODO: not thread safe
   SecretVault m_vault;
+  AssetStore m_assets{ [this] { return &m_vault; } };
   SlotStore m_slots;
   std::vector<RuntimeInput> m_inputs;
   ProcessDepth m_processDepth;

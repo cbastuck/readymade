@@ -24,6 +24,7 @@ import {
   withUnitBlocks,
 } from "./linkBlocks";
 import { getLocalBoard } from "../views/playground/common";
+import { AssetDescriptor, readBoardAssets } from "../runtime/board/assets";
 import { loadSavedBoardViaPlatform } from "../platform/PlatformContext";
 import { toast } from "sonner";
 
@@ -117,6 +118,9 @@ export async function restoreBoard(
         services,
         currentUser,
         rt.boardName ?? restoredBoardName,
+        // Read on each use rather than captured: an asset edited while the
+        // board runs is what the runtime is pushed and resolves next.
+        refs.assetsFor?.(rt),
       );
     }),
   );
@@ -228,6 +232,27 @@ export async function linkBoardDocument(
   };
 }
 
+/**
+ * The assets a board declares, as the board will hold them: what can be used,
+ * with a warning naming each entry that cannot. A bad entry costs that one
+ * asset — the services naming it report it as unknown when they resolve —
+ * rather than the whole board.
+ */
+function boardAssets(board: BoardDescriptor | undefined): AssetDescriptor[] | undefined {
+  if (!board?.assets) {
+    return undefined;
+  }
+  const { assets, problems } = readBoardAssets(board.assets);
+  if (problems.length) {
+    console.warn(`Board assets: ${problems.join("; ")}`);
+    toast.warning(
+      problems.length === 1 ? "An asset could not be read" : `${problems.length} assets could not be read`,
+      { description: problems.join("\n") },
+    );
+  }
+  return assets;
+}
+
 export async function fetchBoard(
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
@@ -250,6 +275,9 @@ export async function fetchBoard(
     );
     refs.setFacade(linked?.facade);
     refs.setLinkage(linkage);
+    // Before the runtimes are restored: each is handed the descriptors its
+    // services reference with its create payload.
+    refs.setAssets?.(boardAssets(linked));
     const data = await restoreBoard(linked, refs, waitForUserLogin);
 
     // In-flight cancellation (e.g. React strict-mode unmount/remount).
@@ -358,9 +386,13 @@ export async function serializeBoard(
     },
   }));
 
+  // The board's own assets, as they are: the frontend's document, never
+  // reported by a runtime. Services hold references to them, not content.
+  const assets = refs.assetsRef?.current;
   const data = {
     runtimes: serializedRuntimes,
     services: serializedServices,
+    ...(assets?.length ? { assets } : {}),
   };
 
   const propsRef = refs.propsRef.current!;
@@ -399,6 +431,7 @@ export async function setBoardState(
   refs.setErrorOnFetch(undefined);
   refs.setFacade(linked?.facade);
   refs.setLinkage(linkage);
+  refs.setAssets?.(boardAssets(linked));
   const data = await restoreBoard(linked, refs, waitForUserLogin);
   if (data) {
     refs.setBoardNameState(data.boardName);
@@ -441,6 +474,7 @@ export async function clearBoard(
   refs.setServices({});
   refs.setRegistry({});
   refs.setFacade(undefined);
+  refs.setAssets?.(undefined);
   // What the cleared board was linked from — its units and its blocks — would
   // otherwise be written into whatever is built next.
   refs.setLinkage(undefined);

@@ -18,6 +18,8 @@ import { HKP_DND_RUNTIME_CLASS_TYPE } from "../../components/DropTypes";
 import NestedNavProvider from "../../runtime/ui/NestedNavigation";
 import { OverviewProvider } from "../../overview/OverviewContext";
 import OverviewToolbarButton from "../../overview/OverviewToolbarButton";
+import { AssetViewProvider } from "../../assets/AssetViewContext";
+import AssetViewToolbarButton from "../../assets/AssetViewToolbarButton";
 import { PlayProvider } from "../../core/play";
 import { FacadeViewProvider } from "../../facade/FacadeViewContext";
 import {
@@ -40,6 +42,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
     <RemoteRuntimeStoreCtx.Provider value={props.remoteRuntimeStore ?? null}>
       <SelectionProvider runtimeIds={boardContext.runtimes.map((rt) => rt.id)}>
         <OverviewProvider>
+          <AssetViewProvider>
           {/* Both places the board can be run from are inside this, so an
               input written in one is a press away in the other. */}
           <PlayProvider>
@@ -71,6 +74,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                       <>
                         <FacadeViewControls />
                         <OverviewToolbarButton />
+                        <AssetViewToolbarButton />
                         <DeployMenu />
                       </>
                     }
@@ -123,6 +127,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
               </div>
             </FacadeViewProvider>
           </PlayProvider>
+          </AssetViewProvider>
         </OverviewProvider>
       </SelectionProvider>
     </RemoteRuntimeStoreCtx.Provider>

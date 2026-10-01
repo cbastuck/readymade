@@ -108,6 +108,20 @@ inline std::optional<RuntimeConfiguration> validateRuntime(json config)
     conf.secrets = readSecretsPayload(*secrets);
   }
 
+  // Descriptors for the assets the services reference; a removal means nothing
+  // to a runtime being created, so only descriptors are kept.
+  auto assets = config.find("assets");
+  if (assets != config.end())
+  {
+    for (auto& [id, entry] : readAssetsPayload(*assets))
+    {
+      if (!entry.is_null())
+      {
+        conf.assets[id] = entry;
+      }
+    }
+  }
+
   // Absent means off; see RuntimeConfiguration::logData.
   auto state = config.find("state");
   if (state != config.end() && state->is_object())

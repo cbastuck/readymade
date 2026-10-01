@@ -81,6 +81,7 @@ import LZCompressDescriptor from "../services/LZCompress";
 import MicrophoneMonitorDescriptor from "../services/MicrophoneMonitor";
 import DebounceDescriptor from "../services/Debounce";
 import HoldDescriptor from "../services/Hold";
+import AssetDescriptor from "../services/Asset";
 import TimelineDescriptor from "../services/Timeline";
 import StopperDescriptor from "../services/Stopper";
 import ConfiguratorDescriptor from "../services/Configurator";
@@ -214,6 +215,9 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Encoding
   EncodeDescriptor,
+
+  // Content
+  AssetDescriptor,
 ];
 
 export const defaultBundles = [];

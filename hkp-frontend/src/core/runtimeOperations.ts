@@ -85,6 +85,9 @@ export async function addRuntime(
         ...prev,
         [runtime.id]: newRegistry,
       }));
+      // An added runtime has no services to reference an asset yet; it is
+      // handed the source so a configuration naming one can push it.
+      scope.assets = refs.assetsFor?.(runtimeWithUser);
       refs.setScopes((prev) => ({
         ...prev,
         [runtime.id]: scope,
@@ -160,6 +163,8 @@ export async function updateRuntime(
       updated.runtime,
       updated.services,
       refs.userRef.current,
+      undefined,
+      refs.assetsFor?.(updated.runtime),
     );
     if (result) {
       refs.setRuntimes((prev) =>

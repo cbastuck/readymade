@@ -31,6 +31,7 @@
 #include "./services/map.h"
 #include "./services/stopper.h"
 #include "./services/hold.h"
+#include "./services/asset.h"
 #include "./services/sub_service.h"
 #include "./services/tracks.h"
 #include "./services/if_service.h"
@@ -72,6 +73,7 @@ using ServiceTypes = Registry::TypeList<
   ,Map
   ,Stopper
   ,Hold
+  ,Asset
   ,SubService
   ,Tracks
   ,IfService

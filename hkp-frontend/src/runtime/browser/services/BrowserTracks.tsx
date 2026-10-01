@@ -312,6 +312,8 @@ export class BrowserTracks extends ServiceBase<State> {
       },
       new BrowserRegistry(),
     );
+    // The board's assets, as the runtime around this pipeline sees them.
+    scope.assets = () => this.app.assets?.() ?? [];
 
     // A service inside a track that emits without being called — a Timer tick,
     // a socket — has its own answer to give; it leaves by the same door this

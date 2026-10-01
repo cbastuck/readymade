@@ -11,6 +11,7 @@ import {
   User,
 } from "hkp-frontend/src/types";
 
+import { AssetsSource } from "hkp-frontend/src/runtime/board/assets";
 import api from "./RuntimeRestApi";
 import { createRuntimeRestApp } from "./RuntimeRestApp";
 import {
@@ -67,6 +68,12 @@ export default class RuntimeRestScope implements RuntimeScope {
    * release one — happens long after the moment the board was named.
    */
   boardName = "";
+  /**
+   * The asset descriptors this runtime's services may reference, read when a
+   * configuration names one the runtime has not been given yet. See
+   * `runtime/board/assets`.
+   */
+  assets?: AssetsSource;
 
   constructor(
     runtime: RuntimeDescriptor,

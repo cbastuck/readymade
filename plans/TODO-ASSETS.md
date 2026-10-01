@@ -16,11 +16,12 @@ reference when a service uses it, from wherever the content actually lives.
 "body": "hkp-asset://player"
 ```
 
-**State:** designed 2026-09-29, nothing built. Prompted by
+**State:** designed 2026-09-29; built 2026-09-30 except what *Work* lists as
+remaining. How it works now is in `docs/content/concepts/assets.md`; this plan
+keeps the decisions and what is still open. Prompted by
 `boards/live-radio-cloud-demo-board.json`, where the player page (6 KB of HTML
-and JS) sits inline in `radio.onRequest[0].state.template.body`. Serving it from
-a second place would mean copying it, and it can only be edited as one line of
-escaped JSON.
+and JS) sat inline in `radio.onRequest[0].state.template.body` — it is now the
+assets `player` and `player-js`.
 
 ---
 
@@ -230,59 +231,52 @@ use for.
 
 ## Work
 
-A vertical slice first: hkp-node and the radio board, end to end. Then breadth.
+### Built (2026-09-30)
 
-### 1 — Board format, frontend
+- **Board format, frontend.** `runtime/board/assets.ts` (descriptors, scheme,
+  finding, renaming, *Used by*); `BoardDescriptor.assets`, held as board state
+  beside the facade and carried through save, drafts, snapshots, share link,
+  board source, templates and partner boards. A runtime's asset source is the
+  document that contributed it (units).
+- **Store and push.** hkp-node (`src/assets.ts`), hkp-python (`assets.py`) and
+  hkp-rt (`assets.h`/`assets.cpp`): inline and `http(s)` sources, cache by
+  `sha256`, ETag revalidation, subscriptions, `assets` in `POST /runtimes`,
+  `POST /runtimes/:id/assets` (merge, `null` removes), a check route
+  `GET /runtimes/:id/assets/:assetId`, nesting delegation. The frontend pushes
+  at create, before a configure naming one, on attach, and on every edit
+  (`core/assetActions.ts`). A deployed board's descriptors travel to the
+  coordinator, which provisions each runtime with what it references.
+- **Consumers.** `http-server-subservices` resolves an asset body on all three
+  servers; the `asset` service exists in the browser, hkp-node, hkp-python and
+  hkp-rt, with a shared panel, tests, docs page and demo board. Both live-radio
+  cloud boards serve their page and script as assets.
+- **The asset view.** List, Monaco editor with Apply, URL descriptors with a
+  per-runtime Check, *Used by* with a way to each service, new from text, file
+  or URL, rename (rewrites references), delete (asks when referenced).
+- **`file://`**: hkp-node inside the tenant's volumes (`file:///<volume>/<path>`),
+  hkp-rt under `HKP_ASSET_ROOT`; refused everywhere else.
+- **Docs.** `concepts/assets.md`, `services/asset.md`, `board-json.md`,
+  `services/http.md`, the radio board pages, and `CLAUDE.md`.
 
-- `runtime/board/assets.ts`: `AssetDescriptor`, `ASSET_SCHEME`,
-  `parseAssetRef`, `findAssetRefs`, `referencedAssets` (`mount.ts` is the
-  model).
-- `BoardDescriptor.assets`. Carried unchanged through save, drafts, snapshots,
-  share link, board source and "Refine board with AI".
-- Units: each runtime's referenced set is computed against the document that
-  contributed it.
+### Remaining
 
-### 2 — Store and push, hkp-node
-
-- `hkp-node/src/assets.ts`: the store, the resolver (inline and https first),
-  cache by `sha256`, subscriptions.
-- `assets` in `POST /runtimes`, `POST /runtimes/:id/assets`, re-push on attach,
-  and nesting delegation.
-- Frontend: the push at create, at configure, and on change
-  (`runtime/rest/`, beside the secrets push).
-
-### 3 — First consumers, hkp-node
-
-- `http-server` resolves an `hkp-asset://` response body, streamed.
-- The `asset` service: logic, UI, registration, tests, docs page, demo board.
-- Migrate `boards/live-radio-cloud-demo-board.json`: the player page (and its
-  script, split out) become assets.
-
-### 4 — The asset view
-
-The list, the text editor with Apply, *Used by*, new/rename/delete, and
-**Make asset** on declared fields.
-
-### 5 — Other runtimes
-
-- The browser runtime: its store is the board's `assets`.
-- hkp-rt and hkp-python: store, push endpoint, resolver, `http_server` response
-  bodies, and the `asset` service. hkp-go when it has an HTTP server.
-
-### 6 — Large and host-local sources
-
-- `s3://` through the `storage` backend.
-- `file://` on the native app, inside the granted folder.
-- Upload into a remote runtime's store, and deploying with host-local assets.
-- Model loaders taking a reference where they take a path.
-
-### 7 — Docs
-
-`docs/content/concepts/assets.md`, a row in `board-json.md`, the reserved
-scheme next to `hkp-mount://` in `CLAUDE.md`, and the vocabulary entry (the
-vocabulary is written by hand, so propose it rather than add it).
-
----
+- **Make asset** from a service panel. Blocked on *Which fields accept a
+  reference* below.
+- **`s3://`.** hkp-node's `storage` is a facade over a backend pipeline and has
+  no S3 client of its own to share, so there is nothing to route through yet.
+  Refused by name meanwhile.
+- **Host-local content.** The native app's granted folder (`hkp://assets`) for
+  its browser runtime, pointing its embedded hkp-rt's `HKP_ASSET_ROOT` there,
+  uploading host-local content into a remote runtime's store keyed by
+  `sha256`, and deploying with host-local assets (or refusing to, by name).
+- **Model loaders** taking a reference where they take a path. They load by
+  file path, so a resolved asset has to land in a file first — the on-disk
+  cache the store section describes, which is not built (the stores cache in
+  memory, bounded).
+- **Unit assets in the view.** A runtime a unit contributes resolves against
+  the unit's assets, but the view lists and edits only the board's own; a
+  flattened export (deploy, share) carries only the board's own.
+- **hkp-go**, when it has an HTTP server.
 
 ## Open
 

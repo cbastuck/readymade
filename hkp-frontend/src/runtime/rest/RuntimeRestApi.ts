@@ -18,6 +18,12 @@ import {
   User,
 } from "hkp-frontend/src/types";
 import RuntimeRestScope from "./RuntimeRestScope";
+import {
+  AssetCheck,
+  AssetPush,
+  AssetsSource,
+  referencedAssets,
+} from "hkp-frontend/src/runtime/board/assets";
 import { isBinaryData } from "./Data";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 import { startedRun } from "../processContext";
@@ -269,6 +275,69 @@ export async function pushSecrets(
   }
 }
 
+/**
+ * Hands a running runtime asset descriptors: new, changed, or `null` for one
+ * the board deleted.
+ *
+ * The same moments as secrets — a configuration naming an asset the runtime
+ * was not given, and re-attaching to a runtime that restarted — plus one they
+ * do not have: an asset edited while the board runs. That push is what makes
+ * an edit take effect, since the services holding the reference resolve it on
+ * their next use and are not reconfigured.
+ */
+export async function pushAssetsTo(
+  runtime: RuntimeDescriptor,
+  assets: AssetPush,
+  user: User | null,
+): Promise<void> {
+  if (!Object.keys(assets).length) {
+    return;
+  }
+  try {
+    const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/assets`, {
+      method: "POST",
+      body: JSON.stringify(assets),
+      headers: { "content-type": "application/json", ...authHeaders(user) },
+    });
+    if (!res.ok) {
+      console.warn(
+        `Pushing assets to ${runtime.id} failed (${res.status}); services referencing ${Object.keys(assets).join(", ")} will report them as unknown`,
+      );
+    }
+  } catch {
+    // An unreachable runtime is reported by everything else the caller is
+    // doing; the services needing an asset say so themselves.
+  }
+}
+
+async function pushAssets(scope: RuntimeScope, assets: AssetPush): Promise<void> {
+  const restScope = scope as RuntimeRestScope;
+  await pushAssetsTo(restScope.descriptor, assets, restScope.authenticatedUser);
+}
+
+async function checkAsset(scope: RuntimeScope, assetId: string): Promise<AssetCheck> {
+  const restScope = scope as RuntimeRestScope;
+  const runtime = restScope.descriptor;
+  try {
+    const res = await fetch(
+      `${runtime.url}/runtimes/${runtime.id}/assets/${encodeURIComponent(assetId)}`,
+      { headers: { ...authHeaders(restScope.authenticatedUser) } },
+    );
+    if (!res.ok) {
+      return {
+        ok: false,
+        problem:
+          res.status === 404
+            ? `${runtime.name} does not resolve assets`
+            : `${runtime.name} answered ${res.status}`,
+      };
+    }
+    return (await res.json()) as AssetCheck;
+  } catch (err: any) {
+    return { ok: false, problem: `${runtime.name} is unreachable: ${err?.message ?? err}` };
+  }
+}
+
 async function attachRuntime(
   runtime: RuntimeDescriptor,
   // State included: attaching re-pushes the values for the references it
@@ -276,6 +345,7 @@ async function attachRuntime(
   services: Array<{ uuid: string; serviceId: string; state?: unknown }>,
   user: User | null,
   boardName = "",
+  assets?: AssetsSource,
 ): Promise<RestoreRuntimeResult | null> {
   let res: Response;
   try {
@@ -317,6 +387,9 @@ async function attachRuntime(
   // credentials, and nothing here can tell that apart from one that never
   // stopped. Pushing again is idempotent, so it is done either way.
   await pushSecrets(descriptor, services, user, boardName);
+  // Likewise the asset store, which lives in memory beside the vault.
+  scope.assets = assets;
+  await pushAssetsTo(descriptor, referencedAssets(services, assets?.()), user);
   return {
     runtime: descriptor,
     // The running services, not the board's: their state is what is live.
@@ -331,6 +404,7 @@ async function restoreRuntime(
   services: Array<ServiceDescriptor>,
   user: User | null,
   boardName?: string,
+  assets?: AssetsSource,
 ): Promise<RestoreRuntimeResult | null> {
   const svcs = (services ?? []).map((s) => ({
     uuid: s.uuid || uuidv4(),
@@ -339,7 +413,7 @@ async function restoreRuntime(
     state: (s as any).state, // TODO:
   }));
 
-  const attached = await attachRuntime(runtime, svcs, user, boardName);
+  const attached = await attachRuntime(runtime, svcs, user, boardName, assets);
   if (attached) {
     return attached;
   }
@@ -348,7 +422,7 @@ async function restoreRuntime(
     registry,
     scope,
     services: createdServices,
-  } = await createRuntimeRequest(runtime, svcs, boardName, user);
+  } = await createRuntimeRequest(runtime, svcs, boardName, user, assets);
   return {
     runtime,
     services: createdServices,
@@ -574,6 +648,13 @@ export async function configureService(
     (scope as RuntimeRestScope).authenticatedUser,
     (scope as RuntimeRestScope).boardName,
   );
+  // Assets the same way, and for the same reason: a field naming one can be
+  // filled in at any time, and the service resolves it on its next use.
+  await pushAssetsTo(
+    runtime,
+    referencedAssets([{ state: config }], scope.assets?.()),
+    (scope as RuntimeRestScope).authenticatedUser,
+  );
   const res = await fetch(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
     {
@@ -683,6 +764,7 @@ async function createRuntimeRequest(
   services: Array<ServiceDescriptor>,
   boardName?: string,
   user?: User | null,
+  assets?: AssetsSource,
 ) {
   const payload = {
     name: runtime.name,
@@ -708,6 +790,10 @@ async function createRuntimeRequest(
       runtimeName: runtime.name,
       url: runtime.url ?? "",
     }),
+    // With the create payload for the same reason: a service that loads its
+    // content while being configured needs the descriptor by then. Only the
+    // ones these services reference — inline content can be large.
+    assets: referencedAssets(services, assets?.()),
   };
   const runtimesUrl = `${runtime.url}/runtimes`;
   let res: Response;
@@ -747,6 +833,7 @@ async function createRuntimeRequest(
   scope.server = serverKindOf(body);
   scope.services = rt.services ?? [];
   scope.boardName = boardName ?? "";
+  scope.assets = assets;
 
   return {
     runtime: rt,
@@ -768,6 +855,8 @@ const api: RuntimeApi = {
   getServiceConfig,
   processService,
   rearrangeServices,
+  pushAssets,
+  checkAsset,
 };
 
 export default api;

@@ -49,6 +49,19 @@ import {
 } from "./core/boardContextTypes";
 import { FacadeDescriptor } from "./facade/types";
 import { BoardLinkage } from "./runtime/board/units";
+import {
+  AssetCheck,
+  AssetDescriptor,
+  AssetUse,
+  AssetsSource,
+  upsertAsset,
+} from "./runtime/board/assets";
+import {
+  assetUses as assetUsesOp,
+  checkAssetOnRuntimes,
+  pushAssetChanges,
+  rewriteAssetRefs,
+} from "./core/assetActions";
 import { UnitOrigin } from "./core/linkUnits";
 import {
   fetchBoard as fetchBoardOp,
@@ -217,6 +230,22 @@ type BoardContextAPI = {
   editBlock: (key: string) => void;
   applyBlockEdit: () => Promise<void>;
   cancelBlockEdit: () => Promise<void>;
+
+  /**
+   * Adds or replaces one of the board's assets and pushes it to the runtimes
+   * referencing it, which serve it on their next use — nothing is
+   * reconfigured. With `replacing` naming a different id it is a rename, and
+   * every reference to the old id is rewritten. See `runtime/board/assets`.
+   */
+  setAsset: (asset: AssetDescriptor, replacing?: string) => Promise<void>;
+  /** Removes an asset from the board and from every runtime holding it. */
+  deleteAsset: (id: string) => Promise<void>;
+  /** Every place a service names an asset, from what the services hold now. */
+  assetUses: (assetId?: string) => Promise<AssetUse[]>;
+  /** What the runtimes that will use an asset say about resolving it. */
+  checkAsset: (
+    assetId: string,
+  ) => Promise<Array<{ runtime: RuntimeDescriptor; check: AssetCheck }>>;
 };
 
 export type EngineState = {
@@ -236,6 +265,8 @@ export type BoardContextState = BoardContextAPI &
 
     boardName?: string;
     facade?: FacadeDescriptor;
+    /** The board's own asset descriptors. See `runtime/board/assets`. */
+    assets?: AssetDescriptor[];
     /**
      * What linking this board produced: the units it was assembled from and the
      * views they contribute. Absent on a board that declares no units — which
@@ -256,6 +287,7 @@ export type BoardContextState = BoardContextAPI &
 type ProviderState = EngineState & {
   availableRuntimeEngines: Array<RuntimeClass>;
   facade?: FacadeDescriptor;
+  assets?: AssetDescriptor[];
   linkage?: BoardLinkage;
   isFetching: boolean;
   errorOnFetch?: Error;
@@ -286,6 +318,10 @@ type ProviderStateAction =
   | {
       type: "setLinkage";
       value: SetStateAction<BoardLinkage | undefined>;
+    }
+  | {
+      type: "setAssets";
+      value: SetStateAction<AssetDescriptor[] | undefined>;
     }
   | { type: "setIsFetching"; value: SetStateAction<boolean> }
   | {
@@ -339,6 +375,11 @@ function providerStateReducer(
       return {
         ...state,
         linkage: resolveSetStateAction(state.linkage, action.value),
+      };
+    case "setAssets":
+      return {
+        ...state,
+        assets: resolveSetStateAction(state.assets, action.value),
       };
     case "setIsFetching":
       return {
@@ -406,6 +447,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         availableRuntimeEnginesProp || restoreAvailableRuntimeEngines(),
       facade: undefined,
       linkage: undefined,
+      assets: undefined,
       isFetching: false,
       errorOnFetch: undefined,
     });
@@ -417,6 +459,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       availableRuntimeEngines,
       facade,
       linkage,
+      assets,
       isFetching,
       errorOnFetch,
     } = state;
@@ -499,6 +542,26 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       latestLinkageRef.current = resolveSetStateAction(latestLinkageRef.current, value);
       dispatch({ type: "setLinkage", value: latestLinkageRef.current });
     };
+    // The assets as last set, ahead of the render that shows them: a runtime
+    // restored in the same tick reads them through `assetsFor`, and so does
+    // every push and resolution after, for as long as the runtime lives.
+    const latestAssetsRef = useRef<AssetDescriptor[] | undefined>(undefined);
+    const setAssets: Dispatch<SetStateAction<AssetDescriptor[] | undefined>> = (
+      value,
+    ) => {
+      latestAssetsRef.current = resolveSetStateAction(latestAssetsRef.current, value);
+      dispatch({ type: "setAssets", value: latestAssetsRef.current });
+    };
+    /**
+     * The descriptors a runtime's services may reference: the board's own, or
+     * those of the unit that contributed the runtime — each runtime belongs to
+     * exactly one document, and references are lexical to it.
+     */
+    const assetsFor = (runtime: RuntimeDescriptor): AssetsSource => () =>
+      runtime.unit
+        ? (latestLinkageRef.current?.units.find((unit) => unit.name === runtime.unit)
+            ?.source.assets ?? [])
+        : (latestAssetsRef.current ?? []);
     const setIsFetching: Dispatch<SetStateAction<boolean>> = (value) =>
       dispatch({ type: "setIsFetching", value });
     const setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>> = (
@@ -536,6 +599,9 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setErrorOnFetch,
       setFacade,
       setLinkage,
+      assetsRef: latestAssetsRef,
+      setAssets,
+      assetsFor,
     });
 
     const waitForUserLogin = async () => {
@@ -712,6 +778,32 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const editBlock = (key: string) => editBlockOp(key, setLinkage);
     const applyBlockEdit = () => applyBlockEditOp(buildContextValue(), setLinkage);
     const cancelBlockEdit = () => cancelBlockEditOp(buildContextValue(), setLinkage);
+
+    const assetBoard = () => ({
+      runtimes: providerStateRef.current.runtimes,
+      scopes: providerStateRef.current.scopes,
+      services: providerStateRef.current.services,
+      runtimeApis: propsRef.current.runtimeApis ?? {},
+    });
+    const setAsset = async (asset: AssetDescriptor, replacing?: string) => {
+      const renaming = !!replacing && replacing !== asset.id;
+      setAssets((prev) => upsertAsset(prev, asset, replacing ?? asset.id));
+      // The new descriptor first, so a service configured with the new id in a
+      // rename finds it already there; the old one goes once nothing names it.
+      await pushAssetChanges(assetBoard(), { [asset.id]: asset });
+      if (renaming) {
+        await rewriteAssetRefs(assetBoard(), replacing!, asset.id);
+        await pushAssetChanges(assetBoard(), { [asset.id]: asset, [replacing!]: null });
+      }
+      markBoardChanged();
+    };
+    const deleteAsset = async (id: string) => {
+      setAssets((prev) => (prev ?? []).filter((entry) => entry.id !== id));
+      await pushAssetChanges(assetBoard(), { [id]: null });
+      markBoardChanged();
+    };
+    const assetUses = (assetId?: string) => assetUsesOp(assetBoard(), assetId);
+    const checkAsset = (assetId: string) => checkAssetOnRuntimes(assetBoard(), assetId);
     const flushSnapshots = useCallback(
       () => snapshotsRef.current?.flush() ?? Promise.resolve(),
       [],
@@ -910,6 +1002,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
           services,
           registry,
           facade,
+          ...(assets?.length ? { assets } : {}),
         };
         // Handed over both ways round, because the two callers want opposite
         // things: a coordinator registers what actually runs, while anything
@@ -933,7 +1026,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         }
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [runtimes, services, boardName, registry, facade, linkage]);
+    }, [runtimes, services, boardName, registry, facade, linkage, assets]);
 
     // A tab being hidden is the last reliable moment before it may be closed —
     // and on a phone, before the browser is suspended — so what is pending is
@@ -1041,6 +1134,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       boardName,
       facade,
       linkage,
+      assets,
       runtimes,
       services,
       registry,
@@ -1080,6 +1174,10 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       editBlock,
       applyBlockEdit,
       cancelBlockEdit,
+      setAsset,
+      deleteAsset,
+      assetUses,
+      checkAsset,
       addAvailableRuntime,
       updateAvailableRuntime,
       removeAvailableRuntime,

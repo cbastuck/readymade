@@ -31,6 +31,10 @@
  * Binary: depends on endpoint + nested services
  * MixedData: native in runtime (service-dependent usage)
  *
+ * An answer whose `body` is an `hkp-asset://<id>` reference is sent as that
+ * asset's content, resolved from the runtime's asset store when the answer is
+ * written, with the asset's media type unless `meta` names one.
+ *
  * **There are two ways in, and a board names the ones it uses.** `onRequest` is
  * a caller arriving; `onProcess` is a pass of the board's own chain. Each is a
  * pipeline of its own, because they are different jobs:
@@ -187,6 +191,14 @@ private:
   bool joinStream(const std::shared_ptr<Session>& session, const std::string& requestPath,
                   const std::string& method);
   void publishToStream(const Data& data);
+
+  // An answer whose `body` is an `hkp-asset://` reference, with the asset's
+  // content in its place and its media type unless the answer names one.
+  // Resolved as the answer is written, so what the endpoint serves is whatever
+  // the asset holds now. One that does not resolve becomes a 500 naming the
+  // asset and why, and is reported: sending the reference itself as the page
+  // would be a quieter failure, and a worse one.
+  Data resolveAssetBody(const Data& answer);
 
 private:
   std::shared_ptr<HttpServerImpl> m_impl;

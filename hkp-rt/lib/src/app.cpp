@@ -269,6 +269,35 @@ json App::setRuntimeSecrets(const std::string& runtimeId,
   return json{{"aliases", rt->secrets().aliases()}};
 }
 
+json App::setRuntimeAssets(const std::string& runtimeId,
+                           const std::map<std::string, nlohmann::json>& entries)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return nullptr;
+  }
+  rt->setAssets(entries);
+  return json{{"ids", rt->assets()->ids()}};
+}
+
+json App::checkRuntimeAsset(const std::string& runtimeId, const std::string& assetId)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return nullptr;
+  }
+  auto resolution = rt->assets()->resolve(assetScheme() + assetId);
+  if (!resolution.asset)
+  {
+    return json{{"ok", false}, {"problem", resolution.problem}};
+  }
+  return json{{"ok", true},
+              {"mediaType", resolution.asset->mediaType},
+              {"size", resolution.asset->content.size()}};
+}
+
 std::shared_ptr<Runtime> App::appendRuntime(const RuntimeConfiguration& config)
 {
   // Build and configure the runtime before it becomes visible to other threads.
