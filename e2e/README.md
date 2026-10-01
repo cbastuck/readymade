@@ -126,6 +126,28 @@ suite stays green and honest — and when someone fixes one it passes
 unexpectedly, the run goes red, and the entry has to be removed. That is the
 only reliable way a known failure ever gets cleaned up.
 
+## The cloud specs
+
+`tests/cloud/` deploys boards to a real coordinator, so it needs a runtime
+server — and has its own config, so the suite above stays fast:
+
+```
+npm run test:cloud       # playwright.cloud.config.ts
+```
+
+It starts one hkp-node on loopback (port 18080) as both runtime server and
+coordinator, keeping nothing on disk, and drives the desktop shell against it.
+Two things a spec supplies that the shell would otherwise get from a person:
+
+- **a session** — `readymade-id-token` in localStorage, an unsigned token the
+  app only reads the subject and expiry of. hkp-node on loopback runs without
+  authentication, so nothing verifies it;
+- **a remote** — `test.use({ hostConfig: { remotes: [...] } })`, which the fake
+  native host reports as the runtime servers this host knows by name.
+
+The server is shared by every spec and has one tenant, so specs use their own
+runtime ids and board names, and `afterEach` deletes what they left on it.
+
 ## Capability checks
 
 `tests/capabilities/` holds environment probes rather than product tests —
@@ -165,5 +187,5 @@ Services are addressed by the uuid in the board JSON (`service(page, uuid)` →
 the app.
 
 Prefer boards that need no network: they run identically on all three profiles
-and are the bulk of what is worth covering. Specs that need a real hkp-node
-belong in their own tagged group so the fast suite stays fast.
+and are the bulk of what is worth covering. Specs that need a real hkp-node go
+in `tests/cloud/`, which the fast suite ignores.

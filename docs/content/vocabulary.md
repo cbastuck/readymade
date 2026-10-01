@@ -79,7 +79,7 @@ is the one worth being pedantic in.
 | **Runtime API / scope / app** | The three seams: verbs per runtime *type*, one live runtime, and what a service may do. | `hkp-frontend/src/types.ts#RuntimeApi`, `#RuntimeScope`, `hkp-frontend/src/runtime/browser/BrowserRuntimeApp.ts` |
 | **Registry** | What services a runtime can create, sent back when it is provisioned. | `hkp-frontend/src/runtime/browser/BrowserRegistry.tsx`, `hkp-node/src/server.ts` |
 | **YAS** | The binary wire format for non-textual data over REST — 7-byte header, type-prefixed payload. | `hkp-frontend/src/runtime/rest/Message.ts`, `hkp-python/src/hkp/yas.py`, `hkp-node/src/yas.ts` |
-| **Remote** | A runtime server the host knows by name. `hkp://remotes/<name>` addresses the app's own embedded runtime. | `meander/backend/remoteRoute.h`, `meander/frontend/src/useBackendRemotes.ts` |
+| **Remote** | A runtime server the host knows by name. A board may name one (`"remote": "Laptop"`) or say what will do (`"requires": { "kind": "python" }`) instead of giving a `url`; the client opening the board resolves it. `hkp://remotes/<name>` addresses the app's own embedded runtime. → `concepts/remotes.md` | `hkp-frontend/src/runtime/board/remote.ts#resolveRuntimeAddress`, `meander/backend/remoteRoute.h`, `meander/frontend/src/useBackendRemotes.ts` |
 
 ---
 
@@ -104,9 +104,12 @@ is the one worth being pedantic in.
 |---|---|---|
 | **Coordinator** | The instance that owns a board and can see across all its runtimes. → `concepts/coordinator.md` | `hkp-frontend/src/core/coordinator.ts`, `hkp-node/src/coordinator/coordinator.ts` |
 | **Cloud board** | A board a coordinator owns and keeps running with nobody watching. → `concepts/cloud-boards.md` | `hkp-node/src/coordinator/session.ts`, `hkp-frontend/src/views/cloud/index.tsx` |
-| **Deploy** | Handing a board from the browser that built it to a coordinator. Runtimes are handed over *before* registering. | `hkp-frontend/src/core/deploy.ts#deployBoard` |
+| **Deploy** | Handing a board from the browser that built it to a coordinator. An introduction: the browser gets a ticket per remote runtime and tells each runtime server to connect with it; runtimes are handed over *before* registering. | `hkp-frontend/src/core/deploy.ts#deployBoard` |
+| **Preflight** | What deploying a board would find, per runtime, asked before anything is handed over: where it resolves to and whether it can run there. | `hkp-frontend/src/core/deployPreflight.ts#preflightBoard`, `hkp-frontend/src/components/Toolbar/DeployDialog.tsx` |
+| **Ticket** | The credential a runtime server connects to a coordinator with — for one runtime of one board of one person. The server keeps it to reconnect; the coordinator keeps a hash. → `concepts/remotes.md` | `hkp-node/src/coordinator/participants.ts#ParticipantRegistry`, `hkp-node/src/coordinatorLinks.ts` |
+| **Participant** | Whatever runs one of a deployed board's runtimes and connected to its coordinator to do so. *Required* (a runtime server: its absence is an error that names it) or *transient* (a browser: its absence is normal). | `hkp-node/src/coordinator/participantProtocol.ts`, `hkp-node/src/coordinator/session.ts` |
 | **Bridge** | The WebSocket a browser attaches to a deployed board with — snapshots out, browser-runtime work in. | `hkp-node/src/coordinator/bridgeProtocol.ts`, `hkp-frontend/src/views/cloud/useCoordinatorBridge.ts` |
-| **Session token** | The machine credential a coordinator holds per runtime, minted to outlive the user's session. | `hkp-node/src/coordinator/session.ts#mintSessionToken` |
+| **Session token** | An opaque credential a runtime server mints for one of a user's runtimes, to outlive their session. The coordinator used to hold one per runtime; it now reaches runtimes over the connection a *ticket* opened. | `hkp-node/src/server.ts` |
 | **Fork** | Copying a deployed board back into something editable; the original keeps running. | `hkp-frontend/src/core/forkBoard.ts` |
 | **Mount** | An endpoint a runtime assigns to a service that must be reachable from outside. → `concepts/mounts.md` | `hkp-frontend/src/runtime/board/mount.ts`, `hkp-node/src/mounts.ts` |
 | **Mount reference** | `hkp-mount://<runtimeId>/<serviceUuid>` — what a person writes; `__hkpMount` is what machinery fills in. | `hkp-frontend/src/runtime/board/mount.ts#parseMountRef` |

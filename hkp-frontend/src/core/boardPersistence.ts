@@ -27,6 +27,12 @@ import { getLocalBoard } from "../views/playground/common";
 import { AssetDescriptor, readBoardAssets } from "../runtime/board/assets";
 import { loadSavedBoardViaPlatform } from "../platform/PlatformContext";
 import { toast } from "sonner";
+import {
+  RuntimeAddressingError,
+  authoredAddressing,
+  resolveRuntimeAddress,
+} from "../runtime/board/remote";
+import { describeRuntimeServer } from "../runtime/rest/RuntimeRestApi";
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
   arr: Array<RestoreRuntimeResult | null>,
@@ -38,6 +44,39 @@ function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
     }
     return cur ? { ...all, [cur.runtime.id]: cur[prop] } : all;
   }, {});
+}
+
+/**
+ * The runtime as it is restored: with the address its `remote` or `requires`
+ * resolves to on this client. The name stays on the descriptor beside it, which
+ * is what a save writes back — see `runtime/board/remote`.
+ *
+ * A name this client does not hold fails the restore, loudly and by name. There
+ * is nothing to fall back to, and a board quietly missing a runtime is worse
+ * than one that says which runtime server it wanted.
+ */
+async function resolveForRestore(
+  runtime: RuntimeDescriptor,
+  refs: BoardStateRefs,
+  user: { idToken?: string } | null,
+): Promise<RuntimeDescriptor> {
+  const resolution = await resolveRuntimeAddress(
+    runtime,
+    refs.availableRuntimeEnginesRef?.current ?? [],
+    async (remote) => {
+      const report = await describeRuntimeServer(remote.url!, user);
+      return report.status === "ok" ? { kind: report.kind } : null;
+    },
+  );
+  if (!resolution.ok) {
+    // A runtime that names nothing at all is left for its api to report, as it
+    // always was.
+    if (resolution.reason === "none") {
+      return { ...runtime };
+    }
+    throw new RuntimeAddressingError(runtime.id, resolution.message);
+  }
+  return { ...runtime, url: resolution.url };
 }
 
 export async function restoreBoard(
@@ -106,6 +145,17 @@ export async function restoreBoard(
       // comes back out through `getState` and into the next saved board.
       // Resolution happens where a secret is used — see `withSecrets`.
       const services = boardServices[rt.id];
+      if (api.resolvesAddress) {
+        return resolveForRestore(rt, refs, currentUser).then((resolved) => {
+          missingSecrets.push(...unavailableSecrets(services));
+          return api.restoreRuntime(
+            resolved,
+            services,
+            currentUser,
+            rt.boardName ?? restoredBoardName,
+          );
+        });
+      }
       missingSecrets.push(...unavailableSecrets(services));
       // A runtime contributed by a unit keeps that unit's board name, which the
       // projection put there. It is not decoration: hkp-node derives a mount
@@ -373,7 +423,9 @@ export async function serializeBoard(
     id: rt.id,
     name: rt.name,
     type: rt.type,
-    url: rt.url,
+    // What was authored, never what it resolved to: a runtime that names a
+    // remote keeps the name, and the address stays with this run.
+    ...authoredAddressing(rt),
     bundles: rt.bundles,
     // What a unit contributed keeps saying so, and keeps the board identity the
     // projection gave it. This is the serialisation deploying and sharing want:

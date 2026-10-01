@@ -9,7 +9,8 @@ import {
   restoreCoordinators,
 } from "hkp-frontend/src/common";
 import { listCoordinatorBoards } from "hkp-frontend/src/views/cloud/coordinatorClient";
-import { deployBoard } from "hkp-frontend/src/core/deploy";
+import { deployBoard, describeDeploy } from "hkp-frontend/src/core/deploy";
+import DeployDialog from "./DeployDialog";
 
 /**
  * The toolbar's deploy control: hands the board being built to a coordinator.
@@ -17,8 +18,10 @@ import { deployBoard } from "hkp-frontend/src/core/deploy";
  * Boards are built here, where this browser owns the runtimes and closing the
  * tab takes them with it. Deploying gives that ownership to a coordinator,
  * which provisions the runtimes itself and keeps the board running with nobody
- * watching. The board is then opened in the cloud view — attached, not owned —
- * because the two views are exactly that distinction.
+ * watching. Picking a coordinator opens a dialog that says, per runtime, where
+ * it would run and whether it can; deploying from there opens the board in the
+ * cloud view — attached, not owned — because the two views are exactly that
+ * distinction.
  */
 
 const menuItemStyle: React.CSSProperties = {
@@ -53,6 +56,10 @@ export default function DeployMenu() {
   /** Coordinator URLs that already run a board under this name — deploying
    *  there replaces it, which the menu says before it happens. */
   const [replacing, setReplacing] = useState<Set<string>>(new Set());
+
+  /** The coordinator picked from the menu: what the dialog is open for. */
+  const [target, setTarget] = useState<CoordinatorDescriptor | null>(null);
+  const [deployError, setDeployError] = useState<string>();
 
   const boardName = boardContext?.boardName;
 
@@ -101,11 +108,17 @@ export default function DeployMenu() {
       return;
     }
     setBusy(true);
+    setDeployError(undefined);
     try {
-      const name = await deployBoard(boardContext, coordinator, user);
+      const result = await deployBoard(boardContext, coordinator, user);
+      setTarget(null);
+      const name = result.boardName;
+      // The board is the coordinator's either way, so the cloud view is where
+      // it is looked at — including when it did not start.
+      const outcome = describeDeploy(result, coordinator.name);
       boardContext.appContext?.pushNotification({
-        type: "success",
-        message: `“${name}” is running on ${coordinator.name}`,
+        type: outcome.ok ? "success" : "error",
+        message: outcome.message,
       });
       navigate("/cloud-boards", {
         state: {
@@ -117,13 +130,13 @@ export default function DeployMenu() {
         },
       });
     } catch (err) {
-      boardContext.appContext?.pushNotification({
-        type: "error",
-        message:
-          err instanceof Error && err.message
-            ? `Deploy failed — ${err.message}`
-            : "Deploy failed",
-      });
+      // Nothing was handed over: the board is still this browser's, so the
+      // dialog stays open with what went wrong and can be tried again.
+      setDeployError(
+        err instanceof Error && err.message
+          ? `Deploy failed — ${err.message}`
+          : "Deploy failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -132,96 +145,113 @@ export default function DeployMenu() {
   const disabled = !boardContext || busy;
 
   return (
-    <DropdownMenuPrimitive.Root open={open} onOpenChange={setOpen}>
-      <DropdownMenuPrimitive.Trigger asChild>
-        <button
-          type="button"
-          title={user ? "Deploy to a coordinator" : "Log in to deploy"}
-          disabled={disabled}
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 7,
-            border: "none",
-            background: "none",
-            cursor: disabled ? "default" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--text, #1a1a1a)",
-            opacity: disabled ? 0.4 : 1,
-          }}
-        >
-          <Rocket size={16} strokeWidth={1.75} />
-        </button>
-      </DropdownMenuPrimitive.Trigger>
+    <>
+      {boardContext && user && (
+        <DeployDialog
+          board={boardContext}
+          user={user}
+          coordinator={target}
+          busy={busy}
+          error={deployError}
+          onDeploy={(coordinator) => void deploy(coordinator)}
+          onClose={() => setTarget(null)}
+        />
+      )}
+      <DropdownMenuPrimitive.Root open={open} onOpenChange={setOpen}>
+        <DropdownMenuPrimitive.Trigger asChild>
+          <button
+            type="button"
+            title={user ? "Deploy to a coordinator" : "Log in to deploy"}
+            disabled={disabled}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 7,
+              border: "none",
+              background: "none",
+              cursor: disabled ? "default" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--text, #1a1a1a)",
+              opacity: disabled ? 0.4 : 1,
+            }}
+          >
+            <Rocket size={16} strokeWidth={1.75} />
+          </button>
+        </DropdownMenuPrimitive.Trigger>
 
-      <DropdownMenuPrimitive.Portal>
-        <DropdownMenuPrimitive.Content
-          align="end"
-          sideOffset={6}
-          style={{
-            zIndex: 200,
-            minWidth: 250,
-            background: "var(--bg-card, white)",
-            border: "1px solid var(--border-mid, #e2ddd7)",
-            borderRadius: 10,
-            boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
-            padding: 5,
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-          }}
-        >
-          {/* Where the board runs right now, said plainly: the two views are
+        <DropdownMenuPrimitive.Portal>
+          <DropdownMenuPrimitive.Content
+            align="end"
+            sideOffset={6}
+            style={{
+              zIndex: 200,
+              minWidth: 250,
+              background: "var(--bg-card, white)",
+              border: "1px solid var(--border-mid, #e2ddd7)",
+              borderRadius: 10,
+              boxShadow:
+                "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+              padding: 5,
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}
+          >
+            {/* Where the board runs right now, said plainly: the two views are
               the two answers, and this is the moment the user changes it. */}
-          <div style={{ ...menuItemStyle, paddingBottom: 4 }}>
-            <div style={itemTitleStyle}>Runs in this browser</div>
-            <div style={itemHintStyle}>
-              Closing the tab stops it. Deploy it to keep it running:
-            </div>
-          </div>
-
-          {!user && (
-            <div style={{ ...menuItemStyle, ...itemHintStyle }}>
-              Log in to deploy this board.
-            </div>
-          )}
-
-          {user && coordinators.length === 0 && (
-            <DropdownMenuPrimitive.Item
-              className="hkp-board-menu-item"
-              style={{ ...menuItemStyle, cursor: "pointer" }}
-              onSelect={() => navigate("/cloud-boards")}
-            >
-              <div style={itemTitleStyle}>Add a coordinator…</div>
+            <div style={{ ...menuItemStyle, paddingBottom: 4 }}>
+              <div style={itemTitleStyle}>Runs in this browser</div>
               <div style={itemHintStyle}>
-                A board needs somewhere to run once it leaves this browser
+                Closing the tab stops it. Deploy it to keep it running:
               </div>
-            </DropdownMenuPrimitive.Item>
-          )}
+            </div>
 
-          {user &&
-            coordinators.map((coordinator) => (
+            {!user && (
+              <div style={{ ...menuItemStyle, ...itemHintStyle }}>
+                Log in to deploy this board.
+              </div>
+            )}
+
+            {user && coordinators.length === 0 && (
               <DropdownMenuPrimitive.Item
-                key={coordinator.url}
                 className="hkp-board-menu-item"
-                disabled={busy}
-                style={{
-                  ...menuItemStyle,
-                  cursor: busy ? "default" : "pointer",
-                  opacity: busy ? 0.5 : 1,
-                }}
-                onSelect={() => void deploy(coordinator)}
+                style={{ ...menuItemStyle, cursor: "pointer" }}
+                onSelect={() => navigate("/cloud-boards")}
               >
-                <div style={itemTitleStyle}>{coordinator.name}</div>
+                <div style={itemTitleStyle}>Add a coordinator…</div>
                 <div style={itemHintStyle}>
-                  {replacing.has(coordinator.url)
-                    ? `Replaces the board already running there`
-                    : coordinator.url}
+                  A board needs somewhere to run once it leaves this browser
                 </div>
               </DropdownMenuPrimitive.Item>
-            ))}
-        </DropdownMenuPrimitive.Content>
-      </DropdownMenuPrimitive.Portal>
-    </DropdownMenuPrimitive.Root>
+            )}
+
+            {user &&
+              coordinators.map((coordinator) => (
+                <DropdownMenuPrimitive.Item
+                  key={coordinator.url}
+                  className="hkp-board-menu-item"
+                  disabled={busy}
+                  style={{
+                    ...menuItemStyle,
+                    cursor: busy ? "default" : "pointer",
+                    opacity: busy ? 0.5 : 1,
+                  }}
+                  onSelect={() => {
+                    setDeployError(undefined);
+                    setTarget(coordinator);
+                  }}
+                >
+                  <div style={itemTitleStyle}>{coordinator.name}</div>
+                  <div style={itemHintStyle}>
+                    {replacing.has(coordinator.url)
+                      ? `Replaces the board already running there`
+                      : coordinator.url}
+                  </div>
+                </DropdownMenuPrimitive.Item>
+              ))}
+          </DropdownMenuPrimitive.Content>
+        </DropdownMenuPrimitive.Portal>
+      </DropdownMenuPrimitive.Root>
+    </>
   );
 }

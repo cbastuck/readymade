@@ -32,6 +32,13 @@ export type SnapshotMessage = {
   /** "running" while the coordinator owns the board's runtimes; "stopped" while
    *  someone has taken them over to edit. */
   status?: string;
+  /**
+   * Why the board is in "error", when it is: a runtime whose runtime server is
+   * not connected, one that could not be built. Sent with the status because
+   * both change while a browser is attached — a participant dropping is
+   * something this browser is told, not something it has to go and ask.
+   */
+  errors?: string[];
   /** The board as authored. Also fetchable over REST, but sent here so that
    *  structure and live state arrive as one thing at one `seq`. */
   config?: unknown;
@@ -51,6 +58,7 @@ export type CoordinatorMessage = SnapshotMessage | ServiceStateMessage;
 export class CoordinatorSnapshotStore {
   private boardName: string | null = null;
   private status: string | null = null;
+  private errors: string[] | null = null;
   private config: unknown = null;
   private runtimes = new Map<string, RuntimeSnapshot>();
   private seq = 0;
@@ -67,6 +75,7 @@ export class CoordinatorSnapshotStore {
     if (message.type === "snapshot") {
       this.boardName = message.boardName;
       this.status = message.status ?? null;
+      this.errors = Array.isArray(message.errors) ? message.errors : null;
       this.config = message.config ?? null;
       this.runtimes = new Map(
         message.runtimes.map((runtime) => [runtime.runtimeId, runtime]),
@@ -96,6 +105,7 @@ export class CoordinatorSnapshotStore {
   clear(): void {
     this.boardName = null;
     this.status = null;
+    this.errors = null;
     this.config = null;
     this.runtimes = new Map();
     this.seq = 0;
@@ -109,6 +119,15 @@ export class CoordinatorSnapshotStore {
   /** "running", "stopped", or null before the first snapshot. */
   getStatus(): string | null {
     return this.status;
+  }
+
+  /**
+   * Why the board is not running cleanly, or null before the first snapshot
+   * and for a coordinator that does not say. The same array until the next
+   * snapshot, so it can be read as a store snapshot.
+   */
+  getErrors(): string[] | null {
+    return this.errors;
   }
 
   /** The board as authored, as the coordinator holds it. */

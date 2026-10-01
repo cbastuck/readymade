@@ -28,7 +28,7 @@ plays both:
 | Board runs as        | Coordinator | Hosts browser runtimes | Hosts remote runtimes    |
 | -------------------- | ----------- | ---------------------- | ------------------------ |
 | Playground/Readymade | the browser | the browser            | the browser drives them  |
-| Cloud board          | hkp-node    | a connected browser    | hkp-node provisions them |
+| Cloud board          | hkp-node    | a connected browser    | hkp-node builds them     |
 
 The browser playing both roles is the historical case, not the general one. A runtime host may
 pass the coordinator to the services it hosts (`AppInstance.coordinator`), which is how a
@@ -36,8 +36,12 @@ service reaches beyond its own runtime; a host that cannot see the board leaves 
 callers treat that as a lookup that has not resolved yet.
 
 A board moves between the two by being **deployed**: built in the playground, where the
-browser owns it, then handed to a coordinator that provisions the same runtimes itself and
-keeps them running with nobody watching. From then on a browser attaches to it — reads and
+browser owns it, then handed to a coordinator that builds the same runtimes itself and
+keeps them running with nobody watching. The coordinator **never dials** a runtime server:
+each one connects *to it* with a ticket the browser handed over while deploying, and the
+board is built and driven over that connection. A remote runtime whose server is not
+connected puts the board in `error`, naming it; a browser runtime with nobody attached is
+normal, and data for it simply stops there. From then on a browser attaches to it — reads and
 configures — and structural changes mean changing the board in the playground and deploying
 again. Which side a runtime is cleaned up by is declared when it is created, in the create
 payload: `garbageCollected: true` reaps it when its last client disconnects (what a browser
@@ -47,6 +51,7 @@ asks for), and saying nothing persists it until an explicit DELETE (what a coord
 - `hkp-frontend/src/core/deploy.ts` — handing a board to a coordinator
 - `hkp-node/src/coordinator/` — the cloud-board coordinator
 - `docs/content/concepts/cloud-boards.md` — the provisioning walkthrough: who owns what, in what order
+- `docs/content/concepts/remotes.md` — naming a runtime server, tickets, and what connects to what
 
 ### Runtime
 
@@ -166,6 +171,12 @@ reference: any pipeline entry `{ "block": "<id>", "params": {…} }` stands for 
 expanded when the board loads and written back as uses when it saves; while running, a use's
 inside is frozen and only its params vary (`docs/content/concepts/blocks.md`). Use `"HKP_RUNTIME_HOST"` as a placeholder in remote URLs when the host
 isn't known at design time.
+
+A remote runtime says where it runs in exactly **one** of three ways: `url` (an address
+someone wrote), `remote` (the name of a runtime server, resolved against the remotes the
+client opening the board keeps) or `requires` (`{ "kind": "python" }`, matched against
+them). More than one is an error, never a fallback, and the address a name resolves to is
+never written back into the board (`hkp-frontend/src/runtime/board/remote.ts`).
 
 Runtime ids are unique **per user**, not globally — hkp-node namespaces runtimes by the
 authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) don't collide when
@@ -336,7 +347,7 @@ meander-ios/           iOS-specific native layer
 | Where                          | What it holds                                                                                                                                                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `docs/content/introduction.md` | The first-read narrative: what Readymade is, what people build with it, and the shape of a board                                                                                                                                                 |
-| `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, presets, blocks, assets, units, mounts, coordinator, cloud boards, logging)                                                                                                        |
+| `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, presets, blocks, assets, units, mounts, coordinator, cloud boards, remotes, logging)                                                                                                          |
 | `docs/content/services/`       | One page per service                                                                                                                                                                                                                             |
 | `docs/content/boards/`         | One page per demo board — what the app does and what each runtime contributes. The runtime/service breakdown below it is generated from the board document at build time, so only the prose lives here. A file here is what puts a board in the docs; its name must match the board's file in `boards/` |
 | `docs/content/board-json.md`   | The serialisation format: what a board document contains, field by field, and what it deliberately does not                                                                                                                                      |

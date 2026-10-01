@@ -65,6 +65,66 @@ export async function registerCoordinatorBoard(
 }
 
 /**
+ * Asks a coordinator for a ticket per runtime of a board.
+ *
+ * A ticket is what a runtime server connects to the coordinator with, and all
+ * it is told about the board: it speaks for one runtime of one board of this
+ * person. Asking again replaces the runtime's previous ticket. The tickets are
+ * shown once, here — the coordinator keeps only what recognises them — so they
+ * go straight to the runtime servers they are for and nowhere else.
+ */
+export async function requestCoordinatorTickets(
+  coordinatorUrl: string,
+  username: string,
+  idToken: string,
+  boardName: string,
+  runtimeIds: string[],
+): Promise<Record<string, string>> {
+  const res = await coordinatorFetch(
+    `${coordinatorUrl}/users/${encodeURIComponent(username)}/boards/${encodeURIComponent(boardName)}/tickets`,
+    idToken,
+    { method: "POST", body: JSON.stringify({ runtimeIds }) },
+  );
+  if (res.status === 404 || res.status === 405) {
+    throw new Error(
+      "This coordinator cannot take runtime servers connecting to it — it needs updating",
+    );
+  }
+  if (!res.ok) {
+    throw new Error(`Failed to prepare the board: ${res.status}`);
+  }
+  const data = (await res.json()) as { tickets?: Record<string, string> };
+  return data.tickets ?? {};
+}
+
+export type CoordinatorParticipant = {
+  runtimeId: string;
+  /** Whether the runtime server holding this runtime's ticket is connected. */
+  connected: boolean;
+  /** "node", "python", "c++" — as that server names itself; while connected. */
+  server?: string;
+  issuedAt: string;
+};
+
+/** Which of a board's runtimes hold a ticket, and which are connected. */
+export async function listCoordinatorParticipants(
+  coordinatorUrl: string,
+  username: string,
+  idToken: string,
+  boardName: string,
+): Promise<CoordinatorParticipant[]> {
+  const res = await coordinatorFetch(
+    `${coordinatorUrl}/users/${encodeURIComponent(username)}/boards/${encodeURIComponent(boardName)}/participants`,
+    idToken,
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to list participants: ${res.status}`);
+  }
+  const data = (await res.json()) as { participants?: CoordinatorParticipant[] };
+  return data.participants ?? [];
+}
+
+/**
  * Stops a board's runtimes without giving up the board.
  *
  * It keeps its place and its config — a coordinator's boards live only in its

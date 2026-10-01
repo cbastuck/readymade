@@ -196,6 +196,13 @@ export default function MeanderPlayground({
     </Button>
   );
 
+  // A board may name a remote rather than give an address, and a name resolves
+  // against the remotes this host keeps — so the board is not restored until
+  // they are known. Restoring first would report every such name as unknown.
+  if (remotes === null) {
+    return null;
+  }
+
   return (
     <Playground
       boardName={boardName}

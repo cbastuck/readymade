@@ -64,7 +64,9 @@ along rather than rejected.
 | `id` | **required.** The stable key everything else in the document uses — the `services` map, mount references, the chain |
 | `name` | **required.** A display label, and what `processRuntimeByName` matches |
 | `type` | **required.** `browser`, `rest` or `graphql` |
-| `url` | for a remote runtime: where to reach it |
+| `url` | for a remote runtime: an address the person wrote |
+| `remote` | for a remote runtime: the **name** of a runtime server, looked up among the remotes the client opening the board keeps |
+| `requires` | for a remote runtime: what will do — `{ "kind": "python" }` — matched against those remotes |
 | `color`, `bundles` | presentation, and plugin libraries to load. Beside `state`, not inside it |
 | `state` | per-runtime settings — see below |
 
@@ -72,12 +74,25 @@ along rather than rejected.
 `graphql`. Boards in the wild carry them, so anything comparing a type should
 compare canonical forms (`toCanonicalRuntimeClassType`).
 
+A remote runtime carries **exactly one** of `url`, `remote` and `requires`. More
+than one is an error, not a preference: a name resolves differently for each
+person, so a board that could fall back from a name to an address would give
+whoever wrote it two attempts at making a client dial something. A board with a
+`url` and nothing else is valid forever — nothing here asks an existing board to
+change.
+
+The address a `remote` or a `requires` resolves to is **never written into the
+document**. It lives with the running board on the client that resolved it, and
+a save writes the name back → `concepts/remotes.md`.
+
 A `url` need not be a plain address:
 
 - `HKP_RUNTIME_HOST` is substituted at load, for boards written before the host
   is known;
 - `hkp://remotes/<name>` addresses the runtime the app itself embeds →
-  `concepts/runtime.md`.
+  `concepts/runtime.md`. It is a name in a url's clothing — the spelling from
+  before `remote` existed — and counts as one: it cannot sit beside a `remote`
+  or a `requires`.
 
 `state` holds what the runtime remembers between loads: display preferences like
 `minimized` and `wrapServices`, and — once a board is deployed and logging is
