@@ -78,14 +78,12 @@ export type RuntimeCustomAction = {
 export type RuntimeDescriptor = RuntimeClass & {
   id: string;
   /**
-   * Which runtime server this runtime belongs on, by name or by what it needs,
-   * instead of by address — a board carries exactly one of `url`, `remote` and
-   * `requires`. On a live runtime `url` then holds the address the name
+   * Which runtime server this runtime belongs on, by name instead of by
+   * address — a board carries exactly one of `url` and `remote`. On a live runtime `url` then holds the address the name
    * resolved to on this client, which a saved board never gets. See
    * `runtime/board/remote`.
    */
   remote?: string;
-  requires?: import("./runtime/board/remote").RuntimeRequirement;
   state?: any; // TODO: should this be here? Only for persisted Runtime states?
   user?: User | null;
   boardName?: string;
@@ -527,7 +525,7 @@ export type ProcessContext = {
 export type RuntimeApi = {
   /**
    * Whether this api dials the runtime server a runtime names, and so needs
-   * its `remote` or `requires` turned into an address before it is restored.
+   * its `remote` turned into an address before it is restored.
    * Unset for an api that hosts the runtime itself or reaches it through a
    * coordinator, where a name stays a label.
    */

@@ -79,7 +79,7 @@ is the one worth being pedantic in.
 | **Runtime API / scope / app** | The three seams: verbs per runtime *type*, one live runtime, and what a service may do. | `hkp-frontend/src/types.ts#RuntimeApi`, `#RuntimeScope`, `hkp-frontend/src/runtime/browser/BrowserRuntimeApp.ts` |
 | **Registry** | What services a runtime can create, sent back when it is provisioned. | `hkp-frontend/src/runtime/browser/BrowserRegistry.tsx`, `hkp-node/src/server.ts` |
 | **YAS** | The binary wire format for non-textual data over REST — 7-byte header, type-prefixed payload. | `hkp-frontend/src/runtime/rest/Message.ts`, `hkp-python/src/hkp/yas.py`, `hkp-node/src/yas.ts` |
-| **Remote** | A runtime server the host knows by name. A board may name one (`"remote": "Laptop"`) or say what will do (`"requires": { "kind": "python" }`) instead of giving a `url`; the client opening the board resolves it. `hkp://remotes/<name>` addresses the app's own embedded runtime. → `concepts/remotes.md` | `hkp-frontend/src/runtime/board/remote.ts#resolveRuntimeAddress`, `meander/backend/remoteRoute.h`, `meander/frontend/src/useBackendRemotes.ts` |
+| **Remote** | A runtime server the host knows by name. A board may name one (`"remote": "Laptop"`) instead of giving a `url`; the client opening the board resolves it. `hkp://remotes/<name>` addresses the app's own embedded runtime. → `concepts/remotes.md` | `hkp-frontend/src/runtime/board/remote.ts#resolveRuntimeAddress`, `meander/backend/remoteRoute.h`, `meander/frontend/src/useBackendRemotes.ts` |
 
 ---
 

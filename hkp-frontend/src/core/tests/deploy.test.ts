@@ -219,7 +219,9 @@ describe("a deploy that cannot go ahead", () => {
   it("does not give up the runtimes when a runtime server cannot connect to the coordinator", async () => {
     const subject = deployable();
     introduceRuntimeServer.mockRejectedValue(
-      new Error("its runtime server could not connect to the coordinator — refused"),
+      new Error(
+        "its runtime server could not connect to the coordinator — refused",
+      ),
     );
 
     const failure = await deployBoard(subject, coordinator, user).catch(
@@ -323,21 +325,7 @@ describe("what a person is told afterwards", () => {
     );
   });
 
-  it("names the remote a requirement was placed on", async () => {
-    // With two servers that would do, the choice was this client's — so it is
-    // said rather than left to be discovered.
-    preflightBoard.mockResolvedValue([
-      { ...ready[1], mode: "requires", remoteName: "Studio" },
-    ]);
-
-    const result = await deployBoard(deployable(), coordinator, user);
-
-    expect(describeDeploy(result, "Home").message).toBe(
-      "“Doorbell” is running on Home — “Node” on “Studio”",
-    );
-  });
-
-  it("does not name a remote the board named itself", async () => {
+  it("says the board is running, and where", async () => {
     const result = await deployBoard(deployable(), coordinator, user);
 
     expect(describeDeploy(result, "Home").message).toBe(

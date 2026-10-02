@@ -172,11 +172,12 @@ expanded when the board loads and written back as uses when it saves; while runn
 inside is frozen and only its params vary (`docs/content/concepts/blocks.md`). Use `"HKP_RUNTIME_HOST"` as a placeholder in remote URLs when the host
 isn't known at design time.
 
-A remote runtime says where it runs in exactly **one** of three ways: `url` (an address
-someone wrote), `remote` (the name of a runtime server, resolved against the remotes the
-client opening the board keeps) or `requires` (`{ "kind": "python" }`, matched against
-them). More than one is an error, never a fallback, and the address a name resolves to is
-never written back into the board (`hkp-frontend/src/runtime/board/remote.ts`).
+A remote runtime says where it runs in exactly **one** of two ways: `url` (an address
+someone wrote) or `remote` (the name of a runtime server, resolved against the remotes the
+client opening the board keeps). Both is an error, never a fallback, and the address a
+name resolves to is never written back into the board
+(`hkp-frontend/src/runtime/board/remote.ts`). A board never has a client *choose* a
+server for it: a runtime lands only where the board or the person named.
 
 Runtime ids are unique **per user**, not globally — hkp-node namespaces runtimes by the
 authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) don't collide when

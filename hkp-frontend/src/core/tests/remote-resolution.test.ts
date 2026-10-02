@@ -11,7 +11,7 @@ import type { BoardStateRefs } from "../boardContextTypes";
  * afterwards says the name again — the address was never the board's.
  */
 
-const asRef = <T,>(current: T) => ({ current });
+const asRef = <T>(current: T) => ({ current });
 
 const remotes = [
   { name: "Laptop", type: "rest", url: "http://laptop:8080" },
@@ -94,28 +94,22 @@ describe("restoring a board that names a remote", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("places a requirement by asking this client's remotes what they are", async () => {
+  it("places nothing for a runtime that only says what kind of server would do", async () => {
+    // No remote is chosen on a board's behalf, and no server is asked what it
+    // is: a runtime lands where it was named or not at all.
     const { refs, restoreRuntime } = makeRefs();
-    const fetchMock = vi.fn(async (url: string) => {
-      const server = url.startsWith("http://studio") ? "python" : "node";
-      return new Response(JSON.stringify({ runtimes: [], server }));
-    });
+    const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    await restoreBoard(
-      board({ requires: { kind: "python" } }),
-      refs,
-      async () => {},
-    );
-
-    expect(restoreRuntime.mock.calls[0][0]).toMatchObject({
-      requires: { kind: "python" },
-      url: "http://studio:5000",
-    });
-    // Asked as the person, the way every other call to those servers is.
-    expect(fetchMock).toHaveBeenCalledWith("http://laptop:8080/runtimes", {
-      headers: { Authorization: "Bearer token-1" },
-    });
+    await expect(
+      restoreBoard(
+        board({ requires: { kind: "python" } }),
+        refs,
+        async () => {},
+      ),
+    ).rejects.toThrow(/names no runtime server/);
+    expect(restoreRuntime).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("leaves a board that only has addresses exactly as it was", async () => {
@@ -166,15 +160,6 @@ describe("saving a board that named a remote", () => {
     );
 
     expect(saved!.runtimes[0]).toMatchObject({ remote: "Studio" });
-    expect(saved!.runtimes[0]).not.toHaveProperty("url");
-  });
-
-  it("writes a requirement back the same way", async () => {
-    const saved = await serializeBoard(
-      refsWith({ requires: { kind: "python" }, url: "http://studio:5000" }),
-    );
-
-    expect(saved!.runtimes[0]).toMatchObject({ requires: { kind: "python" } });
     expect(saved!.runtimes[0]).not.toHaveProperty("url");
   });
 

@@ -73,7 +73,7 @@ deployed. Pinned by `core/tests/deploy.test.ts` and
 Past the handover a problem can only be reported, not avoided. So everything
 knowable beforehand is asked beforehand, from the browser — the one party that
 knows this person's runtime servers and can reach them — and answered **per
-runtime**. It is also where a board's `remote` and `requires` become addresses
+runtime**. It is also where a board's `remote` becomes an address
 (→ `concepts/remotes.md`); the coordinator is told none.
 
 | Finding | Meaning | Stops the deploy |
@@ -81,7 +81,7 @@ runtime**. It is also where a board's `remote` and `requires` become addresses
 | `ready` | its server is running, accepted this person, has every service the board uses there, and can connect to a coordinator | |
 | `transient` | a browser runtime — run by whichever browser has the board open | |
 | `invalid` | it says where it runs more than once (`url` *and* `remote`, say) | yes |
-| `unresolved` | the remote it names is not one this client knows, or no remote is of the kind it needs | yes |
+| `unresolved` | the remote it names is not one this client knows | yes |
 | `unreachable` | its server did not answer | yes |
 | `refused` | its server answered `401`/`403` | yes |
 | `missing-services` | its server's registry lacks services the board uses, which are listed | yes |
@@ -92,7 +92,7 @@ Every server answer comes from one `GET <server>/runtimes`, which already
 returns the server's kind, registry and whether it can join. Only a runtime's
 own pipeline is compared; what a service nests in its state is not walked. The
 desktop dialog shows each finding before anything is handed over, names the
-remote a name or a requirement resolved to, and offers **Check again**; the
+remote a name resolved to, and offers **Check again**; the
 mobile sheet reports what stopped a deploy as a toast.
 
 ### The introduction

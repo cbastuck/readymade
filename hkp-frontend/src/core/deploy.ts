@@ -36,8 +36,8 @@ export type DeployableBoard = {
   boardName?: string;
   serializeBoard: () => Promise<BoardDescriptor | null>;
   handOverRuntimes: () => void;
-  /** The runtime servers this client keeps; what a board's `remote` and
-   *  `requires` are resolved against. */
+  /** The runtime servers this client keeps; what a board's `remote` is
+   *  resolved against. */
   availableRuntimeEngines?: Array<RuntimeClass>;
 };
 
@@ -47,7 +47,7 @@ export type DeployResult = {
    *  and could not fully start — handed over, not running. */
   status: "running" | "stopped" | "error";
   errors: string[];
-  /** Where each runtime was placed; names the remote chosen for a requirement. */
+  /** Where each runtime was placed. */
   placements: RuntimePreflight[];
 };
 
@@ -77,15 +77,9 @@ export function describeDeploy(
         (reasons ? ` — ${reasons}` : ""),
     };
   }
-  // Where a requirement landed is this client's choice, so it is said.
-  const chosen = result.placements
-    .filter((placement) => placement.mode === "requires" && placement.remoteName)
-    .map((placement) => `“${placement.name}” on “${placement.remoteName}”`);
   return {
     ok: true,
-    message:
-      `“${result.boardName}” is running on ${coordinatorName}` +
-      (chosen.length ? ` — ${chosen.join(", ")}` : ""),
+    message: `“${result.boardName}” is running on ${coordinatorName}`,
   };
 }
 
@@ -117,8 +111,7 @@ export async function deployBoard(
   if (!serialized) {
     throw new Error("Could not serialize the current board");
   }
-  const boardName =
-    board.boardName || serialized.boardName || "Untitled board";
+  const boardName = board.boardName || serialized.boardName || "Untitled board";
 
   // Before anything is given up: past the handover below a problem can only be
   // reported, not avoided, and this browser is still the owner until then.

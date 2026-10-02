@@ -6,6 +6,7 @@ import {
 } from "../types";
 import { resolveTemplateVars } from "../templateVars";
 import {
+  AddressResolution,
   KnownRemote,
   RuntimeAddressingError,
   resolveRuntimeAddress,
@@ -25,7 +26,7 @@ import {
  * the one party that knows this person's runtime servers and can reach them —
  * and answered per runtime.
  *
- * It is also where a board's `remote` and `requires` become addresses. That
+ * It is also where a board's `remote` becomes an address. That
  * happens here and nowhere else: the coordinator is told no address and
  * resolves no name.
  */
@@ -62,8 +63,8 @@ export type RuntimePreflight = {
   /** Where this client reaches the runtime's server; set once it resolved. */
   url?: string;
   /** How the board said where the runtime runs. */
-  mode?: "url" | "remote" | "requires";
-  /** The remote that was chosen, when the board named one or asked for a kind. */
+  mode?: "url" | "remote";
+  /** The remote the board named. */
   remoteName?: string;
 };
 
@@ -81,8 +82,7 @@ export function blocksDeploy(finding: RuntimePreflight): boolean {
 /** One line a person can act on. */
 export function describePreflight(finding: RuntimePreflight): string {
   const subject = `“${finding.name || finding.runtimeId}”`;
-  // Said for a name or a requirement, where the choice was this client's:
-  // a person with two python servers should see which one a board landed on.
+  // Said for a name, which is this client's to resolve.
   const on = finding.remoteName ? ` on “${finding.remoteName}”` : "";
   switch (finding.status) {
     case "ready":
@@ -170,8 +170,7 @@ function assess(
  * Says, per runtime, whether the board can be handed over — and for each
  * remote runtime, which runtime server it resolved to on this client.
  *
- * `remotes` are the runtime servers this client keeps, in its own order: that
- * order is what decides between several that satisfy a requirement.
+ * `remotes` are the runtime servers this client keeps.
  */
 export async function preflightBoard(
   board: BoardDescriptor,
@@ -201,16 +200,9 @@ export async function preflightBoard(
         return { ...base, status: "unsupported" };
       }
 
-      let resolution;
+      let resolution: AddressResolution;
       try {
-        resolution = await resolveRuntimeAddress(
-          runtime,
-          remotes,
-          async (remote) => {
-            const report = await reportOf(remote.url!);
-            return report.status === "ok" ? { kind: report.kind } : null;
-          },
-        );
+        resolution = resolveRuntimeAddress(runtime, remotes);
       } catch (err) {
         if (err instanceof RuntimeAddressingError) {
           return { ...base, status: "invalid", detail: err.message };
@@ -225,9 +217,10 @@ export async function preflightBoard(
         ...base,
         url: resolveTemplateVars(resolution.url),
         mode: resolution.mode,
-        // Only where this client made the choice; an authored address is what
-        // the person wrote, and naming a remote for it would be a guess.
-        remoteName: resolution.mode === "url" ? undefined : resolution.remoteName,
+        // Only for a name; an authored address is what the person wrote, and
+        // naming a remote for it would be a guess.
+        remoteName:
+          resolution.mode === "url" ? undefined : resolution.remoteName,
       };
       return {
         ...placed,

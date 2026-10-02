@@ -7,13 +7,12 @@
  * person's own client — the one place that knows their servers — turns that
  * into an address when the board loads.
  *
- * A runtime carries exactly **one** of three, all of them authored:
+ * A runtime carries exactly **one** of two, both authored:
  *
- *   `url`      — an address the person wrote.
- *   `remote`   — a name, looked up among the remotes this client keeps.
- *   `requires` — what will do (`{ "kind": "python" }`), matched against them.
+ *   `url`    — an address the person wrote.
+ *   `remote` — a name, looked up among the remotes this client keeps.
  *
- * More than one is an error, never a preference. A name resolves differently
+ * Both is an error, never a preference. A name resolves differently
  * for each person, so whoever can put a board in front of you controls whether
  * its name resolves; were an unresolved name to fall back to a `url`, they
  * would get two attempts at making your client dial an address.
@@ -23,18 +22,11 @@
  * left for the host that serves the `hkp:` scheme to resolve, as it always was.
  *
  * Resolution is never written back. The address a name resolved to lives on
- * the live runtime descriptor, beside the `remote` or `requires` it came from,
- * and a board being saved writes only what was authored (`authoredAddressing`).
+ * the live runtime descriptor, beside the `remote` it came from, and a board
+ * being saved writes only what was authored (`authoredAddressing`).
  *
- * This module is the vocabulary and the matching. It reaches nothing itself:
- * what a remote reports about itself is supplied by the caller (`RemoteProbe`).
+ * This module is the vocabulary and the lookup. It reaches nothing itself.
  */
-
-/** What a runtime needs of the server it runs on. An object, so it can grow. */
-export type RuntimeRequirement = {
-  /** Which runtime server implementation: `node`, `python`, `cpp`, `go`. */
-  kind: string;
-};
 
 /** A runtime server this client knows by name. */
 export type KnownRemote = {
@@ -48,14 +40,12 @@ export type AddressedRuntime = {
   id: string;
   url?: string;
   remote?: unknown;
-  requires?: unknown;
 };
 
 export type RuntimeAddressing =
   | { mode: "url"; url: string }
   /** `legacyUrl` is set when the name was spelled `hkp://remotes/<name>`. */
   | { mode: "remote"; name: string; legacyUrl?: string }
-  | { mode: "requires"; requires: RuntimeRequirement }
   | { mode: "none" };
 
 /** Scheme and authority of the legacy spelling of a remote's name. */
@@ -82,37 +72,10 @@ export function remoteNameFromUrl(url: string | undefined): string | undefined {
 }
 
 /**
- * A runtime server's kind in the spelling boards use.
+ * Which of the two a runtime in a board *document* uses.
  *
- * hkp-rt has always reported itself as `c++`; a board says `cpp`, which
- * survives being a file name, a tag and a query parameter.
- */
-export function normalizeKind(kind: string | undefined): string | undefined {
-  if (typeof kind !== "string") {
-    return undefined;
-  }
-  const value = kind.trim().toLowerCase();
-  if (!value) {
-    return undefined;
-  }
-  return value === "c++" ? "cpp" : value;
-}
-
-function isRequirement(value: unknown): value is RuntimeRequirement {
-  return (
-    !!value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    typeof (value as { kind?: unknown }).kind === "string" &&
-    !!(value as { kind: string }).kind.trim()
-  );
-}
-
-/**
- * Which of the three a runtime in a board *document* uses.
- *
- * Throws when it uses more than one, or spells one in a shape that cannot be
- * read — a bare string for `requires`, an empty name. Not meant for a live
+ * Throws when it uses both, or spells one in a shape that cannot be read — an
+ * empty name. Not meant for a live
  * runtime descriptor: that carries the resolved `url` beside what it resolved
  * from, which is the state this rule forbids a document to be in.
  */
@@ -129,19 +92,6 @@ export function addressingOf(runtime: AddressedRuntime): RuntimeAddressing {
     modes.push({ mode: "remote", name: runtime.remote.trim() });
   }
 
-  if (runtime.requires !== undefined) {
-    if (!isRequirement(runtime.requires)) {
-      throw new RuntimeAddressingError(
-        runtime.id,
-        `Runtime "${runtime.id}": "requires" must be an object naming a kind, e.g. { "kind": "python" }`,
-      );
-    }
-    modes.push({
-      mode: "requires",
-      requires: { kind: normalizeKind(runtime.requires.kind)! },
-    });
-  }
-
   if (typeof runtime.url === "string" && runtime.url) {
     const legacyName = remoteNameFromUrl(runtime.url);
     modes.push(
@@ -152,11 +102,13 @@ export function addressingOf(runtime: AddressedRuntime): RuntimeAddressing {
   }
 
   if (modes.length > 1) {
-    const said = modes.map((m) => (m.mode === "remote" && m.legacyUrl ? "url" : m.mode));
+    const said = modes.map((m) =>
+      m.mode === "remote" && m.legacyUrl ? "url" : m.mode,
+    );
     throw new RuntimeAddressingError(
       runtime.id,
       `Runtime "${runtime.id}" says where it runs more than once (${said.join(", ")}). ` +
-        `A runtime names exactly one of "url", "remote" or "requires".`,
+        `A runtime names exactly one of "url" or "remote".`,
     );
   }
   return modes[0] ?? { mode: "none" };
@@ -164,19 +116,15 @@ export function addressingOf(runtime: AddressedRuntime): RuntimeAddressing {
 
 /**
  * The addressing fields a saved board gets for a runtime: what was authored
- * and nothing that was resolved. A runtime with a `remote` or a `requires`
- * keeps that and drops the address it resolved to.
+ * and nothing that was resolved. A runtime with a `remote` keeps that and
+ * drops the address it resolved to.
  */
 export function authoredAddressing(runtime: AddressedRuntime): {
   url?: string;
   remote?: string;
-  requires?: RuntimeRequirement;
 } {
   if (typeof runtime.remote === "string" && runtime.remote) {
     return { remote: runtime.remote };
-  }
-  if (isRequirement(runtime.requires)) {
-    return { requires: runtime.requires };
   }
   return { url: runtime.url };
 }
@@ -193,29 +141,23 @@ export function authoredAddressing(runtime: AddressedRuntime): {
  */
 export function bakeAddressing<T extends AddressedRuntime>(
   runtime: T,
-): Omit<T, "remote" | "requires"> {
-  const { remote: _remote, requires: _requires, ...baked } = runtime;
+): Omit<T, "remote"> {
+  const { remote: _remote, ...baked } = runtime;
   return baked;
 }
-
-/** What a remote says about itself when asked; see GET /runtimes. */
-export type RemoteReport = { kind?: string };
-
-/** Asks a remote what it is. Rejects or returns null when it cannot be asked. */
-export type RemoteProbe = (remote: KnownRemote) => Promise<RemoteReport | null>;
 
 export type AddressResolution =
   | {
       ok: true;
       url: string;
       /** How the board said it, for telling a person what happened. */
-      mode: "url" | "remote" | "requires";
-      /** The remote that was chosen, when one was. */
+      mode: "url" | "remote";
+      /** The remote the name resolved to, when the board gave a name. */
       remoteName?: string;
     }
   | {
       ok: false;
-      reason: "none" | "unknown-remote" | "no-match";
+      reason: "none" | "unknown-remote";
       message: string;
     };
 
@@ -229,19 +171,16 @@ function dialable(remotes: KnownRemote[]): KnownRemote[] {
  * Turns what a board says about a runtime into the address this client dials.
  *
  * Against this client's own remotes and nothing else. A name it does not hold
- * does not resolve — there is no second source and no fallback. A requirement
- * takes the first remote, in this client's order, that reports the kind asked
- * for: refusing when several match would leave a person with two python
- * servers unable to open an "any python" board at all.
+ * does not resolve — there is no second source and no fallback, and nothing
+ * here chooses a remote the board did not name.
  *
  * Throws `RuntimeAddressingError` for a runtime that is malformed; returns a
  * failed resolution for one that is well-formed and cannot be placed here.
  */
-export async function resolveRuntimeAddress(
+export function resolveRuntimeAddress(
   runtime: AddressedRuntime,
   remotes: KnownRemote[],
-  probe: RemoteProbe,
-): Promise<AddressResolution> {
+): AddressResolution {
   const addressing = addressingOf(runtime);
 
   switch (addressing.mode) {
@@ -281,32 +220,6 @@ export async function resolveRuntimeAddress(
         url: found.url!,
         mode: "remote",
         remoteName: found.name,
-      };
-    }
-
-    case "requires": {
-      const wanted = addressing.requires.kind;
-      const candidates = dialable(remotes);
-      // Asked together, chosen in order: the answer must not depend on which
-      // server happened to reply first.
-      const reports = await Promise.all(
-        candidates.map((remote) => probe(remote).catch(() => null)),
-      );
-      const index = reports.findIndex(
-        (report) => normalizeKind(report?.kind) === wanted,
-      );
-      if (index < 0) {
-        return {
-          ok: false,
-          reason: "no-match",
-          message: `Runtime "${runtime.id}" needs a ${wanted} runtime server, and none of this client's remotes is one`,
-        };
-      }
-      return {
-        ok: true,
-        url: candidates[index].url!,
-        mode: "requires",
-        remoteName: candidates[index].name,
       };
     }
   }

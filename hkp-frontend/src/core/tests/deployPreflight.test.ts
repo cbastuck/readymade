@@ -112,29 +112,13 @@ describe("a runtime that is ready", () => {
     expect(describePreflight(finding)).toBe("“Node” is ready on “Studio”");
   });
 
-  it("is placed on the first remote of the kind it asks for, and says which", async () => {
-    servers({
-      "http://laptop:8080": healthy("node"),
-      "http://studio:5000": healthy("python"),
-      "http://attic:5000": healthy("python"),
-    });
-
-    const finding = await nodeFinding({ requires: { kind: "python" } });
-
-    expect(finding).toMatchObject({
-      status: "ready",
-      mode: "requires",
-      remoteName: "Studio",
-    });
-  });
-
   it("asks each runtime server once, however many runtimes land on it", async () => {
     const fetchMock = servers({ "http://laptop:8080": healthy("node") });
     const twice = {
       boardName: "b",
       runtimes: [
         { id: "a", name: "A", type: "rest", remote: "Laptop" },
-        { id: "b", name: "B", type: "rest", requires: { kind: "node" } },
+        { id: "b", name: "B", type: "rest", remote: "Laptop" },
       ],
       services: { a: [], b: [] },
     } as unknown as BoardDescriptor;
@@ -155,15 +139,6 @@ describe("a runtime that stops the deploy", () => {
     expect(finding.status).toBe("unresolved");
     expect(blocksDeploy(finding)).toBe(true);
     expect(describePreflight(finding)).toMatch(/Someone else's/);
-  });
-
-  it("says no remote is of the kind it needs", async () => {
-    servers({ "http://laptop:8080": healthy("node") });
-
-    const finding = await nodeFinding({ requires: { kind: "go" } });
-
-    expect(finding.status).toBe("unresolved");
-    expect(describePreflight(finding)).toMatch(/needs a go runtime server/);
   });
 
   it("refuses one that says where it runs more than once, dialling neither", async () => {
@@ -236,7 +211,9 @@ describe("a runtime that stops the deploy", () => {
 
     expect(finding.status).toBe("cannot-join");
     expect(blocksDeploy(finding)).toBe(true);
-    expect(describePreflight(finding)).toMatch(/cannot connect to a coordinator/);
+    expect(describePreflight(finding)).toMatch(
+      /cannot connect to a coordinator/,
+    );
   });
 });
 
@@ -256,7 +233,9 @@ describe("what does not stop a deploy", () => {
 
   it("is a server that reports no registry to check against", async () => {
     servers({
-      "http://laptop:8080": { body: { server: "node", coordinatorLinks: true } },
+      "http://laptop:8080": {
+        body: { server: "node", coordinatorLinks: true },
+      },
     });
 
     expect((await nodeFinding({ remote: "Laptop" })).status).toBe("ready");

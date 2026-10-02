@@ -35,7 +35,7 @@ const placed: RuntimePreflight = {
   name: "Python",
   status: "ready",
   url: "http://studio:5000",
-  mode: "requires",
+  mode: "remote",
   remoteName: "Studio",
 };
 const away: RuntimePreflight = {
@@ -76,8 +76,7 @@ describe("the deploy dialog", () => {
 
     renderDialog();
 
-    // The remote a requirement landed on is named: the choice was this
-    // client's, and a person with two servers that would do should see it.
+    // The remote a name resolved to is said beside the runtime.
     expect(
       await screen.findByText("“Python” is ready on “Studio”"),
     ).toBeTruthy();

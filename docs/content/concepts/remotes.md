@@ -28,35 +28,31 @@ A **remote** is a runtime server a client knows by name. Every host keeps a list
 of them — the Add-runtime picker shows it, *Manage runtime servers* edits it —
 and a board may name one instead of giving its address.
 
-A runtime says where it runs in exactly **one** of three ways, all of them
-authored:
+A runtime says where it runs in exactly **one** of two ways, both authored:
 
 ```json
-{ "id": "node", "name": "Node",   "type": "rest", "url": "http://127.0.0.1:8080" }
-{ "id": "node", "name": "Node",   "type": "rest", "remote": "Laptop" }
-{ "id": "py",   "name": "Python", "type": "rest", "requires": { "kind": "python" } }
+{ "id": "node", "name": "Node", "type": "rest", "url": "http://127.0.0.1:8080" }
+{ "id": "node", "name": "Node", "type": "rest", "remote": "Laptop" }
 ```
 
 | Field | Says | Resolved |
 |---|---|---|
 | `url` | an address the person wrote | used as written. Every board from before remotes; valid forever |
 | `remote` | a name | looked up among this client's remotes |
-| `requires` | what will do | matched against them — the first, in this client's order, of that `kind` |
 
-`kind` is the runtime server implementation: `node`, `python`, `cpp`, `go`. It has
-to be authored even though a board's services could be checked against a
-server's registry: service ids are deliberately shared across runtimes
-(`text-generation` exists on three), so a registry says a server *has* the
-service and never which implementation was meant. `requires` is an object rather
-than a string so that it can grow further keys without a migration.
+There is no third way that says only *what kind* of server would do and leaves
+the client to pick one. A runtime may reference credentials, and those are
+released to the server it lands on — so where it lands has to be something the
+board said or the person can read off it, never a choice made on their behalf
+among whatever servers they happen to keep.
 
-### More than one is an error, not a preference
+### Both is an error, not a preference
 
 No fallback and no precedence. A name resolves differently for each person, so
 anyone who can put a board in front of you controls whether its name resolves.
 If an unresolvable name fell back to a `url`, they would get two attempts at
 making your client dial an address and need only the second. A runtime carrying
-two is refused before anything is dialled.
+both is refused before anything is dialled.
 
 `hkp://remotes/<name>` — the spelling boards used for the app's embedded runtime
 before `remote` existed — is a name in a url's clothing. It **counts as a name**
@@ -73,10 +69,8 @@ label for people.
 - A name this client does not hold **fails the load**, naming the remote. There
   is nothing to fall back to, and a board quietly missing a runtime is worse
   than one that says which runtime server it wanted.
-- A requirement asks each remote what it is (`GET /runtimes` already says: its
-  `server` kind) and takes the first match **in the client's own order** — not
-  whichever answered first. Refusing when several match would leave a person
-  with two python servers unable to open an "any python" board at all.
+- A remote runtime that names **no** server — neither a `url` nor a `remote` —
+  fails the load the same way. Nothing is chosen for it.
 - The resolved address lives on the **live** runtime, beside the name it came
   from. A save writes the name and drops the address
   (`authoredAddressing`). That is what keeps the one-way rule enforceable: if
@@ -86,13 +80,11 @@ label for people.
   names mean nothing substitutes the address and drops the name
   (`bakeAddressing`) — still exactly one way.
 
-A requirement is not relocation. A board asking for "any python" is its author
-saying this runtime is not bound to a machine. Nothing ever moves a runtime that
-named a machine onto a different one: the files, models, devices and
-credentials behind a runtime are not in the board, so a copy elsewhere would
-deploy, report success, and be wrong.
+Nothing ever moves a runtime onto a machine other than the one it named: the
+files, models, devices and credentials behind a runtime are not in the board, so
+a copy elsewhere would deploy, report success, and be wrong.
 
-The vocabulary and the matching live in
+The vocabulary and the lookup live in
 `hkp-frontend/src/runtime/board/remote.ts`; `restoreBoard`
 (`core/boardPersistence.ts`) resolves on load.
 
@@ -226,7 +218,7 @@ beside its kind and registry.
 
 | Concern | Where |
 |---|---|
-| `url` / `remote` / `requires`: vocabulary, matching, what a save keeps | `hkp-frontend/src/runtime/board/remote.ts` |
+| `url` / `remote`: vocabulary, lookup, what a save keeps | `hkp-frontend/src/runtime/board/remote.ts` |
 | Resolving on load | `hkp-frontend/src/core/boardPersistence.ts` (`resolveForRestore`) |
 | Preflight, per runtime | `hkp-frontend/src/core/deployPreflight.ts` |
 | The introduction | `hkp-frontend/src/core/deploy.ts`, `components/Toolbar/DeployDialog.tsx` |

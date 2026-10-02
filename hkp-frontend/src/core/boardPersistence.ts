@@ -16,7 +16,11 @@ import {
   linkBoard,
   reportLinkDiagnostics,
 } from "./linkUnits";
-import { BoardLinkage, unlinkProjection, UnitBoard } from "../runtime/board/units";
+import {
+  BoardLinkage,
+  unlinkProjection,
+  UnitBoard,
+} from "../runtime/board/units";
 import {
   checkAddressesIntoUses,
   linkBlocks,
@@ -32,7 +36,6 @@ import {
   authoredAddressing,
   resolveRuntimeAddress,
 } from "../runtime/board/remote";
-import { describeRuntimeServer } from "../runtime/rest/RuntimeRestApi";
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
   arr: Array<RestoreRuntimeResult | null>,
@@ -47,33 +50,24 @@ function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
 }
 
 /**
- * The runtime as it is restored: with the address its `remote` or `requires`
- * resolves to on this client. The name stays on the descriptor beside it, which
- * is what a save writes back — see `runtime/board/remote`.
+ * The runtime as it is restored: with the address its `remote` resolves to on
+ * this client. The name stays on the descriptor beside it, which is what a save
+ * writes back — see `runtime/board/remote`.
  *
  * A name this client does not hold fails the restore, loudly and by name. There
  * is nothing to fall back to, and a board quietly missing a runtime is worse
- * than one that says which runtime server it wanted.
+ * than one that says which runtime server it wanted. A runtime that names no
+ * server at all fails the same way, before anything is dialled.
  */
-async function resolveForRestore(
+function resolveForRestore(
   runtime: RuntimeDescriptor,
   refs: BoardStateRefs,
-  user: { idToken?: string } | null,
-): Promise<RuntimeDescriptor> {
-  const resolution = await resolveRuntimeAddress(
+): RuntimeDescriptor {
+  const resolution = resolveRuntimeAddress(
     runtime,
     refs.availableRuntimeEnginesRef?.current ?? [],
-    async (remote) => {
-      const report = await describeRuntimeServer(remote.url!, user);
-      return report.status === "ok" ? { kind: report.kind } : null;
-    },
   );
   if (!resolution.ok) {
-    // A runtime that names nothing at all is left for its api to report, as it
-    // always was.
-    if (resolution.reason === "none") {
-      return { ...runtime };
-    }
     throw new RuntimeAddressingError(runtime.id, resolution.message);
   }
   return { ...runtime, url: resolution.url };
@@ -146,15 +140,14 @@ export async function restoreBoard(
       // Resolution happens where a secret is used — see `withSecrets`.
       const services = boardServices[rt.id];
       if (api.resolvesAddress) {
-        return resolveForRestore(rt, refs, currentUser).then((resolved) => {
-          missingSecrets.push(...unavailableSecrets(services));
-          return api.restoreRuntime(
-            resolved,
-            services,
-            currentUser,
-            rt.boardName ?? restoredBoardName,
-          );
-        });
+        const resolved = resolveForRestore(rt, refs);
+        missingSecrets.push(...unavailableSecrets(services));
+        return api.restoreRuntime(
+          resolved,
+          services,
+          currentUser,
+          rt.boardName ?? restoredBoardName,
+        );
       }
       missingSecrets.push(...unavailableSecrets(services));
       // A runtime contributed by a unit keeps that unit's board name, which the
@@ -397,7 +390,8 @@ export async function serializeBoard(
           // A service reports what it was configured with, which is what the
           // board gets. A secret is a reference in that state and stays one:
           // it was never substituted, so there is nothing here to put back.
-          const config = api && scope ? await api.getServiceConfig(scope, svc) : {};
+          const config =
+            api && scope ? await api.getServiceConfig(scope, svc) : {};
           const runtimeState = {
             ...runtime.state,
             ...scope?.serializeState?.(),
@@ -432,7 +426,11 @@ export async function serializeBoard(
     // the link *output*, the way a bundle is. Splitting it back into the
     // documents it came from is a different question, and belongs to saving.
     ...(rt.unit
-      ? { unit: rt.unit, unitRuntimeId: rt.unitRuntimeId, boardName: rt.boardName }
+      ? {
+          unit: rt.unit,
+          unitRuntimeId: rt.unitRuntimeId,
+          boardName: rt.boardName,
+        }
       : {}),
     state: runtimeStates[rt.id] || {
       wrapServices: false,

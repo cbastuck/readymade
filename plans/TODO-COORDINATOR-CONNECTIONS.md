@@ -7,7 +7,7 @@ decisions taken while building, and what is still open — see the last three
 sections. hkp-rt cannot join a coordinator yet.
 
 Two halves, coupled by what deploy checks before it hands a board over: **how a
-board says which runtime server it wants** (a name, a requirement — which matters
+board says which runtime server it wants** (a name — which matters
 even with no coordinator in sight, as soon as a board is shared), and **how a
 board's participants connect to the coordinator that owns it**.
 
@@ -176,18 +176,10 @@ keeps (`ManageConnectionsContent`, `RemotesController`), at the moment they depl
 The coordinator resolves nothing: it knows participants by the tickets they present.
 A name in a deployed board is a label for people, not an address for machines.
 
-A runtime carries exactly **one** addressing mode, all of them authored:
+A runtime carries exactly **one** addressing mode, both authored:
 
 - `url` — an address the person wrote. Every board that exists today.
 - `remote` — a name, resolved by their client.
-- `requires` — an object describing what will do:
-
-```json
-{
-  "id": "py", "name": "Python", "type": "rest",
-  "requires": { "kind": "python" }
-}
-```
 
 **More than one is an error, not a preference.** No fallback, no precedence. A name
 resolves differently for each person, so anyone who can put a board in front of you
@@ -214,66 +206,26 @@ addresses and template variables so the receiving device gets concrete values
 and `remote` dropped — still exactly one mode. Baking stays an explicit act of
 export.
 
-### Saying what a runtime needs: kind, registry, versions, tags
+### Addressing by requirement — built, then withdrawn 2026-10-02
 
-A requirement is **not** relocation. A board asking for "any python" is its author
-declaring that this runtime is not bound to a particular machine; relocation was the
-system deciding that for a board which had said otherwise. Same outcome, opposite
-authority.
+`"requires": { "kind": "python" }` let a board say what would do and had the
+client take the first of its remotes of that kind. It was built on 2026-10-01
+and removed the next day, after being tried:
 
-Four layers, cheapest and most automatic first:
+- **Too little control over where a runtime ends up.** The answer depended on
+  which remotes a client kept and in what order — nothing the board's author or
+  the person opening it had decided about *this* board.
+- **That is a credentials problem, not only a surprise.** A runtime's secrets
+  are released to the server it lands on. A board that lets the client choose
+  can land a runtime asking for secrets on a server nobody meant it for.
+  Consent keyed on the resolved address does not rescue this: the person is
+  asked about an address they did not pick.
 
-1. **Kind** — `node | python | cpp | go`, authored. It must be authored even though
-   the registry check is stricter: service ids are deliberately shared across
-   runtimes (`text-generation` exists in python, node and cpp), so the registry says
-   a server *has* the service but never which implementation was meant.
-2. **Registry** — derived from the board's own services, authored by nobody. The
-   strongest check available, and the one that replaces today's mid-provision
-   `Unknown serviceId` 500 (`hkp-node/src/runtime.ts:932`).
-3. **Service version and capabilities** — already on the wire: `ServiceRegistryEntry`
-   is `{ serviceId, serviceName, version?, capabilities? }` (`hkp-node/src/types.ts`).
-   A board pins these only where it depends on them.
-4. **Remote tags** — labels for what is not a service property at all: this machine
-   has a GPU, sits on a given LAN, holds a licence. Self-declared by the runtime
-   server, the same answer for everyone.
-
-**Version and tag are different matchers and must not share a syntax.** A
-docker-style `python:v2.2` is an opaque string, so it stops matching the moment the
-operator upgrades to v2.3 — which satisfies it. A **version** wants ordering ("at
-least 2.2"); a **tag** wants set containment. Folded into one colon-separated string,
-the version silently inherits exact-match semantics and every upgrade breaks boards.
-
-**A tag describes a machine, not who may use it.** It decides where a board goes,
-never what it may do: the runtime server goes on enforcing at the point of use. That
-is what makes self-declaration safe — the worst a stale or dishonest tag can do is
-send a board to a server that then refuses it.
-
-**Deliberately not per user — decided 2026-09-23.** Tags could have varied by tier or
-status. Rejected as ahead of demand and misleading about where the work is: a
-tier-dependent answer only means anything if the server enforces it at the point of
-use, so the honest version of that feature is enforcement across three runtime
-servers, with the tag as its small visible part.
-
-**Two rules for requirement matching:**
-
-- **Ambiguity resolves by the client's own order, and the deploy dialog names the
-  remote it chose.** Refusing when several candidates match would make a person with
-  two python servers unable to run "any python" boards at all.
-- **A requirement never selects a machine-bound remote.** A runtime that exists
-  because of the machine it runs on is always addressed by name.
-
-### Where kind and tags come from: the runtime server says
-
-Most of it is already on the wire. `GET /runtimes` returns
-`{ runtimes, registry, server: <kind> }` on all three runtime servers
-(`hkp-node/src/server.ts`, `hkp-python/src/hkp/server.py`,
-`hkp-rt/lib/src/http/server.cpp`). Kind is already self-declared, and so is the
-registry — a build property, as that response's own comment says.
-
-**Tags extend that response rather than getting a route of their own.** No new
-surface, no second auth path, and the shape already exists in all three runtimes.
-Read them when a candidate is being chosen, not when a server was first added: a
-machine gains a GPU without anyone re-configuring anything.
+So a runtime lands only where the board or the person **named**. With it went
+the plans that hung off it — tags, version pinning, the "machine-bound remote"
+marker — none of which had a board that needed them. What stays is the
+**registry check** in the preflight: derived from the board's own services,
+authored by nobody, and it chooses nothing.
 
 ### Preflight, and failing loudly
 
@@ -283,8 +235,8 @@ deploy dialog says per runtime which of these it is:
 - resolved to a remote, which is running and accepted the person
 - resolved, but the server is not running or refused them
 - did not resolve on this client — naming the name
-- resolved to a remote of the wrong kind, or one whose registry does not cover the
-  board's services — listing what is missing
+- resolved to a remote whose registry does not cover the board's services —
+  listing what is missing
 
 After handover, a **required** participant that never connects, or later drops, puts
 the board in `error` **naming it**. `error` is not terminal: when the machine returns
@@ -377,10 +329,6 @@ to revisit; none was obvious enough to go without saying.
   the one-mode rule, but the native proxy that serves it goes on resolving it;
   routing it through the client's remote list would have changed how the
   embedded runtime is reached for no gain.
-- **"Wrong kind" has no finding of its own.** Kind is only authored in
-  `requires`, and a requirement is matched by kind — so it either resolves or it
-  does not (`unresolved`). The finding returns if `remote` and a kind are ever
-  allowed together.
 - **Credentials ride with the introduction.** Secrets contact point 3, in its
   simplest form: the browser hands the values to the runtime server the person
   chose, with the ticket; the server holds them **in memory** with the link.
@@ -408,15 +356,10 @@ to revisit; none was obvious enough to go without saying.
   grant keyed on the ticket's bound identity rather than an origin — is a
   constraint on it, recorded in `TODO-SECRETS.md`. A participant that is *not*
   on the person's own machine has no source of credentials but the introduction.
-- **Authoring `remote` and `requires`.** The Add-runtime picker still writes a
-  `url`; a name or a requirement is typed into the board's JSON. The picker
+- **Authoring `remote`.** The Add-runtime picker still writes a
+  `url`; a name is typed into the board's JSON. The picker
   writing `remote` for a named server is the obvious next step and changes what
   every newly built board saves.
-- **A machine-bound remote.** "A requirement never selects a machine-bound
-  remote" is decided and not enforceable: nothing marks a remote as one. Needs
-  a flag on the remote, or tags.
-- **Tags, and pinning service versions.** Unchanged from the concept: `requires`
-  is an object so both can be added; neither has a board that needs it.
 - **Mobile.** The deploy sheet reports what stopped a deploy as a toast, with no
   per-runtime dialog, and the mobile cloud view reads a board's reasons from the
   listing rather than from the live snapshot.
