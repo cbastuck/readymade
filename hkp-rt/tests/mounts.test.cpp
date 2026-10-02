@@ -105,17 +105,53 @@ TEST_CASE("anything else is the api's", "[mounts][front-door]") {
 TEST_CASE("an old service cannot unmount the replacement at the same address",
           "[mounts][front-door]") {
   FrontDoor door("front-secret");
-  int oldService = 1;
-  int replacement = 2;
 
-  door.mount("stable", &oldService, [](MountedConnection) {});
-  door.mount("stable", &replacement, [](MountedConnection) {});
+  const auto releaseOld = door.mount("stable", [](MountedConnection) {});
+  const auto releaseReplacement = door.mount("stable", [](MountedConnection) {});
 
-  door.unmount("stable", &oldService);
+  releaseOld();
   REQUIRE(static_cast<bool>(door.find("stable")));
 
-  door.unmount("stable", &replacement);
+  releaseReplacement();
   REQUIRE_FALSE(static_cast<bool>(door.find("stable")));
+}
+
+TEST_CASE("a mount is given up with its handle", "[mounts][front-door]") {
+  FrontDoor door("front-secret");
+  {
+    MountHandle held("hook", "http://h/hosted/a", door.mount("a", [](MountedConnection) {}));
+    REQUIRE(held);
+    REQUIRE(held.name() == "hook");
+    REQUIRE(static_cast<bool>(door.find("a")));
+  }
+  REQUIRE_FALSE(static_cast<bool>(door.find("a")));
+}
+
+TEST_CASE("a handle assigned over releases the mount it held",
+          "[mounts][front-door]") {
+  FrontDoor door("front-secret");
+  MountHandle held("old", "http://h/hosted/a", door.mount("a", [](MountedConnection) {}));
+
+  held = MountHandle("new", "http://h/hosted/b", door.mount("b", [](MountedConnection) {}));
+
+  REQUIRE_FALSE(static_cast<bool>(door.find("a")));
+  REQUIRE(static_cast<bool>(door.find("b")));
+  REQUIRE(held.url() == "http://h/hosted/b");
+
+  held.release();
+  REQUIRE_FALSE(held);
+  REQUIRE_FALSE(static_cast<bool>(door.find("b")));
+}
+
+TEST_CASE("a handle outliving its front door releases nothing",
+          "[mounts][front-door]") {
+  MountHandle held;
+  {
+    FrontDoor door("front-secret");
+    held = MountHandle("hook", "http://h/hosted/a", door.mount("a", [](MountedConnection) {}));
+  }
+  held.release();
+  REQUIRE_FALSE(held);
 }
 
 TEST_CASE("the api is told who called, and nobody else can say so",

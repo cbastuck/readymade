@@ -297,21 +297,12 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
   });
 }
 
-std::string Runtime::mountEndpoint(const std::string& name, const void* owner,
-                                   MountAdopter adopter)
+MountHandle Runtime::mountEndpoint(const std::string& name, MountAdopter adopter)
 {
   auto server = m_app->getServer();
   return server
-    ? server->mount(m_boardName, m_runtimeId, name, owner, std::move(adopter))
-    : "";
-}
-
-void Runtime::unmountEndpoint(const std::string& name, const void* owner)
-{
-  if (auto server = m_app->getServer())
-  {
-    server->unmount(m_boardName, m_runtimeId, name, owner);
-  }
+    ? server->mount(m_boardName, m_runtimeId, name, std::move(adopter))
+    : MountHandle();
 }
 
 void Runtime::notifyProcessFinished(const Service& service, const Data& data)

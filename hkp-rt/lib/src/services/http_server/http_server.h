@@ -64,14 +64,13 @@ private:
 private:
   std::shared_ptr<HttpServerImpl> m_impl;
   std::string m_mode;
-  // Where it is served when the runtime server mounts it; see mounts.h.
-  std::string m_url;
+  // Where it is served when the runtime server mounts it; see mounts.h. Holds
+  // the name the mount was made under, which configuration may since have
+  // changed.
+  MountHandle m_mount;
   std::string m_mountName;
-  // The name actually claimed by the current mount. Configuration may change
-  // m_mountName while the service is running; cleanup must release the old
-  // claim, not derive a different id from the new setting.
-  std::string m_mountedName;
   std::string mountName() const { return m_mountName.empty() ? getId() : m_mountName; }
+  MountHandle claimMount(const std::string& name);
 
   std::mutex m_assemblyMutex;
   std::map<std::string, ChunkAssembly> m_assemblies; // keyed by X-Upload-Id

@@ -94,14 +94,12 @@ namespace hkp
     // port itself and a service that needs an endpoint binds one of its own.
     void enableMounts(MountOptions options);
 
-    // Gives a service a path on this server's port and returns the address
-    // clients are pointed at, or "" when this server serves no mounts. A
-    // connection to that path is handed to `adopter`.
-    std::string mount(const std::string& boardName, const std::string& runtimeId,
-                      const std::string& name, const void* owner,
-                      MountAdopter adopter);
-    void unmount(const std::string& boardName, const std::string& runtimeId,
-                 const std::string& name, const void* owner);
+    // Gives a service a path on this server's port. The handle holds the
+    // address clients are pointed at and gives the path up when released; it
+    // is empty when this server serves no mounts. A connection to that path is
+    // handed to `adopter`.
+    MountHandle mount(const std::string& boardName, const std::string& runtimeId,
+                      const std::string& name, MountAdopter adopter);
 
     void handleRequest(crow::request& req, crow::response& res);
 

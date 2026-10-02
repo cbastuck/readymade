@@ -465,28 +465,35 @@ void FrontDoor::stop()
   m_acceptor.reset();
 }
 
-void FrontDoor::mount(const std::string& mountId, const void* owner,
-                      MountAdopter adopter)
+std::function<void()> FrontDoor::mount(const std::string& mountId, MountAdopter adopter)
 {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  m_mounts.insert_or_assign(mountId, Mounted{owner, std::move(adopter)});
-}
-
-void FrontDoor::unmount(const std::string& mountId, const void* owner)
-{
-  std::lock_guard<std::mutex> lock(m_mutex);
-  const auto it = m_mounts.find(mountId);
-  if (it != m_mounts.end() && it->second.owner == owner)
+  std::uint64_t serial = 0;
   {
-    m_mounts.erase(it);
+    std::lock_guard<std::mutex> lock(m_mounts->mutex);
+    serial = m_mounts->nextSerial++;
+    m_mounts->claims.insert_or_assign(mountId, Mounts::Claim{serial, std::move(adopter)});
   }
+  std::weak_ptr<Mounts> held = m_mounts;
+  return [held, mountId, serial]() {
+    const auto mounts = held.lock();
+    if (!mounts)
+    {
+      return;
+    }
+    std::lock_guard<std::mutex> lock(mounts->mutex);
+    const auto it = mounts->claims.find(mountId);
+    if (it != mounts->claims.end() && it->second.serial == serial)
+    {
+      mounts->claims.erase(it);
+    }
+  };
 }
 
 MountAdopter FrontDoor::find(const std::string& mountId)
 {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  const auto it = m_mounts.find(mountId);
-  return it == m_mounts.end() ? MountAdopter() : it->second.adopter;
+  std::lock_guard<std::mutex> lock(m_mounts->mutex);
+  const auto it = m_mounts->claims.find(mountId);
+  return it == m_mounts->claims.end() ? MountAdopter() : it->second.adopter;
 }
 
 }

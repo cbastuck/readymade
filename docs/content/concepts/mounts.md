@@ -267,10 +267,6 @@ Current limitations, stated so a board author is not surprised by them:
   on there means the front door listening on every interface and refusing the
   api to anyone but the machine itself, which is a decision about the app's
   exposure and has not been taken.
-- **A mount is not given up when its service is destroyed**, only when it is
-  bypassed: a runtime rebuilt under its id claims the mount before the old
-  service goes, and giving it up then would take it from the new one. A stale
-  mount answers nothing and is replaced by the next service of that name.
 
 ---
 

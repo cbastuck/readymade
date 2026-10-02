@@ -90,9 +90,7 @@ public:
   bool isConnected(const Service &svc) const override;
   void sendData(Data data, MessagePurpose purpose, const std::string& sender, std::function<void(Data)> callback = nullptr) override;
   void notifyProcessFinished(const Service& svc, const Data& data) override;
-  std::string mountEndpoint(const std::string& name, const void* owner,
-                            MountAdopter adopter) override;
-  void unmountEndpoint(const std::string& name, const void* owner) override;
+  MountHandle mountEndpoint(const std::string& name, MountAdopter adopter) override;
   void log(const Service& svc, LogLevel level, const std::string& event,
            const nlohmann::json& data = nullptr) override;
   void forwardLog(const LogEntry& entry) override;

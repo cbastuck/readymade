@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -49,11 +51,11 @@ public:
                        unsigned short upstreamPort);
   void stop();
 
-  /** `owner` identifies the service instance claiming the stable mount id.
-   *  An older instance may be destroyed after its replacement has claimed the
-   *  same id; its unmount must not remove the replacement's endpoint. */
-  void mount(const std::string& mountId, const void* owner, MountAdopter adopter);
-  void unmount(const std::string& mountId, const void* owner);
+  /** Hands connections for `mountId` to `adopter`, and returns what gives the
+   *  mount up again. A later claim to the same id takes it over; what the
+   *  earlier claim returned then removes nothing. The returned function may be
+   *  called after this front door is gone. */
+  std::function<void()> mount(const std::string& mountId, MountAdopter adopter);
   /** The adopter for a mount, or nothing. */
   MountAdopter find(const std::string& mountId);
 
@@ -71,13 +73,19 @@ private:
   std::thread m_thread;
   unsigned short m_upstreamPort = 0;
 
-  std::mutex m_mutex;
-  struct Mounted
+  struct Mounts
   {
-    const void* owner;
-    MountAdopter adopter;
+    struct Claim
+    {
+      std::uint64_t serial;
+      MountAdopter adopter;
+    };
+    std::mutex mutex;
+    std::map<std::string, Claim> claims;
+    std::uint64_t nextSerial = 1;
   };
-  std::map<std::string, Mounted> m_mounts;
+  // Shared with what `mount` returns, which may outlive this.
+  std::shared_ptr<Mounts> m_mounts = std::make_shared<Mounts>();
 };
 
 /**

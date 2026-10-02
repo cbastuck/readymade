@@ -511,31 +511,19 @@ void Server::enableMounts(MountOptions options)
   m_impl->crow.get_middleware<AuthMiddleware>().frontSecret = m_impl->frontDoor->frontSecret();
 }
 
-std::string Server::mount(const std::string& boardName, const std::string& runtimeId,
-                          const std::string& name, const void* owner,
-                          MountAdopter adopter)
+MountHandle Server::mount(const std::string& boardName, const std::string& runtimeId,
+                          const std::string& name, MountAdopter adopter)
 {
   if (!m_impl->frontDoor)
   {
-    return "";
+    return {};
   }
   const auto id = deriveMountId(m_impl->mountOptions.secret, "", boardName, runtimeId, name);
-  m_impl->frontDoor->mount(id, owner, std::move(adopter));
+  auto release = m_impl->frontDoor->mount(id, std::move(adopter));
   const std::string base = !m_impl->mountOptions.externalUrl.empty()
     ? m_impl->mountOptions.externalUrl
     : "http://" + m_impl->externalIP + ":" + std::to_string(port());
-  return base + MOUNT_PREFIX + "/" + id;
-}
-
-void Server::unmount(const std::string& boardName, const std::string& runtimeId,
-                     const std::string& name, const void* owner)
-{
-  if (m_impl->frontDoor)
-  {
-    m_impl->frontDoor->unmount(
-      deriveMountId(m_impl->mountOptions.secret, "", boardName, runtimeId, name),
-      owner);
-  }
+  return MountHandle(name, base + MOUNT_PREFIX + "/" + id, std::move(release));
 }
 
 void Server::enableCoordinatorLinks(std::shared_ptr<LinkStore> store,

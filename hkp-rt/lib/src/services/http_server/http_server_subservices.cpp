@@ -155,12 +155,21 @@ HttpServerSubservices::HttpServerSubservices(const std::string& instanceId)
 HttpServerSubservices::~HttpServerSubservices()
 {
   m_broadcast.onListenersChanged(nullptr);
-  if (!m_mountedName.empty())
-  {
-    unmountEndpoint(m_mountedName);
-  }
+  m_mount.release();
   m_impl->stop();
   m_broadcast.closeAll();
+}
+
+MountHandle HttpServerSubservices::claimMount(const std::string& name)
+{
+  // Held weakly: the mount must not keep this service's endpoint alive.
+  std::weak_ptr<HttpServerImpl> held = m_impl;
+  return mountEndpoint(name, [held](MountedConnection connection) {
+    if (auto impl = held.lock())
+    {
+      impl->adopt(std::move(connection));
+    }
+  });
 }
 
 void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
@@ -477,20 +486,11 @@ json HttpServerSubservices::configure(Data data)
 
   // Renaming a mount rotates its capability URL. Move the live adopter to the
   // newly derived address and release the one it previously held.
-  const auto requestedMount = mountName();
-  if (m_impl->mounted() && !m_mountedName.empty()
-      && requestedMount != m_mountedName)
+  if (m_mount && mountName() != m_mount.name())
   {
-    unmountEndpoint(m_mountedName);
-    std::weak_ptr<HttpServerImpl> held = m_impl;
-    m_url = mountEndpoint(requestedMount, [held](MountedConnection connection) {
-      if (auto impl = held.lock())
-      {
-        impl->adopt(std::move(connection));
-      }
-    });
-    m_mountedName = m_url.empty() ? "" : requestedMount;
-    if (!m_url.empty())
+    m_mount = claimMount(mountName());
+    m_url = m_mount.url();
+    if (m_mount)
     {
       sendNotification(json{{MOUNT_FIELD, m_url}, {"status", "online"}});
     }
@@ -720,21 +720,11 @@ bool HttpServerSubservices::start()
   // port: nothing is bound here, and the address does not depend on a port
   // being free. One that serves none leaves this endpoint to bind its own.
   m_impl->startMounted();
-  // Held weakly: a mount outlives the service that claimed it until another
-  // claims the same name, and must not keep that service's endpoint alive.
-  std::weak_ptr<HttpServerImpl> held = m_impl;
-  const auto requestedMount = mountName();
-  const auto mounted = mountEndpoint(requestedMount, [held](MountedConnection connection) {
-    if (auto impl = held.lock())
-    {
-      impl->adopt(std::move(connection));
-    }
-  });
-  if (!mounted.empty())
+  m_mount = claimMount(mountName());
+  if (m_mount)
   {
     m_host.clear();
-    m_url = mounted;
-    m_mountedName = requestedMount;
+    m_url = m_mount.url();
     std::cout << "HttpServerSubservices::start() mounted at " << m_url << std::endl;
     sendNotification(json{{MOUNT_FIELD, m_url}, {"status", "online"}});
     return true;
@@ -775,11 +765,7 @@ bool HttpServerSubservices::stop()
     std::cout << "HttpServerSubservices::stop() HTTP server is not running" << std::endl;
     return false;
   }
-  if (m_impl->mounted())
-  {
-    unmountEndpoint(m_mountedName);
-  }
-  m_mountedName.clear();
+  m_mount.release();
   m_host.clear();
   m_url.clear();
   // Everything that named where to connect goes with the server, as getState

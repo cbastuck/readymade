@@ -54,6 +54,73 @@ struct MountedConnection
 using MountAdopter = std::function<void(MountedConnection)>;
 
 /**
+ * A mount, held by the service that asked for it.
+ *
+ * The mount lasts until it is released, which destroying the handle or
+ * assigning another over it does. Releasing gives up this claim and no other:
+ * an address is derived from what the mount is called, so a second claim to
+ * the same address takes it over, and the handle of the first then releases
+ * nothing. A handle may outlive the server that issued it.
+ *
+ * Empty — false, with no url — when the server serves no mounts.
+ */
+class MountHandle
+{
+public:
+  MountHandle() = default;
+  MountHandle(std::string name, std::string url, std::function<void()> release)
+    : m_name(std::move(name)), m_url(std::move(url)), m_release(std::move(release))
+  {
+  }
+  MountHandle(const MountHandle&) = delete;
+  MountHandle& operator=(const MountHandle&) = delete;
+  MountHandle(MountHandle&& other) noexcept { take(other); }
+  MountHandle& operator=(MountHandle&& other) noexcept
+  {
+    if (this != &other)
+    {
+      release();
+      take(other);
+    }
+    return *this;
+  }
+  ~MountHandle() { release(); }
+
+  explicit operator bool() const { return !m_url.empty(); }
+  /** What the mount is called; with the board and the runtime, what its
+   *  address is derived from. */
+  const std::string& name() const { return m_name; }
+  /** The address clients are pointed at. */
+  const std::string& url() const { return m_url; }
+
+  void release()
+  {
+    if (m_release)
+    {
+      m_release();
+    }
+    m_release = nullptr;
+    m_name.clear();
+    m_url.clear();
+  }
+
+private:
+  void take(MountHandle& other)
+  {
+    m_name = std::move(other.m_name);
+    m_url = std::move(other.m_url);
+    m_release = std::move(other.m_release);
+    other.m_release = nullptr;
+    other.m_name.clear();
+    other.m_url.clear();
+  }
+
+  std::string m_name;
+  std::string m_url;
+  std::function<void()> m_release;
+};
+
+/**
  * The id a mount always gets: the first 32 hex characters of
  * HMAC-SHA256(secret, tenant NUL board NUL runtime NUL name).
  */

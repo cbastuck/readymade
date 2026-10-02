@@ -43,13 +43,7 @@ public:
 
   ~PeerServerService()
   {
-    // Unmount is owner-aware: if a rebuilt runtime has already claimed this
-    // stable address, destroying the old instance leaves the replacement's
-    // endpoint in place.
-    if (!m_url.empty())
-    {
-      unmountEndpoint(getId());
-    }
+    m_mount.release();
     m_listener.reset();
     m_registry.reset();
   }
@@ -73,7 +67,7 @@ public:
     state["path"]           = m_path;
     // Where it is served when the runtime server mounts it. Reserved name:
     // generic board machinery reads it (see mount.h).
-    state[MOUNT_FIELD]      = m_url;
+    state[MOUNT_FIELD]      = m_mount.url();
     state["emitEvents"]     = m_emitEvents;
     state["connectedPeers"] = m_registry ? m_registry->connectedPeerIds() : std::vector<std::string>{};
     mergeBypassState(state);
@@ -134,16 +128,16 @@ private:
     // A port of this service's own where it does not. See mounts.h.
     auto mounted = std::make_shared<PeerServerListener>(m_registry);
     std::weak_ptr<PeerServerListener> held = mounted;
-    m_url = mountEndpoint(getId(), [held](MountedConnection connection) {
+    m_mount = mountEndpoint(getId(), [held](MountedConnection connection) {
       if (auto listener = held.lock())
       {
         listener->adopt(std::move(connection));
       }
     });
-    if (!m_url.empty())
+    if (m_mount)
     {
       m_listener = std::move(mounted);
-      sendNotification(json{{MOUNT_FIELD, m_url}});
+      sendNotification(json{{MOUNT_FIELD, m_mount.url()}});
       return;
     }
 
@@ -152,11 +146,7 @@ private:
 
   void stop()
   {
-    if (!m_url.empty())
-    {
-      unmountEndpoint(getId());
-      m_url.clear();
-    }
+    m_mount.release();
     m_listener.reset();
     m_registry.reset();
   }
@@ -167,7 +157,7 @@ private:
 
   std::shared_ptr<PeerRegistry>       m_registry;
   std::shared_ptr<PeerServerListener> m_listener;
-  std::string                         m_url;
+  MountHandle                         m_mount;
 };
 
 } // namespace hkp

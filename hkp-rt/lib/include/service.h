@@ -122,10 +122,10 @@ protected:
   // "call-process-finished" lifecycle event until emit() actually delivers.
   Data deferCompletion();
 
-  // A path on the runtime server's own port for this service, or "" when the
-  // server serves none; see RuntimeHost::mountEndpoint.
-  std::string mountEndpoint(const std::string& name, MountAdopter adopter);
-  void unmountEndpoint(const std::string& name);
+  // A path on the runtime server's own port for this service, held for as
+  // long as the handle is; empty when the server serves none. See
+  // RuntimeHost::mountEndpoint.
+  MountHandle mountEndpoint(const std::string& name, MountAdopter adopter);
 
   json mergeStateWith(const json& update) const
   {

@@ -243,10 +243,11 @@ private:
   // What this endpoint's mount is called; empty means its own id. With the
   // board and the runtime it is what the address is derived from.
   std::string m_mountName;
-  // The name held by the live mount, kept separately so a configuration that
-  // renames it can release the address it actually used.
-  std::string m_mountedName;
+  // The live mount, when the runtime server serves this endpoint. Holds the
+  // name it was made under, which configuration may since have changed.
+  MountHandle m_mount;
   std::string mountName() const { return m_mountName.empty() ? getId() : m_mountName; }
+  MountHandle claimMount(const std::string& name);
 };
 
 } // namespace hkp

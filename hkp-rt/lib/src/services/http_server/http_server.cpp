@@ -38,11 +38,20 @@ HttpServer::HttpServer(const std::string& instanceId)
 
 HttpServer::~HttpServer()
 {
-  if (!m_mountedName.empty())
-  {
-    unmountEndpoint(m_mountedName);
-  }
+  m_mount.release();
   m_impl->stop();
+}
+
+MountHandle HttpServer::claimMount(const std::string& name)
+{
+  // Held weakly: the mount must not keep this service's endpoint alive.
+  std::weak_ptr<HttpServerImpl> held = m_impl;
+  return mountEndpoint(name, [held](MountedConnection connection) {
+    if (auto impl = held.lock())
+    {
+      impl->adopt(std::move(connection));
+    }
+  });
 }
 
 void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::string& path, const std::string& method, bool /*awaitResponse*/)
@@ -245,22 +254,12 @@ json HttpServer::configure(Data data)
   // `mountName` is the deliberate address-rotation lever. A running mounted
   // endpoint has to move immediately, and the address it leaves must stop
   // answering (the same behaviour as the Node and Python runtimes).
-  const auto requestedMount = mountName();
-  if (m_impl->mounted() && !m_mountedName.empty()
-      && requestedMount != m_mountedName)
+  if (m_mount && mountName() != m_mount.name())
   {
-    unmountEndpoint(m_mountedName);
-    std::weak_ptr<HttpServerImpl> held = m_impl;
-    m_url = mountEndpoint(requestedMount, [held](MountedConnection connection) {
-      if (auto impl = held.lock())
-      {
-        impl->adopt(std::move(connection));
-      }
-    });
-    m_mountedName = m_url.empty() ? "" : requestedMount;
-    if (!m_url.empty())
+    m_mount = claimMount(mountName());
+    if (m_mount)
     {
-      sendNotification(json{{MOUNT_FIELD, m_url}});
+      sendNotification(json{{MOUNT_FIELD, m_mount.url()}});
     }
   }
   return state;
@@ -270,7 +269,7 @@ json HttpServer::getState() const
 {
   return Service::mergeStateWith(json{
     {"port", m_impl->port()},
-    {MOUNT_FIELD, m_url},
+    {MOUNT_FIELD, m_mount.url()},
     {"mountName", m_mountName}
   });
 }
@@ -316,22 +315,11 @@ bool HttpServer::start()
   // A path on the runtime server's own port where it serves mounts; a port of
   // this service's own where it does not. See mounts.h.
   m_impl->startMounted();
-  // Held weakly: a mount outlives the service that claimed it until another
-  // claims the same name, and must not keep that service's endpoint alive.
-  std::weak_ptr<HttpServerImpl> held = m_impl;
-  const auto requestedMount = mountName();
-  const auto mounted = mountEndpoint(requestedMount, [held](MountedConnection connection) {
-    if (auto impl = held.lock())
-    {
-      impl->adopt(std::move(connection));
-    }
-  });
-  if (!mounted.empty())
+  m_mount = claimMount(mountName());
+  if (m_mount)
   {
-    m_url = mounted;
-    m_mountedName = requestedMount;
-    std::cout << "HttpServer::start() mounted at " << m_url << std::endl;
-    sendNotification(json{{MOUNT_FIELD, m_url}});
+    std::cout << "HttpServer::start() mounted at " << m_mount.url() << std::endl;
+    sendNotification(json{{MOUNT_FIELD, m_mount.url()}});
     return true;
   }
   m_impl->stop();
@@ -355,12 +343,7 @@ bool HttpServer::stop()
     std::cout << "HttpServer::stop() HTTP server is not running" << std::endl;
     return false;
   }
-  if (m_impl->mounted())
-  {
-    unmountEndpoint(m_mountedName);
-  }
-  m_mountedName.clear();
-  m_url.clear();
+  m_mount.release();
   return m_impl->stop();
 }
 
