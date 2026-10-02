@@ -98,8 +98,13 @@ namespace hkp
     // address clients are pointed at and gives the path up when released; it
     // is empty when this server serves no mounts. A connection to that path is
     // handed to `adopter`.
+    //
+    // `deployed` says the runtime is a deployed board's rather than one a
+    // client created. Both derive the same address for the same mount, and
+    // the deployed board is the one that answers there.
     MountHandle mount(const std::string& boardName, const std::string& runtimeId,
-                      const std::string& name, MountAdopter adopter);
+                      const std::string& name, MountAdopter adopter,
+                      bool deployed = false);
 
     void handleRequest(crow::request& req, crow::response& res);
 

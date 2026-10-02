@@ -512,14 +512,15 @@ void Server::enableMounts(MountOptions options)
 }
 
 MountHandle Server::mount(const std::string& boardName, const std::string& runtimeId,
-                          const std::string& name, MountAdopter adopter)
+                          const std::string& name, MountAdopter adopter,
+                          bool deployed)
 {
   if (!m_impl->frontDoor)
   {
     return {};
   }
   const auto id = deriveMountId(m_impl->mountOptions.secret, "", boardName, runtimeId, name);
-  auto release = m_impl->frontDoor->mount(id, std::move(adopter));
+  auto release = m_impl->frontDoor->mount(id, std::move(adopter), deployed);
   const std::string base = !m_impl->mountOptions.externalUrl.empty()
     ? m_impl->mountOptions.externalUrl
     : "http://" + m_impl->externalIP + ":" + std::to_string(port());
@@ -572,7 +573,7 @@ crow::response Server::impl::getRuntimes()
   {
     arr.push_back(jsonSerialise(rt));
   }
-  return makeJsonResponse(json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}, {"coordinatorLinks", coordinatorLinks != nullptr}});
+  return makeJsonResponse(json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}, {"coordinatorLinks", coordinatorLinks != nullptr}, {"boardRuntimes", true}});
 }
 
 
@@ -617,7 +618,7 @@ crow::response Server::impl::createRuntimes(const crow::request &req)
     auto createdConfig = app->createRuntime(*rtConfig);
     arr.push_back(jsonSerialise(createdConfig));
   }
-  return makeJsonResponse({json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}, {"coordinatorLinks", coordinatorLinks != nullptr}}});
+  return makeJsonResponse({json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}, {"coordinatorLinks", coordinatorLinks != nullptr}, {"boardRuntimes", true}}});
 }
 
 crow::response Server::impl::configureService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId)

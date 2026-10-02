@@ -63,7 +63,7 @@ function servers(
 }
 
 const healthy = (server: string) => ({
-  body: { runtimes: [], registry, server, coordinatorLinks: true },
+  body: { runtimes: [], registry, server, coordinatorLinks: true, boardRuntimes: true },
 });
 
 afterEach(() => {
@@ -188,7 +188,7 @@ describe("a runtime that stops the deploy", () => {
         body: {
           registry: [{ serviceId: "monitor" }],
           server: "node",
-          coordinatorLinks: true,
+          coordinatorLinks: true, boardRuntimes: true,
         },
       },
     });
@@ -224,7 +224,7 @@ describe("a runtime that stops the deploy", () => {
         body: {
           registry: [{ serviceId: "sub-service" }],
           server: "node",
-          coordinatorLinks: true,
+          coordinatorLinks: true, boardRuntimes: true,
         },
       },
     });
@@ -263,6 +263,25 @@ describe("a runtime that stops the deploy", () => {
       /cannot connect to a coordinator/,
     );
   });
+
+  it("says its server needs updating when it would share a deployed board's runtimes with this client", async () => {
+    // A server from before a board's runtimes were kept apart: it can join a
+    // coordinator, and this client leaving the board it deployed would then
+    // delete the runtime the coordinator had built under the same id.
+    servers({
+      "http://laptop:8080": {
+        body: { registry, server: "c++", coordinatorLinks: true },
+      },
+    });
+
+    const finding = await nodeFinding({ remote: "Laptop" });
+
+    expect(finding.status).toBe("outdated");
+    expect(blocksDeploy(finding)).toBe(true);
+    expect(describePreflight(finding)).toBe(
+      "“Node”: its runtime server on “Laptop” needs updating before a board can be deployed to it — it is an older version, on which the deployed board would stop as soon as this one is closed",
+    );
+  });
 });
 
 describe("what does not stop a deploy", () => {
@@ -282,7 +301,7 @@ describe("what does not stop a deploy", () => {
   it("is a server that reports no registry to check against", async () => {
     servers({
       "http://laptop:8080": {
-        body: { server: "node", coordinatorLinks: true },
+        body: { server: "node", coordinatorLinks: true, boardRuntimes: true },
       },
     });
 

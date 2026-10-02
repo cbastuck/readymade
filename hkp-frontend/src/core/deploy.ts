@@ -1,6 +1,7 @@
 import { BoardDescriptor, RuntimeClass } from "../types";
 import { CoordinatorDescriptor } from "../common";
 import {
+  cancelCoordinatorTickets,
   registerCoordinatorBoard,
   requestCoordinatorTickets,
 } from "../views/cloud/coordinatorClient";
@@ -129,72 +130,96 @@ export async function deployBoard(
   const participants = placements.filter(
     (placement) => placement.status === "ready" && !!placement.url,
   );
-  if (participants.length > 0) {
-    const tickets = await requestCoordinatorTickets(
-      coordinator.url,
-      user.userId,
-      user.idToken,
-      boardName,
-      participants.map((placement) => placement.runtimeId),
-    );
-    // The values each runtime's services reference, gathered one runtime at a
-    // time: releasing them may ask the person, and two questions at once is
-    // one too many. Consent is asked for the server the name resolved to,
-    // never for the name — a name is the board's to choose and resolves
-    // differently for everyone, so a grant keyed on it would follow the board
-    // wherever it pointed.
-    const secrets = new Map<string, Awaited<ReturnType<typeof secretsFor>>>();
-    for (const placement of participants) {
-      secrets.set(
-        placement.runtimeId,
-        await secretsFor(serialized.services[placement.runtimeId], {
-          boardName,
-          runtimeId: placement.runtimeId,
-          runtimeName: placement.name,
-          url: placement.url!,
-        }),
-      );
-    }
-
-    await Promise.all(
-      participants.map(async (placement) => {
-        const ticket = tickets[placement.runtimeId];
-        try {
-          if (!ticket) {
-            throw new Error("the coordinator issued no ticket for it");
-          }
-          await introduceRuntimeServer(placement.url!, user, {
-            coordinatorUrl: coordinator.url,
-            ticket,
-            boardName,
-            runtimeId: placement.runtimeId,
-            secrets: secrets.get(placement.runtimeId),
-          });
-        } catch (err) {
-          throw new DeployIntroductionError(
-            placement.runtimeId,
-            `“${placement.name || placement.runtimeId}”: ${
-              err instanceof Error ? err.message : String(err)
-            }`,
-          );
-        }
+  // The values each runtime's services reference, gathered one runtime at a
+  // time: releasing them may ask the person, and two questions at once is
+  // one too many. Consent is asked for the server the name resolved to,
+  // never for the name — a name is the board's to choose and resolves
+  // differently for everyone, so a grant keyed on it would follow the board
+  // wherever it pointed. Asked before any ticket exists: a person saying no
+  // leaves nothing to take back.
+  const secrets = new Map<string, Awaited<ReturnType<typeof secretsFor>>>();
+  for (const placement of participants) {
+    secrets.set(
+      placement.runtimeId,
+      await secretsFor(serialized.services[placement.runtimeId], {
+        boardName,
+        runtimeId: placement.runtimeId,
+        runtimeName: placement.name,
+        url: placement.url!,
       }),
     );
   }
 
-  // The runtimes this browser built stay its own, and go when it leaves: what
-  // the coordinator builds for the board is the board's, apart from them even
-  // on the same server and under the same ids.
-  const info = await registerCoordinatorBoard(
-    coordinator.url,
-    user.userId,
-    user.idToken,
-    { ...serialized, boardName },
-  );
-  return {
-    boardName,
-    status: info?.status ?? "running",
-    errors: info?.errors ?? [],
-    placements,
-  };
+  // From the first ticket to the board being registered, a failure is taken
+  // back: the tickets asked for are given up, so a runtime server left
+  // waiting with one is let go and a board that was already running keeps the
+  // servers and tickets it had. A deploy either goes through or changes
+  // nothing.
+  try {
+    if (participants.length > 0) {
+      const tickets = await requestCoordinatorTickets(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        boardName,
+        participants.map((placement) => placement.runtimeId),
+      );
+      // Every introduction is waited for, also once one has failed: one still
+      // on its way must not arrive after the tickets were taken back.
+      const introduced = await Promise.allSettled(
+        participants.map(async (placement) => {
+          const ticket = tickets[placement.runtimeId];
+          try {
+            if (!ticket) {
+              throw new Error("the coordinator issued no ticket for it");
+            }
+            await introduceRuntimeServer(placement.url!, user, {
+              coordinatorUrl: coordinator.url,
+              ticket,
+              boardName,
+              runtimeId: placement.runtimeId,
+              secrets: secrets.get(placement.runtimeId),
+            });
+          } catch (err) {
+            throw new DeployIntroductionError(
+              placement.runtimeId,
+              `“${placement.name || placement.runtimeId}”: ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+            );
+          }
+        }),
+      );
+      const failed = introduced.find((result) => result.status === "rejected");
+      if (failed) {
+        throw (failed as PromiseRejectedResult).reason;
+      }
+    }
+
+    // The runtimes this browser built stay its own, and go when it leaves:
+    // what the coordinator builds for the board is the board's, apart from
+    // them even on the same server and under the same ids.
+    const info = await registerCoordinatorBoard(
+      coordinator.url,
+      user.userId,
+      user.idToken,
+      { ...serialized, boardName },
+    );
+    return {
+      boardName,
+      status: info?.status ?? "running",
+      errors: info?.errors ?? [],
+      placements,
+    };
+  } catch (err) {
+    if (participants.length > 0) {
+      await cancelCoordinatorTickets(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        boardName,
+      );
+    }
+    throw err;
+  }
 }

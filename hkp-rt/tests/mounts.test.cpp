@@ -13,6 +13,22 @@
 
 using namespace hkp;
 
+namespace
+{
+std::string* g_answered = nullptr;
+
+/** An adopter that only says who it is. */
+MountAdopter named(const std::string& name)
+{
+  return [name](MountedConnection) {
+    if (g_answered)
+    {
+      *g_answered = name;
+    }
+  };
+}
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Endpoints served on the runtime server's own port.
 //
@@ -102,18 +118,81 @@ TEST_CASE("anything else is the api's", "[mounts][front-door]") {
   REQUIRE_FALSE(front_door::readHead("nonsense").valid);
 }
 
+namespace
+{
+/** Who is handed a connection to the id, or nobody. */
+std::string answering(FrontDoor& door, const std::string& mountId)
+{
+  const auto adopter = door.find(mountId);
+  if (!adopter)
+  {
+    return "nobody";
+  }
+  // What an adopter is given is a socket; these only say who they are.
+  boost::asio::io_context io;
+  MountedConnection connection{boost::asio::ip::tcp::socket(io), "", ""};
+  std::string who;
+  g_answered = &who;
+  adopter(std::move(connection));
+  g_answered = nullptr;
+  return who;
+}
+}
+
 TEST_CASE("an old service cannot unmount the replacement at the same address",
           "[mounts][front-door]") {
   FrontDoor door("front-secret");
 
-  const auto releaseOld = door.mount("stable", [](MountedConnection) {});
-  const auto releaseReplacement = door.mount("stable", [](MountedConnection) {});
+  const auto releaseOld = door.mount("stable", named("old"));
+  const auto releaseReplacement = door.mount("stable", named("replacement"));
+  REQUIRE(answering(door, "stable") == "replacement");
 
   releaseOld();
-  REQUIRE(static_cast<bool>(door.find("stable")));
+  REQUIRE(answering(door, "stable") == "replacement");
 
   releaseReplacement();
-  REQUIRE_FALSE(static_cast<bool>(door.find("stable")));
+  REQUIRE(answering(door, "stable") == "nobody");
+}
+
+TEST_CASE("an address goes back to the claim before it when the newer one is given up",
+          "[mounts][front-door]") {
+  FrontDoor door("front-secret");
+  const auto releaseFirst = door.mount("stable", named("first"));
+  const auto releaseSecond = door.mount("stable", named("second"));
+
+  releaseSecond();
+
+  REQUIRE(answering(door, "stable") == "first");
+  releaseFirst();
+}
+
+TEST_CASE("a deployed board answers at its address, whoever claimed it last",
+          "[mounts][front-door]") {
+  // A board open in a client and the same board deployed derive the same
+  // address. Opening it must not take the address, and leaving must not take
+  // the address away.
+  FrontDoor door("front-secret");
+  const auto releaseDeployed = door.mount("stable", named("deployed"), true);
+  const auto releaseClient = door.mount("stable", named("client"));
+  REQUIRE(answering(door, "stable") == "deployed");
+
+  releaseClient();
+  REQUIRE(answering(door, "stable") == "deployed");
+
+  releaseDeployed();
+  REQUIRE(answering(door, "stable") == "nobody");
+}
+
+TEST_CASE("a client's copy answers once the deployed board lets go",
+          "[mounts][front-door]") {
+  FrontDoor door("front-secret");
+  const auto releaseClient = door.mount("stable", named("client"));
+  const auto releaseDeployed = door.mount("stable", named("deployed"), true);
+
+  releaseDeployed();
+
+  REQUIRE(answering(door, "stable") == "client");
+  releaseClient();
 }
 
 TEST_CASE("a mount is given up with its handle", "[mounts][front-door]") {

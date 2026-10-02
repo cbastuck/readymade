@@ -860,22 +860,40 @@ TEST_CASE("a runtime id two boards share is a link of each", "[links]") {
   REQUIRE(listed[0]["boardName"] != listed[1]["boardName"]);
 }
 
-TEST_CASE("being introduced again does not cost the board its runtime",
+TEST_CASE("being introduced again costs the board neither its runtime nor its connection",
           "[links]") {
-  // Deploying again replaces the link. The runtime the first one built stays,
-  // for the coordinator to pick up or rebuild over the new connection.
+  // Being introduced is the first step of a deploy that may yet fail.
   FakeCoordinator coordinator;
   auto app = makeApp();
   CoordinatorLinks links(app, createMemoryLinkStore(), fast());
   REQUIRE(links.introduce(introduction(coordinator)).empty());
   REQUIRE(coordinator.request("provision", provision())["ok"] == true);
 
-  REQUIRE(links.introduce(introduction(coordinator)).empty());
+  // Not even a ticket the coordinator would refuse costs it the link.
+  REQUIRE(links.introduce(introduction(coordinator, "hkpt_never-presented")).empty());
 
   REQUIRE(app->getRuntime("rt", "doorbell").has_value());
-  REQUIRE(eventually([&] { return coordinator.hellos().size() == 2; }));
-  REQUIRE(coordinator.hellos()[1]["runtimeExists"] == true);
+  REQUIRE(coordinator.hellos().size() == 1);
   REQUIRE(links.list().size() == 1);
+  REQUIRE(links.list()[0]["connected"] == true);
+  REQUIRE(coordinator.request("describe")["ok"] == true);
+}
+
+TEST_CASE("it refuses to be another coordinator's for a runtime it already serves",
+          "[links]") {
+  FakeCoordinator first;
+  FakeCoordinator second;
+  auto app = makeApp();
+  CoordinatorLinks links(app, createMemoryLinkStore(), fast());
+  REQUIRE(links.introduce(introduction(first)).empty());
+
+  const auto reason = links.introduce(introduction(second));
+
+  REQUIRE(reason.find("already deployed here by") != std::string::npos);
+  REQUIRE(reason.find(first.url()) != std::string::npos);
+  REQUIRE(second.hellos().empty());
+  REQUIRE(links.list().size() == 1);
+  REQUIRE(links.list()[0]["coordinatorUrl"] == first.url());
 }
 
 TEST_CASE("credentials come from the client, and missing ones are named",

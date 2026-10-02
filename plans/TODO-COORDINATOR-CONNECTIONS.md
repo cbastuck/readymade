@@ -361,19 +361,40 @@ runtime underneath its link — silently, the link staying connected.
   its own and are taken down when it leaves. With it went the window in which
   a failed registration left runtimes nobody owned.
 - **Mount addresses are unchanged**, deliberately: the derivation never held
-  the space. A board open in the playground and the same board deployed
-  derive the same address; the last claim answers, and releasing one claim no
-  longer removes another's (hkp-node and hkp-python release by identity now,
-  as hkp-rt's handle does).
-- **A deploy that fails part-way leaves a running board alone.** A ticket asked
-  for while a runtime has one is *pending*: the coordinator accepts both, and
-  the pending one takes over when the board is registered — or as soon as the
-  runtime has no server connected, which is what introducing the same server
-  again amounts to. Coordinator only; runtime servers are unchanged.
+  the space, so a board open in the playground and the same board deployed
+  derive the same address. A second review found what that cost: the
+  playground's claim replaced the deployed board's, and leaving released it
+  without giving the address back — a 404 until the runtime restarted. Each
+  registry now keeps **every claim** to an address; the deployed board's
+  answers, then the newest; releasing one leaves the rest.
+- **A deploy goes through or changes nothing.** A ticket asked for while a
+  runtime has one is *pending*: the coordinator accepts both. At registration
+  a pending ticket a server is waiting with takes over, and one nobody
+  connected with is dropped. A deploy that fails takes its tickets back
+  (`DELETE …/boards/<board>/tickets`, called by `deployBoard`), which lets a
+  waiting server go.
+  - The first version promoted a pending ticket whenever the runtime's server
+    disconnected, and runtime servers dropped their link to make a new one
+    when introduced again — so a failed deploy could still take effect, at
+    once or at the next blip. Both are gone: a server already connected for a
+    runtime **keeps its link** when introduced again (only the secrets are
+    taken), and promotion happens at registration only.
+  - One exception, kept on purpose: a pending ticket's holder arriving at a
+    runtime with **no** server connected takes over at once. It is the repair
+    path — a runtime whose server left is given one again without deploying
+    the board (`e2e/tests/cloud/deploy.spec.ts`).
+- **One coordinator per board on a server.** Link keys and spaces name the
+  board, not the coordinator, so the same board name deployed to a second
+  coordinator through one server would take the first one's runtime. The
+  server refuses the second introduction, naming the first coordinator.
+  Supporting it properly means the coordinator in the key *and* a decision
+  about the two boards' mounts, which would share addresses.
 
-Not done: a pending ticket whose deploy never completes is kept until the next
-one replaces it, and a server waiting with it stays connected. Nothing expires
-it.
+Not done: nothing expires a pending ticket whose client died before it could
+take it back; the next deploy replaces it. A link to a coordinator that is gone
+for good has no way out but `DELETE /coordinator-links/<board>/<runtimeId>`,
+which nothing in the apps calls — and until then a different coordinator is
+refused only while that link is connected.
 
 ## Still open
 

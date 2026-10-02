@@ -6,7 +6,7 @@
       "id": "remote-rt-test-cpp",
       "name": "hkp-rt",
       "type": "rest",
-      "remote": "meander-cpp",
+      "remote": "Docker",
       "state": {
         "wrapServices": false
       }

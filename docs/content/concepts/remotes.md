@@ -135,8 +135,10 @@ introduced it, and nothing else.
 |---|---|
 | Who keeps it | the runtime server, beside its mount secret (`~/.hkp/<node\|python>/coordinator-links.json`, `0600`). The coordinator keeps only a **hash** |
 | How long it lasts | until replaced or revoked. It is what a runtime server reconnects with after a restart or a dropped connection, with nobody present |
-| Replaced | by deploying again — and only once that deploy went through. A ticket asked for while the runtime has one is **pending** beside it: its holder is welcomed and waits, and the server holding the first stays the board's. Registering the board makes the pending ticket the one that counts; the one before it is forgotten and its holder gives way. A deploy that fails part-way therefore costs a running board nothing |
-| Taking over early | a pending ticket also takes over as soon as the runtime has no server connected. That is what happens when the *same* server is introduced again: it drops its old connection to make the new one |
+| Replaced | by deploying again — and only once that deploy went through. A ticket asked for while the runtime has one is **pending** beside it: its holder is welcomed and waits, and the server holding the first stays the board's and can still reconnect. Registering the board settles it: a pending ticket a server is waiting with becomes the one that counts, the one before it is forgotten and its holder gives way; a pending ticket nobody connected with is dropped |
+| Taken back | when a deploy fails. The client gives up the tickets it asked for; a server waiting with one is let go, and nothing about the running board changed |
+| The same server again | a runtime server that is already the board's keeps its connection and its ticket when it is introduced again, and takes only the secrets. The new ticket goes unused |
+| A runtime with no server | the one case a pending ticket takes over before registration: its holder arrives and nothing is connected for that runtime. Nothing is running there to protect, and it is how a runtime whose server left is given one again without deploying the board |
 | Revoked | when the board is deleted, or deployed without that runtime. The connection is closed |
 | On the holder | a ticket the coordinator no longer holds ends the link for good: the runtime server drops it **and the runtime it was for**, which was the coordinator's and is now nobody's |
 
@@ -147,6 +149,14 @@ by board as well as runtime id, and keeps the runtime it builds for it in that
 board's own space, so two boards that both call a runtime `node` do not meet
 (`concepts/cloud-boards.md`). Leaving a board is
 `DELETE <server>/coordinator-links/<board>/<runtimeId>`.
+
+A board's runtime on a server belongs to **one coordinator at a time**. A link
+does not say which coordinator it is for beyond its address, and the space a
+board's runtimes live in is named by the board alone, so the same board name
+deployed to a second coordinator through the same server would take the first
+one's runtime. The server refuses that introduction instead, naming the
+coordinator the board is already deployed by. A link whose coordinator is not
+connected is replaced.
 
 ### Required and transient
 

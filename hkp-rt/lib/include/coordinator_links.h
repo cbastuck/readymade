@@ -93,6 +93,11 @@ public:
    * introduction is made by somebody waiting to hear whether it worked, so this
    * is the one connection attempt that is not retried.
    *
+   * A runtime that is already connected to that coordinator stays as it is:
+   * the link it has is kept, the ticket handed over goes unused, and only the
+   * secrets are taken. One connected to a different coordinator is refused,
+   * and the reason names it.
+   *
    * `secrets` are the values for the references that runtime's services carry.
    * They are handed to the runtime when the coordinator builds it, are held in
    * memory only, and are not sent to the coordinator.

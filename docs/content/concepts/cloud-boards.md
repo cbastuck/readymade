@@ -60,6 +60,13 @@ The rocket in the toolbar opens `DeployDialog` (desktop) or `DeployBoardSheet`
    the coordinator took but could not fully start is said to be exactly that,
    not "running".
 
+A deploy either goes through or changes nothing. From the first ticket to the
+board being registered, a failure is **taken back**
+(`DELETE /coordinator/users/<sub>/boards/<board>/tickets`): the tickets asked
+for are given up and a runtime server left waiting with one is let go. A board
+that was already running keeps the servers and the tickets it had
+(→ `concepts/remotes.md`, *What a ticket is*).
+
 The browser gives nothing up. Both sides use the board's own runtime ids, on
 the same runtime server, and still hold different runtimes: what a coordinator
 builds for a board lives in that board's own **space** on the server, apart
@@ -85,8 +92,12 @@ clients created and leaves boards alone.
 
 Mount addresses do not change with the space: they are derived from the
 tenant, the board, the runtime and the mount's name, so a board played in the
-playground and the same board deployed derive the same address, and whichever
-claimed it last answers there.
+playground and the same board deployed derive the same address. A runtime
+server keeps every claim to an address and lets one answer: **the deployed
+board's**, whoever claimed last. Opening a deployed board in the playground
+therefore does not take its endpoint, and leaving does not take the endpoint
+away; the playground's copy answers only where no deployed board claims the
+address (`concepts/mounts.md`).
 
 `hkp-node/src/runtime.ts` (`boardSpace`), `hkp-python/src/hkp/runtime.py`
 (`board_space`), `hkp-rt/lib/include/app.h` (`RuntimeConfiguration::space`).
@@ -109,6 +120,7 @@ runtime**. It is also where a board's `remote` becomes an address
 | `refused` | its server answered `401`/`403` | yes |
 | `missing-services` | its server's registry lacks services the board uses, which are listed | yes |
 | `cannot-join` | its server cannot connect to a coordinator (the phone apps' embedded runtime, or a server that predates links) | yes |
+| `outdated` | its server can connect to a coordinator but does not keep a board's runtimes apart from a client's (it does not report `boardRuntimes`): the deployed board would stop when the client that deployed it leaves | yes |
 | `unsupported` | a kind of runtime a coordinator does not run (GraphQL) | |
 
 Every server answer comes from one `GET <server>/runtimes`, which already

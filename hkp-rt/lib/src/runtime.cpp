@@ -306,7 +306,7 @@ MountHandle Runtime::mountEndpoint(const std::string& name, MountAdopter adopter
 {
   auto server = m_app->getServer();
   return server
-    ? server->mount(m_boardName, m_runtimeId, name, std::move(adopter))
+    ? server->mount(m_boardName, m_runtimeId, name, std::move(adopter), !m_space.empty())
     : MountHandle();
 }
 

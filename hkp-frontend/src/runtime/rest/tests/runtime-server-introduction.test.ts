@@ -41,6 +41,7 @@ describe("asking a runtime server what it is", () => {
       registry: [{ serviceId: "monitor", serviceName: "Monitor" }],
       server: "python",
       coordinatorLinks: true,
+      boardRuntimes: true,
     });
 
     expect(await describeRuntimeServer("http://studio:5000", user)).toEqual({
@@ -48,6 +49,7 @@ describe("asking a runtime server what it is", () => {
       kind: "python",
       registry: [{ serviceId: "monitor", serviceName: "Monitor" }],
       coordinatorLinks: true,
+      boardRuntimes: true,
     });
     expect(fetchMock).toHaveBeenCalledWith("http://studio:5000/runtimes", {
       headers: { Authorization: "Bearer token-1" },
@@ -61,6 +63,7 @@ describe("asking a runtime server what it is", () => {
       status: "ok",
       kind: "c++",
       coordinatorLinks: false,
+      boardRuntimes: false,
     });
   });
 

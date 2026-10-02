@@ -12,7 +12,10 @@ const events: string[] = [];
 
 const registerCoordinatorBoard = vi.fn();
 const requestCoordinatorTickets = vi.fn();
+const cancelCoordinatorTickets = vi.fn();
 vi.mock("../../views/cloud/coordinatorClient", () => ({
+  cancelCoordinatorTickets: (...args: unknown[]) =>
+    cancelCoordinatorTickets(...args),
   registerCoordinatorBoard: (...args: unknown[]) =>
     registerCoordinatorBoard(...args),
   requestCoordinatorTickets: (...args: unknown[]) =>
@@ -82,6 +85,8 @@ function deployable(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   events.length = 0;
+  cancelCoordinatorTickets.mockReset();
+  cancelCoordinatorTickets.mockResolvedValue(undefined);
   registerCoordinatorBoard.mockReset();
   registerCoordinatorBoard.mockImplementation(async () => {
     events.push("register");
@@ -106,6 +111,12 @@ beforeEach(() => {
 });
 
 describe("deploying a board", () => {
+  it("takes nothing back when the deploy goes through", async () => {
+    await deployBoard(deployable(), coordinator, user);
+
+    expect(cancelCoordinatorTickets).not.toHaveBeenCalled();
+  });
+
   it("checks, introduces and only then registers the board", async () => {
     // A board is registered once every runtime server it needs has connected:
     // registered earlier, it would start in error.
@@ -228,6 +239,45 @@ describe("a deploy that cannot go ahead", () => {
       "“Node”: its runtime server could not connect to the coordinator — refused",
     );
     expect(registerCoordinatorBoard).not.toHaveBeenCalled();
+  });
+
+  it("takes the tickets back when a runtime server cannot connect, so the failed deploy changes nothing", async () => {
+    // Otherwise a server that did connect is left waiting with a ticket, and
+    // a deploy reported as failed could still take effect later.
+    introduceRuntimeServer.mockRejectedValue(new Error("refused"));
+
+    await expect(deployBoard(deployable(), coordinator, user)).rejects.toThrow(
+      /refused/,
+    );
+
+    expect(cancelCoordinatorTickets).toHaveBeenCalledWith(
+      coordinator.url,
+      user.userId,
+      user.idToken,
+      "Doorbell",
+    );
+  });
+
+  it("takes the tickets back when the coordinator does not take the board", async () => {
+    registerCoordinatorBoard.mockRejectedValue(new Error("no room"));
+
+    await expect(deployBoard(deployable(), coordinator, user)).rejects.toThrow(
+      /no room/,
+    );
+
+    expect(cancelCoordinatorTickets).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks for no ticket when the person does not release a credential", async () => {
+    // Nothing was asked of the coordinator, so there is nothing to take back.
+    secretsFor.mockRejectedValue(new Error("not released"));
+
+    await expect(deployBoard(deployable(), coordinator, user)).rejects.toThrow(
+      /not released/,
+    );
+
+    expect(requestCoordinatorTickets).not.toHaveBeenCalled();
+    expect(cancelCoordinatorTickets).not.toHaveBeenCalled();
   });
 
   it("introduces nothing when the coordinator issues no tickets", async () => {

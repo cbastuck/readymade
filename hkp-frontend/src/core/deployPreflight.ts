@@ -50,6 +50,9 @@ export type RuntimePreflightStatus =
   | "missing-services"
   /** Its server cannot connect to a coordinator. */
   | "cannot-join"
+  /** Its server is from before a deployed board's runtimes were kept apart
+   *  from a client's: this client leaving would take the board down. */
+  | "outdated"
   /** A kind of runtime a coordinator does not run. */
   | "unsupported";
 
@@ -101,6 +104,8 @@ export function describePreflight(finding: RuntimePreflight): string {
       return `${subject}: its runtime server${on} does not have ${(finding.missing ?? []).join(", ")}`;
     case "cannot-join":
       return `${subject}: its runtime server${on} cannot connect to a coordinator — a phone's built-in runtime does not, and an older server needs updating`;
+    case "outdated":
+      return `${subject}: its runtime server${on} needs updating before a board can be deployed to it — it is an older version, on which the deployed board would stop as soon as this one is closed`;
     case "unsupported":
       return `${subject} is a kind of runtime a coordinator does not run`;
   }
@@ -151,6 +156,9 @@ function assess(
   }
   if (!report.coordinatorLinks) {
     return { status: "cannot-join" };
+  }
+  if (!report.boardRuntimes) {
+    return { status: "outdated" };
   }
   // A server that reports no registry cannot be checked against one; the
   // coordinator finds out when it builds the runtime.

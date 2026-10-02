@@ -69,8 +69,11 @@ export async function registerCoordinatorBoard(
  *
  * A ticket is what a runtime server connects to the coordinator with, and all
  * it is told about the board: it speaks for one runtime of one board of this
- * person. Asking again replaces the runtime's previous ticket. The tickets are
- * shown once, here — the coordinator keeps only what recognises them — so they
+ * person. For a board that is already deployed they are pending beside the
+ * tickets its runtime servers hold, until the board is registered again; see
+ * `cancelCoordinatorTickets` for a deploy that does not get that far. The
+ * tickets are shown once, here — the coordinator keeps only what recognises
+ * them — so they
  * go straight to the runtime servers they are for and nowhere else.
  */
 export async function requestCoordinatorTickets(
@@ -95,6 +98,32 @@ export async function requestCoordinatorTickets(
   }
   const data = (await res.json()) as { tickets?: Record<string, string> };
   return data.tickets ?? {};
+}
+
+/**
+ * Takes back the tickets of a deploy that did not go through, so that it
+ * changes nothing: a runtime server left waiting with one is let go, and the
+ * board's own servers and tickets stay as they were.
+ *
+ * Never throws. It is called while reporting a failure, which must not be
+ * replaced by a second one; what it could not take back, the next deploy
+ * replaces.
+ */
+export async function cancelCoordinatorTickets(
+  coordinatorUrl: string,
+  username: string,
+  idToken: string,
+  boardName: string,
+): Promise<void> {
+  try {
+    await coordinatorFetch(
+      `${coordinatorUrl}/users/${encodeURIComponent(username)}/boards/${encodeURIComponent(boardName)}/tickets`,
+      idToken,
+      { method: "DELETE" },
+    );
+  } catch (err) {
+    console.warn("Could not take back the tickets of a failed deploy", err);
+  }
 }
 
 export type CoordinatorParticipant = {

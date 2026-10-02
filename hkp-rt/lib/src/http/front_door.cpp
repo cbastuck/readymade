@@ -465,13 +465,14 @@ void FrontDoor::stop()
   m_acceptor.reset();
 }
 
-std::function<void()> FrontDoor::mount(const std::string& mountId, MountAdopter adopter)
+std::function<void()> FrontDoor::mount(const std::string& mountId, MountAdopter adopter,
+                                       bool deployed)
 {
   std::uint64_t serial = 0;
   {
     std::lock_guard<std::mutex> lock(m_mounts->mutex);
     serial = m_mounts->nextSerial++;
-    m_mounts->claims.insert_or_assign(mountId, Mounts::Claim{serial, std::move(adopter)});
+    m_mounts->claims[mountId].push_back(Mounts::Claim{serial, deployed, std::move(adopter)});
   }
   std::weak_ptr<Mounts> held = m_mounts;
   return [held, mountId, serial]() {
@@ -482,7 +483,12 @@ std::function<void()> FrontDoor::mount(const std::string& mountId, MountAdopter 
     }
     std::lock_guard<std::mutex> lock(mounts->mutex);
     const auto it = mounts->claims.find(mountId);
-    if (it != mounts->claims.end() && it->second.serial == serial)
+    if (it == mounts->claims.end())
+    {
+      return;
+    }
+    std::erase_if(it->second, [serial](const Mounts::Claim& claim) { return claim.serial == serial; });
+    if (it->second.empty())
     {
       mounts->claims.erase(it);
     }
@@ -493,7 +499,20 @@ MountAdopter FrontDoor::find(const std::string& mountId)
 {
   std::lock_guard<std::mutex> lock(m_mounts->mutex);
   const auto it = m_mounts->claims.find(mountId);
-  return it == m_mounts->claims.end() ? MountAdopter() : it->second.adopter;
+  if (it == m_mounts->claims.end() || it->second.empty())
+  {
+    return MountAdopter();
+  }
+  // A deployed board's claim before a client's, and the newest of its kind.
+  const auto& claims = it->second;
+  for (auto claim = claims.rbegin(); claim != claims.rend(); ++claim)
+  {
+    if (claim->deployed)
+    {
+      return claim->adopter;
+    }
+  }
+  return claims.back().adopter;
 }
 
 }

@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include <boost/asio.hpp>
 
@@ -51,11 +52,21 @@ public:
                        unsigned short upstreamPort);
   void stop();
 
-  /** Hands connections for `mountId` to `adopter`, and returns what gives the
-   *  mount up again. A later claim to the same id takes it over; what the
-   *  earlier claim returned then removes nothing. The returned function may be
-   *  called after this front door is gone. */
-  std::function<void()> mount(const std::string& mountId, MountAdopter adopter);
+  /**
+   * Claims `mountId` for `adopter`, and returns what gives that claim up
+   * again; it may be called after this front door is gone.
+   *
+   * An id is derived from what the mount is called, so more than one runtime
+   * may claim the same one: a runtime rebuilt under its id claims it before
+   * the one it replaces lets go, and a board open in a client and also
+   * deployed holds two copies of each of its mounts. Every claim is kept and
+   * one answers: a deployed board's (`deployed`) before a client's, and the
+   * newest of its kind. Giving one up leaves the id with whoever still claims
+   * it, so opening a deployed board in a client neither takes its address
+   * nor, on leaving, takes the address away.
+   */
+  std::function<void()> mount(const std::string& mountId, MountAdopter adopter,
+                              bool deployed = false);
   /** The adopter for a mount, or nothing. */
   MountAdopter find(const std::string& mountId);
 
@@ -78,10 +89,12 @@ private:
     struct Claim
     {
       std::uint64_t serial;
+      bool deployed;
       MountAdopter adopter;
     };
     std::mutex mutex;
-    std::map<std::string, Claim> claims;
+    // Per id, every claim to it, oldest first.
+    std::map<std::string, std::vector<Claim>> claims;
     std::uint64_t nextSerial = 1;
   };
   // Shared with what `mount` returns, which may outlive this.

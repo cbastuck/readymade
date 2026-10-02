@@ -102,6 +102,12 @@ export type RuntimeServerReport =
       registry?: ServiceClass[];
       /** Whether it can connect to a coordinator when introduced to one. */
       coordinatorLinks: boolean;
+      /**
+       * Whether it keeps a deployed board's runtimes apart from the ones a
+       * client creates. One that does not shares them under the board's ids,
+       * and this client deleting its own would delete the deployed board's.
+       */
+      boardRuntimes: boolean;
     }
   | { status: "refused"; detail: string }
   | { status: "unreachable"; detail?: string };
@@ -137,12 +143,14 @@ export async function describeRuntimeServer(
   const body = (await res.json().catch(() => null)) as {
     registry?: ServiceClass[];
     coordinatorLinks?: unknown;
+    boardRuntimes?: unknown;
   } | null;
   return {
     status: "ok",
     kind: serverKindOf(body),
     registry: Array.isArray(body?.registry) ? body.registry : undefined,
     coordinatorLinks: body?.coordinatorLinks === true,
+    boardRuntimes: body?.boardRuntimes === true,
   };
 }
 

@@ -68,6 +68,30 @@ rotating the server's secret rotates all of them.
 
 ---
 
+## More than one claim to an address
+
+Because the address is derived from what the mount is called, more than one
+runtime can derive the same one:
+
+- a runtime rebuilt under its id claims the address before the one it replaces
+  lets go;
+- a board that is deployed and also open in the playground has two copies of
+  each of its mounts on the server — the deployed board's runtimes and the
+  playground's are kept apart (`concepts/cloud-boards.md`), their addresses
+  are not.
+
+A runtime server keeps every claim and lets one answer: a **deployed board's
+before a client's**, and the newest of its kind. Releasing a claim releases
+that claim only, and the address stays with whoever still holds one. So
+opening a deployed board does not take its endpoint, closing it again does not
+take the endpoint away, and the playground's copy answers only where no
+deployed board claims the address.
+
+The same on all three: `hkp-node/src/mounts.ts`, `hkp-python/src/hkp/mounts.py`,
+`hkp-rt/lib/src/http/front_door.cpp`.
+
+---
+
 ## What each runtime actually does
 
 "Mount" is the board-wide vocabulary. Every runtime server assigns a path on its

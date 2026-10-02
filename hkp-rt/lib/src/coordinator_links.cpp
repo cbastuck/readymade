@@ -849,9 +849,10 @@ std::string CoordinatorLinks::introduce(const LinkRecord& record,
 {
   // Validated before anything is replaced: a malformed address must not cost a
   // runtime the link it already has.
+  std::string joinUrl;
   try
   {
-    joinUrlFor(record.coordinatorUrl);
+    joinUrl = joinUrlFor(record.coordinatorUrl);
   }
   catch (const std::exception& e)
   {
@@ -859,6 +860,33 @@ std::string CoordinatorLinks::introduce(const LinkRecord& record,
   }
 
   auto self = m_impl;
+  // A runtime already connected to that coordinator stays as it is: being
+  // introduced is the first step of a deploy that may yet fail, and must not
+  // change what is running. One connected to a different coordinator is not
+  // taken from it.
+  {
+    std::shared_ptr<Link> existing;
+    {
+      std::lock_guard<std::mutex> lock(self->mutex);
+      auto it = self->links.find(linkKey(record));
+      if (it != self->links.end() && it->second->welcomed.load())
+      {
+        existing = it->second;
+      }
+    }
+    if (existing)
+    {
+      if (joinUrlFor(existing->record.coordinatorUrl) != joinUrl)
+      {
+        return "\"" + record.boardName + "\" is already deployed here by " +
+          existing->record.coordinatorUrl;
+      }
+      std::lock_guard<std::mutex> lock(existing->secretsMutex);
+      existing->secrets = std::move(secrets);
+      return "";
+    }
+  }
+
   auto link = std::make_shared<Link>();
   link->record = record;
   link->secrets = std::move(secrets);
