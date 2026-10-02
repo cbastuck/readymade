@@ -256,9 +256,9 @@ struct Server::impl
         });
 
     // Leaves a board: drops the link and the runtime it was for.
-    CROW_ROUTE(crow, "/coordinator-links/<string>")
-        .methods("DELETE"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response {
-          const bool removed = coordinatorLinks && coordinatorLinks->remove(runtimeId);
+    CROW_ROUTE(crow, "/coordinator-links/<string>/<string>")
+        .methods("DELETE"_method)([this](const crow::request &req, std::string boardName, std::string runtimeId) -> crow::response {
+          const bool removed = coordinatorLinks && coordinatorLinks->remove(boardName, runtimeId);
           return crow::response{removed ? crow::status::OK : crow::status::NOT_FOUND};
         });
 

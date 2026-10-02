@@ -599,7 +599,7 @@ TEST_CASE("the coordinator builds, configures and releases the runtime",
   REQUIRE(built["ok"] == true);
   REQUIRE(built["data"]["services"][0]["uuid"] == "echo-1");
   REQUIRE(built["data"]["missingSecrets"].empty());
-  const auto runtime = app->getRuntime("rt");
+  const auto runtime = app->getRuntime("rt", "doorbell");
   REQUIRE(runtime.has_value());
   // The board the link was introduced for, whatever the request said: a
   // ticket speaks for one board.
@@ -620,7 +620,7 @@ TEST_CASE("the coordinator builds, configures and releases the runtime",
   REQUIRE(settings["data"]["logging"] == true);
 
   REQUIRE(coordinator.request("remove")["ok"] == true);
-  REQUIRE_FALSE(app->getRuntime("rt").has_value());
+  REQUIRE_FALSE(app->getRuntime("rt", "doorbell").has_value());
   // Removing one that is not there is a success.
   REQUIRE(coordinator.request("remove")["ok"] == true);
 }
@@ -643,7 +643,7 @@ TEST_CASE("what it cannot do is answered with an error rather than silence",
     "provision", provision(json::array({json{{"serviceId", "no-such-service"},
                                              {"uuid", "x"}}})));
   REQUIRE(malformed["ok"] == false);
-  REQUIRE_FALSE(app->getRuntime("rt").has_value());
+  REQUIRE_FALSE(app->getRuntime("rt", "doorbell").has_value());
 }
 
 TEST_CASE("it is driven over the link and says what its runtime says",
@@ -741,7 +741,7 @@ TEST_CASE("it reconnects on its own and says its runtime is still there",
 
   REQUIRE(eventually([&] { return coordinator.hellos().size() == 2; }));
   REQUIRE(coordinator.hellos()[1]["runtimeExists"] == true);
-  REQUIRE(app->getRuntime("rt").has_value());
+  REQUIRE(app->getRuntime("rt", "doorbell").has_value());
 }
 
 TEST_CASE("it drops the link and the runtime when its ticket is revoked",
@@ -757,7 +757,7 @@ TEST_CASE("it drops the link and the runtime when its ticket is revoked",
   coordinator.close(4403);
 
   REQUIRE(eventually([&] { return links.list().empty(); }));
-  REQUIRE(eventually([&] { return !app->getRuntime("rt").has_value(); }));
+  REQUIRE(eventually([&] { return !app->getRuntime("rt", "doorbell").has_value(); }));
   REQUIRE(store->load().empty());
   // And it does not come back.
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -776,7 +776,7 @@ TEST_CASE("it forgets a ticket the coordinator no longer holds", "[links]") {
   coordinator.drop();
 
   REQUIRE(eventually([&] { return links.list().empty(); }));
-  REQUIRE(eventually([&] { return !app->getRuntime("rt").has_value(); }));
+  REQUIRE(eventually([&] { return !app->getRuntime("rt", "doorbell").has_value(); }));
   REQUIRE(store->load().empty());
 }
 
@@ -811,12 +811,53 @@ TEST_CASE("it leaves a board when asked, dropping the runtime", "[links]") {
   REQUIRE(links.introduce(introduction(coordinator)).empty());
   REQUIRE(coordinator.request("provision", provision())["ok"] == true);
 
-  REQUIRE(links.remove("rt"));
+  REQUIRE(links.remove("doorbell", "rt"));
 
-  REQUIRE_FALSE(app->getRuntime("rt").has_value());
+  REQUIRE_FALSE(app->getRuntime("rt", "doorbell").has_value());
   REQUIRE(links.list().empty());
   REQUIRE(store->load().empty());
-  REQUIRE_FALSE(links.remove("rt"));
+  REQUIRE_FALSE(links.remove("doorbell", "rt"));
+}
+
+TEST_CASE("a board's runtime is not the one a client creates under its id",
+          "[links]") {
+  // What opening the same board in the playground does: it creates a runtime
+  // under the id the deployed board uses, and removes it when it leaves.
+  FakeCoordinator coordinator;
+  auto app = makeApp();
+  CoordinatorLinks links(app, createMemoryLinkStore(), fast());
+  REQUIRE(links.introduce(introduction(coordinator)).empty());
+  REQUIRE(coordinator.request("provision", provision())["ok"] == true);
+  const auto deployed = app->getRuntime("rt", "doorbell")->services.size();
+
+  app->createRuntime(json{{"id", "rt"}, {"name", "Cpp"}, {"state", json::object()},
+                          {"services", json::array()}});
+  // The client sees its own runtime and never the board's.
+  REQUIRE(app->getRuntimes().size() == 1);
+  REQUIRE(app->getRuntimes()[0].services.empty());
+  app->removeRuntime("rt");
+  app->removeAllRuntimes();
+
+  REQUIRE(app->getRuntime("rt", "doorbell").has_value());
+  REQUIRE(app->getRuntime("rt", "doorbell")->services.size() == deployed);
+  REQUIRE(coordinator.request("describe")["ok"] == true);
+}
+
+TEST_CASE("a runtime id two boards share is a link of each", "[links]") {
+  // Boards ship the same handful of ids. Being introduced for a second board
+  // must not cost the first one its link.
+  FakeCoordinator coordinator;
+  auto app = makeApp();
+  CoordinatorLinks links(app, createMemoryLinkStore(), fast());
+
+  REQUIRE(links.introduce(LinkRecord{"doorbell", "rt", coordinator.url(), "hkpt_good"}).empty());
+  REQUIRE(links.introduce(LinkRecord{"garden", "rt", coordinator.url(), "hkpt_good"}).empty());
+
+  const auto listed = links.list();
+  REQUIRE(listed.size() == 2);
+  REQUIRE(listed[0]["connected"] == true);
+  REQUIRE(listed[1]["connected"] == true);
+  REQUIRE(listed[0]["boardName"] != listed[1]["boardName"]);
 }
 
 TEST_CASE("being introduced again does not cost the board its runtime",
@@ -831,7 +872,7 @@ TEST_CASE("being introduced again does not cost the board its runtime",
 
   REQUIRE(links.introduce(introduction(coordinator)).empty());
 
-  REQUIRE(app->getRuntime("rt").has_value());
+  REQUIRE(app->getRuntime("rt", "doorbell").has_value());
   REQUIRE(eventually([&] { return coordinator.hellos().size() == 2; }));
   REQUIRE(coordinator.hellos()[1]["runtimeExists"] == true);
   REQUIRE(links.list().size() == 1);

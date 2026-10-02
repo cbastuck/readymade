@@ -103,11 +103,13 @@ public:
   /** Reconnects with the tickets kept from before this process started. */
   void restore();
 
-  /** The links held, without their tickets. */
+  /** The links held, without their tickets. `running` is whether the runtime
+   *  a link is for has been built: a board's runtimes are not among those a
+   *  client lists, so this is where they are seen. */
   json list() const;
 
   /** Leaves a board: drops the link and the runtime it was for. */
-  bool remove(const std::string& runtimeId);
+  bool remove(const std::string& boardName, const std::string& runtimeId);
 
   /** Closes every connection and keeps every ticket. */
   void stop();

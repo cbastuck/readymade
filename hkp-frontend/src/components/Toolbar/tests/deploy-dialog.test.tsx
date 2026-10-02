@@ -22,7 +22,6 @@ const user = { userId: "user-1", idToken: "token" };
 const board = {
   boardName: "Doorbell",
   serializeBoard: async () => null,
-  handOverRuntimes: () => {},
 };
 
 const browser: RuntimePreflight = {

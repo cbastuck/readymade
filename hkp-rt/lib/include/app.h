@@ -29,25 +29,39 @@ public:
   App();
   ~App();
 
+  // A runtime id is unique within a space, and there are two kinds. What a
+  // client creates over the api shares one space, the empty one. What a
+  // coordinator builds for a board gets a space per board
+  // (`RuntimeConfiguration::space`), so two boards that both call a runtime
+  // `cpp` each keep their own, and neither is replaced by a client creating a
+  // runtime of that id.
+  //
+  // Everything below that names a runtime means the one in the api's space
+  // unless it is given another.
   RuntimeConfiguration createRuntime(json config);
   RuntimeConfiguration createRuntime(RuntimeConfiguration config);
 
-  std::vector<RuntimeConfiguration> getRuntimes() const;
-  std::optional<RuntimeConfiguration> getRuntime(const std::string runtimeId) const;
+  std::vector<RuntimeConfiguration> getRuntimes(const std::string& space = "") const;
+  std::optional<RuntimeConfiguration> getRuntime(const std::string runtimeId,
+                                                 const std::string& space = "") const;
 
-  bool removeRuntime(const std::string &id);
+  bool removeRuntime(const std::string &id, const std::string& space = "");
+  // Removes what is in the api's space; a board's runtimes are its
+  // coordinator's to remove.
   void removeAllRuntimes();
 
-  json configureService(const std::string &runtimeId, const std::string &instanceId, json config);
+  json configureService(const std::string &runtimeId, const std::string &instanceId, json config,
+                        const std::string& space = "");
   json getServiceState(const std::string &runtimeId, const std::string &instanceId) const;
-  json getServices(const std::string &runtimeId) const;
+  json getServices(const std::string &runtimeId, const std::string& space = "") const;
   json appendService(const std::string& runtimeId, const ServiceConfiguration& service);
   json removeService(const std::string& runtimeId, const std::string& instanceId);
   Data processRuntime(const std::string& runtimeId, const Data& data);
   // The same, as part of a run somebody else began: `context` is what a peer
   // sent (`runId`, `parentRunId`, `requestId`), and anything it leaves out is
   // filled in. See ProcessContext::fromJson.
-  Data processRuntime(const std::string& runtimeId, const Data& data, const json& context);
+  Data processRuntime(const std::string& runtimeId, const Data& data, const json& context,
+                      const std::string& space = "");
   // Runs a runtime's pipeline starting at one service; see Runtime::processAt.
   // Throws std::runtime_error when the runtime holds no such service.
   Data processServiceAt(const std::string& runtimeId,
@@ -78,7 +92,8 @@ public:
   //
   // Answers with the settings the runtime then has, and null when there is no
   // such runtime.
-  json setRuntimeState(const std::string& runtimeId, const json& state);
+  json setRuntimeState(const std::string& runtimeId, const json& state,
+                       const std::string& space = "");
 
   // Where a runtime's output also goes, beside the clients watching it.
   //
@@ -91,12 +106,15 @@ public:
     std::function<void(const Data&, MessagePurpose, const std::string& sender)> onData;
     std::function<void(const LogEntry&)> onLog;
   };
-  void setRuntimeOutputSink(const std::string& runtimeId, RuntimeOutputSink sink);
-  void clearRuntimeOutputSink(const std::string& runtimeId);
+  void setRuntimeOutputSink(const std::string& runtimeId, RuntimeOutputSink sink,
+                            const std::string& space = "");
+  void clearRuntimeOutputSink(const std::string& runtimeId, const std::string& space = "");
   // Hands a runtime's output to its sink, when it has one. For the runtime.
   void emitRuntimeData(const std::string& runtimeId, const Data& data,
-                       MessagePurpose purpose, const std::string& sender);
-  void emitRuntimeLog(const std::string& runtimeId, const LogEntry& entry);
+                       MessagePurpose purpose, const std::string& sender,
+                       const std::string& space = "");
+  void emitRuntimeLog(const std::string& runtimeId, const LogEntry& entry,
+                      const std::string& space = "");
 
   std::shared_ptr<Service> createService(const std::string& serviceId);
   std::shared_ptr<Service> createService(const std::string& serviceId, const std::string& instanceId);
@@ -124,14 +142,17 @@ public:
   bool loadPlugin(const std::string& path);
   
 private:
-  std::list<std::shared_ptr<Runtime>>::iterator findRuntime(const std::string& runtimeId);
-  std::list<std::shared_ptr<Runtime>>::const_iterator findRuntime(const std::string& runtimeId) const;
+  std::list<std::shared_ptr<Runtime>>::iterator findRuntime(const std::string& runtimeId,
+                                                            const std::string& space = "");
+  std::list<std::shared_ptr<Runtime>>::const_iterator findRuntime(const std::string& runtimeId,
+                                                                  const std::string& space = "") const;
 
   // Look a runtime up and return a shared_ptr copy under the lock. Callers then
   // operate on the copy without holding the lock: the copy keeps the Runtime
   // alive even if another thread removes it concurrently, so operations never
   // touch a half-destroyed Runtime. Returns nullptr when not found.
-  std::shared_ptr<Runtime> findRuntimeShared(const std::string& runtimeId) const;
+  std::shared_ptr<Runtime> findRuntimeShared(const std::string& runtimeId,
+                                             const std::string& space = "") const;
 
   std::shared_ptr<Runtime> appendRuntime(const RuntimeConfiguration& config);
 

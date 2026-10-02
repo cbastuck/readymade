@@ -121,7 +121,7 @@ handing a board over is an introduction, made by `deployBoard()`
 3. Each server opens a WebSocket to the coordinator's `/coordinator/join`,
    presenting the ticket, and says what it is: its kind, its registry, and
    whether that runtime is already running there.
-4. Only once they have all connected is the board handed over and registered.
+4. Only once they have all connected is the board registered.
 
 ### What a ticket is
 
@@ -135,13 +135,18 @@ introduced it, and nothing else.
 |---|---|
 | Who keeps it | the runtime server, beside its mount secret (`~/.hkp/<node\|python>/coordinator-links.json`, `0600`). The coordinator keeps only a **hash** |
 | How long it lasts | until replaced or revoked. It is what a runtime server reconnects with after a restart or a dropped connection, with nobody present |
-| Replaced | by deploying again. The old ticket stops being accepted at once; whatever is connected with it gives way when the new holder connects |
+| Replaced | by deploying again — and only once that deploy went through. A ticket asked for while the runtime has one is **pending** beside it: its holder is welcomed and waits, and the server holding the first stays the board's. Registering the board makes the pending ticket the one that counts; the one before it is forgotten and its holder gives way. A deploy that fails part-way therefore costs a running board nothing |
+| Taking over early | a pending ticket also takes over as soon as the runtime has no server connected. That is what happens when the *same* server is introduced again: it drops its old connection to make the new one |
 | Revoked | when the board is deleted, or deployed without that runtime. The connection is closed |
 | On the holder | a ticket the coordinator no longer holds ends the link for good: the runtime server drops it **and the runtime it was for**, which was the coordinator's and is now nobody's |
 
 There is **one connection per runtime of a board**. Two boards on one machine are
 two tickets and two connections, which keeps one board's traffic off another's
-socket and keeps lifecycle and failure per board.
+socket and keeps lifecycle and failure per board. A runtime server keys a link
+by board as well as runtime id, and keeps the runtime it builds for it in that
+board's own space, so two boards that both call a runtime `node` do not meet
+(`concepts/cloud-boards.md`). Leaving a board is
+`DELETE <server>/coordinator-links/<board>/<runtimeId>`.
 
 ### Required and transient
 

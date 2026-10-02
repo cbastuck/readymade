@@ -76,7 +76,7 @@ It lacks:
    plain `ws://` with none of those.
 2. The link: ticket records, the `hello`, the six operations, close codes,
    backoff.
-3. `POST` / `GET /coordinator-links`, `DELETE /coordinator-links/<runtimeId>`,
+3. `POST` / `GET /coordinator-links`, `DELETE /coordinator-links/<board>/<runtimeId>`,
    and `coordinatorLinks: true` in `GET /runtimes`.
 4. A second place for a runtime's output to go. `Runtime::sendData` and the log
    target hand everything to `Server::sendNotification`, which fans out to
@@ -290,7 +290,7 @@ Two things differ from the plan:
 coordinator speaking the protocol, including the node-written frame fixture.
 
 **B4. Routes and hosts — built.** `POST` / `GET /coordinator-links`,
-`DELETE /coordinator-links/<runtimeId>`, all behind `AuthMiddleware`;
+`DELETE /coordinator-links/<board>/<runtimeId>`, all behind `AuthMiddleware`;
 `coordinatorLinks` in `GET /runtimes` says whether the host turned it on
 (`Server::enableCoordinatorLinks`). The standalone server and the desktop app
 do, keeping tickets in `~/.hkp/cpp/coordinator-links.json`; iOS and Android do

@@ -167,18 +167,14 @@ payload — never inferred from who is connected:
 | `true` | reap when the last client socket closes | a browser — its runtimes should not outlive the tab |
 | absent / `false` | persist until an explicit `DELETE` | a coordinator, a config file, a script |
 
-Deploying is the handover, and **the order is the whole trick**
-(`hkp-frontend/src/core/deploy.ts`): `handOverRuntimes()` runs *before* the
-register request, because both sides use the board's own runtime ids. From the
-moment the coordinator provisions, those runtimes are its own — and the browser's
-unmount cleanup would otherwise `DELETE` a board that is now deployed. Pinned by
-`core/tests/deploy.test.ts` and `core/tests/deploy-handover.test.tsx`.
-
-That id collision is the mechanism, not a bug: hkp-node namespaces runtimes by
-the authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) do
-not collide between people — and *do* collide between a browser and a
-coordinator acting for the same person, which is exactly how a deploy replaces
-what the browser had.
+Deploying is an introduction followed by a registration
+(`hkp-frontend/src/core/deploy.ts`), and the browser gives nothing up for it.
+Both sides use the board's own runtime ids and still hold different runtimes:
+a runtime server keeps what a coordinator builds for a board in that board's
+own space, apart from what its clients create. The browser's runtimes stay its
+own and go when it leaves. Pinned by `core/tests/deploy.test.ts` and
+`core/tests/board-unmount.test.tsx`; the spaces are described in
+`concepts/cloud-boards.md`.
 
 ---
 
@@ -260,7 +256,7 @@ under `hkp-coordinators` (`restoreCoordinators()` / `storeCoordinators()`).
 | Owned-vs-given decision | `hkp-frontend/src/BoardContext.tsx`, `hkp-frontend/src/core/boardContextTypes.ts` (`coordinator?` prop) |
 | Handing it to services | `hkp-frontend/src/types.ts` (`AppInstance.coordinator`), `runtime/browser/BrowserRuntimeApp.ts` |
 | Pushing addresses to remote runtimes | `hkp-frontend/src/core/mountPublication.ts` |
-| Deploying (handover) | `hkp-frontend/src/core/deploy.ts`, `components/Toolbar/DeployMenu.tsx` |
+| Deploying | `hkp-frontend/src/core/deploy.ts`, `components/Toolbar/DeployMenu.tsx` |
 | Attached mode | `hkp-frontend/src/views/cloud/` — `index.tsx`, `useCoordinatorBridge.ts`, `coordinatorSnapshot.ts`, `bridgeRuntimeApi.ts` |
 | Server-side role | `hkp-node/src/coordinator/coordinator.ts` (`BoardCoordinator`) |
 | One board being coordinated | `hkp-node/src/coordinator/session.ts` (`BoardSession`) |
@@ -268,7 +264,7 @@ under `hkp-coordinators` (`restoreCoordinators()` / `storeCoordinators()`).
 | Bridge socket | `hkp-node/src/index.ts`, `hkp-node/src/coordinator/bridgeProtocol.ts` |
 | Persistence | `hkp-node/src/coordinator/boardStore.ts`, `fileBoardStore.ts` |
 | Tickets and the runtime servers connected with them | `hkp-node/src/coordinator/participants.ts`, `join.ts`, `participantProtocol.ts` |
-| Tests that pin the rules | `hkp-frontend/src/core/tests/coordinator-ownership.test.tsx`, `deploy-handover.test.tsx`; `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts` |
+| Tests that pin the rules | `hkp-frontend/src/core/tests/coordinator-ownership.test.tsx`, `board-unmount.test.tsx`; `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts` |
 
 ---
 

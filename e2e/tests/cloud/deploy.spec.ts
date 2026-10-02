@@ -143,15 +143,24 @@ test.describe("deploying a board to a coordinator", () => {
     expect(participants).toMatchObject([
       { runtimeId, connected: true, server: "node" },
     ]);
-    const runtime = await (
-      await request.get(`${NODE_URL}/runtimes/${runtimeId}`)
-    ).json();
-    expect(runtime.garbageCollected).toBe(false);
+    // The board's runtime is not the one this browser built under the same
+    // id: it is listed with the server's links, and is still there when the
+    // browser has gone and taken its own with it.
+    const boardsRuntime = async () =>
+      (await (await request.get(`${NODE_URL}/coordinator-links`)).json()).links;
+    expect(await boardsRuntime()).toMatchObject([
+      { runtimeId, boardName: board.boardName, connected: true, running: true },
+    ]);
 
     await page.close();
-    expect((await request.get(`${NODE_URL}/runtimes/${runtimeId}`)).status()).toBe(
-      200,
-    );
+    await expect
+      .poll(async () =>
+        (await request.get(`${NODE_URL}/runtimes/${runtimeId}`)).status(),
+      )
+      .toBe(404);
+    expect(await boardsRuntime()).toMatchObject([
+      { runtimeId, boardName: board.boardName, connected: true, running: true },
+    ]);
   });
 
   test("refuses to deploy while a runtime server is away, and lets it be checked again", async ({
@@ -248,7 +257,9 @@ test.describe("a deployed board whose runtime server goes away", () => {
 
     // The runtime server leaves the board. The attached browser is told —
     // nothing here reloads or asks.
-    await request.delete(`${NODE_URL}/coordinator-links/${runtimeId}`);
+    await request.delete(
+      `${NODE_URL}/coordinator-links/${board.boardName}/${runtimeId}`,
+    );
 
     await expect(
       page.getByText(`Not fully running on ${COORDINATOR.name}`),

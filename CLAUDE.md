@@ -188,7 +188,10 @@ server for it: a runtime lands only where the board or the person named.
 
 Runtime ids are unique **per user**, not globally — hkp-node namespaces runtimes by the
 authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) don't collide when
-two people load the same board against one server.
+two people load the same board against one server. What a coordinator builds for a
+deployed board is kept **per board** as well, apart from what a runtime server's clients
+create: two deployed boards may share an id, and opening a board in the playground does
+not touch its deployed runtimes (`docs/content/concepts/cloud-boards.md`).
 
 ### Service endpoints (mounts)
 

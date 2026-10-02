@@ -75,7 +75,6 @@ function deployable(overrides: Record<string, unknown> = {}) {
       events.push("serialize");
       return board;
     }),
-    handOverRuntimes: vi.fn(() => events.push("hand over")),
     availableRuntimeEngines: remotes,
     ...overrides,
   };
@@ -107,9 +106,9 @@ beforeEach(() => {
 });
 
 describe("deploying a board", () => {
-  it("checks, introduces and only then gives the runtimes up, before the coordinator builds them", async () => {
-    // Reversed at the end, a navigation landing between the two would delete
-    // the board that was just deployed — the ids are the same on both sides.
+  it("checks, introduces and only then registers the board", async () => {
+    // A board is registered once every runtime server it needs has connected:
+    // registered earlier, it would start in error.
     await deployBoard(deployable(), coordinator, user);
 
     expect(events).toEqual([
@@ -117,7 +116,6 @@ describe("deploying a board", () => {
       "preflight",
       "tickets",
       "introduce",
-      "hand over",
       "register",
     ]);
   });
@@ -188,21 +186,18 @@ describe("deploying a board", () => {
 });
 
 describe("a deploy that cannot go ahead", () => {
-  it("does not give up the runtimes when there is no board to deploy", async () => {
-    // Nothing was handed over, so this browser is still the owner and must
-    // still clean up after itself.
+  it("registers nothing when there is no board to deploy", async () => {
     const subject = deployable({ serializeBoard: async () => null });
 
     await expect(deployBoard(subject, coordinator, user)).rejects.toThrow(
       /serialize/,
     );
-    expect(subject.handOverRuntimes).not.toHaveBeenCalled();
     expect(registerCoordinatorBoard).not.toHaveBeenCalled();
   });
 
-  it("does not give up the runtimes when a runtime would not come up", async () => {
-    // Found before the handover, a problem is one the person can still fix
-    // from a board they own. Found after it, the board is half-deployed.
+  it("registers nothing when a runtime would not come up", async () => {
+    // Found before registering, a problem is one the person can still fix.
+    // Found after it, the board is half-deployed.
     const subject = deployable();
     preflightBoard.mockResolvedValue([
       { runtimeId: "node", name: "Node", status: "unreachable" },
@@ -211,12 +206,11 @@ describe("a deploy that cannot go ahead", () => {
     await expect(deployBoard(subject, coordinator, user)).rejects.toThrow(
       /“Node”: its runtime server is not running/,
     );
-    expect(subject.handOverRuntimes).not.toHaveBeenCalled();
     expect(requestCoordinatorTickets).not.toHaveBeenCalled();
     expect(registerCoordinatorBoard).not.toHaveBeenCalled();
   });
 
-  it("does not give up the runtimes when a runtime server cannot connect to the coordinator", async () => {
+  it("registers nothing when a runtime server cannot connect to the coordinator", async () => {
     const subject = deployable();
     introduceRuntimeServer.mockRejectedValue(
       new Error(
@@ -233,11 +227,10 @@ describe("a deploy that cannot go ahead", () => {
     expect(failure.message).toBe(
       "“Node”: its runtime server could not connect to the coordinator — refused",
     );
-    expect(subject.handOverRuntimes).not.toHaveBeenCalled();
     expect(registerCoordinatorBoard).not.toHaveBeenCalled();
   });
 
-  it("does not give up the runtimes when the coordinator issues no tickets", async () => {
+  it("introduces nothing when the coordinator issues no tickets", async () => {
     const subject = deployable();
     requestCoordinatorTickets.mockRejectedValue(new Error("needs updating"));
 
@@ -245,7 +238,6 @@ describe("a deploy that cannot go ahead", () => {
       /needs updating/,
     );
     expect(introduceRuntimeServer).not.toHaveBeenCalled();
-    expect(subject.handOverRuntimes).not.toHaveBeenCalled();
   });
 });
 

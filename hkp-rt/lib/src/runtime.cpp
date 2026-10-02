@@ -113,6 +113,7 @@ void Runtime::load(const RuntimeConfiguration& config)
     m_boardName = config.boardName;
   }
   m_runtimeId = config.runtimeId;
+  m_space = config.space;
   m_runtimeName = config.runtimeName;
   m_garbageCollected = config.garbageCollected;
   m_logData = config.logData;
@@ -161,6 +162,7 @@ RuntimeConfiguration Runtime::getConfiguration() const
   config.runtimeId = m_runtimeId;
   config.runtimeName = m_runtimeName; 
   config.boardName = m_boardName;
+  config.space = m_space;
   config.garbageCollected = m_garbageCollected;
   config.logData = m_logData;
   config.logging = m_logging;
@@ -268,12 +270,13 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
   // final emit during shutdown) must not dereference a freed Runtime.
   App* app = m_app.get();
   std::string runtimeId = m_runtimeId;
-  app->postCallback([app, runtimeId, data, purpose, sender]() {
+  std::string space = m_space;
+  app->postCallback([app, runtimeId, space, data, purpose, sender]() {
     try
     {
       // Before serializing for the clients watching: a sink takes the value
       // as it is, and must not lose it to a frame that cannot be built.
-      app->emitRuntimeData(runtimeId, data, purpose, sender);
+      app->emitRuntimeData(runtimeId, data, purpose, sender, space);
     }
     catch (const std::exception& e)
     {
@@ -281,8 +284,10 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
     }
     try
     {
+      // The server's sockets watch what its clients created. A board's
+      // runtime is heard through its coordinator alone.
       auto server = app->getServer();
-      if (server)
+      if (server && space.empty())
       {
         server->sendNotification(runtimeId, Message::serializeToString(data, purpose, sender));
       }
@@ -418,11 +423,12 @@ void Runtime::forwardLog(const LogEntry& entry)
   // must not dereference a freed Runtime.
   App* app = m_app.get();
   const std::string runtimeId = m_runtimeId;
+  const std::string space = m_space;
   const nlohmann::json message = {{"type", "log"}, {"entry", entry.toJson()}};
-  app->postCallback([app, runtimeId, message, entry]() {
+  app->postCallback([app, runtimeId, space, message, entry]() {
     try
     {
-      app->emitRuntimeLog(runtimeId, entry);
+      app->emitRuntimeLog(runtimeId, entry, space);
     }
     catch (const std::exception& e)
     {
@@ -430,7 +436,7 @@ void Runtime::forwardLog(const LogEntry& entry)
     }
     try
     {
-      if (auto server = app->getServer())
+      if (auto server = app->getServer(); server && space.empty())
       {
         server->sendText(runtimeId, message.dump());
       }

@@ -202,10 +202,11 @@ GET first.
    was built.
 5. ~~**Frontend**: a Deploy action in the playground that picks a coordinator;
    the cloud view becomes attach-only.~~ **Done** — `DeployMenu` in the toolbar,
-   `core/deploy.ts` (`core/tests/deploy.test.ts`). Deploying gives up the
-   runtimes *before* the coordinator provisions them, because both sides use the
-   board's ids: `BoardContext.handOverRuntimes` stops the browser from deleting
-   them on its way out (`core/tests/deploy-handover.test.tsx`).
+   `core/deploy.ts` (`core/tests/deploy.test.ts`). Deploying used to give up
+   the runtimes *before* the coordinator provisioned them, because both sides
+   shared them under the board's ids. Since 2026-10-02 a board's runtimes are
+   kept apart on the runtime server and nothing is given up; see
+   `TODO-COORDINATOR-CONNECTIONS.md`.
 6. ~~Retire the Edit / Save & Run toggle and the editing mode it needed.~~
    **Done** — the cloud view attaches only. Its "Stop" keeps the board and its
    config, and "Start" registers that config again; "New board" opens the playground rather than creating an empty record

@@ -22,20 +22,20 @@ import {
  * with it when it closes. Deploying registers the board with a coordinator,
  * which builds the same runtimes itself and keeps them running with nobody
  * watching — after which this browser attaches to the board rather than owning
- * it.
+ * it. What this browser built stays its own until it leaves: a board's
+ * runtimes are kept apart from it on a runtime server, under the same ids.
  *
  * The coordinator dials nothing. Every runtime server the board uses connects
  * *to it*, so deploying is an **introduction**, and this browser is the only
  * party that can make it: it holds the person's session with the coordinator
  * and with each of their runtime servers. It asks the coordinator for a ticket
  * per runtime and tells each runtime server to connect with it. Only once they
- * all have is the board handed over.
+ * all have is the board registered.
  */
 
 export type DeployableBoard = {
   boardName?: string;
   serializeBoard: () => Promise<BoardDescriptor | null>;
-  handOverRuntimes: () => void;
   /** The runtime servers this client keeps; what a board's `remote` is
    *  resolved against. */
   availableRuntimeEngines?: Array<RuntimeClass>;
@@ -113,8 +113,8 @@ export async function deployBoard(
   }
   const boardName = board.boardName || serialized.boardName || "Untitled board";
 
-  // Before anything is given up: past the handover below a problem can only be
-  // reported, not avoided, and this browser is still the owner until then.
+  // Before anything is asked of the coordinator: past registering a problem
+  // can only be reported, not avoided.
   const placements = await preflightBoard(
     serialized,
     board.availableRuntimeEngines ?? [],
@@ -124,7 +124,7 @@ export async function deployBoard(
     throw new DeployPreflightError(placements);
   }
 
-  // The introduction. Still before the handover, and for the same reason: a
+  // The introduction. Still before registering, and for the same reason: a
   // runtime server that cannot connect is a board that would not start.
   const participants = placements.filter(
     (placement) => placement.status === "ready" && !!placement.url,
@@ -182,13 +182,9 @@ export async function deployBoard(
     );
   }
 
-  // Before registering, not after: the coordinator builds the runtimes under
-  // the ids this board already uses, so from the first moment of the handover
-  // they are no longer this browser's to delete. Doing it afterwards would
-  // leave a window in which navigating away deletes the board that was just
-  // deployed.
-  board.handOverRuntimes();
-
+  // The runtimes this browser built stay its own, and go when it leaves: what
+  // the coordinator builds for the board is the board's, apart from them even
+  // on the same server and under the same ids.
   const info = await registerCoordinatorBoard(
     coordinator.url,
     user.userId,

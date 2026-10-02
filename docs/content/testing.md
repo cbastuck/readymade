@@ -166,7 +166,7 @@ it reads at boot, and knows the runtime server as a remote through the fake
 native host (`hostConfig.remotes`).
 
 What it covers is what no mock can: a board that names a remote is resolved,
-checked, introduced and handed over; the runtime server connects to the
+checked, introduced and registered; the runtime server connects to the
 coordinator, which is told no address; an attached browser is told when that
 server leaves and when it returns.
 

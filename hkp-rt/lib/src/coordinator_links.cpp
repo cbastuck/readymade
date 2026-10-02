@@ -35,6 +35,21 @@ namespace net = boost::asio;
 
 namespace {
 
+// A runtime id is unique within a board, so a link is known by both. NUL
+// occurs in neither.
+std::string linkKey(const LinkRecord& record)
+{
+  return record.boardName + '\0' + record.runtimeId;
+}
+
+// A board's runtimes are kept apart from what the server's clients create and
+// from every other board's; see App. A link always names its board, so a
+// board's space is never the api's, which is the empty one.
+const std::string& spaceOf(const LinkRecord& record)
+{
+  return record.boardName;
+}
+
 // Close codes a link reads to decide whether to come back. Only these two are
 // final; anything else — a network drop, a coordinator restarting — is
 // something it reconnects through.
@@ -392,7 +407,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
         self->emitLog(held, entry);
       }
     };
-    app->setRuntimeOutputSink(link->record.runtimeId, std::move(sink));
+    app->setRuntimeOutputSink(link->record.runtimeId, std::move(sink), spaceOf(link->record));
   }
 
   // ── Connecting (event loop) ────────────────────────────────────────────────
@@ -433,7 +448,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
         {"type", "hello"},
         {"server", SERVER_KIND},
         {"registry", self->app->getRegistry()},
-        {"runtimeExists", self->app->getRuntime(link->record.runtimeId).has_value()},
+        {"runtimeExists", self->app->getRuntime(link->record.runtimeId, spaceOf(link->record)).has_value()},
       }.dump());
     };
     handlers.onMessage = [weakSelf, link, generation](std::string message, bool isBinary) {
@@ -541,7 +556,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     bool current = false;
     {
       std::lock_guard<std::mutex> lock(mutex);
-      auto it = links.find(link->record.runtimeId);
+      auto it = links.find(linkKey(link->record));
       if (it != links.end() && it->second == link)
       {
         links.erase(it);
@@ -552,11 +567,13 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     {
       return;
     }
-    app->clearRuntimeOutputSink(link->record.runtimeId);
+    app->clearRuntimeOutputSink(link->record.runtimeId, spaceOf(link->record));
     auto self = shared_from_this();
-    const std::string runtimeId = link->record.runtimeId;
+    const LinkRecord record = link->record;
     // After whatever the coordinator last asked for, which may still be running.
-    net::post(work, [self, runtimeId]() { self->app->removeRuntime(runtimeId); });
+    net::post(work, [self, record]() {
+      self->app->removeRuntime(record.runtimeId, spaceOf(record));
+    });
     persist();
   }
 
@@ -646,7 +663,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
       // The result is not sent from here: a run's result leaves through the
       // runtime's output, which this link listens to, the same as a result
       // the runtime produces on its own.
-      app->processRuntime(link->record.runtimeId, data, context);
+      app->processRuntime(link->record.runtimeId, data, context, spaceOf(link->record));
     }
     catch (const std::exception& e)
     {
@@ -673,10 +690,10 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     sendText(link, response.dump(-1, ' ', false, json::error_handler_t::replace));
   }
 
-  json reportedServices(const std::string& runtimeId)
+  json reportedServices(const LinkRecord& record)
   {
     json services = json::array();
-    const json held = app->getServices(runtimeId);
+    const json held = app->getServices(record.runtimeId, spaceOf(record));
     if (held.is_array())
     {
       for (auto service : held)
@@ -695,6 +712,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
   json serve(const std::shared_ptr<Link>& link, const json& request)
   {
     const std::string runtimeId = link->record.runtimeId;
+    const std::string& space = spaceOf(link->record);
     const auto op = request.value("op", std::string());
 
     if (op == "provision")
@@ -716,6 +734,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
       // The board this link was introduced for, whatever the request says: a
       // ticket speaks for one board.
       config->boardName = link->record.boardName;
+      config->space = space;
       // The coordinator's until it says otherwise: a deployed board keeps
       // running with nobody watching.
       config->garbageCollected = false;
@@ -742,23 +761,23 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
       }
       return json{
         {"registry", app->getRegistry()},
-        {"services", reportedServices(runtimeId)},
+        {"services", reportedServices(link->record)},
         {"missingSecrets", missing},
       };
     }
 
     if (op == "describe")
     {
-      if (!app->getRuntime(runtimeId))
+      if (!app->getRuntime(runtimeId, space))
       {
         throw std::runtime_error("the runtime is not running");
       }
-      return json{{"services", reportedServices(runtimeId)}};
+      return json{{"services", reportedServices(link->record)}};
     }
 
     if (op == "configureService")
     {
-      if (!app->getRuntime(runtimeId))
+      if (!app->getRuntime(runtimeId, space))
       {
         throw std::runtime_error("the runtime is not running");
       }
@@ -768,7 +787,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
       {
         throw std::runtime_error("a service is configured with an object");
       }
-      const json state = app->configureService(runtimeId, serviceUuid, config);
+      const json state = app->configureService(runtimeId, serviceUuid, config, space);
       if (state.is_boolean() && !state.get<bool>())
       {
         throw std::runtime_error("no service \"" + serviceUuid + "\"");
@@ -779,7 +798,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     if (op == "setState")
     {
       const json settings = app->setRuntimeState(
-        runtimeId, request.contains("state") ? request["state"] : json::object());
+        runtimeId, request.contains("state") ? request["state"] : json::object(), space);
       if (settings.is_null())
       {
         throw std::runtime_error("the runtime is not running");
@@ -790,7 +809,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     if (op == "remove")
     {
       // Removing one that is not there is a success: gone is what was asked.
-      app->removeRuntime(runtimeId);
+      app->removeRuntime(runtimeId, space);
       return json::object();
     }
 
@@ -852,12 +871,12 @@ std::string CoordinatorLinks::introduce(const LinkRecord& record,
     std::shared_ptr<Link> previous;
     {
       std::lock_guard<std::mutex> lock(self->mutex);
-      auto it = self->links.find(link->record.runtimeId);
+      auto it = self->links.find(linkKey(link->record));
       if (it != self->links.end())
       {
         previous = it->second;
       }
-      self->links[link->record.runtimeId] = link;
+      self->links[linkKey(link->record)] = link;
     }
     // The runtime the earlier link was for stays: the coordinator decides,
     // over the new connection, whether to pick it up or build it again.
@@ -882,7 +901,7 @@ std::string CoordinatorLinks::introduce(const LinkRecord& record,
       bool current = false;
       {
         std::lock_guard<std::mutex> lock(self->mutex);
-        auto it = self->links.find(link->record.runtimeId);
+        auto it = self->links.find(linkKey(link->record));
         if (it != self->links.end() && it->second == link)
         {
           self->links.erase(it);
@@ -891,7 +910,7 @@ std::string CoordinatorLinks::introduce(const LinkRecord& record,
       }
       if (current)
       {
-        self->app->clearRuntimeOutputSink(link->record.runtimeId);
+        self->app->clearRuntimeOutputSink(link->record.runtimeId, spaceOf(link->record));
       }
     });
   }
@@ -910,11 +929,11 @@ void CoordinatorLinks::restore()
       link->record = record;
       {
         std::lock_guard<std::mutex> lock(self->mutex);
-        if (self->links.count(record.runtimeId) > 0)
+        if (self->links.count(linkKey(record)) > 0)
         {
           continue;
         }
-        self->links[record.runtimeId] = link;
+        self->links[linkKey(record)] = link;
       }
       self->listenTo(link);
       self->open(link);
@@ -933,18 +952,19 @@ json CoordinatorLinks::list() const
       {"runtimeId", link->record.runtimeId},
       {"coordinatorUrl", link->record.coordinatorUrl},
       {"connected", link->welcomed.load()},
+      {"running", m_impl->app->getRuntime(link->record.runtimeId, spaceOf(link->record)).has_value()},
     });
   }
   return out;
 }
 
-bool CoordinatorLinks::remove(const std::string& runtimeId)
+bool CoordinatorLinks::remove(const std::string& boardName, const std::string& runtimeId)
 {
   auto self = m_impl;
   std::shared_ptr<Link> link;
   {
     std::lock_guard<std::mutex> lock(self->mutex);
-    auto it = self->links.find(runtimeId);
+    auto it = self->links.find(linkKey(LinkRecord{boardName, runtimeId}));
     if (it == self->links.end())
     {
       return false;
@@ -953,8 +973,8 @@ bool CoordinatorLinks::remove(const std::string& runtimeId)
     self->links.erase(it);
   }
   self->onLoop([self, link]() { self->dispose(link); });
-  self->app->clearRuntimeOutputSink(runtimeId);
-  self->app->removeRuntime(runtimeId);
+  self->app->clearRuntimeOutputSink(runtimeId, spaceOf(link->record));
+  self->app->removeRuntime(runtimeId, spaceOf(link->record));
   self->persist();
   return true;
 }
@@ -983,7 +1003,7 @@ void CoordinatorLinks::stop()
   });
   for (const auto& link : held)
   {
-    self->app->clearRuntimeOutputSink(link->record.runtimeId);
+    self->app->clearRuntimeOutputSink(link->record.runtimeId, spaceOf(link->record));
   }
   self->workGuard.reset();
   self->work.stop();

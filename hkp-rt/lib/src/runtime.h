@@ -138,6 +138,8 @@ public:
   std::shared_ptr<Service> resolveService(const std::string& address) const;
 
   inline const std::string &getId() const { return m_runtimeId; }
+  // Which of the server's runtimes the id is unique among; see App.
+  inline const std::string &getSpace() const { return m_space; }
   /** See RuntimeConfiguration::garbageCollected. False means persist. */
   inline bool isGarbageCollected() const { return m_garbageCollected; }
   inline const std::string &getName() const { return m_runtimeName; }
@@ -162,6 +164,7 @@ private:
 private:
   OwnsMe<App> m_app;
   std::string m_runtimeId;
+  std::string m_space;
   bool m_garbageCollected = false;
   std::string m_runtimeName;
   std::string m_boardName;

@@ -38,7 +38,7 @@ it moves to a server.
 ## Deploying, in order
 
 The order is the whole trick, on both sides. Everything that can fail is done
-while the browser still owns the board.
+before the coordinator is asked to take the board.
 
 > **Warning — unit assets are not deployed:** Deployment carries only the
 > top-level board's assets. A runtime contributed by a unit receives none of
@@ -56,21 +56,44 @@ The rocket in the toolbar opens `DeployDialog` (desktop) or `DeployBoardSheet`
 3. makes the **introduction**: asks the coordinator for a ticket per remote
    runtime and tells each runtime's server to connect to the coordinator with
    it — and stops here if one cannot,
-4. calls `handOverRuntimes()` — **before** registering,
-5. `POST /coordinator/users/<sub>/boards`, and reports what came back: a board
+4. `POST /coordinator/users/<sub>/boards`, and reports what came back: a board
    the coordinator took but could not fully start is said to be exactly that,
    not "running".
 
-Step 4 comes before step 5 because both sides use the board's own runtime ids.
-From the moment the coordinator builds them, those runtimes are its own, and
-this browser's unmount cleanup would otherwise `DELETE` a board that is now
-deployed. Reversed, a navigation landing in between deletes what was just
-deployed. Pinned by `core/tests/deploy.test.ts` and
-`core/tests/deploy-handover.test.tsx`.
+The browser gives nothing up. Both sides use the board's own runtime ids, on
+the same runtime server, and still hold different runtimes: what a coordinator
+builds for a board lives in that board's own **space** on the server, apart
+from what the server's clients create (below). The runtimes this browser built
+stay its own and go when it leaves, as they always did. Pinned by
+`core/tests/deploy.test.ts` and `core/tests/board-unmount.test.tsx`.
+
+### A board's runtimes on a runtime server
+
+A runtime id is unique within a space, and a runtime server keeps two kinds:
+
+| Space | Holds | Reached by |
+|---|---|---|
+| the tenant's own | what its clients create with `POST /runtimes` | the REST api and the runtime's socket |
+| one per deployed board | what a coordinator builds over a link, keyed by tenant, board and runtime id | that link, and nothing else |
+
+So two deployed boards that both call a runtime `node` each have their own on
+one server, and opening either board in the playground — which creates a
+runtime under that same id, and deletes it on leaving — touches neither. A
+board's runtimes are not in `GET /runtimes`; `GET /coordinator-links` lists
+them, each with whether it is `running`. `DELETE /runtimes` removes what
+clients created and leaves boards alone.
+
+Mount addresses do not change with the space: they are derived from the
+tenant, the board, the runtime and the mount's name, so a board played in the
+playground and the same board deployed derive the same address, and whichever
+claimed it last answers there.
+
+`hkp-node/src/runtime.ts` (`boardSpace`), `hkp-python/src/hkp/runtime.py`
+(`board_space`), `hkp-rt/lib/include/app.h` (`RuntimeConfiguration::space`).
 
 ### Preflight — `hkp-frontend/src/core/deployPreflight.ts`
 
-Past the handover a problem can only be reported, not avoided. So everything
+Past registering a problem can only be reported, not avoided. So everything
 knowable beforehand is asked beforehand, from the browser — the one party that
 knows this person's runtime servers and can reach them — and answered **per
 runtime**. It is also where a board's `remote` becomes an address
@@ -91,7 +114,7 @@ runtime**. It is also where a board's `remote` becomes an address
 Every server answer comes from one `GET <server>/runtimes`, which already
 returns the server's kind, registry and whether it can join. Only a runtime's
 own pipeline is compared; what a service nests in its state is not walked. The
-desktop dialog shows each finding before anything is handed over, names the
+desktop dialog shows each finding before anything is deployed, names the
 remote a name resolved to, and offers **Check again**; the
 mobile sheet reports what stopped a deploy as a toast.
 
@@ -388,10 +411,11 @@ registers only when asked.
 - **Ownership before anything.** Ask who built the runtime you are about to
   change or delete. Runtime ids are the board's, so "it has the right id" is not
   evidence that it is yours.
-- **Ids are per user, not global.** The stable ids boards ship (`node`,
-  `chat-node`) do not collide between people — and *do* collide between a
-  browser and a coordinator acting for the same person. That collision is the
-  mechanism, not a bug.
+- **Ids are per user for clients, per board for coordinators.** The stable ids
+  boards ship (`node`, `chat-node`) do not collide between people, between two
+  deployed boards of one person, or between a deployed board and the same
+  board open in a browser. They *do* collide between two browsers of one
+  person playing boards that share an id against one server.
 - **The coordinator dials nothing.** If a change needs the coordinator to reach
   a runtime server, it needs an operation on the connection that server opened
   (`participantProtocol.ts`) — implemented on every runtime server that joins.

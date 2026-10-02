@@ -283,10 +283,9 @@ nobody present. What changes is **who owns the box**.
   coordinator was about to dial. The allowlist, the private-range policy and the
   noted DNS-rebinding window went with it.
 - `HKP_RUNTIME_URL_ALLOWLIST` and `HKP_ALLOW_PRIVATE_RUNTIMES`.
-- The ordering trick in `handOverRuntimes()` was re-examined and **kept**: the
-  browser and the coordinator still build the same runtime ids on the same
-  server, so the browser still has to give them up before the coordinator
-  builds them. The introduction happens before it, not instead of it.
+- ~~The ordering trick in `handOverRuntimes()` was re-examined and **kept**.~~
+  **Retired 2026-10-02**, with the reason for it: see *A board's runtimes are
+  the board's* below.
 
 ---
 
@@ -339,6 +338,42 @@ to revisit; none was obvious enough to go without saying.
   runtimes.
 
 ---
+
+## A board's runtimes are the board's — 2026-10-02
+
+Found in review, after the first build: runtime servers keyed a link, and the
+runtime it built, by tenant and runtime id alone. Boards ship the same handful
+of ids, so deploying a second board to a server took the first one's runtime,
+and opening any board with that id in the playground replaced a deployed
+runtime underneath its link — silently, the link staying connected.
+
+- **A runtime built for a coordinator lives in its board's own space** on the
+  runtime server: keyed by tenant, board and runtime id, apart from what the
+  server's clients create over the api and from every other board. Links are
+  keyed the same way. All three servers (`boardSpace`, `board_space`,
+  `RuntimeConfiguration::space`).
+- **The api does not reach a board's runtimes.** They are not in
+  `GET /runtimes`, and `DELETE /runtimes` leaves them. `GET /coordinator-links`
+  lists them, with `running`. Leaving a board is
+  `DELETE /coordinator-links/<board>/<runtimeId>`.
+- **The handover is gone.** The browser and the coordinator no longer share
+  runtimes, so `handOverRuntimes()` was removed: the browser's runtimes stay
+  its own and are taken down when it leaves. With it went the window in which
+  a failed registration left runtimes nobody owned.
+- **Mount addresses are unchanged**, deliberately: the derivation never held
+  the space. A board open in the playground and the same board deployed
+  derive the same address; the last claim answers, and releasing one claim no
+  longer removes another's (hkp-node and hkp-python release by identity now,
+  as hkp-rt's handle does).
+- **A deploy that fails part-way leaves a running board alone.** A ticket asked
+  for while a runtime has one is *pending*: the coordinator accepts both, and
+  the pending one takes over when the board is registered — or as soon as the
+  runtime has no server connected, which is what introducing the same server
+  again amounts to. Coordinator only; runtime servers are unchanged.
+
+Not done: a pending ticket whose deploy never completes is kept until the next
+one replaces it, and a server waiting with it stays connected. Nothing expires
+it.
 
 ## Still open
 

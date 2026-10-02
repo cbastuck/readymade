@@ -13,7 +13,6 @@ const user = { userId: "user-1", idToken: "token", username: "someone" };
 const boardContext = {
   boardName: "Voice Notes",
   serializeBoard: async () => ({ boardName: "Voice Notes" }),
-  handOverRuntimes: vi.fn(),
 };
 
 vi.mock("../BoardContext", () => ({

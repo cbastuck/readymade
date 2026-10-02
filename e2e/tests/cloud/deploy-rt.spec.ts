@@ -128,11 +128,14 @@ test("hands over a board whose runtime is on the C++ runtime server, and runs it
     await request.get(`${RT_URL}/coordinator-links`)
   ).json();
   expect(links).toMatchObject([
-    { runtimeId, boardName: board.boardName, connected: true },
+    { runtimeId, boardName: board.boardName, connected: true, running: true },
   ]);
 
+  // The board's runtime stays when this browser goes.
   await page.close();
-  expect((await request.get(`${RT_URL}/runtimes/${runtimeId}`)).status()).toBe(
-    200,
-  );
+  expect(
+    (await (await request.get(`${RT_URL}/coordinator-links`)).json()).links,
+  ).toMatchObject([
+    { runtimeId, boardName: board.boardName, connected: true, running: true },
+  ]);
 });
