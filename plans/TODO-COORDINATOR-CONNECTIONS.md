@@ -342,7 +342,8 @@ to revisit; none was obvious enough to go without saying.
 
 ## Still open
 
-- **hkp-rt has no coordinator link.** It needs an outbound WebSocket client
+- **hkp-rt has no coordinator link** — planned in
+  `TODO-HKP-RT-COORDINATOR-LINK.md`. It needs an outbound WebSocket client
   speaking `participantProtocol.ts`, ticket persistence, and the six operations.
   Until then the preflight stops a deploy that places a runtime on it
   (`cannot-join`). The retired dialling path was the only way hkp-rt ever took
@@ -382,4 +383,5 @@ to revisit; none was obvious enough to go without saying.
 | 5. Secrets | consent on the resolved address; values with the introduction; missing ones named per runtime |
 | 6. Docs | `docs/content/concepts/remotes.md`, `cloud-boards.md`, `coordinator.md`, `board-json.md`, `vocabulary.md`, `testing.md` |
 
-The manual checks the automated suites do not cover are in `TODO-TEST.md`.
+The manual checks for what is still to come are in
+`TODO-HKP-RT-COORDINATOR-LINK.md`.

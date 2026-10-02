@@ -102,8 +102,7 @@ handed the platform rather than only on what the UI shows.
 **The blind spot is the boundary itself.** Rename a `saucer.exposed` function or
 change an `hkp://` route and this suite stays green while the shipped app
 breaks. The fake is written against `BackendAdapter`, so TypeScript catches a
-changed *shape* — a changed *route* needs a manual pass, in the style of the
-per-change checklists kept in `plans/TODO-TEST.md`.
+changed *shape* — a changed *route* needs a manual pass, done by hand.
 
 ### The shipped-board sweep
 
@@ -219,7 +218,6 @@ trusting it:
 | A board across hkp-node and hkp-python | `hkp-node/tests/coordinator-python.test.ts` |
 | What CI covers | `.github/workflows/run-all-tests.yml` |
 | Why CI covers only part of it | [Repository](./repository.md) |
-| Manual checklists for a change | `plans/TODO-TEST.md` |
 
 ---
 

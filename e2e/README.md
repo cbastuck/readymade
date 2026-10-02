@@ -96,8 +96,7 @@ It covers everything above the platform boundary, given a conforming host. It
 does not cover the boundary itself: rename a `saucer.exposed` function or
 change an `hkp://` route and this suite stays green while the shipped app
 breaks. The fake is written against `BackendAdapter`, so TypeScript catches a
-changed shape — but a changed *route* needs the per-host smoke checklist, in
-the style of `plans/TODO-TEST.md`.
+changed shape — but a changed *route* needs a per-host smoke check by hand.
 
 The fake is also useful outside the tests: it runs the desktop UI in a plain
 browser with a working board library, no saucer build needed.
