@@ -405,6 +405,9 @@ type CloudBoardsProps = {
   /** Top-left logo. Hosts pass a control that navigates home; without one the
    *  Toolbar renders a decorative mark that looks clickable but is not. */
   logoSlot?: ReactNode;
+  /** The app menu. Hosts with a menu of their own pass it; without one the
+   *  Toolbar renders the browser's, whose settings know nothing of the host. */
+  menuSlot?: ReactNode;
 };
 
 export default function CloudBoards({
@@ -412,6 +415,7 @@ export default function CloudBoards({
   initialBoardName,
   onNavigate,
   logoSlot,
+  menuSlot,
 }: CloudBoardsProps = {}) {
   const appContext = useAppContext();
   const user = appContext?.user ?? null;
@@ -991,7 +995,11 @@ export default function CloudBoards({
         className="w-full h-full flex flex-col"
         style={{ background: "var(--bg-app, #fafafa)" }}
       >
-        <Toolbar logoSlot={logoSlot} statusSlot={statusSlot}>
+        <Toolbar
+          logoSlot={logoSlot}
+          menuSlot={menuSlot}
+          statusSlot={statusSlot}
+        >
           {showCoordinatorInToolbar && (
             <CoordinatorsMenu
               coordinators={coordinators}

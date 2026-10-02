@@ -12,6 +12,7 @@ import Remotes from "hkp-frontend/src/views/remotes";
 import { useBackendRemotes } from "./useBackendRemotes";
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 import StartPage from "./StartPage";
+import MeanderAppMenu from "./MeanderAppMenu";
 import { getBackend } from "./backend";
 import LoadIndicator from "./LoadIndicator";
 import { VaultProvider } from "hkp-frontend/src/VaultContext";
@@ -112,9 +113,11 @@ function CloudLogo({ onClick }: { onClick: () => void }) {
 function RemoteRuntimeView({
   path,
   logoSlot,
+  menuSlot,
 }: {
   path: string;
   logoSlot: ReactNode;
+  menuSlot: ReactNode;
 }) {
   const remotes = useBackendRemotes();
   const [remoteName, runtimeId] = path
@@ -129,6 +132,7 @@ function RemoteRuntimeView({
       remoteName={remoteName}
       runtimeId={runtimeId}
       logoSlot={logoSlot}
+      menuSlot={menuSlot}
     />
   );
 }
@@ -217,14 +221,21 @@ function MeanderShell() {
 
   let content;
   if (location.pathname.startsWith("/cloud-boards")) {
-    // Same logo affordance as the playground: without a slot the Toolbar
-    // renders a mark that looks clickable but goes nowhere.
-    content = <CloudBoards logoSlot={<CloudLogo onClick={onShowStartPage} />} />;
+    // Same logo and menu as the playground: without the slots the Toolbar
+    // renders a mark that looks clickable but goes nowhere, and the browser's
+    // menu, whose settings lack the app's tabs.
+    content = (
+      <CloudBoards
+        logoSlot={<CloudLogo onClick={onShowStartPage} />}
+        menuSlot={<MeanderAppMenu />}
+      />
+    );
   } else if (location.pathname.startsWith("/remotes")) {
     content = (
       <RemoteRuntimeView
         path={location.pathname}
         logoSlot={<CloudLogo onClick={onShowStartPage} />}
+        menuSlot={<MeanderAppMenu />}
       />
     );
   } else if (view.type === "loading") {
