@@ -1,0 +1,8 @@
+# Everything is left out but what the image is built from. The repository holds
+# gigabytes a build has no use for (build trees, node_modules, vcpkg's caches).
+*
+!3rdparty
+3rdparty/vcpkg
+!hkp-rt/CMakeLists.txt
+!hkp-rt/lib
+!hkp-rt/exe

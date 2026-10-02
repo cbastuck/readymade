@@ -8,6 +8,7 @@
 #include "./http_listener.h"
 #include "./http_session.h"
 #include "./request_decode.h"
+#include "mount.h"
 
 #include <algorithm>
 #include <cctype>
@@ -216,6 +217,10 @@ json HttpServer::configure(Data data)
     {
       m_impl->setPort(port);
     }
+    if (buf->contains("mountName") && (*buf)["mountName"].is_string())
+    {
+      m_mountName = (*buf)["mountName"].get<std::string>();
+    }
 
     if (updateIfNeeded(m_mode, (*buf)["mode"]))
     {
@@ -237,7 +242,9 @@ json HttpServer::configure(Data data)
 json HttpServer::getState() const
 {
   return Service::mergeStateWith(json{
-    {"port", m_impl->port()}
+    {"port", m_impl->port()},
+    {MOUNT_FIELD, m_url},
+    {"mountName", m_mountName}
   });
 }
 
@@ -279,6 +286,27 @@ bool HttpServer::start()
     return false;
   }
 
+  // A path on the runtime server's own port where it serves mounts; a port of
+  // this service's own where it does not. See mounts.h.
+  m_impl->startMounted();
+  // Held weakly: a mount outlives the service that claimed it until another
+  // claims the same name, and must not keep that service's endpoint alive.
+  std::weak_ptr<HttpServerImpl> held = m_impl;
+  const auto mounted = mountEndpoint(mountName(), [held](MountedConnection connection) {
+    if (auto impl = held.lock())
+    {
+      impl->adopt(std::move(connection));
+    }
+  });
+  if (!mounted.empty())
+  {
+    m_url = mounted;
+    std::cout << "HttpServer::start() mounted at " << m_url << std::endl;
+    sendNotification(json{{MOUNT_FIELD, m_url}});
+    return true;
+  }
+  m_impl->stop();
+
   auto port = m_impl->start();
   if (port == 0)
   {
@@ -298,6 +326,11 @@ bool HttpServer::stop()
     std::cout << "HttpServer::stop() HTTP server is not running" << std::endl;
     return false;
   }
+  if (m_impl->mounted())
+  {
+    unmountEndpoint(mountName());
+  }
+  m_url.clear();
   return m_impl->stop();
 }
 

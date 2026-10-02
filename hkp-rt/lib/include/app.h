@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <list>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -11,6 +13,8 @@
 #include "./registry.h"
 #include <types/types.h>
 #include <types/validation.h>
+#include <types/message.h>
+#include <log_entry.h>
 
 namespace hkp 
 {
@@ -40,6 +44,10 @@ public:
   json appendService(const std::string& runtimeId, const ServiceConfiguration& service);
   json removeService(const std::string& runtimeId, const std::string& instanceId);
   Data processRuntime(const std::string& runtimeId, const Data& data);
+  // The same, as part of a run somebody else began: `context` is what a peer
+  // sent (`runId`, `parentRunId`, `requestId`), and anything it leaves out is
+  // filled in. See ProcessContext::fromJson.
+  Data processRuntime(const std::string& runtimeId, const Data& data, const json& context);
   // Runs a runtime's pipeline starting at one service; see Runtime::processAt.
   // Throws std::runtime_error when the runtime holds no such service.
   Data processServiceAt(const std::string& runtimeId,
@@ -65,6 +73,31 @@ public:
   // content. Null when there is no such runtime.
   json checkRuntimeAsset(const std::string& runtimeId, const std::string& assetId);
 
+  // Changes what a running runtime records — `logging`, `logLevel`, `logData`
+  // — without rebuilding it. A field left out is left as it was.
+  //
+  // Answers with the settings the runtime then has, and null when there is no
+  // such runtime.
+  json setRuntimeState(const std::string& runtimeId, const json& state);
+
+  // Where a runtime's output also goes, beside the clients watching it.
+  //
+  // One sink per runtime, replaced by the next and removed by an empty one. It
+  // is called on the event loop, with what the runtime hands to the next one
+  // (`onData`, under a result purpose), what its services say (`onData`, as a
+  // notification from `sender`) and what it records (`onLog`).
+  struct RuntimeOutputSink
+  {
+    std::function<void(const Data&, MessagePurpose, const std::string& sender)> onData;
+    std::function<void(const LogEntry&)> onLog;
+  };
+  void setRuntimeOutputSink(const std::string& runtimeId, RuntimeOutputSink sink);
+  void clearRuntimeOutputSink(const std::string& runtimeId);
+  // Hands a runtime's output to its sink, when it has one. For the runtime.
+  void emitRuntimeData(const std::string& runtimeId, const Data& data,
+                       MessagePurpose purpose, const std::string& sender);
+  void emitRuntimeLog(const std::string& runtimeId, const LogEntry& entry);
+
   std::shared_ptr<Service> createService(const std::string& serviceId);
   std::shared_ptr<Service> createService(const std::string& serviceId, const std::string& instanceId);
   const ServiceClass* findServiceClass(const std::string& serviceId) const;
@@ -77,6 +110,9 @@ public:
   void dispatchRuntimeWsMessage(const std::string& runtimeId, const std::string& message, bool isBinary);
 
   void postCallback(std::function<void()> callback);
+  // The loop `postCallback` posts to, for something that keeps a connection
+  // of its own on it.
+  boost::asio::io_context& ioContext() { return m_io; }
 
   void setServer(Server* server) { m_server = server; }
   Server* getServer() const { return m_server; }
@@ -112,6 +148,8 @@ private:
   boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
   std::thread m_eventThread;
   Server* m_server = nullptr;
+  mutable std::mutex m_sinksMutex;
+  std::map<std::string, RuntimeOutputSink> m_sinks;
 };
 
 }

@@ -9,6 +9,7 @@
 
 #include <log_entry.h>
 
+#include <mounts.h>
 #include <secrets.h>
 #include <assets.h>
 #include <slot_store.h>
@@ -113,6 +114,20 @@ public:
   // and otherwise with its parent's — so a slot named inside a sub-pipeline
   // reaches the nearest owner that declared one.
   virtual SlotStore& slots() = 0;
+
+  // Gives a service a path on the runtime server's own port, and returns the
+  // address clients are pointed at — or "" when the server this runtime runs
+  // in serves no mounts, in which case a service that needs an endpoint binds
+  // a port of its own. A connection to that path is handed to `adopter`.
+  //
+  // `name` is what the mount is called: with the board and the runtime it is
+  // what the address is derived from, so the same name gets the same address
+  // after a restart. A nested pipeline's mounts belong to the runtime around it.
+  virtual std::string mountEndpoint(const std::string& name, MountAdopter adopter)
+  {
+    return "";
+  }
+  virtual void unmountEndpoint(const std::string& name) {}
 
   // Instantiate a new SubRuntime from a JSON array of service-config objects.
   // ownerInParent is the service in this host that owns the new SubRuntime.

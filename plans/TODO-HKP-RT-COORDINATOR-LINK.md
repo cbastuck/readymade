@@ -1,7 +1,9 @@
 # Closing cloud boards: binary data, and hkp-rt as a participant
 
-Status: **planned 2026-10-02, nothing built.** To be done on the
-`coordinator_connections` branch, as one package that is tested once.
+Status: **built 2026-10-02**, on the `coordinator_connections` branch, except
+for what is listed under *Left to do*: the Docker image builds but has not been
+run, the manual pass has not been made, and three things are deliberately not
+done.
 
 Two gaps keep cloud boards from being finished:
 
@@ -37,7 +39,7 @@ nobody present.
 
 ---
 
-## Where things stand
+## Where things stood, before
 
 ### Binary data, per transport
 
@@ -121,7 +123,8 @@ Dockerfile for any runtime server in the repo.
     frame over it is dropped with a log entry naming the runtime and the size;
     the connection stays up.
 - **hkp-rt endpoints mount on the server's own port**, as on hkp-node and
-  hkp-python, and stop binding ports of their own. See C5.
+  hkp-python. Built for the standalone server; the apps are an open decision.
+  See C5 and *Left to do*.
 - **The image carries neither embedded llama.cpp nor embedded speech**
   (`HKP_LLAMA_ENABLED`, `HKP_SPEECH_ENABLED` both off). They would multiply the
   image size, and inference is expected to run as a sidecar anyway — a llama
@@ -134,75 +137,99 @@ Dockerfile for any runtime server in the repo.
 
 ## Part A — binary data across a deployed board
 
-### The shape
+**Built 2026-10-02** for the coordinator, hkp-node, hkp-python and the browser
+bridge. How it works is in `docs/content/concepts/cloud-boards.md` ("Bytes
+between runtimes"). What is left of it is hkp-rt's end, which Part B builds.
+
+### The shape, as built
 
 A binary WebSocket frame, on the link and on the bridge alike:
 
 ```
-[ 4 bytes: header length, big-endian ][ header: UTF-8 JSON ][ payload: YAS ]
+[ 4 bytes: header length, big-endian ][ header: UTF-8 JSON ][ payload ]
 ```
 
-The header is the message that would have been sent as text, without its data:
-`{ "type": "result" }`, `{ "type": "processRuntime", "context": … }`,
-`{ "type": "processRuntime", "runtimeId": …, "requestId": … }` on the bridge.
-The payload is the YAS encoding every codec already produces for a result.
+The header is the message that would have been sent as text, without its value
+and with a `binary` field saying what the payload is:
 
-**The coordinator reads the header and forwards the payload untouched.** It
-needs no YAS codec, cannot corrupt what it does not parse, and adding a data
-type later changes the runtimes and not the coordinator. JSON data keeps
-travelling as text frames exactly as today, so nothing that works now changes.
+| `binary.kind` | Payload | Also in the header |
+|---|---|---|
+| `bytes` | the value | — |
+| `floatRingBuffer` | little-endian float32 samples | `id`, `ts` |
+| `mixed` | the bytes of an object's `binary` field | `json`: the rest of the object |
 
-Binary is for `result` and `processRuntime` only. A notification or a log entry
-that carries bytes keeps the placeholder it has today: those are for a person
-to read, and nothing downstream consumes them.
+The coordinator reads the header and forwards the payload untouched
+(`BinaryPayload` in `hkp-node/src/coordinator/binaryFrame.ts`). JSON keeps
+travelling as text frames. Binary is for `result` and `processRuntime` only; a
+notification or a log entry that mentions bytes keeps its placeholder.
 
-### Steps
+### Changed while building: the payload is not YAS
 
-**A1. Protocol.** `participantProtocol.ts` and `bridgeProtocol.ts`: the frame,
-its header types, one `encodeBinaryMessage` / `decodeBinaryMessage` pair in
-`hkp-node/src/coordinator/`. `Participant.process` and the bridge's
-`processRuntime` accept either a value or an opaque payload.
+The plan said "the payload is the YAS encoding every codec already produces".
+Reading the codecs showed they do not produce one encoding:
 
-**A2. Coordinator session.** `session.ts` carries a result as *value or
-payload* from wherever it arrived to the next runtime, remote or browser. It
-never inspects a payload. A payload is not written into a snapshot, a log line
-or the board store; where the session keeps what a runtime last said, a
-payload is recorded as its size only.
+- the frontend's serialises only ring buffers and null, and reads no
+  `BinaryData`;
+- hkp-rt's reads only ring buffers and null;
+- the ring buffer has two dialects (a `uint16` or a `uint32` type id), which
+  hkp-python detects by length;
+- **mixed data — bytes with JSON beside them, which is what an HTTP response or
+  a file read is on every runtime — has no YAS encoding anywhere.** hkp-rt
+  reserves a type id for it and serialises it nowhere.
 
-**A3. A YAS codec for hkp-node.** New `hkp-node/src/yas.ts`, ported from
-`hkp-frontend/src/runtime/rest/Message.ts` (the two must agree, and a test
-feeds each the other's bytes). Then:
+Building on that would have meant a new codec for hkp-node plus extensions to
+the other three, to get an envelope (purpose, sender, nested header) the link
+has no use for. The frame already has a JSON header, so the header says what
+the bytes are and the payload is just the bytes. Each runtime needs about
+thirty lines and no codec.
 
-- the link sends a binary frame for a result that is bytes, a ring buffer or
-  mixed data, and decodes one arriving as `processRuntime`;
-- hkp-node's *own* result socket does the same, which fixes the same gap for a
-  node runtime driven straight from a browser. Small once the codec exists, and
-  it removes a difference between servers that boards should not have to know
-  about (`TODO-CONSOLIDATION.md`).
+**Dropped with it: A3, a YAS codec for hkp-node.** hkp-node's own result
+socket to a browser is still JSON only — a node runtime driven straight from
+the playground still cannot hand the browser bytes. That is a difference
+between runtime servers, not a cloud-board gap, and belongs to
+`TODO-CONSOLIDATION.md`.
 
-**A4. hkp-python link.** `coordinator_links.py` sends `serialize_message` output
-as a binary frame instead of `_jsonable_result`'s placeholder, and decodes
-incoming ones with `deserialize_message`.
+### What each runtime maps the shapes to
 
-**A5. Browser bridge.** `useCoordinatorBridge.ts` / `bridgeRuntimeApi.ts`:
-`binaryType = "arraybuffer"`, decode an arriving payload with
-`deserializeYasMessage`, encode a browser runtime's binary result with
-`serializeYasMessage`.
+| | `bytes` | `floatRingBuffer` | `mixed` |
+|---|---|---|---|
+| hkp-node | `Uint8Array` | `{ type: "FloatRingBuffer", id, ts, binary }` — it has no ring buffer of its own, and sends that shape back out as one | `{ …json, binary: Uint8Array }` |
+| hkp-python | `BinaryData` (and raw `bytes` on the way out) | `FloatRingBuffer` | `{ …json, "binary": bytes }` |
+| browser | `Uint8Array` (and `ArrayBuffer` on the way out) | `FloatRingBuffer` | `{ …json, binary: Uint8Array }` |
+| hkp-rt (Part B) | `BinaryData` | `FloatRingBuffer` | `MixedData` — `json.meta` ↔ `meta` |
 
-**A6. hkp-rt.** Nothing separate: Part B builds its link with binary from the
-start.
+### The operator's limit
+
+`HKP_COORDINATOR_MAX_FRAME_BYTES`, unset by default. It applies to any frame a
+joined participant or an attached browser sends, text or binary; an oversized
+one is dropped and recorded in the board's log as `frame-dropped`, and the
+connection stays up. A `hello` is exempt — it carries a registry, and a limit
+meant for values must not keep a runtime server from joining. It bounds what
+is forwarded and fanned out, not what is received: the frame is in memory by
+the time it is measured.
+
+The libraries' own ceilings are off on every connection involved (`ws`
+`maxPayload: 0`, aiohttp `max_msg_size=0`).
 
 ### Tests
 
-- `hkp-node/tests/yas.test.ts`: round trips per type; fixtures produced by the
-  frontend codec and by `hkp/yas.py` decode identically.
-- `coordinator-session.test.ts`: a payload goes participant → participant and
-  participant → bridge byte for byte; it is absent from the snapshot.
-- `coordinator-python.test.ts`: bytes made on node arrive in python intact, and
-  back.
-- Frontend: bridge unit tests for both directions.
-- `e2e/tests/cloud/deploy.spec.ts`: a deployed board whose node runtime emits
-  bytes that a browser runtime displays.
+- `hkp-node/tests/coordinator-binary.test.ts`: the frame; what node sends as
+  bytes; a session forwarding a payload as the same object; bytes, mixed and
+  JSON between two real runtime servers; through an attached browser and on;
+  the limit.
+- `hkp-node/tests/coordinator-python.test.ts`: bytes, mixed and a ring buffer
+  from node into a real hkp-python and back out, unchanged.
+- `hkp-python/tests/test_coordinator_links.py`: bytes and a ring buffer in and
+  out over the link; the mapping; malformed frames.
+- `hkp-frontend/src/views/cloud/tests/bridge-binary.test.tsx`: the frame, the
+  mapping, and the bridge hook handing a browser runtime bytes and answering
+  with them.
+- One hex fixture, written by hkp-node's encoder, is decoded by all three.
+
+**Not done:** the Playwright spec with a real browser. A node runtime only
+emits bytes on its own from a file read or an HTTP fetch, and the browser
+Monitor's rendering of them is not something to assert on. It is better
+written against an hkp-rt board that draws a ring buffer, in Part D.
 
 ---
 
@@ -210,146 +237,165 @@ start.
 
 Each step leaves the tree working.
 
-**B1. A reconnecting TLS WebSocket client.** New
-`lib/src/common/link_socket.{h,cpp}`: `ws://` and `wss://`, a Bearer header on
-the handshake, ping on an interval, text and binary frames both ways, and the
-HTTP status of a refused upgrade surfaced to the caller — `401`/`403` is how a
-coordinator says a ticket is dead. It runs on the app's existing `io_context`.
-Kept apart from `websocket_client_session`, which the `websocket-client`
-*service* uses and which should not change under boards that depend on it.
-*Tests:* against an in-process Beast server — connects, is refused, pings,
-reports a close code, carries a binary frame.
+**B1. A TLS WebSocket client — built.** `lib/src/common/link_socket.{h,cpp}`
+(`LinkSocket`): `ws://` and `wss://`, a Bearer header on the handshake, text
+and binary frames both ways, no message-size ceiling, pings when idle and
+closes when a ping goes unanswered, and reports how it ended — the HTTP status
+of a refused upgrade, or the close code. TLS verifies the peer's certificate
+*and* its host name, against the vendored roots plus an optional extra root
+(`trustedRootPem`, for a coordinator behind a private CA).
 
-**B2. What the link needs of `App`.**
-`App::setRuntimeState(runtimeId, json)` (logging on/off and level), also
-exposed as `PATCH /runtimes/<id>/state`; `App::describeRuntime(runtimeId)` in
-the shape `ReportedService[]`; and an output sink per runtime, called from
-`Runtime::sendData` and the log target beside `Server::sendNotification`.
-*Tests:* extend `runtime_log.test.cpp`, `runtime_lifecycle.test.cpp`.
+It does **not** reconnect: a connection is one attempt, and whether to make
+another is the link's decision (B3), which is where the node implementation
+has it too. Kept apart from `websocket_client_session`, which the
+`websocket-client` *service* uses.
 
-**B3. The link.** New `lib/include/coordinator_links.h`,
-`lib/src/coordinator_links.cpp` — a port of the node module with the same
-behaviour, including what was not obvious there:
+*Tests:* `tests/link_socket.test.cpp`, 13 cases against a real websocket peer
+on loopback, plain and over TLS with a certificate made for the run — including
+a refused upgrade, a close code, a peer that goes silent, a 20 MiB message, and
+a TLS peer it has no reason to trust (which never sees the credential).
 
-- `hello` carries `server: "c++"`, the registry, `runtimeExists`;
-- `provision` builds with `garbageCollected` unset and the secrets handed over
-  at introduction, and answers with registry, services and `missingSecrets`;
-- `remove` of a runtime that is not there succeeds;
-- close `4403` (revoked) and `4409` (replaced), and a `401`/`403` on the
-  upgrade, are final: drop the link **and remove the runtime**. Anything else
-  reconnects with backoff;
-- replacing a link's ticket does not tear the running runtime down first;
-- secrets are held in memory with the link, never written with the ticket;
-- results that are not JSON go out as Part A's binary frame, and a binary
-  `processRuntime` is decoded with the existing `Message` codec;
-- every operation is posted to the app's event loop (`App::postCallback`).
+**B2. What the link needs of `App` — built.**
+`App::setRuntimeState(runtimeId, json)` (logging, level, `logData`), also
+exposed as `PATCH /runtimes/<id>/state` so hkp-rt matches the other two; and
+`App::setRuntimeOutputSink` — one sink per runtime, called on the event loop
+from `Runtime::sendData` and `forwardLog` beside the sockets, with the value as
+it is rather than a serialised frame. A sink survives the runtime being
+rebuilt under its id, which is what a coordinator's `provision` does.
+Describing a runtime needed nothing new: `App::getServices` already answers in
+the shape the link reports.
+*Tests:* `tests/runtime_output_sink.test.cpp`, 7 cases.
 
-Ticket store: an interface with a file implementation (atomic write, `0600`)
-and a memory one for tests. The **host** supplies the path.
-*Tests:* `tests/coordinator_links.test.cpp` against a fake coordinator on the
-B1 test server — the cases of `hkp-node/tests/coordinator-links.test.ts`.
+**B3. The link — built.** `lib/include/coordinator_links.h`,
+`lib/src/coordinator_links.cpp`, with `lib/src/binary_frame.h` for the frame. A
+port of the node module with the same behaviour: the `hello`, the six
+operations, `4403`/`4409` and a refused upgrade as final (the link is dropped
+**and the runtime removed**), backoff, a replaced link leaving the runtime in
+place, secrets held in memory, tickets in a file written atomically and `0600`.
 
-**B4. Routes and hosts.** `POST /coordinator-links` `{ coordinatorUrl, ticket,
-boardName, runtimeId, secrets? }`, answering once the first connection attempt
-has an outcome; `GET` lists; `DELETE` removes one — all behind
-`AuthMiddleware`. `GET /runtimes` adds `coordinatorLinks: true` when the host
-gave a store. `meander/backend/main.cpp` passes
-`~/.hkp/cpp/coordinator-links.json` and restores at start; iOS and Android pass
-none.
-*Tests:* `http_server_lifecycle.test.cpp`.
+Two things differ from the plan:
+
+- **A coordinator's requests run on a thread of their own, not on the app's
+  event loop.** A pipeline may run for a while, and the connection it arrived on
+  has to go on answering pings meanwhile, or the coordinator takes the runtime
+  for gone after two heartbeats. One thread, so what a coordinator asks happens
+  in the order it asked. The socket, timers and link state stay on the event
+  loop.
+- **A run's result is not sent by the link.** In hkp-rt every run's result
+  leaves through the runtime's output (`Runtime::onProcessEnd` → `sendData`),
+  which the link listens to — so a result produced by a `processRuntime` and
+  one the runtime produces on its own travel the same way, once.
+
+*Tests:* `tests/coordinator_links.test.cpp`, 24 cases against a fake
+coordinator speaking the protocol, including the node-written frame fixture.
+
+**B4. Routes and hosts — built.** `POST` / `GET /coordinator-links`,
+`DELETE /coordinator-links/<runtimeId>`, all behind `AuthMiddleware`;
+`coordinatorLinks` in `GET /runtimes` says whether the host turned it on
+(`Server::enableCoordinatorLinks`). The standalone server and the desktop app
+do, keeping tickets in `~/.hkp/cpp/coordinator-links.json`; iOS and Android do
+not. The desktop app was built with it (`xcodebuild`, Debug) and **not run**.
+The routes are tested over HTTP by `hkp-node/tests/coordinator-rt.test.ts`
+rather than in C++, where a second server cannot be started in one test binary.
 
 ---
 
 ## Part C — hkp-rt standalone: reachable, authenticated, in a container
 
-**C1. Open binding.** `exe/main.cpp` takes a bind address — `HKP_BIND`,
-default `127.0.0.1` — separate from the external address it advertises.
+**C1–C3 — built.** `lib/include/standalone_config.h` reads a standalone
+server's arguments and environment, and `exe/main.cpp` acts on it. The names
+are hkp-node's — `HOST` and `PORT` rather than the `HKP_BIND` first planned — so
+one environment file describes either server:
 
-**C2. Auth from the environment**, named as hkp-node names them:
-`AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `ALLOWED_EMAILS`, building the `AuthConfig`
-the embedded hosts already build. **Fail-closed:** a non-loopback bind without
-all three refuses to start, with a message naming what is missing. A loopback
-bind needs none, as today.
+| | |
+|---|---|
+| `HOST`, `PORT`, `EXTERNAL_HOST` | what it listens on and says of itself; `127.0.0.1:5556` unless said. The arguments it always took still override |
+| `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `ALLOWED_EMAILS` | all three required for a bind that is not loopback: without them it **refuses to start**, naming what is missing |
+| `ALLOWED_ORIGINS` | browser origins allowed to call it |
+| `HKP_EXTERNAL_URL` | where it is reached from outside; mounts are published under it |
+| `HKP_MOUNT_SECRET` | else kept at `~/.hkp/cpp/mount-secret` |
+| `HKP_COORDINATOR_LINKS_FILE` | else `~/.hkp/cpp/coordinator-links.json`; empty keeps tickets in memory |
 
-**C3. The rest of what a server away from a desk needs:**
-`HKP_COORDINATOR_LINKS_FILE` (default `~/.hkp/cpp/coordinator-links.json`),
-restored at start; `HKP_EXTERNAL_URL` for the address it publishes when it sits
-behind a TLS-terminating proxy; allowed CORS origins from the environment
-rather than `*` once it is exposed; `SIGTERM` closes links and exits cleanly.
+`SIGTERM` and `SIGINT` close links and stop the server.
 
-**C4. The image.** `hkp-rt/Dockerfile`, multi-stage: build with vcpkg on a
-Linux base, run from a slim one as a non-root user, `EXPOSE` the port, a volume
-for `~/.hkp`. Linux is not `IS_MACOS`, so `core-input` / `core-output` are
-absent — which the registry already reports and the preflight already checks.
-Built with `HKP_LLAMA_ENABLED=OFF` and `HKP_SPEECH_ENABLED=OFF`; a board
-choosing an embedded backend there gets that service's existing "not built in"
-error, naming the backend.
+*Tests:* `tests/standalone_config.test.cpp`, 10 cases. By hand, on the built
+binary: refusal on `HOST=0.0.0.0` without auth; with auth, a caller on loopback
+is let in, one on the LAN address gets `401`, with or without forged headers.
 
-**C5. Mounts on the server's own port — decided 2026-10-02.** On par with
-hkp-node and hkp-python, and overdue regardless of containers.
+**C4. The image — builds; not yet run.** `hkp-rt/Dockerfile` and
+`hkp-rt/Dockerfile.dockerignore`: multi-stage on `ubuntu:24.04`, vcpkg at the
+commit the repository pins, the same cmake options `run-tests.sh` uses with the
+three ML backends off, a non-root user, `~/.hkp` as a volume, port 8887. It
+built on the first attempt (about nine minutes cold, almost all of it vcpkg
+compiling Boost and OpenSSL), which also settles that hkp-rt compiles with gcc
+on Linux with the new sources. Running it — the refusal without auth, a
+ticket surviving a restart on the volume, an endpoint reached from outside —
+is in the manual pass. Building and running are described in
+`hkp-rt/README-docker.md`.
 
-Today `http-server` and `http-server-subservices` each bind **their own port**
-on `0.0.0.0` (`http_server_impl.cpp`) and publish
-`http://<primary LAN IPv4>:<port>` (`primaryIPv4()` in
-`http_server_subservices.cpp`). That was tolerable with one hkp-rt per machine.
-It is not with several — two hkp-rt processes on one machine collide on
-whatever port a board names — and in a container the published address is the
-container's internal one, each endpoint needs its own published port, and none
-sits behind the proxy the server itself sits behind.
+**C5. Mounts on the server's own port — built for the standalone server.**
 
-So an endpoint becomes a path on the server it already runs in:
+Not built as planned. The plan moved request handling onto the REST framework's
+routes; that cannot be done, because **Crow cannot stream a response** and an
+hkp-rt endpoint does: a binary answer is an open-ended chunked stream fed by
+every later pass (that is what a live audio endpoint is), and `peer-server`
+upgrades to a WebSocket. So the services keep their own socket handling, and
+the server's port becomes a **front door** (`lib/src/http/front_door.cpp`):
 
-- `/hosted/<mountId>` on the Crow server, outside `AuthMiddleware` — the
-  unguessable id is the gate, as on the other two servers.
-- The id is derived, not drawn: an HMAC of board, runtime and mount name
-  (`mountName`, defaulting to the service uuid) under a secret the server holds
-  (`HKP_MOUNT_SECRET`, else `~/.hkp/cpp/mount-secret`, `0600`, supplied by the
-  host like the ticket file). Same derivation as hkp-node, so an address
-  survives restarts and redeploys.
-- The published address is built from `HKP_EXTERNAL_URL` when set, else from
-  the server's own bind and port.
-- The services stop binding. `host` and `port` in their config are accepted and
-  ignored, and say so once in the log, so an old board loads rather than fails.
-  The Beast listener in `services/http_server/` goes; request handling, the
-  `meta`/`body`/binary contract and `stream` fan-out move onto Crow routes.
-- `peer-server` binds its own port too (HTTP and WebSocket on one, default
-  OS-assigned) and gets the same treatment: its signalling moves under
-  `/hosted/<mountId>`, including the WebSocket upgrade, as hkp-node's does.
+- a connection whose first request is for `/hosted/<id>` is handed, socket and
+  bytes already read, to the service owning the mount (`MountedConnection`);
+- anything else is passed through to the REST api, which now listens on
+  loopback on a port the OS picks.
 
-What changes for boards: an endpoint's address is no longer `:<port>` chosen by
-the board. `boards/live-location-demo-board.json` is the one shipped board that
-names a port (`8080`, on the iOS runtime) — it and its docs page are updated,
-and anything outside the repo that was configured with `http://<phone>:8080`
-needs the new address. Boards that reference an endpoint
-(`hkp-mount://<runtime>/<service>`) need nothing.
+What that costs, and how it is handled:
 
-*Tests:* a mount test suite for hkp-rt mirroring `hkp-node/tests/mounts.test.ts`
-(stable across restart, rotates with the name, unreachable without the id);
-`service_http_client_mount.test.cpp` and `http_server_lifecycle.test.cpp`
-updated; two hkp-rt processes on one machine both serving an endpoint; the
-image smoke test calls a mounted endpoint from outside the container.
+- **One request per connection.** Who a connection belongs to is decided on its
+  first request, so what is passed through is marked `Connection: close` (an
+  upgrade excepted). No keep-alive for api calls.
+- **The api's loopback trust.** It lets the machine's own UI in without a
+  token, by the caller's address; passed through, every caller is this process.
+  The front door passes the real address in `X-Hkp-Client`, believed only
+  beside `X-Hkp-Front` — a secret drawn per process — and strips both from
+  what a caller sent.
 
-*Tests (C1–C4):* `auth.test.cpp` gains the environment parsing and the fail-closed
-start; a shell smoke test builds the image, starts it with and without auth
-variables, and checks `GET /runtimes` answers `401` without a token and `200`
-with one.
+The id is hkp-node's derivation with an empty tenant, checked against a value
+computed by node. `http-server`, `http-server-subservices` and `peer-server`
+mount when the server offers it and bind a port when it does not; mounted,
+`host` and `port` are accepted and not acted on, and `mountName` names the
+mount.
+
+**On for the standalone server only.** See *Left to do* for the apps.
+
+*Tests:* `tests/mounts.test.cpp` (10 cases: derivation, the secret file, what
+the front door makes of a request head); `hkp-node/tests/coordinator-rt.test.ts`
+on the running binary — the address, an unknown mount, the same address after a
+restart, two servers on one machine serving one board, `HKP_EXTERNAL_URL`, and a
+runtime's notification socket through the front door.
 
 ---
 
 ## Part D — testing the package
 
-### Automated
+### Automated — done
 
-| What | Where |
-|---|---|
-| YAS in hkp-node, cross-codec fixtures | `hkp-node/tests/yas.test.ts` |
-| Payloads through a session, untouched | `hkp-node/tests/coordinator-session.test.ts` |
-| Bytes between node and python on a deployed board | `hkp-node/tests/coordinator-python.test.ts` |
-| hkp-rt's socket, link, routes | `hkp-rt/tests/link_socket.test.cpp`, `coordinator_links.test.cpp`, `http_server_lifecycle.test.cpp` |
-| A board across hkp-node and hkp-rt, both restarts | new `hkp-node/tests/coordinator-rt.test.ts`, modelled on the python one; skipped when the binary is not built |
-| A ring buffer from hkp-rt arriving in node and in a browser | the same file, and `e2e/tests/cloud/deploy.spec.ts` |
-| Standalone auth and bind | `hkp-rt/tests/auth.test.cpp`, the image smoke test |
-| Preflight accepts an hkp-rt that can join | `hkp-frontend/src/core/tests/deployPreflight.test.ts` |
+| What | Where | Result |
+|---|---|---|
+| The frame, a session forwarding payloads, the limit | `hkp-node/tests/coordinator-binary.test.ts` | pass |
+| Bytes, mixed, ring buffer: node ↔ python | `hkp-node/tests/coordinator-python.test.ts` | pass |
+| The same through hkp-rt; a board across node and hkp-rt; restart; deletion; mounts | `hkp-node/tests/coordinator-rt.test.ts` (11) | pass |
+| The browser's end of the bridge | `hkp-frontend/src/views/cloud/tests/bridge-binary.test.tsx` | pass |
+| hkp-rt: socket, sink, link, standalone config, mounts | `hkp-rt/tests/` (245, of which 63 new) | pass |
+| A real browser deploying a board on hkp-rt | `e2e/tests/cloud/deploy-rt.spec.ts` | pass |
+| Preflight accepts an hkp-rt that can join | `hkp-frontend/src/core/tests/deployPreflight.test.ts` | pass |
+
+Suites as last run: hkp-node 796, hkp-python 373, hkp-frontend 2054 (+1
+skipped), hkp-rt 245, Playwright cloud 6. The main Playwright suite was not
+rerun.
+
+**Not automated:** bytes arriving in a *real* browser. The bridge's end is
+covered with a fake socket, and both runtime-server ends against real servers,
+but no spec watches a browser runtime display a ring buffer on a deployed
+board.
 
 ### By hand, once, at the end
 
@@ -400,26 +446,25 @@ Parts B and C:
 
 ---
 
-## Order and size
+## Left to do
 
-| | Rough size | Depends on |
-|---|---|---|
-| A1–A2 protocol, session | 1 day | — |
-| A3 YAS in hkp-node | 1–1.5 days | — |
-| A4–A5 python link, bridge | 1 day | A1 |
-| B1 link socket | 1 day | — |
-| B2 `App` operations | 0.5 day | — |
-| B3 the link | 2 days | A1, B1, B2 |
-| B4 routes, desktop host | 0.5 day | B3 |
-| C1–C3 standalone | 1 day | B4 |
-| C4 image | 1 day, mostly build time | C1–C3 |
-| C5 mounts on the server's port, incl. `peer-server` | 3 days | C3 |
-| D cross-boundary tests, manual pass, docs | 1.5 days | all |
-
-About thirteen to fourteen days. **Part A first**: it is testable with node and python
-alone, so it is verified before any C++ is written and B3 is built against a
-protocol that already carries binary. **B1 next**, because it carries the risk
-— TLS, reconnect and thread ownership in Beast.
+- **Run the image.** It builds; the container items of the manual pass have
+  not been done.
+- **The manual pass** above. None of it has been done.
+- **Mounts in the apps — a decision, not a task.** Today an endpoint in the
+  desktop app binds every interface whatever the app's *external access*
+  setting says, which is what lets a phone reach it. Mounted, it is reachable
+  only as far as the server's port is: loopback, unless external access is on.
+  Turning mounts on in the desktop app therefore means the front door listening
+  on every interface and refusing the api to anyone but the machine itself —
+  a change to the app's exposure. On the phones it is the same question plus an
+  untested platform. Until decided, the apps bind ports as before and
+  `boards/live-location-demo-board.json` is unchanged.
+- **hkp-node's own result socket is JSON only.** A node runtime driven straight
+  from the playground cannot hand the browser bytes. Not a cloud-board gap;
+  `TODO-CONSOLIDATION.md`.
+- **A real-browser test for bytes** on a deployed board (see Part D).
+- **The mobile deploy sheet** still reports what stopped a deploy as a toast.
 
 ---
 
@@ -435,10 +480,11 @@ protocol that already carries binary. **B1 next**, because it carries the risk
 
 ---
 
-## Docs, when it lands
+## Docs
 
-`docs/content/concepts/remotes.md` (which servers can join; the binary frame),
-`cloud-boards.md` (the `cannot-join` row), `coordinator.md`, `targets.md` (the
-image), `testing.md`, the READMEs of the three servers, `CLAUDE.md`, and
-`/vocabulary` over the changeset. This plan's conclusions move there and the
-file is deleted.
+Done: `docs/content/concepts/remotes.md` (which servers join),
+`cloud-boards.md` (bytes between runtimes, the `cannot-join` row), `mounts.md`
+(hkp-rt's front door, and the apps as a gap), `targets.md` (the standalone
+server and the image), `testing.md`, `hkp-node/README.md`, `CLAUDE.md`; the
+vocabulary's references still resolve. When the items above are settled, what
+remains here moves there and this file is deleted.

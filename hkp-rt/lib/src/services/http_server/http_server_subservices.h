@@ -240,6 +240,10 @@ private:
   // The most recent chunk, which is what a Range probe is answered from.
   StreamChunk m_lastChunk;
   StreamBroadcast m_broadcast;
+  // What this endpoint's mount is called; empty means its own id. With the
+  // board and the runtime it is what the address is derived from.
+  std::string m_mountName;
+  std::string mountName() const { return m_mountName.empty() ? getId() : m_mountName; }
 };
 
 } // namespace hkp

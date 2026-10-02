@@ -28,8 +28,8 @@ cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 ...
 BOOST_ROOT=/path/to/boost cmake ...
 cmake --build . --config Release --target ALL_BUILD
 
-# Linux via Docker
-docker build --platform linux/amd64 -f hkp-rt/Dockerfile.linux -t hkp/rt-base .
+# The standalone server as a container — from the repo root, see README-docker.md
+docker build -f hkp-rt/Dockerfile -t hkp-rt .
 ```
 
 `hkp-rt/` can still be built standalone (its CMakeLists.txt falls back to `../3rdparty/` when not invoked from root).

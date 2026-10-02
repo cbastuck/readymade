@@ -23,6 +23,8 @@ public:
                     std::string basePath);
 
   void run();
+  // What was already read from the socket before this session was given it.
+  void prefill(const std::string& bytes);
 
 private:
   void on_read(boost::beast::error_code ec, std::size_t n);

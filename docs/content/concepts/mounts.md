@@ -70,23 +70,51 @@ rotating the server's secret rotates all of them.
 
 ## What each runtime actually does
 
-"Mount" is the board-wide vocabulary, but the mechanism behind it differs, and
-only node and python assign paths:
+"Mount" is the board-wide vocabulary. Every runtime server assigns a path on its
+own port; hkp-rt does so where its host has turned that on:
 
 | Runtime | How a hosted service becomes reachable | Published address |
 |---|---|---|
 | hkp-node | mount path on the runtime's shared server | `http://host:port/hosted/<mountId>` |
 | hkp-python | same | `http://host:port/hosted/<mountId>` |
-| hkp-rt | binds a port of its own | `http://<lan-ip>:<port>/` |
+| hkp-rt, standalone or in a container | same | `http://host:port/hosted/<mountId>`, or under `HKP_EXTERNAL_URL` |
+| hkp-rt, embedded in an app | binds a port of its own | `http://<lan-ip>:<port>/` |
 | Browser | hosts nothing; it consumes mounts | — |
 
 Services that own a mount today: `http-server-subservices` (node, python,
-hkp-rt), `peer-server` (node) and `websocket-reader` (node).
+hkp-rt), `http-server` (hkp-rt), `peer-server` (node, hkp-rt) and
+`websocket-reader` (node).
 
-On hkp-rt the port is part of the board and is restored on load. A board that
-says `"port": 0` asks the operating system for any free port; whatever it got is
-what the service then reports, so saving the board records a concrete port and
-the next load binds that same one.
+### hkp-rt
+
+The id is derived exactly as hkp-node derives it, with an empty tenant — hkp-rt
+has one — so the same board on the same secret gets the same address. The
+secret is `HKP_MOUNT_SECRET`, else kept at `~/.hkp/cpp/mount-secret`.
+
+How a mounted request is served differs from the other two, because an hkp-rt
+endpoint may hold a response open and stream into it, which the server's REST
+framework cannot do. So the server's port is a **front door**
+(`hkp-rt/lib/src/http/front_door.cpp`): a connection whose first request is for
+`/hosted/<id>` is handed, socket and all, to the service that owns the mount;
+anything else is passed through to the REST api, which listens on loopback on a
+port nobody is told. Two things follow:
+
+- **One request per connection.** Who a connection belongs to is decided once,
+  so what is passed through to the api is marked `Connection: close`. A
+  WebSocket upgrade is passed through as one.
+- **The api still knows who is calling.** It trusts the machine's own UI without
+  a token, by the caller's address — and passed through, everything comes from
+  the same process. The front door says who the caller was in a header the api
+  believes only beside a secret this process alone knows; both are removed from
+  anything a caller sent.
+
+Mounted, `host` and `port` in a board are accepted and not acted on.
+`mountName` names the mount, defaulting to the service's id.
+
+A host turns this on with `Server::enableMounts`. The standalone server does.
+**The apps do not yet**: there an endpoint still binds the port its board names,
+`"port": 0` asks the operating system for any free one, and whatever it got is
+what the service reports and a saved board records. See the gaps below.
 
 ---
 
@@ -230,8 +258,19 @@ Current limitations, stated so a board author is not surprised by them:
 - **One mount per consumer.** The resolved address has one field to go in, so a
   service naming two mounts gets only the first resolved (and a warning). A
   service that needs two should host a pipeline instead.
-- **"Mount" means two things.** An assigned path on node and python, a bound port
-  on hkp-rt. Only the reference vocabulary is genuinely shared by all runtimes.
+- **hkp-rt embedded in an app still binds ports.** A standalone hkp-rt mounts
+  on its own port; the desktop and phone apps do not, because it changes who
+  can reach an endpoint. Today an endpoint in the desktop app binds every
+  interface whatever the app's *external access* setting says, and that is what
+  lets a phone reach it. Mounted, it would be reachable only as far as the
+  server's own port is — loopback, unless external access is on. Turning mounts
+  on there means the front door listening on every interface and refusing the
+  api to anyone but the machine itself, which is a decision about the app's
+  exposure and has not been taken.
+- **A mount is not given up when its service is destroyed**, only when it is
+  bypassed: a runtime rebuilt under its id claims the mount before the old
+  service goes, and giving it up then would take it from the new one. A stale
+  mount answers nothing and is replaced by the next service of that name.
 
 ---
 

@@ -173,6 +173,11 @@ server leaves and when it returns.
 Across runtime servers the same path is covered below the browser:
 `hkp-node/tests/coordinator-python.test.ts` starts hkp-python as its own process
 and runs one board over both — skipped where hkp-python has no virtualenv.
+`coordinator-rt.test.ts` does the same with the hkp-rt binary
+(`hkp-rt/build-tests/exe/hkp-rt`, which `hkp-rt/run-tests.sh` builds; skipped
+where it is absent), and also calls an endpoint mounted on it. Both pass bytes,
+bytes with JSON beside them and a ring buffer through the other server and
+compare what comes back.
 
 ### After a failure
 
@@ -216,6 +221,7 @@ trusting it:
 | Blocks on the running board: the lock, params, detach, editing, making one | `e2e/tests/blocks.spec.ts` |
 | Deploying to a real coordinator, in a browser | `e2e/playwright.cloud.config.ts`, `e2e/tests/cloud/deploy.spec.ts` |
 | A board across hkp-node and hkp-python | `hkp-node/tests/coordinator-python.test.ts` |
+| A board across hkp-node and hkp-rt; endpoints mounted on hkp-rt | `hkp-node/tests/coordinator-rt.test.ts` |
 | What CI covers | `.github/workflows/run-all-tests.yml` |
 | Why CI covers only part of it | [Repository](./repository.md) |
 

@@ -136,6 +136,10 @@ npm run test:cloud       # playwright.cloud.config.ts
 
 It starts one hkp-node on loopback (port 18080) as both runtime server and
 coordinator, keeping nothing on disk, and drives the desktop shell against it.
+Where hkp-rt has been built (`hkp-rt/run-tests.sh` builds it; `HKP_RT_BIN`
+names a binary built elsewhere) it is started too, on port 18087, as a second
+runtime server, and `deploy-rt.spec.ts` deploys a board onto it. Without the
+binary that spec is skipped.
 Two things a spec supplies that the shell would otherwise get from a person:
 
 - **a session** — `readymade-id-token` in localStorage, an unsigned token the

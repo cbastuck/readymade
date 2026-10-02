@@ -64,6 +64,10 @@ private:
 private:
   std::shared_ptr<HttpServerImpl> m_impl;
   std::string m_mode;
+  // Where it is served when the runtime server mounts it; see mounts.h.
+  std::string m_url;
+  std::string m_mountName;
+  std::string mountName() const { return m_mountName.empty() ? getId() : m_mountName; }
 
   std::mutex m_assemblyMutex;
   std::map<std::string, ChunkAssembly> m_assemblies; // keyed by X-Upload-Id

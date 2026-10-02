@@ -207,10 +207,18 @@ not through the coordinator:
 |---|---|
 | hkp-node | yes |
 | hkp-python | yes |
-| hkp-rt (C++) | **not yet** — it has no outbound link, so deploying a board that places a runtime on it is stopped by the preflight |
+| hkp-rt (C++), standalone or in a container | yes |
+| hkp-rt, embedded in the desktop app | yes |
+| hkp-rt, embedded in the iOS or Android app | **no**, deliberately — a phone suspends the app at will, the link would drop, and the board would go to `error`. The deploy preflight says so beforehand |
 
 A server says whether it can in `GET /runtimes` (`coordinatorLinks: true`),
-beside its kind and registry.
+beside its kind and registry. On hkp-rt that is the host's decision: the library
+connects to a coordinator only once its host has given it somewhere to keep
+tickets (`Server::enableCoordinatorLinks`).
+
+hkp-rt is single-tenant — one id space, an email allow-list — so its links have
+no owner: whoever may create a runtime there may link one. It keeps its tickets
+in `~/.hkp/cpp/coordinator-links.json`.
 
 ---
 
@@ -225,8 +233,8 @@ beside its kind and registry.
 | Tickets and accepted connections | `hkp-node/src/coordinator/participants.ts`, `join.ts` |
 | The protocol over a connection | `hkp-node/src/coordinator/participantProtocol.ts` |
 | A board over its participants | `hkp-node/src/coordinator/session.ts` |
-| The runtime server's end | `hkp-node/src/coordinatorLinks.ts`, `hkp-python/src/hkp/coordinator_links.py` |
-| Tests | `hkp-node/tests/coordinator-participants.test.ts`, `coordinator-session.test.ts`, `coordinator-links.test.ts`, `coordinator-restart.test.ts`, `coordinator-python.test.ts`; `hkp-python/tests/test_coordinator_links.py`; `hkp-frontend/src/runtime/board/tests/remote.test.ts`, `core/tests/deploy*.test.ts`, `remote-resolution.test.ts`; `e2e/tests/cloud/deploy.spec.ts` |
+| The runtime server's end | `hkp-node/src/coordinatorLinks.ts`, `hkp-python/src/hkp/coordinator_links.py`, `hkp-rt/lib/src/coordinator_links.cpp` (over `common/link_socket.cpp`) |
+| Tests | `hkp-node/tests/coordinator-participants.test.ts`, `coordinator-session.test.ts`, `coordinator-links.test.ts`, `coordinator-restart.test.ts`, `coordinator-python.test.ts`, `coordinator-rt.test.ts`; `hkp-python/tests/test_coordinator_links.py`; `hkp-rt/tests/coordinator_links.test.cpp`, `link_socket.test.cpp`; `hkp-frontend/src/runtime/board/tests/remote.test.ts`, `core/tests/deploy*.test.ts`, `remote-resolution.test.ts`; `e2e/tests/cloud/deploy.spec.ts` |
 
 ---
 

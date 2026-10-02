@@ -85,7 +85,7 @@ runtime**. It is also where a board's `remote` becomes an address
 | `unreachable` | its server did not answer | yes |
 | `refused` | its server answered `401`/`403` | yes |
 | `missing-services` | its server's registry lacks services the board uses, which are listed | yes |
-| `cannot-join` | its server cannot connect to a coordinator (hkp-rt, today) | yes |
+| `cannot-join` | its server cannot connect to a coordinator (the phone apps' embedded runtime, or a server that predates links) | yes |
 | `unsupported` | a kind of runtime a coordinator does not run (GraphQL) | |
 
 Every server answer comes from one `GET <server>/runtimes`, which already
@@ -174,6 +174,55 @@ browser is a **transient** participant: with no viewer attached, data arriving
 for that runtime stops there — as it would at a service that returned `null` —
 and the board stays `running`. The consequence is worth stating plainly: **the
 part of a cloud board downstream of a browser runtime does not run headless.**
+
+### Bytes between runtimes
+
+Both of a coordinator's connections — the link to a runtime server and the
+bridge to a browser — carry JSON as text frames. A value that holds bytes
+would not survive that: as text, a byte array arrives as an object of numbered
+keys. So what one runtime hands the next travels as a **binary frame** when it
+is not JSON:
+
+```
+[ 4 bytes: header length, big-endian ][ header: UTF-8 JSON ][ payload ]
+```
+
+The header is the message that would have been sent as text —
+`{ "type": "result" }`, `{ "type": "processRuntime", … }` — with the value left
+out and a `binary` field saying what the payload is:
+
+| `binary.kind` | Payload | Also in the header |
+|---|---|---|
+| `bytes` | the value | — |
+| `floatRingBuffer` | little-endian float32 samples | `id`, `ts` |
+| `mixed` | the bytes of an object's `binary` field | `json`: the rest of the object |
+
+`mixed` is what an HTTP response or a file read is on every runtime: bytes with
+something said about them.
+
+**The coordinator does not read the payload.** It parses the header, keeps the
+bytes as they came, and writes them out under the next runtime's header. It
+cannot corrupt what it does not interpret, and a new shape is a change to the
+runtimes that produce and consume it, not to the coordinator.
+
+Each runtime maps the shapes onto its own types. hkp-node has no ring buffer,
+so one passing through it is held as
+`{ type: "FloatRingBuffer", id, ts, binary }` and leaves as a ring buffer again
+if nothing touched it.
+
+Only a runtime's output and the next runtime's input travel this way. A
+notification or a log entry that mentions bytes describes them — a size, a
+type — because those are for a person to read.
+
+**No ceiling is built in.** What a board passes between runtimes in the
+playground it may pass when deployed. A coordinator's operator may set one —
+`HKP_COORDINATOR_MAX_FRAME_BYTES` — because a coordinator is shared and holds a
+frame once per attached viewer. A frame over it is dropped and recorded in the
+board's log as `frame-dropped`; the connection, and the board, stay up.
+
+This is not YAS, which is what a runtime server and a browser speak when the
+browser drives the runtime itself. The link already has
+a JSON header to say what the bytes are, and YAS has no encoding for `mixed`.
 
 ---
 
@@ -372,7 +421,8 @@ registers only when asked.
 | Bridge socket | `hkp-node/src/index.ts` (`/coordinator/bridge`), `coordinator/bridgeProtocol.ts` |
 | Board + log persistence | `hkp-node/src/coordinator/fileBoardStore.ts`, `logStore.ts` |
 | Tickets, joining, the participant protocol | `hkp-node/src/coordinator/participants.ts`, `join.ts`, `participantProtocol.ts` |
-| A runtime server's link to a coordinator | `hkp-node/src/coordinatorLinks.ts`, `hkp-python/src/hkp/coordinator_links.py` |
+| Bytes between runtimes | `hkp-node/src/coordinator/binaryFrame.ts`, `hkp-python/src/hkp/binary_frame.py`, `hkp-rt/lib/src/binary_frame.h`, `hkp-frontend/src/views/cloud/bridgeBinary.ts` |
+| A runtime server's link to a coordinator | `hkp-node/src/coordinatorLinks.ts`, `hkp-python/src/hkp/coordinator_links.py`, `hkp-rt/lib/src/coordinator_links.cpp` |
 | Tests | `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts`, `board-log.test.ts`; `hkp-python/tests/test_coordinator_links.py`; `hkp-frontend/src/views/cloud/tests/`, `core/tests/deploy*.test.*`; `e2e/tests/cloud/` |
 
 ---
@@ -383,8 +433,9 @@ registers only when asked.
   top-level board's asset descriptors. A runtime contributed by a unit receives
   none of that unit's assets, so its `hkp-asset://…` references will not resolve
   in the deployed board. See [Assets: Units and deploying](./assets.md#units-and-deploying).
-- **hkp-rt cannot join a coordinator.** It has no outbound link, so a board that
-  places a runtime on it is stopped by the preflight.
+- **A phone's embedded runtime cannot join a coordinator**, by decision: the
+  app is suspended at will. The preflight stops a board that places a runtime
+  there.
 - **Credentials do not survive a runtime server restart.** The ticket does; the
   values handed over with the introduction are held in memory. The board says
   which are missing, and deploying again supplies them.

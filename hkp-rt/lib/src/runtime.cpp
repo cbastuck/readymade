@@ -271,6 +271,16 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
   app->postCallback([app, runtimeId, data, purpose, sender]() {
     try
     {
+      // Before serializing for the clients watching: a sink takes the value
+      // as it is, and must not lose it to a frame that cannot be built.
+      app->emitRuntimeData(runtimeId, data, purpose, sender);
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "Runtime::sendData: output sink failed: " << e.what() << std::endl;
+    }
+    try
+    {
       auto server = app->getServer();
       if (server)
       {
@@ -285,6 +295,20 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
       std::cerr << "Runtime::sendData: dropping notification: " << e.what() << std::endl;
     }
   });
+}
+
+std::string Runtime::mountEndpoint(const std::string& name, MountAdopter adopter)
+{
+  auto server = m_app->getServer();
+  return server ? server->mount(m_boardName, m_runtimeId, name, std::move(adopter)) : "";
+}
+
+void Runtime::unmountEndpoint(const std::string& name)
+{
+  if (auto server = m_app->getServer())
+  {
+    server->unmount(m_boardName, m_runtimeId, name);
+  }
 }
 
 void Runtime::notifyProcessFinished(const Service& service, const Data& data)
@@ -401,7 +425,15 @@ void Runtime::forwardLog(const LogEntry& entry)
   App* app = m_app.get();
   const std::string runtimeId = m_runtimeId;
   const nlohmann::json message = {{"type", "log"}, {"entry", entry.toJson()}};
-  app->postCallback([app, runtimeId, message]() {
+  app->postCallback([app, runtimeId, message, entry]() {
+    try
+    {
+      app->emitRuntimeLog(runtimeId, entry);
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "Runtime::forwardLog: output sink failed: " << e.what() << std::endl;
+    }
     try
     {
       if (auto server = app->getServer())

@@ -192,6 +192,16 @@ Data App::processRuntime(const std::string& runtimeId, const Data& data)
   return rt->process(data);
 }
 
+Data App::processRuntime(const std::string& runtimeId, const Data& data, const json& context)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return false;
+  }
+  return rt->process(data, ProcessContext::fromJson(context));
+}
+
 Data App::processServiceAt(const std::string& runtimeId,
                            const std::string& instanceId, const Data& data)
 {
@@ -296,6 +306,85 @@ json App::checkRuntimeAsset(const std::string& runtimeId, const std::string& ass
   return json{{"ok", true},
               {"mediaType", resolution.asset->mediaType},
               {"size", resolution.asset->content.size()}};
+}
+
+json App::setRuntimeState(const std::string& runtimeId, const json& state)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return nullptr;
+  }
+  if (state.is_object())
+  {
+    if (state.contains("logging") && state["logging"].is_boolean())
+    {
+      rt->setLogging(state["logging"].get<bool>());
+    }
+    if (state.contains("logLevel") && state["logLevel"].is_string())
+    {
+      rt->setLogLevel(levelFromString(state["logLevel"].get<std::string>()));
+    }
+    if (state.contains("logData") && state["logData"].is_boolean())
+    {
+      rt->setLogData(state["logData"].get<bool>());
+    }
+  }
+  const auto config = rt->getConfiguration();
+  return json{
+    {"logging", config.logging},
+    {"logData", config.logData},
+    {"logLevel", config.logLevel},
+  };
+}
+
+void App::setRuntimeOutputSink(const std::string& runtimeId, RuntimeOutputSink sink)
+{
+  std::lock_guard<std::mutex> lock(m_sinksMutex);
+  m_sinks[runtimeId] = std::move(sink);
+}
+
+void App::clearRuntimeOutputSink(const std::string& runtimeId)
+{
+  std::lock_guard<std::mutex> lock(m_sinksMutex);
+  m_sinks.erase(runtimeId);
+}
+
+void App::emitRuntimeData(const std::string& runtimeId, const Data& data,
+                          MessagePurpose purpose, const std::string& sender)
+{
+  // Copied out under the lock and called without it: a sink may take a while,
+  // and may itself replace or remove a sink.
+  std::function<void(const Data&, MessagePurpose, const std::string&)> onData;
+  {
+    std::lock_guard<std::mutex> lock(m_sinksMutex);
+    auto it = m_sinks.find(runtimeId);
+    if (it != m_sinks.end())
+    {
+      onData = it->second.onData;
+    }
+  }
+  if (onData)
+  {
+    onData(data, purpose, sender);
+  }
+}
+
+void App::emitRuntimeLog(const std::string& runtimeId, const LogEntry& entry)
+{
+  std::function<void(const LogEntry&)> onLog;
+  {
+    std::lock_guard<std::mutex> lock(m_sinksMutex);
+    auto it = m_sinks.find(runtimeId);
+    if (it != m_sinks.end())
+    {
+      onLog = it->second.onLog;
+    }
+  }
+  if (onLog)
+  {
+    onLog(entry);
+  }
 }
 
 std::shared_ptr<Runtime> App::appendRuntime(const RuntimeConfiguration& config)

@@ -50,6 +50,13 @@ public:
 
   uint64_t age() const;
   unsigned int id() const { return m_id; }
+  // For a buffer rebuilt from samples that arrived from elsewhere: it is the
+  // buffer it was there, not a new one made here.
+  void setIdentity(unsigned int id, uint64_t timestamp)
+  {
+    m_id = id;
+    m_timestamp = timestamp;
+  }
   uint64_t timestamp() const { return m_timestamp; }
 
   uint64_t getReadIndex() const { return m_readIndex.load(std::memory_order_relaxed); }

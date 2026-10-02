@@ -144,6 +144,13 @@ Types are shared across runtimes:
 - `hkp-rt/lib/include/types/data.h` — C++ type definitions
 - `hkp-go/types/data.go` — Go type definitions
 
+A deployed board does not use YAS between runtimes. The coordinator's
+connections carry a value holding bytes as a binary frame — a JSON header
+saying what the bytes are (`bytes`, `floatRingBuffer`, `mixed`), then the bytes
+— which the coordinator forwards without reading
+(`hkp-node/src/coordinator/binaryFrame.ts`,
+`docs/content/concepts/cloud-boards.md`).
+
 ---
 
 ## Board JSON format
@@ -197,7 +204,8 @@ These endpoints are unauthenticated by design — they exist for outside callers
 token — so the unguessable id is what gates access. The id is **derived, not drawn**: an
 HMAC of the tenant, board, runtime and the mount's name (`mountName`, defaulting to the
 service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted per runtime at
-`~/.hkp/<node|python>/mount-secret`). The address therefore survives reloads, restarts and
+`~/.hkp/<node|python|cpp>/mount-secret`). A standalone hkp-rt mounts the same way;
+embedded in an app it still binds the port a board names (`docs/content/concepts/mounts.md`). The address therefore survives reloads, restarts and
 redeploys — an outside party configured with it by hand keeps working — while staying
 uncomputable without the key. Renaming a mount rotates that one address; rotating the
 secret rotates all of them. Nothing sensitive enters the board, which says only what the

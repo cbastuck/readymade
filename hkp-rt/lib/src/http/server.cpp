@@ -16,6 +16,10 @@
 #include "common/websocket_protocol.h"
 #include "discovery/discovery.h"
 #include "uuid.h"
+#include "http/front_door.h"
+
+#include <atomic>
+#include <thread>
 
 namespace hkp
 {
@@ -50,9 +54,25 @@ inline std::string bearerToken(const std::string& header)
   return header.substr(prefixLen);
 }
 
+// Where a request came from. Behind the front door every request arrives from
+// this process, which says who the caller was in a header — believed only
+// beside the secret the front door alone knows. See http/front_door.h.
+inline std::string callerAddress(const crow::request& req, const std::string& frontSecret)
+{
+  if (!frontSecret.empty() &&
+      req.get_header_value(FrontDoor::FRONT_HEADER) == frontSecret)
+  {
+    return req.get_header_value(FrontDoor::CLIENT_HEADER);
+  }
+  return req.remote_ip_address;
+}
+
 struct AuthMiddleware
 {
   struct context {};
+
+  // Set once mounts are enabled; see callerAddress.
+  std::string frontSecret;
 
   Authenticator* authenticator = nullptr;
   CapabilityStore* capabilities = nullptr;
@@ -81,7 +101,7 @@ struct AuthMiddleware
     // UI. This lets the owner drive (and start discovery on) their own runtime
     // without having to add themselves to the allow-list; only genuine LAN peers
     // are challenged for a token.
-    if (isLoopbackHost(req.remote_ip_address))
+    if (isLoopbackHost(callerAddress(req, frontSecret)))
     {
       return;
     }
@@ -210,11 +230,37 @@ struct Server::impl
           return makeJsonResponse(checked);
         });
 
+    // Change what a running runtime records, without rebuilding it. Separate
+    // from POST /runtimes/<id>, which processes data rather than configuring
+    // anything.
+    CROW_ROUTE(crow, "/runtimes/<string>/state")
+        .methods("PATCH"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return setRuntimeState(req, runtimeId); });
+
     CROW_ROUTE(crow, "/runtimes/<string>/rearrange")
         .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return rearrangeServices(req, runtimeId); });
 
     CROW_ROUTE(crow, "/runtimes/<string>")
         .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return processRuntime(req, runtimeId); });
+
+    // A person's own client introducing this server to a coordinator, for one
+    // runtime of one board: it has asked the coordinator for a ticket and
+    // passes it on. This server then connects to the coordinator — the
+    // coordinator connects to nothing — and keeps the ticket to reconnect with.
+    CROW_ROUTE(crow, "/coordinator-links")
+        .methods("POST"_method)([this](const crow::request &req) -> crow::response { return introduceCoordinator(req); });
+
+    // The links held: which runtimes belong to which board, never a ticket.
+    CROW_ROUTE(crow, "/coordinator-links")
+        .methods("GET"_method)([this]() -> crow::response {
+          return makeJsonResponse(json{{"links", coordinatorLinks ? coordinatorLinks->list() : json::array()}});
+        });
+
+    // Leaves a board: drops the link and the runtime it was for.
+    CROW_ROUTE(crow, "/coordinator-links/<string>")
+        .methods("DELETE"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response {
+          const bool removed = coordinatorLinks && coordinatorLinks->remove(runtimeId);
+          return crow::response{removed ? crow::status::OK : crow::status::NOT_FOUND};
+        });
 
     CROW_ROUTE(crow, "/runtimes/<string>/inputs")
         .methods("GET"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return getRuntimeInputs(req, runtimeId); });
@@ -281,6 +327,8 @@ struct Server::impl
   crow::response rearrangeServices(const crow::request &req, const std::string& runtimeId);
   crow::response setSecrets(const crow::request &req, const std::string& runtimeId);
   crow::response setAssets(const crow::request &req, const std::string& runtimeId);
+  crow::response setRuntimeState(const crow::request &req, const std::string& runtimeId);
+  crow::response introduceCoordinator(const crow::request &req);
   crow::response processRuntime(const crow::request &req, const std::string& runtimeId);
   crow::response processService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId);
   crow::response getRuntimeInputs(const crow::request &req, const std::string& runtimeId);
@@ -372,6 +420,12 @@ struct Server::impl
   std::string bindAddress;
   std::string instanceId = generateUUID();
   std::unique_ptr<Authenticator> authenticator;
+  // Set by a host that serves mounts; see Server::enableMounts.
+  std::unique_ptr<FrontDoor> frontDoor;
+  Server::MountOptions mountOptions;
+  std::atomic<unsigned int> publicPort{0};
+  // Set by a host that lets this server be introduced to coordinators.
+  std::unique_ptr<CoordinatorLinks> coordinatorLinks;
   CapabilityStore capabilities;
   DiscoveryManager discovery;
 
@@ -407,17 +461,103 @@ void Server::start(const std::string& externalIP, unsigned int port, const std::
 {
   m_impl->externalIP = externalIP;
   m_impl->bindAddress = bindAddress;
-  m_impl->crow.bindaddr(bindAddress).port(port).run();
+  if (!m_impl->frontDoor)
+  {
+    m_impl->crow.bindaddr(bindAddress).port(port).run();
+    return;
+  }
+
+  // The front door takes the port. The api listens on loopback, on a port the
+  // OS picks and nobody is told, and is reached through the front door only.
+  m_impl->publicPort = port;
+  std::atomic<bool> failed{false};
+  auto* impl = m_impl.get();
+  std::thread opener([impl, &failed, bindAddress, port]() {
+    impl->crow.wait_for_server_start(std::chrono::milliseconds(30000));
+    const auto bound = impl->frontDoor->start(
+      bindAddress, static_cast<unsigned short>(port), impl->crow.port());
+    if (bound == 0)
+    {
+      failed = true;
+      impl->crow.stop();
+      return;
+    }
+    impl->publicPort = bound;
+  });
+  m_impl->crow.bindaddr("127.0.0.1").port(0).run();
+  opener.join();
+  m_impl->frontDoor->stop();
+  if (failed)
+  {
+    throw std::runtime_error("could not listen on " + bindAddress + ":" + std::to_string(port));
+  }
+}
+
+void Server::enableMounts(MountOptions options)
+{
+  if (options.secret.empty())
+  {
+    options.secret = generateUUID() + generateUUID();
+  }
+  m_impl->mountOptions = std::move(options);
+  m_impl->publicPort = m_impl->mountOptions.port;
+  if (m_impl->externalIP.empty())
+  {
+    m_impl->externalIP = m_impl->mountOptions.externalHost;
+  }
+  // Known to this process only: what makes the caller's address, as the front
+  // door passes it on, something the api can believe.
+  m_impl->frontDoor = std::make_unique<FrontDoor>(generateUUID() + generateUUID());
+  m_impl->crow.get_middleware<AuthMiddleware>().frontSecret = m_impl->frontDoor->frontSecret();
+}
+
+std::string Server::mount(const std::string& boardName, const std::string& runtimeId,
+                          const std::string& name, MountAdopter adopter)
+{
+  if (!m_impl->frontDoor)
+  {
+    return "";
+  }
+  const auto id = deriveMountId(m_impl->mountOptions.secret, "", boardName, runtimeId, name);
+  m_impl->frontDoor->mount(id, std::move(adopter));
+  const std::string base = !m_impl->mountOptions.externalUrl.empty()
+    ? m_impl->mountOptions.externalUrl
+    : "http://" + m_impl->externalIP + ":" + std::to_string(port());
+  return base + MOUNT_PREFIX + "/" + id;
+}
+
+void Server::unmount(const std::string& boardName, const std::string& runtimeId,
+                     const std::string& name)
+{
+  if (m_impl->frontDoor)
+  {
+    m_impl->frontDoor->unmount(
+      deriveMountId(m_impl->mountOptions.secret, "", boardName, runtimeId, name));
+  }
+}
+
+void Server::enableCoordinatorLinks(std::shared_ptr<LinkStore> store,
+                                    CoordinatorLinksOptions options)
+{
+  m_impl->coordinatorLinks = std::make_unique<CoordinatorLinks>(
+    m_impl->app, std::move(store), std::move(options));
+  m_impl->coordinatorLinks->restore();
 }
 
 void Server::stop() 
 {
+  // Before the routes go: a link's connection is closed, its ticket kept.
+  if (m_impl->coordinatorLinks)
+  {
+    m_impl->coordinatorLinks->stop();
+  }
   m_impl->crow.stop();
 }
 
 unsigned int Server::port() const
 {
-  return m_impl->crow.port();
+  // The port callers use, which with mounts is the front door's.
+  return m_impl->frontDoor ? m_impl->publicPort.load() : m_impl->crow.port();
 }
 
 const std::string& Server::externalIP() const
@@ -442,7 +582,7 @@ crow::response Server::impl::getRuntimes()
   {
     arr.push_back(jsonSerialise(rt));
   }
-  return makeJsonResponse(json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}});
+  return makeJsonResponse(json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}, {"coordinatorLinks", coordinatorLinks != nullptr}});
 }
 
 
@@ -487,7 +627,7 @@ crow::response Server::impl::createRuntimes(const crow::request &req)
     auto createdConfig = app->createRuntime(*rtConfig);
     arr.push_back(jsonSerialise(createdConfig));
   }
-  return makeJsonResponse({json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}}});
+  return makeJsonResponse({json{{"runtimes", arr}, {"registry", app->getRegistry()}, {"server", kRuntimeServerKind}, {"coordinatorLinks", coordinatorLinks != nullptr}}});
 }
 
 crow::response Server::impl::configureService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId)
@@ -613,6 +753,62 @@ crow::response Server::impl::getRuntimeById(const std::string& id)
     return crow::response{crow::status::NOT_FOUND};
   }
   return makeJsonResponse(jsonSerialise(*rt));
+}
+
+crow::response Server::impl::introduceCoordinator(const crow::request &req)
+{
+  if (!coordinatorLinks)
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+  const json body = json::parse(req.body, nullptr, /*allow_exceptions=*/false);
+  const auto text = [&body](const char* key) {
+    return body.is_object() && body.contains(key) && body[key].is_string()
+      ? body[key].get<std::string>() : std::string();
+  };
+  const LinkRecord record{text("boardName"), text("runtimeId"),
+                          text("coordinatorUrl"), text("ticket")};
+  if (record.boardName.empty() || record.runtimeId.empty() ||
+      record.coordinatorUrl.empty() || record.ticket.empty())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+  // The values for the references that runtime's services carry. Handed to the
+  // runtime when the coordinator builds it, and not sent to the coordinator.
+  const auto reason = coordinatorLinks->introduce(
+    record, readSecretsPayload(body.contains("secrets") ? body["secrets"] : json()));
+  if (!reason.empty())
+  {
+    auto refused = makeJsonResponse(json{{"error", reason}});
+    refused.code = 502;
+    return refused;
+  }
+  auto connected = makeJsonResponse(json{{"connected", true}});
+  connected.code = 201;
+  return connected;
+}
+
+crow::response Server::impl::setRuntimeState(const crow::request &req, const std::string& runtimeId)
+{
+  json body;
+  try
+  {
+    body = json::parse(req.body);
+  }
+  catch (const std::exception&)
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+  if (!body.is_object())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+  auto settings = app->setRuntimeState(runtimeId, body);
+  if (settings.is_null())
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+  return makeJsonResponse(settings);
 }
 
 crow::response Server::impl::setSecrets(const crow::request &req, const std::string& runtimeId)
@@ -937,7 +1133,8 @@ bool Server::impl::wsOnAccept(const crow::request& req, void** userdata)
   // Same policy as the REST AuthMiddleware: no-auth mode and loopback clients
   // are always allowed; otherwise the token (carried in ?access_token= because
   // a browser can't set headers on a handshake) must verify and be allow-listed.
-  bool allowed = authenticator->isNoAuth() || isLoopbackHost(req.remote_ip_address);
+  bool allowed = authenticator->isNoAuth() ||
+    isLoopbackHost(callerAddress(req, frontDoor ? frontDoor->frontSecret() : std::string()));
   if (!allowed)
   {
     if (const char* token = req.url_params.get("access_token"))

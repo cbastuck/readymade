@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { defineConfig, devices } from "@playwright/test";
 
 import type { HostOptions } from "./support/test";
@@ -11,6 +15,10 @@ import type { HostOptions } from "./support/test";
  * setup. On loopback it runs without authentication, and keeps nothing on
  * disk: every directory it would write to is pointed at nowhere.
  *
+ * A fourth joins where it has been built: hkp-rt, the C++ runtime server, as a
+ * second place a board's runtime can live. `hkp-rt/run-tests.sh` builds the
+ * binary; without it the specs that need it are skipped.
+ *
  * One host profile, the desktop shell: it is the one whose session and remotes
  * a spec can supply (through the fake native host), and what is under test
  * here is deploying, not the shells.
@@ -19,6 +27,15 @@ import type { HostOptions } from "./support/test";
 const MEANDER_PORT = 8599;
 export const NODE_PORT = 18080;
 export const NODE_URL = `http://127.0.0.1:${NODE_PORT}`;
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+export const RT_PORT = 18087;
+export const RT_URL = `http://127.0.0.1:${RT_PORT}`;
+/** The hkp-rt binary, when one has been built; `HKP_RT_BIN` names another. */
+export const RT_BIN = [
+  process.env.HKP_RT_BIN,
+  path.resolve(HERE, "../hkp-rt/build-tests/exe/hkp-rt"),
+  path.resolve(HERE, "../hkp-rt/build/exe/hkp-rt"),
+].find((candidate) => !!candidate && fs.existsSync(candidate));
 
 export default defineConfig<HostOptions>({
   testDir: "./tests/cloud",
@@ -81,5 +98,24 @@ export default defineConfig<HostOptions>({
         HKP_FILES_DIR: "",
       },
     },
+    ...(RT_BIN
+      ? [
+          {
+            command: `"${RT_BIN}" ${RT_PORT}`,
+            url: `${RT_URL}/runtimes`,
+            reuseExistingServer: false,
+            timeout: 60_000,
+            env: {
+              HOST: "",
+              AUTH0_DOMAIN: "",
+              AUTH0_AUDIENCE: "",
+              ALLOWED_EMAILS: "",
+              HKP_COORDINATOR_LINKS_FILE: "",
+              HKP_MOUNT_SECRET: "e2e",
+              HKP_EXTERNAL_URL: "",
+            },
+          },
+        ]
+      : []),
   ],
 });

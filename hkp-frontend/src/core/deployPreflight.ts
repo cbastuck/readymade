@@ -99,7 +99,7 @@ export function describePreflight(finding: RuntimePreflight): string {
     case "missing-services":
       return `${subject}: its runtime server${on} does not have ${(finding.missing ?? []).join(", ")}`;
     case "cannot-join":
-      return `${subject}: its runtime server${on} cannot connect to a coordinator — it needs updating`;
+      return `${subject}: its runtime server${on} cannot connect to a coordinator — a phone's built-in runtime does not, and an older server needs updating`;
     case "unsupported":
       return `${subject} is a kind of runtime a coordinator does not run`;
   }

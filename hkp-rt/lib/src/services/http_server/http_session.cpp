@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <cstring>
 
 #include "./http_server_impl.h" 
 #include "./request_handler.h"
@@ -48,10 +49,10 @@ inline std::shared_ptr<http::response<http::string_body>> createHttpEventStreamH
 
 static unsigned int s_sessionId = 0;
 
-Session::Session(Listener& listener, tcp::socket&& socket)
+Session::Session(HttpServerImpl& server, tcp::socket&& socket)
     : stream_(std::move(socket))
     , lambda_(*this)
-    , listener_(listener)
+    , server_(server)
     , m_sessionId(s_sessionId++)
 { 
 }
@@ -59,6 +60,14 @@ Session::Session(Listener& listener, tcp::socket&& socket)
 Session::~Session()
 {
   do_close(false);
+}
+
+void Session::adoptMounted(const std::string& prefetched, const std::string& mountPath)
+{
+  m_mountPath = mountPath;
+  const auto area = buffer_.prepare(prefetched.size());
+  std::memcpy(area.data(), prefetched.data(), prefetched.size());
+  buffer_.commit(prefetched.size());
 }
 
 // Start the asynchronous operation
@@ -100,7 +109,7 @@ void Session::on_read(beast::error_code ec, std::size_t bytes_transferred)
 
   // Send the response
   // handle_request(std::move(req_), lambda_);
-  listener_.onSessionOpened(shared_from_this());
+  server_.onSessionOpened(shared_from_this());
 }
 
 void Session::on_write(bool close, beast::error_code ec, std::size_t bytes_transferred)
@@ -147,7 +156,7 @@ void Session::do_close(bool notify)
     if (notify)
     {
       // At this point the connection is closed gracefully
-      listener_.onSessionClosed(shared_from_this());
+      server_.onSessionClosed(shared_from_this());
     }
 }
 

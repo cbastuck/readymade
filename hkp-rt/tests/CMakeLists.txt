@@ -64,6 +64,10 @@ add_executable(hkp-rt-service-tests
   service_websocket_writer.test.cpp
   runtime_no_input.test.cpp
   service_asset.test.cpp
+  runtime_output_sink.test.cpp
+  link_socket.test.cpp
+  coordinator_links.test.cpp
+  mounts.test.cpp
 )
 target_include_directories(hkp-rt-service-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lib/src)
 target_link_libraries(hkp-rt-service-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2::Catch2WithMain)
@@ -73,6 +77,7 @@ catch_discover_tests(hkp-rt-service-tests)
 
 add_executable(hkp-rt-auth-tests
   auth.test.cpp
+  standalone_config.test.cpp
 )
 target_link_libraries(hkp-rt-auth-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2::Catch2WithMain)
 target_compile_features(hkp-rt-auth-tests PRIVATE cxx_std_20)

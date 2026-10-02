@@ -342,12 +342,9 @@ to revisit; none was obvious enough to go without saying.
 
 ## Still open
 
-- **hkp-rt has no coordinator link** — planned in
-  `TODO-HKP-RT-COORDINATOR-LINK.md`. It needs an outbound WebSocket client
-  speaking `participantProtocol.ts`, ticket persistence, and the six operations.
-  Until then the preflight stops a deploy that places a runtime on it
-  (`cannot-join`). The retired dialling path was the only way hkp-rt ever took
-  part in a cloud board, and only without auth — it has no session-token route.
+- **hkp-rt** joins a coordinator as of 2026-10-02 (standalone and desktop),
+  and deployed boards carry bytes between runtimes. What is left of that
+  package is in `TODO-HKP-RT-COORDINATOR-LINK.md`.
 - **Credentials after a runtime server restart.** The ticket survives, the
   values do not: the board says `needs configuration — its runtime server holds
   no value for …`, and deploying again fixes it. Whether a runtime server gets

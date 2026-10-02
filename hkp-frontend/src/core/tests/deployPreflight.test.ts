@@ -200,6 +200,17 @@ describe("a runtime that stops the deploy", () => {
     expect(describePreflight(finding)).toMatch(/does not have smtp/);
   });
 
+  it("takes a C++ runtime server that says it can join", async () => {
+    // hkp-rt calls itself "c++", and says per host whether it can connect to a
+    // coordinator: a standalone or desktop one can, a phone's cannot.
+    servers({ "http://laptop:8080": healthy("c++") });
+
+    const finding = await nodeFinding({ url: "http://laptop:8080" });
+
+    expect(finding.status).toBe("ready");
+    expect(blocksDeploy(finding)).toBe(false);
+  });
+
   it("says its server cannot connect to a coordinator", async () => {
     // A runtime server from before coordinators stopped dialling: there is
     // nothing for the coordinator to reach it with any more.
