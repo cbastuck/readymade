@@ -40,6 +40,12 @@ export default class RuntimeRestScope implements RuntimeScope {
   runtimeOutput: WebSocket | undefined;
   registry: ServiceRegistry = [];
   /**
+   * Bytes that could not be sent because the socket was not open, since the
+   * last time that was logged, and when it was.
+   */
+  droppedBytes = 0;
+  droppedLoggedAt = 0;
+  /**
    * Which runtime server hosts this runtime ("node", "python", "c++"), as the
    * server reports it. Absent when the server does not say.
    */

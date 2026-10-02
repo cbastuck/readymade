@@ -92,5 +92,7 @@ microphone, so the first samples have somewhere to go; Stop does the reverse.
 
 Run hkp-rt on port 8887 (`hkp-rt 8887`) and load the board. Check the
 microphone's **Channels** in its panel: the encoder is set to `1`, which matches
-a built-in mic. For a two-channel interface, set the encoder's `channels` to `2`.
+a built-in mic. For a two-channel interface, set the encoder's `channels` to `2`. If the device
+will not run at the 48 kHz the board asks for, the board says so when you press
+Start; set the encoder's `sampleRate` to the rate the microphone reports.
 The stream is served on port 8890 on your LAN address.

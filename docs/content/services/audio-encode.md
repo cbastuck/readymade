@@ -72,9 +72,13 @@ and may spend bits its predecessors saved, so the encoder keeps back the samples
 its model still needs. Encoding chunk by chunk with a fresh encoder would put a
 seam, and the encoder's start-up delay, into every chunk.
 
-Every chunk a stream emits is **whole frames**, so each is a place a listener can
-start — which is what lets an [endpoint's stream](./http.md#streaming) take
-listeners at any moment. State adds `streamedBytes` and `streamedSeconds`, and is
+Every chunk a stream emits is **whole frames**, so each is a place a decoder can
+find its footing — which is what lets an [endpoint's stream](./http.md#streaming)
+take listeners at any moment. It is not always a place the audio is complete: a
+frame that spends bits its predecessors saved needs bytes a listener joining
+there never received, and a decoder plays such a frame as silence. Joining
+therefore costs up to a few frames — tens of milliseconds — before sound starts,
+the same as on any MP3 radio stream. State adds `streamedBytes` and `streamedSeconds`, and is
 notified about once a second rather than on every pass.
 
 ## Input / Output

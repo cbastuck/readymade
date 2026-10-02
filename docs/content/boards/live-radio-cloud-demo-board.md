@@ -46,8 +46,11 @@ Runtimes do not dial each other: a result goes from one runtime to whoever runs
 the board, and from there to the next. Here that is this window, on the same
 machine as the home runtime, so the detour costs next to nothing — but the
 board has to stay open while it is on air, and every frame passes through the
-window's main thread. If the uplink stalls, the frames wait rather than being
-dropped, and listeners fall behind for good.
+window's main thread. If the uplink stalls while the connection to the relay
+stays open, the frames wait rather than being dropped, and listeners fall behind
+for good. While that connection is closed — before it first opens, or between a
+drop and the reconnect — there is nowhere for them to wait: those frames are
+dropped, and listeners hear a gap. The window's console says how many bytes.
 
 [Live Radio (Cloud, direct)](./live-radio-cloud-direct-demo-board.md) connects
 the home runtime to the relay itself instead, and keeps at most about a second

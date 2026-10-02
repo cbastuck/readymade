@@ -99,6 +99,7 @@ service:
 | `availableDevices` | `string[]` | All input devices currently visible to CoreAudio |
 | `sampleRate` | `number` | The rate the device actually runs at |
 | `channels` | `number` | How many channels the samples are interleaved across — what a service reading them, such as [Audio Encode](./audio-encode.md), is configured to match |
+| `error` | `string` | Why the device is not delivering what was asked for, or empty. Set when the device runs at a rate other than `preferredSampleRate` — capture goes ahead at the device's rate, and whatever reads the samples under the preferred one plays them at the wrong speed — and when the device's format cannot be captured at all: samples that are not float, or channels in separate buffers |
 
 ### Which thread runs the pipeline
 

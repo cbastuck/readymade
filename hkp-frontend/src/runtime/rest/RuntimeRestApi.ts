@@ -456,9 +456,17 @@ export async function processRuntime(
     if (isBinaryData(payload)) {
       // A JSON body cannot carry bytes, and a body the runtime misreads is
       // worse than none: this pass is dropped until the socket is open.
-      console.warn(
-        `processRuntime: ${runtime.id} has no open socket; dropping ${payload.byteLength} bytes`,
-      );
+      // Logged as a running total at most once a second, since a stream
+      // arrives many times that often.
+      scope.droppedBytes += payload.byteLength;
+      const now = Date.now();
+      if (now - scope.droppedLoggedAt >= 1000) {
+        console.warn(
+          `processRuntime: ${runtime.id} has no open socket; dropped ${scope.droppedBytes} bytes`,
+        );
+        scope.droppedBytes = 0;
+        scope.droppedLoggedAt = now;
+      }
       return;
     }
     const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {

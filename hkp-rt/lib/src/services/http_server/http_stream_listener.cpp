@@ -1,6 +1,8 @@
 #include "./http_stream_listener.h"
 
+#include <charconv>
 #include <cmath>
+#include <limits>
 #include <string_view>
 
 #include <boost/asio.hpp>
@@ -215,13 +217,29 @@ std::optional<std::pair<std::uint64_t, std::uint64_t>> boundedRange(const std::s
   {
     return std::nullopt;
   }
-  const auto first = std::stoull(spec.substr(0, dash));
-  const auto last = std::stoull(spec.substr(dash + 1));
-  if (last < first)
+  // A number too large to hold is not a range that can be answered, and is
+  // treated like any other malformed one.
+  const auto parse = [&spec](std::size_t from, std::size_t to) -> std::optional<std::uint64_t> {
+    std::uint64_t value = 0;
+    const char* begin = spec.data() + from;
+    const char* end = spec.data() + to;
+    const auto result = std::from_chars(begin, end, value);
+    if (result.ec != std::errc{} || result.ptr != end)
+    {
+      return std::nullopt;
+    }
+    return value;
+  };
+  const auto first = parse(0, dash);
+  const auto last = parse(dash + 1, spec.size());
+  // A span covering the whole 64-bit space has a length that cannot be held
+  // either.
+  if (!first || !last || *last < *first
+      || *last - *first == std::numeric_limits<std::uint64_t>::max())
   {
     return std::nullopt;
   }
-  return std::make_pair(first, last);
+  return std::make_pair(*first, *last);
 }
 
 void answerRangeProbe(const std::shared_ptr<Session>& session, const std::string& contentType,

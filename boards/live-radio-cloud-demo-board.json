@@ -189,6 +189,15 @@
           ]
         }
       }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "mic",
+          "path": "error"
+        },
+        "tone": "error"
+      }
     ]
   }
 }

@@ -3,6 +3,7 @@
 #include <atomic>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <CoreAudio/CoreAudio.h>
 
 #include <types/types.h>
@@ -89,6 +90,7 @@ public:
     // service reading them (an encoder, say) is configured to match.
     state["channels"] = m_channels;
     state["availableSampleRates"] = m_inputDeviceID ? CoreAudioGetAvailableSampleRates(m_inputDeviceID) : json::array();
+    state["error"] = m_error;
     return Service::mergeBypassState(state);
   }
 
@@ -118,6 +120,7 @@ private:
     std::string deviceName = CoreAudioGetInputDeviceName(m_inputDeviceID);
     std::cout << "Using input device: " << deviceName << std::endl;
   
+    m_error.clear();
     if (m_preferredSampleRate > 0)
     {
       status = CoreAudioSetSampleRate(m_inputDeviceID, m_preferredSampleRate);
@@ -134,10 +137,29 @@ private:
     status = CoreAudioGetSampleFormat(m_inputDeviceID, kAudioObjectPropertyScopeInput, &streamFormat);
     if (status != 0 || !(streamFormat.mFormatFlags & kAudioFormatFlagIsFloat))
     {
-      std::cerr << "CoreInput::start: input device does not deliver float samples" << std::endl;
+      reportError("the input device does not deliver float samples");
+      return;
+    }
+    // The callback reads one buffer holding every channel. A device that hands
+    // each channel its own buffer would be captured as its first channel only,
+    // under a channel count that says otherwise.
+    if (streamFormat.mChannelsPerFrame > 1 && (streamFormat.mFormatFlags & kAudioFormatFlagIsNonInterleaved))
+    {
+      reportError("the input device delivers its channels in separate buffers, which is not supported");
       return;
     }
     m_channels = streamFormat.mChannelsPerFrame;
+
+    // Capture goes ahead at the rate the device has: the samples are good, and
+    // only what reads them under the rate that was asked for is wrong. Compared
+    // against the rate read back, since a device can accept the request and
+    // keep its own.
+    if (m_preferredSampleRate > 0 && m_sampleRate != m_preferredSampleRate)
+    {
+      reportError("the input device runs at " + std::to_string(static_cast<long>(m_sampleRate)) +
+                  " Hz, not the " + std::to_string(static_cast<long>(m_preferredSampleRate)) +
+                  " Hz asked for");
+    }
 
     UInt32 targetBufferSize = m_preferredBufferSize > 0 ? m_preferredBufferSize : BUFFER_SIZE;
     status = CoreAudioSetBufferSize(m_inputDeviceID, targetBufferSize);
@@ -250,6 +272,15 @@ private:
     next(Data(m_buffer), true);
   }
 
+  // Kept in state and notified, so a board can show it. Never called from the
+  // audio thread.
+  void reportError(const std::string& message)
+  {
+    m_error = message;
+    std::cerr << "CoreInput: " << message << std::endl;
+    sendNotification(json{{"error", m_error}});
+  }
+
   // Carries a deferred pass from the audio thread to the runtime's event loop.
   //
   // The wakeup's own thread does the posting, because posting may allocate.
@@ -300,6 +331,7 @@ private:
   UInt32 m_channels = 0;
   double m_preferredSampleRate = 0.0;
   UInt32 m_preferredBufferSize = 0;
+  std::string m_error;
 };
 
 }

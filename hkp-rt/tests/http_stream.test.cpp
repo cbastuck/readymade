@@ -309,6 +309,13 @@ TEST_CASE("only a bounded byte range is a probe", "[http-server-subservices][str
   REQUIRE_FALSE(boundedRange("bytes=0-1,5-6"));
   REQUIRE_FALSE(boundedRange("bytes=5-1"));
   REQUIRE_FALSE(boundedRange(""));
+  // The largest offsets that fit are still a range; past that it is malformed
+  // rather than an exception.
+  REQUIRE(boundedRange("bytes=1-18446744073709551615"));
+  REQUIRE_FALSE(boundedRange("bytes=0-18446744073709551616"));
+  REQUIRE_FALSE(boundedRange("bytes=99999999999999999999999999-999999999999999999999999999"));
+  // Every byte there could be: a length one more than can be counted.
+  REQUIRE_FALSE(boundedRange("bytes=0-18446744073709551615"));
 }
 
 TEST_CASE("a range probe is answered and closed, not kept as a listener",
