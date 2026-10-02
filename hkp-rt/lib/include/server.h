@@ -98,9 +98,10 @@ namespace hkp
     // clients are pointed at, or "" when this server serves no mounts. A
     // connection to that path is handed to `adopter`.
     std::string mount(const std::string& boardName, const std::string& runtimeId,
-                      const std::string& name, MountAdopter adopter);
+                      const std::string& name, const void* owner,
+                      MountAdopter adopter);
     void unmount(const std::string& boardName, const std::string& runtimeId,
-                 const std::string& name);
+                 const std::string& name, const void* owner);
 
     void handleRequest(crow::request& req, crow::response& res);
 

@@ -123,11 +123,12 @@ public:
   // `name` is what the mount is called: with the board and the runtime it is
   // what the address is derived from, so the same name gets the same address
   // after a restart. A nested pipeline's mounts belong to the runtime around it.
-  virtual std::string mountEndpoint(const std::string& name, MountAdopter adopter)
+  virtual std::string mountEndpoint(const std::string& name, const void* owner,
+                                    MountAdopter adopter)
   {
     return "";
   }
-  virtual void unmountEndpoint(const std::string& name) {}
+  virtual void unmountEndpoint(const std::string& name, const void* owner) {}
 
   // Instantiate a new SubRuntime from a JSON array of service-config objects.
   // ownerInParent is the service in this host that owns the new SubRuntime.

@@ -209,14 +209,14 @@ void Service::emit(Data partialResult)
 
 std::string Service::mountEndpoint(const std::string& name, MountAdopter adopter)
 {
-  return m_host ? m_host->mountEndpoint(name, std::move(adopter)) : "";
+  return m_host ? m_host->mountEndpoint(name, this, std::move(adopter)) : "";
 }
 
 void Service::unmountEndpoint(const std::string& name)
 {
   if (m_host)
   {
-    m_host->unmountEndpoint(name);
+    m_host->unmountEndpoint(name, this);
   }
 }
 

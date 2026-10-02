@@ -15,6 +15,7 @@ import {
   RuntimeServerReport,
   describeRuntimeServer,
 } from "../runtime/rest/RuntimeRestApi";
+import { forEachServiceNode } from "../runtime/board/traversal";
 
 /**
  * Checking a board before it is handed to a coordinator.
@@ -119,19 +120,23 @@ export class DeployPreflightError extends Error {
 
 /**
  * The service ids a board uses on a runtime, canonical and without repeats.
- * Only the runtime's own pipeline is read: what a service nests in its state
- * is that service's to report when it is configured.
+ *
+ * Pipelines are data: SubService, Tracks, Switch and other control-flow
+ * services carry service descriptors in their state. Those nested services
+ * are built by the same runtime server and therefore have to be present in its
+ * registry too. Walking the serialized value also keeps this independent of
+ * which service happens to own a particular kind of nested pipeline.
  */
 function requiredServiceIds(
   board: BoardDescriptor,
   runtimeId: string,
 ): string[] {
   const ids = new Set<string>();
-  for (const service of board.services[runtimeId] ?? []) {
-    if (typeof service?.serviceId === "string" && service.serviceId) {
+  forEachServiceNode(board.services[runtimeId] ?? [], (service) => {
+    if (service.serviceId) {
       ids.add(toCanonicalServiceId(service.serviceId));
     }
-  }
+  });
   return [...ids];
 }
 

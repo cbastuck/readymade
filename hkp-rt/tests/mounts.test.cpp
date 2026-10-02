@@ -102,6 +102,22 @@ TEST_CASE("anything else is the api's", "[mounts][front-door]") {
   REQUIRE_FALSE(front_door::readHead("nonsense").valid);
 }
 
+TEST_CASE("an old service cannot unmount the replacement at the same address",
+          "[mounts][front-door]") {
+  FrontDoor door("front-secret");
+  int oldService = 1;
+  int replacement = 2;
+
+  door.mount("stable", &oldService, [](MountedConnection) {});
+  door.mount("stable", &replacement, [](MountedConnection) {});
+
+  door.unmount("stable", &oldService);
+  REQUIRE(static_cast<bool>(door.find("stable")));
+
+  door.unmount("stable", &replacement);
+  REQUIRE_FALSE(static_cast<bool>(door.find("stable")));
+}
+
 TEST_CASE("the api is told who called, and nobody else can say so",
           "[mounts][front-door]") {
   const std::string bytes =

@@ -67,6 +67,10 @@ private:
   // Where it is served when the runtime server mounts it; see mounts.h.
   std::string m_url;
   std::string m_mountName;
+  // The name actually claimed by the current mount. Configuration may change
+  // m_mountName while the service is running; cleanup must release the old
+  // claim, not derive a different id from the new setting.
+  std::string m_mountedName;
   std::string mountName() const { return m_mountName.empty() ? getId() : m_mountName; }
 
   std::mutex m_assemblyMutex;

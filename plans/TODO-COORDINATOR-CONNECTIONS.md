@@ -361,8 +361,17 @@ to revisit; none was obvious enough to go without saying.
 - **Mobile.** The deploy sheet reports what stopped a deploy as a toast, with no
   per-runtime dialog, and the mobile cloud view reads a board's reasons from the
   listing rather than from the live snapshot.
-- **Nested services are not in the preflight.** Only a runtime's own pipeline is
-  compared with the registry.
+- **Runtime ids are not namespaced by board on runtime servers.** Two boards
+  owned by the same account commonly both call a runtime `node` or `python`;
+  placing both on one server currently makes their coordinator links and
+  runtime instances collide. The protocol ticket is already scoped to the
+  board, but the Node, Python and C++ runtime hosts still key the instance by
+  owner/runtime id (or runtime id alone in C++).
+- **A multi-runtime introduction is not transactional.** Tickets replace the
+  previous deployment before every runtime server has accepted its
+  introduction. If a later introduction fails, servers that already joined
+  and the replacement tickets are left in place even though the browser keeps
+  ownership and the board is not re-registered.
 - **Cloud view Start** re-registers without a preflight. It needs none for
   addresses any more, and reports a runtime server that is not connected by
   name.

@@ -200,6 +200,43 @@ describe("a runtime that stops the deploy", () => {
     expect(describePreflight(finding)).toMatch(/does not have smtp/);
   });
 
+  it("checks services nested inside composed pipelines too", async () => {
+    const nested = board({ remote: "Laptop" });
+    nested.services.node = [
+      {
+        uuid: "pipeline",
+        serviceId: "sub-service",
+        serviceName: "Pipeline",
+        state: {
+          pipeline: [
+            {
+              uuid: "fetch",
+              serviceId: "hookup.to/service/http-client",
+              serviceName: "Fetch",
+              state: {},
+            },
+          ],
+        },
+      },
+    ];
+    servers({
+      "http://laptop:8080": {
+        body: {
+          registry: [{ serviceId: "sub-service" }],
+          server: "node",
+          coordinatorLinks: true,
+        },
+      },
+    });
+
+    const finding = (
+      await preflightBoard(nested, remotes, user)
+    ).find((entry) => entry.runtimeId === "node")!;
+
+    expect(finding.status).toBe("missing-services");
+    expect(finding.missing).toEqual(["http-client"]);
+  });
+
   it("takes a C++ runtime server that says it can join", async () => {
     // hkp-rt calls itself "c++", and says per host whether it can connect to a
     // coordinator: a standalone or desktop one can, a phone's cannot.

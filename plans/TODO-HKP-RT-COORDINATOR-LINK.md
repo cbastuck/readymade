@@ -382,15 +382,16 @@ runtime's notification socket through the front door.
 |---|---|---|
 | The frame, a session forwarding payloads, the limit | `hkp-node/tests/coordinator-binary.test.ts` | pass |
 | Bytes, mixed, ring buffer: node ↔ python | `hkp-node/tests/coordinator-python.test.ts` | pass |
-| The same through hkp-rt; a board across node and hkp-rt; restart; deletion; mounts | `hkp-node/tests/coordinator-rt.test.ts` (11) | pass |
+| The same through hkp-rt; a board across node and hkp-rt; restart; deletion; mounts | `hkp-node/tests/coordinator-rt.test.ts` (13) | pass |
 | The browser's end of the bridge | `hkp-frontend/src/views/cloud/tests/bridge-binary.test.tsx` | pass |
-| hkp-rt: socket, sink, link, standalone config, mounts | `hkp-rt/tests/` (245, of which 63 new) | pass |
+| hkp-rt: socket, sink, link, standalone config, mounts | `hkp-rt/tests/` (246, of which 64 new) | pass |
 | A real browser deploying a board on hkp-rt | `e2e/tests/cloud/deploy-rt.spec.ts` | pass |
 | Preflight accepts an hkp-rt that can join | `hkp-frontend/src/core/tests/deployPreflight.test.ts` | pass |
 
-Suites as last run: hkp-node 796, hkp-python 373, hkp-frontend 2054 (+1
-skipped), hkp-rt 245, Playwright cloud 6. The main Playwright suite was not
-rerun.
+Suites as last run: hkp-node 799, hkp-python 373, hkp-frontend 2058 (+1
+skipped), hkp-rt 246, Playwright cloud 6. The full main Playwright suite was
+not rerun; its shipped-board browser sweep passed all 70 cases (including the
+declared expected failure for the retired Reduce service).
 
 **Not automated:** bytes arriving in a *real* browser. The bridge's end is
 covered with a fake socket, and both runtime-server ends against real servers,

@@ -82,7 +82,7 @@ export default defineConfig<HostOptions>({
 
   webServer: [
     {
-      command: `npx vite --port ${FRONTEND_PORT} --strictPort`,
+      command: `"${process.execPath}" node_modules/vite/bin/vite.js --port ${FRONTEND_PORT} --strictPort`,
       // vite serves its working directory, so each server has to be started
       // from its own app rather than from here.
       cwd: "../hkp-frontend",
@@ -91,7 +91,7 @@ export default defineConfig<HostOptions>({
       timeout: 120_000,
     },
     {
-      command: `npx vite --port ${MEANDER_PORT} --strictPort`,
+      command: `"${process.execPath}" node_modules/vite/bin/vite.js --port ${MEANDER_PORT} --strictPort`,
       cwd: "../meander/frontend",
       url: `http://localhost:${MEANDER_PORT}`,
       reuseExistingServer: !process.env.CI,

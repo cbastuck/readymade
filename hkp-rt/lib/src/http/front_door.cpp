@@ -465,23 +465,28 @@ void FrontDoor::stop()
   m_acceptor.reset();
 }
 
-void FrontDoor::mount(const std::string& mountId, MountAdopter adopter)
+void FrontDoor::mount(const std::string& mountId, const void* owner,
+                      MountAdopter adopter)
 {
   std::lock_guard<std::mutex> lock(m_mutex);
-  m_mounts[mountId] = std::move(adopter);
+  m_mounts.insert_or_assign(mountId, Mounted{owner, std::move(adopter)});
 }
 
-void FrontDoor::unmount(const std::string& mountId)
+void FrontDoor::unmount(const std::string& mountId, const void* owner)
 {
   std::lock_guard<std::mutex> lock(m_mutex);
-  m_mounts.erase(mountId);
+  const auto it = m_mounts.find(mountId);
+  if (it != m_mounts.end() && it->second.owner == owner)
+  {
+    m_mounts.erase(it);
+  }
 }
 
 MountAdopter FrontDoor::find(const std::string& mountId)
 {
   std::lock_guard<std::mutex> lock(m_mutex);
   const auto it = m_mounts.find(mountId);
-  return it == m_mounts.end() ? MountAdopter() : it->second;
+  return it == m_mounts.end() ? MountAdopter() : it->second.adopter;
 }
 
 }

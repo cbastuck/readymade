@@ -102,11 +102,22 @@ export default function CameraUI(props: ServiceUIProps) {
     videoElement: HTMLVideoElement,
     deviceId?: string,
   ) => {
-    const s = await startVideoStream(videoElement, deviceId);
-    setStream(s);
-    streamRef.current = s;
-    if (!devices.length) {
-      await enumerateDevices();
+    let started: MediaStream | null = null;
+    try {
+      const s = await startVideoStream(videoElement, deviceId);
+      started = s;
+      setStream(s);
+      streamRef.current = s;
+      if (!devices.length) {
+        await enumerateDevices();
+      }
+    } catch (err) {
+      // Camera availability is environmental, not a board crash. Keep the
+      // service usable so the person can retry or choose another device.
+      stopVideoStream(started, videoElement);
+      setStream(null);
+      streamRef.current = null;
+      console.warn("Could not start camera:", err);
     }
   };
 

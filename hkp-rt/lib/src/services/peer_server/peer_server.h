@@ -43,9 +43,13 @@ public:
 
   ~PeerServerService()
   {
-    // Not stop(): a runtime rebuilt under its id mounts the new service before
-    // the old one is destroyed, and giving the mount up here would take it
-    // from the service that has just claimed it.
+    // Unmount is owner-aware: if a rebuilt runtime has already claimed this
+    // stable address, destroying the old instance leaves the replacement's
+    // endpoint in place.
+    if (!m_url.empty())
+    {
+      unmountEndpoint(getId());
+    }
     m_listener.reset();
     m_registry.reset();
   }

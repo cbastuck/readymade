@@ -512,14 +512,15 @@ void Server::enableMounts(MountOptions options)
 }
 
 std::string Server::mount(const std::string& boardName, const std::string& runtimeId,
-                          const std::string& name, MountAdopter adopter)
+                          const std::string& name, const void* owner,
+                          MountAdopter adopter)
 {
   if (!m_impl->frontDoor)
   {
     return "";
   }
   const auto id = deriveMountId(m_impl->mountOptions.secret, "", boardName, runtimeId, name);
-  m_impl->frontDoor->mount(id, std::move(adopter));
+  m_impl->frontDoor->mount(id, owner, std::move(adopter));
   const std::string base = !m_impl->mountOptions.externalUrl.empty()
     ? m_impl->mountOptions.externalUrl
     : "http://" + m_impl->externalIP + ":" + std::to_string(port());
@@ -527,12 +528,13 @@ std::string Server::mount(const std::string& boardName, const std::string& runti
 }
 
 void Server::unmount(const std::string& boardName, const std::string& runtimeId,
-                     const std::string& name)
+                     const std::string& name, const void* owner)
 {
   if (m_impl->frontDoor)
   {
     m_impl->frontDoor->unmount(
-      deriveMountId(m_impl->mountOptions.secret, "", boardName, runtimeId, name));
+      deriveMountId(m_impl->mountOptions.secret, "", boardName, runtimeId, name),
+      owner);
   }
 }
 

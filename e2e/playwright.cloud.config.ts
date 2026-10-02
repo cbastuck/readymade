@@ -66,14 +66,17 @@ export default defineConfig<HostOptions>({
 
   webServer: [
     {
-      command: `npx vite --port ${MEANDER_PORT} --strictPort`,
+      // Keep child servers on the same Node as Playwright. `npx` resolves
+      // `node` through PATH and can otherwise fall back to an older system
+      // runtime even when this suite was explicitly started with Node 22.
+      command: `"${process.execPath}" node_modules/vite/bin/vite.js --port ${MEANDER_PORT} --strictPort`,
       cwd: "../meander/frontend",
       url: `http://localhost:${MEANDER_PORT}`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
     {
-      command: "npx tsx src/index.ts",
+      command: `"${process.execPath}" node_modules/tsx/dist/cli.mjs src/index.ts`,
       cwd: "../hkp-node",
       url: `${NODE_URL}/runtimes`,
       // Never reused: a server left over from another run would still hold

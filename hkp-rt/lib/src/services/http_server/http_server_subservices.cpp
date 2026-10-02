@@ -155,6 +155,10 @@ HttpServerSubservices::HttpServerSubservices(const std::string& instanceId)
 HttpServerSubservices::~HttpServerSubservices()
 {
   m_broadcast.onListenersChanged(nullptr);
+  if (!m_mountedName.empty())
+  {
+    unmountEndpoint(m_mountedName);
+  }
   m_impl->stop();
   m_broadcast.closeAll();
 }
@@ -471,6 +475,27 @@ json HttpServerSubservices::configure(Data data)
     }
   }
 
+  // Renaming a mount rotates its capability URL. Move the live adopter to the
+  // newly derived address and release the one it previously held.
+  const auto requestedMount = mountName();
+  if (m_impl->mounted() && !m_mountedName.empty()
+      && requestedMount != m_mountedName)
+  {
+    unmountEndpoint(m_mountedName);
+    std::weak_ptr<HttpServerImpl> held = m_impl;
+    m_url = mountEndpoint(requestedMount, [held](MountedConnection connection) {
+      if (auto impl = held.lock())
+      {
+        impl->adopt(std::move(connection));
+      }
+    });
+    m_mountedName = m_url.empty() ? "" : requestedMount;
+    if (!m_url.empty())
+    {
+      sendNotification(json{{MOUNT_FIELD, m_url}, {"status", "online"}});
+    }
+  }
+
   return getState();
 }
 
@@ -698,7 +723,8 @@ bool HttpServerSubservices::start()
   // Held weakly: a mount outlives the service that claimed it until another
   // claims the same name, and must not keep that service's endpoint alive.
   std::weak_ptr<HttpServerImpl> held = m_impl;
-  const auto mounted = mountEndpoint(mountName(), [held](MountedConnection connection) {
+  const auto requestedMount = mountName();
+  const auto mounted = mountEndpoint(requestedMount, [held](MountedConnection connection) {
     if (auto impl = held.lock())
     {
       impl->adopt(std::move(connection));
@@ -708,6 +734,7 @@ bool HttpServerSubservices::start()
   {
     m_host.clear();
     m_url = mounted;
+    m_mountedName = requestedMount;
     std::cout << "HttpServerSubservices::start() mounted at " << m_url << std::endl;
     sendNotification(json{{MOUNT_FIELD, m_url}, {"status", "online"}});
     return true;
@@ -750,8 +777,9 @@ bool HttpServerSubservices::stop()
   }
   if (m_impl->mounted())
   {
-    unmountEndpoint(mountName());
+    unmountEndpoint(m_mountedName);
   }
+  m_mountedName.clear();
   m_host.clear();
   m_url.clear();
   // Everything that named where to connect goes with the server, as getState

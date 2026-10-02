@@ -38,6 +38,10 @@ HttpServer::HttpServer(const std::string& instanceId)
 
 HttpServer::~HttpServer()
 {
+  if (!m_mountedName.empty())
+  {
+    unmountEndpoint(m_mountedName);
+  }
   m_impl->stop();
 }
 
@@ -236,7 +240,30 @@ json HttpServer::configure(Data data)
       }
     }
   }
-  return Service::configure(data);
+  auto state = Service::configure(data);
+
+  // `mountName` is the deliberate address-rotation lever. A running mounted
+  // endpoint has to move immediately, and the address it leaves must stop
+  // answering (the same behaviour as the Node and Python runtimes).
+  const auto requestedMount = mountName();
+  if (m_impl->mounted() && !m_mountedName.empty()
+      && requestedMount != m_mountedName)
+  {
+    unmountEndpoint(m_mountedName);
+    std::weak_ptr<HttpServerImpl> held = m_impl;
+    m_url = mountEndpoint(requestedMount, [held](MountedConnection connection) {
+      if (auto impl = held.lock())
+      {
+        impl->adopt(std::move(connection));
+      }
+    });
+    m_mountedName = m_url.empty() ? "" : requestedMount;
+    if (!m_url.empty())
+    {
+      sendNotification(json{{MOUNT_FIELD, m_url}});
+    }
+  }
+  return state;
 }
 
 json HttpServer::getState() const
@@ -292,7 +319,8 @@ bool HttpServer::start()
   // Held weakly: a mount outlives the service that claimed it until another
   // claims the same name, and must not keep that service's endpoint alive.
   std::weak_ptr<HttpServerImpl> held = m_impl;
-  const auto mounted = mountEndpoint(mountName(), [held](MountedConnection connection) {
+  const auto requestedMount = mountName();
+  const auto mounted = mountEndpoint(requestedMount, [held](MountedConnection connection) {
     if (auto impl = held.lock())
     {
       impl->adopt(std::move(connection));
@@ -301,6 +329,7 @@ bool HttpServer::start()
   if (!mounted.empty())
   {
     m_url = mounted;
+    m_mountedName = requestedMount;
     std::cout << "HttpServer::start() mounted at " << m_url << std::endl;
     sendNotification(json{{MOUNT_FIELD, m_url}});
     return true;
@@ -328,8 +357,9 @@ bool HttpServer::stop()
   }
   if (m_impl->mounted())
   {
-    unmountEndpoint(mountName());
+    unmountEndpoint(m_mountedName);
   }
+  m_mountedName.clear();
   m_url.clear();
   return m_impl->stop();
 }

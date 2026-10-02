@@ -79,11 +79,15 @@ public:
   // nested service as immediately as a top-level one, and so that nesting
   // composes to whichever runtime was actually given something.
   SecretVault& secrets() override { return m_parent.secrets(); }
-  std::string mountEndpoint(const std::string& name, MountAdopter adopter) override
+  std::string mountEndpoint(const std::string& name, const void* owner,
+                            MountAdopter adopter) override
   {
-    return m_parent.mountEndpoint(name, std::move(adopter));
+    return m_parent.mountEndpoint(name, owner, std::move(adopter));
   }
-  void unmountEndpoint(const std::string& name) override { m_parent.unmountEndpoint(name); }
+  void unmountEndpoint(const std::string& name, const void* owner) override
+  {
+    m_parent.unmountEndpoint(name, owner);
+  }
 
   // Out to the runtime around this one, for the same reason as secrets: an
   // asset edited while the board runs is what a nested service resolves next.

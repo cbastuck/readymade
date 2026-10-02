@@ -56,7 +56,16 @@ export default function MeanderPlayground({
   const [boardSource, setBoardSource] = useState("");
 
   const loadRemotes = useCallback(async () => {
-    setRemotes(await getRemotes());
+    try {
+      setRemotes(await getRemotes());
+    } catch (err) {
+      // Do not leave the whole playground blank when the native store is
+      // temporarily unavailable. Boards without named remotes still work; a
+      // board that names one gets the normal, actionable "unknown remote"
+      // error once it is restored.
+      console.error("Could not load remote runtimes:", err);
+      setRemotes([]);
+    }
   }, []);
 
   useEffect(() => {

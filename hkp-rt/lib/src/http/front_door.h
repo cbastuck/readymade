@@ -49,8 +49,11 @@ public:
                        unsigned short upstreamPort);
   void stop();
 
-  void mount(const std::string& mountId, MountAdopter adopter);
-  void unmount(const std::string& mountId);
+  /** `owner` identifies the service instance claiming the stable mount id.
+   *  An older instance may be destroyed after its replacement has claimed the
+   *  same id; its unmount must not remove the replacement's endpoint. */
+  void mount(const std::string& mountId, const void* owner, MountAdopter adopter);
+  void unmount(const std::string& mountId, const void* owner);
   /** The adopter for a mount, or nothing. */
   MountAdopter find(const std::string& mountId);
 
@@ -69,7 +72,12 @@ private:
   unsigned short m_upstreamPort = 0;
 
   std::mutex m_mutex;
-  std::map<std::string, MountAdopter> m_mounts;
+  struct Mounted
+  {
+    const void* owner;
+    MountAdopter adopter;
+  };
+  std::map<std::string, Mounted> m_mounts;
 };
 
 /**
