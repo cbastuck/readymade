@@ -352,7 +352,10 @@ close`), which every player understands. Bytes, strings and MixedData's `binary`
 are streamed; anything else a pass produces is not. The state reports the
 `streamUrl`, how many `listeners` there are and, in `listenerDetails`, who they
 are — address, user agent, time connected, bytes sent; setting `stream` to `null` ends
-it and lets them go.
+it and lets them go. Declaring a different stream ends the old one the same way
+— its listeners were answered under the old path and content type — and nothing
+it kept for late joiners or probes carries over; declaring the same one again
+changes nothing.
 
 **Where the passes come from is the board's business.** Whatever reaches the
 endpoint is streamed: the output of the service before it, the result of the

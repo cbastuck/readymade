@@ -58,7 +58,7 @@ must present a key.
 
 | Property | Type | Description |
 |---|---|---|
-| `key` | `string` | What a client must present, as `Authorization: Bearer <key>` or `?key=<key>`; usually `{{secret.<alias>}}`. Unset, nobody is let in |
+| `key` | `string` | What a client must present, as `Authorization: Bearer <key>` — never in the query string, where proxies and logs would keep it; usually `{{secret.<alias>}}`. Unset, nobody is let in. Changing it closes every connection, and a secret given a new value takes no more messages from a client that connected with the old one (closed with code 1008) |
 | `exclusive` | `boolean` | One client at a time: a new one closes the one before, which is what a client reconnecting after its network dropped looks like from here. Default `false`, every client's messages are handed on |
 | `mountName` | `string` | Names the mount; renaming it rotates the address |
 

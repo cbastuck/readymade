@@ -186,7 +186,32 @@ Steps:
 - **The channel count is set by hand.** The encoder's `channels` has to match
   what `core-input` reports. A mismatch plays at the wrong speed. Per the
   FloatRingBuffer convention this stays board configuration, but a board could
-  surface the mismatch.
+  surface the mismatch. (A sample-rate mismatch is surfaced: `core-input`
+  reports `error` when the device does not run at `preferredSampleRate`, and
+  the radio boards show it as a notice.)
+- **Server-side caps on the public endpoints** (from review, 2026-10-03). Every
+  bound today is board configuration, so a board owner — or anyone holding a
+  leaked ingest key — can make a shared server hold as much as they like. Wanted:
+  limits the server enforces whatever a board says, in both runtimes:
+  - listeners per stream, answered 503 when full. The only one reachable without
+    a credential: the stream path is public (it is in the QR code), and a
+    listener that connects before anything is streamed is never timed out,
+    since a stall is only noticed when a chunk is delivered;
+  - a ceiling on `burstBytes` and `maxQueueBytes` (any non-negative integer is
+    accepted now);
+  - `websocket-reader`: a `maxPayload` of its own (`ws` defaults to 100 MiB),
+    and a bound on passes in flight, since each message starts one at once.
+  Where the ceilings come from (environment, per-tenant quota) is to decide;
+  hkp-node already has per-tenant quotas to hang them on.
+- **Merging with `coordinator_connections` (hkp-node).** Both branches change
+  how the coordinator sends bytes to the next runtime in
+  `BoardSession.routeResult`: this branch sends a YAS frame to a remote
+  runtime, `coordinator_connections` sends `encodeBinaryFrame`
+  (`coordinator/binaryFrame.ts`) — and also covers the browser-bridge branch,
+  which here still `JSON.stringify`s a Buffer into `{type:"Buffer",data:[…]}`.
+  Expect a conflict, and pick one wire format for coordinator → runtime bytes
+  when resolving it. hkp-rt and hkp-python read YAS on their runtime sockets
+  today.
 - **Realtime safety elsewhere, found and not changed:**
   - `core-output` / `FloatRingBuffer::consumeBinary` log to stdout from the
     audio thread on underrun.
