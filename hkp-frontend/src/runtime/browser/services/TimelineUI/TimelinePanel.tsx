@@ -1,5 +1,13 @@
-import { Bars, Lane, Marker, Playhead, Preview, Ruler } from "./parts";
-import { displayLength, formatTime, objectAt, TimelineView, withImage } from "./model";
+import { Bars, Lane, LoopShade, LoopStrip, Marker, Playhead, Preview, Ruler } from "./parts";
+import {
+  displayLength,
+  formatTime,
+  objectAt,
+  setLoop,
+  shownLoop,
+  TimelineView,
+  withImage,
+} from "./model";
 
 /**
  * The Timeline as it sits on the board: what it draws at the playhead, and
@@ -21,6 +29,7 @@ export default function TimelinePanel({
   onScrub?: (t: number) => void;
 }) {
   const length = displayLength(view);
+  const loop = shownLoop(view);
   const markers: Marker[] = [
     ...Object.entries(view.keyframes).flatMap(([property, frames]) =>
       frames.map((k) => ({ at: k.at, shape: "key" as const, title: property })),
@@ -41,6 +50,13 @@ export default function TimelinePanel({
         />
       )}
       <div className="relative flex flex-col gap-1">
+        <LoopStrip
+          range={loop}
+          active={view.loop}
+          length={length}
+          onChange={readOnly ? undefined : (range) => configure(setLoop(range))}
+          onToggle={readOnly ? undefined : () => configure({ loop: !view.loop })}
+        />
         <Ruler length={length} onScrub={onScrub} />
         <Lane markers={markers} length={length} onScrub={onScrub} />
         {view.placements.length > 0 && (
@@ -55,6 +71,7 @@ export default function TimelinePanel({
             }))}
           />
         )}
+        {view.loop && loop && <LoopShade range={loop} length={length} />}
         <Playhead t={cursor} length={length} />
       </div>
     </div>

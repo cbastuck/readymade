@@ -9,7 +9,8 @@ ones. The board built from it is the visual counterpart of
 `nested-rhythm-demo-board.json`, where small animated blocks together make one
 animation drawn on one canvas.
 
-**State:** decided 2026-09-26; placements built the same day (see *Placements*).
+**State:** decided 2026-09-26; placements built the same day (see *Placements*);
+recording built 2026-09-28 (see *Recording*).
 The service (time, actions, object and keyframes) is built in `Timeline.ts`
 and `timeline-core.ts`, and so is the demo board, `boards/timeline-demo-board.json`. Tests are in
 `tests/timeline-service.test.ts` and `tests/timeline-board.test.ts`. There is
@@ -230,6 +231,59 @@ panel shows the placements as a thin row of bars. A driven timeline's panel
 shows the name it takes and whether it plays, and the editor has its
 `placement` field where "starts at" and "speed" were.
 
+### Recording
+
+Decided and built 2026-09-28.
+
+**The problem.** A board wanted to record what a Trigger Pad plays and play it
+back later. The timeline already keeps actions on a time axis and plays them
+back, and `speed` and `loop` already change how. What was missing was a way to
+put actions there as they arrive.
+
+| Question | Decision | Why |
+|---|---|---|
+| What is recorded | **Whatever arrives at the input**, as `{ at, data }`. The timeline knows nothing about what feeds it | Decided by the user: the timeline records events over time and plays them back, whatever they are. Recording pad numbers would have tied it to the Trigger Pad. |
+| What an input to an own clock is | **An action happening now.** Playing, the clock moves to that exact moment (not the last frame's) and the input leaves in that frame's `actions`. Stopped or paused, it passes through on a frame for where the timeline stands | Decided by the user (pass-through while stopped). What follows sees one shape, played live or back. Before this, an own clock ignored its input. |
+| Where it is kept | At the unwrapped position wrapped into the timeline, in the timeline's unit, so `speed` and beats apply to a take as to any action | It is an action like any other. |
+| Modes | `recordMode`: **`overdub`** keeps what is there; **`replace`** clears what time passes over while recording, so it neither fires nor stays. What lies past where recording stopped is kept; on a loop each pass replaces the one before | Decided by the user. |
+| When recording ends | **Stopping or pausing ends it** (`recording` goes false) | Otherwise playing a take back in replace mode would erase it. |
+| Only an own clock records | A driven timeline's input is its clock | No moment of its own to place an input at. |
+| Saving takes | **Out of scope** (decided by the user). JSON data is saved like any action; a Blob is not. | |
+
+The panel has a record button and an `overdub` / `replace` switch in the
+transport. Data that is not JSON is described on its marker ("audio/webm,
+31 KB") and cannot be edited as text.
+
+**Loop range** (built 2026-09-28, asked for with the recorder). `loopStart`
+and `loopEnd` (0 = the length) make a looping timeline repeat
+`[loopStart, loopEnd)` instead of `[0, length)`, so an existing loop is a range
+over the whole timeline. Time before the range plays once, on the way in (a
+count-in). What lies past it is silent while looping and plays again when
+looping is switched off, so a range never shortens the take. An own clock set
+past the range's end (by a seek, by playing, or by the range moving) goes to
+its start. A position past the end is not taken modulo the range, since landing
+at an arbitrary point in the loop reads as a bug. An own clock's position is
+kept wrapped into the range, so a range changed mid-play applies from where the
+timeline is. The panel draws the range on a strip above the ruler: drag to
+draw (which also loops), drag the range to move it, drag an edge to move that
+edge, press it to switch looping on or off. It is shaded over the rows while
+looping, and the transport has a loop toggle.
+
+`triggerpad-recorder-board.json` records the Trigger Pad. Its Recorder is an
+unbounded timeline at 60 fps, followed by a Filter (frames with an action) and a
+Map (`params.actions[0]`) in front of Audio Output.
+
+**Open:**
+- **Several actions in one frame.** The board's Map takes the first, so two hits
+  within a frame sound as one. The browser has no Iterator (hkp-node does);
+  porting it would play them all.
+- **Saving takes** holding Blobs (e.g. as data URLs, as the timeline's image is).
+- **Timing.** A take plays back up to a frame late, as the night-groove hits do.
+- The Looper docs page (`docs/content/services/looper.md`) describes a
+  browser service that does not exist; recording on the timeline covers it.
+
+---
+
 ## The canvas side
 
 - **A `group` draw type**:
@@ -298,6 +352,9 @@ a shared palette making the pieces read as one.
    timeline's status, demo board moved over).
 7. Canvas `group`, and a board where an outer level moves a whole block.
 8. ~~Docs page~~ (written 2026-09-26), vocabulary check, and the performance judgement.
+9. ~~Recording~~ (built 2026-09-28: `recording`, `recordMode`, own-clock input
+   as a live action, panel controls, `triggerpad-recorder-board.json`), and
+   the loop range (`loopStart`, `loopEnd`, drawn above the ruler).
 
 ---
 

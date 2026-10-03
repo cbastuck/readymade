@@ -9,6 +9,7 @@ import {
   Ease,
   Keyframe,
   Keyframes,
+  loopRange,
   Placement,
   TimelineAction,
   valueAt,
@@ -21,9 +22,15 @@ export type TimelineView = {
   actions: TimelineAction[];
   length: number;
   loop: boolean;
+  loopStart: number;
+  /** 0 is the length. */
+  loopEnd: number;
   unit: "s" | "beats";
   fps: number;
   running: boolean;
+  /** Whether what arrives at the input is being recorded. */
+  recording: boolean;
+  recordMode: "overdub" | "replace";
   /** When each name plays on this timeline. */
   placements: Placement[];
   /** The name a driven timeline takes from its driver. */
@@ -41,9 +48,13 @@ export const EMPTY_VIEW: TimelineView = {
   actions: [],
   length: 0,
   loop: false,
+  loopStart: 0,
+  loopEnd: 0,
   unit: "s",
   fps: 30,
   running: false,
+  recording: false,
+  recordMode: "overdub",
   placements: [],
   placement: "",
   placementStatus: null,
@@ -83,9 +94,28 @@ export function displayLength(view: TimelineView): number {
     ...Object.values(view.keyframes).flatMap((frames) => frames.map((k) => k.at)),
     ...view.actions.map((a) => a.at),
     ...view.placements.map((p) => p.at + p.duration),
+    view.loopEnd,
     view.t,
   ];
   return Math.max(4, Math.ceil(Math.max(...ats) * 1.25));
+}
+
+/**
+ * The loop range as the panel shows it, looping or not: the one set, or the
+ * whole length where none is; null where there is nothing to repeat.
+ */
+export function shownLoop(view: TimelineView): { start: number; end: number } | null {
+  return loopRange({
+    length: view.length,
+    loop: true,
+    loopStart: view.loopStart,
+    loopEnd: view.loopEnd,
+  });
+}
+
+/** Setting a loop range: drawing one means looping it. */
+export function setLoop(range: { start: number; end: number }) {
+  return { loopStart: range.start, loopEnd: range.end, loop: true };
 }
 
 /** The properties worth offering for an object, by what it draws as. */
@@ -285,6 +315,27 @@ export function formatValue(value: unknown): string {
     return "";
   }
   return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+/**
+ * An action's data as the panel shows it. Recorded data need not be JSON — a
+ * Blob, say — and is then described rather than written out, and cannot be
+ * edited as text without losing it.
+ */
+export function describeData(data: unknown): { text: string; editable: boolean } {
+  if (typeof Blob !== "undefined" && data instanceof Blob) {
+    const kb = Math.max(1, Math.round(data.size / 1024));
+    return { text: `${data.type || "binary"}, ${kb} KB`, editable: false };
+  }
+  if (
+    data !== null &&
+    typeof data === "object" &&
+    !Array.isArray(data) &&
+    Object.getPrototypeOf(data) !== Object.prototype
+  ) {
+    return { text: data.constructor?.name ?? "object", editable: false };
+  }
+  return { text: JSON.stringify(data ?? null), editable: true };
 }
 
 export function formatTime(t: number): string {

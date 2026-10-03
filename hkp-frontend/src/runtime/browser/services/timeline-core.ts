@@ -18,7 +18,28 @@ export type Extent = {
   /** How long the timeline is; 0 is unbounded, which only a non-looping one can be. */
   length: number;
   loop: boolean;
+  /** Where a loop starts over from; 0 is the start. */
+  loopStart?: number;
+  /** Where a loop starts over; 0 is the length. */
+  loopEnd?: number;
 };
+
+/**
+ * The stretch a looping timeline repeats, `[start, end)`, or null where it
+ * does not loop — not looping, or with nothing to repeat. Time before `start`
+ * is played once, on the way in.
+ */
+export function loopRange(extent: Extent): { start: number; end: number } | null {
+  if (!extent.loop) {
+    return null;
+  }
+  const start = Math.max(0, extent.loopStart ?? 0);
+  let end = extent.loopEnd && extent.loopEnd > 0 ? extent.loopEnd : extent.length;
+  if (extent.length > 0) {
+    end = Math.min(end, extent.length);
+  }
+  return end > start ? { start, end } : null;
+}
 
 /**
  * The actions due after `from` up to and including `to`, earliest first, and
@@ -26,9 +47,10 @@ export type Extent = {
  * itself as well: time that has just been set to a position, rather than
  * having travelled to it, has not yet fired what sits there.
  *
- * A looping timeline's positions are `[0, length)` — an action at `length` or
- * beyond would be the same moment as one at 0 of the next pass, so it never
- * fires. A non-looping one's are `[0, length]`.
+ * A looping timeline's positions are its loop range `[start, end)` — an
+ * action at `end` or beyond would be the same moment as one at `start` of the
+ * next pass, so it never fires — and, once, what lies before `start`. A
+ * non-looping one's are `[0, length]`.
  */
 export function dueActions(
   actions: TimelineAction[],
@@ -37,6 +59,49 @@ export function dueActions(
   extent: Extent,
   includeFrom = false,
 ): unknown[] {
+  return dueIn(actions, from, to, extent, includeFrom).map(({ data }) =>
+    data === undefined ? null : data,
+  );
+}
+
+/**
+ * The actions that would not be due in the same window — what is left after
+ * time passing over it clears it, as a recording that replaces does.
+ */
+export function withoutDue(
+  actions: TimelineAction[],
+  from: number,
+  to: number,
+  extent: Extent,
+  includeFrom = false,
+): TimelineAction[] {
+  const due = new Set(
+    dueIn(actions, from, to, extent, includeFrom).map(({ index }) => index),
+  );
+  return due.size === 0 ? actions : actions.filter((_, index) => !due.has(index));
+}
+
+/**
+ * `actions` with one more at `at`, after any already there — so actions
+ * sharing a moment keep the order they were added in.
+ */
+export function insertAction(
+  actions: TimelineAction[],
+  action: TimelineAction,
+): TimelineAction[] {
+  const before = actions.findIndex((a) => a.at > action.at);
+  return before === -1
+    ? [...actions, action]
+    : [...actions.slice(0, before), action, ...actions.slice(before)];
+}
+
+function dueIn(
+  actions: TimelineAction[],
+  from: number,
+  to: number,
+  extent: Extent,
+  includeFrom: boolean,
+): { pos: number; index: number; data: unknown }[] {
   if (to < from) {
     return [];
   }
@@ -45,35 +110,38 @@ export function dueActions(
     (includeFrom ? pos >= from : pos > from) && pos <= to;
 
   const due: { pos: number; index: number; data: unknown }[] = [];
-  const { length, loop } = extent;
+  const range = loopRange(extent);
 
-  if (loop && length > 0) {
-    const firstPass = Math.max(0, Math.floor(from / length));
-    const lastPass = Math.floor(to / length);
-    for (let pass = firstPass; pass <= lastPass; pass++) {
-      actions.forEach((action, index) => {
-        if (action.at < 0 || action.at >= length) {
-          return;
-        }
-        const pos = pass * length + action.at;
-        if (inWindow(pos)) {
-          due.push({ pos, index, data: action.data });
-        }
-      });
+  actions.forEach((action, index) => {
+    const { at } = action;
+    if (at < 0) {
+      return;
     }
-  } else {
-    actions.forEach((action, index) => {
-      if (action.at < 0 || (length > 0 && action.at > length)) {
+    if (!range || at < range.start) {
+      if (!range && extent.length > 0 && at > extent.length) {
         return;
       }
-      if (inWindow(action.at)) {
-        due.push({ pos: action.at, index, data: action.data });
+      if (inWindow(at)) {
+        due.push({ pos: at, index, data: action.data });
       }
-    });
-  }
+      return;
+    }
+    if (at >= range.end) {
+      return;
+    }
+    // Pass `k` of the loop places the action at `at + k × span`.
+    const span = range.end - range.start;
+    const first = Math.max(0, Math.floor((from - at) / span));
+    const last = Math.floor((to - at) / span);
+    for (let pass = first; pass <= last; pass++) {
+      const pos = at + pass * span;
+      if (inWindow(pos)) {
+        due.push({ pos, index, data: action.data });
+      }
+    }
+  });
 
-  due.sort((a, b) => a.pos - b.pos || a.index - b.index);
-  return due.map(({ data }) => (data === undefined ? null : data));
+  return due.sort((a, b) => a.pos - b.pos || a.index - b.index);
 }
 
 /**
@@ -85,27 +153,31 @@ export function restOfPass(
   from: number,
   extent: Extent,
 ): unknown[] {
-  const { length, loop } = extent;
-  if (loop && length > 0) {
+  const range = loopRange(extent);
+  if (range) {
     // Read as one pass of a timeline that does not loop, whose end — the
     // next pass's start — is not part of it.
     const inPass = wrap(from, extent);
     return dueActions(
-      actions.filter((a) => a.at < length),
+      actions.filter((a) => a.at < range.end),
       inPass,
-      length,
-      { length, loop: false },
+      range.end,
+      { length: range.end, loop: false },
     );
   }
-  return dueActions(actions, from, length > 0 ? length : Infinity, extent);
+  const { length } = extent;
+  return dueActions(actions, from, length > 0 ? length : Infinity, { length, loop: false });
 }
 
 /** An unwrapped position as the timeline reports it. */
 export function wrap(pos: number, extent: Extent): number {
-  if (extent.loop && extent.length > 0) {
-    return pos - Math.floor(pos / extent.length) * extent.length;
+  const range = loopRange(extent);
+  if (!range || pos < range.end) {
+    return pos;
   }
-  return pos;
+  const span = range.end - range.start;
+  const into = pos - range.start;
+  return range.start + into - Math.floor(into / span) * span;
 }
 
 /** The actions a board wrote, keeping only those with a place on the timeline. */
@@ -281,16 +353,17 @@ export function normalizePlacements(value: unknown): Placement[] {
 
 /**
  * Where a placement ends on the timeline. A bounded timeline cuts it at its
- * length; a looping one's positions stop just short of it, since its length is
- * the next pass's start.
+ * length; a looping one's positions stop just short of its loop's end, since
+ * that is the next pass's start.
  */
 function endOf(placement: Placement, extent: Extent): number {
   const end = placement.at + placement.duration;
+  const range = loopRange(extent);
+  if (range) {
+    return end >= range.end ? range.end - 1e-9 : end;
+  }
   if (extent.length <= 0) {
     return end;
-  }
-  if (extent.loop && end >= extent.length) {
-    return extent.length - 1e-9;
   }
   return Math.min(end, extent.length);
 }

@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   CustomMenuEntry,
@@ -29,9 +30,15 @@ import { assureJSON } from "hkp-frontend/src/common";
 import { copyToClipboard } from "hkp-frontend/src/clipboard";
 import {
   PanelLockHandOverContext,
+  UsePlugSlotContext,
   useFrameBlockLock,
   useLockHandOver,
+  useUsePlugSlot,
 } from "hkp-frontend/src/runtime/ui/BlockUse";
+import {
+  ServicePickedContext,
+  useServicePicked,
+} from "hkp-frontend/src/selection/SelectionContext";
 
 const DOCS_SERVICES_URL = "https://hookitapp.com/documentation/services";
 
@@ -80,9 +87,13 @@ export default function ServiceFrame({
   // reach and still showing what only reads; else its body stays locked whole.
   const [panelTookLock, handPanelLock] = useLockHandOver();
   const bodyLocked = locked && panelTookLock === 0;
+  const picked = useServicePicked();
+  const plugSlot = useUsePlugSlot();
   const body = (
     <PanelLockHandOverContext.Provider value={locked ? handPanelLock : null}>
-      {children}
+      <UsePlugSlotContext.Provider value={null}>
+        <ServicePickedContext.Provider value={false}>{children}</ServicePickedContext.Provider>
+      </UsePlugSlotContext.Provider>
     </PanelLockHandOverContext.Provider>
   );
 
@@ -363,13 +374,19 @@ export default function ServiceFrame({
       onInject={onInject}
     />
   );
-  const outputPlug = locked ? (
-    <div inert style={{ display: "contents" }}>
-      {plug}
-    </div>
-  ) : (
-    plug
-  );
+  const inReachPlug = (lockedPlug: boolean) =>
+    lockedPlug ? (
+      <div inert style={{ display: "contents" }}>
+        {plug}
+      </div>
+    ) : (
+      plug
+    );
+  // The frame of a use is hidden behind the use's bar, so its plug is drawn
+  // beside the bar instead (see UsePlugSlotContext).
+  const outputPlug = plugSlot
+    ? createPortal(inReachPlug(plugSlot.locked), plugSlot.element)
+    : inReachPlug(locked);
 
   const dragData = filterPrivateMembers(
     service,
@@ -383,7 +400,7 @@ export default function ServiceFrame({
         <div className="flex items-center">
           <div
             ref={cardRef}
-            className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}`}
+            className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}${picked ? " hkp-service-card--selected" : ""}`}
             style={s(t.unselectable, {
               position: "relative",
               zIndex: 1,
@@ -455,7 +472,7 @@ export default function ServiceFrame({
     <div key={`service-frame-${uuid}`} id={`service-frame-${uuid}`}>
       <div className="flex items-center">
         <div
-          className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}`}
+          className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}${picked ? " hkp-service-card--selected" : ""}`}
           style={s(t.unselectable, {
             transition: "border 800ms",
             border: `solid ${theme.serviceBorderWidth}px ${theme.borderColor}`,

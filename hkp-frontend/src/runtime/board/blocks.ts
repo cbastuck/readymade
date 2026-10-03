@@ -714,6 +714,53 @@ export function withBlockFrom(
   };
 }
 
+/**
+ * The uses among a runtime's own services, followed into the sub-service they
+ * were just wrapped in: each placement under one of `ids` now sits in
+ * `wrapperId`'s pipeline, one level down. Without it saving would look for
+ * them where they were, find nothing, and write them out expanded.
+ */
+export function withServicesWrapped(
+  linkage: BlockLinkage,
+  runtimeId: string,
+  ids: string[],
+  wrapperId: string,
+): BlockLinkage {
+  const moved = new Set(ids);
+  const renamed = new Map<string, string>();
+  const placed = linkage.placed.map((entry) => {
+    const first = entry.path[1];
+    if (
+      entry.runtimeId !== runtimeId ||
+      typeof first !== "object" ||
+      !moved.has(first.id)
+    ) {
+      return entry;
+    }
+    const path: BlockPathStep[] = [
+      runtimeId,
+      { id: wrapperId },
+      "state",
+      "pipeline",
+      ...entry.path.slice(1),
+    ];
+    const key = pathKey(path);
+    renamed.set(entry.key, key);
+    return { ...entry, path, key, address: addressOf(path) };
+  });
+  return {
+    ...linkage,
+    placed: placed.map((entry) =>
+      entry.parent && renamed.has(entry.parent)
+        ? { ...entry, parent: renamed.get(entry.parent) }
+        : entry,
+    ),
+    ...(linkage.editing
+      ? { editing: renamed.get(linkage.editing) ?? linkage.editing }
+      : {}),
+  };
+}
+
 const WHOLE_REFERENCE = /^\{\{\s*param\.([A-Za-z0-9_.-]+)\s*\}\}$/;
 
 /** Every place a definition's state refers to a parameter, found by id where entries have one. */

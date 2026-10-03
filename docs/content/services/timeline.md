@@ -39,7 +39,7 @@ inner one plays (see *Placements*). Several animated pieces are mixed with
 
 | `clock` | Time comes from | Used for |
 |---|---|---|
-| `"own"` (default) | Its own clock, emitting `fps` frames a second while it plays. Input is ignored. | The outermost timeline, the one the facade starts and stops |
+| `"own"` (default) | Its own clock, emitting `fps` frames a second while it plays. Its input is an action happening now (see [Recording](#recording)). | The outermost timeline, the one the facade starts and stops, and a timeline recording what arrives |
 | `"input"` | The frames it is given: `t` from the input (or a bare number), in whatever unit the driver counts | Every inner timeline |
 
 An own clock counts in seconds or in **beats** (`unit`). Beats read the tempo
@@ -54,9 +54,22 @@ without reaching the slot, which a service inside a Tracks track cannot: a
 
 ### Length and looping
 
-`length` 0 is unbounded. A looping timeline wraps at `length`, and its
-positions are `[0, length)`: an action at `length` never fires. A non-looping
-one's positions are `[0, length]`.
+`length` 0 is unbounded. A non-looping timeline's positions are
+`[0, length]`.
+
+A looping timeline repeats its **loop range**, `[loopStart, loopEnd)`. By
+default the range is the whole timeline (`loopStart` 0, and `loopEnd` 0 means
+the length), so a looping timeline wraps at `length`. An action at the range's
+end never fires, because that moment is the next pass's start.
+
+- Time before `loopStart` plays once, on the way into the range, like a count-in.
+- What lies past `loopEnd` does not play while the timeline loops. Switch
+  looping off and everything plays again; `length` stays where a non-looping
+  timeline ends.
+- An own clock set past the range's end goes to its start. That applies when
+  it is sought there, when it stands there as it starts playing, and when the
+  range moves to before where it stands.
+- An unbounded timeline (`length` 0) loops only with a `loopEnd`.
 
 - An own clock that does not loop halts at its end. Playing again starts over.
 - A driven timeline that does not loop emits **null** past its end, so the
@@ -114,6 +127,40 @@ loop and fires the actions of each. An action without data is reported as null.
 Because actions fire only when time passes over them, a seek skips them. For
 state that must be right wherever time lands ("from here on, scene B"), use a
 keyframe with `step` ease instead.
+
+---
+
+## Recording
+
+Whatever arrives at an own clock's input is an **action happening now**. The
+timeline does not look at what it is: a pad's audio, a note, a click, a line of
+text are all recorded and played back the same way.
+
+- **Playing:** the clock moves to the moment the input arrived (that exact
+  moment, not the last frame's) and the input leaves in that frame's
+  `actions`, after anything else due by then.
+- **Recording** (`recording: true`, while playing): the input also stays, as
+  `{ "at": <that moment>, "data": <the input> }`. From then on it plays
+  whenever time reaches it, like any other action: faster or slower with
+  `speed`, and again on every pass of a loop.
+- **Stopped or paused:** the input passes through on a frame for where the
+  timeline stands, `{ "t": …, "actions": [<the input>] }`. Nothing is recorded,
+  so what follows sees the same shape whether the timeline plays or not.
+
+`recordMode` says what a recording does to the actions already there:
+
+| Mode | While recording |
+|---|---|
+| `"overdub"` (default) | What is there stays and plays; new actions are added to it |
+| `"replace"` | What time passes over is cleared: it neither fires nor stays. What lies past the point where recording stopped is kept. On a loop, each pass replaces the one before. |
+
+Stopping or pausing ends a recording, so playing a take back never records over
+it. Recorded actions are saved with the board like any others, but only as
+far as their data is JSON: audio (a Blob) lasts only while the board is open.
+
+Actions are emitted on the first frame at or after their moment, so a recorded
+action plays back up to one frame (`1 / fps` seconds) late. Raise `fps` for
+tighter timing.
 
 ---
 
@@ -179,12 +226,16 @@ drops `t`.
 | `keyframes` | `{ [property]: { at, value, ease? }[] }` | `{}` | Keyframes per property of the object |
 | `actions` | `{ at, data }[]` | `[]` | Data emitted when time reaches `at` |
 | `length` | `number` | `0` | Length in the timeline's unit; `0` is unbounded |
-| `loop` | `boolean` | `false` | Wrap at `length` |
+| `loop` | `boolean` | `false` | Repeat the loop range |
+| `loopStart` | `number` | `0` | Where the loop starts over from |
+| `loopEnd` | `number` | `0` | Where the loop starts over; `0` is the length |
 | `unit` | `"s" \| "beats"` | `"s"` | How an own clock counts |
 | `tempoSlot` | `string` | `"tempo"` | Slot holding the tempo (BPM) for `"beats"` |
 | `fps` | `number` | `30` | Frames a second an own clock emits |
 | `speed` | `number` | `1` | Playback speed of an own clock |
 | `running` | `boolean` | `false` | Whether an own clock is playing; `true` plays, `false` pauses |
+| `recording` | `boolean` | `false` | Whether what arrives at a playing own clock's input is kept as actions. Stopping or pausing sets it to `false`. |
+| `recordMode` | `"overdub" \| "replace"` | `"overdub"` | Whether a recording keeps the actions it passes over or clears them |
 | `placements` | `{ name, at, duration }[]` | `[]` | When each name plays on this timeline |
 | `placement` | `string` | `""` | The name a driven timeline takes from its driver; `""` takes none |
 
@@ -197,6 +248,7 @@ Only an own clock responds to these.
 | `play: true` | Plays from where it is (from the start if it played through to its end), emitting a frame at once |
 | `pause: true` | Pauses where it is |
 | `stop: true` | Pauses and goes back to 0 |
+| `recording: true` | Records what arrives at the input while playing. Send it with `play: true` to start playing and recording at once. |
 | `seek: <number>` | Sets the time. Paused, a frame is emitted at once, so scrubbing a paused timeline scrubs everything it drives. The next frame carries `jump: true`. |
 
 Changing `object`, `keyframes` or `placements` re-emits the current frame
@@ -208,7 +260,8 @@ clock keeps time but emits nothing.
 ## Input and output
 
 A driven timeline takes a frame `{ "t": <number>, "placements"?: {…}, "jump"?: true }`
-or a bare number. An own clock ignores its input.
+or a bare number. An own clock takes anything, as an action happening now; no
+input (`null` or `undefined`) emits nothing.
 
 It emits **every frame**, not only those an action falls in, because what
 follows has to redraw:
@@ -242,6 +295,16 @@ to drag and resize), and one for the actions.
 
 - A property that is not animated has a fixed value on the object. Once it has
   a keyframe, a value typed at the playhead sets a keyframe there.
+- The strip above the ruler shows the loop range. Drag across it to draw a
+  new range, which also switches looping on. Drag the range to move it, or drag
+  an edge to move that edge. Press the range to switch looping on or off. The
+  repeat button in the transport switches looping too. While looping, the
+  range is shaded over the rows, and the expanded view has `from` and `to`
+  fields for it.
+- The record button in the transport records what arrives while playing; the
+  button beside it switches between `overdub` and `replace`. Recorded data that
+  is not JSON (a Blob) is described on its marker rather than written out, and
+  cannot be edited as text.
 - The image button in the transport, or dropping an image on the preview, sets
   the object's image, kept as a data URL.
 - Scrubbing an own clock seeks it, and so moves the whole board. A driven

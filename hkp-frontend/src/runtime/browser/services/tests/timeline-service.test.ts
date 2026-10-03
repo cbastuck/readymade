@@ -7,6 +7,10 @@
  *    timelines, the rest of a pass
  *  - Own clock: play, frame rate, pause and resume, stop, playing through to
  *    the end, looping, beats at the tempo slot, seek and its jump flag, bypass
+ *  - Loop range: played into once, repeated, what lies past it silent, an own
+ *    clock set past it taken to its start
+ *  - Recording: input as an action happening now, passed through while
+ *    stopped, kept at its exact moment while recording, overdub and replace
  *  - Placements: what an arranging timeline's frames say about each name, and
  *    how a placed timeline plays — stretched, looped, entered, jumped, scoped
  *  - Driven clock: the driver's time, null after the stretch, the frame that
@@ -20,12 +24,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import TimelineDescriptor from "../Timeline";
 import {
   dueActions,
+  loopRange,
   interpolate,
   normalizeKeyframes,
   normalizePlacements,
   placementsAt,
   restOfPass,
   valueAt,
+  wrap,
 } from "../timeline-core";
 import { createSlotStore } from "../../../slots";
 
@@ -370,16 +376,257 @@ describe("Timeline – own clock", () => {
     timeline.destroy();
   });
 
-  it("ignores input", () => {
-    const { timeline } = createTimeline();
-    expect(timeline.process({ t: 3 })).toBeNull();
-  });
-
   it("does not play when driven", () => {
     const { timeline, app } = createTimeline();
     timeline.configure({ clock: "input", play: true });
     expect(frames(app)).toEqual([]);
     expect(timeline.state.running).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Loop range
+// ---------------------------------------------------------------------------
+
+describe("loop range", () => {
+  const range = { length: 0, loop: true, loopStart: 1, loopEnd: 2 };
+
+  it("is the whole length by default, and nothing when not looping or empty", () => {
+    expect(loopRange({ length: 4, loop: true })).toEqual({ start: 0, end: 4 });
+    expect(loopRange({ length: 4, loop: false, loopStart: 1, loopEnd: 2 })).toBeNull();
+    expect(loopRange({ length: 0, loop: true })).toBeNull();
+    expect(loopRange({ length: 4, loop: true, loopStart: 3, loopEnd: 2 })).toBeNull();
+    expect(loopRange({ length: 3, loop: true, loopStart: 1, loopEnd: 8 })).toEqual({ start: 1, end: 3 });
+  });
+
+  it("plays what lies before it once, repeats what lies in it, and never what lies past it", () => {
+    const actions = [at(0.5, "intro"), at(1.5, "in"), at(2.5, "past")];
+    expect(dueActions(actions, 0, 4.9, range, true)).toEqual(["intro", "in", "in", "in", "in"]);
+  });
+
+  it("wraps into the range only past its end", () => {
+    expect(wrap(0.5, range)).toBe(0.5);
+    expect(wrap(1.5, range)).toBe(1.5);
+    expect(wrap(2.25, range)).toBe(1.25);
+    expect(wrap(3.75, range)).toBe(1.75);
+  });
+
+  it("finds the rest of a pass up to the range's end", () => {
+    const actions = [at(1.25, "a"), at(1.75, "b"), at(2.5, "past")];
+    expect(restOfPass(actions, 2.5, range)).toEqual(["b"]);
+  });
+});
+
+describe("Timeline – loop range", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("plays into its range and repeats it", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({
+      fps: 10,
+      loop: true,
+      loopStart: 1,
+      loopEnd: 2,
+      actions: [at(0.5, "intro"), at(1, "start"), at(1.5, "in"), at(2.5, "past")],
+      play: true,
+    });
+    vi.advanceTimersByTime(3500);
+    expect(fired(app)).toEqual(["intro", "start", "in", "start", "in", "start", "in"]);
+    const ts = frames(app).map((f) => f.t);
+    expect(Math.max(...ts)).toBeLessThan(2);
+    timeline.destroy();
+  });
+
+  it("takes a seek past its end to its start", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({ loop: true, loopStart: 1, loopEnd: 2, actions: [at(1, "start")] });
+    timeline.configure({ seek: 3 });
+    expect(frames(app).at(-1)).toEqual({ t: 1, actions: ["start"], jump: true });
+  });
+
+  it("goes to its start when the range moves to before where the timeline stands", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({ fps: 10, actions: [at(0.5, "a")], play: true });
+    vi.advanceTimersByTime(3000);
+    timeline.configure({ loop: true, loopStart: 0.5, loopEnd: 1 });
+    vi.advanceTimersByTime(100);
+    expect(frames(app).at(-1).t).toBeCloseTo(0.6);
+    expect(fired(app)).toEqual(["a", "a"]);
+    timeline.destroy();
+  });
+
+  it("plays everything again when it stops looping", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({
+      fps: 10,
+      loop: false,
+      loopStart: 1,
+      loopEnd: 2,
+      actions: [at(1.5, "in"), at(2.5, "past")],
+      play: true,
+    });
+    vi.advanceTimersByTime(3000);
+    expect(fired(app)).toEqual(["in", "past"]);
+    timeline.destroy();
+  });
+
+  it("records into its range, overdubbing pass after pass", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({ fps: 10, loop: true, loopStart: 1, loopEnd: 2, recording: true, play: true });
+    vi.advanceTimersByTime(2250);
+    timeline.process("hit");
+    expect(timeline.state.actions.map((a: any) => Math.round(a.at * 100) / 100)).toEqual([1.25]);
+    vi.advanceTimersByTime(1050);
+    expect(fired(app)).toEqual(["hit"]);
+    timeline.destroy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Recording
+// ---------------------------------------------------------------------------
+
+describe("Timeline – recording", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** Where the actions sit, rounded against the clock's float arithmetic. */
+  const placed = (timeline: any) =>
+    timeline.state.actions.map((a: any) => [Math.round(a.at * 1000) / 1000, a.data]);
+
+  it("passes input through while stopped, on a frame for where it stands", () => {
+    const { timeline } = createTimeline();
+    timeline.configure({ recording: true });
+    expect(timeline.process("hit")).toEqual({ t: 0, actions: ["hit"] });
+    expect(timeline.state.actions).toEqual([]);
+  });
+
+  it("emits nothing for no input", () => {
+    const { timeline } = createTimeline();
+    expect(timeline.process(undefined)).toBeNull();
+    expect(timeline.process(null)).toBeNull();
+  });
+
+  it("takes the clock to the moment an input arrives, not the last frame's", () => {
+    const { timeline } = createTimeline();
+    timeline.configure({ fps: 10, play: true });
+    vi.advanceTimersByTime(250);
+    const frame = timeline.process("hit");
+    expect(frame.t).toBeCloseTo(0.25);
+    expect(frame.actions).toEqual(["hit"]);
+    expect(timeline.state.actions).toEqual([]);
+    timeline.destroy();
+  });
+
+  it("keeps what arrives while recording at the moment it arrived, and plays it back there", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({ fps: 10, recording: true, play: true });
+    vi.advanceTimersByTime(250);
+    timeline.process("a");
+    vi.advanceTimersByTime(300);
+    timeline.process("b");
+    // What was just recorded is not due again in the frames that follow.
+    vi.advanceTimersByTime(300);
+    expect(fired(app)).toEqual([]);
+
+    timeline.configure({ stop: true });
+    expect(placed(timeline)).toEqual([[0.25, "a"], [0.55, "b"]]);
+
+    app.next.mockClear();
+    timeline.configure({ play: true });
+    vi.advanceTimersByTime(1000);
+    const firing = frames(app).filter((f) => f.actions.length > 0);
+    expect(firing.map((f) => f.actions)).toEqual([["a"], ["b"]]);
+    expect(firing[0].t).toBeGreaterThanOrEqual(0.25);
+    expect(firing[0].t).toBeLessThan(0.35);
+    timeline.destroy();
+  });
+
+  it("records in the timeline's time, so a playback speed applies to it", () => {
+    const { timeline } = createTimeline();
+    timeline.configure({ fps: 10, speed: 2, recording: true, play: true });
+    vi.advanceTimersByTime(250);
+    timeline.process("a");
+    expect(placed(timeline)).toEqual([[0.5, "a"]]);
+    timeline.destroy();
+  });
+
+  it("records nothing while stopped", () => {
+    const { timeline } = createTimeline();
+    timeline.configure({ recording: true });
+    timeline.process("a");
+    expect(timeline.state.actions).toEqual([]);
+  });
+
+  it("overdubs on a loop: what was there stays, and what was added plays on the next pass", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({
+      fps: 10,
+      length: 1,
+      loop: true,
+      actions: [at(0.5, "old")],
+      recording: true,
+      play: true,
+    });
+    vi.advanceTimersByTime(250);
+    timeline.process("new");
+    vi.advanceTimersByTime(1100);
+    expect(fired(app)).toEqual(["old", "new"]);
+    expect(placed(timeline)).toEqual([[0.25, "new"], [0.5, "old"]]);
+    timeline.destroy();
+  });
+
+  it("replaces what it passes over while recording, and nothing it has not reached", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({
+      fps: 10,
+      actions: [at(0, "start"), at(0.2, "early"), at(0.8, "late")],
+      recordMode: "replace",
+      recording: true,
+      play: true,
+    });
+    vi.advanceTimersByTime(500);
+    timeline.process("new");
+    timeline.configure({ stop: true });
+    expect(fired(app)).toEqual([]);
+    expect(placed(timeline)).toEqual([[0.5, "new"], [0.8, "late"]]);
+    expect(app.notify).toHaveBeenCalledWith(timeline, { actions: timeline.state.actions });
+  });
+
+  it("replaces a loop pass by pass", () => {
+    const { timeline } = createTimeline();
+    timeline.configure({ fps: 10, length: 1, loop: true, recordMode: "replace", recording: true, play: true });
+    vi.advanceTimersByTime(250);
+    timeline.process("first pass");
+    vi.advanceTimersByTime(1100);
+    timeline.process("second pass");
+    expect(placed(timeline)).toEqual([[0.35, "second pass"]]);
+    timeline.destroy();
+  });
+
+  it("ends a recording when it stops or pauses", () => {
+    const { timeline, app } = createTimeline();
+    timeline.configure({ fps: 10, recording: true, play: true });
+    timeline.configure({ pause: true });
+    expect(timeline.state.recording).toBe(false);
+    expect(app.notify).toHaveBeenCalledWith(timeline, { recording: false });
+
+    timeline.configure({ recording: true, play: true });
+    timeline.configure({ stop: true });
+    expect(timeline.state.recording).toBe(false);
   });
 });
 

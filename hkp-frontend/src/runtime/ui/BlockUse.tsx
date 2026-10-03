@@ -134,6 +134,21 @@ export function useLockHandOver(): [number, () => () => void] {
   return [taken, handOver];
 }
 
+/**
+ * Where the frame of a use draws its output plug. A use shows its bar in place
+ * of its panel, and the plug belongs to the frame inside that panel — it is
+ * what hears the service's output — so the frame portals it here, beside the
+ * bar. What comes out of a use is the use's as a whole, not its inside, so the
+ * plug stays in reach; it is locked only for a use inside another one. A frame
+ * clears this for what its body draws, so only the use's own frame takes it.
+ */
+export type UsePlugSlot = { element: HTMLElement; locked: boolean };
+export const UsePlugSlotContext = createContext<UsePlugSlot | null>(null);
+
+export function useUsePlugSlot(): UsePlugSlot | null {
+  return useContext(UsePlugSlotContext);
+}
+
 /** The hand-over a locked frame offers the panel drawn in its body. */
 export const PanelLockHandOverContext = createContext<(() => () => void) | null>(null);
 
@@ -215,6 +230,7 @@ export default function BlockUseFrame({
   const use = usePlacedUse(address, runtimeId);
   // How many frames drawn directly in the panel have taken its lock over.
   const [handedOver, handOver] = useLockHandOver();
+  const [plugSlot, setPlugSlot] = useState<HTMLElement | null>(null);
   // Only a locked panel has a lock to hand over.
   const lockedHere = !use?.editing && (!!use || inside);
   const addressed = (
@@ -243,8 +259,8 @@ export default function BlockUseFrame({
       </div>
     );
   }
-  return (
-    <div className="inline-flex flex-col" data-block-use={use ? use.placed.use.block : undefined}>
+  const panel = (
+    <div className="inline-flex flex-col">
       {use ? (
         <UseBar
           use={use}
@@ -271,6 +287,19 @@ export default function BlockUseFrame({
           {addressed}
         </div>
       </BlockLockContext.Provider>
+    </div>
+  );
+  if (!use) {
+    return panel;
+  }
+  return (
+    <div className="inline-flex items-center" data-block-use={use.placed.use.block}>
+      <UsePlugSlotContext.Provider
+        value={plugSlot ? { element: plugSlot, locked: inside } : null}
+      >
+        {panel}
+      </UsePlugSlotContext.Provider>
+      <div ref={setPlugSlot} className="flex items-center" data-use-output />
     </div>
   );
 }

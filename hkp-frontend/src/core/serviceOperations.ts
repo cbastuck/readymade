@@ -18,6 +18,7 @@ export async function addService(
   refs: BoardStateRefs,
   prototype?: ServiceInstance,
   insertAtIndex?: number,
+  state?: Record<string, unknown>,
 ): Promise<ServiceDescriptor | null> {
   const [scope, api] = getRuntimeScopeApi(runtime.id, refs);
   if (!api || !scope) {
@@ -78,13 +79,13 @@ export async function addService(
       api.getServiceConfig?.(scope, created),
     ).catch(() => null);
     svc = { ...created, serviceName: placed.service.serviceName, ...(state ? { state } : {}) };
-  } else if (created && preset) {
-    await api.configureService(scope, created, presetState(preset));
-    const state = await Promise.resolve(
+  } else if (created && (preset || state)) {
+    await api.configureService(scope, created, state ?? presetState(preset!));
+    const reported = await Promise.resolve(
       api.getServiceConfig?.(scope, created),
     ).catch(() => null);
-    if (state) {
-      svc = { ...created, state };
+    if (reported) {
+      svc = { ...created, state: reported };
     }
   }
 
@@ -112,7 +113,13 @@ export async function addService(
       prototype,
       prototype.state || prototype,
     );
-  } else if (svc && !preset && !definition && isRuntimeBrowserClassType(runtime.type)) {
+  } else if (
+    svc &&
+    !preset &&
+    !definition &&
+    !state &&
+    isRuntimeBrowserClassType(runtime.type)
+  ) {
     // Initialise a freshly inserted browser service with an initial configure,
     // symmetric with restore (which configures every service on load). Without
     // it, a service that establishes a side effect in configure() — e.g.

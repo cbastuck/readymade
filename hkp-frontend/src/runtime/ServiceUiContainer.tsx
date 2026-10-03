@@ -23,6 +23,11 @@ import {
   CommandItem,
 } from "../ui-components/primitives/command";
 import { CommandList } from "cmdk";
+import {
+  ServicePickedContext,
+  useSelection,
+} from "../selection/SelectionContext";
+import { runBetween } from "./board/wrap";
 
 type Props = {
   userId: string | undefined;
@@ -90,6 +95,57 @@ export default function ServiceUiContainer(props: Props) {
       : [];
   }, [services, runtimeId, userId, boardName, onCreateServiceUi, editable]);
 
+  const selection = useSelection();
+  const picked = new Set(
+    selection?.selectedServices?.runtimeId === runtimeId
+      ? selection.selectedServices.uuids
+      : [],
+  );
+
+  /**
+   * Shift-click on a service's own header picks it, or stretches what is
+   * picked to reach it: always a run, since a run is what can be wrapped.
+   * Anywhere on the header — its name and buttons included, which a shift
+   * gives no meaning of their own — but only there, so shift-clicking inside
+   * a panel keeps meaning what it means there. A field being typed in (a
+   * rename) keeps its shift-click for selecting text.
+   */
+  const pickedByShiftClick = (ev: React.MouseEvent, uuid: string) => {
+    if (!ev.shiftKey || !selection?.selectServices) {
+      return false;
+    }
+    const target = ev.target as HTMLElement;
+    if (target.closest("input, textarea, select, [contenteditable='true']")) {
+      return false;
+    }
+    const frame = target
+      .closest("[data-service-header]")
+      ?.closest("[id^='service-frame-']");
+    return frame?.id === `service-frame-${uuid}`;
+  };
+  const onPick = (ev: React.MouseEvent, uuid: string) => {
+    if (!pickedByShiftClick(ev, uuid) || !services) {
+      return;
+    }
+    ev.preventDefault();
+    ev.stopPropagation();
+    const order = services.map((svc) => svc.uuid);
+    const current = selection!.selectedServices;
+    if (current?.runtimeId === runtimeId && order.includes(current.anchor)) {
+      if (current.anchor === uuid && current.uuids.length === 1) {
+        selection!.selectServices!(null);
+        return;
+      }
+      selection!.selectServices!({
+        runtimeId,
+        anchor: current.anchor,
+        uuids: runBetween(order, current.anchor, uuid),
+      });
+      return;
+    }
+    selection!.selectServices!({ runtimeId, anchor: uuid, uuids: [uuid] });
+  };
+
   if (!services) {
     return null;
   }
@@ -130,30 +186,48 @@ export default function ServiceUiContainer(props: Props) {
               // runtime row scroll horizontally instead.
               flexShrink: 0,
             }}
+            onClickCapture={(ev) => onPick(ev, services[pos].uuid)}
+            // A shift-click that picks is not also a press on the header: not
+            // the menu opening (which a pointerdown does), and not the page's
+            // text selection stretching (which a mousedown does).
+            onPointerDownCapture={(ev) => {
+              if (pickedByShiftClick(ev, services[pos].uuid)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+              }
+            }}
+            onMouseDownCapture={(ev) => {
+              if (pickedByShiftClick(ev, services[pos].uuid)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+              }
+            }}
           >
-            <ServiceWithDropBars
-              index={pos}
-              isFirst={pos === 0}
-              isDragging={isDragging}
-              onDrop={onArrangeService}
-              onDropServiceClass={onDropServiceClass}
-            >
-              <BlockUseFrame
-                address={services[pos].uuid}
-                runtimeId={runtime.id}
-                level={
-                  toCanonicalServiceId(services[pos].serviceId ?? "") === "sub-service"
-                    ? {
-                        id: services[pos].uuid,
-                        label: services[pos].serviceName || "Sub-service",
-                      }
-                    : undefined
-                }
-                onRemove={() => boardContext?.removeService(services[pos], runtime)}
+            <ServicePickedContext.Provider value={picked.has(services[pos].uuid)}>
+              <ServiceWithDropBars
+                index={pos}
+                isFirst={pos === 0}
+                isDragging={isDragging}
+                onDrop={onArrangeService}
+                onDropServiceClass={onDropServiceClass}
               >
-                {serviceElement}
-              </BlockUseFrame>
-            </ServiceWithDropBars>
+                <BlockUseFrame
+                  address={services[pos].uuid}
+                  runtimeId={runtime.id}
+                  level={
+                    toCanonicalServiceId(services[pos].serviceId ?? "") === "sub-service"
+                      ? {
+                          id: services[pos].uuid,
+                          label: services[pos].serviceName || "Sub-service",
+                        }
+                      : undefined
+                  }
+                  onRemove={() => boardContext?.removeService(services[pos], runtime)}
+                >
+                  {serviceElement}
+                </BlockUseFrame>
+              </ServiceWithDropBars>
+            </ServicePickedContext.Provider>
           </div>
         );
         return [card];

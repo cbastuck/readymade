@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import { update } from "../CanvasUI/canvasDraw";
-import { formatTime, snap } from "./model";
+import { formatTime, SNAP as SNAP_STEP, snap } from "./model";
 
 /** Time under the pointer, on an element spanning `length`; null where it cannot be told. */
 function timeAt(event: PointerEvent, element: HTMLElement, length: number): number | null {
@@ -97,6 +97,141 @@ export function Ruler({
         </div>
       ))}
     </div>
+  );
+}
+
+export type LoopSpan = { start: number; end: number };
+
+/**
+ * The loop range, as a strip above the ruler. Dragging where the range is not
+ * draws a new one; dragging the range moves it, and dragging either of its
+ * edges moves that edge. Pressing it without dragging switches looping on or
+ * off. Dimmed while the timeline does not loop.
+ */
+export function LoopStrip({
+  range,
+  active,
+  length,
+  onChange,
+  onToggle,
+}: {
+  /** The range shown; null where there is none. */
+  range: LoopSpan | null;
+  active: boolean;
+  length: number;
+  /** Absent, the strip only shows the range. */
+  onChange?: (range: LoopSpan) => void;
+  onToggle?: () => void;
+}) {
+  const [drag, setDrag] = useState<{
+    mode: "draw" | "move" | "start" | "end";
+    from: number;
+    span: LoopSpan;
+    moved: boolean;
+  } | null>(null);
+
+  const begin = (event: PointerEvent<HTMLDivElement>, mode: "draw" | "move" | "start" | "end") => {
+    if (!onChange) {
+      return;
+    }
+    event.stopPropagation();
+    const strip = event.currentTarget.closest("[data-loop-strip]") as HTMLElement | null;
+    const from = strip ? timeAt(event, strip, length) : null;
+    if (!strip || from === null) {
+      return;
+    }
+    strip.setPointerCapture(event.pointerId);
+    const span = mode === "draw" || !range ? { start: snap(from), end: snap(from) } : range;
+    setDrag({ mode, from, span, moved: false });
+  };
+
+  const shown = drag && drag.span.end > drag.span.start ? drag.span : range;
+  const color = active ? "var(--hkp-accent)" : "var(--text-mid)";
+
+  return (
+    <div
+      data-loop-strip
+      className={`relative h-2.5 select-none ${onChange ? "cursor-crosshair" : ""}`}
+      style={{ touchAction: "none" }}
+      title={onChange ? "Drag to set the loop range" : undefined}
+      onPointerDown={(event) => begin(event, "draw")}
+      onPointerMove={(event) => {
+        const t = drag ? timeAt(event, event.currentTarget, length) : null;
+        if (!drag || t === null) {
+          return;
+        }
+        const delta = t - drag.from;
+        const { start, end } = range ?? drag.span;
+        let span: LoopSpan;
+        if (drag.mode === "draw") {
+          span = { start: snap(Math.min(drag.from, t)), end: snap(Math.max(drag.from, t)) };
+        } else if (drag.mode === "move") {
+          const shift = snap(Math.min(Math.max(delta, -start), length - end));
+          span = { start: snap(start + shift), end: snap(end + shift) };
+        } else if (drag.mode === "start") {
+          span = { start: Math.min(snap(start + delta), end - SNAP_STEP), end };
+        } else {
+          span = { start, end: Math.max(snap(end + delta), start + SNAP_STEP) };
+        }
+        if (span.start !== drag.span.start || span.end !== drag.span.end) {
+          setDrag({ ...drag, span, moved: true });
+        }
+      }}
+      onPointerUp={() => {
+        if (drag?.moved && drag.span.end > drag.span.start) {
+          onChange?.(drag.span);
+        } else if (drag && drag.mode !== "draw") {
+          onToggle?.();
+        }
+        setDrag(null);
+      }}
+    >
+      {shown && (
+        <div
+          className={`absolute top-0 bottom-0 ${onChange ? "cursor-grab" : ""}`}
+          title={`loop ${formatTime(shown.start)} – ${formatTime(shown.end)}${active ? "" : " (off)"}`}
+          style={{
+            left: percent(shown.start, length),
+            width: `calc(${percent(shown.end, length)} - ${percent(shown.start, length)})`,
+            borderRadius: 2,
+            background: `color-mix(in srgb, ${color} ${active ? 45 : 20}%, transparent)`,
+            border: `1px solid ${color}`,
+            opacity: active ? 1 : 0.7,
+          }}
+          onPointerDown={(event) => begin(event, "move")}
+        >
+          {onChange && (
+            <>
+              <div
+                className="absolute top-0 bottom-0 left-0 cursor-ew-resize"
+                style={{ width: 6, marginLeft: -3 }}
+                onPointerDown={(event) => begin(event, "start")}
+              />
+              <div
+                className="absolute top-0 bottom-0 right-0 cursor-ew-resize"
+                style={{ width: 6, marginRight: -3 }}
+                onPointerDown={(event) => begin(event, "end")}
+              />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The loop range shaded over the rows beneath it, while the timeline loops. */
+export function LoopShade({ range, length, inset = 0 }: { range: LoopSpan; length: number; inset?: number }) {
+  const at = (t: number) => (length > 0 ? Math.min(Math.max(t, 0), length) / length : 0);
+  return (
+    <div
+      className="pointer-events-none absolute top-0 bottom-0"
+      style={{
+        left: `calc(${inset}px + (100% - ${inset}px) * ${at(range.start)})`,
+        width: `calc((100% - ${inset}px) * ${at(range.end) - at(range.start)})`,
+        background: "color-mix(in srgb, var(--hkp-accent) 8%, transparent)",
+      }}
+    />
   );
 }
 
