@@ -34,6 +34,7 @@ import {
   removeSavedPreset,
   savePreset,
   subscribePresets,
+  updatePresetFromOrigin,
 } from "hkp-frontend/src/core/presets";
 import {
   isBuiltInPreset,
@@ -87,6 +88,12 @@ export function usePresetsFolder(
         // device to delete, and nothing to rewrite its tags in.
         onDelete: builtIn ? undefined : () => forget(preset),
         onRetag: builtIn ? undefined : (tags) => retag(preset, tags),
+        onUpdate:
+          !builtIn && preset.origin
+            ? async () => {
+                await updatePresetFromOrigin(preset);
+              }
+            : undefined,
       };
     };
 

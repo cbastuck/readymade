@@ -157,6 +157,55 @@ describe("composed presets in the palette", () => {
   });
 });
 
+describe("library blocks in the palette", () => {
+  const NOTIFY = {
+    preset: "v1",
+    id: "notify",
+    name: "Notify",
+    serviceId: "sub-service",
+    params: { topic: "t" },
+    state: { pipeline: [{ serviceId: "map", instanceId: "m", state: {} }] },
+  };
+  const { preset: _marker, ...copied } = NOTIFY;
+
+  const cards = () =>
+    [...document.querySelectorAll(".hkp-palette-card-name")].map((el) => el.textContent);
+
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => window.localStorage.clear());
+
+  it("keeps the library's card where it is once the board holds a copy", () => {
+    savePreset(parsePreset(NOTIFY));
+    renderSidebar(withSubService);
+    const before = cards();
+
+    // The board after a drop: the definition copied into its blocks.
+    renderSidebar({
+      ...withSubService,
+      linkage: { units: [], views: [], blocks: { definitions: { "": [copied] }, placed: [] } },
+    } as unknown as Partial<BoardContextState>);
+    const after = cards().slice(before.length);
+    expect(after).toEqual(before);
+  });
+
+  it("gives the board's copy a card of its own once it differs", () => {
+    savePreset(parsePreset(NOTIFY));
+    renderSidebar({
+      ...withSubService,
+      linkage: {
+        units: [],
+        views: [],
+        blocks: {
+          definitions: { "": [{ ...copied, name: "Notify, edited" }] },
+          placed: [],
+        },
+      },
+    } as unknown as Partial<BoardContextState>);
+    expect(screen.getByText("Notify")).toBeTruthy();
+    expect(screen.getByText("Notify, edited")).toBeTruthy();
+  });
+});
+
 describe("the runtimes / services splitter", () => {
   beforeEach(() => localStorage.clear());
 

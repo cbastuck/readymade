@@ -49,6 +49,12 @@ export function addressRoot(address: string): string {
   return splitAddress(address)[0] ?? address;
 }
 
+/** The service an address ends at, by the name its own pipeline gives it. */
+export function addressLeaf(address: string): string {
+  const parts = splitAddress(address);
+  return parts[parts.length - 1] ?? address;
+}
+
 /**
  * The state of a service an address names, read out of the board document.
  *

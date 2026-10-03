@@ -21,6 +21,8 @@ import {
   isRuntimeRestClassType,
 } from "../../types";
 import { usePresetsForService } from "../../ui-components/service/usePresetsForService";
+import { isUsableAsBlock, parseBlockDefinition } from "../../core/presets";
+import { BlockDefinition, findSameDefinition } from "../../runtime/board/blocks";
 import {
   HKP_DND_RUNTIME_CLASS_TYPE,
   HKP_DND_SERVICE_CLASS_TYPE,
@@ -120,10 +122,11 @@ function ServiceCard({ svc }: { svc: ServiceClassWithPreset }) {
   // A palette entry standing for a preset of a sub-service is a building block
   // made of other services. It is dragged and dropped like any primitive; the
   // icon is the only place it says what it is made of.
-  const composed = !!svc.preset;
-  // A block of this board is used by reference rather than copied, and says
-  // so with the same mark its uses carry on the board.
-  const block = !!svc.block;
+  // A block — of this board, or one from the library a drop copies into it —
+  // is used by reference rather than copied, and says so with the same mark
+  // its uses carry on the board.
+  const block = !!svc.block || !!svc.preset?.use;
+  const composed = !!svc.preset && !block;
   return (
     <div
       draggable
@@ -423,6 +426,9 @@ export default function Sidebar() {
       return [];
     }
     const typeMap = new Map<string, ServiceClassWithPreset[]>();
+    const boardBlocks = boardContext.linkage?.blocks?.definitions[""] ?? [];
+    /** Per runtime class, the library blocks offered as cards. */
+    const offeredFromLibrary = new Map<string, BlockDefinition[]>();
     for (const runtime of boardContext.runtimes) {
       const canonical = toCanonicalRuntimeClassType(runtime.type);
       const services = boardContext.registry[runtime.id] ?? [];
@@ -451,6 +457,7 @@ export default function Sidebar() {
         continue;
       }
       for (const preset of subServicePresets) {
+        const use = isUsableAsBlock(preset);
         if (
           preset.runtimes?.length &&
           !preset.runtimes.some(
@@ -470,17 +477,32 @@ export default function Sidebar() {
           description: preset.description,
           version: host.version,
           capabilities: host.capabilities,
-          preset: { id: preset.id, serviceId: preset.serviceId },
+          preset: {
+            id: preset.id,
+            serviceId: preset.serviceId,
+            ...(use ? { use: true } : {}),
+          },
         });
+        if (use) {
+          offeredFromLibrary.set(type, [
+            ...(offeredFromLibrary.get(type) ?? []),
+            parseBlockDefinition(preset),
+          ]);
+        }
       }
     }
 
     // The board's own blocks, where the runtime has the service each one is
     // made of. Those of the board being opened: a unit's blocks are for its
     // own runtimes.
-    const boardBlocks = boardContext.linkage?.blocks?.definitions[""] ?? [];
-    for (const group of typeMap.values()) {
+    for (const [type, group] of typeMap.entries()) {
       for (const definition of boardBlocks) {
+        // A copy of a library block the palette already offers stays behind
+        // the library's card, where it was dropped from — a drop of that card
+        // uses the board's copy. It gets a card of its own once it differs.
+        if (findSameDefinition(offeredFromLibrary.get(type), definition)) {
+          continue;
+        }
         const host = group.find(
           (svc) =>
             !svc.preset &&

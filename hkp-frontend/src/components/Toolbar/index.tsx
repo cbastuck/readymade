@@ -114,14 +114,16 @@ export default function Toolbar({
           top: 0,
           zIndex: 100,
           width: "100%",
-          height: 52,
+          // Set by the host: what suits the bar depends on what sits above it,
+          // which the page cannot see.
+          height: "var(--hkp-toolbar-height, 44px)",
           display: "flex",
           alignItems: "center",
           background: "var(--bg-app, white)",
           borderTop: "1.5px solid oklch(0.89 0.006 62)",
           borderBottom: "1.5px solid oklch(0.89 0.006 62)",
           gap: 4,
-          padding: "0 14px",
+          padding: "0px 14px",
           boxSizing: "border-box",
           flexShrink: 0,
         }}

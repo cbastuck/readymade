@@ -14,7 +14,7 @@ import {
   findServiceUI as restFindServiceUI,
   type ServiceLookup,
 } from "../rest/UIRegistry";
-import { joinAddress } from "../board/address";
+import { addressLeaf, joinAddress } from "../board/address";
 import BlockUseFrame, {
   BlockEditActions,
   useServiceAddress,
@@ -94,8 +94,23 @@ export default function SubServicePipelineUI({
 
   const label =
     levelLabel || service.serviceName || service.serviceId || "Pipeline";
-  const isOpen = navigation?.stack[depth]?.id === service.uuid;
+  const level = navigation?.stack[depth];
+  // A level opened for a service inside this host rather than by this panel's
+  // id. The host is the service this pipeline belongs to: a pipeline standing
+  // in for one of a service's several carries that service's address, and its
+  // last part is the host's uuid.
+  const holdsLevel =
+    !!level?.holding &&
+    level.id === addressLeaf(service.address ?? service.uuid) &&
+    pipeline.some((entry) => entry.instanceId === level.holding);
+  const isOpen = level?.id === service.uuid || holdsLevel;
   const layer = isOpen ? (navigation?.layerFor(depth + 1) ?? null) : null;
+
+  useEffect(() => {
+    if (holdsLevel) {
+      navigation?.claim(depth, service.uuid, label);
+    }
+  }, [holdsLevel, navigation, depth, service.uuid, label]);
 
   // A trail must not outlive what it points at: a host that goes away — its
   // service removed, its board reloaded — closes the level it opened. Read

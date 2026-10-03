@@ -72,6 +72,7 @@ A JSON document naming a service and carrying its state:
 | `runtimes`    | no       | The runtime classes it suits — a hint shown to a person, never a restriction |
 | `secrets`     | no       | Display information for the aliases `state` refers to, keyed by alias       |
 | `params`      | no       | Defaults for the `{{param.name}}` references in `state`, substituted when the preset is applied |
+| `origin`      | no       | The URL it was imported from, as typed. Written on import; what *Update from source* reads again |
 
 A file holds one preset, or several under `{"presets": [ … ]}`.
 
@@ -155,12 +156,44 @@ Two origins, no difference in how they apply:
   and listed in `hkp-frontend/src/presetRegistry.ts`. The equivalent of the demo
   boards, and not deletable: there is nothing on the device to delete.
 - **Kept on this device** — imported from a disk or a URL, or saved from a
-  service that was already configured the way someone wanted to keep it. Stored
-  in `localStorage`.
+  service that was already configured the way someone wanted to keep it.
 
 A preset fetched from a URL is fetched from whatever address serves the file; a
 GitHub page link is rewritten to the raw file behind it, so pasting the page you
 are looking at works.
+
+### Where the device keeps them
+
+Where is the host's business, the way where boards are saved is:
+
+| Host | Store |
+| --- | --- |
+| Web | `localStorage` |
+| Readymade desktop | `~/.hkp/presets/` |
+| Readymade iOS | `Documents/Presets/` in the app's container |
+| Readymade Android | `files/Presets/` in the app's storage |
+
+The native apps keep **files, one per preset** — the file as it was imported,
+or `<service>--<id>.json` for one saved from a service — served to the web app
+over `hkp://presets` (`GET` lists every file unparsed, `POST` and `DELETE` take
+a file name). So the folder *is* the library: it is read when the app starts,
+and a preset file put there by hand is in it the next time. A file holding
+several presets stays one file; changing or forgetting one of them rewrites it.
+A file that is not a preset is skipped and reported in the console, not
+refused. Presets an older build kept in `localStorage` are moved into the folder
+the first time; if the host cannot list its store they stay where they were.
+
+The seam is `PlatformCapabilities.presetStorage` (`platform/PlatformContext`),
+attached when the host's `PlatformProvider` renders; the store itself is in
+`core/presets.ts`.
+
+### Imported from a URL, updated when asked
+
+A preset imported from a URL remembers the address as `origin`, and the details
+column offers **Update from source**, which fetches it again and keeps the newer
+version in place of this device's copy. It never happens on its own: what an
+author publishes later reaches this device when someone decides to take it.
+A board that holds a copy of a block from the library keeps its copy either way.
 
 ---
 
@@ -267,6 +300,22 @@ where the preset belongs — `runtimes` is how a composed preset says which side
 it was built for, since it names nested services that one registry has and
 another may not.
 
+**A composed preset with params is a block, and a drop uses it.** A
+sub-service preset that declares `params` is written to be placed several times
+with different values, so the palette marks it as a block and dropping it
+places a [use](blocks.md) rather than a copy: the preset's definition is copied
+into the board's own `blocks` — once; a second drop names the copy the board
+already holds — and the new entry is a use of it, varied from its bar. The board
+then opens anywhere, with or without this library. The library's card stays
+where it is and stands for the board's copy too; that copy gets a card of its
+own once it differs (after *Edit block*). Without `params` there is nothing to
+vary per use, and a drop applies the preset as above. The build ships one:
+**ntfy notification**, which sends its input as a push notification through
+[ntfy](https://ntfy.sh), with the topic, title, priority, tags and server as
+params. Its topic defaults to `readymade-{{random}}`: every use is given a
+topic of its own ([a value made for each use](blocks.md)), since anyone who
+knows an ntfy.sh topic can read it.
+
 **Picking one is the playground's job.** A service's menu has a *Presets*
 submenu listing what is available for that service and nothing else. The menu
 answers one question — which preset do I want on this service — and a list of
@@ -281,8 +330,9 @@ Presets source, in every menu for that service, and exportable as a file, which
 is the only form in which it reaches anybody else.
 
 The two surfaces read one list. The store says when it changes, because
-`localStorage` reports nothing to the tab that wrote it, and a preset imported on
-the start page has to appear in the playground's menu without a reload.
+`localStorage` reports nothing to the tab that wrote it, a native host's folder
+is read after the app has started, and a preset imported on the start page has
+to appear in the playground's menu without a reload.
 
 ---
 

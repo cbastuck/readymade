@@ -82,6 +82,7 @@ export function remapFacadeUuids(
           serviceUuid: remap(widget.serviceUuid),
         };
       case "camera":
+      case "detect":
         return {
           ...widget,
           serviceUuid: remap(widget.serviceUuid),

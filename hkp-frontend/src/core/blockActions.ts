@@ -22,6 +22,7 @@ import {
   withUseParams,
 } from "../runtime/board/blocks";
 import type { BlockLinkage } from "../runtime/board/blocks";
+import { generatedParams } from "../runtime/board/params";
 import { BlockDefinition, presetFromService } from "./presets";
 import { BoardLinkage } from "../runtime/board/units";
 import { RuntimeDescriptor, RuntimeServiceMap } from "../types";
@@ -64,7 +65,10 @@ export async function setBlockParams(
   if (!current) {
     throw new Error(`setBlockParams: no use of a block is placed at ${key}`);
   }
-  const params = { ...current.use.params, ...changed };
+  const merged = { ...current.use.params, ...changed };
+  // Made here, once: the running use and the linkage saving writes are two
+  // expansions, and `{{random}}` made in each would be two different values.
+  const params = { ...merged, ...generatedParams(merged) };
   const { linkage, service, diagnostics } = withUseParams(blocks, key, params);
   const errors = diagnostics.filter((entry) => entry.level === "error");
   if (errors.length) {

@@ -11,6 +11,7 @@ import audiolizeBoard from "../../boards/audiolize-board.json";
 import triggerpadBoard from "../../boards/triggerpad-board.json";
 import spectralModifierBoard from "../../boards/spectral-modifier-board.json";
 import noiseAlertBoard from "../../boards/noise-alert-board.json";
+import faceAlertBoard from "../../boards/face-alert-board.json";
 import peerChatBoard from "../../boards/peer-chat-board.json";
 import peerChatNodeBoard from "../../boards/peer-chat-node-board.json";
 import p2pSenderBoard from "../../boards/p2p-sender-demo-board.json";
@@ -43,6 +44,7 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   "trigger-pad": triggerpadBoard as BoardDescriptor,
   "spectral-modifier": spectralModifierBoard as BoardDescriptor,
   "noise-alert": noiseAlertBoard as BoardDescriptor,
+  "face-alert": faceAlertBoard as BoardDescriptor,
   "peer-chat": peerChatBoard as BoardDescriptor,
   "peer-chat-with-node": peerChatNodeBoard as BoardDescriptor,
   "p2p-sender": p2pSenderBoard as BoardDescriptor,

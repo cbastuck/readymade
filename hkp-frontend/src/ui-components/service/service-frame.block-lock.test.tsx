@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import ServiceFrame from "./ServiceFrame";
+import { BoardCtx, type BoardContextState } from "hkp-frontend/src/BoardContext";
 import BlockUseFrame, {
   usePanelBlockLock,
 } from "hkp-frontend/src/runtime/ui/BlockUse";
@@ -141,5 +142,58 @@ describe("ServiceFrame inside a use of a block", () => {
     );
     expect(screen.getByText("body control").closest("[inert]")).toBeNull();
     expect(screen.getByText("open config").dataset.readOnly).toBe("false");
+  });
+});
+
+describe("the output plug of a use", () => {
+  // A use shows its bar and not its panel, so the plug its frame draws has to
+  // be drawn beside the bar — else what the use passes on is out of sight.
+  const board = {
+    linkage: {
+      units: [],
+      views: [],
+      blocks: {
+        definitions: {
+          "": [{ id: "b", name: "B", serviceId: "sub-service", state: { pipeline: [] } }],
+        },
+        placed: [
+          {
+            key: "k",
+            runtimeId: "rt",
+            path: ["rt", { id: "svc-1" }],
+            address: "svc-1",
+            id: "svc-1",
+            use: { block: "b", uuid: "svc-1" },
+            document: "",
+          },
+        ],
+      },
+    },
+  } as unknown as BoardContextState;
+
+  it("is drawn beside the use's bar, within reach, while the plugs inside stay in the panel", () => {
+    const { container } = render(
+      <BoardCtx.Provider value={board}>
+        <BlockUseFrame address="svc-1" runtimeId="rt">
+          <ServiceFrame service={createService()} onAction={vi.fn()}>
+            <ServiceFrame
+              service={{ ...createService(), uuid: "svc-2" }}
+              onAction={vi.fn()}
+            >
+              <span>inside</span>
+            </ServiceFrame>
+          </ServiceFrame>
+        </BlockUseFrame>
+      </BoardCtx.Provider>,
+    );
+    const slot = container.querySelector("[data-use-output]")!;
+    const own = slot.querySelectorAll('[aria-label="Inspect output"]');
+    expect(own).toHaveLength(1);
+    expect(own[0].closest("[inert]")).toBeNull();
+
+    // The service inside the use keeps its plug in its own (hidden) frame.
+    const all = container.querySelectorAll('[aria-label="Inspect output"]');
+    expect(all).toHaveLength(2);
+    expect(lockedPanel(container).contains(all[1] === own[0] ? all[0] : all[1])).toBe(true);
   });
 });

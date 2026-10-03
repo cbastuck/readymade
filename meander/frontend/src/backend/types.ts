@@ -94,6 +94,14 @@ export interface BackendAdapter {
   loadStartPageTree(): Promise<StartPageTree | null>;
   saveStartPageTree(tree: StartPageTree): Promise<void>;
 
+  // The preset library (hkp://presets): preset files — blocks among them — in
+  // a folder the host owns, one file each, so a file dropped there is in the
+  // library on the next start. Optional: absent on hosts that keep presets in
+  // local storage.
+  listPresetFiles?(): Promise<Array<{ file: string; source: string }>>;
+  writePresetFile?(file: string, source: string): Promise<void>;
+  deletePresetFile?(file: string): Promise<void>;
+
   // Board artwork image (stored next to the board file); returns the URL to
   // render the image from.
   uploadBoardArt(boardName: string, image: Blob): Promise<string>;

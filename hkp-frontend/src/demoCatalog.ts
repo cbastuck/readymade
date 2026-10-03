@@ -95,6 +95,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Audio"],
   },
   {
+    slug: "face-alert",
+    label: "Face Alert",
+    description:
+      "Watches the camera and sends a push notification through ntfy when a face appears — once, not every frame. Faces are found on the device; only the message leaves it, to a topic made at random for your copy.",
+    icon: "👤",
+    tags: ["Camera"],
+  },
+  {
     slug: "peer-chat",
     label: "Peer Chat",
     description:

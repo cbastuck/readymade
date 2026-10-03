@@ -8,6 +8,7 @@ import BoardProvider, {
 } from "hkp-frontend/src/BoardContext";
 import BrowserRegistry from "hkp-frontend/src/runtime/browser/BrowserRegistry";
 import { linkBlocks } from "hkp-frontend/src/core/linkBlocks";
+import { isBlockUse } from "hkp-frontend/src/runtime/board/blocks";
 import { allowedServices } from "hkp-frontend/src/runtime/browser/BrowserRegistry";
 import {
   BoardDescriptor,
@@ -138,12 +139,18 @@ describe("demo boards regression", () => {
           for (const service of services || []) {
             expect(typeof service.uuid).toBe("string");
             expect(service.uuid.length).toBeGreaterThan(0);
+            expect(uuids.has(service.uuid)).toBe(false);
+            uuids.add(service.uuid);
+            // A use of a block names the block, not a service; what it
+            // expands to is checked where the board is linked, below.
+            if (isBlockUse(service)) {
+              expect(service.block.length).toBeGreaterThan(0);
+              continue;
+            }
             expect(typeof service.serviceId).toBe("string");
             expect(service.serviceId.length).toBeGreaterThan(0);
             expect(typeof service.serviceName).toBe("string");
             expect(service.serviceName.length).toBeGreaterThan(0);
-            expect(uuids.has(service.uuid)).toBe(false);
-            uuids.add(service.uuid);
           }
         }
 

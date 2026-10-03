@@ -171,6 +171,74 @@ describe("service operations integration", () => {
     });
   });
 
+  describe("addService from a library block", () => {
+    // A sub-service preset with params is offered as a block: dropping it
+    // copies its definition into the board and places a use of it, so the
+    // board opens anywhere without the library and saves the use.
+    const NOTIFY = {
+      preset: "v1",
+      id: "notify",
+      name: "Notify",
+      serviceId: "sub-service",
+      params: { topic: "readymade" },
+      state: {
+        pipeline: [
+          { serviceId: "map", instanceId: "m", state: { template: { url: "{{param.topic}}" } } },
+        ],
+      },
+    };
+
+    beforeEach(() => window.localStorage.clear());
+    afterEach(() => window.localStorage.clear());
+
+    const drop = async (getCtx: () => BoardContextState | null) => {
+      await act(async () => {
+        await getCtx()!.addService(
+          {
+            serviceId: "sub-service",
+            serviceName: "Notify",
+            preset: { id: "notify", serviceId: "sub-service", use: true },
+          } as any,
+          runtime,
+        );
+      });
+    };
+
+    it("copies the definition into the board and places a use of it", async () => {
+      savePreset(parsePreset(NOTIFY));
+      let n = 0;
+      const api = makeApi({
+        addService: vi.fn(async (_scope: any, service: any) => ({
+          uuid: `svc-${++n}`,
+          serviceId: service.serviceId,
+          serviceName: service.serviceName,
+          state: { pipeline: [] },
+        })),
+      });
+      const { getCtx } = renderBoard(api);
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+
+      await drop(getCtx);
+
+      // Configured with the definition, its params substituted.
+      const configured = api.configureService.mock.calls[0][2];
+      expect(configured.pipeline[0].state.template.url).toBe("readymade");
+      await waitFor(() => {
+        expect(getCtx()!.linkage?.blocks?.definitions[""]?.map((d) => d.id)).toEqual(["notify"]);
+      });
+      expect(getCtx()!.linkage!.blocks!.placed.map((p) => p.use)).toEqual([
+        { block: "notify", uuid: "svc-1" },
+      ]);
+
+      // A second drop uses the copy the board now holds, rather than a second one.
+      await drop(getCtx);
+      await waitFor(() => {
+        expect(getCtx()!.linkage!.blocks!.placed).toHaveLength(2);
+      });
+      expect(getCtx()!.linkage!.blocks!.definitions[""]).toHaveLength(1);
+    });
+  });
+
   describe("addService", () => {
     it("appends a new service to the runtime", async () => {
       const api = makeApi();

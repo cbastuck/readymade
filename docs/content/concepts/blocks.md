@@ -87,6 +87,25 @@ which may refer to the outer block's — that is how *Note* passes `trigger` to
 *Hit*. A parameter may even name a block, `{ "block": "{{param.beat}}" }`, so
 one definition can be told which block to repeat.
 
+### A value made for each use
+
+A param's default may contain `{{random}}`:
+
+```json
+"params": { "topic": "readymade-{{random}}" }
+```
+
+Each use that does not give the param a value of its own gets one made —
+20 lowercase letters and digits, about 103 bits — the first time it is
+expanded, and **keeps it**: the value is written into the use's `params`, so
+saving the board saves it and the board opens with the same one next time. It
+shows on the use's bar, where it can be copied or replaced; typing
+`{{random}}` there makes a new one. For what must differ between copies and
+must not be guessable — an ntfy topic, a channel name — where a fixed default
+would put every copy of a board on the same one. A use inside another block's
+definition is not saved on its own, so it gets a new value each time the board
+opens. Applying a preset makes one for the copy the same way.
+
 A unit's parameters (`concepts/units.md`) share the syntax and not the scope:
 they are substituted into a unit's services — including the params its uses pass
 — and never into its `blocks`.
@@ -110,7 +129,9 @@ belongs to its definition.** So:
   is worse than not being able to make it. What only reads stays reachable: a
   service's configuration opens read-only, and a panel that locks its own
   controls instead (the Timeline's, whose editor opens as a read-only view)
-  keeps what shows details.
+  keeps what shows details. What a use passes on is the use's own, so its
+  output plug sits beside the bar, where the Flow Inspector opens as it does on
+  any service.
 - **Nothing addresses it.** A facade widget or a Configurator naming a service
   inside a use is refused when it is called, and warned about when the board is
   opened. A use is addressed as a whole. This is a board rule, not a security
@@ -174,6 +195,27 @@ Wrapping keeps the board doing what it did:
 Only services at the top of a runtime can be picked; a sub-pipeline's own
 services cannot yet.
 
+### Blocks from the library
+
+A block need not start in the board. The [preset library](presets.md) holds
+sub-service presets, and one that declares `params` is offered in the same
+sidebar as a block: shipped with the build (**ntfy notification**), imported
+from a file or a URL, or saved from a service. Dropping it **copies its
+definition into the board's `blocks`** and places a use of it — from then on it
+is the board's own block, exactly as if it had been made there:
+
+- The board opens anywhere, without the library, and a share link carries the
+  definition.
+- A second drop, of the same block, uses the copy the board already holds —
+  under whatever id it has there — rather than copying it again. One that
+  differs from a board block with the same id is given a free id (`ntfy-2`).
+- The library's version changing later — edited, or updated from its source —
+  does not reach the board's copy. Edit the board's block, or drop the newer
+  one beside it.
+
+The copy leaves behind what is the library's business: the `preset` marker and
+`origin`.
+
 ---
 
 ## Where a board goes
@@ -197,8 +239,9 @@ moment it is made.
 
 What still differs: a preset is keyed by the service it configures and its id,
 and lives in files and the preset library; a block is named by its id within one
-board. Blocks defined in files, shared across boards, are where the two are
-expected to become one.
+board. The library is where they meet: a sub-service preset with params is
+dropped as a block, its definition copied into the board. A use never names the
+library itself, so a board depends on nothing outside it.
 
 ---
 
@@ -227,6 +270,8 @@ expected to become one.
 | Wrapping picked services, and making a block of them | `hkp-frontend/src/runtime/board/wrap.ts` (what may be wrapped), `hkp-frontend/src/core/wrapActions.ts` (doing it), `hkp-frontend/src/ui-components/runtime-ui/WrapSelection.tsx` |
 | Picking services | `hkp-frontend/src/selection/SelectionContext.tsx`, `hkp-frontend/src/runtime/ServiceUiContainer.tsx` |
 | Adding a use from the palette | `hkp-frontend/src/core/serviceOperations.ts` (`addService`) |
+| Copying a library block into a board | `hkp-frontend/src/runtime/board/blocks.ts` (`withAdoptedDefinition`), `core/presets.ts` (`isUsableAsBlock`) |
+| Blocks the build ships | `hkp-frontend/presets/sub-service/`, listed in `src/presetRegistry.ts` |
 | The bar, the lock, the edit bar | `hkp-frontend/src/runtime/ui/BlockUse.tsx` |
 | Refusing addresses into a use | `hkp-frontend/src/facade/boardServices.ts` |
 | Worked example | `boards/nested-rhythm-demo-board.json` |

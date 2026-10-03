@@ -9,7 +9,7 @@ import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
  *
  * It used to post to the runtime-wide entry point, which always starts at the
  * first service — so a value pushed from the middle of a pipeline (the flow
- * inspector's "Inject data", a Monitor's "Inject Buffer") was fed to the head of
+ * inspector's "Inject", a Monitor's "Inject Buffer") was fed to the head of
  * the pipeline instead, and whatever ran there replaced it long before the
  * service after the caller saw anything.
  */

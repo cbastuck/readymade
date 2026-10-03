@@ -601,6 +601,17 @@ how large it is drawn here; `preview: false` captures without drawing it at all.
 camera runs in a facade **needs** this widget: the Camera service captures through a video element
 something on screen handed it, and a facade view draws no service panels.
 
+**detect** — what a Detect service sees: the last frame it looked at, with each face it found
+outlined. Pair it with a camera widget whose `preview` is `false`, so the frame is shown once, as
+the board understands it:
+
+```json
+{ "type": "camera", "serviceUuid": "camera-svc", "width": 320, "height": 240, "preview": false },
+{ "type": "detect", "serviceUuid": "detect-svc", "width": 320 }
+```
+
+`width` is what the frame is drawn at (default 320); its height follows the frame.
+
 **xy-pad** — embeds the XY Pad service:
 
 ```json

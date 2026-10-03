@@ -134,10 +134,27 @@ test.describe("a use on the running board", () => {
     await expect(first.getByLabel("trigger")).toHaveValue("kick");
     // The default fills in what the use does not say.
     await expect(first.getByLabel("volume")).toHaveValue("0.5");
-    // Its panel is not shown, and out of reach should it be.
+    // Its panel is not shown, and out of reach should it be. Not by one
+    // `inert` over the whole panel: the frame inside takes the lock over, so
+    // what only reads (its configuration) stays reachable — every control that
+    // writes is then inert where it sits, or disabled.
     const panel = first.locator(".hkp-block-locked").first();
     await expect(panel).toBeHidden();
-    await expect(panel).toHaveAttribute("inert", "");
+    const controls = await panel.evaluate(
+      (root) => root.querySelectorAll("input, select, textarea, button").length,
+    );
+    expect(controls).toBeGreaterThan(0);
+    const reachable = await panel.evaluate((root) =>
+      [...root.querySelectorAll("input, select, textarea, button")]
+        .filter(
+          (control) =>
+            !control.closest("[inert]") &&
+            !(control as HTMLInputElement).disabled &&
+            !control.closest("[data-service-header]"),
+        )
+        .map((control) => control.outerHTML.slice(0, 80)),
+    );
+    expect(reachable).toEqual([]);
   });
 
   test("params changed on a use are what the board saves", async ({ page }) => {
@@ -324,6 +341,90 @@ test.describe("making a block", () => {
       { block: "pair", uuid: "pair" },
       { block: "pair", uuid: expect.any(String) },
     ]);
+  });
+});
+
+test.describe("a block from the library", () => {
+  const libraryBoard = {
+    boardName: "Blocks library e2e",
+    runtimes: [{ id: "rt", name: "Browser", type: "browser", state: {} }],
+    services: {
+      rt: [
+        {
+          uuid: "log",
+          serviceId: "hookup.to/service/monitor",
+          serviceName: "Log",
+        },
+      ],
+    },
+  };
+
+  test.beforeEach(async ({ seedBoard, openBoard, page }) => {
+    await seedBoard("blocks-library-e2e", libraryBoard);
+    await openBoard("blocks-library-e2e");
+    await expect(page.locator("#service-frame-log")).toBeVisible({
+      timeout: 20_000,
+    });
+  });
+
+  test("the shipped ntfy block is copied into the board once, and each drop is a use of it", async ({
+    page,
+  }) => {
+    const card = () =>
+      page.locator(".hkp-palette-card", { hasText: "ntfy notification" }).first();
+    const runtime = page.locator(".hkp-runtime-container").first();
+
+    const names = () => page.locator(".hkp-palette-card-name").allTextContents();
+    const before = await names();
+
+    await card().dragTo(runtime);
+    await expect(uses(page, "ntfy-notification")).toHaveCount(1);
+    // The card stays where it was dropped from — the board's copy gets no card
+    // of its own while it says what the library's does.
+    expect(await names()).toEqual(before);
+
+    // What the use passes on is inspectable from beside its bar, where its
+    // hidden panel's plug is drawn.
+    const plug = uses(page, "ntfy-notification")
+      .first()
+      .getByRole("button", { name: "Inspect output" });
+    await expect(plug).toBeVisible();
+    if (process.env.HKP_E2E_SCREENSHOT) {
+      await page.screenshot({ path: process.env.HKP_E2E_SCREENSHOT });
+    }
+    await plug.click();
+    await expect(page.getByText("Flow Inspector").first()).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await card().dragTo(runtime);
+    await expect(uses(page, "ntfy-notification")).toHaveCount(2);
+
+    await page.keyboard.press(
+      process.platform === "darwin" ? "Meta+s" : "Control+s",
+    );
+    const key = "hkp-playground-Blocks library e2e";
+    await expect
+      .poll(() => page.evaluate((k) => localStorage.getItem(k), key))
+      .not.toBeNull();
+    const item = JSON.parse(
+      (await page.evaluate((k) => localStorage.getItem(k), key))!,
+    );
+    const saved = JSON.parse(item.source ?? JSON.stringify(item));
+    expect(saved.blocks).toHaveLength(1);
+    expect(saved.blocks[0]).toMatchObject({
+      id: "ntfy-notification",
+      serviceId: "sub-service",
+      params: { topic: "readymade-{{random}}" },
+    });
+    expect(saved.blocks[0]).not.toHaveProperty("preset");
+    // Each use was given a topic of its own, and keeps it.
+    const topic = { topic: expect.stringMatching(/^readymade-[a-z0-9]{20}$/) };
+    expect(saved.services.rt).toEqual([
+      expect.objectContaining({ uuid: "log" }),
+      { block: "ntfy-notification", uuid: expect.any(String), params: topic },
+      { block: "ntfy-notification", uuid: expect.any(String), params: topic },
+    ]);
+    expect(saved.services.rt[1].params.topic).not.toBe(saved.services.rt[2].params.topic);
   });
 });
 

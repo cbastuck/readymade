@@ -7,8 +7,8 @@ import {
   isRuntimeBrowserClassType,
 } from "../types";
 import { presetsForService } from "../presetRegistry";
-import { presetState } from "./presets";
-import { withNewUse } from "../runtime/board/blocks";
+import { parseBlockDefinition, presetState } from "./presets";
+import { withAdoptedDefinition, withNewUse } from "../runtime/board/blocks";
 import { reorderService } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 
@@ -26,23 +26,35 @@ export async function addService(
       `BoardContext.addService() runtime api is missing: ${runtime.type}`,
     );
   }
-  // A palette entry standing for a preset is called what the preset is called,
-  // and so is what it creates: the service is named at creation rather than
-  // renamed into it afterwards.
-  const preset = service.preset
+  const found = service.preset
     ? presetsForService(service.preset.serviceId).find(
         (entry) => entry.id === service.preset!.id,
       )
     : undefined;
+  if (service.preset?.use && !found) {
+    throw new Error(`No preset "${service.preset.id}" to use`);
+  }
+  // A palette entry standing for a preset is called what the preset is called,
+  // and so is what it creates: the service is named at creation rather than
+  // renamed into it afterwards.
+  const preset = service.preset?.use ? undefined : found;
   // A block is used, not applied: what is created is what a use of it
   // expands to, and linkage records the use so saving writes it back.
-  const blocks = refs.linkageRef?.current?.blocks;
+  let blocks = refs.linkageRef?.current?.blocks;
   const blockDocument = runtime.unit ?? "";
-  const definition = service.block
-    ? blocks?.definitions[blockDocument]?.find((entry) => entry.id === service.block!.id)
+  let blockId = service.block?.id;
+  if (service.preset?.use && found) {
+    // A block from the library is copied into the board first, so the board
+    // holds what its use names (see `withAdoptedDefinition`).
+    const adopted = withAdoptedDefinition(blocks, blockDocument, parseBlockDefinition(found));
+    blocks = adopted.linkage;
+    blockId = adopted.id;
+  }
+  const definition = blockId
+    ? blocks?.definitions[blockDocument]?.find((entry) => entry.id === blockId)
     : undefined;
-  if (service.block && (!blocks || !definition)) {
-    throw new Error(`No block "${service.block.id}" to add to runtime "${runtime.id}"`);
+  if (blockId && (!blocks || !definition)) {
+    throw new Error(`No block "${blockId}" to add to runtime "${runtime.id}"`);
   }
 
   const created = await api.addService(
@@ -74,7 +86,14 @@ export async function addService(
       id: created.uuid,
     });
     await api.configureService(scope, created, placed.service.state);
-    refs.setLinkage((prev) => (prev ? { ...prev, blocks: placed.linkage } : prev));
+    // A board that had no blocks before a library block was used has no
+    // linkage for them yet; this is where it starts.
+    refs.setLinkage((prev) => ({
+      units: prev?.units ?? [],
+      views: prev?.views ?? [],
+      ...prev,
+      blocks: placed.linkage,
+    }));
     const state = await Promise.resolve(
       api.getServiceConfig?.(scope, created),
     ).catch(() => null);

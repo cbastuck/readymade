@@ -255,6 +255,34 @@ export const meanderBackend: BackendAdapter = {
     }
   },
 
+  async listPresetFiles(): Promise<Array<{ file: string; source: string }>> {
+    const res = await fetch("hkp://presets");
+    if (!res.ok) {
+      throw new Error(`Failed to list presets: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  async writePresetFile(file: string, source: string): Promise<void> {
+    const res = await fetch(`hkp://presets/${encodePathSegment(file)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: source,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to save preset "${file}": ${res.statusText}`);
+    }
+  },
+
+  async deletePresetFile(file: string): Promise<void> {
+    const res = await fetch(`hkp://presets/${encodePathSegment(file)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok && res.status !== 404) {
+      throw new Error(`Failed to delete preset "${file}": ${res.statusText}`);
+    }
+  },
+
   async uploadBoardArt(boardName: string, image: Blob): Promise<string> {
     const res = await fetch(`hkp://board-art/${encodePathSegment(boardName)}`, {
       method: "POST",

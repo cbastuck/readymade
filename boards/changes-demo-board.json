@@ -1,0 +1,60 @@
+{
+  "boardName": "Changes Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Every second",
+        "state": {
+          "periodic": true,
+          "periodicValue": 1,
+          "periodicUnit": "s",
+          "running": true,
+          "start": true,
+          "immediate": true
+        }
+      },
+      {
+        "uuid": "reading-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "A reading",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "level=": "round(rand() * 3)"
+          }
+        }
+      },
+      {
+        "uuid": "all-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Every reading"
+      },
+      {
+        "uuid": "changes-svc",
+        "serviceId": "hookup.to/service/changes",
+        "serviceName": "Level changed",
+        "state": {
+          "value": "params.level",
+          "emit": "change"
+        }
+      },
+      {
+        "uuid": "changed-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Only changes"
+      }
+    ]
+  }
+}

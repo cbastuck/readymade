@@ -289,6 +289,7 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `level-meter`      | Vertical bar driven by a service notification                              |
 | `canvas`           | Embeds a Canvas service's drawing surface                                  |
 | `camera`           | Live camera; the frame it captures goes down the pipeline                   |
+| `detect`           | What a Detect service sees: its last frame, with what it found outlined     |
 | `calendar`         | A day as a calendar: hours down the side, one column per bookable thing     |
 | `xy-pad`           | Embeds an XY Pad service                                                   |
 | `qr-code`          | Displays a QR code from a service notification                             |

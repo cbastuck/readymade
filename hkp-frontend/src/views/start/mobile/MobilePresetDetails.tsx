@@ -73,6 +73,20 @@ function Action({
 export default function MobilePresetDetails({ node }: { node: PresetNode }) {
   const { preset } = node;
   const [showState, setShowState] = useState(false);
+  const [updating, setUpdating] = useState<"idle" | "busy" | "done">("idle");
+  const [updateError, setUpdateError] = useState("");
+
+  const update = async () => {
+    setUpdating("busy");
+    setUpdateError("");
+    try {
+      await node.onUpdate!();
+      setUpdating("done");
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : String(err));
+      setUpdating("idle");
+    }
+  };
   const secrets = presetSecrets(preset);
   const missing = unavailableSecrets(preset.state);
 
@@ -132,7 +146,11 @@ export default function MobilePresetDetails({ node }: { node: PresetNode }) {
               color: M.textSecondary,
             }}
           >
-            {node.builtIn ? "Built in" : "Saved on this device"}
+            {node.builtIn
+              ? "Built in"
+              : preset.origin
+                ? "Imported from a URL"
+                : "Saved on this device"}
           </div>
         </div>
       </div>
@@ -191,6 +209,21 @@ export default function MobilePresetDetails({ node }: { node: PresetNode }) {
         </pre>
       )}
 
+      {preset.origin && <MetaRow label="Source" value={preset.origin} />}
+      {node.onUpdate && (
+        <Action onClick={() => void update()}>
+          {updating === "busy"
+            ? "Updating…"
+            : updating === "done"
+              ? "Updated from source"
+              : "Update from source"}
+        </Action>
+      )}
+      {updateError && (
+        <div style={{ fontSize: 12.5, color: "#e0355f", padding: "0 4px" }}>
+          {updateError}
+        </div>
+      )}
       <Action onClick={download}>Export file</Action>
       {node.onDelete && (
         <Action tone="danger" onClick={() => node.onDelete!()}>

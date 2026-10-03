@@ -268,7 +268,12 @@ export type ServiceClass = {
  * Only a palette entry has one. A registry entry is a service and nothing more.
  */
 export type ServiceClassWithPreset = ServiceClass & {
-  preset?: { id: string; serviceId: ServiceURI };
+  /**
+   * A preset this entry stands for. `use` places it as a block instead of
+   * applying it: its definition is copied into the board's `blocks` and the
+   * entry becomes a use of it (`core/serviceOperations#addService`).
+   */
+  preset?: { id: string; serviceId: ServiceURI; use?: boolean };
   /**
    * A block of this board this entry stands for: adding it places a use of the
    * block — a reference — where a preset would apply a copy. See

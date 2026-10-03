@@ -24,6 +24,7 @@ export default function CameraUI(props: ServiceUIProps) {
   const [height, setHeight] = useState<number>(200);
   const [captureFormat, setCaptureFormat] = useState<string>("image/png");
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [devices, setDevices] = useState<Array<MediaDeviceInfo>>([]);
   const [currentDevice, setCurrentDevice] = useState<MediaDeviceInfo | null>(
     null,
@@ -98,6 +99,9 @@ export default function CameraUI(props: ServiceUIProps) {
     setCurrentDevice(videoDevices[0]);
   };
 
+  // Every caller starts the camera and moves on — a ref callback, a button —
+  // so a camera that cannot be had (refused, absent, busy) is said here, in
+  // the panel, rather than left as a rejection nobody handles.
   const startVideo = async (
     videoElement: HTMLVideoElement,
     deviceId?: string,
@@ -108,6 +112,7 @@ export default function CameraUI(props: ServiceUIProps) {
       started = s;
       setStream(s);
       streamRef.current = s;
+      setCameraError(null);
       if (!devices.length) {
         await enumerateDevices();
       }
@@ -118,6 +123,7 @@ export default function CameraUI(props: ServiceUIProps) {
       setStream(null);
       streamRef.current = null;
       console.warn("Could not start camera:", err);
+      setCameraError(err instanceof Error ? err.message : "Camera unavailable");
     }
   };
 
@@ -222,6 +228,11 @@ export default function CameraUI(props: ServiceUIProps) {
           height={cameraRunning ? height : 0}
           autoPlay
         />
+        {cameraError && (
+          <div className="text-xs text-red-600 break-words">
+            Camera unavailable: {cameraError}
+          </div>
+        )}
 
         <div className="mt-2">
           <GroupLabel className="hkp-svc-field-label" size={4}>

@@ -1,0 +1,47 @@
+/* Editor dialog — a titled header, an optional details strip, the editor
+   filling the rest, and a footer holding the actions, in the settings kit's
+   terms (settings/settings.css). The frame carries `hkp-set hkp-set-dialog`,
+   which defines the colours and type and places the close button. */
+
+/* The primitive puts extra header buttons beside its close button. */
+.hkp-edit-dialog > .absolute {
+  align-items: center;
+  gap: 4px;
+}
+
+.hkp-edit-dialog-details {
+  flex: 0 0 auto;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--set-line-soft);
+  background: var(--set-ground);
+  color: var(--set-mid);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.hkp-edit-dialog-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hkp-edit-dialog-footer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--set-line-soft);
+  background: var(--set-ground);
+}
+
+@media (max-width: 640px) {
+  .hkp-edit-dialog-details {
+    padding: 10px 16px;
+  }
+  .hkp-edit-dialog-footer {
+    padding: 10px 16px;
+  }
+}

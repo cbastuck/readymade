@@ -19,7 +19,8 @@ of a pipeline and sits inside one.
 { "block": "note", "instanceId": "kick", "params": { "trigger": "kick", "volume": 0.9 } }
 ```
 
-**State:** designed 2026-09-26; phases 1–5 built on `nesting_audio`, with what
+**State:** designed 2026-09-26; phases 1–5 built on `nesting_audio`, phase 6
+(blocks from the library) 2026-09-27, with what
 is left under *Still to build* and *Open*.
 
 ---
@@ -234,6 +235,38 @@ and *use* (reference, a block). So, wherever there is a choice:
 - ☑ `concepts/blocks.md`, `board-json.md`, `concepts/presets.md` (params, the
   other verb), the nested-rhythm page and board description, `testing.md`,
   `CLAUDE.md`, the vocabulary entry
+
+### 6 — Blocks from the library (2026-09-27)
+
+Decided with the user: **one library** — the preset library; sub-service presets
+are the blocks. A use **copies the definition into the board** (never names the
+library, so a board depends on nothing outside it). A URL import **keeps the
+imported copy**; *Update from source* re-fetches only when asked. Native hosts
+keep the library as **files in a folder**, so a dropped file is in it next start.
+
+- ☑ Store seam: `PresetStorage` + `attachPresetStorage` (`core/presets.ts`), a
+  cache in front of the host's files; `PlatformCapabilities.presetStorage`,
+  attached by `PlatformProvider`; `localStorage` stays the web store. Presets
+  in `localStorage` move into the host's folder once; a host that cannot list
+  keeps them where they were
+- ☑ `hkp://presets` (GET list `[{file, source}]`, POST/DELETE `/presets/<file>`)
+  on desktop (`~/.hkp/presets`, `meander/backend/schemeHandler.cpp`), iOS
+  (`Documents/Presets`, `BoardListView.swift`) and Android (`files/Presets`,
+  `bridge/PresetStore.kt`)
+- ☑ `origin` on URL imports; *Update from source* on desktop and mobile details;
+  preset import on the mobile start page
+- ☑ `isUsableAsBlock` (sub-service + `params`) → the palette card's `preset.use`;
+  `addService` adopts the definition (`withAdoptedDefinition`: reuse an equal
+  one under any id, else a free id) and places a use. The library card stays
+  in place; the board's copy gets its own card only once it differs (first
+  build hid the library card and put the copy at the top — read as vanished)
+- ☑ Shipped: `presets/sub-service/ntfy-notification.json`
+- ☐ Native hosts exercised in the app: desktop builds and Android compiles;
+  iOS only parsed (`swiftc -parse`). `hkp://presets` has not been called from
+  a running app on any of them
+- ☐ Mobile playground has no palette for presets or blocks — a library block
+  can be managed on mobile but only dropped on desktop/web
+- ☐ Nested drops (a use inside a sub-pipeline) — same gap as board blocks
 
 ### Still to build
 
