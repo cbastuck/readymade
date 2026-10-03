@@ -145,6 +145,13 @@ coordinator pushes instead: `hkp-frontend/src/core/mountPublication.ts`
 configures it with the plain address. hkp-node's session does the same for the
 boards it owns.
 
+For that it has to know the address, and a remote owner that claims its mount
+after load — unbypassed from a facade, say — says so only in a notification
+and in the state it answers the configure with. Both are taken into the board's
+state for that service (`withReportedMount()`, fed by the REST scope's report
+targets), the address and nothing else; hkp-node's session does the same with
+the notifications it receives.
+
 ---
 
 ## Ownership, which is what the role really is

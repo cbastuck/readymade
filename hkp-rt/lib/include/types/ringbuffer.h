@@ -52,8 +52,8 @@ public:
   unsigned int id() const { return m_id; }
   uint64_t timestamp() const { return m_timestamp; }
 
-  unsigned int getReadIndex() const { return m_readIndex.load(std::memory_order_relaxed); }
-  unsigned int getWriteIndex() const { return m_writeIndex.load(std::memory_order_relaxed); }
+  uint64_t getReadIndex() const { return m_readIndex.load(std::memory_order_relaxed); }
+  uint64_t getWriteIndex() const { return m_writeIndex.load(std::memory_order_relaxed); }
 
   unsigned int getInternalBufferSize() const { return N; }
 
@@ -62,8 +62,15 @@ private:
   static unsigned int m_bufferAutoId;
   inline static const unsigned int N = 44100 * 2;
   float m_buffer[N];
-  std::atomic<std::uint32_t> m_writeIndex;
-  std::atomic<std::uint32_t> mutable m_readIndex; // mutable because serialise modifies it
+  // Positions in the stream, never wrapped: the slot is `index % N`. 64 bits
+  // because N does not divide 2^32 — a 32-bit index jumps to a different slot
+  // when it wraps, which at 48 kHz stereo is after about twelve hours.
+  //
+  // One writer, one reader. The writer stores its index only after the samples
+  // it covers are in place (release), so a reader that sees an index sees the
+  // samples behind it.
+  std::atomic<std::uint64_t> m_writeIndex;
+  std::atomic<std::uint64_t> mutable m_readIndex; // mutable because serialise modifies it
   std::string m_name;
   unsigned int m_id;
   uint64_t m_timestamp;

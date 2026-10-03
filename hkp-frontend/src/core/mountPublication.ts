@@ -34,6 +34,58 @@ type BoardView = {
   };
 };
 
+type ServicesView = {
+  [runtimeId: string]: Array<{ uuid: string; state?: unknown }>;
+};
+
+/**
+ * The board's services with the mount address a remote service just reported
+ * written into that service's state, or `services` itself when the report
+ * changes nothing.
+ *
+ * A remote runtime's state reaches the board when the board loads; what a
+ * service says afterwards — its notifications, the state it answers a
+ * configure with — goes to its panel and not to the board. An owner that comes
+ * out of bypass after load therefore publishes an address the board never
+ * sees, and every reference to it stays unresolved. Only the address is taken
+ * over: it is the one piece of a service's state another service depends on,
+ * and anything more would turn each configure into a board change.
+ *
+ * An empty address (a mount released) is not taken over: the address a mount
+ * gets is derived, so the next claim publishes the same one, and a consumer
+ * holding it simply reconnects then. hkp-node's coordinator does the same
+ * (`hkp-node/src/coordinator/session.ts`).
+ */
+export function withReportedMount<T extends ServicesView>(
+  services: T,
+  runtimeId: string,
+  serviceUuid: string,
+  report: unknown,
+): T {
+  if (!report || typeof report !== "object" || Array.isArray(report)) {
+    return services;
+  }
+  const published = (report as Record<string, unknown>)[MOUNT_FIELD];
+  if (typeof published !== "string" || !published) {
+    return services;
+  }
+  const list = services[runtimeId];
+  const index = list?.findIndex((svc) => svc.uuid === serviceUuid) ?? -1;
+  if (index === -1) {
+    return services;
+  }
+  const state = list[index].state as Record<string, unknown> | undefined;
+  if (state?.[MOUNT_FIELD] === published) {
+    return services;
+  }
+  const updated = [...list];
+  updated[index] = {
+    ...list[index],
+    state: { ...(state ?? {}), [MOUNT_FIELD]: published },
+  };
+  return { ...services, [runtimeId]: updated };
+}
+
 /** Key identifying what was last handed to a service. */
 export function configureKey(runtimeId: string, serviceUuid: string): string {
   return `${runtimeId}/${serviceUuid}`;

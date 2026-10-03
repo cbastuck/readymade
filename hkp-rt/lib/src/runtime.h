@@ -75,6 +75,7 @@ public:
   // ── RuntimeHost overrides ────────────────────────────────────────────────
   Data processFrom(const Service &service, Data data, bool advanceBefore=true, std::function<void(Data)> callback = nullptr) override;
   void scheduleProcessFrom(const Service &service, Data data, bool advanceBefore=true) override;
+  void post(std::function<void()> fn) override;
   bool isConnected(const Service &svc) const override;
   void sendData(Data data, MessagePurpose purpose, const std::string& sender, std::function<void(Data)> callback = nullptr) override;
   void notifyProcessFinished(const Service& svc, const Data& data) override;

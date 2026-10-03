@@ -30,6 +30,7 @@ export default function CoreInputUI(props: ServiceUIProps) {
   const [deferPropagation, setDeferPropagation] = useState<boolean>(false);
   const [sampleRate, setSampleRate] = useState<number>(0);
   const [bufferSize, setBufferSize] = useState<number>(0);
+  const [channels, setChannels] = useState<number>(0);
   const [availableSampleRates, setAvailableSampleRates] = useState<number[]>([]);
   const [pendingSampleRate, setPendingSampleRate] = useState<number | null>(null);
   const [pendingBufferSize, setPendingBufferSize] = useState<number | null>(null);
@@ -76,6 +77,10 @@ export default function CoreInputUI(props: ServiceUIProps) {
       if (!message.bypass) {
         setPendingBufferSize(null);
       }
+    }
+
+    if (message.channels !== undefined) {
+      setChannels(message.channels);
     }
 
     if (message.availableSampleRates !== undefined) {
@@ -168,6 +173,11 @@ export default function CoreInputUI(props: ServiceUIProps) {
             uppercaseValues={false}
           />
         </div>
+        {channels > 0 && (
+          // How the samples in the buffer are interleaved — what a service
+          // reading them, an encoder say, is configured to match.
+          <InputField label="Channels" value={String(channels)} disabled={true} />
+        )}
         <Switch
           className="py-2"
           labelClassName="tracking-[1px] text-base2"

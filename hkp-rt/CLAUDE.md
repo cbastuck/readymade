@@ -41,6 +41,7 @@ All dependency management lives in the **root `CMakeLists.txt`** and **root `vcp
 | Dep                             | How             | Location                                |
 | ------------------------------- | --------------- | --------------------------------------- |
 | Boost, OpenSSL, FFmpeg, fdk-aac | vcpkg           | root `vcpkg.json`                       |
+| mp3lame (LAME, `audio-encode` mp3; macOS only so far — `HKP_MP3_ENABLED` is set when found) | vcpkg | `3rdparty/vcpkg.json` |
 | Inja (template engine)          | CPM             | fetched at configure time               |
 | Saucer (GUI framework)          | CPM             | fetched at configure time (custom fork) |
 | minimp4 (MP4 demuxer)           | CPM             | fetched at configure time               |

@@ -67,6 +67,7 @@ public:
                    std::function<void(Data)> callback = nullptr) override;
   void scheduleProcessFrom(const Service& svc, Data data,
                            bool advanceBefore = true) override;
+  void post(std::function<void()> fn) override { m_post(std::move(fn)); }
   bool isConnected(const Service& svc) const override;
   void sendData(Data data, MessagePurpose purpose,
                 const std::string& sender,

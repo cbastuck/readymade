@@ -20,6 +20,7 @@ import ServiceSheet from "./ServiceSheet";
 import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import MobileFacadeView from "./MobileFacadeView";
+import { passesNothing } from "../../../runtime/rest/Data";
 import { narrowBoardContext } from "../../../facade/boardServices";
 import { useEditReportingService } from "../../../core/editedServices";
 
@@ -1139,12 +1140,14 @@ function useWireBrowserScopes(
           return;
         }
 
+        const carriesOn = !passesNothing(result);
+
         const activeBridge = bridgeRef.current;
         if (activeBridge) {
           // Cloud board: the coordinator routes to the next runtime — just hand
           // the result back to it.
           const ws = activeBridge.ws;
-          if (ws && ws.readyState === WebSocket.OPEN && result !== null) {
+          if (ws && ws.readyState === WebSocket.OPEN && carriesOn) {
             ws.send(
               JSON.stringify({
                 type: "result-from-browser",
@@ -1164,7 +1167,7 @@ function useWireBrowserScopes(
           nextScope &&
           (runtimeApis[next.type] ||
             runtimeApis[toCanonicalRuntimeClassType(next.type)]);
-        if (nextApi && nextScope && result !== null) {
+        if (nextApi && nextScope && carriesOn) {
           nextApi.processRuntime(nextScope, result, null, context);
         }
       };

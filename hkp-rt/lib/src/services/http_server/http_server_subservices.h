@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <map>
+#include <mutex>
 #include <string>
 
 #include <optional>
@@ -16,6 +17,7 @@
 #include <slot_store.h>
 
 #include "../../sub_runtime.h"
+#include "../../common/stream_broadcast.h"
 
 /**
  * Service Documentation
@@ -55,11 +57,43 @@
  * this service owns and lends to both of its pipelines. Legacy boards say the
  * same thing as `mode: "process_on_data"`, which is this arrangement built in
  * and unnamed; `entryFor` is where the older spellings are read.
+ *
+ * **A stream is the one answer that keeps coming.** With `stream` declared,
+ *
+ *     { "stream": { "path": "/live.mp3", "contentType": "audio/mpeg" } }
+ *
+ * a GET on that path is not a request to answer but a listener to keep: the
+ * connection stays open, and what every pass produces — `onProcess`'s result,
+ * or the pass's input where there is no `onProcess` — is written to it, and to
+ * every other caller on that path, as it happens. There is one stream, not one
+ * per listener; a listener joining late starts with the last `burstBytes` of
+ * it, and one falling more than `maxQueueBytes` behind loses the oldest of what
+ * it has not been sent yet rather than holding up anyone else. One that stops
+ * reading altogether for `stallTimeoutMs` is let go. Bytes, strings
+ * and MixedData's binary are streamed; anything else a pass produces is not.
  */
 namespace hkp {
 
 class Session;
 class HttpServerImpl;
+
+// What an endpoint declares about its stream (see HttpServerSubservices).
+struct HttpStreamConfig
+{
+  std::string path;
+  std::string contentType = "application/octet-stream";
+  std::size_t burstBytes = 0;
+  std::size_t maxQueueBytes = 32 * 1024;
+  // How long a write may wait on a caller that has stopped reading before the
+  // caller is no longer counted as listening.
+  std::size_t stallTimeoutMs = 5000;
+
+  bool operator==(const HttpStreamConfig&) const = default;
+};
+
+// The stream a `stream` value declares, or nothing where it declares none — a
+// value that is not an object, or names no path.
+std::optional<HttpStreamConfig> parseHttpStreamConfig(const nlohmann::json& value);
 
 // The headers a pipeline is shown, out of the ones a request carried.
 //
@@ -149,6 +183,11 @@ public:
 private:
   static json pipelineState(const Pipeline& pipeline);
 
+  // Whether this request is a caller joining the stream; takes it over if so.
+  bool joinStream(const std::shared_ptr<Session>& session, const std::string& requestPath,
+                  const std::string& method);
+  void publishToStream(const Data& data);
+
 private:
   std::shared_ptr<HttpServerImpl> m_impl;
   // How a board that predates named entry points says which side enters the one
@@ -183,6 +222,12 @@ private:
   // (QR code / status) can present a scannable link. Empty while stopped.
   std::string m_host;
   std::string m_url;
+  // Read on the server's thread as callers arrive, written by configure().
+  mutable std::mutex m_streamMutex;
+  std::optional<HttpStreamConfig> m_stream;
+  // The most recent chunk, which is what a Range probe is answered from.
+  StreamChunk m_lastChunk;
+  StreamBroadcast m_broadcast;
 };
 
 } // namespace hkp

@@ -18,7 +18,7 @@ import {
   deserializeYasMessage,
   serializeYasMessage,
 } from "./Message";
-import { TextSymbol, isData } from "./Data";
+import { TextSymbol, isBinaryData, isData } from "./Data";
 
 /** Append the bearer token to a WebSocket URL as ?access_token= for auth. */
 export function withAccessToken(
@@ -39,6 +39,12 @@ export default class RuntimeRestScope implements RuntimeScope {
   authenticatedUser: User | null = null;
   runtimeOutput: WebSocket | undefined;
   registry: ServiceRegistry = [];
+  /**
+   * Bytes that could not be sent because the socket was not open, since the
+   * last time that was logged, and when it was.
+   */
+  droppedBytes = 0;
+  droppedLoggedAt = 0;
   /**
    * Which runtime server hosts this runtime ("node", "python", "c++"), as the
    * server reports it. Absent when the server does not say.
@@ -79,7 +85,16 @@ export default class RuntimeRestScope implements RuntimeScope {
       this.runtimeOutput.onmessage = async (event) => {
         const isBinary = typeof event.data !== "string";
         if (isBinary) {
-          const message = deserializeYasMessage(await event.data.arrayBuffer());
+          let message;
+          try {
+            message = deserializeYasMessage(await event.data.arrayBuffer());
+          } catch (err) {
+            // A frame this client cannot read is dropped, not thrown: this is
+            // an event handler, so a throw here is an unhandled rejection per
+            // frame, and a runtime streaming results sends many.
+            console.warn("RuntimeRestScope.runtimeOutput: dropping frame", err);
+            return;
+          }
           if (
             message.purpose === MessagePurpose.RESULT ||
             message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE ||
@@ -113,6 +128,7 @@ export default class RuntimeRestScope implements RuntimeScope {
             this.onResult(null, message.data, context);
           } else if (message.purpose === MessagePurpose.NOTIFICATION) {
             this.app.notify({ uuid: message.sender }, message.data);
+            this.emitReport(message.sender, message.data);
           } else {
             console.log(
               "RuntimeRestScope.runtimeOutput.onmessage unknown message purpose",
@@ -133,6 +149,7 @@ export default class RuntimeRestScope implements RuntimeScope {
                 data = value;
               }
               this.app.notify({ uuid: instanceId }, data);
+              this.emitReport(instanceId, data);
             }
           } else if (msg.type === "result") {
             this.onResult(null, msg.data, null);
@@ -177,7 +194,8 @@ export default class RuntimeRestScope implements RuntimeScope {
     if (!this.runtimeOutput || this.runtimeOutput.readyState !== WebSocket.OPEN) {
       return false;
     }
-    if (isData(params)) {
+    // Bytes go as bytes too: JSON would spell each one out as a numbered key.
+    if (isData(params) || isBinaryData(params)) {
       // The binary frame has no `type` field, so the purpose carries the
       // distinction the JSON branch below gets from `type`: a resolveResult is
       // a NOTIFICATION addressed to the pending request named in `sender`,
@@ -231,6 +249,30 @@ export default class RuntimeRestScope implements RuntimeScope {
   emitLog(entry: LogEntry) {
     for (const target of this.logTargets) {
       target(entry);
+    }
+  }
+
+  /**
+   * What this runtime's services report — notifications, and the state a
+   * configure is answered with — for whoever keeps a view of them beyond the
+   * service's own panel.
+   */
+  private reportTargets = new Set<
+    (serviceUuid: string, report: unknown) => void
+  >();
+
+  registerReportTarget(
+    target: (serviceUuid: string, report: unknown) => void,
+  ): () => void {
+    this.reportTargets.add(target);
+    return () => {
+      this.reportTargets.delete(target);
+    };
+  }
+
+  emitReport(serviceUuid: string, report: unknown) {
+    for (const target of this.reportTargets) {
+      target(serviceUuid, report);
     }
   }
 

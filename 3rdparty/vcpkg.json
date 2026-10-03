@@ -7,6 +7,10 @@
       "platform": "osx&!osx"
     },
     "fdk-aac",
+    {
+      "name": "mp3lame",
+      "platform": "osx"
+    },
     "openssl",
     "boost-asio",
     "boost-beast",

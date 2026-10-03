@@ -68,6 +68,11 @@ public:
   void do_close(bool notify = true);
 
   void sendDataSync(Data& data, bool useEventStream = false);
+
+  // Answers with the response envelope `data` holds and answers true, or
+  // answers false and sends nothing when `data` is not one. See
+  // answerEnvelope() in the .cpp for what makes a value an envelope.
+  bool sendAnswerEnvelope(const Data& data);
   void sendDataAsync(json data);
 
   std::string getRequestPath() const
@@ -118,6 +123,10 @@ public:
     }
     return headers;
   }
+
+  // The connection itself, for a response that outlives this request/response
+  // exchange — a stream (see HttpStreamListener). Use only on its strand.
+  boost::beast::tcp_stream& tcpStream() { return stream_; }
 
   void sendHtmlResponse(const std::string& html);
   void sendJsonResponseWithCors(const json& data);

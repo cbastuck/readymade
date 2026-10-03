@@ -95,6 +95,15 @@ Data Message::deserialize(BufferType& buffer, MessageHeader* outHeader)
   {
     return Null();
   }
+  else if (dataType == getTypeId<BinaryData>())
+  {
+    // No inner YAS object: the bytes run to the end of the frame.
+    auto bytes = buffer.data();
+    auto begin = static_cast<const uint8_t*>(bytes.data());
+    BinaryData binary(begin, begin + bytes.size());
+    buffer.consume(bytes.size());
+    return binary;
+  }
   
   std::cerr << "Message::deserialize data type is not suported" << std::endl;
   return Null();

@@ -9,6 +9,7 @@
 #include "./http_server_impl.h"
 #include "./http_listener.h"
 #include "./http_session.h"
+#include "./http_stream_listener.h"
 #include "./request_decode.h"
 #include "../../uuid.h"
 
@@ -83,6 +84,51 @@ namespace hkp {
 
 using namespace request_decode;
 
+std::optional<HttpStreamConfig> parseHttpStreamConfig(const nlohmann::json& value)
+{
+  if (!value.is_object() || !value.contains("path") || !value["path"].is_string())
+  {
+    return std::nullopt;
+  }
+  HttpStreamConfig config;
+  config.path = value["path"].get<std::string>();
+  if (config.path.empty())
+  {
+    return std::nullopt;
+  }
+  // Compared against a request's path, which always starts with one.
+  if (config.path.front() != '/')
+  {
+    config.path.insert(config.path.begin(), '/');
+  }
+  if (value.contains("contentType") && value["contentType"].is_string()
+      && !value["contentType"].get<std::string>().empty())
+  {
+    config.contentType = value["contentType"].get<std::string>();
+  }
+  // Integers as JSON writes them are signed; only a negative one is refused.
+  const auto bytesOf = [&value](const char* key) -> std::optional<std::size_t> {
+    if (!value.contains(key) || !value[key].is_number_integer() || value[key].get<int64_t>() < 0)
+    {
+      return std::nullopt;
+    }
+    return static_cast<std::size_t>(value[key].get<int64_t>());
+  };
+  if (auto burst = bytesOf("burstBytes"))
+  {
+    config.burstBytes = *burst;
+  }
+  if (auto queue = bytesOf("maxQueueBytes"); queue && *queue > 0)
+  {
+    config.maxQueueBytes = *queue;
+  }
+  if (auto stall = bytesOf("stallTimeoutMs"); stall && *stall > 0)
+  {
+    config.stallTimeoutMs = *stall;
+  }
+  return config;
+}
+
 HttpServerSubservices::HttpServerSubservices(const std::string& instanceId)
   : Service(instanceId, serviceId())
   , m_impl(std::make_shared<HttpServerImpl>())
@@ -95,6 +141,9 @@ HttpServerSubservices::HttpServerSubservices(const std::string& instanceId)
   //     single ordered list either way, so a service inside it that needs to
   //     tell a request from a data arrival has to do so from the input.
   m_mode = "process_on_session";
+  m_broadcast.onListenersChanged([this](std::size_t count) {
+    sendNotification(json{{"listeners", count}});
+  });
   m_impl->setOnSessionOpenedCallback(
     [this](std::shared_ptr<Session> session, const std::string& path, const std::string& method) {
       onNewSession(session, path, method);
@@ -104,7 +153,9 @@ HttpServerSubservices::HttpServerSubservices(const std::string& instanceId)
 
 HttpServerSubservices::~HttpServerSubservices()
 {
+  m_broadcast.onListenersChanged(nullptr);
   m_impl->stop();
+  m_broadcast.closeAll();
 }
 
 void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
@@ -127,6 +178,11 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
   std::string requestPath;
   json query;
   splitTarget(path, requestPath, query);
+
+  if (joinStream(session, requestPath, method))
+  {
+    return;
+  }
   meta["method"] = method;
   meta["path"]   = requestPath;
   meta["query"]  = query;
@@ -299,6 +355,24 @@ json HttpServerSubservices::configure(Data data)
     }
   }
 
+  // `null`, or anything that names no path, ends the stream: whoever is
+  // listening is let go, since nothing will be written to them again.
+  if (buf->contains("stream"))
+  {
+    auto declared = parseHttpStreamConfig((*buf)["stream"]);
+    bool ended = false;
+    {
+      std::lock_guard<std::mutex> lock(m_streamMutex);
+      ended = m_stream && !declared;
+      m_stream = declared;
+    }
+    m_broadcast.setBurstBytes(declared ? declared->burstBytes : 0);
+    if (ended)
+    {
+      m_broadcast.closeAll();
+    }
+  }
+
   // An edit aimed at one named entry. The unscoped verbs below cannot say which
   // pipeline they mean once there is more than one.
   if (buf->contains("configurePipeline") && (*buf)["configurePipeline"].is_object())
@@ -388,6 +462,34 @@ json HttpServerSubservices::getState() const
     {"forwardHeaders", m_forwardHeaders ? json(*m_forwardHeaders) : json(nullptr)}
   };
 
+  {
+    std::lock_guard<std::mutex> lock(m_streamMutex);
+    if (m_stream)
+    {
+      state["stream"] = json{
+        {"path", m_stream->path},
+        {"contentType", m_stream->contentType},
+        {"burstBytes", m_stream->burstBytes},
+        {"maxQueueBytes", m_stream->maxQueueBytes},
+        {"stallTimeoutMs", m_stream->stallTimeoutMs},
+      };
+      // Who, not only how many: a count alone cannot tell a second player from
+      // a request a browser opened and never closed.
+      json details = json::array();
+      for (const auto& listener : m_broadcast.listeners())
+      {
+        if (auto http = std::dynamic_pointer_cast<HttpStreamListener>(listener))
+        {
+          details.push_back(http->describe());
+        }
+      }
+      state["listeners"] = details.size();
+      state["listenerDetails"] = details;
+      // Where a player connects. Empty while nothing is listening for it.
+      state["streamUrl"] = m_url.empty() ? std::string() : m_url + m_stream->path.substr(1);
+    }
+  }
+
   // What was declared, not what it was understood as. A board that named its
   // entries gets them back; one that declared a single pipeline keeps that,
   // because it is the version an older runtime can still load.
@@ -443,16 +545,86 @@ Data HttpServerSubservices::process(Data data)
   }
 
   const auto entry = isBypass() ? nullptr : entryFor(HttpEntry::kOnProcess);
-  if (!entry || entry->empty())
-  {
-    return data;
-  }
 
   // Routing only: what the pass's own pipeline returns carries on down the
   // chain. Whatever has to survive until a request arrives — a value this side
   // produces and the other reads — belongs in a slot, which is a service's job
   // and not this one's.
-  return entry->process(data);
+  Data result = (!entry || entry->empty()) ? data : entry->process(data);
+
+  // And is what the stream carries, to whoever is listening now.
+  if (!isBypass())
+  {
+    publishToStream(result);
+  }
+  return result;
+}
+
+bool HttpServerSubservices::joinStream(const std::shared_ptr<Session>& session,
+                                       const std::string& requestPath,
+                                       const std::string& method)
+{
+  std::optional<HttpStreamConfig> stream;
+  StreamChunk sample;
+  {
+    std::lock_guard<std::mutex> lock(m_streamMutex);
+    stream = m_stream;
+    sample = m_lastChunk;
+  }
+  if (!stream || method != "GET" || requestPath != stream->path)
+  {
+    return false;
+  }
+
+  // A probe, not a listener. Until something has been streamed there is
+  // nothing to answer it with, and it is served the stream like anyone else.
+  if (auto range = boundedRange(session->getRequestHeader("range")); range && sample)
+  {
+    answerRangeProbe(session, stream->contentType, range->first, range->second, *sample);
+    return true;
+  }
+
+  auto listener = std::make_shared<HttpStreamListener>(
+    session, stream->maxQueueBytes, std::chrono::milliseconds(stream->stallTimeoutMs),
+    [this](HttpStreamListener* closed) { m_broadcast.leave(closed); });
+  listener->start(stream->contentType);
+  m_broadcast.join(listener);
+  return true;
+}
+
+void HttpServerSubservices::publishToStream(const Data& data)
+{
+  {
+    std::lock_guard<std::mutex> lock(m_streamMutex);
+    if (!m_stream)
+    {
+      return;
+    }
+  }
+
+  // One copy, shared by every listener: the pass's own value carries on down
+  // the chain.
+  StreamChunk chunk;
+  if (const auto* bytes = boost::get<BinaryData>(&data))
+  {
+    chunk = std::make_shared<const std::vector<uint8_t>>(*bytes);
+  }
+  else if (const auto* mixed = boost::get<MixedData>(&data))
+  {
+    chunk = std::make_shared<const std::vector<uint8_t>>(mixed->binary);
+  }
+  else if (const auto* text = boost::get<std::string>(&data))
+  {
+    chunk = std::make_shared<const std::vector<uint8_t>>(text->begin(), text->end());
+  }
+  if (chunk && !chunk->empty())
+  {
+    {
+      std::lock_guard<std::mutex> lock(m_streamMutex);
+      m_lastChunk = chunk;
+    }
+    m_broadcast.publish(std::move(chunk));
+  }
 }
 
 bool HttpServerSubservices::start()
@@ -476,12 +648,20 @@ bool HttpServerSubservices::start()
   std::cout << "HttpServerSubservices::start() HTTP server started on port: " << m_impl->port() << std::endl;
   m_host = primaryIPv4();
   m_url  = "http://" + m_host + ":" + std::to_string(m_impl->port()) + "/";
-  sendNotification(json{
+  json online{
     {"port",   m_impl->port()},
     {"host",   m_host},
     {MOUNT_FIELD, m_url},
     {"status", "online"}
-  });
+  };
+  {
+    std::lock_guard<std::mutex> lock(m_streamMutex);
+    if (m_stream)
+    {
+      online["streamUrl"] = m_url + m_stream->path.substr(1);
+    }
+  }
+  sendNotification(online);
   return true;
 }
 
@@ -494,8 +674,14 @@ bool HttpServerSubservices::stop()
   }
   m_host.clear();
   m_url.clear();
-  sendNotification(json{{"status", "offline"}});
-  return m_impl->stop();
+  // Everything that named where to connect goes with the server, as getState
+  // already reports it.
+  sendNotification(json{{"status", "offline"}, {MOUNT_FIELD, ""}, {"streamUrl", ""}});
+  const bool stopped = m_impl->stop();
+  // After the server's thread has stopped, so the connections are closed here
+  // rather than by handlers that would not run until a restart.
+  m_broadcast.closeAll();
+  return stopped;
 }
 
 void HttpServerSubservices::syncSubserviceStates(Pipeline& pipeline)
