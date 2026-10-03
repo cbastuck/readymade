@@ -547,16 +547,6 @@ export type RuntimeApi = {
     assets: import("./runtime/board/assets").AssetPush,
   ) => Promise<string | null>;
 
-  /**
-   * Whether an asset resolves on this runtime, and to what — asked of the
-   * runtime that will use it, since only it can say whether it reaches a URL
-   * or a file. A check, never the content.
-   */
-  checkAsset?: (
-    scope: RuntimeScope,
-    assetId: string,
-  ) => Promise<import("./runtime/board/assets").AssetCheck>;
-
   attachRuntimes?: (
     runtime: RuntimeClass,
     user: User | null,

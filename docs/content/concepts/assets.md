@@ -184,8 +184,7 @@ from the toolbar:
   on each keystroke, since a page served half-written is worse than a stale one.
   A runtime that did not take the push goes on using the version before, so it
   is named on the asset and **Apply** stays available to send it again.
-  A URL source is edited as a descriptor, with **Check** asking the runtimes
-  given it whether it resolves.
+  A URL source is edited as a descriptor.
 - **Given to**: every runtime, including one added later, or only the ones
   ticked — and then taken from a runtime that is unticked. Ticking all of them
   is still a list: a runtime added later is not on it.

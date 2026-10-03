@@ -18,8 +18,7 @@ import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { extractServiceConfiguration } from "./services/helpers";
 import { defaultBundles } from "./registry/Default";
 import { startedRun } from "../processContext";
-import { AssetCheck, AssetsSource } from "../board/assets";
-import { resolveAsset } from "./assetResolver";
+import { AssetsSource } from "../board/assets";
 
 export async function addRuntime(
   rtClass: RuntimeClass,
@@ -86,17 +85,6 @@ async function restoreRuntime(
     registry: scope.registry.allServices(), // TODO: this is not used
     scope,
   };
-}
-
-async function checkAsset(scope_: RuntimeScope, assetId: string): Promise<AssetCheck> {
-  const scope = scope_ as BrowserRuntimeScope;
-  const { asset, problem } = await resolveAsset(
-    scope.assets?.() ?? [],
-    `hkp-asset://${assetId}`,
-  );
-  return asset
-    ? { ok: true, mediaType: asset.mediaType, size: asset.bytes.length }
-    : { ok: false, problem };
 }
 
 export function processRuntime(
@@ -303,7 +291,6 @@ const api: RuntimeApi = {
   getServiceConfig,
   processService,
   rearrangeServices,
-  checkAsset,
 };
 
 export default api;

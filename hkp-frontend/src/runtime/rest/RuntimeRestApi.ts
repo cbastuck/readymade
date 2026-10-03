@@ -19,7 +19,6 @@ import {
 } from "hkp-frontend/src/types";
 import RuntimeRestScope from "./RuntimeRestScope";
 import {
-  AssetCheck,
   AssetPush,
   AssetsSource,
   assetsById,
@@ -320,29 +319,6 @@ export async function pushAssetsTo(
 async function pushAssets(scope: RuntimeScope, assets: AssetPush): Promise<string | null> {
   const restScope = scope as RuntimeRestScope;
   return pushAssetsTo(restScope.descriptor, assets, restScope.authenticatedUser);
-}
-
-async function checkAsset(scope: RuntimeScope, assetId: string): Promise<AssetCheck> {
-  const restScope = scope as RuntimeRestScope;
-  const runtime = restScope.descriptor;
-  try {
-    const res = await fetch(
-      `${runtime.url}/runtimes/${runtime.id}/assets/${encodeURIComponent(assetId)}`,
-      { headers: { ...authHeaders(restScope.authenticatedUser) } },
-    );
-    if (!res.ok) {
-      return {
-        ok: false,
-        problem:
-          res.status === 404
-            ? `${runtime.name} does not resolve assets`
-            : `${runtime.name} answered ${res.status}`,
-      };
-    }
-    return (await res.json()) as AssetCheck;
-  } catch (err: any) {
-    return { ok: false, problem: `${runtime.name} is unreachable: ${err?.message ?? err}` };
-  }
 }
 
 async function attachRuntime(
@@ -859,7 +835,6 @@ const api: RuntimeApi = {
   processService,
   rearrangeServices,
   pushAssets,
-  checkAsset,
 };
 
 export default api;

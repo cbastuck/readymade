@@ -73,7 +73,6 @@ function Harness({
       return failures;
     },
     assetUses: async () => uses,
-    checkAsset: async () => [],
   } as unknown as BoardContextState;
   return (
     <BoardCtx.Provider value={board}>

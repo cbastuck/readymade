@@ -20,7 +20,6 @@ import {
   toCanonicalRuntimeClassType,
 } from "../types";
 import {
-  AssetCheck,
   AssetDescriptor,
   AssetPush,
   AssetUse,
@@ -31,8 +30,6 @@ import {
 
 /** The part of a board's engine state the actions read. */
 export type AssetBoard = {
-  /** The board's own assets, for asking which runtimes one is for. */
-  assets?: AssetDescriptor[];
   runtimes: RuntimeDescriptor[];
   scopes: { [runtimeId: string]: RuntimeScope };
   services: { [runtimeId: string]: ServiceDescriptor[] };
@@ -275,31 +272,4 @@ export async function renameAssetOnRuntimes(
     );
   }
   throw failure;
-}
-
-/**
- * What each runtime given an asset says about resolving it — the view's
- * "fetch now". Asked of the runtimes that may use it, because only they can
- * say whether a URL or a file is within their reach.
- */
-export async function checkAssetOnRuntimes(
-  board: AssetBoard,
-  assetId: string,
-): Promise<Array<{ runtime: RuntimeDescriptor; check: AssetCheck }>> {
-  const asset = board.assets?.find((entry) => entry.id === assetId);
-  const asked = ownRuntimes(board).filter(
-    (runtime) =>
-      !!apiOf(board, runtime)?.checkAsset && (!asset || assetReaches(asset, runtime)),
-  );
-  return Promise.all(
-    asked.map(async (runtime) => {
-      const scope = board.scopes[runtime.id];
-      const api = apiOf(board, runtime);
-      const check: AssetCheck =
-        scope && api?.checkAsset
-          ? await api.checkAsset(scope, assetId)
-          : { ok: false, problem: `${runtime.name} cannot resolve assets` };
-      return { runtime, check };
-    }),
-  );
 }

@@ -10,7 +10,6 @@ import {
 } from "hkp-frontend/src/types";
 import {
   assetUses,
-  checkAssetOnRuntimes,
   pushAssetChanges,
   renameAssetOnRuntimes,
   rewriteAssetRefs,
@@ -249,12 +248,10 @@ describe("an edit on the running board", () => {
   const boardWith = (states: Record<string, unknown>) => {
     const push = vi.fn(async (): Promise<string | null> => null);
     const configure = vi.fn(async (): Promise<object> => ({}));
-    const check = vi.fn(async () => ({ ok: true, mediaType: "text/html", size: 9 }));
     const api = {
       getServiceConfig: async (_scope: unknown, svc: { uuid: string }) => states[svc.uuid],
       pushAssets: push,
       configureService: configure,
-      checkAsset: check,
     };
     const runtimes = [
       runtime,
@@ -271,7 +268,7 @@ describe("an edit on the running board", () => {
       } as never,
       runtimeApis: { rest: api } as unknown as RuntimeApiMap,
     };
-    return { board, push, configure, check };
+    return { board, push, configure };
   };
 
   it("pushes a changed descriptor to every runtime of the board's own, named there or not", async () => {
@@ -459,8 +456,8 @@ describe("an edit on the running board", () => {
     );
   });
 
-  it("leaves a unit's services out of where an asset is used and checked", async () => {
-    const { board, check } = boardWith({
+  it("leaves a unit's services out of where an asset is used", async () => {
+    const { board } = boardWith({
       radio: { body: "hkp-asset://page" },
       timer: {},
       // The unit's own `page`, which only happens to share the id.
@@ -469,17 +466,6 @@ describe("an edit on the running board", () => {
 
     expect((await assetUses(board, "page")).map((use) => use.serviceUuid)).toEqual(["radio"]);
 
-    // Asked of every runtime given the board's `page` — and not of the unit's,
-    // which holds its own.
-    const checks = await checkAssetOnRuntimes(board, "page");
-    expect(checks.map(({ runtime: asked }) => asked.id)).toEqual(["relay", "other"]);
-    expect(check).toHaveBeenCalledTimes(2);
-
-    const kept = await checkAssetOnRuntimes(
-      { ...board, assets: [{ ...page, runtimes: ["other"] }] },
-      "page",
-    );
-    expect(kept.map(({ runtime: asked }) => asked.id)).toEqual(["other"]);
   });
 
   it("puts a rename back when a service does not take it", async () => {

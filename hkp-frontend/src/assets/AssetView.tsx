@@ -12,8 +12,8 @@
  *   the runtimes referencing it. They serve it on their next use; nothing is
  *   reconfigured. A runtime that did not take it is named, and Apply stays
  *   available to send it again.
- * - **A URL** as a descriptor, with a check that asks the runtimes given it
- *   whether it resolves, since only they know what they can reach.
+ * - **A URL** as a descriptor: where the content is, fetched by each runtime
+ *   using it.
  * - **Given to**: every runtime of the board, including one added later, or
  *   only the ones ticked.
  * - **Used by**: every service whose state names the asset, found by a scan
@@ -38,7 +38,6 @@ import Editor from "hkp-frontend/src/components/shared/Editor";
 import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
 import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
 import {
-  AssetCheck,
   AssetDescriptor,
   AssetSourceKind,
   AssetUse,
@@ -50,7 +49,6 @@ import {
   isTextMediaType,
   uniqueAssetId,
 } from "hkp-frontend/src/runtime/board/assets";
-import { RuntimeDescriptor } from "hkp-frontend/src/types";
 import { AssetPushFailure } from "hkp-frontend/src/core/assetActions";
 import { formatBytes } from "hkp-frontend/src/runtime/ui/AssetPanel";
 import { useAssetView } from "./AssetViewContext";
@@ -197,10 +195,6 @@ export default function AssetView() {
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [uses, setUses] = useState<AssetUse[] | null>(null);
-  const [checks, setChecks] = useState<Array<{
-    runtime: RuntimeDescriptor;
-    check: AssetCheck;
-  }> | null>(null);
   const [busy, setBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -212,7 +206,6 @@ export default function AssetView() {
     setDraftGeneration(boardGeneration);
     setDraft(null);
     setUses(null);
-    setChecks(null);
   }
 
   // What is on screen now, for work that was started on an earlier render and
@@ -229,7 +222,6 @@ export default function AssetView() {
   // of the asset being opened is kept too: that is the one just applied, which
   // the board's list may not show until its next render.
   useEffect(() => {
-    setChecks(null);
     setDraft((current) => {
       if (selectedId === null) {
         return current && current.original === null ? current : null;
@@ -286,7 +278,6 @@ export default function AssetView() {
     assetView.select(null);
     setDraft(draftOf(descriptor, null));
     setUses(null);
-    setChecks(null);
   };
 
   const newText = () =>
@@ -559,17 +550,6 @@ export default function AssetView() {
       }
     } finally {
       setBusy(false);
-    }
-  };
-
-  const check = async () => {
-    if (!draft?.original) {
-      return;
-    }
-    setChecks(null);
-    const answers = await board.checkAsset(draft.original);
-    if (onThisBoard()) {
-      setChecks(answers);
     }
   };
 
@@ -987,21 +967,6 @@ export default function AssetView() {
               >
                 {draft.original ? "Revert" : "Discard"}
               </button>
-              {draft.original && (
-                <button
-                  type="button"
-                  style={iconButton}
-                  disabled={dirty || busy}
-                  onClick={() => void check()}
-                  title={
-                    dirty
-                      ? "Apply first"
-                      : "Ask the runtimes using it whether it resolves"
-                  }
-                >
-                  Check
-                </button>
-              )}
               <span style={{ flex: 1 }} />
               {draft.original && (
                 <button
@@ -1021,24 +986,6 @@ export default function AssetView() {
                 there, so the version before it is still in use. Apply sends it
                 again.
               </p>
-            )}
-
-            {checks && (
-              <div style={{ display: "grid", gap: 2 }}>
-                {checks.length === 0 && (
-                  <span style={muted}>No runtime can resolve assets here.</span>
-                )}
-                {checks.map(({ runtime, check: result }) => (
-                  <span key={runtime.id} style={{ fontSize: 12 }}>
-                    <strong>{runtime.name}</strong>:{" "}
-                    {result.ok ? (
-                      `resolves — ${result.mediaType}, ${formatBytes(result.size)}`
-                    ) : (
-                      <span className="text-red-500">{result.problem}</span>
-                    )}
-                  </span>
-                ))}
-              </div>
             )}
 
             {draft.original && (

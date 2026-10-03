@@ -252,8 +252,8 @@ use for.
   servers; the `asset` service exists in the browser, hkp-node, hkp-python and
   hkp-rt, with a shared panel, tests, docs page and demo board. Both live-radio
   cloud boards serve their page and script as assets.
-- **The asset view.** List, Monaco editor with Apply, URL descriptors with a
-  per-runtime Check, *Used by* with a way to each service, new from text, file
+- **The asset view.** List, Monaco editor with Apply, URL descriptors
+  (the per-runtime Check was removed 2026-10-03 as not needed), *Used by* with a way to each service, new from text, file
   or URL, rename (rewrites references), delete (asks when referenced).
 - **`file://`**: hkp-node inside the tenant's volumes (`file:///<volume>/<path>`),
   hkp-rt under `HKP_ASSET_ROOT`; refused everywhere else.

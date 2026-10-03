@@ -62,11 +62,6 @@ export type AssetDescriptor = {
 /** Where an asset's content is, as the asset view names it. */
 export type AssetSourceKind = "text" | "base64" | "url";
 
-/** What a runtime says about an asset it was asked to resolve. */
-export type AssetCheck =
-  | { ok: true; mediaType: string; size: number }
-  | { ok: false; problem: string };
-
 /** What the runtimes are sent: descriptors by id, `null` for one deleted. */
 export type AssetPush = Record<string, AssetDescriptor | null>;
 

@@ -50,7 +50,6 @@ import {
 import { FacadeDescriptor } from "./facade/types";
 import { BoardLinkage } from "./runtime/board/units";
 import {
-  AssetCheck,
   AssetDescriptor,
   AssetUse,
   AssetsSource,
@@ -60,7 +59,6 @@ import {
 import {
   AssetPushFailure,
   assetUses as assetUsesOp,
-  checkAssetOnRuntimes,
   pushAssetChanges,
   renameAssetOnRuntimes,
 } from "./core/assetActions";
@@ -256,10 +254,6 @@ type BoardContextAPI = {
   deleteAsset: (id: string) => Promise<AssetPushFailure[]>;
   /** Every place a service names an asset, from what the services hold now. */
   assetUses: (assetId?: string) => Promise<AssetUse[]>;
-  /** What the runtimes that will use an asset say about resolving it. */
-  checkAsset: (
-    assetId: string,
-  ) => Promise<Array<{ runtime: RuntimeDescriptor; check: AssetCheck }>>;
 };
 
 export type EngineState = {
@@ -794,7 +788,6 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const cancelBlockEdit = () => cancelBlockEditOp(buildContextValue(), setLinkage);
 
     const assetBoard = () => ({
-      assets: latestAssetsRef.current,
       runtimes: providerStateRef.current.runtimes,
       scopes: providerStateRef.current.scopes,
       services: providerStateRef.current.services,
@@ -863,7 +856,6 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       return failures;
     };
     const assetUses = (assetId?: string) => assetUsesOp(assetBoard(), assetId);
-    const checkAsset = (assetId: string) => checkAssetOnRuntimes(assetBoard(), assetId);
     const flushSnapshots = useCallback(
       () => snapshotsRef.current?.flush() ?? Promise.resolve(),
       [],
@@ -1238,7 +1230,6 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setAsset,
       deleteAsset,
       assetUses,
-      checkAsset,
       addAvailableRuntime,
       updateAvailableRuntime,
       removeAvailableRuntime,
