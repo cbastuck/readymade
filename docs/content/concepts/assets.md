@@ -45,6 +45,12 @@ an id, a media type and exactly one source.
 | `size` | for the view, and for refusing oversized content |
 | `name` | what a person calls it |
 
+An entry missing what is required is left out when the board loads, and named in
+a warning; it costs that one asset, not the board. The optional fields are kept
+where they are well-formed and dropped where they are not — a `sha256` that is
+not 64 hex digits, a header whose value is not a string — which is how every
+runtime reads the same descriptor.
+
 Service state holds a **reference** — `hkp-asset://<id>` — as a whole field, and
 never the content:
 
@@ -144,13 +150,28 @@ from the toolbar:
 - **An editor** for inline text, highlighted by media type. Changes take effect
   on **Apply**, which pushes the descriptor to the runtimes referencing it — never
   on each keystroke, since a page served half-written is worse than a stale one.
+  A runtime that did not take the push goes on using the version before, so it
+  is named on the asset and **Apply** stays available to send it again.
   A URL source is edited as a descriptor, with **Check** asking the runtimes that
   will use it whether it resolves.
-- **Used by**: every service whose state names the asset, found by a scan of what
-  the services hold now, each a way to that service.
-- **New** from text, a file or a URL; **renaming** rewrites every reference;
-  **deleting** one that is still referenced asks first. Inline content past a
-  size suggests moving out to a URL — where it goes is the author's call.
+- **Used by**: every service on the board's own runtimes whose state names the
+  asset, found by a scan of what the services hold now, each a way to that
+  service.
+- **New** from text, a file or a URL. **Renaming** gives the asset under its new
+  id to the runtimes naming the old one, then rewrites every reference, then
+  removes the old id — so no service is told to use an id its runtime has not
+  been given, and the board declares both ids until the last reference has
+  moved. A runtime or a service that does not take its part puts the rename
+  back, and the new id is taken back from the runtimes that were given it.
+- **Deleting** one that is still referenced asks first. A runtime the deletion
+  did not reach still holds the asset — out of the board, but there for an
+  `asset` service asked for it by name — so it is named, with a retry.
+- Inline content past a size suggests moving out to a URL — where it goes is
+  the author's call.
+
+What is being edited belongs to the board that is open: an edit not yet applied
+is dropped when another board replaces it, and one still on its way to the
+runtimes stops where it is.
 
 ---
 
@@ -158,7 +179,10 @@ from the toolbar:
 
 A runtime's store is filled from the document that contributed the runtime. A
 runtime a [unit](./units.md) brings resolves against that unit's assets, so
-references are lexical and nothing needs renaming when units are composed.
+references are lexical and nothing needs renaming when units are composed. The
+same id in the board and in a unit names two assets: the asset view lists, checks
+and pushes the board's own, and an `asset` service's panel offers the ones its
+runtime resolves against.
 
 A board deployed to a [coordinator](./cloud-boards.md) carries its descriptors,
 and the coordinator sends each runtime it provisions the ones its services

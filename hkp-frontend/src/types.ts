@@ -538,13 +538,14 @@ export type RuntimeApi = {
 
   /**
    * Hands a running runtime new, changed or deleted (`null`) asset
-   * descriptors. Absent where the runtime reads the board's assets directly —
-   * the browser runtime, whose store *is* the board's `assets`.
+   * descriptors, and answers why it did not take them, or null when it did.
+   * Absent where the runtime reads the board's assets directly — the browser
+   * runtime, whose store *is* the board's `assets`.
    */
   pushAssets?: (
     scope: RuntimeScope,
     assets: import("./runtime/board/assets").AssetPush,
-  ) => Promise<void>;
+  ) => Promise<string | null>;
 
   /**
    * Whether an asset resolves on this runtime, and to what — asked of the

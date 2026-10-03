@@ -54,13 +54,15 @@ import {
   AssetDescriptor,
   AssetUse,
   AssetsSource,
+  assetsOfRuntime,
   upsertAsset,
 } from "./runtime/board/assets";
 import {
+  AssetPushFailure,
   assetUses as assetUsesOp,
   checkAssetOnRuntimes,
   pushAssetChanges,
-  rewriteAssetRefs,
+  renameAssetOnRuntimes,
 } from "./core/assetActions";
 import { UnitOrigin } from "./core/linkUnits";
 import {
@@ -236,10 +238,22 @@ type BoardContextAPI = {
    * referencing it, which serve it on their next use — nothing is
    * reconfigured. With `replacing` naming a different id it is a rename, and
    * every reference to the old id is rewritten. See `runtime/board/assets`.
+   *
+   * Answers the runtimes that did not take what they were sent: the asset, and
+   * setting it again sends it again; or, after a rename, the removal of the
+   * old id. A rename that a runtime or a service does not take is undone and
+   * thrown, leaving the board as it was.
+   *
+   * Belongs to the board it was called on. Once another replaces that one it
+   * stops where it is and answers nothing.
    */
-  setAsset: (asset: AssetDescriptor, replacing?: string) => Promise<void>;
-  /** Removes an asset from the board and from every runtime holding it. */
-  deleteAsset: (id: string) => Promise<void>;
+  setAsset: (asset: AssetDescriptor, replacing?: string) => Promise<AssetPushFailure[]>;
+  /**
+   * Removes an asset from the board and from every runtime holding it, and
+   * answers the runtimes that still hold it. Deleting it again asks them
+   * again. Belongs to the board it was called on, as `setAsset` does.
+   */
+  deleteAsset: (id: string) => Promise<AssetPushFailure[]>;
   /** Every place a service names an asset, from what the services hold now. */
   assetUses: (assetId?: string) => Promise<AssetUse[]>;
   /** What the runtimes that will use an asset say about resolving it. */
@@ -264,6 +278,11 @@ export type BoardContextState = BoardContextAPI &
     coordinator: BoardCoordinator;
 
     boardName?: string;
+    /**
+     * Which board is open, counted: changes whenever one board replaces
+     * another, so a view holding something of the board before can let it go.
+     */
+    boardGeneration: number;
     facade?: FacadeDescriptor;
     /** The board's own asset descriptors. See `runtime/board/assets`. */
     assets?: AssetDescriptor[];
@@ -552,16 +571,9 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       latestAssetsRef.current = resolveSetStateAction(latestAssetsRef.current, value);
       dispatch({ type: "setAssets", value: latestAssetsRef.current });
     };
-    /**
-     * The descriptors a runtime's services may reference: the board's own, or
-     * those of the unit that contributed the runtime — each runtime belongs to
-     * exactly one document, and references are lexical to it.
-     */
+    /** The descriptors a runtime's services may reference, as they are when asked. */
     const assetsFor = (runtime: RuntimeDescriptor): AssetsSource => () =>
-      runtime.unit
-        ? (latestLinkageRef.current?.units.find((unit) => unit.name === runtime.unit)
-            ?.source.assets ?? [])
-        : (latestAssetsRef.current ?? []);
+      assetsOfRuntime(runtime, latestAssetsRef.current, latestLinkageRef.current?.units);
     const setIsFetching: Dispatch<SetStateAction<boolean>> = (value) =>
       dispatch({ type: "setIsFetching", value });
     const setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>> = (
@@ -636,14 +648,16 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     // While a replacement runs, no board is open to apply anything to.
     const boardGenerationRef = useRef(0);
     const replacingBoardsRef = useRef(0);
+    // The same count where a render can see it, for what is on screen.
+    const [boardGeneration, setBoardGeneration] = useState(0);
     const replacingBoard = async <T,>(replace: () => Promise<T>): Promise<T> => {
-      boardGenerationRef.current++;
+      setBoardGeneration(++boardGenerationRef.current);
       replacingBoardsRef.current++;
       try {
         return await replace();
       } finally {
         replacingBoardsRef.current--;
-        boardGenerationRef.current++;
+        setBoardGeneration(++boardGenerationRef.current);
       }
     };
     /** Whether the board open now is the one open when this was called. */
@@ -785,22 +799,67 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       services: providerStateRef.current.services,
       runtimeApis: propsRef.current.runtimeApis ?? {},
     });
+    // An edit to assets is several steps with a runtime answering in between,
+    // and each step reads the board as it is then. It belongs to the board it
+    // was started on: once another has replaced that one, the next step would
+    // be taken on the wrong board's runtimes and assets, so it is not taken.
+    const editingAssets = () => {
+      const onThisBoard = stillOnThisBoard();
+      if (!onThisBoard()) {
+        throw new Error("the board is being replaced");
+      }
+      return onThisBoard;
+    };
     const setAsset = async (asset: AssetDescriptor, replacing?: string) => {
+      const onThisBoard = editingAssets();
       const renaming = !!replacing && replacing !== asset.id;
-      setAssets((prev) => upsertAsset(prev, asset, replacing ?? asset.id));
-      // The new descriptor first, so a service configured with the new id in a
-      // rename finds it already there; the old one goes once nothing names it.
-      await pushAssetChanges(assetBoard(), { [asset.id]: asset });
+      let failures: AssetPushFailure[];
       if (renaming) {
-        await rewriteAssetRefs(assetBoard(), replacing!, asset.id);
-        await pushAssetChanges(assetBoard(), { [asset.id]: asset, [replacing!]: null });
+        // Both ids are declared while the runtimes are moved from one to the
+        // other: a service resolves whichever it names at that moment.
+        const before = latestAssetsRef.current;
+        setAssets((prev) => upsertAsset(prev, asset));
+        try {
+          await renameAssetOnRuntimes(assetBoard(), asset, replacing!);
+        } catch (err) {
+          if (!onThisBoard()) {
+            return [];
+          }
+          // The services are on the old id, so the board is too.
+          setAssets(before);
+          throw err;
+        }
+        if (!onThisBoard()) {
+          return [];
+        }
+        // The old one goes now that nothing names it, here and on the runtimes.
+        setAssets((prev) =>
+          upsertAsset(
+            (prev ?? []).filter((entry) => entry.id !== asset.id),
+            asset,
+            replacing,
+          ),
+        );
+        failures = await pushAssetChanges(assetBoard(), { [replacing!]: null });
+      } else {
+        setAssets((prev) => upsertAsset(prev, asset, replacing ?? asset.id));
+        failures = await pushAssetChanges(assetBoard(), { [asset.id]: asset });
+      }
+      if (!onThisBoard()) {
+        return [];
       }
       markBoardChanged();
+      return failures;
     };
     const deleteAsset = async (id: string) => {
+      const onThisBoard = editingAssets();
       setAssets((prev) => (prev ?? []).filter((entry) => entry.id !== id));
-      await pushAssetChanges(assetBoard(), { [id]: null });
+      const failures = await pushAssetChanges(assetBoard(), { [id]: null });
+      if (!onThisBoard()) {
+        return [];
+      }
       markBoardChanged();
+      return failures;
     };
     const assetUses = (assetId?: string) => assetUsesOp(assetBoard(), assetId);
     const checkAsset = (assetId: string) => checkAssetOnRuntimes(assetBoard(), assetId);
@@ -1132,6 +1191,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       user,
       coordinator,
       boardName,
+      boardGeneration,
       facade,
       linkage,
       assets,

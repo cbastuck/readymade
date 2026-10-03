@@ -1,13 +1,16 @@
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import {
+  assetsOfRuntime,
   formatAssetRef,
   parseAssetRef,
 } from "hkp-frontend/src/runtime/board/assets";
+import { useServiceRuntimeId } from "./BlockUse";
 
 /**
- * The `asset` service's panel: which of the board's assets it emits, and what
- * the last pass found there.
+ * The `asset` service's panel: which asset it emits, and what the last pass
+ * found there. The choice is among the assets its runtime resolves against —
+ * the board's own, or those of the unit that contributed the runtime.
  *
  * Kept apart from either runtime's wrapper because `asset` is one service: in
  * the browser and on a runtime server it differs in how a panel reaches it, not
@@ -47,14 +50,16 @@ type Props = {
 
 export default function AssetPanel({ state, configure }: Props) {
   const board = useBoardContext();
-  const assets = board?.assets ?? [];
+  const runtimeId = useServiceRuntimeId();
+  const runtime = board?.runtimes.find((candidate) => candidate.id === runtimeId);
+  const assets = assetsOfRuntime(runtime, board?.assets, board?.linkage?.units);
   const options: Record<string, string> = {};
   for (const asset of assets) {
     options[formatAssetRef(asset.id)] = asset.name || asset.id;
   }
   const selectedId = parseAssetRef(state.asset);
-  // A reference the board does not declare still shows, so a board that lost
-  // an asset says which one rather than looking unconfigured.
+  // A reference to an asset that is not declared still shows, so a board that
+  // lost one says which rather than looking unconfigured.
   if (state.asset && !(state.asset in options)) {
     options[state.asset] = `${selectedId ?? state.asset} (not declared)`;
   }
@@ -71,7 +76,9 @@ export default function AssetPanel({ state, configure }: Props) {
         />
       ) : (
         <div className="text-sm opacity-70">
-          This board declares no assets. Add one in the asset view.
+          {runtime?.unit
+            ? `The unit "${runtime.unit}" declares no assets.`
+            : "This board declares no assets. Add one in the asset view."}
         </div>
       )}
       {state.error ? (

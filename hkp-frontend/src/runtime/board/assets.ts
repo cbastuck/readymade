@@ -30,6 +30,7 @@ export const ASSET_SCHEME = "hkp-asset://";
 
 const ID = "[A-Za-z0-9_.-]+";
 const ID_PATTERN = new RegExp(`^${ID}$`);
+const SHA256_PATTERN = /^[0-9a-fA-F]{64}$/;
 const WHOLE_REFERENCE = /^hkp-asset:\/\/([A-Za-z0-9_.-]+)$/;
 const ANY_REFERENCE = /hkp-asset:\/\/([A-Za-z0-9_.-]+)/g;
 
@@ -66,6 +67,21 @@ export type AssetPush = Record<string, AssetDescriptor | null>;
  * board runs is what the next push or resolution sees.
  */
 export type AssetsSource = () => AssetDescriptor[];
+
+/**
+ * The descriptors a runtime's services may reference: the board's own, or
+ * those of the unit that contributed the runtime — each runtime belongs to
+ * exactly one document, and references are lexical to it.
+ */
+export function assetsOfRuntime(
+  runtime: { unit?: string } | undefined,
+  assets: AssetDescriptor[] | undefined,
+  units: Array<{ name: string; source: { assets?: AssetDescriptor[] } }> | undefined,
+): AssetDescriptor[] {
+  return runtime?.unit
+    ? (units?.find((unit) => unit.name === runtime.unit)?.source.assets ?? [])
+    : (assets ?? []);
+}
 
 export function isAssetId(value: string): boolean {
   return ID_PATTERN.test(value);
@@ -252,6 +268,11 @@ export function renameAssetRefs<T>(value: T, from: string, to: string): T {
 /**
  * One descriptor as a board declares it, or the reason it is not one. Exactly
  * one source: two would leave a runtime choosing between them.
+ *
+ * What makes it an asset — id, source, media type — is required. The rest is
+ * kept where it is well-formed and left out where it is not, the way
+ * hkp-node's `readAssetDescriptor` reads the same descriptor: a board has to
+ * mean the same thing to the runtime it is pushed to as it does here.
  */
 export function checkAssetDescriptor(value: unknown): AssetDescriptor | string {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -270,7 +291,35 @@ export function checkAssetDescriptor(value: unknown): AssetDescriptor | string {
   if (typeof record.mediaType !== "string" || !record.mediaType) {
     return `asset "${record.id}" has no mediaType`;
   }
-  return record as AssetDescriptor;
+
+  const descriptor: Record<string, unknown> = { id: record.id };
+  if (typeof record.name === "string") {
+    descriptor.name = record.name;
+  }
+  descriptor.mediaType = record.mediaType;
+  if (typeof record.sha256 === "string" && SHA256_PATTERN.test(record.sha256)) {
+    descriptor.sha256 = record.sha256.toLowerCase();
+  }
+  if (typeof record.size === "number" && Number.isFinite(record.size)) {
+    descriptor.size = record.size;
+  }
+  const source = sources[0];
+  descriptor[source] = record[source];
+  if (
+    source === "url" &&
+    record.headers &&
+    typeof record.headers === "object" &&
+    !Array.isArray(record.headers)
+  ) {
+    const headers: Record<string, string> = {};
+    for (const [name, header] of Object.entries(record.headers as Record<string, unknown>)) {
+      if (typeof header === "string") {
+        headers[name] = header;
+      }
+    }
+    descriptor.headers = headers;
+  }
+  return descriptor as AssetDescriptor;
 }
 
 /**

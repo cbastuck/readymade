@@ -10,7 +10,8 @@
  *   pushed as it is typed — a page served half-written is worse than a stale
  *   one — so a change takes effect on **Apply**, which pushes the descriptor to
  *   the runtimes referencing it. They serve it on their next use; nothing is
- *   reconfigured.
+ *   reconfigured. A runtime that did not take it is named, and Apply stays
+ *   available to send it again.
  * - **A URL** as a descriptor, with a check that asks the runtimes that will
  *   use it whether it resolves, since only they know what they can reach.
  * - **Used by**: every service whose state names the asset, found by a scan
@@ -18,7 +19,8 @@
  *   service.
  *
  * Renaming rewrites every reference; deleting one still referenced asks first.
- * See `runtime/board/assets`.
+ * A draft is of the board that is open: it is dropped when another board
+ * replaces that one. See `runtime/board/assets`.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -45,6 +47,7 @@ import {
   uniqueAssetId,
 } from "hkp-frontend/src/runtime/board/assets";
 import { RuntimeDescriptor } from "hkp-frontend/src/types";
+import { AssetPushFailure } from "hkp-frontend/src/core/assetActions";
 import { formatBytes } from "hkp-frontend/src/runtime/ui/AssetPanel";
 import { useAssetView } from "./AssetViewContext";
 
@@ -157,6 +160,7 @@ function revealServiceFrame(uuid: string) {
 }
 
 const muted: React.CSSProperties = { opacity: 0.65, fontSize: 12 };
+const warning: React.CSSProperties = { fontSize: 12, color: "#b45309" };
 const label: React.CSSProperties = {
   fontSize: 10,
   textTransform: "uppercase",
@@ -195,6 +199,24 @@ export default function AssetView() {
   const [checks, setChecks] = useState<Array<{ runtime: RuntimeDescriptor; check: AssetCheck }> | null>(null);
   const [busy, setBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // A draft belongs to the board it was started on. Kept across a replacement
+  // it would be shown over the next board's assets, and applied into them.
+  const boardGeneration = board?.boardGeneration;
+  const [draftGeneration, setDraftGeneration] = useState(boardGeneration);
+  if (draftGeneration !== boardGeneration) {
+    setDraftGeneration(boardGeneration);
+    setDraft(null);
+    setUses(null);
+    setChecks(null);
+  }
+
+  // What is on screen now, for work that was started on an earlier render and
+  // finishes after one of the board's runtimes has answered.
+  const latest = useRef({ boardGeneration, assets });
+  latest.current = { boardGeneration, assets };
+  /** Whether the board open now is still the one this render shows. */
+  const onThisBoard = () => latest.current.boardGeneration === boardGeneration;
 
   const selected = assets.find((asset) => asset.id === selectedId) ?? null;
 
@@ -240,6 +262,8 @@ export default function AssetView() {
     (!applied ||
       JSON.stringify(draft.descriptor) !== JSON.stringify(applied) ||
       draft.headersText !== draftOf(applied, applied.id).headersText);
+  // The runtimes the last Apply of this asset did not reach.
+  const staleOn = (draft?.original && assetView.staleOn[draft.original]) || [];
 
   const update = (change: Partial<AssetDescriptor>) =>
     setDraft((previous) =>
@@ -348,19 +372,90 @@ export default function AssetView() {
     }
     setBusy(true);
     try {
-      await board.setAsset(descriptor, draft.original ?? undefined);
+      const failures = await board.setAsset(descriptor, draft.original ?? undefined);
+      // Another board was opened meanwhile: what came of this is not its to show.
+      if (!onThisBoard()) {
+        return;
+      }
+      const renamed = !!draft.original && draft.original !== descriptor.id;
       setDraft(draftOf(descriptor, descriptor.id));
       assetView.select(descriptor.id);
-      toast.success(
-        draft.original && draft.original !== descriptor.id
-          ? `Renamed "${draft.original}" to "${descriptor.id}"`
-          : `Applied "${descriptor.id}"`,
-      );
+      if (renamed) {
+        assetView.setStaleOn(draft.original!, []);
+      }
+      const stale = failures.filter(({ push }) => push[descriptor.id]);
+      const names = stale.map(({ runtime }) => runtime.name);
+      assetView.setStaleOn(descriptor.id, names);
+      if (stale.length) {
+        // The board has the change and the runtime does not: it goes on using
+        // the version before, and nothing else would say so.
+        toast.warning(`"${descriptor.id}" did not reach ${names.join(", ")}`, {
+          description: `${stale.map(({ problem }) => problem).join("\n")}\nThe version before is still in use there. Apply sends it again.`,
+        });
+      } else {
+        toast.success(
+          renamed
+            ? `Renamed "${draft.original}" to "${descriptor.id}"`
+            : `Applied "${descriptor.id}"`,
+        );
+      }
+      if (renamed) {
+        reportLeftOn(
+          draft.original!,
+          failures.filter(({ push }) => push[draft.original!] === null),
+        );
+      }
     } catch (err: any) {
-      toast.error(`Could not apply "${descriptor.id}"`, { description: err?.message ?? String(err) });
+      if (onThisBoard()) {
+        toast.error(`Could not apply "${descriptor.id}"`, {
+          description: err?.message ?? String(err),
+        });
+      }
     } finally {
       setBusy(false);
-      void refreshUses();
+      if (onThisBoard()) {
+        void refreshUses();
+      }
+    }
+  };
+
+  // An asset the board dropped and a runtime still holds has no row to be
+  // marked on, so the notice itself carries the way to ask again — for as long
+  // as that is still the same question: the same board, and no asset started
+  // under the id since.
+  const reportLeftOn = (id: string, failures: AssetPushFailure[]) => {
+    if (!failures.length) {
+      return;
+    }
+    const names = failures.map(({ runtime }) => runtime.name).join(", ");
+    toast.warning(`"${id}" is still on ${names}`, {
+      description: `${failures.map(({ problem }) => problem).join("\n")}\nIt is out of the board, but an asset service asked for it by name there still emits it.`,
+      action: {
+        label: "Retry",
+        onClick: () => {
+          if (onThisBoard() && !latest.current.assets.some((asset) => asset.id === id)) {
+            void removeFromRuntimes(id);
+          }
+        },
+      },
+    });
+  };
+
+  const removeFromRuntimes = async (id: string) => {
+    try {
+      const failures = await board.deleteAsset(id);
+      if (!onThisBoard()) {
+        return;
+      }
+      if (failures.length) {
+        reportLeftOn(id, failures);
+      } else {
+        toast.success(`Removed "${id}" from the runtimes`);
+      }
+    } catch (err: any) {
+      if (onThisBoard()) {
+        toast.error(`Could not remove "${id}"`, { description: err?.message ?? String(err) });
+      }
     }
   };
 
@@ -379,6 +474,9 @@ export default function AssetView() {
     }
     const id = draft.original;
     const current = await board.assetUses(id);
+    if (!onThisBoard()) {
+      return;
+    }
     if (
       current.length &&
       !window.confirm(
@@ -389,9 +487,18 @@ export default function AssetView() {
     }
     setBusy(true);
     try {
-      await board.deleteAsset(id);
+      const failures = await board.deleteAsset(id);
+      if (!onThisBoard()) {
+        return;
+      }
+      assetView.setStaleOn(id, []);
       assetView.select(null);
       setDraft(null);
+      reportLeftOn(id, failures);
+    } catch (err: any) {
+      if (onThisBoard()) {
+        toast.error(`Could not delete "${id}"`, { description: err?.message ?? String(err) });
+      }
     } finally {
       setBusy(false);
     }
@@ -402,7 +509,10 @@ export default function AssetView() {
       return;
     }
     setChecks(null);
-    setChecks(await board.checkAsset(draft.original));
+    const answers = await board.checkAsset(draft.original);
+    if (onThisBoard()) {
+      setChecks(answers);
+    }
   };
 
   const openUse = (use: AssetUse) => {
@@ -502,6 +612,9 @@ export default function AssetView() {
                   {asset.id} · {asset.mediaType.split(";")[0]} · {assetSourceKind(asset)} ·{" "}
                   {formatBytes(assetSize(asset))}
                 </div>
+                {assetView.staleOn[asset.id] && (
+                  <div style={warning}>not on {assetView.staleOn[asset.id].join(", ")}</div>
+                )}
               </button>
             );
           })}
@@ -573,7 +686,7 @@ export default function AssetView() {
             </div>
 
             {kind !== "url" && size !== undefined && size > LARGE_INLINE_BYTES && (
-              <p style={{ ...muted, color: "#b45309", opacity: 1 }}>
+              <p style={warning}>
                 This is large to keep inside the board, which every save and share carries. Consider
                 hosting it and naming it here by URL.
               </p>
@@ -652,7 +765,7 @@ export default function AssetView() {
                 type="button"
                 className="hkp-svc-btn"
                 style={{ ...iconButton, fontWeight: 600 }}
-                disabled={!dirty || busy}
+                disabled={(!dirty && !staleOn.length) || busy}
                 onClick={() => void apply()}
                 title="Push this asset to the runtimes that use it; they serve it on their next use"
               >
@@ -684,6 +797,13 @@ export default function AssetView() {
                 </button>
               )}
             </div>
+
+            {staleOn.length > 0 && (
+              <p style={warning}>
+                Not on {staleOn.join(", ")}: the last change did not arrive there, so the version
+                before it is still in use. Apply sends it again.
+              </p>
+            )}
 
             {checks && (
               <div style={{ display: "grid", gap: 2 }}>

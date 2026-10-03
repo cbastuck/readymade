@@ -56,6 +56,21 @@ describe("the asset service in the browser", () => {
     expect(out.body.error).toMatch(/not declared/);
   });
 
+  it("answers content that does not decode with an error, when run and when checked", async () => {
+    const scope = await restoreWith(
+      () => [{ id: "logo", mediaType: "image/png", base64: "not base64!" }],
+      { asset: "hkp-asset://logo" },
+    );
+
+    const out = (await BrowserRuntimeApi.processRuntime(scope, {}, null)) as any;
+    expect(out.meta.status).toBe(404);
+    expect(out.body.error).toMatch(/not base64/);
+    expect(await BrowserRuntimeApi.checkAsset!(scope, "logo")).toEqual({
+      ok: false,
+      problem: 'asset "logo": its content is not base64',
+    });
+  });
+
   it("is checked against the same descriptors", async () => {
     const scope = await restoreWith(
       () => [{ id: "page", mediaType: "text/plain", text: "abc" }],

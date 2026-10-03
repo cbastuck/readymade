@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AssetDescriptor,
   assetSize,
+  assetsOfRuntime,
   findAssetRefs,
   findAssetUses,
   formatAssetRef,
@@ -103,6 +104,50 @@ describe("a board's assets", () => {
     ]);
     expect(assets).toEqual([page]);
     expect(problems).toHaveLength(3);
+  });
+
+  it("keeps the optional parts of a descriptor only where they are well-formed", () => {
+    const pinned = "AB".repeat(32);
+    const { assets, problems } = readBoardAssets([
+      { id: "a", name: { en: "A" }, mediaType: "text/plain", text: "a", size: "9", sha256: 7 },
+      {
+        id: "b",
+        name: "B",
+        mediaType: "audio/wav",
+        url: "https://example.com/b.wav",
+        sha256: pinned,
+        size: 12,
+        headers: { authorization: "{{secret.token}}", retries: 3 },
+        text: 5,
+      },
+      { id: "c", mediaType: "audio/wav", url: "https://example.com/c.wav", sha256: "abc", headers: "x" },
+    ]);
+
+    expect(problems).toEqual([]);
+    expect(assets).toEqual([
+      { id: "a", mediaType: "text/plain", text: "a" },
+      {
+        id: "b",
+        name: "B",
+        mediaType: "audio/wav",
+        url: "https://example.com/b.wav",
+        sha256: pinned.toLowerCase(),
+        size: 12,
+        headers: { authorization: "{{secret.token}}" },
+      },
+      { id: "c", mediaType: "audio/wav", url: "https://example.com/c.wav" },
+    ]);
+  });
+
+  it("are a runtime's own document's: the board's, or its unit's", () => {
+    const unitPage = { ...page, text: "<p>unit</p>" };
+    const units = [{ name: "shop", source: { assets: [unitPage] } }];
+
+    expect(assetsOfRuntime({}, [page], units)).toEqual([page]);
+    expect(assetsOfRuntime(undefined, [page], units)).toEqual([page]);
+    expect(assetsOfRuntime({ unit: "shop" }, [page], units)).toEqual([unitPage]);
+    // A unit that declares none has none — never the board's.
+    expect(assetsOfRuntime({ unit: "other" }, [page], units)).toEqual([]);
   });
 
   it("measures inline content", () => {

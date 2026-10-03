@@ -284,14 +284,21 @@ export async function pushSecrets(
  * do not have: an asset edited while the board runs. That push is what makes
  * an edit take effect, since the services holding the reference resolve it on
  * their next use and are not reconfigured.
+ *
+ * Answers why the runtime did not take them, or null when it did. Never
+ * throws: where a runtime is being created, attached to or configured, a
+ * failure here is reported by everything else the caller is doing, and the
+ * services needing an asset say so themselves. An edit has nothing else to
+ * report it — the runtime goes on using the descriptor it has — so that
+ * caller reads the answer.
  */
 export async function pushAssetsTo(
   runtime: RuntimeDescriptor,
   assets: AssetPush,
   user: User | null,
-): Promise<void> {
+): Promise<string | null> {
   if (!Object.keys(assets).length) {
-    return;
+    return null;
   }
   try {
     const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/assets`, {
@@ -303,16 +310,17 @@ export async function pushAssetsTo(
       console.warn(
         `Pushing assets to ${runtime.id} failed (${res.status}); services referencing ${Object.keys(assets).join(", ")} will report them as unknown`,
       );
+      return `${runtime.name} answered ${res.status}`;
     }
-  } catch {
-    // An unreachable runtime is reported by everything else the caller is
-    // doing; the services needing an asset say so themselves.
+    return null;
+  } catch (err: any) {
+    return `${runtime.name} is unreachable: ${err?.message ?? err}`;
   }
 }
 
-async function pushAssets(scope: RuntimeScope, assets: AssetPush): Promise<void> {
+async function pushAssets(scope: RuntimeScope, assets: AssetPush): Promise<string | null> {
   const restScope = scope as RuntimeRestScope;
-  await pushAssetsTo(restScope.descriptor, assets, restScope.authenticatedUser);
+  return pushAssetsTo(restScope.descriptor, assets, restScope.authenticatedUser);
 }
 
 async function checkAsset(scope: RuntimeScope, assetId: string): Promise<AssetCheck> {

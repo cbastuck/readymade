@@ -52,7 +52,11 @@ async function load(descriptor: AssetDescriptor): Promise<Uint8Array | string> {
     return new TextEncoder().encode(descriptor.text);
   }
   if ("base64" in descriptor) {
-    return decodeBase64(descriptor.base64);
+    try {
+      return decodeBase64(descriptor.base64);
+    } catch {
+      return "its content is not base64";
+    }
   }
 
   let url: URL;
@@ -98,8 +102,8 @@ async function load(descriptor: AssetDescriptor): Promise<Uint8Array | string> {
 
 /**
  * An asset's content for one use, or a sentence saying why there is none: not a
- * reference, an unknown id, a refused source, a failed fetch, a hash that does
- * not match.
+ * reference, an unknown id, a refused source, content that does not decode, a
+ * failed fetch, a hash that does not match.
  */
 export async function resolveAsset(
   assets: AssetDescriptor[],
