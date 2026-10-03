@@ -67,6 +67,19 @@ describe("restoring a board that names a remote", () => {
     expect(restored.runtimes[0]).toMatchObject({ remote: "Studio" });
   });
 
+  it("hands the runtime the board's assets, wherever its address came from", async () => {
+    for (const runtime of [{ remote: "Studio" }, { url: "http://h:8080" }]) {
+      const { refs, restoreRuntime } = makeRefs();
+      const assets = () => [];
+      (refs as any).assetsFor = (rt: { id: string }) =>
+        rt.id === "rt" ? assets : undefined;
+
+      await restoreBoard(board(runtime), refs, async () => {});
+
+      expect(restoreRuntime.mock.calls[0][4]).toBe(assets);
+    }
+  });
+
   it("fails, naming the remote, when this client does not hold the name", async () => {
     const { refs, restoreRuntime } = makeRefs();
 

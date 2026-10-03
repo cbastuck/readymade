@@ -28,6 +28,8 @@
 #include <coordinator_links.h>
 #include <service.h>
 
+#include "services/asset.h"
+
 using namespace hkp;
 
 namespace beast = boost::beast;
@@ -658,6 +660,29 @@ TEST_CASE("it is driven over the link and says what its runtime says",
 
   REQUIRE(eventually([&] { return coordinator.events("result").size() == 1; }));
   REQUIRE(coordinator.events("result")[0]["data"] == json{{"hello", "there"}});
+}
+
+TEST_CASE("it is built with the assets the coordinator sends", "[links]") {
+  FakeCoordinator coordinator;
+  auto app = makeApp();
+  app->registerService<Asset>();
+  CoordinatorLinks links(app, createMemoryLinkStore(), fast());
+  REQUIRE(links.introduce(introduction(coordinator)).empty());
+  auto description = provision(json::array({
+    json{{"uuid", "asset-1"}, {"serviceId", "asset"}, {"serviceName", "Asset"},
+         {"state", {{"asset", "hkp-asset://day"}}}},
+  }));
+  description["assets"] = {
+    {"day", {{"id", "day"}, {"mediaType", "text/plain"}, {"text", "sun"}}},
+  };
+  REQUIRE(coordinator.request("provision", description)["ok"] == true);
+
+  coordinator.send(json{{"type", "processRuntime"}, {"params", json::object()}});
+
+  REQUIRE(eventually([&] { return coordinator.events("result").size() == 1; }));
+  const auto result = coordinator.events("result")[0]["data"];
+  REQUIRE(result["meta"]["status"] == 200);
+  REQUIRE(result["body"] == "sun");
 }
 
 TEST_CASE("bytes arrive as bytes and leave as bytes", "[links][binary]") {

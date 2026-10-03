@@ -147,6 +147,8 @@ export async function restoreBoard(
           services,
           currentUser,
           rt.boardName ?? restoredBoardName,
+          // The board's assets for this runtime, as below.
+          refs.assetsFor?.(rt),
         );
       }
       missingSecrets.push(...unavailableSecrets(services));
