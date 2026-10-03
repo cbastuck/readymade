@@ -19,7 +19,7 @@ import {
   deserializeYasMessage,
   serializeYasMessage,
 } from "./Message";
-import { TextSymbol, isBinaryData, isData } from "./Data";
+import { TextSymbol, isBinaryData, isData, passesNothing } from "./Data";
 
 /** Append the bearer token to a WebSocket URL as ?access_token= for auth. */
 export function withAccessToken(
@@ -132,7 +132,7 @@ export default class RuntimeRestScope implements RuntimeScope {
                 requestId: message.sender,
               };
             }
-            this.onResult(null, message.data, context);
+            this.deliverResult(message.data, context);
           } else if (message.purpose === MessagePurpose.NOTIFICATION) {
             this.app.notify({ uuid: message.sender }, message.data);
             this.emitReport(message.sender, message.data);
@@ -159,7 +159,7 @@ export default class RuntimeRestScope implements RuntimeScope {
               this.emitReport(instanceId, data);
             }
           } else if (msg.type === "result") {
-            this.onResult(null, msg.data, null);
+            this.deliverResult(msg.data, null);
           } else if (msg.type === "log" && msg.entry) {
             // What this runtime recorded. A board attached to a coordinator has
             // its entries kept there — the runtime sends them over its own
@@ -185,6 +185,21 @@ export default class RuntimeRestScope implements RuntimeScope {
         this.runtimeOutput?.send(protocol);
       };
     }
+  }
+
+  /**
+   * Hands a result the runtime sent to whoever listens on this scope.
+   *
+   * A runtime reports every run that finished, including the ones a service
+   * stopped, and such a report passes nothing on. With no caller waiting for
+   * it there is nothing in it to act on, so it ends here rather than reaching
+   * `onResult` once per run.
+   */
+  private deliverResult(data: any, context: ProcessContext | null) {
+    if (!context && passesNothing(data)) {
+      return;
+    }
+    this.onResult(null, data, context);
   }
 
   sendMessageViaWebsocket(
