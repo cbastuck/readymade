@@ -13,6 +13,7 @@ import {
 import Editable from "hkp-frontend/src/ui-components/Editable";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
+import { bakeAddressing } from "hkp-frontend/src/runtime/board/remote";
 import { resolveTemplateVarsInObject } from "hkp-frontend/src/templateVars";
 
 import RunParamsDialog from "./RunParamsDialog";
@@ -247,7 +248,12 @@ export default function RuntimeHeader({
             };
           }),
         );
-        runtimeSource = { runtime, services: servicesWithState };
+        // Handed to another runtime as a concrete thing, so the address a
+        // remote's name resolved to here travels in place of the name.
+        runtimeSource = {
+          runtime: bakeAddressing(runtime),
+          services: servicesWithState,
+        };
       }
 
       const targetRuntime = boardContext.runtimes?.find(

@@ -5,6 +5,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cstring>
 #include <iostream>
 
 namespace beast = boost::beast;
@@ -31,6 +32,13 @@ PeerServerSession::PeerServerSession(net::ip::tcp::socket&& socket,
   , m_registry(std::move(registry))
   , m_basePath(std::move(basePath))
 {
+}
+
+void PeerServerSession::prefill(const std::string& bytes)
+{
+  const auto area = m_buf.prepare(bytes.size());
+  std::memcpy(area.data(), bytes.data(), bytes.size());
+  m_buf.commit(bytes.size());
 }
 
 void PeerServerSession::run()

@@ -32,6 +32,8 @@ export type FakeHostConfig = {
   shell: HostShell;
   /** Boards the host's library already holds, by name. */
   boards?: Record<string, unknown>;
+  /** Runtime servers the host already knows by name — its saved remotes. */
+  remotes?: Array<{ name: string; url: string; port?: number; color?: string }>;
   /** Runtime-access settings the host reports. */
   settings?: { allowExternalRuntimeAccess: boolean; allowedUsers: string[] };
   /** Secret aliases the host's vault already holds, by alias. */
@@ -55,7 +57,7 @@ export function installFakeNativeHost(config: FakeHostConfig): void {
     boards: { ...(config.boards ?? {}) } as Record<string, unknown>,
     /** Board name -> ISO timestamp, as the host reports for `?meta=1`. */
     modified: {} as Record<string, string>,
-    remotes: [] as unknown[],
+    remotes: [...(config.remotes ?? [])] as unknown[],
     settings: config.settings ?? {
       allowExternalRuntimeAccess: false,
       allowedUsers: [] as string[],

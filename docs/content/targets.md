@@ -210,6 +210,36 @@ rebuilding it.
 
 ---
 
+## hkp-rt on its own: a server, and a container
+
+The C++ runtime also runs with no app around it (`hkp-rt/exe`), which is what a
+server or a container runs. On a person's own machine it needs nothing said: it
+listens on `127.0.0.1`, and a loopback bind is itself the access boundary.
+Anywhere else its environment says the rest, in the names hkp-node uses:
+
+| Variable | |
+|---|---|
+| `HOST`, `PORT` | what it listens on; `127.0.0.1` and `5556` unless said |
+| `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `ALLOWED_EMAILS` | who may use it. **All three are required for a bind that is not loopback** — without them it refuses to start, rather than serve an open port or deny every request once running |
+| `ALLOWED_ORIGINS` | which origins may call it from a browser |
+| `HKP_EXTERNAL_URL` | where it is reached from outside when that is not `http://<host>:<port>` — behind a proxy terminating TLS. Endpoints its services expose are published under it |
+| `HKP_MOUNT_SECRET` | keys those endpoints' addresses; else kept at `~/.hkp/cpp/mount-secret` |
+| `HKP_COORDINATOR_LINKS_FILE` | where coordinator tickets are kept; `~/.hkp/cpp/coordinator-links.json` |
+
+`hkp-rt/Dockerfile` builds it into an image, from the repository root:
+`docker build -f hkp-rt/Dockerfile -t hkp-rt .` The image carries no in-process
+ML backend — llama.cpp, the speech models and inflect are left out, because they
+multiply its size and inference runs better beside a container than inside it.
+`text-generation`, `speech-to-text` and `text-to-speech` are in its registry all
+the same and reach an OpenAI-compatible server by URL. `~/.hkp` is a volume: the
+tickets and the mount secret are what must survive a restart.
+
+Such a server takes part in a deployed board (→ `concepts/remotes.md`), and its
+endpoints are paths on its one port (→ `concepts/mounts.md`), so a single
+published port and a single proxy are all it needs.
+
+---
+
 ## What each host adds
 
 Beyond the platform seam, each shell brings things a browser cannot:

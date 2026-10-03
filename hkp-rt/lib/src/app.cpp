@@ -68,14 +68,20 @@ RuntimeConfiguration App::createRuntime(RuntimeConfiguration config)
   return runtime->getConfiguration();
 }
 
-std::vector<RuntimeConfiguration> App::getRuntimes() const
+std::vector<RuntimeConfiguration> App::getRuntimes(const std::string& space) const
 {
   // Snapshot the shared_ptrs under the lock, then read each runtime's config
   // without holding it — the copies keep the runtimes alive.
   std::vector<std::shared_ptr<Runtime>> snapshot;
   {
     std::lock_guard<std::mutex> lock(m_runtimesMutex);
-    snapshot.assign(m_runtimes.begin(), m_runtimes.end());
+    for (const auto& rt : m_runtimes)
+    {
+      if (rt->getSpace() == space)
+      {
+        snapshot.push_back(rt);
+      }
+    }
   }
   std::vector<RuntimeConfiguration> configurations;
   for (auto &rt : snapshot)
@@ -85,9 +91,10 @@ std::vector<RuntimeConfiguration> App::getRuntimes() const
   return configurations;
 }
 
-std::optional<RuntimeConfiguration> App::getRuntime(const std::string runtimeId) const
+std::optional<RuntimeConfiguration> App::getRuntime(const std::string runtimeId,
+                                                    const std::string& space) const
 {
-  auto rt = findRuntimeShared(runtimeId);
+  auto rt = findRuntimeShared(runtimeId, space);
   if (!rt)
   {
     return std::nullopt;
@@ -95,12 +102,12 @@ std::optional<RuntimeConfiguration> App::getRuntime(const std::string runtimeId)
   return rt->getConfiguration();
 }
 
-bool App::removeRuntime(const std::string &id)
+bool App::removeRuntime(const std::string &id, const std::string& space)
 {
   std::shared_ptr<Runtime> removed; // destroyed after the lock is released
   {
     std::lock_guard<std::mutex> lock(m_runtimesMutex);
-    auto it = findRuntime(id);
+    auto it = findRuntime(id, space);
     if (it == m_runtimes.end())
     {
       return false;
@@ -116,13 +123,25 @@ void App::removeAllRuntimes()
   std::list<std::shared_ptr<Runtime>> removed; // destroyed after the lock
   {
     std::lock_guard<std::mutex> lock(m_runtimesMutex);
-    removed.swap(m_runtimes);
+    for (auto it = m_runtimes.begin(); it != m_runtimes.end();)
+    {
+      if ((*it)->getSpace().empty())
+      {
+        removed.push_back(*it);
+        it = m_runtimes.erase(it);
+      }
+      else
+      {
+        ++it;
+      }
+    }
   }
 }
 
-json App::configureService(const std::string &runtimeId, const std::string &instanceId, json config)
+json App::configureService(const std::string &runtimeId, const std::string &instanceId, json config,
+                           const std::string& space)
 {
-  auto rt = findRuntimeShared(runtimeId);
+  auto rt = findRuntimeShared(runtimeId, space);
   if (!rt)
   {
     return false;
@@ -140,9 +159,9 @@ json App::getServiceState(const std::string &runtimeId, const std::string &insta
   return rt->getServiceState(instanceId);
 }
 
-json App::getServices(const std::string &runtimeId) const
+json App::getServices(const std::string &runtimeId, const std::string& space) const
 {
-  auto rt = findRuntimeShared(runtimeId);
+  auto rt = findRuntimeShared(runtimeId, space);
   if (!rt)
   {
     return false;
@@ -192,6 +211,17 @@ Data App::processRuntime(const std::string& runtimeId, const Data& data)
   return rt->process(data);
 }
 
+Data App::processRuntime(const std::string& runtimeId, const Data& data, const json& context,
+                         const std::string& space)
+{
+  auto rt = findRuntimeShared(runtimeId, space);
+  if (!rt)
+  {
+    return false;
+  }
+  return rt->process(data, ProcessContext::fromJson(context));
+}
+
 Data App::processServiceAt(const std::string& runtimeId,
                            const std::string& instanceId, const Data& data)
 {
@@ -221,28 +251,31 @@ json App::getRegistry() const
   return r;
 }
 
-std::list<std::shared_ptr<Runtime>>::iterator App::findRuntime(const std::string& runtimeId)
+std::list<std::shared_ptr<Runtime>>::iterator App::findRuntime(const std::string& runtimeId,
+                                                               const std::string& space)
 {
   return std::find_if(
     m_runtimes.begin(), 
     m_runtimes.end(), 
-    [runtimeId](auto rt){ return rt->getId() == runtimeId; }
+    [&](const auto& rt){ return rt->getId() == runtimeId && rt->getSpace() == space; }
   );
 }
 
-std::list<std::shared_ptr<Runtime>>::const_iterator App::findRuntime(const std::string& runtimeId) const
+std::list<std::shared_ptr<Runtime>>::const_iterator App::findRuntime(const std::string& runtimeId,
+                                                                     const std::string& space) const
 {
   return std::find_if(
     m_runtimes.cbegin(),
     m_runtimes.cend(),
-    [runtimeId](auto rt){ return rt->getId() == runtimeId; }
+    [&](const auto& rt){ return rt->getId() == runtimeId && rt->getSpace() == space; }
   );
 }
 
-std::shared_ptr<Runtime> App::findRuntimeShared(const std::string& runtimeId) const
+std::shared_ptr<Runtime> App::findRuntimeShared(const std::string& runtimeId,
+                                                const std::string& space) const
 {
   std::lock_guard<std::mutex> lock(m_runtimesMutex);
-  auto it = findRuntime(runtimeId);
+  auto it = findRuntime(runtimeId, space);
   return it == m_runtimes.cend() ? nullptr : *it;
 }
 
@@ -298,6 +331,98 @@ json App::checkRuntimeAsset(const std::string& runtimeId, const std::string& ass
               {"size", resolution.asset->content.size()}};
 }
 
+json App::setRuntimeState(const std::string& runtimeId, const json& state,
+                          const std::string& space)
+{
+  auto rt = findRuntimeShared(runtimeId, space);
+  if (!rt)
+  {
+    return nullptr;
+  }
+  if (state.is_object())
+  {
+    if (state.contains("logging") && state["logging"].is_boolean())
+    {
+      rt->setLogging(state["logging"].get<bool>());
+    }
+    if (state.contains("logLevel") && state["logLevel"].is_string())
+    {
+      rt->setLogLevel(levelFromString(state["logLevel"].get<std::string>()));
+    }
+    if (state.contains("logData") && state["logData"].is_boolean())
+    {
+      rt->setLogData(state["logData"].get<bool>());
+    }
+  }
+  const auto config = rt->getConfiguration();
+  return json{
+    {"logging", config.logging},
+    {"logData", config.logData},
+    {"logLevel", config.logLevel},
+  };
+}
+
+namespace
+{
+// NUL occurs in neither part.
+std::string sinkKey(const std::string& runtimeId, const std::string& space)
+{
+  return space + '\0' + runtimeId;
+}
+}
+
+void App::setRuntimeOutputSink(const std::string& runtimeId, RuntimeOutputSink sink,
+                               const std::string& space)
+{
+  std::lock_guard<std::mutex> lock(m_sinksMutex);
+  m_sinks[sinkKey(runtimeId, space)] = std::move(sink);
+}
+
+void App::clearRuntimeOutputSink(const std::string& runtimeId, const std::string& space)
+{
+  std::lock_guard<std::mutex> lock(m_sinksMutex);
+  m_sinks.erase(sinkKey(runtimeId, space));
+}
+
+void App::emitRuntimeData(const std::string& runtimeId, const Data& data,
+                          MessagePurpose purpose, const std::string& sender,
+                          const std::string& space)
+{
+  // Copied out under the lock and called without it: a sink may take a while,
+  // and may itself replace or remove a sink.
+  std::function<void(const Data&, MessagePurpose, const std::string&)> onData;
+  {
+    std::lock_guard<std::mutex> lock(m_sinksMutex);
+    auto it = m_sinks.find(sinkKey(runtimeId, space));
+    if (it != m_sinks.end())
+    {
+      onData = it->second.onData;
+    }
+  }
+  if (onData)
+  {
+    onData(data, purpose, sender);
+  }
+}
+
+void App::emitRuntimeLog(const std::string& runtimeId, const LogEntry& entry,
+                         const std::string& space)
+{
+  std::function<void(const LogEntry&)> onLog;
+  {
+    std::lock_guard<std::mutex> lock(m_sinksMutex);
+    auto it = m_sinks.find(sinkKey(runtimeId, space));
+    if (it != m_sinks.end())
+    {
+      onLog = it->second.onLog;
+    }
+  }
+  if (onLog)
+  {
+    onLog(entry);
+  }
+}
+
 std::shared_ptr<Runtime> App::appendRuntime(const RuntimeConfiguration& config)
 {
   // Build and configure the runtime before it becomes visible to other threads.
@@ -307,7 +432,8 @@ std::shared_ptr<Runtime> App::appendRuntime(const RuntimeConfiguration& config)
   std::shared_ptr<Runtime> replaced; // destroyed after the lock is released
   {
     std::lock_guard<std::mutex> lock(m_runtimesMutex);
-    auto it = findRuntime(config.runtimeId); // replace one with the same id
+    // Replace the one with the same id in the same space.
+    auto it = findRuntime(config.runtimeId, config.space);
     if (it != m_runtimes.end())
     {
       replaced = *it;
@@ -341,7 +467,9 @@ Data App::processRuntimeWithName(const std::string& name, const Data& params) co
     auto pos = std::find_if(
       m_runtimes.begin(),
       m_runtimes.end(),
-      [name](auto rt){ return rt->getName() == name; }
+      // Among what clients created: a board's runtimes are driven by its
+      // coordinator.
+      [name](auto rt){ return rt->getName() == name && rt->getSpace().empty(); }
     );
     if (pos != m_runtimes.end())
     {

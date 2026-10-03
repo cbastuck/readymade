@@ -155,8 +155,21 @@ HttpServerSubservices::HttpServerSubservices(const std::string& instanceId)
 HttpServerSubservices::~HttpServerSubservices()
 {
   m_broadcast.onListenersChanged(nullptr);
+  m_mount.release();
   m_impl->stop();
   m_broadcast.closeAll();
+}
+
+MountHandle HttpServerSubservices::claimMount(const std::string& name)
+{
+  // Held weakly: the mount must not keep this service's endpoint alive.
+  std::weak_ptr<HttpServerImpl> held = m_impl;
+  return mountEndpoint(name, [held](MountedConnection connection) {
+    if (auto impl = held.lock())
+    {
+      impl->adopt(std::move(connection));
+    }
+  });
 }
 
 void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
@@ -335,6 +348,11 @@ json HttpServerSubservices::configure(Data data)
     m_impl->setPort(port);
   }
 
+  if (buf->contains("mountName") && (*buf)["mountName"].is_string())
+  {
+    m_mountName = (*buf)["mountName"].get<std::string>();
+  }
+
   // An array is a decision, including an empty one. Anything else — absent,
   // null, a string — leaves the default of forwarding all of them.
   if (buf->contains("forwardHeaders"))
@@ -453,7 +471,9 @@ json HttpServerSubservices::configure(Data data)
   // The port is only read when the acceptor binds, so changing it on a running
   // server takes a rebind — otherwise the state advertises a port nothing is
   // listening on.
-  if (portChanged && wasRunning && m_impl->running())
+  // Served from a mount there is no port to rebind: the address is the
+  // server's, and what a board says of a port is not acted on.
+  if (portChanged && wasRunning && m_impl->running() && !m_impl->mounted())
   {
     stop();
     if (!start())
@@ -461,6 +481,18 @@ json HttpServerSubservices::configure(Data data)
       std::cerr << "HttpServerSubservices::configure() Failed to rebind on port: "
                 << port << std::endl;
       setBypass(true); // nothing is listening; say so rather than report online
+    }
+  }
+
+  // Renaming a mount rotates its capability URL. Move the live adopter to the
+  // newly derived address and release the one it previously held.
+  if (m_mount && mountName() != m_mount.name())
+  {
+    m_mount = claimMount(mountName());
+    m_url = m_mount.url();
+    if (m_mount)
+    {
+      sendNotification(json{{MOUNT_FIELD, m_url}, {"status", "online"}});
     }
   }
 
@@ -503,6 +535,7 @@ json HttpServerSubservices::getState() const
     // Public endpoint. Reserved name: generic board machinery reads and
     // rewrites it (see the frontend's runtime/board/mount).
     {MOUNT_FIELD, m_url},
+    {"mountName", m_mountName},
     {"status", isBypass() ? "offline" : "online"},
     {"forwardHeaders", m_forwardHeaders ? json(*m_forwardHeaders) : json(nullptr)}
   };
@@ -683,6 +716,21 @@ bool HttpServerSubservices::start()
     return false;
   }
 
+  // A runtime server that serves mounts gives this endpoint a path on its own
+  // port: nothing is bound here, and the address does not depend on a port
+  // being free. One that serves none leaves this endpoint to bind its own.
+  m_impl->startMounted();
+  m_mount = claimMount(mountName());
+  if (m_mount)
+  {
+    m_host.clear();
+    m_url = m_mount.url();
+    std::cout << "HttpServerSubservices::start() mounted at " << m_url << std::endl;
+    sendNotification(json{{MOUNT_FIELD, m_url}, {"status", "online"}});
+    return true;
+  }
+  m_impl->stop();
+
   auto port = m_impl->start();
   if (port == 0)
   {
@@ -717,6 +765,7 @@ bool HttpServerSubservices::stop()
     std::cout << "HttpServerSubservices::stop() HTTP server is not running" << std::endl;
     return false;
   }
+  m_mount.release();
   m_host.clear();
   m_url.clear();
   // Everything that named where to connect goes with the server, as getState

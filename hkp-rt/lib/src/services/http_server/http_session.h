@@ -13,7 +13,7 @@
 
 namespace hkp {
 
-class Listener;
+class HttpServerImpl;
 
 class Session : public std::enable_shared_from_this<Session>
 { 
@@ -56,7 +56,13 @@ class Session : public std::enable_shared_from_this<Session>
 
 public:
   // Take ownership of the stream
-  Session(Listener& listener, tcp::socket&& socket);
+  Session(HttpServerImpl& server, tcp::socket&& socket);
+
+  // For a connection that arrived at a mount: what was already read from it,
+  // and the prefix the mount owns. The first request is in `prefetched` with
+  // the prefix already taken off; a later one on the same connection arrives
+  // with it, and has it taken off when its path is read.
+  void adoptMounted(const std::string& prefetched, const std::string& mountPath);
   ~Session();
   
   // Start the asynchronous operation
@@ -77,7 +83,16 @@ public:
 
   std::string getRequestPath() const
   {
-    return std::string(parser_->get().target());
+    std::string target(parser_->get().target());
+    if (!m_mountPath.empty() && target.compare(0, m_mountPath.size(), m_mountPath) == 0)
+    {
+      target = target.substr(m_mountPath.size());
+      if (target.empty() || target[0] != '/')
+      {
+        target = "/" + target;
+      }
+    }
+    return target;
   }
 
   std::string getRequestMethod() const
@@ -144,8 +159,9 @@ private:
   std::optional<boost::beast::http::request_parser<boost::beast::http::string_body>> parser_;
   std::shared_ptr<void> res_;
   send_lambda lambda_;
-  Listener& listener_;
+  HttpServerImpl& server_;
   unsigned int m_sessionId;
+  std::string m_mountPath;
 
   bool m_eventSourceHeadersSent = false;
 };

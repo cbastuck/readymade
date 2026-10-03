@@ -20,7 +20,16 @@ export async function startVideoStream(
     : { video: true };
   const stream = await navigator.mediaDevices.getUserMedia(constraints);
   video.srcObject = stream;
-  void video.play();
+  try {
+    await video.play();
+  } catch (err) {
+    // A browser can grant a stream yet refuse to attach/play it (headless and
+    // embedded webviews are common examples). Do not leak the granted device
+    // while reporting that failure to the UI.
+    stream.getTracks().forEach((track) => track.stop());
+    video.srcObject = null;
+    throw err;
+  }
   return stream;
 }
 

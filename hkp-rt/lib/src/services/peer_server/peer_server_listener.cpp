@@ -37,9 +37,49 @@ PeerServerListener::PeerServerListener(std::shared_ptr<PeerRegistry> registry,
   m_thread = std::thread([this] { run(); });
 }
 
+PeerServerListener::PeerServerListener(std::shared_ptr<PeerRegistry> registry)
+  : m_acceptor(m_ioc)
+  , m_registry(std::move(registry))
+{
+  // Nothing accepts, so nothing else keeps the context running.
+  m_work = std::make_unique<net::executor_work_guard<net::io_context::executor_type>>(
+    net::make_work_guard(m_ioc));
+  m_thread = std::thread([this] { m_ioc.run(); });
+}
+
+void PeerServerListener::adopt(MountedConnection connection)
+{
+  // The socket came from the runtime server's io context; sessions here run on
+  // this one, so the connection is moved across.
+  beast::error_code ec;
+  const auto protocol = connection.socket.local_endpoint(ec).protocol();
+  if (ec)
+  {
+    return;
+  }
+  const auto native = connection.socket.release(ec);
+  if (ec)
+  {
+    return;
+  }
+  tcp::socket socket(net::make_strand(m_ioc));
+  socket.assign(protocol, native, ec);
+  if (ec)
+  {
+    return;
+  }
+  // The mount's prefix is already off the request, so the paths a session
+  // answers are the mount's own: `<mount>/id`, `<mount>/peers`.
+  auto session = std::make_shared<PeerServerSession>(std::move(socket), m_registry, "");
+  session->prefill(connection.prefetched);
+  net::post(m_ioc, [session]() { session->run(); });
+}
+
 PeerServerListener::~PeerServerListener()
 {
-  m_acceptor.close();
+  m_work.reset();
+  beast::error_code ignored;
+  m_acceptor.close(ignored);
   m_ioc.stop();
   if (m_thread.joinable())
   {
@@ -49,7 +89,9 @@ PeerServerListener::~PeerServerListener()
 
 unsigned short PeerServerListener::getBoundPort() const
 {
-  return m_acceptor.local_endpoint().port();
+  beast::error_code ec;
+  const auto endpoint = m_acceptor.local_endpoint(ec);
+  return ec ? 0 : endpoint.port();
 }
 
 void PeerServerListener::run()

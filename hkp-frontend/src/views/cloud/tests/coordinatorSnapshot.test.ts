@@ -172,6 +172,49 @@ describe("the status of the open board", () => {
   });
 });
 
+/**
+ * Why a board is not running cleanly travels with its status. A runtime server
+ * dropping its connection puts the board in error while a browser is attached,
+ * so the reasons have to arrive the way the status does — not be fetched once
+ * when the board was opened.
+ */
+describe("why the open board is not running cleanly", () => {
+  it("is whatever the last snapshot said", () => {
+    const store = new CoordinatorSnapshotStore();
+
+    store.apply({ ...snapshot(1), status: "running", errors: [] });
+    expect(store.getErrors()).toEqual([]);
+
+    store.apply({
+      ...snapshot(2),
+      status: "error",
+      errors: ['Runtime "node" is not connected'],
+    });
+    expect(store.getErrors()).toEqual(['Runtime "node" is not connected']);
+  });
+
+  it("is the same array until the next snapshot, so a view can read it as one value", () => {
+    const store = new CoordinatorSnapshotStore();
+    store.apply({ ...snapshot(1), status: "error", errors: ["x"] });
+
+    expect(store.getErrors()).toBe(store.getErrors());
+  });
+
+  it("is unknown for a coordinator that does not say, and once dropped", () => {
+    // Null rather than an empty list: "no reasons given" is not "no errors",
+    // and the view falls back to what the board listing said.
+    const store = new CoordinatorSnapshotStore();
+    expect(store.getErrors()).toBeNull();
+
+    store.apply({ ...snapshot(1), status: "error" });
+    expect(store.getErrors()).toBeNull();
+
+    store.apply({ ...snapshot(2), status: "error", errors: ["x"] });
+    store.clear();
+    expect(store.getErrors()).toBeNull();
+  });
+});
+
 describe("resolving mounts against what the coordinator reported", () => {
   it("reads as the shape a board coordinator expects", () => {
     // So a browser service's hkp-mount:// reference resolves to the address the

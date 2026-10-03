@@ -13,7 +13,6 @@ const user = { userId: "user-1", idToken: "token", username: "someone" };
 const boardContext = {
   boardName: "Voice Notes",
   serializeBoard: async () => ({ boardName: "Voice Notes" }),
-  handOverRuntimes: vi.fn(),
 };
 
 vi.mock("../BoardContext", () => ({
@@ -28,8 +27,14 @@ vi.mock("../auth/useCloudLogin", () => ({
   useCloudLogin: () => () => {},
 }));
 
-vi.mock("../core/deploy", () => ({
-  deployBoard: vi.fn(async () => "Voice Notes"),
+vi.mock("../core/deploy", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../core/deploy")>()),
+  deployBoard: vi.fn(async () => ({
+    boardName: "Voice Notes",
+    status: "running",
+    errors: [],
+    placements: [],
+  })),
 }));
 
 vi.mock("../views/cloud/coordinatorClient", () => ({

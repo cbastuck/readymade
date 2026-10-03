@@ -102,8 +102,7 @@ handed the platform rather than only on what the UI shows.
 **The blind spot is the boundary itself.** Rename a `saucer.exposed` function or
 change an `hkp://` route and this suite stays green while the shipped app
 breaks. The fake is written against `BackendAdapter`, so TypeScript catches a
-changed *shape* — a changed *route* needs a manual pass, in the style of the
-per-change checklists kept in `plans/TODO-TEST.md`.
+changed *shape* — a changed *route* needs a manual pass, done by hand.
 
 ### The shipped-board sweep
 
@@ -148,6 +147,38 @@ with no signalling server, and is why `CHROMIUM_ARGS` exists: without
 candidates that two isolated contexts cannot resolve for each other, and pairing
 never completes — silently.
 
+### The cloud specs
+
+`e2e/tests/cloud/` deploys boards for real: a playground, a runtime server and a
+coordinator. They need a third process, so they have a config of their own —
+the fast suite above starts nothing but the two dev servers, and ignores this
+directory.
+
+```bash
+cd e2e
+npm run test:cloud       # playwright.cloud.config.ts
+```
+
+That config starts one hkp-node on loopback as both runtime server and
+coordinator, with every directory it would write to pointed at nowhere, and
+runs the desktop shell against it. The shell is signed in by seeding the session
+it reads at boot, and knows the runtime server as a remote through the fake
+native host (`hostConfig.remotes`).
+
+What it covers is what no mock can: a board that names a remote is resolved,
+checked, introduced and registered; the runtime server connects to the
+coordinator, which is told no address; an attached browser is told when that
+server leaves and when it returns.
+
+Across runtime servers the same path is covered below the browser:
+`hkp-node/tests/coordinator-python.test.ts` starts hkp-python as its own process
+and runs one board over both — skipped where hkp-python has no virtualenv.
+`coordinator-rt.test.ts` does the same with the hkp-rt binary
+(`hkp-rt/build-tests/exe/hkp-rt`, which `hkp-rt/run-tests.sh` builds; skipped
+where it is absent), and also calls an endpoint mounted on it. Both pass bytes,
+bytes with JSON beside them and a ring buffer through the other server and
+compare what comes back.
+
 ### After a failure
 
 `trace: retain-on-failure` means the failing run was already recorded:
@@ -188,9 +219,11 @@ trusting it:
 | Board drift, without a browser | `hkp-frontend/src/runtime/browser/tests/demo-boards.regression.test.tsx` |
 | Board drift, in a browser | `e2e/tests/smoke/shipped-boards.spec.ts` |
 | Blocks on the running board: the lock, params, detach, editing, making one | `e2e/tests/blocks.spec.ts` |
+| Deploying to a real coordinator, in a browser | `e2e/playwright.cloud.config.ts`, `e2e/tests/cloud/deploy.spec.ts` |
+| A board across hkp-node and hkp-python | `hkp-node/tests/coordinator-python.test.ts` |
+| A board across hkp-node and hkp-rt; endpoints mounted on hkp-rt | `hkp-node/tests/coordinator-rt.test.ts` |
 | What CI covers | `.github/workflows/run-all-tests.yml` |
 | Why CI covers only part of it | [Repository](./repository.md) |
-| Manual checklists for a change | `plans/TODO-TEST.md` |
 
 ---
 

@@ -145,9 +145,10 @@ changing it means changing the board in the playground and deploying again.
 - **Cloud boards with browser runtimes cannot run headless.** The coordinator
   drives them over the bridge, so that part of the chain stalls with no viewer
   attached. Already true; worth stating in the docs rather than discovering.
-- **Auth simplifies.** The browser stops needing credentials for remote runtimes;
-  the coordinator's session tokens are the only ones in play, and a runtime's
-  allowlist only has to admit the coordinator.
+- **Auth simplifies.** The browser stops needing credentials for remote runtimes
+  of a board it is only attached to. (Superseded in how: the coordinator no
+  longer holds session tokens. It reaches a runtime over a connection that
+  runtime's server opened with a ticket — `TODO-COORDINATOR-CONNECTIONS.md`.)
 - **Reconnection is a real state.** Bridge drops must re-snapshot, not resume
   blindly.
 - **Attach and provision are now separate calls.** The browser asks with `GET`
@@ -201,10 +202,11 @@ GET first.
    was built.
 5. ~~**Frontend**: a Deploy action in the playground that picks a coordinator;
    the cloud view becomes attach-only.~~ **Done** — `DeployMenu` in the toolbar,
-   `core/deploy.ts` (`core/tests/deploy.test.ts`). Deploying gives up the
-   runtimes *before* the coordinator provisions them, because both sides use the
-   board's ids: `BoardContext.handOverRuntimes` stops the browser from deleting
-   them on its way out (`core/tests/deploy-handover.test.tsx`).
+   `core/deploy.ts` (`core/tests/deploy.test.ts`). Deploying used to give up
+   the runtimes *before* the coordinator provisioned them, because both sides
+   shared them under the board's ids. Since 2026-10-02 a board's runtimes are
+   kept apart on the runtime server and nothing is given up; see
+   `TODO-COORDINATOR-CONNECTIONS.md`.
 6. ~~Retire the Edit / Save & Run toggle and the editing mode it needed.~~
    **Done** — the cloud view attaches only. Its "Stop" keeps the board and its
    config, and "Start" registers that config again; "New board" opens the playground rather than creating an empty record
@@ -230,16 +232,18 @@ the board in a playground tab and deploying it again.
 
 ### Parked by decision
 
-- **Adopt-on-start** instead of rebuilding. Start replaces the orphan today,
-  which is clean but changes mount addresses; adopting would preserve them (and
-  live state) across a coordinator restart. Revisit if a board handing its mount
+- **Adopt-on-start** instead of rebuilding. A coordinator that restarts rebuilds
+  each runtime when its server reconnects; adopting would preserve live state
+  across a coordinator restart. (A *dropped connection* is adopted since
+  2026-10-01 — only a new session rebuilds.) Revisit if a board handing its mount
   URL to something external turns out to be the common case.
-- **Auto-start on boot** — not possible under the current auth model: both
-  provisioning and minting a session token need the user's JWT.
+- ~~**Auto-start on boot**~~ — **done 2026-10-01**, by a different route than
+  this plan foresaw: runtime servers reconnect with the tickets they kept, so no
+  user token is needed. See `TODO-COORDINATOR-CONNECTIONS.md`.
 - **A lock on the data directory.** One directory belongs to one coordinator;
   documented rather than enforced.
-- **Remembering that a board was running** before a restart. Boards persist,
-  runs do not — one rule.
+- ~~**Remembering that a board was running**~~ — **done 2026-10-01**: the board
+  store keeps whether a board was stopped. Runs still do not persist.
 
 ## Done since
 

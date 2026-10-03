@@ -207,6 +207,11 @@ void Service::emit(Data partialResult)
   nextAsync(std::move(partialResult));
 }
 
+MountHandle Service::mountEndpoint(const std::string& name, MountAdopter adopter)
+{
+  return m_host ? m_host->mountEndpoint(name, std::move(adopter)) : MountHandle();
+}
+
 Data Service::deferCompletion()
 {
   m_processDeferred = true;

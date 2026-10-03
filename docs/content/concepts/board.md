@@ -56,7 +56,9 @@ mount reference names.
   it already has and attach rather than rebuild.
 - **Ids are unique per user, not globally.** hkp-node namespaces runtimes by the
   authenticated `sub`, so boards can ship readable ids like `node` or
-  `chat-node` without two people colliding on one server.
+  `chat-node` without two people colliding on one server. A deployed board's
+  runtimes are further kept per board, so two of one person's boards may share
+  an id too (`concepts/cloud-boards.md`).
 - **Copying a board must rename all of them.** Otherwise the copy provisions
   over the original's runtimes — an editor whose changes land somewhere else.
   `hkp-frontend/src/core/forkBoard.ts` does the renaming, driven by *field name*
