@@ -63,6 +63,7 @@ add_executable(hkp-rt-service-tests
   service_audio_encode.test.cpp
   service_websocket_writer.test.cpp
   runtime_no_input.test.cpp
+  service_asset.test.cpp
 )
 target_include_directories(hkp-rt-service-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lib/src)
 target_link_libraries(hkp-rt-service-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2::Catch2WithMain)

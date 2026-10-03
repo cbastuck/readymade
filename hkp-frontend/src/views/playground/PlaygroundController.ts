@@ -426,6 +426,7 @@ export function usePlaygroundController(
       unit,
       units,
       blocks,
+      assets,
     } = initialBord as PlaygroundState & UnitDocument;
 
     setAcceptedSyncSenders(accepted);
@@ -455,6 +456,8 @@ export function usePlaygroundController(
       // Blocks likewise: a use of one names a definition that only the board
       // holds, and a runtime handed the use unexpanded has no service to make.
       blocks,
+      // And assets: a reference names content only the board declares.
+      assets,
     };
   };
 

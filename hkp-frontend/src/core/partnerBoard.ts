@@ -1,6 +1,7 @@
 import { BoardDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { createBoardLink } from "hkp-frontend/src/views/playground/BoardLink";
+import { referencedAssets } from "hkp-frontend/src/runtime/board/assets";
 import {
   isLocalhostUrl,
   resolveTemplateVarsInObject,
@@ -68,8 +69,20 @@ export function createPartnerBoard(
       runtimes: partnerRuntimes,
       services: partnerServices,
       facade: board.facade,
+      // The partner's browser runtimes resolve their references against the
+      // same descriptors, so the ones they reference come along.
+      ...partnerAssets(board, partnerServices),
     }),
   );
+}
+
+function partnerAssets(
+  board: BoardDescriptor,
+  services: BoardDescriptor["services"],
+): Pick<BoardDescriptor, "assets"> {
+  const referenced = referencedAssets(Object.values(services).flat(), board.assets);
+  const assets = Object.values(referenced);
+  return assets.length ? { assets } : {};
 }
 
 /**

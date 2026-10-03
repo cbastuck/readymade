@@ -190,6 +190,26 @@ struct Server::impl
     CROW_ROUTE(crow, "/runtimes/<string>/secrets")
         .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return setSecrets(req, runtimeId); });
 
+    // Descriptors for the assets this runtime's services reference. Provisioning
+    // carries them already; this is for a configuration naming one the runtime
+    // was not given, for an asset edited while the board runs — which is how an
+    // edit reaches a service without reconfiguring it — and for a re-push after
+    // a restart. It merges, and null removes an asset. Answers with ids, never
+    // content.
+    CROW_ROUTE(crow, "/runtimes/<string>/assets")
+        .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return setAssets(req, runtimeId); });
+
+    // Whether an asset resolves here, and to what: a check, not a download.
+    CROW_ROUTE(crow, "/runtimes/<string>/assets/<string>")
+        .methods("GET"_method)([this](const crow::request &, std::string runtimeId, std::string assetId) -> crow::response {
+          auto checked = app->checkRuntimeAsset(runtimeId, assetId);
+          if (checked.is_null())
+          {
+            return crow::response{crow::status::NOT_FOUND};
+          }
+          return makeJsonResponse(checked);
+        });
+
     CROW_ROUTE(crow, "/runtimes/<string>/rearrange")
         .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return rearrangeServices(req, runtimeId); });
 
@@ -260,6 +280,7 @@ struct Server::impl
   crow::response getRuntimeById(const std::string& id);
   crow::response rearrangeServices(const crow::request &req, const std::string& runtimeId);
   crow::response setSecrets(const crow::request &req, const std::string& runtimeId);
+  crow::response setAssets(const crow::request &req, const std::string& runtimeId);
   crow::response processRuntime(const crow::request &req, const std::string& runtimeId);
   crow::response processService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId);
   crow::response getRuntimeInputs(const crow::request &req, const std::string& runtimeId);
@@ -611,6 +632,30 @@ crow::response Server::impl::setSecrets(const crow::request &req, const std::str
   }
 
   auto held = app->setRuntimeSecrets(runtimeId, readSecretsPayload(body));
+  if (held.is_null())
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+  return makeJsonResponse(held);
+}
+
+crow::response Server::impl::setAssets(const crow::request &req, const std::string& runtimeId)
+{
+  json body;
+  try
+  {
+    body = json::parse(req.body);
+  }
+  catch (const std::exception&)
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+  if (!body.is_object() && !body.is_array())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto held = app->setRuntimeAssets(runtimeId, readAssetsPayload(body));
   if (held.is_null())
   {
     return crow::response{crow::status::NOT_FOUND};

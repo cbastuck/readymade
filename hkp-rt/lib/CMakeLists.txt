@@ -87,6 +87,7 @@ target_sources(${PROJECT_NAME}
     PRIVATE
       src/common/websocket_server_session.cpp
       src/runtime.cpp
+      src/assets.cpp
       src/registry.cpp
       src/service.cpp
       src/sub_runtime.cpp

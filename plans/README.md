@@ -8,7 +8,7 @@ plan is deleted.
 
 | Document | What it covers | State |
 | --- | --- | --- |
-| [TODO-ASSETS.md](TODO-ASSETS.md) | Content (pages, scripts, samples, models) declared once in a board as inline text, base64 or a URL, and referenced from service state as `hkp-asset://id`; each runtime resolves at point of use from a pushed asset store; its own board view for editing | designed 2026-09-29, not built |
+| [TODO-ASSETS.md](TODO-ASSETS.md) | Content (pages, scripts, samples, models) declared once in a board as inline text, base64 or a URL, and referenced from service state as `hkp-asset://id`; each runtime resolves at point of use from a pushed asset store; its own board view for editing | built 2026-09-30 across browser, hkp-node, hkp-python and hkp-rt; Make asset, s3, host-local upload and model loaders open |
 | [TODO-BLOCKS.md](TODO-BLOCKS.md) | Services defined once in a board and used by reference: frozen uses, params, detach, towards presets | built 2026-09-26; a few gaps and open questions left |
 | [TODO-CLOUD-COORDINATOR.md](TODO-CLOUD-COORDINATOR.md) | A coordinator, not a browser tab, owns a deployed board and provisions its runtimes | decided Aug 2026; partly built |
 | [TODO-CONSOLIDATION.md](TODO-CONSOLIDATION.md) | Aligning service ids and contracts across runtimes, so a mismatch is reported rather than absorbed | open |

@@ -20,6 +20,7 @@ import TracksUI from "./ui/TracksUI";
 import HttpEndpointUI from "./ui/HttpEndpointUI";
 import RssUI from "./ui/RssUI";
 import SubServiceUI from "./ui/SubServiceUI";
+import AssetUI from "./ui/AssetUI";
 
 export type ServiceLookup = {
   serviceId?: ServiceClass["serviceId"];
@@ -85,6 +86,8 @@ function findServiceUIByKey(
       return SmtpEmailUI;
     case "rss":
       return RssUI;
+    case "asset":
+      return AssetUI;
   }
   return null;
 }

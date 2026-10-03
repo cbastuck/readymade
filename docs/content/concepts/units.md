@@ -70,6 +70,12 @@ Both fields live on every board descriptor, because they have to survive every
 path a board arrives by — a file picker, a share link, a coordinator, an iOS
 share sheet — and linking happens downstream of all of them.
 
+> **Warning — unit assets are not deployed:** Assets declared by a unit resolve
+> while a composition runs locally. A coordinator deployment carries only the
+> top-level board's assets, so a runtime contributed by a unit cannot resolve
+> that unit's `hkp-asset://…` references after deployment. See
+> [Assets: Units and deploying](./assets.md#units-and-deploying).
+
 ---
 
 ## Linking is a projection along one axis
@@ -272,6 +278,11 @@ read from a URL has no writable place to go back to and is skipped.
 
 ## Known gaps
 
+- **Unit-owned assets are not deployed.** They resolve while the composition
+  runs locally, but a coordinator deployment carries only the top-level board's
+  assets. A runtime contributed by a unit therefore cannot resolve that unit's
+  `hkp-asset://…` references after deployment. See
+  [Assets: Units and deploying](./assets.md#units-and-deploying).
 - **A unit must be reachable under its base name** when the origin is saved
   boards — those are keyed by board name, not file name. A board stored under a
   title resembling neither is not reachable that way; an explicit name would

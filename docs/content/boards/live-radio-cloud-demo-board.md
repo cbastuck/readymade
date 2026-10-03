@@ -32,8 +32,12 @@ any board. The MP3 frames travel as bytes all the way.
 1. [http-server-subservices](../services/http.md#streaming) declares a `stream`
    at `/live.mp3` and passes each pass it is given to everyone connected there.
    Every other request is answered by `onRequest`:
-   - **Player page**, a [Map](../services/map.md) answering with the page as an
-     [answer envelope](../services/http.md#what-a-handler-may-answer-with).
+   - **Player page**, a [Map](../services/map.md) answering with an
+     [answer envelope](../services/http.md#what-a-handler-may-answer-with) whose
+     body names one of the board's [assets](../concepts/assets.md): the script
+     for `/player.js`, the page for anything else. The page and its script are
+     the assets **player** and **player-js** — edit them in the asset view, and
+     the next listener to open the address gets the new version.
 2. **End Of Chain**, a [Stopper](../services/stopper.md): nothing needs to go
    back.
 
