@@ -30,9 +30,17 @@
         "serviceId": "hookup.to/service/map",
         "serviceName": "Sample Data",
         "state": {
-          "template": {
-            "=": "[{cat:'A'},{cat:'B'},{cat:'A'},{cat:'C'},{cat:'B'},{cat:'A'},{cat:'C'},{cat:'B'},{cat:'A'}]"
-          }
+          "template": [
+            { "cat": "A" },
+            { "cat": "B" },
+            { "cat": "A" },
+            { "cat": "C" },
+            { "cat": "B" },
+            { "cat": "A" },
+            { "cat": "C" },
+            { "cat": "B" },
+            { "cat": "A" }
+          ]
         }
       },
       {

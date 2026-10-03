@@ -2,6 +2,7 @@
 
 #include <types/types.h>
 #include <log_entry.h>
+#include <mounts.h>
 
 namespace hkp {
 
@@ -120,6 +121,11 @@ protected:
   // synchronous push and marks the call deferred so the runtime withholds the
   // "call-process-finished" lifecycle event until emit() actually delivers.
   Data deferCompletion();
+
+  // A path on the runtime server's own port for this service, held for as
+  // long as the handle is; empty when the server serves none. See
+  // RuntimeHost::mountEndpoint.
+  MountHandle mountEndpoint(const std::string& name, MountAdopter adopter);
 
   json mergeStateWith(const json& update) const
   {

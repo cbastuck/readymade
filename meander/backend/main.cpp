@@ -346,6 +346,12 @@ int real_main(int argc, char *argv[])
 
   auto hkpApp = std::make_shared<hkp::App>();
   auto server = std::make_shared<hkp::Server>(hkpApp, "meander-cpp", allowedOrigins, "", std::move(authConfig));
+  // A desktop is a machine a deployed board's runtimes can live on: the app is
+  // either running or it is not, and a runtime server that is away is
+  // something a coordinator reports. Tickets are kept so that those runtimes
+  // are re-established when the app starts again.
+  server->enableCoordinatorLinks(hkp::createFileLinkStore(
+    (settings.getRuntimeServerDirPath() / "coordinator-links.json").string()));
   auto t = std::make_shared<std::thread>([server, lanIP, bindAddress]()
   {
     // Thrown from a thread, a failure to bind would otherwise terminate the

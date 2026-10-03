@@ -70,6 +70,12 @@ struct RuntimeConfiguration
   std::string runtimeName;
   std::string boardName;
   /**
+   * Which of a server's runtimes this id is unique among; see App. Empty for
+   * what a client creates. It is the server's to set and is never read from
+   * or written to a runtime's JSON.
+   */
+  std::string space;
+  /**
    * Whether this runtime should be torn down once the last client that was
    * connected to it disconnects.
    *

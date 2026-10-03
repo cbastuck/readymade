@@ -85,6 +85,61 @@ unsigned short HttpServerImpl::start()
   return m_port;
 }
 
+bool HttpServerImpl::startMounted()
+{
+  // The same unwinding start() does, and for the same reasons.
+  if (m_thread.joinable())
+  {
+    m_work_guard.reset();
+    m_ioc.stop();
+    m_thread.join();
+  }
+  m_ioc.restart();
+  m_work_guard = std::make_shared<net::executor_work_guard<net::io_context::executor_type>>(net::make_work_guard(m_ioc));
+  m_mounted = true;
+  m_thread = std::thread([this]() {
+    try
+    {
+      m_ioc.run();
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "HTTP server thread exception: " << e.what() << std::endl;
+    }
+  });
+  return true;
+}
+
+void HttpServerImpl::adopt(MountedConnection connection)
+{
+  if (!m_mounted)
+  {
+    return;
+  }
+  // The socket came from the runtime server's io context; this endpoint runs
+  // its sessions on its own, so the connection is moved across.
+  boost::system::error_code ec;
+  const auto protocol = connection.socket.local_endpoint(ec).protocol();
+  if (ec)
+  {
+    return;
+  }
+  const auto native = connection.socket.release(ec);
+  if (ec)
+  {
+    return;
+  }
+  tcp::socket socket(net::make_strand(m_ioc));
+  socket.assign(protocol, native, ec);
+  if (ec)
+  {
+    return;
+  }
+  auto session = std::make_shared<Session>(*this, std::move(socket));
+  session->adoptMounted(connection.prefetched, connection.mountPath);
+  net::post(m_ioc, [session]() { session->run(); });
+}
+
 bool HttpServerImpl::stop()
 {
   // Stopping is idempotent. The destructor calls it unconditionally, and a
@@ -96,6 +151,7 @@ bool HttpServerImpl::stop()
     return false;
   }
 
+  m_mounted = false;
   std::cout << "HttpServerImpl::stop() Stopping HTTP server on port: " << m_port << std::endl;
   for (auto & session : m_sessions)
   {

@@ -1,0 +1,61 @@
+{
+  "boardName": "Remote by name (hkp-rt)",
+  "description": "A runtime that names its runtime server instead of giving an address: \"remote\": \"Cpp\" is looked up among the runtime servers this client keeps. Here that server is an hkp-rt. A Timer on it ticks into a Monitor there and one in the browser.",
+  "runtimes": [
+    {
+      "id": "remote-rt-test-cpp",
+      "name": "hkp-rt",
+      "type": "rest",
+      "remote": "Docker",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "remote-rt-test-ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "remote-rt-test-cpp": [
+      {
+        "uuid": "remote-rt-test-timer",
+        "serviceId": "timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 2,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "remote-rt-test-stamp",
+        "serviceId": "map",
+        "serviceName": "Stamp",
+        "state": {
+          "mode": "add",
+          "template": {
+            "from": "the hkp-rt runtime"
+          }
+        }
+      },
+      {
+        "uuid": "remote-rt-test-cpp-monitor",
+        "serviceId": "monitor",
+        "serviceName": "On the server"
+      }
+    ],
+    "remote-rt-test-ui": [
+      {
+        "uuid": "remote-rt-test-ui-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "In the browser"
+      }
+    ]
+  }
+}

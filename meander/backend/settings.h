@@ -464,6 +464,13 @@ public:
     return writeRemoteRuntimeEngines(runtimes);
   }
 
+  // Where the embedded runtime server keeps what it must find again after a
+  // restart: beside the app's own data, in a directory of its own.
+  std::filesystem::path getRuntimeServerDirPath() const
+  {
+    return m_hkpDirPath / "cpp";
+  }
+
   std::filesystem::path getMeandersDirPath() const
   {
     namespace fs = std::filesystem;

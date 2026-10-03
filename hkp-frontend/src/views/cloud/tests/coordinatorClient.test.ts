@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { setCoordinatorBoardLogging } from "../coordinatorClient";
+import {
+  listCoordinatorParticipants,
+  requestCoordinatorTickets,
+  setCoordinatorBoardLogging,
+} from "../coordinatorClient";
 
 /**
  * What the coordinator client puts on the wire.
@@ -131,5 +135,67 @@ describe("setCoordinatorBoardLogging", () => {
         true,
       ),
     ).rejects.toThrow("400");
+  });
+});
+
+describe("asking for tickets", () => {
+  it("names the board and its runtimes, as the person", async () => {
+    const calls = captureFetch({ tickets: { node: "hkpt_a", py: "hkpt_b" } });
+
+    const tickets = await requestCoordinatorTickets(
+      "http://coordinator",
+      "auth0|user 1",
+      "token",
+      "My board",
+      ["node", "py"],
+    );
+
+    expect(tickets).toEqual({ node: "hkpt_a", py: "hkpt_b" });
+    expect(calls[0].url).toBe(
+      "http://coordinator/users/auth0%7Cuser%201/boards/My%20board/tickets",
+    );
+    expect(calls[0].init.method).toBe("POST");
+    expect(JSON.parse(calls[0].init.body as string)).toEqual({
+      runtimeIds: ["node", "py"],
+    });
+    expect(new Headers(calls[0].init.headers).get("authorization")).toBe(
+      "Bearer token",
+    );
+  });
+
+  it("says the coordinator needs updating when it has no such route", async () => {
+    // One that still dials: it would take the board and then fail to reach
+    // every runtime in it. Better said before anything is handed over.
+    globalThis.fetch = vi.fn(
+      async () => ({ ok: false, status: 404 }) as Response,
+    ) as unknown as typeof fetch;
+
+    await expect(
+      requestCoordinatorTickets("http://coordinator", "u", "t", "b", ["node"]),
+    ).rejects.toThrow(/needs updating/);
+  });
+
+  it("fails on any other refusal rather than carrying on without tickets", async () => {
+    globalThis.fetch = vi.fn(
+      async () => ({ ok: false, status: 403 }) as Response,
+    ) as unknown as typeof fetch;
+
+    await expect(
+      requestCoordinatorTickets("http://coordinator", "u", "t", "b", ["node"]),
+    ).rejects.toThrow(/403/);
+  });
+});
+
+describe("listing a board's participants", () => {
+  it("reads who holds a ticket and who is connected", async () => {
+    const participants = [
+      { runtimeId: "node", connected: true, server: "node", issuedAt: "x" },
+    ];
+    const calls = captureFetch({ participants });
+
+    expect(
+      await listCoordinatorParticipants("http://coordinator", "u", "t", "b"),
+    ).toEqual(participants);
+    expect(calls[0].url).toBe("http://coordinator/users/u/boards/b/participants");
   });
 });

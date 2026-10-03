@@ -5,7 +5,7 @@ import { useAppContext } from "../../../AppContext";
 import { useBoardContext } from "../../../BoardContext";
 import { useCloudLogin } from "../../../auth/useCloudLogin";
 import { CoordinatorDescriptor } from "../../../common";
-import { deployBoard } from "../../../core/deploy";
+import { deployBoard, describeDeploy } from "../../../core/deploy";
 import { listCoordinatorBoards } from "../../cloud/coordinatorClient";
 import BottomSheet from "./BottomSheet";
 import MobileIcon from "./MobileIcon";
@@ -87,10 +87,13 @@ export default function DeployBoardSheet({
     }
     setBusy(true);
     try {
-      const name = await deployBoard(boardContext, coordinator, user);
-      toast.success(`“${name}” is running on ${coordinator.name}`);
+      const result = await deployBoard(boardContext, coordinator, user);
+      // The board is the coordinator's either way, so the host attaches to it
+      // — including when it did not start.
+      const outcome = describeDeploy(result, coordinator.name);
+      (outcome.ok ? toast.success : toast.error)(outcome.message);
       onClose();
-      onDeployed(coordinator, name);
+      onDeployed(coordinator, result.boardName);
     } catch (err) {
       toast.error(
         err instanceof Error && err.message

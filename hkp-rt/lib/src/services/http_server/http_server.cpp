@@ -8,6 +8,7 @@
 #include "./http_listener.h"
 #include "./http_session.h"
 #include "./request_decode.h"
+#include "mount.h"
 
 #include <algorithm>
 #include <cctype>
@@ -37,7 +38,20 @@ HttpServer::HttpServer(const std::string& instanceId)
 
 HttpServer::~HttpServer()
 {
+  m_mount.release();
   m_impl->stop();
+}
+
+MountHandle HttpServer::claimMount(const std::string& name)
+{
+  // Held weakly: the mount must not keep this service's endpoint alive.
+  std::weak_ptr<HttpServerImpl> held = m_impl;
+  return mountEndpoint(name, [held](MountedConnection connection) {
+    if (auto impl = held.lock())
+    {
+      impl->adopt(std::move(connection));
+    }
+  });
 }
 
 void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::string& path, const std::string& method, bool /*awaitResponse*/)
@@ -216,6 +230,10 @@ json HttpServer::configure(Data data)
     {
       m_impl->setPort(port);
     }
+    if (buf->contains("mountName") && (*buf)["mountName"].is_string())
+    {
+      m_mountName = (*buf)["mountName"].get<std::string>();
+    }
 
     if (updateIfNeeded(m_mode, (*buf)["mode"]))
     {
@@ -231,13 +249,28 @@ json HttpServer::configure(Data data)
       }
     }
   }
-  return Service::configure(data);
+  auto state = Service::configure(data);
+
+  // `mountName` is the deliberate address-rotation lever. A running mounted
+  // endpoint has to move immediately, and the address it leaves must stop
+  // answering (the same behaviour as the Node and Python runtimes).
+  if (m_mount && mountName() != m_mount.name())
+  {
+    m_mount = claimMount(mountName());
+    if (m_mount)
+    {
+      sendNotification(json{{MOUNT_FIELD, m_mount.url()}});
+    }
+  }
+  return state;
 }
 
 json HttpServer::getState() const
 {
   return Service::mergeStateWith(json{
-    {"port", m_impl->port()}
+    {"port", m_impl->port()},
+    {MOUNT_FIELD, m_mount.url()},
+    {"mountName", m_mountName}
   });
 }
 
@@ -279,6 +312,18 @@ bool HttpServer::start()
     return false;
   }
 
+  // A path on the runtime server's own port where it serves mounts; a port of
+  // this service's own where it does not. See mounts.h.
+  m_impl->startMounted();
+  m_mount = claimMount(mountName());
+  if (m_mount)
+  {
+    std::cout << "HttpServer::start() mounted at " << m_mount.url() << std::endl;
+    sendNotification(json{{MOUNT_FIELD, m_mount.url()}});
+    return true;
+  }
+  m_impl->stop();
+
   auto port = m_impl->start();
   if (port == 0)
   {
@@ -298,6 +343,7 @@ bool HttpServer::stop()
     std::cout << "HttpServer::stop() HTTP server is not running" << std::endl;
     return false;
   }
+  m_mount.release();
   return m_impl->stop();
 }
 

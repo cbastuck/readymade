@@ -27,7 +27,7 @@ same document runs either way; what differs is who provisions its runtimes:
 | Board runs as | Owner | Its runtimes | The browser's role |
 |---|---|---|---|
 | Playground / Readymade | this browser | provisioned by it, over REST | owner |
-| Deployed | a coordinator | provisioned by it, kept alive with nobody watching | viewer, over the bridge |
+| Deployed | a coordinator | built by it over connections their runtime servers opened, kept alive with nobody watching | viewer, over the bridge |
 
 Moving between them is **deploying**. See the **Coordinator** concept
 (`concepts/coordinator.md`) for the role itself; this page is what happens when
@@ -37,7 +37,8 @@ it moves to a server.
 
 ## Deploying, in order
 
-The order is the whole trick, on both sides.
+The order is the whole trick, on both sides. Everything that can fail is done
+before the coordinator is asked to take the board.
 
 > **Warning — unit assets are not deployed:** Deployment carries only the
 > top-level board's assets. A runtime contributed by a unit receives none of
@@ -46,18 +47,98 @@ The order is the whole trick, on both sides.
 
 ### Browser side — `hkp-frontend/src/core/deploy.ts`
 
-`DeployMenu` (desktop) or `DeployBoardSheet` (mobile) calls `deployBoard()`,
-which:
+The rocket in the toolbar opens `DeployDialog` (desktop) or `DeployBoardSheet`
+(mobile); deploying calls `deployBoard()`, which:
 
 1. serializes the board,
-2. calls `handOverRuntimes()` — **before** registering,
-3. `POST /coordinator/users/<sub>/boards`.
+2. runs the **preflight** — below — and stops here if a runtime would not come
+   up,
+3. makes the **introduction**: asks the coordinator for a ticket per remote
+   runtime and tells each runtime's server to connect to the coordinator with
+   it — and stops here if one cannot,
+4. `POST /coordinator/users/<sub>/boards`, and reports what came back: a board
+   the coordinator took but could not fully start is said to be exactly that,
+   not "running".
 
-Step 2 comes first because both sides use the board's own runtime ids. From the
-moment the coordinator provisions, those runtimes are its own, and this
-browser's unmount cleanup would otherwise `DELETE` a board that is now deployed.
-Reversed, a navigation landing in between deletes what was just deployed. Pinned
-by `core/tests/deploy.test.ts` and `core/tests/deploy-handover.test.tsx`.
+A deploy either goes through or changes nothing. From the first ticket to the
+board being registered, a failure is **taken back**
+(`DELETE /coordinator/users/<sub>/boards/<board>/tickets`): the tickets asked
+for are given up and a runtime server left waiting with one is let go. A board
+that was already running keeps the servers and the tickets it had
+(→ `concepts/remotes.md`, *What a ticket is*).
+
+The browser gives nothing up. Both sides use the board's own runtime ids, on
+the same runtime server, and still hold different runtimes: what a coordinator
+builds for a board lives in that board's own **space** on the server, apart
+from what the server's clients create (below). The runtimes this browser built
+stay its own and go when it leaves, as they always did. Pinned by
+`core/tests/deploy.test.ts` and `core/tests/board-unmount.test.tsx`.
+
+### A board's runtimes on a runtime server
+
+A runtime id is unique within a space, and a runtime server keeps two kinds:
+
+| Space | Holds | Reached by |
+|---|---|---|
+| the tenant's own | what its clients create with `POST /runtimes` | the REST api and the runtime's socket |
+| one per deployed board | what a coordinator builds over a link, keyed by tenant, board and runtime id | that link, and nothing else |
+
+So two deployed boards that both call a runtime `node` each have their own on
+one server, and opening either board in the playground — which creates a
+runtime under that same id, and deletes it on leaving — touches neither. A
+board's runtimes are not in `GET /runtimes`; `GET /coordinator-links` lists
+them, each with whether it is `running`. `DELETE /runtimes` removes what
+clients created and leaves boards alone.
+
+Mount addresses do not change with the space: they are derived from the
+tenant, the board, the runtime and the mount's name, so a board played in the
+playground and the same board deployed derive the same address. A runtime
+server keeps every claim to an address and lets one answer: **the deployed
+board's**, whoever claimed last. Opening a deployed board in the playground
+therefore does not take its endpoint, and leaving does not take the endpoint
+away; the playground's copy answers only where no deployed board claims the
+address (`concepts/mounts.md`).
+
+`hkp-node/src/runtime.ts` (`boardSpace`), `hkp-python/src/hkp/runtime.py`
+(`board_space`), `hkp-rt/lib/include/app.h` (`RuntimeConfiguration::space`).
+
+### Preflight — `hkp-frontend/src/core/deployPreflight.ts`
+
+Past registering a problem can only be reported, not avoided. So everything
+knowable beforehand is asked beforehand, from the browser — the one party that
+knows this person's runtime servers and can reach them — and answered **per
+runtime**. It is also where a board's `remote` becomes an address
+(→ `concepts/remotes.md`); the coordinator is told none.
+
+| Finding | Meaning | Stops the deploy |
+|---|---|---|
+| `ready` | its server is running, accepted this person, has every service the board uses there, and can connect to a coordinator | |
+| `transient` | a browser runtime — run by whichever browser has the board open | |
+| `invalid` | it says where it runs more than once (`url` *and* `remote`, say) | yes |
+| `unresolved` | the remote it names is not one this client knows | yes |
+| `unreachable` | its server did not answer | yes |
+| `refused` | its server answered `401`/`403` | yes |
+| `missing-services` | its server's registry lacks services the board uses, which are listed | yes |
+| `cannot-join` | its server cannot connect to a coordinator (the phone apps' embedded runtime, or a server that predates links) | yes |
+| `outdated` | its server can connect to a coordinator but does not keep a board's runtimes apart from a client's (it does not report `boardRuntimes`): the deployed board would stop when the client that deployed it leaves | yes |
+| `unsupported` | a kind of runtime a coordinator does not run (GraphQL) | |
+
+Every server answer comes from one `GET <server>/runtimes`, which already
+returns the server's kind, registry and whether it can join. Only a runtime's
+own pipeline is compared; what a service nests in its state is not walked. The
+desktop dialog shows each finding before anything is deployed, names the
+remote a name resolved to, and offers **Check again**; the
+mobile sheet reports what stopped a deploy as a toast.
+
+### The introduction
+
+A coordinator never dials a runtime server — each one connects to it
+(→ `concepts/remotes.md`). The browser is the only party with a session on both
+sides, so it introduces them: a **ticket** from the coordinator
+(`POST …/boards/<board>/tickets`), handed to the runtime server
+(`POST <server>/coordinator-links`) together with the values for the secret
+references that runtime's services hold. The runtime server connects to
+`/coordinator/join` with the ticket and keeps it to reconnect with.
 
 ### Coordinator side — `hkp-node/src/coordinator/`
 
@@ -68,37 +149,35 @@ by `core/tests/deploy.test.ts` and `core/tests/deploy-handover.test.tsx`.
 2. **`BoardCoordinator.registerBoard()`** — serialized per `(user, board)`
    through a promise map, so two registrations cannot interleave: registering
    replaces a board's session, and replacing it destroys the old one, which
-   hands back the runtimes it had provisioned. It lifts connected browser
-   bridges out of the old session (`takeBridges()`), awaits `destroy()`, starts
-   a new `BoardSession`, and re-attaches the bridges — so a watching browser
-   sees no disconnect.
-3. **Per remote runtime — `BoardSession.provision()`:**
-   - `assertRuntimeUrlAllowed(url)` — SSRF guard. Board configs are untrusted
-     (shared, imported), so blocked targets are refused before any request
-     leaves the process (`coordinator/urlGuard.ts`).
-   - `POST /runtimes` with `garbageCollected: false`, authenticated with the
-     **user's forwarded JWT**. Always a POST: registering a board is a deploy,
-     so it creates-or-replaces. The flag is what makes that replacement safe —
-     the browser's dying socket cannot reap the coordinator's fresh runtime.
-   - `POST /runtimes/:id/session-token` with the same JWT — see below.
-   - open the coordinator's **own** WebSocket to the returned `outputUrl`,
-     authenticated with that session token, after validating the URL again in
-     case a hostile target tried to redirect it somewhere blocked.
-4. **Mounts, once every runtime exists** — `collectMountAddresses()` reads each
-   runtime's services and records what they published in `__hkpMount`;
-   `publishMountAddresses()` configures the consumers. Two passes, because a
-   service can point at a mount on a runtime provisioned later. The board keeps
-   its `hkp-mount://` references: an address is only true of one run.
+   releases the runtimes it had built. It lifts connected browser bridges out of
+   the old session (`takeBridges()`), awaits `destroy()`, revokes the tickets of
+   any runtime the board no longer has, starts a new `BoardSession`, and
+   re-attaches the bridges — so a watching browser sees no disconnect.
+3. **Per remote runtime — `BoardSession.bringUp()`**, over the connection its
+   runtime server opened (`coordinator/participantProtocol.ts`):
+   - `provision` — the runtime is built from the board's description of it, as
+     the user who introduced the link, with `garbageCollected: false`. It
+     replaces anything under that id, which is what makes a deploy safe: the
+     browser's dying socket cannot reap the coordinator's fresh runtime.
+   - the runtime's results, notifications and log entries arrive on the same
+     connection from then on, and the coordinator drives the runtime over it.
+   - a runtime whose server is **not connected** is not waited for. The board
+     says which one is missing and builds it when that server connects.
+4. **Mounts, once every runtime exists** — the addresses each runtime's
+   services published in `__hkpMount` are recorded as it is built;
+   `publishMountAddresses()` configures the consumers. A second pass, because a
+   service can point at a mount on a runtime built later. The board keeps its
+   `hkp-mount://` references: an address is only true of one run.
 
-### Why session tokens exist
+### Why tickets, and not the user's token
 
-The coordinator's long-lived calls — its result socket, teardown, configuring a
-service an hour later — must keep working after the user's id token expires. The
-session token is **the user's permissions, delegated**: the runtime server
-returns an opaque random string bound to `{sub, runtimeId}` and resolves it back
-to their `sub`, so there is no service superuser. It lives in that server's
-memory only; if the process dies, the coordinator must re-provision, which needs
-a live user JWT.
+The coordinator's dealings with a runtime — driving it, configuring a service
+an hour later, rebuilding it after its server restarted — must keep working
+after the user's id token expires, and with nobody present. A ticket is **the
+user's permissions for one runtime, delegated to a machine**: it resolves to
+their `sub` on the runtime server, so there is no service superuser, and it
+speaks for nothing but that runtime of that board. Because the runtime server
+keeps it, a restart on either side is recovered from without the user.
 
 ---
 
@@ -125,10 +204,60 @@ or forking it, below.
 ### Browser runtimes in a cloud board
 
 A coordinator cannot host a browser runtime, so it routes results into one over
-the bridge (`routeResult()` → `processRuntime` → `result-from-browser`). The
-consequence is worth stating plainly: **a cloud board containing a browser
-runtime cannot run headless.** That link of the chain stalls with no viewer
-attached.
+the bridge (`routeResult()` → `processRuntime` → `result-from-browser`). A
+browser is a **transient** participant: with no viewer attached, data arriving
+for that runtime stops there — as it would at a service that returned `null` —
+and the board stays `running`. The consequence is worth stating plainly: **the
+part of a cloud board downstream of a browser runtime does not run headless.**
+
+### Bytes between runtimes
+
+Both of a coordinator's connections — the link to a runtime server and the
+bridge to a browser — carry JSON as text frames. A value that holds bytes
+would not survive that: as text, a byte array arrives as an object of numbered
+keys. So what one runtime hands the next travels as a **binary frame** when it
+is not JSON:
+
+```
+[ 4 bytes: header length, big-endian ][ header: UTF-8 JSON ][ payload ]
+```
+
+The header is the message that would have been sent as text —
+`{ "type": "result" }`, `{ "type": "processRuntime", … }` — with the value left
+out and a `binary` field saying what the payload is:
+
+| `binary.kind` | Payload | Also in the header |
+|---|---|---|
+| `bytes` | the value | — |
+| `floatRingBuffer` | little-endian float32 samples | `id`, `ts` |
+| `mixed` | the bytes of an object's `binary` field | `json`: the rest of the object |
+
+`mixed` is what an HTTP response or a file read is on every runtime: bytes with
+something said about them.
+
+**The coordinator does not read the payload.** It parses the header, keeps the
+bytes as they came, and writes them out under the next runtime's header. It
+cannot corrupt what it does not interpret, and a new shape is a change to the
+runtimes that produce and consume it, not to the coordinator.
+
+Each runtime maps the shapes onto its own types. hkp-node has no ring buffer,
+so one passing through it is held as
+`{ type: "FloatRingBuffer", id, ts, binary }` and leaves as a ring buffer again
+if nothing touched it.
+
+Only a runtime's output and the next runtime's input travel this way. A
+notification or a log entry that mentions bytes describes them — a size, a
+type — because those are for a person to read.
+
+**No ceiling is built in.** What a board passes between runtimes in the
+playground it may pass when deployed. A coordinator's operator may set one —
+`HKP_COORDINATOR_MAX_FRAME_BYTES` — because a coordinator is shared and holds a
+frame once per attached viewer. A frame over it is dropped and recorded in the
+board's log as `frame-dropped`; the connection, and the board, stay up.
+
+This is not YAS, which is what a runtime server and a browser speak when the
+browser drives the runtime itself. The link already has
+a JSON header to say what the bytes are, and YAS has no encoding for `mixed`.
 
 ---
 
@@ -136,23 +265,28 @@ attached.
 
 | Status | Meaning |
 |---|---|
-| `running` | the coordinator owns and holds this board's runtimes |
-| `stopped` | the coordinator still holds the **board** — its place in the list, its config — but not its runtimes |
-| `error` | something failed to come up; `errors[]` says what |
+| `running` | every runtime the board cannot run without is built, on a runtime server that is connected |
+| `stopped` | the coordinator still holds the **board** — its place in the list, its config, its tickets — but not its runtimes |
+| `error` | a required runtime's server is not connected, or the runtime could not be built; `errors[]` names it |
 
-**Stopping is not deleting.** `BoardSession.stop()` tears the runtimes down and
-clears everything that described that run — sockets, mount addresses, service
-states, registries — while the board keeps its config. That is what editing
-does: the browser takes the runtimes over, so the coordinator must not still
-hold them, but a board being edited must not be a board that can be lost.
+**`error` is not terminal.** It is what a board is while a runtime server is
+away, and it ends when that server reconnects: the runtime is picked back up if
+it is still running there, and rebuilt from the board's config if it is not. An
+attached browser is told as it happens — status and reasons travel together in
+the bridge snapshot. A browser runtime with nobody attached is **not** an error
+(→ *required and transient*, `concepts/remotes.md`).
 
-Residue is reported rather than swallowed: a runtime the coordinator could not
-release is very likely still running, so those are collected into `errors[]`
-while the status stays `stopped`. A `404` is not one of them — it means there is
-no such runtime, which is what was asked for. The three runtime servers disagree
-about saying so (hkp-node answers `200` whether or not it held one; hkp-python
-and hkp-rt answer `404`), so anything treating every non-2xx as failure will cry
-wolf on two of the three.
+**Stopping is not deleting.** `BoardSession.stop()` releases the runtimes and
+clears everything that described that run — mount addresses, service states,
+registries — while the board keeps its config. That is what editing does: the
+browser takes the runtimes over, so the coordinator must not still hold them,
+but a board being edited must not be a board that can be lost. The runtime
+servers stay connected, so **Start needs no new tickets**.
+
+Residue is reported rather than swallowed: a runtime that could not be released
+— its server was not connected — is very likely still running, so those are
+collected into `errors[]` while the status stays `stopped`. It is released when
+that server next connects.
 
 **Starting a stopped board is registering its config again** — there is no
 separate start path.
@@ -165,11 +299,11 @@ Enabled with `COORDINATOR_ENABLED=true`. Boards are one JSON file each under
 `HKP_COORDINATOR_DATA_DIR` (default `~/.hkp/coordinator/boards`); setting that
 to the empty string keeps them in memory instead.
 
-It persists `userId`, `boardName`, `createdAt` and `config` — **the board, not
-the run**. Provisioned runtimes, live service state, registries, mount
-addresses, session tokens and status each describe one run against processes
-that may not exist on load, so writing them down would persist claims that are
-false when read back.
+It persists `userId`, `boardName`, `createdAt`, `config`, whether the board was
+**stopped**, and the **hashes of its tickets** — the board, not the run. Built
+runtimes, live service state, registries, mount addresses and status each
+describe one run against processes that may not exist on load, so writing them
+down would persist claims that are false when read back.
 
 - **Paths are hashed**, never built from names:
   `<sha256(userId)>/<sha256(boardName)>.json`. Both names come off the wire, so a
@@ -179,30 +313,31 @@ false when read back.
 - **Writes are temp-then-rename**, so a crash leaves the previous board intact.
   Files are `0600`, directories `0700`: a board config carries service state,
   which can carry credentials.
-- **A restored board is stopped**, and can be nothing else — provisioning and
-  minting a session token both need the user's JWT, and at boot there is no user.
-  Starting it is the owner's move.
+- **Only ticket hashes are stored.** What is on disk recognises a ticket and
+  cannot present one.
+- **A restored board runs again by itself.** One that was running comes back in
+  `error`, naming every runtime it is waiting for, and builds each as its
+  runtime server reconnects with the ticket it kept. One that was stopped stays
+  stopped. A file written before tickets existed comes back stopped — nothing
+  holds a ticket for it, so nothing could reconnect.
 - **A corrupt or newer-format file is skipped and logged**, never fatal.
 - **A failing save does not fail a deploy**: the board runs, and only its
   survival of a restart is in doubt.
 
-### The orphan window
+### While the coordinator is away
 
-Runtimes are provisioned to persist, so they outlive the coordinator that made
-them. After a restart they are still running with nothing tracking them —
-holding their mounts, keeping their state. Pressing **Start** re-registers the
-same config under the same runtime ids, and `POST /runtimes` replaces, so the
-orphan is destroyed and rebuilt. A board that is never started again keeps its
-orphan; nothing sweeps for them. `hkp-node/tests/coordinator-restart.test.ts`
-covers this end to end.
+Runtimes are built to persist, so they outlive the coordinator that built them:
+a webhook arriving while it restarts is still answered. Their runtime servers
+keep trying to reconnect, and when the coordinator is back the board's runtimes
+are rebuilt from its config under the same ids — one runtime, not two — at the
+mount addresses they had. `hkp-node/tests/coordinator-restart.test.ts` covers
+this end to end, in both directions.
 
 ### One directory, one coordinator
 
 Not enforced, and worth knowing: two coordinator processes pointed at the same
-data directory both restore every board and both believe they own them. They
-would provision the same runtime ids against the same runtime servers and
-replace each other's runtimes, which looks like runtimes randomly restarting.
-There is no lock.
+data directory both restore every board and both believe they own them, and
+both would accept the same tickets. There is no lock.
 
 ---
 
@@ -214,7 +349,8 @@ JSONL file per board under `HKP_COORDINATOR_LOG_DIR` (default: beside the
 boards), size-bounded and rolled, with the board store's per-user owner-only
 posture because entries carry board data (`coordinator/logStore.ts`).
 
-- Entries from remote runtimes arrive on their result sockets.
+- Entries from remote runtimes arrive on the connections their runtime servers
+  opened.
 - Entries from a browser runtime arrive over the bridge as `log` messages —
   that runtime has no other route into the board's log.
 - Read back with `GET /coordinator/users/:username/boards/:boardName/runs`.
@@ -284,19 +420,24 @@ registers only when asked.
 
 ## When touching this area
 
-- **Ownership before anything.** Ask who provisioned the runtime you are about
-  to change or delete. Runtime ids are the board's, so "it has the right id" is
-  not evidence that it is yours.
-- **Ids are per user, not global.** The stable ids boards ship (`node`,
-  `chat-node`) do not collide between people — and *do* collide between a
-  browser and a coordinator acting for the same person. That collision is the
-  mechanism, not a bug.
-- **Cloud boards with browser runtimes cannot run headless.** The coordinator
-  drives those over the bridge, so that link stalls with no viewer.
-- **Reconnection is a real state.** A dropped bridge re-snapshots; it does not
-  resume blindly. Snapshots carry a `seq` for gap detection.
-- **Mount references, not addresses, are what a board stores.** Resolution is
-  lazy and belongs to the coordinator — only it sees the whole board.
+- **Ownership before anything.** Ask who built the runtime you are about to
+  change or delete. Runtime ids are the board's, so "it has the right id" is not
+  evidence that it is yours.
+- **Ids are per user for clients, per board for coordinators.** The stable ids
+  boards ship (`node`, `chat-node`) do not collide between people, between two
+  deployed boards of one person, or between a deployed board and the same
+  board open in a browser. They *do* collide between two browsers of one
+  person playing boards that share an id against one server.
+- **The coordinator dials nothing.** If a change needs the coordinator to reach
+  a runtime server, it needs an operation on the connection that server opened
+  (`participantProtocol.ts`) — implemented on every runtime server that joins.
+- **A missing participant is not one thing.** A remote runtime away is an
+  error that names it; a browser runtime away is normal operation.
+- **Reconnection is a real state**, on both kinds of connection. A dropped
+  bridge re-snapshots; a runtime server that returns is picked up or rebuilt.
+- **Mount references, not addresses, are what a board stores** — and names, not
+  addresses, for its runtime servers. Resolving a mount belongs to the
+  coordinator; resolving a remote belongs to the person's client.
 
 ---
 
@@ -304,7 +445,8 @@ registers only when asked.
 
 | Concern | Where |
 |---|---|
-| Deploy (browser side) | `hkp-frontend/src/core/deploy.ts`, `components/Toolbar/DeployMenu.tsx`, `views/playground/mobile/DeployBoardSheet.tsx` |
+| Deploy (browser side) | `hkp-frontend/src/core/deploy.ts`, `core/deployPreflight.ts`, `components/Toolbar/DeployMenu.tsx`, `DeployDialog.tsx`, `views/playground/mobile/DeployBoardSheet.tsx` |
+| Naming a remote | `hkp-frontend/src/runtime/board/remote.ts` |
 | Coordinator REST client | `hkp-frontend/src/views/cloud/coordinatorClient.ts` |
 | Attached view | `hkp-frontend/src/views/cloud/index.tsx`, `useCoordinatorBridge.ts`, `coordinatorSnapshot.ts`, `bridgeRuntimeApi.ts` |
 | Mobile | `hkp-frontend/src/views/cloud/mobile/MobileCloudBoards.tsx` |
@@ -314,8 +456,10 @@ registers only when asked.
 | HTTP API | `hkp-node/src/coordinator/router.ts` (`/coordinator/users/:username/boards…`) |
 | Bridge socket | `hkp-node/src/index.ts` (`/coordinator/bridge`), `coordinator/bridgeProtocol.ts` |
 | Board + log persistence | `hkp-node/src/coordinator/fileBoardStore.ts`, `logStore.ts` |
-| SSRF guard | `hkp-node/src/coordinator/urlGuard.ts` |
-| Tests | `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts`, `board-log.test.ts`; `hkp-frontend/src/views/cloud/tests/`, `core/tests/deploy*.test.*` |
+| Tickets, joining, the participant protocol | `hkp-node/src/coordinator/participants.ts`, `join.ts`, `participantProtocol.ts` |
+| Bytes between runtimes | `hkp-node/src/coordinator/binaryFrame.ts`, `hkp-python/src/hkp/binary_frame.py`, `hkp-rt/lib/src/binary_frame.h`, `hkp-frontend/src/views/cloud/bridgeBinary.ts` |
+| A runtime server's link to a coordinator | `hkp-node/src/coordinatorLinks.ts`, `hkp-python/src/hkp/coordinator_links.py`, `hkp-rt/lib/src/coordinator_links.cpp` |
+| Tests | `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts`, `board-log.test.ts`; `hkp-python/tests/test_coordinator_links.py`; `hkp-frontend/src/views/cloud/tests/`, `core/tests/deploy*.test.*`; `e2e/tests/cloud/` |
 
 ---
 
@@ -325,19 +469,23 @@ registers only when asked.
   top-level board's asset descriptors. A runtime contributed by a unit receives
   none of that unit's assets, so its `hkp-asset://…` references will not resolve
   in the deployed board. See [Assets: Units and deploying](./assets.md#units-and-deploying).
-- **Resuming is not built.** Registering always provisions; a coordinator never
-  attaches to runtimes already running under those ids. Start on a stopped board
-  is a re-deploy.
+- **A phone's embedded runtime cannot join a coordinator**, by decision: the
+  app is suspended at will. The preflight stops a board that places a runtime
+  there.
+- **Credentials do not survive a runtime server restart.** The ticket does; the
+  values handed over with the introduction are held in memory. The board says
+  which are missing, and deploying again supplies them.
 - **No lock on the data directory** (see above).
-- **Orphaned runtimes** after a coordinator restart are only reclaimed by
-  starting the board again.
-- **A board with a browser runtime cannot run headless.**
+- **The part of a board downstream of a browser runtime does not run headless.**
+- **The mobile deploy sheet has no per-runtime dialog**, and the mobile cloud
+  view reads a board's reasons from the listing rather than live.
 - **Deploy is one-way per board**: the way back is a fork, which is a *copy* —
   the deployed board keeps running until someone stops it.
 
 ---
 
-See also: **Coordinator** (`concepts/coordinator.md`), **Mounts**
-(`concepts/mounts.md`) and **Logging** (`concepts/logging.md`).
+See also: **Coordinator** (`concepts/coordinator.md`), **Remotes**
+(`concepts/remotes.md`), **Mounts** (`concepts/mounts.md`) and **Logging**
+(`concepts/logging.md`).
 `plans/TODO-CLOUD-COORDINATOR.md` records why it is built this way and what is
 still open.

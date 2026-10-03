@@ -38,7 +38,7 @@ deployed:
 | Board runs as | Coordinator | Hosts browser runtimes | Provisions remote runtimes |
 |---|---|---|---|
 | Playground / Readymade | the browser | the browser | the browser, over REST |
-| Cloud board | hkp-node | a connected browser | hkp-node |
+| Cloud board | hkp-node | a connected browser | hkp-node, over connections their runtime servers opened to it |
 
 Both rows are the **same board**. What changes is who owns it. A board moves
 from the first row to the second by being **deployed**, and from that moment the
@@ -167,18 +167,14 @@ payload — never inferred from who is connected:
 | `true` | reap when the last client socket closes | a browser — its runtimes should not outlive the tab |
 | absent / `false` | persist until an explicit `DELETE` | a coordinator, a config file, a script |
 
-Deploying is the handover, and **the order is the whole trick**
-(`hkp-frontend/src/core/deploy.ts`): `handOverRuntimes()` runs *before* the
-register request, because both sides use the board's own runtime ids. From the
-moment the coordinator provisions, those runtimes are its own — and the browser's
-unmount cleanup would otherwise `DELETE` a board that is now deployed. Pinned by
-`core/tests/deploy.test.ts` and `core/tests/deploy-handover.test.tsx`.
-
-That id collision is the mechanism, not a bug: hkp-node namespaces runtimes by
-the authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) do
-not collide between people — and *do* collide between a browser and a
-coordinator acting for the same person, which is exactly how a deploy replaces
-what the browser had.
+Deploying is an introduction followed by a registration
+(`hkp-frontend/src/core/deploy.ts`), and the browser gives nothing up for it.
+Both sides use the board's own runtime ids and still hold different runtimes:
+a runtime server keeps what a coordinator builds for a board in that board's
+own space, apart from what its clients create. The browser's runtimes stay its
+own and go when it leaves. Pinned by `core/tests/deploy.test.ts` and
+`core/tests/board-unmount.test.tsx`; the spaces are described in
+`concepts/cloud-boards.md`.
 
 ---
 
@@ -188,20 +184,22 @@ Per board, in `BoardSession`:
 
 | Field | What it is |
 |---|---|
-| `provisioned` | the runtimes this session created, with their result-socket URLs |
-| `sockets` | one WebSocket per remote runtime, carrying results and notifications |
-| `sessionTokens` | per-runtime delegated tokens for calls that outlive the user's JWT |
+| `participants` | the runtime servers connected for this board, one connection per remote runtime — they connected in; the coordinator dials nothing (→ `concepts/remotes.md`) |
+| `built`, `live` | the runtimes this session has built, and those whose runtime server is connected right now |
+| `runtimeErrors` | why each runtime is not as the board wants it — what `error` names |
 | `mountAddresses` | what each service published, keyed `runtimeId/serviceUuid` |
 | `serviceStates`, `registries` | the board as the coordinator knows it — what an attached browser renders |
 | `bridges` | every browser currently watching, each with the runtime ids it hosts |
 | `seq` | ordering, so a browser can tell it missed an update |
 
 **It persists the board, not the run.** `hkp-node/src/coordinator/fileBoardStore.ts`
-writes `userId`, `boardName`, `createdAt` and `config`, and nothing else:
-provisioned runtimes, live state, registries, mount addresses, session tokens
-and status each describe one run against processes that may not exist on load.
-A restored board is therefore **stopped** — provisioning needs the user's JWT,
-and at boot there is no user.
+writes `userId`, `boardName`, `createdAt`, `config`, whether the board was
+stopped, and the hashes of its tickets — and nothing else: built runtimes, live
+state, registries, mount addresses and status each describe one run against
+processes that may not exist on load. A restored board that was running
+therefore comes back **waiting** — in `error`, naming each runtime — and builds
+them as their runtime servers reconnect with the tickets they kept. No user is
+needed for that, which is what a ticket is for.
 
 ---
 
@@ -258,32 +256,28 @@ under `hkp-coordinators` (`restoreCoordinators()` / `storeCoordinators()`).
 | Owned-vs-given decision | `hkp-frontend/src/BoardContext.tsx`, `hkp-frontend/src/core/boardContextTypes.ts` (`coordinator?` prop) |
 | Handing it to services | `hkp-frontend/src/types.ts` (`AppInstance.coordinator`), `runtime/browser/BrowserRuntimeApp.ts` |
 | Pushing addresses to remote runtimes | `hkp-frontend/src/core/mountPublication.ts` |
-| Deploying (handover) | `hkp-frontend/src/core/deploy.ts`, `components/Toolbar/DeployMenu.tsx` |
+| Deploying | `hkp-frontend/src/core/deploy.ts`, `components/Toolbar/DeployMenu.tsx` |
 | Attached mode | `hkp-frontend/src/views/cloud/` — `index.tsx`, `useCoordinatorBridge.ts`, `coordinatorSnapshot.ts`, `bridgeRuntimeApi.ts` |
 | Server-side role | `hkp-node/src/coordinator/coordinator.ts` (`BoardCoordinator`) |
 | One board being coordinated | `hkp-node/src/coordinator/session.ts` (`BoardSession`) |
 | HTTP API | `hkp-node/src/coordinator/router.ts` |
 | Bridge socket | `hkp-node/src/index.ts`, `hkp-node/src/coordinator/bridgeProtocol.ts` |
 | Persistence | `hkp-node/src/coordinator/boardStore.ts`, `fileBoardStore.ts` |
-| SSRF guard on board-supplied URLs | `hkp-node/src/coordinator/urlGuard.ts` |
-| Tests that pin the rules | `hkp-frontend/src/core/tests/coordinator-ownership.test.tsx`, `deploy-handover.test.tsx`; `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts` |
+| Tickets and the runtime servers connected with them | `hkp-node/src/coordinator/participants.ts`, `join.ts`, `participantProtocol.ts` |
+| Tests that pin the rules | `hkp-frontend/src/core/tests/coordinator-ownership.test.tsx`, `board-unmount.test.tsx`; `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts` |
 
 ---
 
 ## Known gaps
 
-- **Resuming is not built.** Registering a board always provisions; a coordinator
-  never attaches to runtimes that are already running under those ids.
 - **Two processes, one data directory** both restore every board and both believe
   they own them. There is no lock — keep a data directory to one coordinator.
-- **Orphans after a restart.** Runtimes provisioned to persist outlive the
-  coordinator that made them; nothing sweeps for them, and only re-registering
-  the same ids replaces them.
 - **An absent coordinator is indistinguishable from an unresolved lookup.** Both
   are "nothing yet", so a host that forgot to pass one looks like a slow board.
 
 ---
 
 See also: **Mounts** (`concepts/mounts.md`) for the questions that need a
-coordinator most, and **Cloud boards** (`concepts/cloud-boards.md`) for what
-happens when the role moves to a server.
+coordinator most, **Cloud boards** (`concepts/cloud-boards.md`) for what
+happens when the role moves to a server, and **Remotes**
+(`concepts/remotes.md`) for how a board's runtime servers connect to it.

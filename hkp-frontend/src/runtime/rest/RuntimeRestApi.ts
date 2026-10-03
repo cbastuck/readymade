@@ -92,6 +92,120 @@ function serverKindOf(body: unknown): string | undefined {
   return typeof server === "string" && server ? server : undefined;
 }
 
+/** What a runtime server says about itself, or why it could not be asked. */
+export type RuntimeServerReport =
+  | {
+      status: "ok";
+      /** "node", "python", "c++" — as the server names itself. */
+      kind?: string;
+      /** Absent when the server reports none; then nothing can be checked. */
+      registry?: ServiceClass[];
+      /** Whether it can connect to a coordinator when introduced to one. */
+      coordinatorLinks: boolean;
+      /**
+       * Whether it keeps a deployed board's runtimes apart from the ones a
+       * client creates. One that does not shares them under the board's ids,
+       * and this client deleting its own would delete the deployed board's.
+       */
+      boardRuntimes: boolean;
+    }
+  | { status: "refused"; detail: string }
+  | { status: "unreachable"; detail?: string };
+
+/**
+ * Asks a runtime server what it is, as this person.
+ *
+ * `GET /runtimes` already says it all — the kind, the registry and what the
+ * server can do are properties of the build, reported beside the caller's own
+ * runtimes — so there is no separate route to ask, and no second auth path.
+ */
+export async function describeRuntimeServer(
+  url: string,
+  user: { idToken?: string } | null,
+): Promise<RuntimeServerReport> {
+  let res: Response;
+  try {
+    res = await fetch(`${url}/runtimes`, {
+      headers: user?.idToken ? { Authorization: `Bearer ${user.idToken}` } : {},
+    });
+  } catch (err) {
+    return {
+      status: "unreachable",
+      detail: err instanceof Error ? err.message : undefined,
+    };
+  }
+  if (res.status === 401 || res.status === 403) {
+    return { status: "refused", detail: `${res.status}` };
+  }
+  if (!res.ok) {
+    return { status: "unreachable", detail: `${res.status}` };
+  }
+  const body = (await res.json().catch(() => null)) as {
+    registry?: ServiceClass[];
+    coordinatorLinks?: unknown;
+    boardRuntimes?: unknown;
+  } | null;
+  return {
+    status: "ok",
+    kind: serverKindOf(body),
+    registry: Array.isArray(body?.registry) ? body.registry : undefined,
+    coordinatorLinks: body?.coordinatorLinks === true,
+    boardRuntimes: body?.boardRuntimes === true,
+  };
+}
+
+/**
+ * Introduces a runtime server to a coordinator, for one runtime of one board.
+ *
+ * The coordinator dials nothing, so somebody has to tell the runtime server
+ * where to connect — and this client is the one party with a session on both
+ * sides. It passes on the ticket the coordinator issued; the runtime server
+ * connects with it and keeps it to reconnect with.
+ *
+ * `secrets` are the values for the references that runtime's services carry.
+ * They go to the runtime server this person chose, from this person's vault,
+ * and not to the coordinator.
+ */
+export async function introduceRuntimeServer(
+  url: string,
+  user: { idToken?: string } | null,
+  introduction: {
+    coordinatorUrl: string;
+    ticket: string;
+    boardName: string;
+    runtimeId: string;
+    secrets?: Record<string, { value: string; audience?: string[] }>;
+  },
+): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${url}/coordinator-links`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(user?.idToken ? { Authorization: `Bearer ${user.idToken}` } : {}),
+      },
+      body: JSON.stringify(introduction),
+    });
+  } catch (err) {
+    throw new Error(
+      `its runtime server could not be reached (${err instanceof Error ? err.message : "no answer"})`,
+    );
+  }
+  if (res.ok) {
+    return;
+  }
+  if (res.status === 404 || res.status === 405) {
+    throw new Error("its runtime server cannot connect to a coordinator");
+  }
+  const body = (await res.json().catch(() => null)) as { error?: string } | null;
+  throw new Error(
+    body?.error
+      ? `its runtime server could not connect to the coordinator — ${body.error}`
+      : `its runtime server refused (${res.status})`,
+  );
+}
+
 function normalizeRegistry(registry: ServiceClass[]): ServiceClass[] {
   return registry.map((entry) => {
     if (entry.serviceId !== "sub-service") {
@@ -212,7 +326,7 @@ function isSameRuntime(
  * as unavailable by name, which is a better failure than a runtime holding a
  * credential nobody could account for.
  */
-async function secretsFor(
+export async function secretsFor(
   services: Array<{ state?: unknown }> | undefined,
   release: Omit<SecretRelease, "aliases">,
 ): Promise<Record<string, { value: string; audience?: string[] }>> {
@@ -823,6 +937,7 @@ async function createRuntimeRequest(
 }
 
 const api: RuntimeApi = {
+  resolvesAddress: true,
   addRuntime,
   removeRuntime,
   restoreRuntime,

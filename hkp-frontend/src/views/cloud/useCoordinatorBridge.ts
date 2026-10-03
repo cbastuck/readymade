@@ -6,6 +6,12 @@ import {
 } from "./coordinatorSnapshot";
 import { BoardContextState } from "../../BoardContext";
 import {
+  decodeBinaryFrame,
+  encodeBinaryFrame,
+  fromBinaryValue,
+  toBinaryValue,
+} from "./bridgeBinary";
+import {
   isRuntimeBrowserClassType,
   toCanonicalRuntimeClassType,
 } from "../../types";
@@ -122,6 +128,8 @@ export function useCoordinatorBridge(
     let intentionallyClosed = false;
 
     const ws = new WebSocket(withAccessToken(wsUrl, idToken));
+    // Input that holds bytes arrives as a binary frame; see bridgeBinary.
+    ws.binaryType = "arraybuffer";
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -143,10 +151,21 @@ export function useCoordinatorBridge(
         return;
       }
       let msg: BridgeInboundMessage;
-      try {
-        msg = JSON.parse(event.data as string);
-      } catch {
-        return;
+      if (event.data instanceof ArrayBuffer) {
+        const frame = decodeBinaryFrame(event.data);
+        if (!frame || frame.header.type !== "processRuntime") {
+          return;
+        }
+        msg = {
+          ...frame.header,
+          params: fromBinaryValue(frame.value),
+        } as BridgeInboundMessage;
+      } else {
+        try {
+          msg = JSON.parse(event.data as string);
+        } catch {
+          return;
+        }
       }
 
       // A service on a runtime we reach through the coordinator said something.
@@ -208,11 +227,17 @@ export function useCoordinatorBridge(
       api.processRuntime(scope, params, null, {
         requestId,
         onResolve: (result: unknown) => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(
-              JSON.stringify({ type: "result", requestId, data: result }),
-            );
+          if (ws.readyState !== WebSocket.OPEN) {
+            return;
           }
+          // Bytes go as a binary frame: as text they would arrive at the
+          // next runtime as an object of numbered keys.
+          const binary = toBinaryValue(result);
+          ws.send(
+            binary
+              ? encodeBinaryFrame({ type: "result", requestId }, binary)
+              : JSON.stringify({ type: "result", requestId, data: result }),
+          );
         },
       });
     };

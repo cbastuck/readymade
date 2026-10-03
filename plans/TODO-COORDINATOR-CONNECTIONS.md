@@ -1,9 +1,13 @@
 # Coordinator connections: participants connect in, nothing is dialled
 
-Status: concept only. Nothing here is built.
+Status: **built 2026-10-01** for hkp-node, hkp-python and the frontend. What the
+system now does is documented in `docs/content/concepts/remotes.md` and
+`docs/content/concepts/cloud-boards.md`; this file keeps the reasoning, the
+decisions taken while building, and what is still open — see the last three
+sections. hkp-rt cannot join a coordinator yet.
 
 Two halves, coupled by what deploy checks before it hands a board over: **how a
-board says which runtime server it wants** (a name, a requirement — which matters
+board says which runtime server it wants** (a name — which matters
 even with no coordinator in sight, as soon as a board is shared), and **how a
 board's participants connect to the coordinator that owns it**.
 
@@ -172,18 +176,10 @@ keeps (`ManageConnectionsContent`, `RemotesController`), at the moment they depl
 The coordinator resolves nothing: it knows participants by the tickets they present.
 A name in a deployed board is a label for people, not an address for machines.
 
-A runtime carries exactly **one** addressing mode, all of them authored:
+A runtime carries exactly **one** addressing mode, both authored:
 
 - `url` — an address the person wrote. Every board that exists today.
 - `remote` — a name, resolved by their client.
-- `requires` — an object describing what will do:
-
-```json
-{
-  "id": "py", "name": "Python", "type": "rest",
-  "requires": { "kind": "python" }
-}
-```
 
 **More than one is an error, not a preference.** No fallback, no precedence. A name
 resolves differently for each person, so anyone who can put a board in front of you
@@ -210,66 +206,26 @@ addresses and template variables so the receiving device gets concrete values
 and `remote` dropped — still exactly one mode. Baking stays an explicit act of
 export.
 
-### Saying what a runtime needs: kind, registry, versions, tags
+### Addressing by requirement — built, then withdrawn 2026-10-02
 
-A requirement is **not** relocation. A board asking for "any python" is its author
-declaring that this runtime is not bound to a particular machine; relocation was the
-system deciding that for a board which had said otherwise. Same outcome, opposite
-authority.
+`"requires": { "kind": "python" }` let a board say what would do and had the
+client take the first of its remotes of that kind. It was built on 2026-10-01
+and removed the next day, after being tried:
 
-Four layers, cheapest and most automatic first:
+- **Too little control over where a runtime ends up.** The answer depended on
+  which remotes a client kept and in what order — nothing the board's author or
+  the person opening it had decided about *this* board.
+- **That is a credentials problem, not only a surprise.** A runtime's secrets
+  are released to the server it lands on. A board that lets the client choose
+  can land a runtime asking for secrets on a server nobody meant it for.
+  Consent keyed on the resolved address does not rescue this: the person is
+  asked about an address they did not pick.
 
-1. **Kind** — `node | python | cpp | go`, authored. It must be authored even though
-   the registry check is stricter: service ids are deliberately shared across
-   runtimes (`text-generation` exists in python, node and cpp), so the registry says
-   a server *has* the service but never which implementation was meant.
-2. **Registry** — derived from the board's own services, authored by nobody. The
-   strongest check available, and the one that replaces today's mid-provision
-   `Unknown serviceId` 500 (`hkp-node/src/runtime.ts:932`).
-3. **Service version and capabilities** — already on the wire: `ServiceRegistryEntry`
-   is `{ serviceId, serviceName, version?, capabilities? }` (`hkp-node/src/types.ts`).
-   A board pins these only where it depends on them.
-4. **Remote tags** — labels for what is not a service property at all: this machine
-   has a GPU, sits on a given LAN, holds a licence. Self-declared by the runtime
-   server, the same answer for everyone.
-
-**Version and tag are different matchers and must not share a syntax.** A
-docker-style `python:v2.2` is an opaque string, so it stops matching the moment the
-operator upgrades to v2.3 — which satisfies it. A **version** wants ordering ("at
-least 2.2"); a **tag** wants set containment. Folded into one colon-separated string,
-the version silently inherits exact-match semantics and every upgrade breaks boards.
-
-**A tag describes a machine, not who may use it.** It decides where a board goes,
-never what it may do: the runtime server goes on enforcing at the point of use. That
-is what makes self-declaration safe — the worst a stale or dishonest tag can do is
-send a board to a server that then refuses it.
-
-**Deliberately not per user — decided 2026-09-23.** Tags could have varied by tier or
-status. Rejected as ahead of demand and misleading about where the work is: a
-tier-dependent answer only means anything if the server enforces it at the point of
-use, so the honest version of that feature is enforcement across three runtime
-servers, with the tag as its small visible part.
-
-**Two rules for requirement matching:**
-
-- **Ambiguity resolves by the client's own order, and the deploy dialog names the
-  remote it chose.** Refusing when several candidates match would make a person with
-  two python servers unable to run "any python" boards at all.
-- **A requirement never selects a machine-bound remote.** A runtime that exists
-  because of the machine it runs on is always addressed by name.
-
-### Where kind and tags come from: the runtime server says
-
-Most of it is already on the wire. `GET /runtimes` returns
-`{ runtimes, registry, server: <kind> }` on all three runtime servers
-(`hkp-node/src/server.ts`, `hkp-python/src/hkp/server.py`,
-`hkp-rt/lib/src/http/server.cpp`). Kind is already self-declared, and so is the
-registry — a build property, as that response's own comment says.
-
-**Tags extend that response rather than getting a route of their own.** No new
-surface, no second auth path, and the shape already exists in all three runtimes.
-Read them when a candidate is being chosen, not when a server was first added: a
-machine gains a GPU without anyone re-configuring anything.
+So a runtime lands only where the board or the person **named**. With it went
+the plans that hung off it — tags, version pinning, the "machine-bound remote"
+marker — none of which had a board that needed them. What stays is the
+**registry check** in the preflight: derived from the board's own services,
+authored by nobody, and it chooses nothing.
 
 ### Preflight, and failing loudly
 
@@ -279,8 +235,8 @@ deploy dialog says per runtime which of these it is:
 - resolved to a remote, which is running and accepted the person
 - resolved, but the server is not running or refused them
 - did not resolve on this client — naming the name
-- resolved to a remote of the wrong kind, or one whose registry does not cover the
-  board's services — listing what is missing
+- resolved to a remote whose registry does not cover the board's services —
+  listing what is missing
 
 After handover, a **required** participant that never connects, or later drops, puts
 the board in `error` **naming it**. `error` is not terminal: when the machine returns
@@ -321,46 +277,173 @@ nobody present. What changes is **who owns the box**.
 
 ---
 
-## What this retires
+## What this retired
 
-- `coordinator/urlGuard.ts` — its entire job is validating addresses the coordinator
-  is about to dial. Once nothing is dialled, the allowlist, the private-range policy
-  and the noted DNS-rebinding window go with it.
-- `HKP_RUNTIME_URL_ALLOWLIST` and `HKP_ALLOW_PRIVATE_RUNTIMES` as deployment concerns.
-- The ordering trick in `handOverRuntimes()` wants re-examining: it exists because the
-  browser and the coordinator provision the same runtime ids on the same server, and
-  the introduction step changes when each side acts.
-
----
-
-## Open questions
-
-- **How a requirement is spelled beyond `kind`.** The object is decided; its other
-  keys are not, and `tags` should wait for a board that needs one.
-- **Where a runtime server gets its own tags** — process config, a file beside the
-  mount secret, or something it derives about itself.
-- **Ticket lifetime and rotation.** Long-lived and revocable is the minimum. Does it
-  rotate on reconnect, and what does the coordinator show a person about which
-  machines hold one?
-- **A participant that connects claiming a runtime the board no longer has.** A stale
-  ticket after the board changed — refuse and say so, presumably, but it needs
-  deciding.
-- **Pinning service versions.** The registry carries a version per service. Does a
-  board ever pin it, and does that belong in `requires` or beside the service?
+- `coordinator/urlGuard.ts` — its entire job was validating addresses the
+  coordinator was about to dial. The allowlist, the private-range policy and the
+  noted DNS-rebinding window went with it.
+- `HKP_RUNTIME_URL_ALLOWLIST` and `HKP_ALLOW_PRIVATE_RUNTIMES`.
+- ~~The ordering trick in `handOverRuntimes()` was re-examined and **kept**.~~
+  **Retired 2026-10-02**, with the reason for it: see *A board's runtimes are
+  the board's* below.
 
 ---
 
-## Work breakdown (sketch)
+## Decided while building — 2026-10-01
 
-1. **Preflight and status vocabulary.** Independent of the rest, and it removes
-   today's half-deployed board with its misleading Stop button.
-2. **Named remotes.** `remote` and `requires` on the runtime descriptor, a resolver in
-   the person's client, refusal when a runtime gives more than one addressing mode,
-   kind and registry checked before handover. Today's url-only boards go through
-   untouched.
-3. **Accept-only coordinator.** Tickets, the introduction step in deploy, the join
-   endpoint, provisioning over the inbound connection, one connection per board,
-   required vs transient participants, `error` naming what is missing.
-4. **Retire the dialling path** once nothing uses it.
-5. **Secrets.** The three contact points above.
-6. **Docs.** A concepts page beside mounts and coordinator, and vocabulary entries.
+The open questions the concept left, and what was chosen. Each is small enough
+to revisit; none was obvious enough to go without saying.
+
+- **Ticket lifetime and rotation.** Long-lived, until replaced or revoked. It
+  does **not** rotate on reconnect: the runtime server would have to persist a
+  new ticket on every connection, and a write that failed would lock the machine
+  out. Deploying again replaces it. The coordinator shows who holds one and
+  whether they are connected (`GET …/boards/<board>/participants`), never a
+  ticket; nothing in the UI reads that route yet.
+- **Replacing is not revoking.** Asking for a new ticket invalidates the old one
+  at once but leaves whatever is connected with it in place until the new
+  holder connects. A deploy that never completes must not cost the running
+  board a runtime.
+- **A participant claiming a runtime the board no longer has** is refused: the
+  ticket was revoked when the board was registered without that runtime (or
+  deleted), so the upgrade answers `401`. A runtime server told so drops the
+  link **and the runtime** — it was the coordinator's, and nobody else will
+  release it.
+- **A runtime server displaced by another** (the board deployed to a different
+  machine) is closed with its own code and does the same. Without that the
+  machine a runtime left would keep a copy running.
+- **Picking up versus rebuilding.** A participant says in its hello whether the
+  runtime is running there. The session picks it up only if *it* built it and it
+  is still there — a dropped connection. Otherwise it builds: whatever is under
+  that id was not built from this board (the copy the browser ran before it
+  deployed, typically).
+- **Nothing waits.** Registering a board does not wait for a participant; the
+  introduction already did. A board whose runtime server is not connected is in
+  `error` at once and comes up when it connects.
+- **A restored board runs again by itself**, which the concept implied and
+  `TODO-CLOUD-COORDINATOR.md` had parked as impossible ("auto-start on boot",
+  "remembering that a board was running"). Both follow from tickets: the board
+  store now keeps `stopped` and the ticket hashes.
+- **`hkp://remotes/<name>` stays resolved by the host.** It counts as a name for
+  the one-mode rule, but the native proxy that serves it goes on resolving it;
+  routing it through the client's remote list would have changed how the
+  embedded runtime is reached for no gain.
+- **Credentials ride with the introduction.** Secrets contact point 3, in its
+  simplest form: the browser hands the values to the runtime server the person
+  chose, with the ticket; the server holds them **in memory** with the link.
+  Not persisting them is deliberate — a plaintext secret store on a runtime
+  server is a posture nobody decided on. The cost is stated below.
+- **Session tokens are no longer used by the coordinator** and were left in the
+  runtime servers. Removing the route is a separate change across three
+  runtimes.
+
+---
+
+## A board's runtimes are the board's — 2026-10-02
+
+Found in review, after the first build: runtime servers keyed a link, and the
+runtime it built, by tenant and runtime id alone. Boards ship the same handful
+of ids, so deploying a second board to a server took the first one's runtime,
+and opening any board with that id in the playground replaced a deployed
+runtime underneath its link — silently, the link staying connected.
+
+- **A runtime built for a coordinator lives in its board's own space** on the
+  runtime server: keyed by tenant, board and runtime id, apart from what the
+  server's clients create over the api and from every other board. Links are
+  keyed the same way. All three servers (`boardSpace`, `board_space`,
+  `RuntimeConfiguration::space`).
+- **The api does not reach a board's runtimes.** They are not in
+  `GET /runtimes`, and `DELETE /runtimes` leaves them. `GET /coordinator-links`
+  lists them, with `running`. Leaving a board is
+  `DELETE /coordinator-links/<board>/<runtimeId>`.
+- **The handover is gone.** The browser and the coordinator no longer share
+  runtimes, so `handOverRuntimes()` was removed: the browser's runtimes stay
+  its own and are taken down when it leaves. With it went the window in which
+  a failed registration left runtimes nobody owned.
+- **Mount addresses are unchanged**, deliberately: the derivation never held
+  the space, so a board open in the playground and the same board deployed
+  derive the same address. A second review found what that cost: the
+  playground's claim replaced the deployed board's, and leaving released it
+  without giving the address back — a 404 until the runtime restarted. Each
+  registry now keeps **every claim** to an address; the deployed board's
+  answers, then the newest; releasing one leaves the rest.
+- **A deploy goes through or changes nothing.** A ticket asked for while a
+  runtime has one is *pending*: the coordinator accepts both. At registration
+  a pending ticket a server is waiting with takes over, and one nobody
+  connected with is dropped. A deploy that fails takes its tickets back
+  (`DELETE …/boards/<board>/tickets`, called by `deployBoard`), which lets a
+  waiting server go.
+  - The first version promoted a pending ticket whenever the runtime's server
+    disconnected, and runtime servers dropped their link to make a new one
+    when introduced again — so a failed deploy could still take effect, at
+    once or at the next blip. Both are gone: a server already connected for a
+    runtime **keeps its link** when introduced again (only the secrets are
+    taken), and promotion happens at registration only.
+  - One exception, kept on purpose: a pending ticket's holder arriving at a
+    runtime with **no** server connected takes over at once. It is the repair
+    path — a runtime whose server left is given one again without deploying
+    the board (`e2e/tests/cloud/deploy.spec.ts`).
+- **One coordinator per board on a server.** Link keys and spaces name the
+  board, not the coordinator, so the same board name deployed to a second
+  coordinator through one server would take the first one's runtime. The
+  server refuses the second introduction, naming the first coordinator.
+  Supporting it properly means the coordinator in the key *and* a decision
+  about the two boards' mounts, which would share addresses.
+
+Not done: nothing expires a pending ticket whose client died before it could
+take it back; the next deploy replaces it. A link to a coordinator that is gone
+for good has no way out but `DELETE /coordinator-links/<board>/<runtimeId>`,
+which nothing in the apps calls — and until then a different coordinator is
+refused only while that link is connected.
+
+## Still open
+
+- **hkp-rt** joins a coordinator as of 2026-10-02 (standalone and desktop),
+  and deployed boards carry bytes between runtimes. What is left of that
+  package is in `TODO-HKP-RT-COORDINATOR-LINK.md`.
+- **Credentials after a runtime server restart.** The ticket survives, the
+  values do not: the board says `needs configuration — its runtime server holds
+  no value for …`, and deploying again fixes it. Whether a runtime server gets
+  an encrypted store for them is the same question as `TODO-SECRETS.md` B-b,
+  asked of a different box.
+- **The coordinator vault (B-b) is still unbuilt**, and contact point 2 — a
+  grant keyed on the ticket's bound identity rather than an origin — is a
+  constraint on it, recorded in `TODO-SECRETS.md`. A participant that is *not*
+  on the person's own machine has no source of credentials but the introduction.
+- **Authoring `remote`.** The Add-runtime picker still writes a
+  `url`; a name is typed into the board's JSON. The picker
+  writing `remote` for a named server is the obvious next step and changes what
+  every newly built board saves.
+- **Mobile.** The deploy sheet reports what stopped a deploy as a toast, with no
+  per-runtime dialog, and the mobile cloud view reads a board's reasons from the
+  listing rather than from the live snapshot.
+- **Runtime ids are not namespaced by board on runtime servers.** Two boards
+  owned by the same account commonly both call a runtime `node` or `python`;
+  placing both on one server currently makes their coordinator links and
+  runtime instances collide. The protocol ticket is already scoped to the
+  board, but the Node, Python and C++ runtime hosts still key the instance by
+  owner/runtime id (or runtime id alone in C++).
+- **A multi-runtime introduction is not transactional.** Tickets replace the
+  previous deployment before every runtime server has accepted its
+  introduction. If a later introduction fails, servers that already joined
+  and the replacement tickets are left in place even though the browser keeps
+  ownership and the board is not re-registered.
+- **Cloud view Start** re-registers without a preflight. It needs none for
+  addresses any more, and reports a runtime server that is not connected by
+  name.
+
+---
+
+## What was built
+
+| Step | Where |
+|---|---|
+| 1. Preflight, honest deploy status, per-runtime dialog | `hkp-frontend/src/core/deployPreflight.ts`, `core/deploy.ts`, `components/Toolbar/DeployDialog.tsx` |
+| 2. Named remotes | `hkp-frontend/src/runtime/board/remote.ts`; resolved in `core/boardPersistence.ts`; `meander/frontend/src/MeanderPlayground.tsx` holds the board until remotes are loaded |
+| 3. Accept-only coordinator | `hkp-node/src/coordinator/participants.ts`, `participantProtocol.ts`, `join.ts`, `session.ts`; runtime-server end in `hkp-node/src/coordinatorLinks.ts` and `hkp-python/src/hkp/coordinator_links.py` |
+| 4. Dialling retired | `coordinator/urlGuard.ts`, `HKP_RUNTIME_URL_ALLOWLIST`, `HKP_ALLOW_PRIVATE_RUNTIMES` and the coordinator's use of session tokens are gone |
+| 5. Secrets | consent on the resolved address; values with the introduction; missing ones named per runtime |
+| 6. Docs | `docs/content/concepts/remotes.md`, `cloud-boards.md`, `coordinator.md`, `board-json.md`, `vocabulary.md`, `testing.md` |
+
+The manual checks for what is still to come are in
+`TODO-HKP-RT-COORDINATOR-LINK.md`.

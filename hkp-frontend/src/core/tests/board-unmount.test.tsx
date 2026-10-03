@@ -9,13 +9,12 @@ import BoardProvider, {
 import { RuntimeApi, RuntimeDescriptor, RuntimeScope } from "hkp-frontend/src/types";
 
 /**
- * Giving a board away.
+ * Leaving a board.
  *
- * A board built here runs on runtimes this browser provisioned and tears down
- * on its way out. Deploying gives them to a coordinator, which provisions them
- * under the same ids — they are the board's ids. Tearing them down afterwards
- * would delete a running board that now belongs to someone else, and the
- * deleting would look like ordinary cleanup, which is why it is pinned here.
+ * A board built here runs on runtimes this browser provisioned, and takes them
+ * down on its way out — whether or not the board was deployed meanwhile. What
+ * a coordinator builds for a deployed board is kept apart from them by the
+ * runtime server, so taking these down stops nothing but this browser's copy.
  */
 
 function ContextProbe({
@@ -83,38 +82,5 @@ describe("a board this browser owns", () => {
       "node",
       "ui",
     ]);
-  });
-});
-
-describe("a board that has been deployed", () => {
-  it("leaves the remote runtimes running", async () => {
-    // The coordinator provisioned them under these ids; deleting one here would
-    // stop the board it just deployed.
-    const { context, view, removeRuntime, close } = await mountBoard();
-
-    context.handOverRuntimes();
-    view.unmount();
-
-    const removed = removeRuntime.mock.calls.map(
-      (call) => (call as unknown as [unknown, RuntimeDescriptor])[1].id,
-    );
-    expect(removed).not.toContain("node");
-    // Still disconnected: the socket is the one thing this browser still owns.
-    expect(close).toHaveBeenCalled();
-  });
-
-  it("still takes down the runtimes that live in this browser", async () => {
-    // A browser runtime cannot be handed over — it runs in this tab, and no
-    // coordinator can adopt it.
-    const { context, view, removeRuntime } = await mountBoard();
-
-    context.handOverRuntimes();
-    view.unmount();
-
-    expect(
-      removeRuntime.mock.calls.map(
-        (call) => (call as unknown as [unknown, RuntimeDescriptor])[1].id,
-      ),
-    ).toEqual(["ui"]);
   });
 });

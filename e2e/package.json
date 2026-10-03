@@ -12,6 +12,7 @@
     "test:web": "playwright test --project=web",
     "test:desktop": "playwright test --project=desktop",
     "test:mobile": "playwright test --project=mobile",
+    "test:cloud": "playwright test --config=playwright.cloud.config.ts",
     "report": "playwright show-report"
   },
   "devDependencies": {

@@ -92,15 +92,19 @@ target_sources(${PROJECT_NAME}
       src/service.cpp
       src/sub_runtime.cpp
       src/app.cpp
+      src/coordinator_links.cpp
       src/discovery/discovery.cpp
       src/http/auth.cpp
       src/http/server.cpp
+      src/http/front_door.cpp
       src/types/models.cpp 
       src/types/message.cpp
       src/types/data.cpp 
       src/types/ringbuffer.cpp
       src/common/websocket_server_listener.cpp      
       src/common/websocket_client_session.cpp
+      src/common/link_socket.cpp
+      src/common/link_socket.h
       #services
       src/common/inja.h
       src/common/websocket_server.cpp

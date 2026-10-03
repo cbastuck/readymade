@@ -43,6 +43,9 @@ export default defineConfig<HostOptions>({
   projects: [
     {
       name: "web",
+      // Specs that need a real runtime server and coordinator have their own
+      // config (playwright.cloud.config.ts), so this suite starts neither.
+      testIgnore: /cloud\//,
       use: {
         ...devices["Desktop Chrome"],
         launchOptions: { args: CHROMIUM_ARGS },
@@ -55,7 +58,7 @@ export default defineConfig<HostOptions>({
       // The capability checks launch their own browsers, and the sweep asks
       // about board JSON rather than about a host — both answer the same
       // whichever project runs them, so one project runs them.
-      testIgnore: /(capabilities|smoke)\//,
+      testIgnore: /(capabilities|smoke|cloud)\//,
       use: {
         ...devices["Desktop Chrome"],
         launchOptions: { args: CHROMIUM_ARGS },
@@ -65,7 +68,7 @@ export default defineConfig<HostOptions>({
     },
     {
       name: "mobile",
-      testIgnore: /(capabilities|smoke)\//,
+      testIgnore: /(capabilities|smoke|cloud)\//,
       use: {
         // A real touch device, not just a narrow window: the mobile shell has
         // its own gesture code (MobileHub, MobileSubPipeline, ServiceSheet),
@@ -79,7 +82,7 @@ export default defineConfig<HostOptions>({
 
   webServer: [
     {
-      command: `npx vite --port ${FRONTEND_PORT} --strictPort`,
+      command: `"${process.execPath}" node_modules/vite/bin/vite.js --port ${FRONTEND_PORT} --strictPort`,
       // vite serves its working directory, so each server has to be started
       // from its own app rather than from here.
       cwd: "../hkp-frontend",
@@ -88,7 +91,7 @@ export default defineConfig<HostOptions>({
       timeout: 120_000,
     },
     {
-      command: `npx vite --port ${MEANDER_PORT} --strictPort`,
+      command: `"${process.execPath}" node_modules/vite/bin/vite.js --port ${MEANDER_PORT} --strictPort`,
       cwd: "../meander/frontend",
       url: `http://localhost:${MEANDER_PORT}`,
       reuseExistingServer: !process.env.CI,

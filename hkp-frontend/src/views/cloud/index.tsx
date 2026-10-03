@@ -405,6 +405,9 @@ type CloudBoardsProps = {
   /** Top-left logo. Hosts pass a control that navigates home; without one the
    *  Toolbar renders a decorative mark that looks clickable but is not. */
   logoSlot?: ReactNode;
+  /** The app menu. Hosts with a menu of their own pass it; without one the
+   *  Toolbar renders the browser's, whose settings know nothing of the host. */
+  menuSlot?: ReactNode;
 };
 
 export default function CloudBoards({
@@ -412,6 +415,7 @@ export default function CloudBoards({
   initialBoardName,
   onNavigate,
   logoSlot,
+  menuSlot,
 }: CloudBoardsProps = {}) {
   const appContext = useAppContext();
   const user = appContext?.user ?? null;
@@ -782,6 +786,12 @@ export default function CloudBoards({
     () => bridgeAccess.snapshot.getStatus(),
   );
   const boardStatus = liveStatus ?? openBoard?.status;
+  // The reasons arrive the same way, and for the same reason: a runtime server
+  // dropping its connection puts the board in error while this is open.
+  const liveErrors = useSyncExternalStore(
+    (onChange) => bridgeAccess.snapshot.subscribe(onChange),
+    () => bridgeAccess.snapshot.getErrors(),
+  );
 
   /**
    * Whether this board is recording what its services log.
@@ -845,7 +855,7 @@ export default function CloudBoards({
   // Shown whenever there are any, not only for a board that failed to start:
   // stopping reports the runtimes it could not release, and those are still
   // running somewhere with nothing tracking them.
-  const openBoardErrors = openBoard?.errors ?? [];
+  const openBoardErrors = liveErrors ?? openBoard?.errors ?? [];
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -866,8 +876,10 @@ export default function CloudBoards({
   );
 
   const isStopped = boardStatus === "stopped";
-  // Provisioning failed for at least one runtime. The ones that did provision
-  // are still live on their hosts, so Stop stays offered — it releases them.
+  // A runtime the board cannot run without is missing — its runtime server is
+  // not connected — or could not be built. Not terminal: the board runs again
+  // when that server connects. The runtimes that are up are still live, so Stop
+  // stays offered — it releases them.
   const isFailed = boardStatus === "error";
   const coordinatorName = selectedCoordinator?.name ?? "a coordinator";
   const boardIsOpen = !!(mountedBoard && selectedCoordinator && selectedBoard);
@@ -878,7 +890,7 @@ export default function CloudBoards({
           isStopped
             ? "Its runtimes are released; Start provisions them again"
             : isFailed
-              ? "Some runtimes could not be provisioned; Stop releases the ones that were"
+              ? "A runtime is not connected or could not be built — see below. It runs again when its runtime server connects; Stop releases the others"
               : "It keeps running when you close this"
         }
         style={{
@@ -904,7 +916,7 @@ export default function CloudBoards({
           {isStopped
             ? "Stopped on"
             : isFailed
-              ? "Didn’t fully start on"
+              ? "Not fully running on"
               : "Deployed to"}{" "}
           {coordinatorName}
         </span>
@@ -983,7 +995,11 @@ export default function CloudBoards({
         className="w-full h-full flex flex-col"
         style={{ background: "var(--bg-app, #fafafa)" }}
       >
-        <Toolbar logoSlot={logoSlot} statusSlot={statusSlot}>
+        <Toolbar
+          logoSlot={logoSlot}
+          menuSlot={menuSlot}
+          statusSlot={statusSlot}
+        >
           {showCoordinatorInToolbar && (
             <CoordinatorsMenu
               coordinators={coordinators}

@@ -8,6 +8,7 @@
 
 #include "peer_registry.h"
 #include "peer_server_listener.h"
+#include "mount.h"
 
 namespace hkp {
 
@@ -42,7 +43,9 @@ public:
 
   ~PeerServerService()
   {
-    stop();
+    m_mount.release();
+    m_listener.reset();
+    m_registry.reset();
   }
 
   json configure(Data data) override
@@ -62,6 +65,9 @@ public:
     json state;
     state["port"]           = m_listener ? static_cast<int>(m_listener->getBoundPort()) : static_cast<int>(m_port);
     state["path"]           = m_path;
+    // Where it is served when the runtime server mounts it. Reserved name:
+    // generic board machinery reads it (see mount.h).
+    state[MOUNT_FIELD]      = m_mount.url();
     state["emitEvents"]     = m_emitEvents;
     state["connectedPeers"] = m_registry ? m_registry->connectedPeerIds() : std::vector<std::string>{};
     mergeBypassState(state);
@@ -117,11 +123,30 @@ private:
         });
     }
 
-    m_listener = std::make_unique<PeerServerListener>(m_registry, m_port, m_path);
+    // A path on the runtime server's own port where it serves mounts — `port`
+    // and `path` are then not acted on, and a client is pointed at the mount.
+    // A port of this service's own where it does not. See mounts.h.
+    auto mounted = std::make_shared<PeerServerListener>(m_registry);
+    std::weak_ptr<PeerServerListener> held = mounted;
+    m_mount = mountEndpoint(getId(), [held](MountedConnection connection) {
+      if (auto listener = held.lock())
+      {
+        listener->adopt(std::move(connection));
+      }
+    });
+    if (m_mount)
+    {
+      m_listener = std::move(mounted);
+      sendNotification(json{{MOUNT_FIELD, m_mount.url()}});
+      return;
+    }
+
+    m_listener = std::make_shared<PeerServerListener>(m_registry, m_port, m_path);
   }
 
   void stop()
   {
+    m_mount.release();
     m_listener.reset();
     m_registry.reset();
   }
@@ -131,7 +156,8 @@ private:
   bool           m_emitEvents = false;
 
   std::shared_ptr<PeerRegistry>       m_registry;
-  std::unique_ptr<PeerServerListener> m_listener;
+  std::shared_ptr<PeerServerListener> m_listener;
+  MountHandle                         m_mount;
 };
 
 } // namespace hkp

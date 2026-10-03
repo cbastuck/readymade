@@ -327,6 +327,38 @@ configuration: imap.password* and refuses to start, rather than provisioning
 with empty credentials and surfacing it hours later as an IMAP auth failure that
 names nothing.
 
+### What coordinator connections changed — 2026-10-01
+
+The coordinator no longer dials runtimes; runtime servers connect to it with a
+ticket (`TODO-COORDINATOR-CONNECTIONS.md`, `docs/content/concepts/remotes.md`).
+Three things follow for this plan, two built and one a constraint on B-b:
+
+1. **Consent stays keyed on the resolved destination, never the name.** Built. A
+   board may name a remote instead of giving a `url`; the name is
+   board-controlled and resolves differently for each person, so decision 4's
+   grant key uses the address the name resolved to on this client — at load,
+   and again when deploying (`core/tests/deploy.test.ts`,
+   `runtime/rest/tests/runtime-server-introduction.test.ts`).
+2. **A participant the coordinator did not dial has no origin to key a grant
+   on.** A constraint on B-b, not built: when the coordinator vault exists, what
+   it releases a value *to* is the ticket's bound identity — one runtime of one
+   board of one person, something the machine holds — not an address any board
+   can point at.
+3. **A participant on the person's own machine is served by that machine.**
+   Built, in its simplest form: the browser hands the values to the runtime
+   server with the introduction; that server holds them in memory with the link
+   and gives them to the runtime when the coordinator builds it. They never
+   reach the coordinator. A runtime built without one says so, per runtime and
+   by alias — *needs configuration — its runtime server holds no value for
+   `imap.password`* — which is B-b's "missing secrets are a board state", saying
+   **where**. What is not built is surviving a runtime server restart: that
+   needs somewhere to keep values at rest, which is B-b's tradeoff on a box the
+   person owns.
+
+B-b itself is unchanged and still unbuilt: a participant that is *not* on the
+person's machine, and a board started with nobody's browser in the path, have
+no other source of credentials.
+
 ### B-c. Shared boards become templates
 
 `api/boards.php` shares boards read-only by email. With references inline and no

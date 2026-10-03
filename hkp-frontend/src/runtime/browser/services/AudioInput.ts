@@ -84,7 +84,20 @@ class AudioInput extends ServiceBase<State> {
     });
     this.recorder = undefined;
     this._stream = undefined;
-    this.prepareStream();
+    // Boards may contain Audio Input even when microphone access is unavailable
+    // (permission denied, insecure context, or a headless browser). Construction
+    // must remain best-effort: a rejected startup request must not become an
+    // unhandled promise rejection that destabilizes the whole board.
+    void this.prepareStream().catch((err) => {
+      const detail =
+        typeof err === "object" &&
+        err !== null &&
+        "message" in err &&
+        typeof err.message === "string"
+          ? `: ${err.message}`
+          : "";
+      this.pushErrorNotification(`Could not access audio input${detail}`);
+    });
   }
 
   async configure(config: any) {
