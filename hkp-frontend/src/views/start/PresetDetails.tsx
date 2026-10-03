@@ -12,6 +12,7 @@ import { useState } from "react";
 
 import { PresetNode } from "./types";
 import {
+  isUsableAsBlock,
   normalizeTags,
   presetSecrets,
   serializePreset,
@@ -121,10 +122,65 @@ function Tags({ node }: { node: PresetNode }) {
   );
 }
 
+/** The host of the URL a preset was imported from, or the URL itself when it does not parse. */
+function originHost(origin: string): string {
+  try {
+    return new URL(origin).host;
+  } catch {
+    return origin;
+  }
+}
+
+/**
+ * Reads an imported preset again from where it came from. Says how it went
+ * rather than closing over it: an update that finds nothing new, and one the
+ * address refuses, look the same from outside.
+ */
+function UpdateFromOrigin({ node }: { node: PresetNode }) {
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const [error, setError] = useState("");
+  if (!node.onUpdate) {
+    return null;
+  }
+  const update = async () => {
+    setState("busy");
+    setError("");
+    try {
+      await node.onUpdate!();
+      setState("done");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setState("idle");
+    }
+  };
+  return (
+    <div style={{ width: "100%" }}>
+      <button
+        className="st-btn st-btn-ghost"
+        style={{ justifyContent: "center", width: "100%" }}
+        disabled={state === "busy"}
+        onClick={() => void update()}
+      >
+        {state === "busy"
+          ? "Updating…"
+          : state === "done"
+            ? "Updated from source"
+            : "Update from source"}
+      </button>
+      {error && (
+        <div style={{ marginTop: 4, fontSize: 11.5, color: "#e0355f", lineHeight: 1.4 }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PresetDetails({ node }: { node: PresetNode }) {
   const { preset } = node;
   const [showState, setShowState] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const block = isUsableAsBlock(preset);
 
   const secrets = presetSecrets(preset);
   const missing = unavailableSecrets(preset.state);
@@ -202,7 +258,11 @@ export default function PresetDetails({ node }: { node: PresetNode }) {
               color: "#6b7080",
             }}
           >
-            {node.builtIn ? "Built in" : "Saved on this device"}
+            {node.builtIn
+              ? "Built in"
+              : preset.origin
+                ? `Imported from ${originHost(preset.origin)}`
+                : "Saved on this device"}
           </div>
         </div>
 
@@ -234,7 +294,14 @@ export default function PresetDetails({ node }: { node: PresetNode }) {
           {preset.runtimes?.length ? (
             <MetaRow label="Meant for" value={preset.runtimes.join(", ")} />
           ) : null}
+          {block && (
+            <MetaRow
+              label="Block"
+              value={`Dropped from the palette, it is copied into the board and placed as a use, varied by ${Object.keys(preset.params ?? {}).join(", ")}.`}
+            />
+          )}
           {preset.author && <MetaRow label="Author" value={preset.author} />}
+          {preset.origin && <MetaRow label="Source" value={preset.origin} />}
           <Tags node={node} />
         </div>
 
@@ -335,6 +402,7 @@ export default function PresetDetails({ node }: { node: PresetNode }) {
             gap: 8,
           }}
         >
+          <UpdateFromOrigin node={node} />
           <button
             className="st-btn st-btn-ghost"
             style={{ justifyContent: "center", width: "100%" }}

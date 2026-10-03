@@ -211,6 +211,12 @@ export interface PresetNode {
    * exported. Absent on a built-in, for the same reason `onDelete` is.
    */
   onRetag?: (tags: string[]) => void;
+  /**
+   * Reads the preset again from the URL it was imported from and keeps what is
+   * there now. Present only on one imported from a URL: a preset changes when
+   * someone asks for the newer version, never on its own.
+   */
+  onUpdate?: () => Promise<void>;
 }
 
 export type TreeNode = BoardNode | FolderNode | RuntimeNode | PresetNode;

@@ -42,6 +42,17 @@ export type NestedLevel = {
    * go back to, so the trail says something is there without offering to.
    */
   viaInline?: boolean;
+  /**
+   * Set on a level opened from outside the panels: `id` names the service
+   * hosting the pipeline and this names a service inside it, and the level is
+   * whichever of the host's pipelines holds that one.
+   *
+   * A host with several pipelines — a Switch's cases, Tracks' tracks — opens
+   * each under an id of its own panel's making, which nothing outside the panel
+   * can know. What an outside caller does know is the service it is going to,
+   * so it says that, and the pipeline holding it claims the level.
+   */
+  holding?: string;
 };
 
 export type NestedNavigation = {
@@ -49,6 +60,23 @@ export type NestedNavigation = {
   stack: NestedLevel[];
   /** Opens a pipeline from a host sitting at `depth`, closing anything deeper. */
   open: (id: string, label: string, depth: number, viaInline?: boolean) => void;
+  /**
+   * Opens whichever pipeline of `host` holds the service `holding`, closing
+   * anything deeper — for opening levels from outside the panels, which know
+   * the path to a service but not what each host calls its pipelines.
+   */
+  openHolding: (
+    host: string,
+    holding: string,
+    label: string,
+    depth: number,
+  ) => void;
+  /**
+   * Takes over a level opened by `openHolding` under the pipeline's own id and
+   * label, so it is from then on the level that pipeline's own button opens. A
+   * no-op once the level has been claimed or replaced.
+   */
+  claim: (depth: number, id: string, label: string) => void;
   /** Closes a level and everything below it. A no-op if it is not open. */
   close: (id: string) => void;
   /** Walks back out to `depth`; 0 is the board itself. */
@@ -130,6 +158,21 @@ export default function NestedNavProvider({
       stack,
       open: (id, label, depth, viaInline) =>
         setStack((prev) => [...prev.slice(0, depth), { id, label, viaInline }]),
+      openHolding: (host, holding, label, depth) =>
+        setStack((prev) => [
+          ...prev.slice(0, depth),
+          { id: host, label, holding },
+        ]),
+      claim: (depth, id, label) =>
+        setStack((prev) => {
+          const level = prev[depth];
+          if (!level?.holding) {
+            return prev;
+          }
+          const next = [...prev];
+          next[depth] = { id, label, viaInline: level.viaInline };
+          return next;
+        }),
       close: (id) =>
         setStack((prev) => {
           const at = prev.findIndex((level) => level.id === id);
@@ -195,9 +238,12 @@ export default function NestedNavProvider({
             {children}
           </div>
 
-          {stack.map((level, index) => (
+          {/* Keyed by depth, not by the level: a claimed level changes its id,
+              and a layer remounted under it would take the portal with it —
+              unmounting every panel on it, and with them every level deeper. */}
+          {stack.map((_, index) => (
             <div
-              key={level.id}
+              key={index}
               ref={layerRef(index + 1)}
               // Only the topmost layer is reachable. `inert` keeps the focus
               // ring and the screen reader out of what is covered — which is

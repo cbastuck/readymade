@@ -22,7 +22,14 @@ import {
   usePlatform,
 } from "hkp-frontend/src/platform/PlatformContext";
 
-export default function PresetImport({ onClose }: { onClose: () => void }) {
+export default function PresetImport({
+  onClose,
+  mobile = false,
+}: {
+  onClose: () => void;
+  /** Text at 16px: anything smaller makes iOS zoom into the field on focus. */
+  mobile?: boolean;
+}) {
   const platform = usePlatform();
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -142,8 +149,10 @@ export default function PresetImport({ onClose }: { onClose: () => void }) {
         >
           <div style={{ fontSize: 14, fontWeight: 700 }}>Import a preset</div>
           <div style={{ marginTop: 3, fontSize: 12.5, color: "#6b7080" }}>
-            A preset file configures one kind of service. It is filed under the
-            service it names.
+            A preset file configures one kind of service, and is filed under
+            the service it names. A sub-service preset with parameters is a
+            block: the palette places it as a use. One fetched from a URL can
+            be updated from there later.
           </div>
         </div>
 
@@ -161,7 +170,11 @@ export default function PresetImport({ onClose }: { onClose: () => void }) {
           <div style={{ display: "flex", gap: 6 }}>
             <input
               className="st-search"
-              style={{ flex: "1 1 auto", minWidth: 0 }}
+              style={{
+                flex: "1 1 auto",
+                minWidth: 0,
+                ...(mobile ? { fontSize: 16 } : {}),
+              }}
               value={url}
               placeholder="https://… or a GitHub link to a preset file"
               onChange={(e) => setUrl(e.target.value)}

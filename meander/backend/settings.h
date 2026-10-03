@@ -188,6 +188,50 @@ public:
     return savePath.string();
   }
 
+  // The preset library: one JSON file per preset (or per file of presets),
+  // in a folder of its own so a file dropped there is in the library on the
+  // next start.
+  std::filesystem::path getPresetsDirPath() const
+  {
+    namespace fs = std::filesystem;
+    fs::path presetsDir = m_hkpDirPath / "presets";
+    if (!fs::exists(presetsDir))
+    {
+      fs::create_directory(presetsDir);
+    }
+    return presetsDir;
+  }
+
+  // A preset file is named by the frontend, or by whoever dropped it into the
+  // folder: a plain `.json` name, never a path.
+  static bool isValidPresetFileName(const std::string& fileName)
+  {
+    const std::string suffix = ".json";
+    if (fileName.size() <= suffix.size() || fileName.front() == '.' ||
+        fileName.compare(fileName.size() - suffix.size(), suffix.size(), suffix) != 0)
+    {
+      return false;
+    }
+    for (const char ch : fileName)
+    {
+      const unsigned char c = static_cast<unsigned char>(ch);
+      if (!(std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == ' '))
+      {
+        return false;
+      }
+    }
+    return fileName.find("..") == std::string::npos;
+  }
+
+  std::string getPresetFilePath(const std::string& fileName) const
+  {
+    if (!isValidPresetFileName(fileName))
+    {
+      return "";
+    }
+    return (getPresetsDirPath() / fileName).string();
+  }
+
   // The start page's folder/tag hierarchy, stored next to the saved boards.
   std::string getStartPagePath() const
   {

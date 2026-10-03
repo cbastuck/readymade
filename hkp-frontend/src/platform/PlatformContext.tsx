@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode } from "react";
 
 import type { BoardDescriptor } from "../types";
+import { attachPresetStorage, type PresetStorage } from "../core/presets";
 
 // Runtime-access settings the host persists (exposure + allow-list). Changes
 // take effect on the host's next start.
@@ -75,6 +76,13 @@ export interface PlatformCapabilities {
    * will later look in.
    */
   saveSavedBoard?: (name: string, board: BoardDescriptor) => Promise<void>;
+  /**
+   * Where the presets this device keeps are stored — the preset library, which
+   * holds the blocks a board can use as well. The native app keeps them as
+   * files in a folder, so a file put there is in the library the next time the
+   * app starts. When absent they live in local storage.
+   */
+  presetStorage?: PresetStorage;
   /**
    * Platform-specific login. Resolves to a raw OIDC id_token JWT on success, or
    * null if the user cancelled. Provided by hosts where the standard Auth0 web
@@ -155,6 +163,8 @@ export function PlatformProvider({
   children: ReactNode;
 }) {
   activeCapabilities = value;
+  // Idempotent: the same store is attached once, however often this renders.
+  void attachPresetStorage(value.presetStorage ?? null);
   return (
     <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>
   );

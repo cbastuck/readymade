@@ -33,7 +33,7 @@
 
 import type { BlockDefinition } from "../../core/presets";
 import { RuntimeServiceMap, toCanonicalServiceId } from "../../types";
-import { substituteParams, referencedParams } from "./params";
+import { generatedParams, substituteParams, referencedParams } from "./params";
 import { Diagnostic } from "./units";
 
 export type { BlockDefinition };
@@ -237,6 +237,13 @@ function expandUse(
         ...where,
       });
     }
+  }
+  // A value the definition asks to be made (`{{random}}`) is made once, for
+  // this use, and kept in its params — which saving writes back, so the board
+  // keeps it and every later expansion reads it rather than making another.
+  const made = generatedParams({ ...definition.params, ...use.params });
+  if (Object.keys(made).length) {
+    use = { ...use, params: { ...use.params, ...made } };
   }
   const missing = new Set<string>();
   const instance = instantiate(definition, use, id, arrayPath.length === 1, missing);
@@ -665,6 +672,75 @@ export function withNewUse(
     linkage: { ...linkage, placed: [...linkage.placed, ...out.placed] },
     service,
     diagnostics: out.diagnostics,
+  };
+}
+
+/** A value with its object keys in order, so two spellings of one document compare equal. */
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(canonical);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonical((value as Record<string, unknown>)[key])]),
+    );
+  }
+  return value;
+}
+
+/**
+ * What a definition says, apart from what it is called in one document and the
+ * bookkeeping of the library it came from.
+ */
+function definitionContent(definition: BlockDefinition): string {
+  const { id: _id, preset: _preset, origin: _origin, ...content } = definition;
+  return JSON.stringify(canonical(content));
+}
+
+/** The definition in a document saying exactly what `definition` says, whatever its id there. */
+export function findSameDefinition(
+  definitions: BlockDefinition[] | undefined,
+  definition: BlockDefinition,
+): BlockDefinition | undefined {
+  const content = definitionContent(definition);
+  return (definitions ?? []).find((entry) => definitionContent(entry) === content);
+}
+
+/**
+ * A definition from outside a document — a block from the preset library —
+ * copied into it, so a use there can name it. The board then holds its own
+ * copy: it opens anywhere without the library, and a later change to the
+ * library's version leaves it as it was.
+ *
+ * Copied once: a definition the document already holds under any id is the one
+ * used again. One that differs but has the id taken is given a free one, since
+ * the document's own block of that name is not this one.
+ */
+export function withAdoptedDefinition(
+  linkage: BlockLinkage | undefined,
+  document: BlockDocument,
+  definition: BlockDefinition,
+): { linkage: BlockLinkage; id: string } {
+  const current = linkage ?? { definitions: {}, placed: [] };
+  const existing = current.definitions[document] ?? [];
+  const same = findSameDefinition(existing, definition);
+  if (same) {
+    return { linkage: current, id: same.id };
+  }
+  const { preset: _preset, origin: _origin, ...copy } = definition;
+  const taken = new Set(existing.map((entry) => entry.id));
+  let id = definition.id;
+  for (let n = 2; taken.has(id); n++) {
+    id = `${definition.id}-${n}`;
+  }
+  return {
+    linkage: {
+      ...current,
+      definitions: { ...current.definitions, [document]: [...existing, { ...copy, id }] },
+    },
+    id,
   };
 }
 

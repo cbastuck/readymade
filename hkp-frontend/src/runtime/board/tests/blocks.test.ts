@@ -9,6 +9,8 @@ import {
   expandBlocks,
   findEntryPath,
   usesToRefresh,
+  findSameDefinition,
+  withAdoptedDefinition,
   withBlockFrom,
   withNewUse,
   outermostUses,
@@ -600,5 +602,93 @@ describe("wrapping services that include uses", () => {
     const outer = blockUseAt(made, "wrapper", "ui")!;
     expect(blockUseAt(made, "wrapper.b1", "ui")?.parent).toBe(outer.key);
     expect(outermostUses(made).map((placed) => placed.address)).toEqual(["wrapper"]);
+  });
+});
+
+describe("adopting a definition from the library", () => {
+  const library: BlockDefinition = {
+    preset: "v1",
+    origin: "https://example.com/note.json",
+    ...note,
+  };
+
+  it("copies it into a board without blocks, as a board-local definition", () => {
+    const { linkage, id } = withAdoptedDefinition(undefined, "", library);
+    expect(id).toBe("note");
+    expect(linkage.definitions[""]).toHaveLength(1);
+    // The board's copy carries neither the preset marker nor the library's bookkeeping.
+    expect(linkage.definitions[""][0]).not.toHaveProperty("preset");
+    expect(linkage.definitions[""][0]).not.toHaveProperty("origin");
+    expect(linkage.placed).toEqual([]);
+  });
+
+  it("uses the copy the board already holds, under whatever id it has there", () => {
+    const board: BlockLinkage = {
+      definitions: { "": [{ ...note, id: "my-note" }] },
+      placed: [],
+    };
+    const { linkage, id } = withAdoptedDefinition(board, "", library);
+    expect(id).toBe("my-note");
+    expect(linkage).toBe(board);
+    expect(findSameDefinition(board.definitions[""], library)?.id).toBe("my-note");
+  });
+
+  it("gives a different definition a free id rather than replacing the board's own", () => {
+    const board: BlockLinkage = {
+      definitions: { "": [{ ...note, name: "Another note" }] },
+      placed: [],
+    };
+    const { linkage, id } = withAdoptedDefinition(board, "", library);
+    expect(id).toBe("note-2");
+    expect(linkage.definitions[""].map((entry) => entry.id)).toEqual(["note", "note-2"]);
+    expect(linkage.definitions[""][0].name).toBe("Another note");
+  });
+
+  it("compares what a definition says, not how its keys are ordered", () => {
+    const reordered = JSON.parse(
+      JSON.stringify({ state: note.state, params: note.params, serviceId: note.serviceId, name: note.name, id: "x" }),
+    );
+    expect(findSameDefinition([reordered], note)?.id).toBe("x");
+  });
+});
+
+describe("a param made at random", () => {
+  const notify: BlockDefinition = {
+    id: "notify",
+    name: "Notify",
+    serviceId: "sub-service",
+    params: { topic: "readymade-{{random}}", title: "Hello" },
+    state: {
+      pipeline: [
+        { serviceId: "map", instanceId: "m", state: { url: "https://ntfy.sh/{{param.topic}}" } },
+      ],
+    },
+  };
+  const own = { "": [notify] };
+  const board = (uses: unknown[]) => ({ ui: uses }) as any;
+
+  it("is made once per use, kept in the use, and saved with it", () => {
+    const source = board([
+      { block: "notify", uuid: "a" },
+      { block: "notify", uuid: "b" },
+    ]);
+    const { services, placed } = expandBlocks(source, own);
+    const topics = placed.map((entry) => entry.use.params?.topic as string);
+    expect(topics[0]).toMatch(/^readymade-[a-z0-9]{20}$/);
+    expect(topics[1]).toMatch(/^readymade-[a-z0-9]{20}$/);
+    expect(topics[0]).not.toBe(topics[1]);
+    // What runs says what the use keeps.
+    expect(services.ui[0].state.pipeline[0].state.url).toBe(`https://ntfy.sh/${topics[0]}`);
+    // And saving writes it, so the board opens with the same topic next time.
+    const saved = collapseBlocks(services, { definitions: own, placed });
+    expect(saved.ui[0]).toEqual({ block: "notify", uuid: "a", params: { topic: topics[0] } });
+  });
+
+  it("is left alone where the use gives the param a value", () => {
+    const { placed } = expandBlocks(
+      board([{ block: "notify", uuid: "a", params: { topic: "mine" } }]),
+      own,
+    );
+    expect(placed[0].use.params).toEqual({ topic: "mine" });
   });
 });

@@ -1,0 +1,45 @@
+{
+  "preset": "v1",
+  "id": "ntfy-notification",
+  "name": "ntfy notification",
+  "serviceId": "sub-service",
+  "version": 2,
+  "description": "Sends a push notification through ntfy. The message is the input's `message` field, or the input itself when it is a string; it is POSTed to <server>/<topic> with the title, priority and tags as headers, and ntfy's reply is passed on. Anyone who knows a topic on ntfy.sh can read it, so each use is given a random one of its own — shown on its bar, where it can be copied to subscribe in the ntfy app, or replaced.",
+  "homepage": "https://docs.ntfy.sh/publish/",
+  "tags": ["Messaging"],
+  "runtimes": ["browser"],
+  "params": {
+    "topic": "readymade-{{random}}",
+    "title": "Readymade",
+    "priority": "default",
+    "tags": "",
+    "server": "https://ntfy.sh"
+  },
+  "state": {
+    "pipeline": [
+      {
+        "serviceId": "hookup.to/service/map",
+        "instanceId": "build-request",
+        "serviceName": "Build request",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "config.serviceId": "hookup.to/service/fetcher",
+            "config.data.method": "POST",
+            "config.data.url": "{{param.server}}/{{param.topic}}",
+            "config.data.headers.Title": "{{param.title}}",
+            "config.data.headers.Priority": "{{param.priority}}",
+            "config.data.headers.Tags": "{{param.tags}}",
+            "config.data.body=": "params.message || params"
+          }
+        }
+      },
+      {
+        "serviceId": "hookup.to/service/fetcher",
+        "instanceId": "post",
+        "serviceName": "POST to ntfy",
+        "state": {}
+      }
+    ]
+  }
+}

@@ -116,6 +116,21 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
 
   m_router.register_route(
       "GET",
+      "/presets",
+      std::bind(&SchemeHandler::handleListPresets, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "POST",
+      "/presets/:file",
+      std::bind(&SchemeHandler::handleSavePreset, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "DELETE",
+      "/presets/:file",
+      std::bind(&SchemeHandler::handleDeletePreset, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "GET",
       "/board-art/:board",
       std::bind(&SchemeHandler::handleGetBoardArt, this, std::placeholders::_1, std::placeholders::_2));
 
@@ -911,6 +926,141 @@ saucer::scheme::response SchemeHandler::handleGetStartPage(const Router::Params 
   std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
   return saucer::scheme::response{
       .data = saucer::stash::from_str(content),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+// Every preset file in the library, unparsed: the frontend reads them, and
+// reports and skips one that is not a preset rather than this refusing it.
+saucer::scheme::response SchemeHandler::handleListPresets(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  namespace fs = std::filesystem;
+  json files = json::array();
+  std::error_code ec;
+  for (const auto &entry : fs::directory_iterator(m_settings.getPresetsDirPath(), ec))
+  {
+    const auto name = entry.path().filename().string();
+    if (!entry.is_regular_file() || !Settings::isValidPresetFileName(name))
+    {
+      continue;
+    }
+    std::ifstream file(entry.path());
+    if (!file.is_open())
+    {
+      continue;
+    }
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    files.push_back({{"file", name}, {"source", content}});
+  }
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(files.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleSavePreset(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto path = m_settings.getPresetFilePath(p.at("file"));
+  if (path.empty())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid preset file name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+  const auto content = req.content();
+  try
+  {
+    const auto payload = json::parse(
+        std::string(reinterpret_cast<const char *>(content.data()), content.size()));
+    if (!payload.is_object())
+    {
+      throw json::type_error::create(302, "a preset file must be an object", nullptr);
+    }
+  }
+  catch (const json::exception&)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid JSON payload"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  std::ofstream file(path);
+  if (!file.is_open())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Failed to open file for writing"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  file.write(reinterpret_cast<const char *>(content.data()), content.size());
+  // Closed before answering: what is still buffered is written here, so a
+  // write that did not reach the disk is answered as one, not as saved.
+  file.close();
+  if (file.fail())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Failed to write preset file"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"file", p.at("file")}}.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleDeletePreset(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto path = m_settings.getPresetFilePath(p.at("file"));
+  if (path.empty())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid preset file name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+  std::error_code ec;
+  const bool removed = std::filesystem::remove(path, ec);
+  // A file that is not there is not an error to `remove`; one it could not
+  // delete is, and is still there.
+  if (ec)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Failed to delete preset file"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  if (!removed)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Preset file not found"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"file", p.at("file")}}.dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
       .status = 200,

@@ -7,6 +7,7 @@ import {
   RuntimeTokenRequest,
 } from "hkp-frontend/src/platform/PlatformContext";
 import { BoardDescriptor } from "hkp-frontend/src/types";
+import type { PresetStorage } from "hkp-frontend/src/core/presets";
 import { getBackend } from "../backend";
 import { meanderLogin, type NativeLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
@@ -143,12 +144,24 @@ const saveSavedBoardNative = async (name: string, board: BoardDescriptor) => {
   await backend.saveBoard(name, board);
 };
 
+/**
+ * The preset library as files in the host's presets folder. Every native host
+ * serves hkp://presets; one that does not answers the listing with an error,
+ * and the library is read as empty rather than failing the app.
+ */
+const presetStorageNative: PresetStorage = {
+  list: async () => (await getBackend()).listPresetFiles?.() ?? [],
+  write: async (file, source) => (await getBackend()).writePresetFile?.(file, source),
+  remove: async (file) => (await getBackend()).deletePresetFile?.(file),
+};
+
 const capabilities: PlatformCapabilities = isNative
   ? {
       pickFiles: pickFilesNative,
       readFile: async (uri) => (await getBackend()).readFile(uri),
       loadSavedBoard: loadSavedBoardNative,
       saveSavedBoard: saveSavedBoardNative,
+      presetStorage: presetStorageNative,
       saveRuntimeToDisk: async (json, _filename) => {
         const backend = await getBackend();
         const path = await backend.pickSavePath({ filters: ["*.json"] });
@@ -168,6 +181,7 @@ const capabilities: PlatformCapabilities = isNative
     ? {
         loadSavedBoard: loadSavedBoardNative,
         saveSavedBoard: saveSavedBoardNative,
+        presetStorage: presetStorageNative,
         setRuntimeAllowedUser: setRuntimeAllowedUserNative,
         // Native Auth0 login via ASWebAuthenticationSession on iOS and browser
         // redirect capture on Android.

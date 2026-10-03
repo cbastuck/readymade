@@ -118,8 +118,12 @@ describe("the Presets source", () => {
     // Sorted, and "messaging" is the same tag as "Messaging" — compared without
     // case so one tag cannot become two folders that look alike.
     expect(tags.map((folder) => folder.name)).toEqual(["Audio", "Messaging"]);
+    // The saved ones: the build ships blocks filed under the same tags.
     expect(
-      (tags[1].children as PresetNode[]).map((node) => node.preset.id).sort(),
+      (tags[1].children as PresetNode[])
+        .filter((node) => !node.builtIn)
+        .map((node) => node.preset.id)
+        .sort(),
     ).toEqual(["spectral-analyser", "telegram-responder"]);
     // Nothing loose: both presets said where they belong.
     expect(
@@ -158,7 +162,12 @@ describe("the Presets source", () => {
     const folders = (
       services(result.current).find((entry) => entry.name === "sub-service")!
         .children as FolderNode[]
-    ).map((folder) => folder.name);
+    )
+      // Where the saved preset is filed; a shipped one keeps its own folders.
+      .filter((folder) =>
+        (folder.children as PresetNode[]).some((node) => !node.builtIn),
+      )
+      .map((folder) => folder.name);
     // Refiled under both, and the duplicate spelling did not become a folder.
     expect(folders).toEqual(["Bots", "Chat"]);
   });

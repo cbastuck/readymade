@@ -291,7 +291,11 @@ export default function ServiceFrame({
     window.matchMedia("(pointer: coarse)").matches;
 
   if (frameless) {
-    return children;
+    // No plug of its own to put in a use's slot, and none to pass on to the
+    // frames inside it.
+    return (
+      <UsePlugSlotContext.Provider value={null}>{children}</UsePlugSlotContext.Provider>
+    );
   }
 
   const configDetails = (
@@ -372,6 +376,7 @@ export default function ServiceFrame({
       isActive={signalOutput}
       data={recentProgressData}
       onInject={onInject}
+      offsetTop={plugSlot ? 0 : undefined}
     />
   );
   const inReachPlug = (lockedPlug: boolean) =>

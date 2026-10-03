@@ -37,6 +37,7 @@ import { BoardRow, FolderRow, PresetRow, RuntimeRow } from "./MobileRows";
 import MobileBoardDetails from "./MobileBoardDetails";
 import MobileRuntimeDetails from "./MobileRuntimeDetails";
 import MobilePresetDetails from "./MobilePresetDetails";
+import PresetImport from "../PresetImport";
 import ManageRemotesSheet from "./ManageRemotesSheet";
 import NameSheet from "./NameSheet";
 import AssignFoldersSheet from "./AssignFoldersSheet";
@@ -308,8 +309,10 @@ export default function MobileStartPage(props: StartPageProps) {
     [manageCoordinators, openConnections],
   );
 
+  const [importingPreset, setImportingPreset] = useState(false);
   const { tree, updateTree, roots, savedBoards, refreshSavedBoards } =
     useStartPageModel({
+      onImportPreset: () => setImportingPreset(true),
       store,
       listSavedBoards,
       boardStates,
@@ -1081,6 +1084,10 @@ export default function MobileStartPage(props: StartPageProps) {
           </Slide>
         )}
       </div>
+
+      {importingPreset && (
+        <PresetImport mobile onClose={() => setImportingPreset(false)} />
+      )}
 
       {/* ── Add to folder (chooser + name input) ── */}
       <BottomSheet
