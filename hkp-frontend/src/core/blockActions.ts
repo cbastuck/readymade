@@ -21,8 +21,10 @@ import {
   withDefinition,
   withUseParams,
 } from "../runtime/board/blocks";
+import type { BlockLinkage } from "../runtime/board/blocks";
 import { BlockDefinition, presetFromService } from "./presets";
 import { BoardLinkage } from "../runtime/board/units";
+import { RuntimeDescriptor, RuntimeServiceMap } from "../types";
 
 /**
  * Sets these params on one use, keeping the others it has, re-instantiates it
@@ -121,16 +123,41 @@ export async function makeBlock(
   if (!serialized) {
     throw new Error("makeBlock: the board could not be read");
   }
-  const blocks = boardContext.linkage?.blocks;
-  const services = blocks
-    ? collapseBlocks(serialized.services, blocks)
-    : serialized.services;
+  const { definition, linkage } = blockFrom(
+    serialized.services,
+    boardContext.linkage?.blocks,
+    address,
+    runtimeId,
+    boardContext.runtimes,
+  );
+  setLinkage((prev) => ({
+    units: prev?.units ?? [],
+    views: prev?.views ?? [],
+    ...prev,
+    blocks: linkage,
+  }));
+  return definition;
+}
+
+/**
+ * The block the service at `address` makes, and the linkage with it as the
+ * first use, read from `services` as serialised (uses expanded) and `blocks`
+ * placed on them. Changes nothing: the caller sets the linkage.
+ */
+export function blockFrom(
+  serialized: RuntimeServiceMap,
+  blocks: BlockLinkage | undefined,
+  address: string,
+  runtimeId: string | undefined,
+  runtimes: RuntimeDescriptor[],
+): { definition: BlockDefinition; linkage: BlockLinkage } {
+  const services = blocks ? collapseBlocks(serialized, blocks) : serialized;
   const path = findEntryPath(services, address, runtimeId);
   if (!path) {
     throw new Error(`makeBlock: nothing on the board is at "${address}"`);
   }
   const holderId = path[0] as string;
-  const runtime = boardContext.runtimes.find((entry) => entry.id === holderId);
+  const runtime = runtimes.find((entry) => entry.id === holderId);
   const document = runtime?.unit ?? "";
   const entry = entryAt(services, path);
   const name = entry.serviceName || entry.serviceId;
@@ -145,14 +172,10 @@ export async function makeBlock(
     id = `${definition.id}-${n}`;
   }
   const made: BlockDefinition = { ...definition, id };
-  const linkage = withBlockFrom(blocks, { runtimeId: holderId, document, path, definition: made });
-  setLinkage((prev) => ({
-    units: prev?.units ?? [],
-    views: prev?.views ?? [],
-    ...prev,
-    blocks: linkage,
-  }));
-  return made;
+  return {
+    definition: made,
+    linkage: withBlockFrom(blocks, { runtimeId: holderId, document, path, definition: made }),
+  };
 }
 
 function entryAt(services: unknown, path: BlockPathStep[]): any {

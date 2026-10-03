@@ -1,10 +1,10 @@
-import { FoldVertical, Pause, Play, Radio, Square, UnfoldVertical } from "lucide-react";
+import { Circle, FoldVertical, Pause, Play, Radio, Repeat, Square, UnfoldVertical } from "lucide-react";
 
 import { ImageButton } from "./parts";
 import { formatTime, placementNote, TimelineView, withImage } from "./model";
 
 /**
- * Play, pause and stop for a timeline keeping its own clock, and where it is.
+ * Play, pause, stop and record for a timeline keeping its own clock, and where it is.
  * A driven timeline has no clock to control: it says what drives it instead,
  * and offers to follow its driver again after its playhead was set by hand.
  */
@@ -55,6 +55,34 @@ export default function Transport({
           >
             <Square size={14} />
           </button>
+          <button
+            type="button"
+            className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+            title={view.recording ? "Stop recording" : "Record what arrives at the input while playing"}
+            disabled={readOnly}
+            onClick={() => configure({ recording: !view.recording })}
+          >
+            <Circle
+              size={14}
+              color={view.recording ? "#dc2626" : "currentColor"}
+              fill={view.recording ? "#dc2626" : "none"}
+            />
+          </button>
+          <button
+            type="button"
+            className="hkp-svc-btn flex items-center"
+            title={
+              view.recordMode === "replace"
+                ? "Recording clears what it passes over; switch to keeping it"
+                : "Recording keeps what is there; switch to clearing what it passes over"
+            }
+            disabled={readOnly}
+            onClick={() =>
+              configure({ recordMode: view.recordMode === "replace" ? "overdub" : "replace" })
+            }
+          >
+            {view.recordMode}
+          </button>
         </>
       ) : (
         <span
@@ -64,12 +92,20 @@ export default function Transport({
           {note ? note.text : "driven"}
         </span>
       )}
+      <button
+        type="button"
+        className="hkp-svc-btn hkp-svc-btn--icon flex items-center"
+        title={view.loop ? "Stop looping" : "Loop"}
+        disabled={readOnly}
+        onClick={() => configure({ loop: !view.loop })}
+      >
+        <Repeat size={14} color={view.loop ? "var(--hkp-accent)" : "currentColor"} />
+      </button>
       <span className="tabular-nums" style={{ color: "var(--text)" }}>
         {formatTime(cursor)}
         <span style={{ color: "var(--text-mid)" }}>
           {" "}
           / {formatTime(length)} {unit}
-          {view.loop ? " ↻" : ""}
         </span>
       </span>
       {pinned && (

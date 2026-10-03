@@ -218,7 +218,7 @@ trusting it:
 | Fake platform host | `e2e/support/fakeNativeHost.ts`, `e2e/support/test.ts` |
 | Board drift, without a browser | `hkp-frontend/src/runtime/browser/tests/demo-boards.regression.test.tsx` |
 | Board drift, in a browser | `e2e/tests/smoke/shipped-boards.spec.ts` |
-| Blocks on the running board: the lock, params, detach, editing, making one | `e2e/tests/blocks.spec.ts` |
+| Blocks on the running board: the lock, params, detach, editing, making one, wrapping picked services | `e2e/tests/blocks.spec.ts` |
 | Deploying to a real coordinator, in a browser | `e2e/playwright.cloud.config.ts`, `e2e/tests/cloud/deploy.spec.ts` |
 | A board across hkp-node and hkp-python | `hkp-node/tests/coordinator-python.test.ts` |
 | A board across hkp-node and hkp-rt; endpoints mounted on hkp-rt | `hkp-node/tests/coordinator-rt.test.ts` |

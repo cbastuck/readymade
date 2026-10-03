@@ -24,17 +24,46 @@
  * The fallback is derived rather than stored, so a pick outlives its runtime
  * leaving and coming back: reimporting the same board puts the selection back
  * where the person left it.
+ *
+ * Within the selected runtime, services can be picked too: a run of them,
+ * which is what an action on several services at once — wrapping them in a
+ * sub-service, making a block of them — acts on. Unlike the runtime it can be
+ * empty, and it is emptied by Escape, by an action that used it, and by
+ * another runtime being selected. Picking is by shift-click, from an anchor:
+ * the first service picked, which the run then stretches from.
  */
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+
+/** Services picked in one runtime, and the one the pick started from. */
+export type ServiceSelection = {
+  runtimeId: string;
+  anchor: string;
+  uuids: string[];
+};
 
 export type SelectionApi = {
   /** The selected runtime's id, or null when the board has no runtimes. */
   selectedRuntimeId: string | null;
   /** Select a runtime. */
   selectRuntime: (runtimeId: string) => void;
+  /** The services picked, or null when none are. */
+  selectedServices?: ServiceSelection | null;
+  /** Pick these services, replacing what was picked; null picks none. */
+  selectServices?: (selection: ServiceSelection | null) => void;
 };
 
 const SelectionCtx = createContext<SelectionApi | null>(null);
+
+/**
+ * Whether the service whose frame this is drawn in is picked. Set by the list
+ * a runtime draws its own services in, and cleared again for what a panel
+ * draws inside itself, so a nested service is never shown as picked.
+ */
+export const ServicePickedContext = createContext(false);
+
+export function useServicePicked(): boolean {
+  return useContext(ServicePickedContext);
+}
 
 export function useSelection(): SelectionApi | null {
   return useContext(SelectionCtx);
@@ -49,15 +78,45 @@ export function SelectionProvider({
   children: React.ReactNode;
 }) {
   const [pickedRuntimeId, setPickedRuntimeId] = useState<string | null>(null);
+  const [pickedServices, setPickedServices] = useState<ServiceSelection | null>(
+    null,
+  );
 
   const selectedRuntimeId =
     pickedRuntimeId !== null && runtimeIds.includes(pickedRuntimeId)
       ? pickedRuntimeId
       : (runtimeIds[0] ?? null);
+  const selectedServices =
+    pickedServices && pickedServices.runtimeId === selectedRuntimeId
+      ? pickedServices
+      : null;
+
+  useEffect(() => {
+    if (!selectedServices) {
+      return;
+    }
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") {
+        setPickedServices(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedServices]);
 
   const api = useMemo<SelectionApi>(
-    () => ({ selectedRuntimeId, selectRuntime: setPickedRuntimeId }),
-    [selectedRuntimeId],
+    () => ({
+      selectedRuntimeId,
+      selectRuntime: (runtimeId: string) => {
+        setPickedRuntimeId(runtimeId);
+        setPickedServices((prev) =>
+          prev && prev.runtimeId !== runtimeId ? null : prev,
+        );
+      },
+      selectedServices,
+      selectServices: setPickedServices,
+    }),
+    [selectedRuntimeId, selectedServices],
   );
 
   return <SelectionCtx.Provider value={api}>{children}</SelectionCtx.Provider>;

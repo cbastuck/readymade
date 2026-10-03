@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  describeData,
   addAction,
   displayLength,
   EMPTY_VIEW,
@@ -215,3 +216,15 @@ describe("placements", () => {
   });
 });
 
+
+describe("describeData", () => {
+  it("writes JSON out, and lets it be edited as text", () => {
+    expect(describeData({ note: 60 })).toEqual({ text: '{"note":60}', editable: true });
+    expect(describeData(undefined)).toEqual({ text: "null", editable: true });
+  });
+
+  it("describes recorded data that is not JSON, and keeps it from being edited", () => {
+    const blob = new Blob([new Uint8Array(3000)], { type: "audio/webm" });
+    expect(describeData(blob)).toEqual({ text: "audio/webm, 3 KB", editable: false });
+  });
+});
