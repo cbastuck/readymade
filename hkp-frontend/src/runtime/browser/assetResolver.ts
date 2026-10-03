@@ -11,7 +11,6 @@
  * among them — are not readable by a browser runtime and are refused by name.
  */
 
-import { resolveCredential } from "hkp-frontend/src/core/secrets";
 import { AssetDescriptor, parseAssetRef } from "../board/assets";
 
 export type ResolvedAsset = {
@@ -68,20 +67,13 @@ async function load(descriptor: AssetDescriptor): Promise<Uint8Array | string> {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     return `${url.protocol}// sources cannot be read by a browser runtime`;
   }
-  const { value: headers, problem } = resolveCredential(
-    descriptor.headers ?? {},
-    url.href,
-  );
-  if (problem) {
-    return problem;
-  }
 
   // Pinned by its hash, a URL's content cannot change, so it is fetched once;
   // without one it is fetched on each use, as a runtime server would.
   const key = descriptor.sha256 ? JSON.stringify(descriptor) : null;
   const pending =
     (key && fetched.get(key)) ||
-    fetch(url.href, { headers }).then(async (response) => {
+    fetch(url.href).then(async (response) => {
       if (!response.ok) {
         throw new Error(`${url.href} answered ${response.status}`);
       }

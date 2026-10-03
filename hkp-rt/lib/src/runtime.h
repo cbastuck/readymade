@@ -166,7 +166,7 @@ private:
   std::string m_boardName;
   std::list<std::shared_ptr<Service>> m_services; // TODO: not thread safe
   SecretVault m_vault;
-  AssetStore m_assets{ [this] { return &m_vault; } };
+  AssetStore m_assets;
   SlotStore m_slots;
   std::vector<RuntimeInput> m_inputs;
   ProcessDepth m_processDepth;

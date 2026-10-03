@@ -22,7 +22,7 @@ import {
   AssetCheck,
   AssetPush,
   AssetsSource,
-  referencedAssets,
+  assetsById,
 } from "hkp-frontend/src/runtime/board/assets";
 import { isBinaryData } from "./Data";
 import { EngineState } from "hkp-frontend/src/BoardContext";
@@ -279,18 +279,17 @@ export async function pushSecrets(
  * Hands a running runtime asset descriptors: new, changed, or `null` for one
  * the board deleted.
  *
- * The same moments as secrets — a configuration naming an asset the runtime
- * was not given, and re-attaching to a runtime that restarted — plus one they
- * do not have: an asset edited while the board runs. That push is what makes
- * an edit take effect, since the services holding the reference resolve it on
+ * A runtime is created with all the assets it is given, so there are two
+ * moments left: re-attaching to a runtime that restarted, which lost its
+ * store, and an asset edited while the board runs. That push is what makes an
+ * edit take effect, since the services holding the reference resolve it on
  * their next use and are not reconfigured.
  *
  * Answers why the runtime did not take them, or null when it did. Never
- * throws: where a runtime is being created, attached to or configured, a
- * failure here is reported by everything else the caller is doing, and the
- * services needing an asset say so themselves. An edit has nothing else to
- * report it — the runtime goes on using the descriptor it has — so that
- * caller reads the answer.
+ * throws: where a runtime is being attached to, a failure here is reported by
+ * everything else the caller is doing, and the services needing an asset say
+ * so themselves. An edit has nothing else to report it — the runtime goes on
+ * using the descriptor it has — so that caller reads the answer.
  */
 export async function pushAssetsTo(
   runtime: RuntimeDescriptor,
@@ -397,7 +396,7 @@ async function attachRuntime(
   await pushSecrets(descriptor, services, user, boardName);
   // Likewise the asset store, which lives in memory beside the vault.
   scope.assets = assets;
-  await pushAssetsTo(descriptor, referencedAssets(services, assets?.()), user);
+  await pushAssetsTo(descriptor, assetsById(assets?.()), user);
   return {
     runtime: descriptor,
     // The running services, not the board's: their state is what is live.
@@ -656,13 +655,9 @@ export async function configureService(
     (scope as RuntimeRestScope).authenticatedUser,
     (scope as RuntimeRestScope).boardName,
   );
-  // Assets the same way, and for the same reason: a field naming one can be
-  // filled in at any time, and the service resolves it on its next use.
-  await pushAssetsTo(
-    runtime,
-    referencedAssets([{ state: config }], scope.assets?.()),
-    (scope as RuntimeRestScope).authenticatedUser,
-  );
+  // Not so for assets: a runtime is given every asset it may use when it is
+  // created, and again whenever one changes, so whichever a configuration
+  // names is already there.
   const res = await fetch(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
     {
@@ -799,9 +794,9 @@ async function createRuntimeRequest(
       url: runtime.url ?? "",
     }),
     // With the create payload for the same reason: a service that loads its
-    // content while being configured needs the descriptor by then. Only the
-    // ones these services reference — inline content can be large.
-    assets: referencedAssets(services, assets?.()),
+    // content while being configured needs the descriptor by then. Every
+    // asset this runtime is given, whether or not a service names it yet.
+    assets: assetsById(assets?.()),
   };
   const runtimesUrl = `${runtime.url}/runtimes`;
   let res: Response;

@@ -93,7 +93,7 @@ public:
 
   SecretVault m_vault;
   SlotStore m_slots;
-  AssetStore store{ [this] { return &m_vault; } };
+  AssetStore store;
 };
 
 struct HttpAnswer {
@@ -150,6 +150,83 @@ TEST_CASE("an assets payload keeps descriptors with exactly one source", "[asset
   REQUIRE(entries.size() == 2);
   REQUIRE(entries["page"]["id"] == "page");
   REQUIRE(entries["gone"].is_null());
+}
+
+TEST_CASE("an assets payload keeps which runtimes an asset is for, and no headers", "[assets]") {
+  auto entries = readAssetsPayload(json{
+    { "model",
+      { { "mediaType", "application/octet-stream" },
+        { "url", "https://example.com/m.bin" },
+        { "runtimes", json::array({ "rt", 7 }) },
+        { "headers", { { "authorization", "Bearer {{secret.token}}" } } } } },
+  });
+  REQUIRE(entries["model"]["runtimes"] == json::array({ "rt" }));
+  REQUIRE_FALSE(entries["model"].contains("headers"));
+}
+
+TEST_CASE("base64 is read as a browser reads it, and refused when it is not base64", "[assets]") {
+  const auto bytes = [](const std::string& text) { return decodeBase64(text); };
+  REQUIRE(bytes("AQID") == std::string("\x01\x02\x03"));
+  REQUIRE(bytes("AQ ID\nBA==\n") == std::string("\x01\x02\x03\x04"));
+  REQUIRE(bytes("AQIDBA") == std::string("\x01\x02\x03\x04"));
+  REQUIRE(bytes("") == std::string());
+  // One character over a group of four stands for no byte at all.
+  REQUIRE_FALSE(bytes("AQIDB").has_value());
+  REQUIRE_FALSE(bytes("AQ=ID").has_value());
+  REQUIRE_FALSE(bytes("AQID-_").has_value());
+  // Not the bytes of the part it recognises.
+  REQUIRE_FALSE(bytes("AQID!").has_value());
+
+  AssetStore store;
+  store.replace({
+    { "logo", json{ { "id", "logo" }, { "mediaType", "image/png" }, { "base64", "not base64!" } } },
+  });
+  REQUIRE(store.resolve("hkp-asset://logo").problem == "asset \"logo\": its content is not base64");
+}
+
+TEST_CASE("a URL source is followed through redirects to other http(s) addresses", "[assets]") {
+  std::vector<std::string> asked;
+  AssetStore store(
+    [&](const std::string& url, const std::map<std::string, std::string>&) {
+      asked.push_back(url);
+      if (url == "https://example.com/model") {
+        return AssetStore::FetchResponse{ 302, "", "", "https://cdn.example.net/store/m.bin?sig=1" };
+      }
+      if (url == "https://cdn.example.net/store/m.bin?sig=1") {
+        return AssetStore::FetchResponse{ 307, "", "", "../final.bin" };
+      }
+      if (url == "https://cdn.example.net/final.bin") {
+        return AssetStore::FetchResponse{ 200, "weights", "" };
+      }
+      if (url == "https://example.com/local") {
+        return AssetStore::FetchResponse{ 302, "", "", "file:///etc/passwd" };
+      }
+      // Anything else points back at itself.
+      return AssetStore::FetchResponse{ 302, "", "", url };
+    });
+  const auto at = [](const std::string& id, const std::string& url) {
+    return std::pair<const std::string, json>{
+      id, json{ { "id", id }, { "mediaType", "application/octet-stream" }, { "url", url } } };
+  };
+  store.replace({
+    at("model", "https://example.com/model"),
+    at("local", "https://example.com/local"),
+    at("loop", "https://example.com/loop"),
+  });
+
+  REQUIRE(store.resolve("hkp-asset://model").asset->content == "weights");
+  REQUIRE(asked == std::vector<std::string>{
+    "https://example.com/model",
+    "https://cdn.example.net/store/m.bin?sig=1",
+    "https://cdn.example.net/final.bin",
+  });
+
+  REQUIRE(store.resolve("hkp-asset://local").problem ==
+          "asset \"local\": https://example.com/local redirected to a file:// address");
+  asked.clear();
+  REQUIRE(store.resolve("hkp-asset://loop").problem ==
+          "asset \"loop\": https://example.com/loop redirected more than 10 times");
+  REQUIRE(asked.size() == 11);
 }
 
 TEST_CASE("the store resolves inline sources and says why when it cannot", "[assets]") {
@@ -216,7 +293,7 @@ TEST_CASE("a URL source is revalidated with its ETag, or not at all when pinned"
   int requests = 0;
   std::string lastIfNoneMatch;
   std::string body = "remote v1";
-  AssetStore store([] { return nullptr; },
+  AssetStore store(
     [&](const std::string&, const std::map<std::string, std::string>& headers) {
       ++requests;
       auto found = headers.find("If-None-Match");

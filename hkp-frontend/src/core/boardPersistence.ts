@@ -234,7 +234,7 @@ export async function linkBoardDocument(
 
 /**
  * The assets a board declares, as the board will hold them: what can be used,
- * with a warning naming each entry that cannot. A bad entry costs that one
+ * with a warning naming each entry that cannot, or not as written. A bad entry costs that one
  * asset — the services naming it report it as unknown when they resolve —
  * rather than the whole board.
  */
@@ -246,7 +246,9 @@ function boardAssets(board: BoardDescriptor | undefined): AssetDescriptor[] | un
   if (problems.length) {
     console.warn(`Board assets: ${problems.join("; ")}`);
     toast.warning(
-      problems.length === 1 ? "An asset could not be read" : `${problems.length} assets could not be read`,
+      problems.length === 1
+        ? "An asset was not read as declared"
+        : `${problems.length} assets were not read as declared`,
       { description: problems.join("\n") },
     );
   }

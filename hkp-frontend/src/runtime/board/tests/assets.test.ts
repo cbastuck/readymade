@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AssetDescriptor,
   assetSize,
+  assetsById,
   assetsOfRuntime,
   findAssetRefs,
   findAssetUses,
@@ -117,10 +118,10 @@ describe("a board's assets", () => {
         url: "https://example.com/b.wav",
         sha256: pinned,
         size: 12,
-        headers: { authorization: "{{secret.token}}", retries: 3 },
+        runtimes: ["node", 7],
         text: 5,
       },
-      { id: "c", mediaType: "audio/wav", url: "https://example.com/c.wav", sha256: "abc", headers: "x" },
+      { id: "c", mediaType: "audio/wav", url: "https://example.com/c.wav", sha256: "abc", runtimes: "node" },
     ]);
 
     expect(problems).toEqual([]);
@@ -133,9 +134,27 @@ describe("a board's assets", () => {
         url: "https://example.com/b.wav",
         sha256: pinned.toLowerCase(),
         size: 12,
-        headers: { authorization: "{{secret.token}}" },
+        runtimes: ["node"],
       },
       { id: "c", mediaType: "audio/wav", url: "https://example.com/c.wav" },
+    ]);
+  });
+
+  it("reads an asset without the headers it declares, and says so", () => {
+    const { assets, problems } = readBoardAssets([
+      {
+        id: "model",
+        mediaType: "application/octet-stream",
+        url: "https://example.com/m.bin",
+        headers: { authorization: "Bearer {{secret.token}}" },
+      },
+    ]);
+
+    expect(assets).toEqual([
+      { id: "model", mediaType: "application/octet-stream", url: "https://example.com/m.bin" },
+    ]);
+    expect(problems).toEqual([
+      'asset "model" declares headers, which an asset does not take; it is fetched without them',
     ]);
   });
 
@@ -148,6 +167,28 @@ describe("a board's assets", () => {
     expect(assetsOfRuntime({ unit: "shop" }, [page], units)).toEqual([unitPage]);
     // A unit that declares none has none — never the board's.
     expect(assetsOfRuntime({ unit: "other" }, [page], units)).toEqual([]);
+  });
+
+  it("are kept from a runtime they do not name", () => {
+    const everywhere = page;
+    const onNode = { ...app, runtimes: ["node"] };
+    const nowhere = { ...model, runtimes: [] };
+    const assets = [everywhere, onNode, nowhere];
+
+    expect(assetsOfRuntime({ id: "node" }, assets, undefined)).toEqual([everywhere, onNode]);
+    expect(assetsOfRuntime({ id: "ui" }, assets, undefined)).toEqual([everywhere]);
+    // A unit's asset names its runtimes as the unit does, whatever the board
+    // it is placed on calls them.
+    const units = [{ name: "shop", source: { assets: [onNode] } }];
+    expect(
+      assetsOfRuntime({ id: "shop.node", unit: "shop", unitRuntimeId: "node" }, [], units),
+    ).toEqual([onNode]);
+    expect(
+      assetsOfRuntime({ id: "shop.ui", unit: "shop", unitRuntimeId: "ui" }, [], units),
+    ).toEqual([]);
+    // No runtime in particular: the board's own, whole.
+    expect(assetsOfRuntime(undefined, assets, undefined)).toEqual(assets);
+    expect(assetsById([everywhere, onNode])).toEqual({ page: everywhere, app: onNode });
   });
 
   it("measures inline content", () => {

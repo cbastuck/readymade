@@ -36,6 +36,7 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: v
 const page: AssetDescriptor = { id: "player", name: "Player page", mediaType: "text/html", text: "<p>v1</p>" };
 
 const relay = { id: "relay", name: "Relay", type: "rest" } as RuntimeDescriptor;
+const browser = { id: "ui", name: "Browser", type: "browser" } as RuntimeDescriptor;
 
 type Answer = AssetPushFailure[] | void | Promise<AssetPushFailure[]>;
 
@@ -60,7 +61,7 @@ function Harness({
   const board = {
     assets,
     boardGeneration,
-    runtimes: [relay],
+    runtimes: [relay, browser],
     setAsset: async (asset: AssetDescriptor, replacing?: string) => {
       const failures = (await setAsset(asset, replacing)) ?? [];
       setAssets((prev) => [...prev.filter((entry) => entry.id !== (replacing ?? asset.id)), asset]);
@@ -159,6 +160,56 @@ describe("the asset view", () => {
 
     await waitFor(() => expect(setAsset).toHaveBeenCalledTimes(1));
     expect(setAsset.mock.calls[0]).toEqual([{ ...page, id: "page" }, "player"]);
+  });
+
+  it("is every runtime's, or only the ticked ones' — and ticking them all is still a list", async () => {
+    const setAsset = vi.fn();
+    render(<Harness initial={[page]} setAsset={setAsset} />);
+
+    fireEvent.click(screen.getByRole("option", { name: /Player page/ }));
+    const every = (await screen.findByLabelText(/Every runtime/)) as HTMLInputElement;
+    const only = screen.getByLabelText("Only these:") as HTMLInputElement;
+    const box = (name: string) => screen.getByLabelText(name) as HTMLInputElement;
+    // Every runtime: nothing to tick, since none is being picked.
+    expect([every.checked, only.checked]).toEqual([true, false]);
+    expect([box("Relay").disabled, box("Browser").disabled]).toEqual([true, true]);
+
+    // Picking starts from the ones that have it now, and then narrows.
+    fireEvent.click(only);
+    expect([box("Relay").checked, box("Browser").checked]).toEqual([true, true]);
+    fireEvent.click(box("Browser"));
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(setAsset).toHaveBeenCalledTimes(1));
+    expect(setAsset.mock.calls[0][0]).toEqual({ ...page, runtimes: ["relay"] });
+
+    // All ticked again is the two named — a runtime added later is not one.
+    fireEvent.click(box("Browser"));
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(setAsset).toHaveBeenCalledTimes(2));
+    expect(setAsset.mock.calls[1][0]).toEqual({ ...page, runtimes: ["relay", "ui"] });
+
+    // Every runtime is said by naming none.
+    fireEvent.click(screen.getByLabelText(/Every runtime/));
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(setAsset).toHaveBeenCalledTimes(3));
+    expect(setAsset.mock.calls[2][0]).toEqual(page);
+    expect("runtimes" in setAsset.mock.calls[2][0]).toBe(false);
+  });
+
+  it("copies the reference a service names the asset by", async () => {
+    const writeText = vi.fn(async () => {});
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    render(<Harness initial={[page]} setAsset={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("option", { name: /Player page/ }));
+    fireEvent.click(await screen.findByTitle("Copy reference"));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("hkp-asset://player"));
+
+    // The one being typed, once the id is changed: what applying it will make it.
+    fireEvent.change(screen.getByLabelText("Asset id"), { target: { value: "page" } });
+    fireEvent.click(screen.getByTitle("Copy reference"));
+    await waitFor(() => expect(writeText).toHaveBeenLastCalledWith("hkp-asset://page"));
+    vi.unstubAllGlobals();
   });
 
   it("refuses an id that is not one", async () => {

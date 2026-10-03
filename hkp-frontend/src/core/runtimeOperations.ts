@@ -5,6 +5,7 @@ import {
 } from "../types";
 import { reorderRuntime } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
+import { assetsById } from "../runtime/board/assets";
 
 export function registerBrowserRuntime(boardName: string, runtimeId: string) {
   const existing = JSON.parse(
@@ -76,6 +77,31 @@ export async function addRuntime(
         state: { ...runtime.state, color: rtClass.color },
         boardName: currentBoardName,
       };
+      // A runtime is given every asset it may use, and this one was created
+      // before the board knew it to say which those are. It is handed the
+      // source and sent them now, ahead of being put on the board: once it is
+      // there a service can be added to it, and nothing later would send them
+      // short of an edit or a reload.
+      scope.assets = refs.assetsFor?.(runtimeWithUser);
+      const refused = await api.pushAssets?.(scope, assetsById(scope.assets?.()));
+      if (refused) {
+        // Not added without them: it would look like any other runtime and
+        // resolve nothing, and loading this board would not bring it up at
+        // all, since the assets then travel with the request that creates it.
+        // Reported here rather than thrown, because what follows a throw asks
+        // the person to log in again, and this is not about who they are.
+        const removed = await api
+          .removeRuntime(scope, runtimeWithUser, currentUser)
+          .then(() => true)
+          .catch(() => false);
+        onError?.(
+          new Error(
+            `it did not take the board's assets (${refused}), so it was not added` +
+              (removed ? "" : "; it could not be removed again and is still running there"),
+          ),
+        );
+        return null;
+      }
       refs.setRuntimes((prev) => [...prev, runtimeWithUser]);
       refs.setServices((prev) => ({
         ...prev,
@@ -85,9 +111,6 @@ export async function addRuntime(
         ...prev,
         [runtime.id]: newRegistry,
       }));
-      // An added runtime has no services to reference an asset yet; it is
-      // handed the source so a configuration naming one can push it.
-      scope.assets = refs.assetsFor?.(runtimeWithUser);
       refs.setScopes((prev) => ({
         ...prev,
         [runtime.id]: scope,

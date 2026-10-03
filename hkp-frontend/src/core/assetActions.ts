@@ -4,8 +4,8 @@
  * A board's `assets` are the frontend's own document, and changing one is a
  * state update — but the runtimes resolving them hold descriptors of their
  * own, pushed to them. An edit is therefore also a push: the new descriptor to
- * every runtime whose services reference the asset, where the next use picks
- * it up without anything being reconfigured. See `runtime/board/assets`.
+ * every runtime the asset is for, where the next use picks it up without
+ * anything being reconfigured. See `runtime/board/assets`.
  *
  * Only the board's own runtimes are touched. A runtime a unit contributed
  * resolves against that unit's assets, which are edited in the unit.
@@ -24,13 +24,15 @@ import {
   AssetDescriptor,
   AssetPush,
   AssetUse,
-  findAssetRefs,
+  assetReaches,
   findAssetUses,
   renameAssetRefs,
 } from "../runtime/board/assets";
 
 /** The part of a board's engine state the actions read. */
 export type AssetBoard = {
+  /** The board's own assets, for asking which runtimes one is for. */
+  assets?: AssetDescriptor[];
   runtimes: RuntimeDescriptor[];
   scopes: { [runtimeId: string]: RuntimeScope };
   services: { [runtimeId: string]: ServiceDescriptor[] };
@@ -126,15 +128,17 @@ export async function assetUses(board: AssetBoard, assetId?: string): Promise<As
 }
 
 /**
- * Sends changed descriptors to the runtimes that need them: a new or edited
- * one to each runtime whose services reference it, a deletion (`null`) to
- * every runtime that takes pushes, since which of them were told about it is
- * not recorded anywhere and removing one it never had costs nothing.
+ * Sends changed descriptors to the board's own runtimes: a new or edited one
+ * to each runtime the asset is for, and a deletion (`null`) to every other —
+ * one the board dropped, or one this runtime is no longer given. Which of them
+ * held it is not recorded anywhere, and removing one it never had costs
+ * nothing.
  *
  * Returns the runtimes that did not take what they were sent, which nothing
  * else will report: one that missed a descriptor goes on using the one it
  * had, and one that missed a deletion still holds the asset — out of the
- * board, but there for an `asset` service whose input asks for it by name.
+ * board, or kept from that runtime, but there for a service asked for it by
+ * name.
  */
 export async function pushAssetChanges(
   board: AssetBoard,
@@ -143,22 +147,15 @@ export async function pushAssetChanges(
   if (!Object.keys(changes).length) {
     return [];
   }
-  const live = await liveServiceStates(board);
   const failures: AssetPushFailure[] = [];
   await Promise.all(
     ownRuntimes(board).map(async (runtime) => {
       if (!takesPushes(board, runtime)) {
         return;
       }
-      const referenced = findAssetRefs((live[runtime.id] ?? []).map((svc) => svc.state));
       const push: AssetPush = {};
       for (const [id, descriptor] of Object.entries(changes)) {
-        if (descriptor === null || referenced.includes(id)) {
-          push[id] = descriptor;
-        }
-      }
-      if (!Object.keys(push).length) {
-        return;
+        push[id] = descriptor && assetReaches(descriptor, runtime) ? descriptor : null;
       }
       const failure = await pushTo(board, runtime, push);
       if (failure) {
@@ -228,7 +225,7 @@ export async function rewriteAssetRefs(
 
 /**
  * Moves the runtimes from an asset's old id to its new one: the descriptor
- * under the new id to every runtime naming the old one, then the references
+ * under the new id to every runtime it is for, then the references
  * rewritten. In that order, so that no service is told to use an id its
  * runtime has not been given — a runtime that does not take the descriptor
  * stops the rename before anything is rewritten. The old descriptor is left
@@ -245,11 +242,8 @@ export async function renameAssetOnRuntimes(
   asset: AssetDescriptor,
   from: string,
 ): Promise<number> {
-  const live = await liveServiceStates(board);
   const staged = ownRuntimes(board).filter(
-    (runtime) =>
-      takesPushes(board, runtime) &&
-      findAssetRefs((live[runtime.id] ?? []).map((svc) => svc.state)).includes(from),
+    (runtime) => takesPushes(board, runtime) && assetReaches(asset, runtime),
   );
   const refused = (
     await Promise.all(staged.map((runtime) => pushTo(board, runtime, { [asset.id]: asset })))
@@ -284,23 +278,19 @@ export async function renameAssetOnRuntimes(
 }
 
 /**
- * What each runtime referencing an asset says about resolving it — the view's
- * "fetch now". Asked of the runtimes that will use it, because only they can
+ * What each runtime given an asset says about resolving it — the view's
+ * "fetch now". Asked of the runtimes that may use it, because only they can
  * say whether a URL or a file is within their reach.
  */
 export async function checkAssetOnRuntimes(
   board: AssetBoard,
   assetId: string,
 ): Promise<Array<{ runtime: RuntimeDescriptor; check: AssetCheck }>> {
-  const live = await liveServiceStates(board);
-  const referencing = ownRuntimes(board).filter((runtime) =>
-    findAssetRefs((live[runtime.id] ?? []).map((svc) => svc.state)).includes(assetId),
+  const asset = board.assets?.find((entry) => entry.id === assetId);
+  const asked = ownRuntimes(board).filter(
+    (runtime) =>
+      !!apiOf(board, runtime)?.checkAsset && (!asset || assetReaches(asset, runtime)),
   );
-  // Nothing references it yet: ask the first runtime that can answer, so an
-  // asset can be checked before it is used.
-  const asked = referencing.length
-    ? referencing
-    : ownRuntimes(board).filter((runtime) => apiOf(board, runtime)?.checkAsset).slice(0, 1);
   return Promise.all(
     asked.map(async (runtime) => {
       const scope = board.scopes[runtime.id];

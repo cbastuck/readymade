@@ -794,6 +794,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const cancelBlockEdit = () => cancelBlockEditOp(buildContextValue(), setLinkage);
 
     const assetBoard = () => ({
+      assets: latestAssetsRef.current,
       runtimes: providerStateRef.current.runtimes,
       scopes: providerStateRef.current.scopes,
       services: providerStateRef.current.services,

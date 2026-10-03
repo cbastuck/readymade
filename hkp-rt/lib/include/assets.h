@@ -14,7 +14,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include <secrets.h>
 
 namespace hkp {
 
@@ -26,18 +25,26 @@ namespace hkp {
 // the content itself. getState() therefore echoes the reference, and saving a
 // board writes back what was configured: there is no round trip to undo.
 //
-// The descriptors arrive the way secrets do — with the runtime's create
-// payload, or on POST /runtimes/<id>/assets — plus again whenever an asset is
-// edited, which is the point: a service resolves its reference at the moment it
-// uses it, so the next use gets the new content without anything being
-// reconfigured.
+// The descriptors arrive with the runtime's create payload, or on
+// POST /runtimes/<id>/assets — and again whenever an asset is edited, which is
+// the point: a service resolves its reference at the moment it uses it, so the
+// next use gets the new content without anything being reconfigured. A runtime
+// is given every asset of its board that is not kept to other runtimes, named
+// by its services or not: which one a service uses can be decided as it runs.
 //
 // Where the content comes from depends on the source:
 //
 //   text, base64   already in the descriptor
-//   http(s)://     fetched by this runtime, cached by sha256 or revalidated by ETag
+//   http(s)://     fetched by this runtime as anyone would fetch it, following
+//                  redirects to other http(s) addresses, cached by sha256 or
+//                  revalidated by ETag
 //   file://        only inside the root this host was given (HKP_ASSET_ROOT);
 //                  refused everywhere else, never read
+//
+// An asset carries no request headers and names no secret. It is resolved
+// without anyone looking, by every runtime holding it, which is no place for a
+// credential; content that needs one is fetched by a service that says where
+// it sends it.
 //
 // The format matches hkp-frontend/src/runtime/board/assets.ts and
 // hkp-node/src/assets.ts: a board written against one runtime has to open
@@ -147,22 +154,34 @@ std::optional<AssetDescriptor> readAssetDescriptor(const nlohmann::json& value,
 // service referencing it says so by name. A removal is an entry holding null.
 std::map<std::string, nlohmann::json> readAssetsPayload(const nlohmann::json& value);
 
+// The bytes base64 text stands for, or nothing when it is not base64.
+//
+// Beast's decoder stops at the first character it does not recognise and hands
+// back what it had, so text that is not base64 — or base64 wrapped over lines —
+// would come out as some of its bytes. What is taken here is what a browser's
+// atob takes — ASCII whitespace ignored, the standard alphabet, padding
+// optional — so that a descriptor resolves to the same content, or the same
+// refusal, on every runtime.
+std::optional<std::string> decodeBase64(const std::string& encoded);
+
 class AssetStore
 {
 public:
-  // How a URL source is fetched. Supplied for tests; the default speaks HTTP and
-  // HTTPS through Beast. Answers status, body and ETag, or throws.
+  // How one address is fetched. Supplied for tests; the default speaks HTTP and
+  // HTTPS through Beast. Answers status, body and ETag, or throws. One request:
+  // the store follows a redirect itself, so it does with any fetch.
   struct FetchResponse
   {
     int status = 0;
     std::string body;
     std::string etag;
+    // Where a redirect points, as the response gave it; empty otherwise.
+    std::string location;
   };
   using Fetch = std::function<FetchResponse(const std::string& url,
                                             const std::map<std::string, std::string>& headers)>;
 
-  explicit AssetStore(std::function<SecretVault*()> secrets = [] { return nullptr; },
-                      Fetch fetch = nullptr);
+  explicit AssetStore(Fetch fetch = nullptr);
 
   // Replaces everything held.
   void replace(const std::map<std::string, nlohmann::json>& entries);
@@ -213,7 +232,6 @@ private:
   std::size_t m_cachedBytes = 0;
   std::map<std::size_t, std::pair<std::string, std::function<void(const std::string&)>>> m_listeners;
   std::size_t m_nextListener = 1;
-  std::function<SecretVault*()> m_secrets;
   Fetch m_fetch;
   std::string m_fileRoot;
 };

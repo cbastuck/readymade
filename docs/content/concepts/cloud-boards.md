@@ -39,6 +39,11 @@ it moves to a server.
 
 The order is the whole trick, on both sides.
 
+> **Warning — unit assets are not deployed:** Deployment carries only the
+> top-level board's assets. A runtime contributed by a unit receives none of
+> that unit's assets, so its `hkp-asset://…` references will fail to resolve.
+> See [Assets: Units and deploying](./assets.md#units-and-deploying).
+
 ### Browser side — `hkp-frontend/src/core/deploy.ts`
 
 `DeployMenu` (desktop) or `DeployBoardSheet` (mobile) calls `deployBoard()`,
@@ -316,6 +321,10 @@ registers only when asked.
 
 ## Known gaps
 
+- **Unit-owned assets are not deployed.** Deployment carries only the
+  top-level board's asset descriptors. A runtime contributed by a unit receives
+  none of that unit's assets, so its `hkp-asset://…` references will not resolve
+  in the deployed board. See [Assets: Units and deploying](./assets.md#units-and-deploying).
 - **Resuming is not built.** Registering always provisions; a coordinator never
   attaches to runtimes already running under those ids. Start on a stopped board
   is a re-deploy.

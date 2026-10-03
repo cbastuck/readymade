@@ -12,13 +12,20 @@
  *
  *   Resolution happens in the runtime that uses the content, at the moment it
  *   uses it, from that runtime's asset store. The store is pushed the
- *   descriptors its services reference — with the create payload, before a
- *   configuration that names a new one, and again whenever an asset is edited —
- *   so an edit changes what is served without reconfiguring anything.
+ *   descriptors of the runtime's document — with the create payload, on
+ *   attach, and again whenever an asset is edited — so an edit changes what is
+ *   served without reconfiguring anything. All of them, unless an asset names
+ *   the runtimes it is for: a reference can be chosen while a board runs, and
+ *   has to resolve wherever it arrives.
  *
- * References are *found* by their scheme anywhere in a string, so that one an
- * expression produces is still pushed to the runtime that will resolve it. They
- * are *resolved* only as a whole value: nothing is spliced into longer text.
+ * A source is content, or an address anyone may fetch. An asset carries no
+ * request headers and names no secret: it is resolved without anyone looking,
+ * on every runtime holding it, which is no place for a credential. Content
+ * that needs one is fetched by a service that shows where it sends it.
+ *
+ * References are *found* by their scheme anywhere in a string — for saying
+ * where an asset is used, and for renaming one. They are *resolved* only as a
+ * whole value: nothing is spliced into longer text.
  *
  * The format matches hkp-node's `src/assets.ts`: a board written against one
  * runtime has to open against another.
@@ -34,10 +41,7 @@ const SHA256_PATTERN = /^[0-9a-fA-F]{64}$/;
 const WHOLE_REFERENCE = /^hkp-asset:\/\/([A-Za-z0-9_.-]+)$/;
 const ANY_REFERENCE = /hkp-asset:\/\/([A-Za-z0-9_.-]+)/g;
 
-export type AssetSource =
-  | { text: string }
-  | { base64: string }
-  | { url: string; headers?: Record<string, string> };
+export type AssetSource = { text: string } | { base64: string } | { url: string };
 
 export type AssetDescriptor = {
   id: string;
@@ -48,6 +52,11 @@ export type AssetDescriptor = {
   sha256?: string;
   /** For the view, and for refusing oversized inline content. */
   size?: number;
+  /**
+   * The runtimes that are given this asset, by the id they have in the
+   * document declaring it. Absent: every runtime of that document.
+   */
+  runtimes?: string[];
 } & AssetSource;
 
 /** Where an asset's content is, as the asset view names it. */
@@ -68,19 +77,47 @@ export type AssetPush = Record<string, AssetDescriptor | null>;
  */
 export type AssetsSource = () => AssetDescriptor[];
 
+/** A runtime as an asset's `runtimes` may name it. */
+type AssetRuntime = { id?: string; unit?: string; unitRuntimeId?: string };
+
 /**
- * The descriptors a runtime's services may reference: the board's own, or
- * those of the unit that contributed the runtime — each runtime belongs to
- * exactly one document, and references are lexical to it.
+ * Whether a runtime is given an asset: every runtime is, unless the asset
+ * names the ones that are. A runtime a unit contributed is named by the id it
+ * has in that unit, which is the document the asset was written in.
+ */
+export function assetReaches(asset: AssetDescriptor, runtime: AssetRuntime): boolean {
+  return !asset.runtimes || asset.runtimes.includes(runtime.unitRuntimeId ?? runtime.id ?? "");
+}
+
+/**
+ * The descriptors a runtime's services may reference, which are the ones it
+ * is given: those of its document — the board's own, or those of the unit that
+ * contributed the runtime, since each runtime belongs to exactly one document
+ * and references are lexical to it — less the ones kept to other runtimes.
+ *
+ * All of them rather than the ones its services name: which asset a service
+ * uses can be decided as it runs — by its input, by a request — and a
+ * reference that reaches a runtime has to resolve there.
+ *
+ * Without a runtime, the board's own, whole.
  */
 export function assetsOfRuntime(
-  runtime: { unit?: string } | undefined,
+  runtime: AssetRuntime | undefined,
   assets: AssetDescriptor[] | undefined,
   units: Array<{ name: string; source: { assets?: AssetDescriptor[] } }> | undefined,
 ): AssetDescriptor[] {
-  return runtime?.unit
+  if (!runtime) {
+    return assets ?? [];
+  }
+  const declared = runtime.unit
     ? (units?.find((unit) => unit.name === runtime.unit)?.source.assets ?? [])
     : (assets ?? []);
+  return declared.filter((asset) => assetReaches(asset, runtime));
+}
+
+/** Descriptors by id, as a runtime is sent them. */
+export function assetsById(assets: AssetDescriptor[] | undefined): Record<string, AssetDescriptor> {
+  return Object.fromEntries((assets ?? []).map((asset) => [asset.id, asset]));
 }
 
 export function isAssetId(value: string): boolean {
@@ -133,10 +170,10 @@ export function findAssetRefs(value: unknown, into: string[] = []): string[] {
 }
 
 /**
- * The descriptors a set of services references, by id — what a runtime hosting
- * them is sent. Only those: a board's inline assets can be large, and a runtime
- * holds nothing it has no use for. A reference to an asset the board does not
- * declare is left out, and the service naming it says so when it resolves.
+ * The descriptors a set of services references, by id — for a board cut down
+ * to some of its services, which takes the assets those name with it. Not what
+ * a runtime is sent: see `assetsOfRuntime`. A reference to an asset the board
+ * does not declare is left out.
  */
 export function referencedAssets(
   services: Array<{ state?: unknown }> | undefined,
@@ -270,7 +307,8 @@ export function renameAssetRefs<T>(value: T, from: string, to: string): T {
  * one source: two would leave a runtime choosing between them.
  *
  * What makes it an asset — id, source, media type — is required. The rest is
- * kept where it is well-formed and left out where it is not, the way
+ * kept where it is well-formed and left out where it is not or is not part of
+ * a descriptor, the way
  * hkp-node's `readAssetDescriptor` reads the same descriptor: a board has to
  * mean the same thing to the runtime it is pushed to as it does here.
  */
@@ -303,29 +341,19 @@ export function checkAssetDescriptor(value: unknown): AssetDescriptor | string {
   if (typeof record.size === "number" && Number.isFinite(record.size)) {
     descriptor.size = record.size;
   }
+  if (Array.isArray(record.runtimes)) {
+    descriptor.runtimes = record.runtimes.filter((id) => typeof id === "string");
+  }
   const source = sources[0];
   descriptor[source] = record[source];
-  if (
-    source === "url" &&
-    record.headers &&
-    typeof record.headers === "object" &&
-    !Array.isArray(record.headers)
-  ) {
-    const headers: Record<string, string> = {};
-    for (const [name, header] of Object.entries(record.headers as Record<string, unknown>)) {
-      if (typeof header === "string") {
-        headers[name] = header;
-      }
-    }
-    descriptor.headers = headers;
-  }
   return descriptor as AssetDescriptor;
 }
 
 /**
  * A board's `assets`, read for loading: what can be used, and a sentence for
- * each entry that cannot. An entry that is dropped costs that one asset — the
- * services naming it say so when they resolve — rather than the board.
+ * each entry that cannot, or that is used without something it declared. An
+ * entry that is dropped costs that one asset — the services naming it say so
+ * when they resolve — rather than the board.
  */
 export function readBoardAssets(value: unknown): {
   assets: AssetDescriptor[];
@@ -348,6 +376,12 @@ export function readBoardAssets(value: unknown): {
     if (assets.some((asset) => asset.id === checked.id)) {
       problems.push(`asset "${checked.id}" is declared twice; the first is kept`);
       continue;
+    }
+    // Kept, without them: said so that a fetch that then fails is not a puzzle.
+    if ((entry as { headers?: unknown }).headers !== undefined) {
+      problems.push(
+        `asset "${checked.id}" declares headers, which an asset does not take; it is fetched without them`,
+      );
     }
     assets.push(checked);
   }

@@ -12,8 +12,10 @@
  *   the runtimes referencing it. They serve it on their next use; nothing is
  *   reconfigured. A runtime that did not take it is named, and Apply stays
  *   available to send it again.
- * - **A URL** as a descriptor, with a check that asks the runtimes that will
- *   use it whether it resolves, since only they know what they can reach.
+ * - **A URL** as a descriptor, with a check that asks the runtimes given it
+ *   whether it resolves, since only they know what they can reach.
+ * - **Given to**: every runtime of the board, including one added later, or
+ *   only the ones ticked.
  * - **Used by**: every service whose state names the asset, found by a scan
  *   for the scheme over what the services hold now, each a way to that
  *   service.
@@ -33,12 +35,14 @@ import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution"
 
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import Editor from "hkp-frontend/src/components/shared/Editor";
+import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
 import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
 import {
   AssetCheck,
   AssetDescriptor,
   AssetSourceKind,
   AssetUse,
+  assetReaches,
   assetSize,
   assetSourceKind,
   formatAssetRef,
@@ -122,16 +126,10 @@ type Draft = {
   descriptor: AssetDescriptor;
   /** The id it was loaded under, or null for one not yet on the board. */
   original: string | null;
-  headersText: string;
 };
 
 function draftOf(asset: AssetDescriptor, original: string | null): Draft {
-  return {
-    descriptor: asset,
-    original,
-    headersText:
-      "url" in asset && asset.headers ? JSON.stringify(asset.headers, null, 2) : "",
-  };
+  return { descriptor: asset, original };
 }
 
 /**
@@ -172,7 +170,10 @@ const field: React.CSSProperties = {
   padding: "4px 6px",
   border: "1px solid var(--hkp-border, #d4d4d8)",
   borderRadius: 4,
-  background: "transparent",
+  // The surface a service's card has, a step lighter than the view around it:
+  // on the view's own background a field reads as one that cannot be typed in.
+  background: "var(--bg-card, #ffffff)",
+  color: "var(--text, #1a1a1a)",
   fontSize: 13,
 };
 const iconButton: React.CSSProperties = {
@@ -196,7 +197,10 @@ export default function AssetView() {
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [uses, setUses] = useState<AssetUse[] | null>(null);
-  const [checks, setChecks] = useState<Array<{ runtime: RuntimeDescriptor; check: AssetCheck }> | null>(null);
+  const [checks, setChecks] = useState<Array<{
+    runtime: RuntimeDescriptor;
+    check: AssetCheck;
+  }> | null>(null);
   const [busy, setBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -256,19 +260,25 @@ export default function AssetView() {
     return null;
   }
 
-  const applied = draft ? assets.find((asset) => asset.id === draft.original) : undefined;
+  const applied = draft
+    ? assets.find((asset) => asset.id === draft.original)
+    : undefined;
   const dirty =
     !!draft &&
-    (!applied ||
-      JSON.stringify(draft.descriptor) !== JSON.stringify(applied) ||
-      draft.headersText !== draftOf(applied, applied.id).headersText);
+    (!applied || JSON.stringify(draft.descriptor) !== JSON.stringify(applied));
   // The runtimes the last Apply of this asset did not reach.
   const staleOn = (draft?.original && assetView.staleOn[draft.original]) || [];
 
   const update = (change: Partial<AssetDescriptor>) =>
     setDraft((previous) =>
       previous
-        ? { ...previous, descriptor: { ...previous.descriptor, ...change } as AssetDescriptor }
+        ? {
+            ...previous,
+            descriptor: {
+              ...previous.descriptor,
+              ...change,
+            } as AssetDescriptor,
+          }
         : previous,
     );
 
@@ -302,8 +312,19 @@ export default function AssetView() {
     // came, base64 in the board. Moving large content out is suggested, not done.
     startNew(
       isTextMediaType(mediaType)
-        ? { id, name: file.name, mediaType, text: new TextDecoder().decode(bytes) }
-        : { id, name: file.name, mediaType, base64: toBase64(bytes), size: bytes.length },
+        ? {
+            id,
+            name: file.name,
+            mediaType,
+            text: new TextDecoder().decode(bytes),
+          }
+        : {
+            id,
+            name: file.name,
+            mediaType,
+            base64: toBase64(bytes),
+            size: bytes.length,
+          },
     );
   };
 
@@ -311,15 +332,54 @@ export default function AssetView() {
     if (!draft) {
       return;
     }
-    const { id, name, mediaType } = draft.descriptor;
-    const base = { id, ...(name ? { name } : {}), mediaType };
+    const { id, name, mediaType, runtimes } = draft.descriptor;
+    const base = {
+      id,
+      ...(name ? { name } : {}),
+      mediaType,
+      ...(runtimes ? { runtimes } : {}),
+    };
     const next: AssetDescriptor =
       kind === "text"
         ? { ...base, text: "" }
         : kind === "base64"
           ? { ...base, base64: "" }
           : { ...base, url: "https://" };
-    setDraft({ ...draft, descriptor: next, headersText: "" });
+    setDraft({ ...draft, descriptor: next });
+  };
+
+  // The runtimes an asset can be kept to are the board's own: one a unit
+  // contributed is given that unit's assets.
+  const ownRuntimes = board.runtimes.filter((runtime) => !runtime.unit);
+
+  // Two answers to "which runtimes are given this asset", kept apart: every
+  // one, which says nothing and so covers a runtime added later, or the ones
+  // named. Ticking every runtime there is does not turn the second into the
+  // first — a list stays a list, and a later runtime is not on it.
+  const setRuntimes = (runtimes: string[] | undefined) => {
+    if (!draft) {
+      return;
+    }
+    const { runtimes: _previous, ...rest } = draft.descriptor;
+    setDraft({
+      ...draft,
+      descriptor: (runtimes ? { ...rest, runtimes } : rest) as AssetDescriptor,
+    });
+  };
+
+  const setReaches = (runtimeId: string, reaches: boolean) => {
+    if (!draft) {
+      return;
+    }
+    setRuntimes(
+      ownRuntimes
+        .filter((runtime) =>
+          runtime.id === runtimeId
+            ? reaches
+            : assetReaches(draft.descriptor, runtime),
+        )
+        .map((runtime) => runtime.id),
+    );
   };
 
   const problemWith = (candidate: Draft): string | null => {
@@ -350,29 +410,18 @@ export default function AssetView() {
     if (!draft) {
       return;
     }
-    let descriptor = draft.descriptor;
-    if ("url" in descriptor) {
-      const text = draft.headersText.trim();
-      let headers: Record<string, string> | undefined;
-      if (text) {
-        try {
-          headers = JSON.parse(text);
-        } catch {
-          toast.error("Headers are not JSON");
-          return;
-        }
-      }
-      const { headers: _previous, ...rest } = descriptor as AssetDescriptor & { headers?: unknown };
-      descriptor = (headers ? { ...rest, headers } : rest) as AssetDescriptor;
-    }
-    const problem = problemWith({ ...draft, descriptor });
+    const descriptor = draft.descriptor;
+    const problem = problemWith(draft);
     if (problem) {
       toast.error(problem);
       return;
     }
     setBusy(true);
     try {
-      const failures = await board.setAsset(descriptor, draft.original ?? undefined);
+      const failures = await board.setAsset(
+        descriptor,
+        draft.original ?? undefined,
+      );
       // Another board was opened meanwhile: what came of this is not its to show.
       if (!onThisBoard()) {
         return;
@@ -383,7 +432,9 @@ export default function AssetView() {
       if (renamed) {
         assetView.setStaleOn(draft.original!, []);
       }
-      const stale = failures.filter(({ push }) => push[descriptor.id]);
+      // Whatever it was to be sent — the asset, or its removal from a runtime
+      // it is no longer for — it still has what it had.
+      const stale = failures.filter(({ push }) => descriptor.id in push);
       const names = stale.map(({ runtime }) => runtime.name);
       assetView.setStaleOn(descriptor.id, names);
       if (stale.length) {
@@ -433,7 +484,10 @@ export default function AssetView() {
       action: {
         label: "Retry",
         onClick: () => {
-          if (onThisBoard() && !latest.current.assets.some((asset) => asset.id === id)) {
+          if (
+            onThisBoard() &&
+            !latest.current.assets.some((asset) => asset.id === id)
+          ) {
             void removeFromRuntimes(id);
           }
         },
@@ -454,7 +508,9 @@ export default function AssetView() {
       }
     } catch (err: any) {
       if (onThisBoard()) {
-        toast.error(`Could not remove "${id}"`, { description: err?.message ?? String(err) });
+        toast.error(`Could not remove "${id}"`, {
+          description: err?.message ?? String(err),
+        });
       }
     }
   };
@@ -497,7 +553,9 @@ export default function AssetView() {
       reportLeftOn(id, failures);
     } catch (err: any) {
       if (onThisBoard()) {
-        toast.error(`Could not delete "${id}"`, { description: err?.message ?? String(err) });
+        toast.error(`Could not delete "${id}"`, {
+          description: err?.message ?? String(err),
+        });
       }
     } finally {
       setBusy(false);
@@ -522,7 +580,8 @@ export default function AssetView() {
   };
 
   const runtimeName = (runtimeId: string) =>
-    board.runtimes.find((runtime) => runtime.id === runtimeId)?.name ?? runtimeId;
+    board.runtimes.find((runtime) => runtime.id === runtimeId)?.name ??
+    runtimeId;
 
   const kind = draft ? assetSourceKind(draft.descriptor) : null;
   const size = draft ? assetSize(draft.descriptor) : undefined;
@@ -554,7 +613,12 @@ export default function AssetView() {
         }}
       >
         <div style={{ display: "flex", gap: 6, padding: 8, flexWrap: "wrap" }}>
-          <button type="button" style={iconButton} onClick={newText} title="New inline text asset">
+          <button
+            type="button"
+            style={iconButton}
+            onClick={newText}
+            title="New inline text asset"
+          >
             <FilePlus2 size={13} /> Text
           </button>
           <button
@@ -565,7 +629,12 @@ export default function AssetView() {
           >
             <Upload size={13} /> File
           </button>
-          <button type="button" style={iconButton} onClick={newUrl} title="New asset at a URL">
+          <button
+            type="button"
+            style={iconButton}
+            onClick={newUrl}
+            title="New asset at a URL"
+          >
             <Link2 size={13} /> URL
           </button>
           <input
@@ -581,11 +650,16 @@ export default function AssetView() {
             }}
           />
         </div>
-        <div style={{ overflowY: "auto", flex: 1 }} role="listbox" aria-label="Assets">
+        <div
+          style={{ overflowY: "auto", flex: 1 }}
+          role="listbox"
+          aria-label="Assets"
+        >
           {!assets.length && !draft && (
             <p style={{ ...muted, padding: "4px 12px" }}>
-              This board declares no assets yet. Content a service serves, plays or loads can live
-              here once and be named from its state as <code>hkp-asset://id</code>.
+              This board declares no assets yet. Content a service serves, plays
+              or loads can live here once and be named from its state as{" "}
+              <code>hkp-asset://id</code>.
             </p>
           )}
           {assets.map((asset) => {
@@ -604,16 +678,20 @@ export default function AssetView() {
                   padding: "6px 12px",
                   border: "none",
                   cursor: "pointer",
-                  background: active ? "var(--hkp-accent-dim, rgba(10,188,251,0.12))" : "none",
+                  background: active
+                    ? "var(--hkp-accent-dim, rgba(10,188,251,0.12))"
+                    : "none",
                 }}
               >
                 <div style={{ fontWeight: 500 }}>{asset.name || asset.id}</div>
                 <div style={muted}>
-                  {asset.id} · {asset.mediaType.split(";")[0]} · {assetSourceKind(asset)} ·{" "}
-                  {formatBytes(assetSize(asset))}
+                  {asset.id} · {asset.mediaType.split(";")[0]} ·{" "}
+                  {assetSourceKind(asset)} · {formatBytes(assetSize(asset))}
                 </div>
                 {assetView.staleOn[asset.id] && (
-                  <div style={warning}>not on {assetView.staleOn[asset.id].join(", ")}</div>
+                  <div style={warning}>
+                    not on {assetView.staleOn[asset.id].join(", ")}
+                  </div>
                 )}
               </button>
             );
@@ -632,19 +710,38 @@ export default function AssetView() {
         </div>
       </aside>
 
-      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", padding: 12, gap: 10, overflowY: "auto" }}>
+      <main
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: 12,
+          gap: 10,
+          overflowY: "auto",
+        }}
+      >
         {!draft ? (
           <p style={muted}>Choose an asset, or start a new one.</p>
         ) : (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 8,
+              }}
+            >
               <label>
                 <div style={label}>Id</div>
                 <input
                   style={field}
                   value={draft.descriptor.id}
-                  onChange={(event) => update({ id: event.target.value.trim() })}
+                  onChange={(event) =>
+                    update({ id: event.target.value.trim() })
+                  }
                   aria-label="Asset id"
+                  spellCheck={false}
                 />
               </label>
               <label>
@@ -653,8 +750,11 @@ export default function AssetView() {
                   style={field}
                   value={draft.descriptor.name ?? ""}
                   placeholder={draft.descriptor.id}
-                  onChange={(event) => update({ name: event.target.value || undefined })}
+                  onChange={(event) =>
+                    update({ name: event.target.value || undefined })
+                  }
                   aria-label="Asset name"
+                  spellCheck={false}
                 />
               </label>
               <label>
@@ -662,35 +762,71 @@ export default function AssetView() {
                 <input
                   style={field}
                   value={draft.descriptor.mediaType}
-                  onChange={(event) => update({ mediaType: event.target.value })}
+                  onChange={(event) =>
+                    update({ mediaType: event.target.value })
+                  }
                   aria-label="Media type"
                 />
               </label>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
               <span style={label}>Source</span>
               {(["text", "base64", "url"] as const).map((option) => (
-                <label key={option} style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+                <label
+                  key={option}
+                  style={{
+                    display: "inline-flex",
+                    gap: 4,
+                    alignItems: "center",
+                  }}
+                >
                   <input
                     type="radio"
                     name="asset-source"
                     checked={kind === option}
                     onChange={() => setSourceKind(option)}
                   />
-                  {option === "text" ? "Inline text" : option === "base64" ? "Inline bytes" : "URL"}
+                  {option === "text"
+                    ? "Inline text"
+                    : option === "base64"
+                      ? "Inline bytes"
+                      : "URL"}
                 </label>
               ))}
               <span style={muted}>{formatBytes(size)}</span>
-              <code style={{ ...muted, marginLeft: "auto" }}>{formatAssetRef(draft.descriptor.id)}</code>
+              {/* What a service's state holds to name this asset, there to be taken. */}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 2,
+                  marginLeft: "auto",
+                }}
+              >
+                <code style={muted}>{formatAssetRef(draft.descriptor.id)}</code>
+                <CopyButton
+                  value={formatAssetRef(draft.descriptor.id)}
+                  label="reference"
+                />
+              </span>
             </div>
 
-            {kind !== "url" && size !== undefined && size > LARGE_INLINE_BYTES && (
-              <p style={warning}>
-                This is large to keep inside the board, which every save and share carries. Consider
-                hosting it and naming it here by URL.
-              </p>
-            )}
+            {kind !== "url" &&
+              size !== undefined &&
+              size > LARGE_INLINE_BYTES && (
+                <p style={warning}>
+                  This is large to keep inside the board, which every save and
+                  share carries. Consider hosting it and naming it here by URL.
+                </p>
+              )}
 
             {"text" in draft.descriptor && (
               <Editor
@@ -698,7 +834,9 @@ export default function AssetView() {
                 value={draft.descriptor.text}
                 language={languageFor(draft.descriptor.mediaType)}
                 height={420}
-                onChange={(text) => update({ text: text ?? "" } as Partial<AssetDescriptor>)}
+                onChange={(text) =>
+                  update({ text: text ?? "" } as Partial<AssetDescriptor>)
+                }
               />
             )}
 
@@ -721,7 +859,10 @@ export default function AssetView() {
                         return;
                       }
                       const bytes = new Uint8Array(await file.arrayBuffer());
-                      update({ base64: toBase64(bytes), size: bytes.length } as Partial<AssetDescriptor>);
+                      update({
+                        base64: toBase64(bytes),
+                        size: bytes.length,
+                      } as Partial<AssetDescriptor>);
                     }}
                   />
                 </label>
@@ -735,7 +876,11 @@ export default function AssetView() {
                   <input
                     style={field}
                     value={draft.descriptor.url}
-                    onChange={(event) => update({ url: event.target.value } as Partial<AssetDescriptor>)}
+                    onChange={(event) =>
+                      update({
+                        url: event.target.value,
+                      } as Partial<AssetDescriptor>)
+                    }
                     aria-label="Asset URL"
                   />
                 </label>
@@ -744,19 +889,82 @@ export default function AssetView() {
                   <input
                     style={field}
                     value={draft.descriptor.sha256 ?? ""}
-                    onChange={(event) => update({ sha256: event.target.value.trim() || undefined })}
+                    onChange={(event) =>
+                      update({ sha256: event.target.value.trim() || undefined })
+                    }
                     aria-label="sha256"
                   />
                 </label>
-                <label>
-                  <div style={label}>Headers (JSON; may name secrets as {"{{secret.alias}}"})</div>
-                  <textarea
-                    style={{ ...field, fontFamily: "monospace", minHeight: 60 }}
-                    value={draft.headersText}
-                    onChange={(event) => setDraft({ ...draft, headersText: event.target.value })}
-                    aria-label="Headers"
+                <p style={muted}>
+                  Fetched as it is, by each runtime using it: an asset sends no
+                  headers and no credentials. Content that needs them is fetched
+                  by a service.
+                </p>
+              </div>
+            )}
+
+            {ownRuntimes.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+                role="group"
+                aria-label="Runtimes given this asset"
+              >
+                <span style={label}>Given to</span>
+                <label
+                  style={{ display: "inline-flex", gap: 4, alignItems: "center" }}
+                >
+                  <input
+                    type="radio"
+                    name="asset-runtimes"
+                    checked={!draft.descriptor.runtimes}
+                    onChange={() => setRuntimes(undefined)}
                   />
+                  Every runtime, including any added later
                 </label>
+                <label
+                  style={{ display: "inline-flex", gap: 4, alignItems: "center" }}
+                >
+                  <input
+                    type="radio"
+                    name="asset-runtimes"
+                    checked={!!draft.descriptor.runtimes}
+                    // Starts from the ones that have it now, so that choosing
+                    // this changes nothing until one is unticked.
+                    onChange={() =>
+                      setRuntimes(ownRuntimes.map((runtime) => runtime.id))
+                    }
+                  />
+                  Only these:
+                </label>
+                {ownRuntimes.map((runtime) => (
+                  <label
+                    key={runtime.id}
+                    style={{
+                      display: "inline-flex",
+                      gap: 4,
+                      alignItems: "center",
+                      opacity: draft.descriptor.runtimes ? 1 : 0.5,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!draft.descriptor.runtimes}
+                      checked={
+                        !!draft.descriptor.runtimes &&
+                        assetReaches(draft.descriptor, runtime)
+                      }
+                      onChange={(event) =>
+                        setReaches(runtime.id, event.target.checked)
+                      }
+                    />
+                    {runtime.name || runtime.id}
+                  </label>
+                ))}
               </div>
             )}
 
@@ -771,7 +979,12 @@ export default function AssetView() {
               >
                 Apply
               </button>
-              <button type="button" style={iconButton} disabled={!dirty || busy} onClick={revert}>
+              <button
+                type="button"
+                style={iconButton}
+                disabled={!dirty || busy}
+                onClick={revert}
+              >
                 {draft.original ? "Revert" : "Discard"}
               </button>
               {draft.original && (
@@ -780,7 +993,11 @@ export default function AssetView() {
                   style={iconButton}
                   disabled={dirty || busy}
                   onClick={() => void check()}
-                  title={dirty ? "Apply first" : "Ask the runtimes using it whether it resolves"}
+                  title={
+                    dirty
+                      ? "Apply first"
+                      : "Ask the runtimes using it whether it resolves"
+                  }
                 >
                   Check
                 </button>
@@ -800,14 +1017,17 @@ export default function AssetView() {
 
             {staleOn.length > 0 && (
               <p style={warning}>
-                Not on {staleOn.join(", ")}: the last change did not arrive there, so the version
-                before it is still in use. Apply sends it again.
+                Not on {staleOn.join(", ")}: the last change did not arrive
+                there, so the version before it is still in use. Apply sends it
+                again.
               </p>
             )}
 
             {checks && (
               <div style={{ display: "grid", gap: 2 }}>
-                {checks.length === 0 && <span style={muted}>No runtime can resolve assets here.</span>}
+                {checks.length === 0 && (
+                  <span style={muted}>No runtime can resolve assets here.</span>
+                )}
                 {checks.map(({ runtime, check: result }) => (
                   <span key={runtime.id} style={{ fontSize: 12 }}>
                     <strong>{runtime.name}</strong>:{" "}
@@ -829,19 +1049,34 @@ export default function AssetView() {
                 ) : uses.length === 0 ? (
                   <span style={muted}>No service names this asset yet.</span>
                 ) : (
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 2 }}>
+                  <ul
+                    style={{
+                      listStyle: "none",
+                      padding: 0,
+                      margin: 0,
+                      display: "grid",
+                      gap: 2,
+                    }}
+                  >
                     {uses.map((use, index) => (
-                      <li key={`${use.runtimeId}/${use.serviceUuid}/${use.path.join(".")}/${index}`}>
+                      <li
+                        key={`${use.runtimeId}/${use.serviceUuid}/${use.path.join(".")}/${index}`}
+                      >
                         <button
                           type="button"
                           onClick={() => openUse(use)}
-                          style={{ ...iconButton, border: "none", padding: "2px 0" }}
+                          style={{
+                            ...iconButton,
+                            border: "none",
+                            padding: "2px 0",
+                          }}
                           title="Open this service"
                         >
                           <CornerUpRight size={12} />
                           <strong>{use.serviceName || use.serviceUuid}</strong>
                           <span style={muted}>
-                            {runtimeName(use.runtimeId)} · {use.path.join(".") || "(state)"}
+                            {runtimeName(use.runtimeId)} ·{" "}
+                            {use.path.join(".") || "(state)"}
                           </span>
                         </button>
                       </li>

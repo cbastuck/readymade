@@ -36,14 +36,12 @@ struct Refused : std::runtime_error
   using std::runtime_error::runtime_error;
 };
 
-std::string decodeBase64(const std::string& encoded)
+// How many redirects one fetch follows before it is given up.
+constexpr int kMaxRedirects = 10;
+
+bool isRedirect(int status)
 {
-  std::string out(beast::detail::base64::decoded_size(encoded.size()), '\0');
-  const auto [written, read] =
-    beast::detail::base64::decode(out.data(), encoded.data(), encoded.size());
-  (void)read;
-  out.resize(written);
-  return out;
+  return status == 301 || status == 302 || status == 303 || status == 307 || status == 308;
 }
 
 std::string lower(std::string text)
@@ -99,6 +97,7 @@ AssetStore::FetchResponse fetchUrl(const std::string& target,
     AssetStore::FetchResponse out;
     out.status = parser.get().result_int();
     out.etag = std::string(parser.get()[http::field::etag]);
+    out.location = std::string(parser.get()[http::field::location]);
     out.body = std::move(parser.get().body());
     return out;
   };
@@ -171,6 +170,51 @@ std::string fileInside(const std::string& root, const std::string& url)
 
 } // namespace
 
+std::optional<std::string> decodeBase64(const std::string& encoded)
+{
+  std::string text;
+  text.reserve(encoded.size());
+  for (const char c : encoded)
+  {
+    if (c != '\t' && c != '\n' && c != '\f' && c != '\r' && c != ' ')
+    {
+      text.push_back(c);
+    }
+  }
+  if (text.size() % 4 == 0)
+  {
+    for (int i = 0; i < 2 && !text.empty() && text.back() == '='; ++i)
+    {
+      text.pop_back();
+    }
+  }
+  // One character over a group of four stands for no byte at all.
+  if (text.size() % 4 == 1)
+  {
+    return std::nullopt;
+  }
+  for (const char c : text)
+  {
+    const bool known = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                       (c >= '0' && c <= '9') || c == '+' || c == '/';
+    if (!known)
+    {
+      return std::nullopt;
+    }
+  }
+  // Room for a last group that is not four characters: the padding that would
+  // have completed it is gone by now, and `decoded_size` counts whole groups.
+  std::string out((text.size() + 3) / 4 * 3, '\0');
+  const auto [written, read] =
+    boost::beast::detail::base64::decode(out.data(), text.data(), text.size());
+  if (read != text.size())
+  {
+    return std::nullopt;
+  }
+  out.resize(written);
+  return out;
+}
+
 std::optional<AssetDescriptor> readAssetDescriptor(const nlohmann::json& value,
                                                    const std::string& fallbackId)
 {
@@ -223,19 +267,21 @@ std::optional<AssetDescriptor> readAssetDescriptor(const nlohmann::json& value,
   {
     descriptor["size"] = value["size"];
   }
-  descriptor[source] = value[source];
-  if (source == "url" && value.contains("headers") && value["headers"].is_object())
+  // Which runtimes it is for: read by whoever provisions them, kept so that a
+  // descriptor reads the same on every runtime.
+  if (value.contains("runtimes") && value["runtimes"].is_array())
   {
-    nlohmann::json headers = nlohmann::json::object();
-    for (const auto& [name, header] : value["headers"].items())
+    nlohmann::json runtimes = nlohmann::json::array();
+    for (const auto& entry : value["runtimes"])
     {
-      if (header.is_string())
+      if (entry.is_string())
       {
-        headers[name] = header;
+        runtimes.push_back(entry);
       }
     }
-    descriptor["headers"] = headers;
+    descriptor["runtimes"] = runtimes;
   }
+  descriptor[source] = value[source];
   return descriptor;
 }
 
@@ -277,8 +323,8 @@ std::map<std::string, nlohmann::json> readAssetsPayload(const nlohmann::json& va
   return entries;
 }
 
-AssetStore::AssetStore(std::function<SecretVault*()> secrets, Fetch fetch)
-  : m_secrets(std::move(secrets)), m_fetch(std::move(fetch))
+AssetStore::AssetStore(Fetch fetch)
+  : m_fetch(std::move(fetch))
 {
   if (const char* root = std::getenv("HKP_ASSET_ROOT"))
   {
@@ -476,7 +522,13 @@ std::string AssetStore::load(const AssetDescriptor& descriptor, const CacheEntry
   }
   if (descriptor.contains("base64"))
   {
-    return decodeBase64(descriptor["base64"].get<std::string>());
+    auto bytes = decodeBase64(descriptor["base64"].get<std::string>());
+    if (!bytes)
+    {
+      problem = "its content is not base64";
+      return "";
+    }
+    return std::move(*bytes);
   }
 
   const auto url = descriptor["url"].get<std::string>();
@@ -515,38 +567,51 @@ std::string AssetStore::load(const AssetDescriptor& descriptor, const CacheEntry
     return "";
   }
 
-  nlohmann::json held = descriptor.contains("headers") ? descriptor["headers"] : nlohmann::json::object();
-  const auto credential = resolveCredential(m_secrets ? m_secrets() : nullptr, held, url);
-  if (!credential.problem.empty())
-  {
-    problem = credential.problem;
-    return "";
-  }
   std::map<std::string, std::string> headers;
-  if (credential.value.is_object())
-  {
-    for (const auto& [name, value] : credential.value.items())
-    {
-      if (value.is_string())
-      {
-        headers[name] = value.get<std::string>();
-      }
-    }
-  }
   if (cached && !cached->etag.empty())
   {
     headers["If-None-Match"] = cached->etag;
   }
 
+  // A redirect is followed here rather than by whatever fetches, so that it is
+  // followed the same way whichever that is — and only to another http(s)
+  // address, a bounded number of times.
   FetchResponse response;
-  try
+  std::string current = url;
+  for (int redirects = 0;; ++redirects)
   {
-    response = m_fetch ? m_fetch(url, headers) : fetchUrl(url, headers, maxBytes);
-  }
-  catch (const std::exception& error)
-  {
-    problem = url + " is unreachable: " + error.what();
-    return "";
+    try
+    {
+      response = m_fetch ? m_fetch(current, headers) : fetchUrl(current, headers, maxBytes);
+    }
+    catch (const std::exception& error)
+    {
+      problem = current + " is unreachable: " + error.what();
+      return "";
+    }
+    if (!isRedirect(response.status) || response.location.empty())
+    {
+      break;
+    }
+    if (redirects >= kMaxRedirects)
+    {
+      problem = url + " redirected more than " + std::to_string(kMaxRedirects) + " times";
+      return "";
+    }
+    const auto from = urls::parse_uri(current);
+    const auto to = urls::parse_uri_reference(response.location);
+    urls::url next;
+    if (from.has_error() || to.has_error() || urls::resolve(from.value(), to.value(), next).has_error())
+    {
+      problem = current + " redirected to \"" + response.location + "\", which is not a URL";
+      return "";
+    }
+    if (next.scheme_id() != urls::scheme::http && next.scheme_id() != urls::scheme::https)
+    {
+      problem = current + " redirected to a " + std::string(next.scheme()) + ":// address";
+      return "";
+    }
+    current = std::string(next.buffer());
   }
   if (response.status == 304 && cached)
   {

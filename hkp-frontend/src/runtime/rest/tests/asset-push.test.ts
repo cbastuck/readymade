@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import restApi, { pushAssetsTo } from "../RuntimeRestApi";
-import { AssetDescriptor } from "hkp-frontend/src/runtime/board/assets";
+import { AssetDescriptor, assetsOfRuntime } from "hkp-frontend/src/runtime/board/assets";
+import { addRuntime } from "hkp-frontend/src/core/runtimeOperations";
 import {
   RuntimeApiMap,
   RuntimeDescriptor,
@@ -16,11 +17,13 @@ import {
 } from "hkp-frontend/src/core/assetActions";
 
 /**
- * Descriptors reach a remote runtime whenever it comes to need them.
+ * A remote runtime is given the assets of its document — all of them, unless
+ * an asset names the runtimes it is for.
  *
- * The moments secrets have — provisioning, a configuration naming one, and
- * re-attaching to a runtime that restarted — plus one they do not: an asset
- * edited while the board runs, which is what makes the edit take effect.
+ * Which asset a service uses can be decided while the board runs, so a
+ * reference has to resolve wherever it arrives. The moments: provisioning,
+ * re-attaching to a runtime that restarted, and an asset edited while the
+ * board runs, which is what makes the edit take effect.
  */
 
 const runtime: RuntimeDescriptor = {
@@ -81,12 +84,12 @@ afterEach(() => {
 });
 
 describe("assets reaching a remote runtime", () => {
-  it("rides with the create payload — only what its services reference", async () => {
+  it("rides with the create payload — every one, named by a service or not", async () => {
     const fetchMock = mockFetch(created);
 
     await restApi.restoreRuntime(runtime, serving, null, "Radio", () => [page, script, unused]);
 
-    expect(sentTo(fetchMock, "/runtimes").assets).toEqual({ page, script });
+    expect(sentTo(fetchMock, "/runtimes").assets).toEqual({ page, script, unused });
   });
 
   it("is pushed again when re-attaching, since a restarted runtime lost its store", async () => {
@@ -104,12 +107,12 @@ describe("assets reaching a remote runtime", () => {
       return { ok: true, status: 200, json: async () => ({}) };
     });
 
-    await restApi.restoreRuntime(runtime, serving, null, "Radio", () => [page, script]);
+    await restApi.restoreRuntime(runtime, serving, null, "Radio", () => [page, script, unused]);
 
-    expect(sentTo(fetchMock, "/runtimes/relay/assets")).toEqual({ page, script });
+    expect(sentTo(fetchMock, "/runtimes/relay/assets")).toEqual({ page, script, unused });
   });
 
-  it("is pushed before a configuration that names one", async () => {
+  it("is not sent with a configuration: the runtime was given it already", async () => {
     const fetchMock = mockFetch(() => ({ ok: true, status: 200, json: async () => ({}) }));
     const scope = {
       descriptor: runtime,
@@ -122,21 +125,9 @@ describe("assets reaching a remote runtime", () => {
       asset: "hkp-asset://page",
     });
 
-    const calls = fetchMock.mock.calls.map(([url]) => String(url));
-    expect(calls).toEqual([
-      "http://127.0.0.1:8080/runtimes/relay/assets",
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
       "http://127.0.0.1:8080/runtimes/relay/services/a",
     ]);
-    expect(sentTo(fetchMock, "/assets")).toEqual({ page });
-  });
-
-  it("says nothing when a configuration names no asset", async () => {
-    const fetchMock = mockFetch(() => ({ ok: true, status: 200, json: async () => ({}) }));
-    const scope = { descriptor: runtime, services: [], authenticatedUser: null, assets: () => [page] } as never;
-
-    await restApi.configureService(scope, { uuid: "a" } as never, { bypass: false });
-
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes("/assets"))).toHaveLength(0);
   });
 
   it("answers why a runtime did not take a push, rather than throwing", async () => {
@@ -152,6 +143,105 @@ describe("assets reaching a remote runtime", () => {
     expect(await pushAssetsTo(runtime, { page }, null)).toBe(
       "Relay is unreachable: Failed to fetch",
     );
+  });
+});
+
+describe("a runtime added to a board that has assets", () => {
+  const added = { id: "new", name: "New", type: "rest", url: "http://127.0.0.1:8083" };
+  const kept = { ...script, runtimes: ["relay"] };
+
+  /** A board to add a runtime to, and what was done to it, in order. */
+  function boardTaking(push: () => Promise<string | null>, remove = async () => {}) {
+    const order: string[] = [];
+    const scope = {} as { assets?: () => AssetDescriptor[] };
+    const pushAssets = vi.fn(async () => {
+      order.push("push");
+      return push();
+    });
+    const removeRuntime = vi.fn(async () => {
+      order.push("remove");
+      return remove();
+    });
+    const onBoard = (what: string) => () => {
+      order.push(what);
+    };
+    const refs = {
+      propsRef: {
+        current: {
+          runtimeApis: {
+            rest: {
+              addRuntime: async () => ({ runtime: added, services: [], registry: [], scope }),
+              pushAssets,
+              removeRuntime,
+            },
+          },
+        },
+      },
+      userRef: { current: null },
+      boardNameRef: { current: "Radio" },
+      // The board's assets as this runtime is given them: all but the one
+      // kept to another runtime.
+      assetsFor: (runtime: RuntimeDescriptor) => () =>
+        assetsOfRuntime(runtime, [page, kept, unused], undefined),
+      setRuntimes: onBoard("on the board"),
+      setServices: onBoard("services"),
+      setRegistry: onBoard("registry"),
+      setScopes: onBoard("scope"),
+    };
+    const errors: string[] = [];
+    const waitForUserLogin = vi.fn(async () => {});
+    const add = () =>
+      addRuntime(
+        { type: "rest", name: "New", url: added.url } as never,
+        refs as never,
+        waitForUserLogin,
+        (err) => errors.push(err.message),
+      );
+    return { add, order, scope, pushAssets, removeRuntime, errors, waitForUserLogin };
+  }
+
+  it("is sent them before it is on the board, since nothing later would", async () => {
+    const { add, order, scope, pushAssets, errors } = boardTaking(async () => null);
+
+    const runtime = await add();
+
+    expect(runtime?.id).toBe("new");
+    expect(pushAssets).toHaveBeenCalledWith(scope, { page, unused });
+    expect(order).toEqual(["push", "on the board", "services", "registry", "scope"]);
+    expect(errors).toEqual([]);
+  });
+
+  it("is not added when it does not take them, and is removed from where it was created", async () => {
+    const { add, order, scope, removeRuntime, errors, waitForUserLogin } = boardTaking(
+      async () => "New answered 413",
+    );
+
+    expect(await add()).toBeNull();
+
+    // Never on the board, and not left running with nothing to resolve.
+    expect(order).toEqual(["push", "remove"]);
+    expect(removeRuntime).toHaveBeenCalledWith(scope, expect.objectContaining({ id: "new" }), null);
+    expect(errors).toEqual([
+      "it did not take the board's assets (New answered 413), so it was not added",
+    ]);
+    // Not a question of who is asking.
+    expect(waitForUserLogin).not.toHaveBeenCalled();
+  });
+
+  it("says so when it could not be removed again either", async () => {
+    const { add, order, errors } = boardTaking(
+      async () => "New is unreachable: Failed to fetch",
+      async () => {
+        throw new Error("Failed to fetch");
+      },
+    );
+
+    expect(await add()).toBeNull();
+
+    expect(order).toEqual(["push", "remove"]);
+    expect(errors).toEqual([
+      "it did not take the board's assets (New is unreachable: Failed to fetch), so it was not added; it could not be removed again and is still running there",
+    ]);
   });
 });
 
@@ -184,7 +274,7 @@ describe("an edit on the running board", () => {
     return { board, push, configure, check };
   };
 
-  it("pushes a changed descriptor to the runtimes that reference it, and no others", async () => {
+  it("pushes a changed descriptor to every runtime of the board's own, named there or not", async () => {
     const { board, push } = boardWith({
       radio: { body: "hkp-asset://page" },
       timer: { interval: 1000 },
@@ -194,18 +284,26 @@ describe("an edit on the running board", () => {
 
     await pushAssetChanges(board, { page: edited });
 
-    // Once, to the relay: the other runtime does not reference it, and the
-    // unit's runtime resolves against the unit's own assets.
-    expect(push).toHaveBeenCalledTimes(1);
-    expect(push.mock.calls[0]).toEqual([board.scopes.relay, { page: edited }]);
+    // The other runtime names it nowhere, and could still be handed it by a
+    // request; the unit's runtime resolves against the unit's own assets.
+    expect(push.mock.calls).toEqual([
+      [board.scopes.relay, { page: edited }],
+      [board.scopes.other, { page: edited }],
+    ]);
   });
 
-  it("finds a reference by what the service holds now, not what the board loaded", async () => {
-    const { board, push } = boardWith({ radio: {}, timer: { note: "hkp-asset://page" } });
+  it("keeps an asset to the runtimes it names, and takes it from the others", async () => {
+    const { board, push } = boardWith({ radio: {}, timer: {} });
+    const kept = { ...page, runtimes: ["relay"] };
 
-    await pushAssetChanges(board, { page });
+    await pushAssetChanges(board, { page: kept });
 
-    expect(push.mock.calls.map(([scope]) => scope)).toEqual([board.scopes.other]);
+    // A removal for the other: it may hold the asset from before it was kept
+    // from it, and removing one it never had costs nothing.
+    expect(push.mock.calls).toEqual([
+      [board.scopes.relay, { page: kept }],
+      [board.scopes.other, { page: null }],
+    ]);
   });
 
   it("removes a deleted asset from every runtime of the board's own", async () => {
@@ -256,9 +354,13 @@ describe("an edit on the running board", () => {
 
     expect(await renameAssetOnRuntimes(board, player, "page")).toBe(1);
 
-    // To the relay alone, which names `page`; nothing names `player` yet.
-    expect(push.mock.calls).toEqual([[board.scopes.relay, { player }]]);
-    expect(order).toEqual(["push", "configure"]);
+    // To every runtime it is for, before the one service naming `page` is told
+    // to name `player` instead.
+    expect(push.mock.calls).toEqual([
+      [board.scopes.relay, { player }],
+      [board.scopes.other, { player }],
+    ]);
+    expect(order).toEqual(["push", "push", "configure"]);
   });
 
   it("rewrites nothing when a runtime does not take the renamed asset", async () => {
@@ -367,9 +469,17 @@ describe("an edit on the running board", () => {
 
     expect((await assetUses(board, "page")).map((use) => use.serviceUuid)).toEqual(["radio"]);
 
+    // Asked of every runtime given the board's `page` — and not of the unit's,
+    // which holds its own.
     const checks = await checkAssetOnRuntimes(board, "page");
-    expect(checks.map(({ runtime: asked }) => asked.id)).toEqual(["relay"]);
-    expect(check).toHaveBeenCalledTimes(1);
+    expect(checks.map(({ runtime: asked }) => asked.id)).toEqual(["relay", "other"]);
+    expect(check).toHaveBeenCalledTimes(2);
+
+    const kept = await checkAssetOnRuntimes(
+      { ...board, assets: [{ ...page, runtimes: ["other"] }] },
+      "page",
+    );
+    expect(kept.map(({ runtime: asked }) => asked.id)).toEqual(["other"]);
   });
 
   it("puts a rename back when a service does not take it", async () => {
