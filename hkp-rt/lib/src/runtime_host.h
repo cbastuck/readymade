@@ -10,6 +10,7 @@
 #include <log_entry.h>
 
 #include <secrets.h>
+#include <assets.h>
 #include <slot_store.h>
 
 namespace hkp {
@@ -90,6 +91,15 @@ public:
   // always be empty, and a credential service could only ever be used at the
   // top level.
   virtual SecretVault& secrets() = 0;
+
+  // The runtime's assets, for a service that consumes content by reference.
+  //
+  // A service holds `hkp-asset://<id>` and resolves it here at the moment it
+  // uses it, so an asset edited while the board runs is what the next use gets.
+  // The content is used and dropped, never put into state. A nested pipeline
+  // answers with the store of the runtime around it, for the reason secrets do.
+  // Null where the host has none.
+  virtual AssetStore* assets() { return nullptr; }
 
   // The cells this pipeline's values may be held in.
   //

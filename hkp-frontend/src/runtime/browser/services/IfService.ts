@@ -178,6 +178,8 @@ class IfService extends ServiceBase<State> {
       },
       registry,
     );
+    // The board's assets, as the runtime around this pipeline sees them.
+    scope.assets = () => this.app.assets?.() ?? [];
 
     // Propagate runtime variables up through the scope hierarchy
     scope.app.getRuntimeVariable = () => this.app.getRuntimeVariable();

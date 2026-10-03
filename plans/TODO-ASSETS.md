@@ -16,11 +16,12 @@ reference when a service uses it, from wherever the content actually lives.
 "body": "hkp-asset://player"
 ```
 
-**State:** designed 2026-09-29, nothing built. Prompted by
+**State:** designed 2026-09-29; built 2026-09-30 except what *Work* lists as
+remaining. How it works now is in `docs/content/concepts/assets.md`; this plan
+keeps the decisions and what is still open. Prompted by
 `boards/live-radio-cloud-demo-board.json`, where the player page (6 KB of HTML
-and JS) sits inline in `radio.onRequest[0].state.template.body`. Serving it from
-a second place would mean copying it, and it can only be edited as one line of
-escaped JSON.
+and JS) sat inline in `radio.onRequest[0].state.template.body` — it is now the
+assets `player` and `player-js`.
 
 ---
 
@@ -49,12 +50,14 @@ that goes *into* a service.
 | What service state holds | **The reference, never the content**: `hkp-asset://<id>` as a whole field | `getState` echoes it and saving writes back what was configured. There is no round trip to undo. See *Rejected*. |
 | Syntax | **A scheme**, not `{{…}}` | A reference names a whole value, the way `hkp-mount://` does, and is found by its scheme wherever it appears. Nothing is spliced into longer strings (see *Rejected*). |
 | Who resolves | **The runtime that uses it**, at point of use, from a per-runtime **asset store** | A runtime fetches a URL source itself instead of having the content relayed through the browser. Editing an asset changes what is served without reconfiguring anything. |
-| How descriptors reach a runtime | **Pushed**: in the create payload and with a configure that names one, **and again whenever an asset changes** | The secrets path (`TODO-SECRETS.md` §5), plus propagation on change, which secrets deliberately do not have. For assets it is the point. |
+| How descriptors reach a runtime | **Pushed**: in the create payload, on attach, **and again whenever an asset changes** | Propagation on change, which secrets deliberately do not have. For assets it is the point. |
+| Which descriptors a runtime is given | **All of its document's**, unless an asset names the runtimes it is for (`runtimes`) — not the ones its services name (changed 2026-10-03) | Which asset a service uses can be decided while the board runs: the `asset` service takes one from its input, an endpoint resolves the body it is handed. A reference arriving from another runtime, a computed one, or one in a request was never in the scanned state, so it did not resolve. What is sent is the descriptor; large content is a URL. |
+| Credentials | **None**: no `headers`, no `{{secret.…}}` in a descriptor (changed 2026-10-03) | An asset is resolved without anyone looking, on every runtime holding it — the least visible place a secret could be sent from, and a literal header would travel with every copy of the board. Content that needs a credential goes through `http-client` or a `file://` source. |
 | Which services resolve | **The ones that consume content**, through one resolver. Everything else composes through the **`asset` service** | Only services that serve, play or load need to know. The `asset` service puts an asset into the pipeline for any other service. |
 | An unresolved reference | **Fails loudly** | A service that does not resolve passes `hkp-asset://…` on as text, which is wrong visibly rather than quietly. This is the secrets argument. |
 | `file://` | **Only the host that owns the path resolves it, and only inside a granted root** | Otherwise a shared board naming `file:///etc/passwd` behind an HTTP server is a leak. See *Sources*. |
 | Units | **A runtime's store is filled from the document that contributed the runtime** | Each runtime belongs to exactly one document, so references are lexical without renaming anything. |
-| Deploying | **Descriptors travel; host-local content is uploaded** | A coordinator can fetch URLs itself, but it cannot read the deploying machine's disk. |
+| Deploying | **Only the top-level board's descriptors travel today** | Its own runtimes receive those descriptors. A runtime contributed by a unit receives none of the unit's assets, so unit-owned references do not resolve after deployment. Uploading host-local content and carrying unit assets remain future work. |
 | UI | **A third board view** beside the runtime view and the overview | Editing a page needs a code editor, and the view is also where *Used by* lives. See *The asset view*. |
 
 ---
@@ -71,13 +74,14 @@ type AssetDescriptor = {
 } & (
   | { text: string }
   | { base64: string }
-  | { url: string; headers?: Record<string, string> }
-);
+  | { url: string }
+) & {
+  runtimes?: string[];  // the runtimes given it; absent: every one of its document
+};
 ```
 
-Exactly one source per asset. `headers` may carry `{{secret.…}}` for an
-authenticated URL. The runtime resolves them through `resolveCredential` with
-`to` set to the URL's host, so audience rules apply unchanged.
+Exactly one source per asset. A `url` is fetched as anyone would fetch it: a
+descriptor takes no headers and names no secret (see *Decided*).
 
 Inline sources (`text`, `base64`) are for content that is small and belongs to
 the board. Anything else is a URL. The asset view may suggest moving inline
@@ -95,12 +99,12 @@ the content goes is the author's call.
 | `s3://` | the runtime using it | Through the same backend `storage` uses (`hkp-node/src/services/storage.ts`), so there is one S3 client, not two |
 | `file://` | **only the host that owns the path**, inside a granted root | The native app, for its embedded hkp-rt and its browser runtime, inside a folder the user granted (e.g. `hkp://assets`). On hkp-node, a path resolves only inside the tenant's volume, as `filesystem` does. Anything outside a root is refused, never read. |
 
-**Host-local content for a remote runtime.** When a runtime cannot resolve a
-source but the frontend can (a `file://` source on the native app, a remote
-runtime on a server), the frontend reads it and **uploads it into that
-runtime's store**, keyed by `sha256`. The descriptor stays as authored. Deploying
-does the same for every host-local asset a deployed runtime references, or
-refuses to deploy and says which asset could not be read.
+**Planned — host-local content for a remote runtime.** When a runtime cannot
+resolve a source but the frontend can (a `file://` source on the native app, a
+remote runtime on a server), the intended design is for the frontend to upload
+it into that runtime's store, keyed by `sha256`. This is not built. Deployment
+currently neither uploads such content nor refuses the deployment by asset
+name.
 
 ---
 
@@ -128,13 +132,11 @@ immediately. The two nesting implementations (`SubService`/`HostedRuntime` and
 ### The push
 
 - **Create:** `POST /runtimes` carries an `assets` map beside `secrets`, holding
-  the descriptors that runtime's service states reference (`referencedAssets`,
-  a scan for the scheme). A runtime is sent only what it references, because
-  inline content can be large.
-- **Configure:** a configuration naming an asset the runtime does not have yet
-  is preceded by `POST /runtimes/:id/assets`, which merges.
+  every descriptor the runtime is given (`assetsOfRuntime`): its document's,
+  less the ones whose `runtimes` leave it out. No scan decides it.
+- **Attach:** the same map again, on `POST /runtimes/:id/assets`, which merges.
 - **Change:** editing an asset in the view pushes the new descriptor to every
-  runtime that references it. The store invalidates its cache for that id and
+  runtime it is for, and its removal to the ones it is kept from. The store invalidates its cache for that id and
   notifies subscribers.
 - **Attach:** re-push on `attachRuntime`, since a restarted runtime still has
   its services but has lost its store.
@@ -230,59 +232,55 @@ use for.
 
 ## Work
 
-A vertical slice first: hkp-node and the radio board, end to end. Then breadth.
+### Built (2026-09-30)
 
-### 1 — Board format, frontend
+- **Board format, frontend.** `runtime/board/assets.ts` (descriptors, scheme,
+  finding, renaming, *Used by*); `BoardDescriptor.assets`, held as board state
+  beside the facade and carried through save, drafts, snapshots, share link,
+  board source, templates and partner boards. A runtime's asset source is the
+  document that contributed it (units).
+- **Store and push.** hkp-node (`src/assets.ts`), hkp-python (`assets.py`) and
+  hkp-rt (`assets.h`/`assets.cpp`): inline and `http(s)` sources, cache by
+  `sha256`, ETag revalidation, subscriptions, `assets` in `POST /runtimes`,
+  `POST /runtimes/:id/assets` (merge, `null` removes), a check route
+  `GET /runtimes/:id/assets/:assetId`, nesting delegation. The frontend pushes
+  at create, before a configure naming one, on attach, and on every edit
+  (`core/assetActions.ts`). On deployment, the top-level board's descriptors
+  travel to the coordinator and are provisioned to its own runtimes. A runtime
+  contributed by a unit receives no unit-owned assets.
+- **Consumers.** `http-server-subservices` resolves an asset body on all three
+  servers; the `asset` service exists in the browser, hkp-node, hkp-python and
+  hkp-rt, with a shared panel, tests, docs page and demo board. Both live-radio
+  cloud boards serve their page and script as assets.
+- **The asset view.** List, Monaco editor with Apply, URL descriptors
+  (the per-runtime Check was removed 2026-10-03 as not needed), *Used by* with a way to each service, new from text, file
+  or URL, rename (rewrites references), delete (asks when referenced).
+- **`file://`**: hkp-node inside the tenant's volumes (`file:///<volume>/<path>`),
+  hkp-rt under `HKP_ASSET_ROOT`; refused everywhere else.
+- **Docs.** `concepts/assets.md`, `services/asset.md`, `board-json.md`,
+  `services/http.md`, the radio board pages, and `CLAUDE.md`.
 
-- `runtime/board/assets.ts`: `AssetDescriptor`, `ASSET_SCHEME`,
-  `parseAssetRef`, `findAssetRefs`, `referencedAssets` (`mount.ts` is the
-  model).
-- `BoardDescriptor.assets`. Carried unchanged through save, drafts, snapshots,
-  share link, board source and "Refine board with AI".
-- Units: each runtime's referenced set is computed against the document that
-  contributed it.
+### Remaining
 
-### 2 — Store and push, hkp-node
-
-- `hkp-node/src/assets.ts`: the store, the resolver (inline and https first),
-  cache by `sha256`, subscriptions.
-- `assets` in `POST /runtimes`, `POST /runtimes/:id/assets`, re-push on attach,
-  and nesting delegation.
-- Frontend: the push at create, at configure, and on change
-  (`runtime/rest/`, beside the secrets push).
-
-### 3 — First consumers, hkp-node
-
-- `http-server` resolves an `hkp-asset://` response body, streamed.
-- The `asset` service: logic, UI, registration, tests, docs page, demo board.
-- Migrate `boards/live-radio-cloud-demo-board.json`: the player page (and its
-  script, split out) become assets.
-
-### 4 — The asset view
-
-The list, the text editor with Apply, *Used by*, new/rename/delete, and
-**Make asset** on declared fields.
-
-### 5 — Other runtimes
-
-- The browser runtime: its store is the board's `assets`.
-- hkp-rt and hkp-python: store, push endpoint, resolver, `http_server` response
-  bodies, and the `asset` service. hkp-go when it has an HTTP server.
-
-### 6 — Large and host-local sources
-
-- `s3://` through the `storage` backend.
-- `file://` on the native app, inside the granted folder.
-- Upload into a remote runtime's store, and deploying with host-local assets.
-- Model loaders taking a reference where they take a path.
-
-### 7 — Docs
-
-`docs/content/concepts/assets.md`, a row in `board-json.md`, the reserved
-scheme next to `hkp-mount://` in `CLAUDE.md`, and the vocabulary entry (the
-vocabulary is written by hand, so propose it rather than add it).
-
----
+- **Make asset** from a service panel. Blocked on *Which fields accept a
+  reference* below.
+- **`s3://`.** hkp-node's `storage` is a facade over a backend pipeline and has
+  no S3 client of its own to share, so there is nothing to route through yet.
+  Refused by name meanwhile.
+- **Host-local content.** The native app's granted folder (`hkp://assets`) for
+  its browser runtime, pointing its embedded hkp-rt's `HKP_ASSET_ROOT` there,
+  uploading host-local content into a remote runtime's store keyed by
+  `sha256`, and deploying with host-local assets (or refusing to, by name).
+- **Model loaders** taking a reference where they take a path. They load by
+  file path, so a resolved asset has to land in a file first — the on-disk
+  cache the store section describes, which is not built (the stores cache in
+  memory, bounded).
+- **Unit assets in the view and flattened output.** A runtime a unit contributes
+  resolves against the unit's assets locally, but the view lists and edits only
+  the top-level board's own. A flattened export (deploy or share) carries only
+  those top-level assets. Consequently, a coordinator gives a unit-contributed
+  runtime no assets and its unit-owned references fail to resolve.
+- **hkp-go**, when it has an HTTP server.
 
 ## Open
 

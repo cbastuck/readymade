@@ -228,6 +228,13 @@ request envelope read backwards — `meta` beside `body` or `binary`:
 | `binary` | the bytes to send |
 | `body` | a string, sent as text; anything else, sent as JSON |
 
+A `body` that is an asset reference — `"hkp-asset://player"` — is sent as that
+[asset](../concepts/assets.md)'s content, resolved from the runtime's asset store
+when the answer is written, and with the asset's media type unless `meta` names
+one. Editing the asset changes the next response without reconfiguring the
+endpoint. One that does not resolve is answered `500`, naming the asset and why.
+On hkp-node, hkp-python and hkp-rt.
+
 **The status is what distinguishes an answer from a request.** A request and a
 response are the same shape, so a pipeline that passes its input through returns
 a request — and reading any `meta` as an answer would silently reply with the

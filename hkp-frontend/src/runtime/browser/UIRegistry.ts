@@ -40,6 +40,7 @@ import SoundDescriptor from "./services/Sound";
 import EncryptDescriptor from "./services/Encrypt";
 import DecryptDescriptor from "./services/Decrypt";
 import HashDescriptor from "./services/Hash";
+import AssetDescriptor from "./services/Asset";
 import SignDescriptor from "./services/Sign";
 
 /**
@@ -138,6 +139,8 @@ export function findServiceUI(
       return HashDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/sign":
       return SignDescriptor.createUI as unknown as ServiceUIComponent;
+    case "asset":
+      return AssetDescriptor.createUI as unknown as ServiceUIComponent;
     default:
       return null;
   }

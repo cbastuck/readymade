@@ -190,6 +190,8 @@ export class ProcessRouter extends ServiceBase<State> {
       },
       registry,
     );
+    // The board's assets, as the runtime around this pipeline sees them.
+    scope.assets = () => this.app.assets?.() ?? [];
 
     for (const entry of this.state.pipeline) {
       const descriptor = await addService(

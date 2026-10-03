@@ -203,6 +203,8 @@ export class Configurator extends ServiceBase<State> {
       { id: `configurator-${this.uuid}`, name: "Configurator Pipeline", type: "browser" },
       registry,
     );
+    // The board's assets, as the runtime around this pipeline sees them.
+    scope.assets = () => this.app.assets?.() ?? [];
 
     for (const entry of this.state.pipeline) {
       const descriptor = await addService(

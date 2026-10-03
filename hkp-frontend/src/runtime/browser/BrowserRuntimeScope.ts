@@ -13,6 +13,7 @@ import {
   User,
 } from "../../types";
 import { BoardCoordinator } from "hkp-frontend/src/core/coordinator";
+import { AssetsSource } from "hkp-frontend/src/runtime/board/assets";
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 import api from "./BrowserRuntimeApi";
@@ -336,6 +337,14 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   // this scope runs outside a board it can see: callers treat "no coordinator"
   // as a normal, retryable state rather than an error.
   coordinator: BoardCoordinator | null = null;
+
+  /**
+   * The board's asset descriptors, as the document that contributed this
+   * runtime declares them: for a browser runtime its asset store *is* the
+   * board's `assets`, read as they are now. Assigned by whoever restores the
+   * runtime, or by the service hosting a nested pipeline.
+   */
+  assets?: AssetsSource;
 
   serializeState = () => {
     return this.state;

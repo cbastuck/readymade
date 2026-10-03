@@ -225,6 +225,20 @@ The `__hkp` prefix marks a state property whose meaning is defined outside the s
 holding it — generic board machinery reads and rewrites it. Reserved: services must not use
 such a name for anything else.
 
+### Assets
+
+Content a service serves, plays or loads — a page, a script, a sample — is declared once in
+the board's `assets` as descriptors (`id`, `mediaType`, exactly one of `text`, `base64` or
+`url`) and named from service state as `hkp-asset://<id>`, a whole value, never the content.
+The scheme is reserved beside `hkp-mount://`. The runtime that uses the content resolves the
+reference at that moment from its own asset store, which is pushed the descriptors its
+services reference (create payload, before a configure naming one, on attach, and on every
+edit) — so editing an asset changes what is served without reconfiguring anything. The
+browser runtime's store is the board's `assets` itself. Vocabulary in
+`hkp-frontend/src/runtime/board/assets.ts`; the stores in `hkp-node/src/assets.ts`,
+`hkp-python/src/hkp/assets.py` and `hkp-rt/lib/include/assets.h`; the walkthrough in
+`docs/content/concepts/assets.md`.
+
 ---
 
 ## Facade layer
@@ -322,7 +336,7 @@ meander-ios/           iOS-specific native layer
 | Where                          | What it holds                                                                                                                                                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `docs/content/introduction.md` | The first-read narrative: what Readymade is, what people build with it, and the shape of a board                                                                                                                                                 |
-| `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, presets, blocks, units, mounts, coordinator, cloud boards, logging)                                                                                                          |
+| `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, presets, blocks, assets, units, mounts, coordinator, cloud boards, logging)                                                                                                        |
 | `docs/content/services/`       | One page per service                                                                                                                                                                                                                             |
 | `docs/content/boards/`         | One page per demo board — what the app does and what each runtime contributes. The runtime/service breakdown below it is generated from the board document at build time, so only the prose lives here. A file here is what puts a board in the docs; its name must match the board's file in `boards/` |
 | `docs/content/board-json.md`   | The serialisation format: what a board document contains, field by field, and what it deliberately does not                                                                                                                                      |

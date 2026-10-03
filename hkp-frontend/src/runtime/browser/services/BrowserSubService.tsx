@@ -432,6 +432,8 @@ export class BrowserSubService extends ServiceBase<State> {
       },
       registry,
     );
+    // The board's assets, as the runtime around this pipeline sees them.
+    scope.assets = () => this.app.assets?.() ?? [];
     // Before any service is added: a service may hold a value while it is
     // being configured (a Hold given a value to write), and it has to land in
     // the cells the scope will go on using, not in ones replaced after.

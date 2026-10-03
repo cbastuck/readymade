@@ -12,6 +12,7 @@
 #include "./http_stream_listener.h"
 #include "./request_decode.h"
 #include "../../uuid.h"
+#include "../../runtime_host.h"
 
 #include <algorithm>
 #include <optional>
@@ -248,7 +249,8 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
   if (handler && !handler->empty())
   {
     Data answer = handler->process(data);
-    session->sendDataSync(answer);
+    Data served = resolveAssetBody(answer);
+    session->sendDataSync(served);
     // No callback: nothing downstream is awaited, because the caller has been
     // answered already. Registering one would leave the runtime waiting for a
     // response to a request nobody is holding open.
@@ -259,13 +261,56 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
   if (!awaitResponse)
   {
     Data result = next(data, true);
-    session->sendDataSync(result);
+    Data served = resolveAssetBody(result);
+    session->sendDataSync(served);
     return;
   }
 
-  nextAsync(data, [session](Data result) {
-    session->sendDataSync(result);
+  nextAsync(data, [this, session](Data result) {
+    Data served = resolveAssetBody(result);
+    session->sendDataSync(served);
   });
+}
+
+Data HttpServerSubservices::resolveAssetBody(const Data& answer)
+{
+  auto value = getJSONFromData(answer);
+  if (!value || !value->is_object() || !value->contains("meta") || !value->contains("body"))
+  {
+    return answer;
+  }
+  const auto& meta = (*value)["meta"];
+  if (!meta.is_object() || !meta.contains("status") || !meta["status"].is_number_integer())
+  {
+    return answer;
+  }
+  const auto& body = (*value)["body"];
+  if (!parseAssetRef(body))
+  {
+    return answer;
+  }
+
+  auto* host = parentHost();
+  auto* store = host ? host->assets() : nullptr;
+  AssetResolution resolution = store
+    ? store->resolve(body.get<std::string>())
+    : AssetResolution{ std::nullopt, "this runtime has no assets" };
+  if (!resolution.asset)
+  {
+    sendNotification(json{ { "error", resolution.problem } });
+    return Data(json{ { "meta", { { "status", 500 }, { "contentType", "application/json" } } },
+                      { "body", { { "error", resolution.problem } } } });
+  }
+
+  MixedData served;
+  served.meta = meta;
+  if (!meta.contains("contentType") || !meta["contentType"].is_string() ||
+      meta["contentType"].get<std::string>().empty())
+  {
+    served.meta["contentType"] = resolution.asset->mediaType;
+  }
+  served.binary.assign(resolution.asset->content.begin(), resolution.asset->content.end());
+  return Data(served);
 }
 
 std::string HttpServerSubservices::getServiceId() const

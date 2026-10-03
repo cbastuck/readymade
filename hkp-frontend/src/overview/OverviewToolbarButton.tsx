@@ -32,6 +32,7 @@ import {
   useFacadeView,
 } from "hkp-frontend/src/facade/FacadeViewContext";
 import { useOverview } from "./OverviewContext";
+import { useAssetView } from "hkp-frontend/src/assets/AssetViewContext";
 
 /** How the overview is flown, said where there is room for it. */
 const HOW_TO =
@@ -41,6 +42,7 @@ export default function OverviewToolbarButton() {
   const overview = useOverview();
   const boardContext = useBoardContext();
   const facadeView = useFacadeView();
+  const assetView = useAssetView();
 
   const hasServices = Object.values(boardContext?.services ?? {}).some(
     (list) => list.length > 0,
@@ -63,6 +65,8 @@ export default function OverviewToolbarButton() {
     if (facadeView?.mode === "facade" && boardHasFacade(boardContext)) {
       facadeView.setMode("split");
     }
+    // The asset view takes the same place; the two are alternatives.
+    assetView?.hide();
     overview.show();
   };
 

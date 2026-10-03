@@ -121,6 +121,9 @@ void Runtime::load(const RuntimeConfiguration& config)
   // Before any service is built, because a service that opens a connection
   // while being configured asks for its credential during construction.
   m_vault.replace(config.secrets);
+  // Likewise assets: a service that loads its content while being configured
+  // asks for it during construction.
+  m_assets.replace(config.assets);
   auto services = config.services;
   for (auto &service : services)
   {

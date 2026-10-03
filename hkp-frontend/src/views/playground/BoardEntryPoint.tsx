@@ -14,6 +14,8 @@ import FacadeRenderer from "../../facade/FacadeRenderer";
 import { useFacadeView } from "../../facade/FacadeViewContext";
 import { useOverview } from "../../overview/OverviewContext";
 import OverviewView from "../../overview/OverviewView";
+import { useAssetView } from "../../assets/AssetViewContext";
+import AssetView from "../../assets/AssetView";
 import { FacadeDescriptor } from "../../facade/types";
 
 /** What the editor starts from on a board that declares no facade yet. */
@@ -52,7 +54,11 @@ export default function BoardEntryPoint({
   // view it was left on.
   const facadeView = useFacadeView();
   const overview = useOverview();
-  const showOverview = !!overview?.visible;
+  const assetView = useAssetView();
+  // The asset view takes the runtimes' place the way the overview does; the
+  // two are alternatives, and the overview wins if both were asked for.
+  const showAssets = !!assetView?.visible && !overview?.visible;
+  const showOverview = !!overview?.visible || showAssets;
   const activeView =
     views.find((view) => view.id === activeViewId) ?? views[0] ?? null;
   const facade = activeView?.facade ?? boardContext.facade;
@@ -139,7 +145,7 @@ export default function BoardEntryPoint({
           boardName={boardName}
         />
       </div>
-      {showOverview && <OverviewView />}
+      {showOverview && (showAssets ? <AssetView /> : <OverviewView />)}
     </div>
   );
 

@@ -24,6 +24,7 @@ Everything else is optional:
 | `unit` | what this board imports and exports, if it is used as a unit |
 | `units` | the boards this one is assembled from → `concepts/units.md` |
 | `blocks` | services defined once and used by reference wherever a pipeline names them → `concepts/blocks.md` |
+| `assets` | content — a page, a script, an image — declared once as descriptors and named from service state as `hkp-asset://<id>` → `concepts/assets.md` |
 | `registry` | what a runtime reported it could build. Written by machinery, not authored |
 
 ```json
@@ -197,6 +198,11 @@ back through `getState`. That is what makes a board safe to commit and to share,
 and it is a designed property rather than a convention: a resolved value cannot
 travel back out the way it came in.
 
+**No content that belongs elsewhere.** A service that serves or loads content
+holds a reference to one of the board's `assets` — `hkp-asset://player` — rather
+than the content itself, and each runtime resolves it where it is used. An asset
+can be inline in the document, or a URL the runtime fetches.
+
 **But not free of machine-written state.** Since `state` is a report, a board can
 carry a resolved endpoint or a port the system assigned. A runtime asked for
 `"port": 0` is given a free one, and saving the board writes down the one it
@@ -239,6 +245,7 @@ actually changed.
 | Facade shape | `hkp-frontend/src/facade/types.ts` |
 | Unit and composition shape | `hkp-frontend/src/runtime/board/units.ts` |
 | Blocks and their uses | `hkp-frontend/src/runtime/board/blocks.ts`, `hkp-frontend/src/core/linkBlocks.ts` |
+| Assets and references to them | `hkp-frontend/src/runtime/board/assets.ts` |
 | Example boards | `boards/` |
 
 ---

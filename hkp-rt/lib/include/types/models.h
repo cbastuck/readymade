@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 
 #include <secrets.h>
+#include <assets.h>
 using json = nlohmann::json;
 
 namespace hkp {
@@ -123,6 +124,13 @@ struct RuntimeConfiguration
    * a service's state, never into a serialized runtime, never back out.
    */
   std::map<std::string, SecretEntry> secrets;
+  /**
+   * Descriptors for the `hkp-asset://<id>` references this runtime's services
+   * carry, by id — with the create payload for the reason secrets are, and only
+   * what the services reference. They go into the runtime's asset store and
+   * never into service state. See assets.h.
+   */
+  std::map<std::string, nlohmann::json> assets;
   std::vector<ServiceConfiguration> services;
 
   // readonly values 

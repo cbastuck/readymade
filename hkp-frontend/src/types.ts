@@ -134,6 +134,14 @@ export interface RuntimeScope {
   registerReportTarget?: (
     target: (serviceUuid: string, report: unknown) => void,
   ) => () => void;
+
+  /**
+   * The asset descriptors this runtime's services may reference: those of the
+   * document that contributed the runtime. Set by the board, read on each use,
+   * so an asset edited while the board runs is what the next push or
+   * resolution sees. Absent: the runtime has no assets.
+   */
+  assets?: import("./runtime/board/assets").AssetsSource;
 }
 
 export type ExternalInput = {
@@ -374,6 +382,12 @@ export type AppImpl = {
   // that the same as a lookup that has not resolved yet.
   coordinator?: BoardCoordinator;
   /**
+   * The asset descriptors of the board this service belongs to — for a browser
+   * runtime its asset store is the board's `assets`, read as they are now.
+   * Absent where the host has none. See `runtime/board/assets`.
+   */
+  assets?: () => Array<import("./runtime/board/assets").AssetDescriptor>;
+  /**
    * The cells a service holds values in between passes, or absent where the
    * runtime it is in has none. See runtime/slots.ts.
    */
@@ -514,7 +528,24 @@ export type RuntimeApi = {
     services: Array<ServiceDescriptor>,
     user: User | null,
     boardName?: string,
+    /**
+     * The descriptors this runtime's services may reference. A remote runtime
+     * is sent the ones they do reference with its create payload (or again on
+     * attach); the scope keeps the source for later pushes.
+     */
+    assets?: import("./runtime/board/assets").AssetsSource,
   ) => Promise<RestoreRuntimeResult | null>;
+
+  /**
+   * Hands a running runtime new, changed or deleted (`null`) asset
+   * descriptors, and answers why it did not take them, or null when it did.
+   * Absent where the runtime reads the board's assets directly — the browser
+   * runtime, whose store *is* the board's `assets`.
+   */
+  pushAssets?: (
+    scope: RuntimeScope,
+    assets: import("./runtime/board/assets").AssetPush,
+  ) => Promise<string | null>;
 
   attachRuntimes?: (
     runtime: RuntimeClass,
@@ -633,6 +664,13 @@ export type BoardDescriptor = {
    * runtime sees one. See `runtime/board/blocks`.
    */
   blocks?: Array<import("./runtime/board/blocks").BlockDefinition>;
+  /**
+   * Content declared once and named from service state as
+   * `hkp-asset://<id>`. Descriptors only — the content, or where it lives —
+   * each pushed to the runtimes whose services reference it, which resolve it
+   * at point of use. See `runtime/board/assets`.
+   */
+  assets?: Array<import("./runtime/board/assets").AssetDescriptor>;
 };
 
 export function isRuntimeDescriptorConfig(data: any): data is RuntimeDescriptor & { services: any[] } {

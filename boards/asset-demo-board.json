@@ -1,0 +1,54 @@
+{
+  "boardName": "Asset Demo",
+  "description": "Content declared once in the board and named from service state as hkp-asset://<id>. The Asset service emits the asset it is configured with, or the one its input names: inject hkp-asset://greeting to switch. Open the asset view from the toolbar, edit an asset and press Apply — the next run carries the new content without reconfiguring anything.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": "hkp-asset://greeting",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "asset-svc",
+        "serviceId": "asset",
+        "serviceName": "Asset",
+        "state": {
+          "asset": "hkp-asset://card"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  },
+  "assets": [
+    {
+      "id": "card",
+      "name": "Card",
+      "mediaType": "application/json",
+      "text": "{\n  \"title\": \"An asset\",\n  \"body\": \"Declared once in the board, named by reference, resolved when used.\"\n}\n"
+    },
+    {
+      "id": "greeting",
+      "name": "Greeting",
+      "mediaType": "text/plain; charset=utf-8",
+      "text": "Hello from an asset.\n"
+    }
+  ]
+}

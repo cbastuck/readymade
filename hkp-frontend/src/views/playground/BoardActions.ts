@@ -202,7 +202,8 @@ export async function createBoardFromTemplate(
   }
   try {
     const template: BoardDescriptor = await resp.json();
-    const { runtimes, services, description, registry, facade, blocks } = template;
+    const { runtimes, services, description, registry, facade, blocks, assets } =
+      template;
 
     const patchedRuntimes = runtimes.map((rt) => ({
       ...rt,
@@ -232,6 +233,8 @@ export async function createBoardFromTemplate(
       facade: facade ? remapFacadeUuids(facade, uuidMap) : undefined,
       // A use keeps naming its block; the definitions have to come along.
       ...(blocks ? { blocks } : {}),
+      // A reference keeps naming its asset; the descriptors come along too.
+      ...(assets ? { assets } : {}),
     };
   } catch (err) {
     console.error("Creating from template failed", templateUrl, err);

@@ -18,6 +18,11 @@ import {
   User,
 } from "hkp-frontend/src/types";
 import RuntimeRestScope from "./RuntimeRestScope";
+import {
+  AssetPush,
+  AssetsSource,
+  assetsById,
+} from "hkp-frontend/src/runtime/board/assets";
 import { isBinaryData } from "./Data";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 import { startedRun } from "../processContext";
@@ -269,6 +274,53 @@ export async function pushSecrets(
   }
 }
 
+/**
+ * Hands a running runtime asset descriptors: new, changed, or `null` for one
+ * the board deleted.
+ *
+ * A runtime is created with all the assets it is given, so there are two
+ * moments left: re-attaching to a runtime that restarted, which lost its
+ * store, and an asset edited while the board runs. That push is what makes an
+ * edit take effect, since the services holding the reference resolve it on
+ * their next use and are not reconfigured.
+ *
+ * Answers why the runtime did not take them, or null when it did. Never
+ * throws: where a runtime is being attached to, a failure here is reported by
+ * everything else the caller is doing, and the services needing an asset say
+ * so themselves. An edit has nothing else to report it — the runtime goes on
+ * using the descriptor it has — so that caller reads the answer.
+ */
+export async function pushAssetsTo(
+  runtime: RuntimeDescriptor,
+  assets: AssetPush,
+  user: User | null,
+): Promise<string | null> {
+  if (!Object.keys(assets).length) {
+    return null;
+  }
+  try {
+    const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/assets`, {
+      method: "POST",
+      body: JSON.stringify(assets),
+      headers: { "content-type": "application/json", ...authHeaders(user) },
+    });
+    if (!res.ok) {
+      console.warn(
+        `Pushing assets to ${runtime.id} failed (${res.status}); services referencing ${Object.keys(assets).join(", ")} will report them as unknown`,
+      );
+      return `${runtime.name} answered ${res.status}`;
+    }
+    return null;
+  } catch (err: any) {
+    return `${runtime.name} is unreachable: ${err?.message ?? err}`;
+  }
+}
+
+async function pushAssets(scope: RuntimeScope, assets: AssetPush): Promise<string | null> {
+  const restScope = scope as RuntimeRestScope;
+  return pushAssetsTo(restScope.descriptor, assets, restScope.authenticatedUser);
+}
+
 async function attachRuntime(
   runtime: RuntimeDescriptor,
   // State included: attaching re-pushes the values for the references it
@@ -276,6 +328,7 @@ async function attachRuntime(
   services: Array<{ uuid: string; serviceId: string; state?: unknown }>,
   user: User | null,
   boardName = "",
+  assets?: AssetsSource,
 ): Promise<RestoreRuntimeResult | null> {
   let res: Response;
   try {
@@ -317,6 +370,9 @@ async function attachRuntime(
   // credentials, and nothing here can tell that apart from one that never
   // stopped. Pushing again is idempotent, so it is done either way.
   await pushSecrets(descriptor, services, user, boardName);
+  // Likewise the asset store, which lives in memory beside the vault.
+  scope.assets = assets;
+  await pushAssetsTo(descriptor, assetsById(assets?.()), user);
   return {
     runtime: descriptor,
     // The running services, not the board's: their state is what is live.
@@ -331,6 +387,7 @@ async function restoreRuntime(
   services: Array<ServiceDescriptor>,
   user: User | null,
   boardName?: string,
+  assets?: AssetsSource,
 ): Promise<RestoreRuntimeResult | null> {
   const svcs = (services ?? []).map((s) => ({
     uuid: s.uuid || uuidv4(),
@@ -339,7 +396,7 @@ async function restoreRuntime(
     state: (s as any).state, // TODO:
   }));
 
-  const attached = await attachRuntime(runtime, svcs, user, boardName);
+  const attached = await attachRuntime(runtime, svcs, user, boardName, assets);
   if (attached) {
     return attached;
   }
@@ -348,7 +405,7 @@ async function restoreRuntime(
     registry,
     scope,
     services: createdServices,
-  } = await createRuntimeRequest(runtime, svcs, boardName, user);
+  } = await createRuntimeRequest(runtime, svcs, boardName, user, assets);
   return {
     runtime,
     services: createdServices,
@@ -574,6 +631,9 @@ export async function configureService(
     (scope as RuntimeRestScope).authenticatedUser,
     (scope as RuntimeRestScope).boardName,
   );
+  // Not so for assets: a runtime is given every asset it may use when it is
+  // created, and again whenever one changes, so whichever a configuration
+  // names is already there.
   const res = await fetch(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
     {
@@ -683,6 +743,7 @@ async function createRuntimeRequest(
   services: Array<ServiceDescriptor>,
   boardName?: string,
   user?: User | null,
+  assets?: AssetsSource,
 ) {
   const payload = {
     name: runtime.name,
@@ -708,6 +769,10 @@ async function createRuntimeRequest(
       runtimeName: runtime.name,
       url: runtime.url ?? "",
     }),
+    // With the create payload for the same reason: a service that loads its
+    // content while being configured needs the descriptor by then. Every
+    // asset this runtime is given, whether or not a service names it yet.
+    assets: assetsById(assets?.()),
   };
   const runtimesUrl = `${runtime.url}/runtimes`;
   let res: Response;
@@ -747,6 +812,7 @@ async function createRuntimeRequest(
   scope.server = serverKindOf(body);
   scope.services = rt.services ?? [];
   scope.boardName = boardName ?? "";
+  scope.assets = assets;
 
   return {
     runtime: rt,
@@ -768,6 +834,7 @@ const api: RuntimeApi = {
   getServiceConfig,
   processService,
   rearrangeServices,
+  pushAssets,
 };
 
 export default api;

@@ -183,6 +183,8 @@ export class FeedbackService extends ServiceBase<State> {
       },
       registry,
     );
+    // The board's assets, as the runtime around this pipeline sees them.
+    scope.assets = () => this.app.assets?.() ?? [];
 
     scope.onResult = async (_instanceId: string | null, result: any) => {
       this._handleResult(result);
