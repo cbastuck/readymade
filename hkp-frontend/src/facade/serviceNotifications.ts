@@ -177,7 +177,7 @@ function useLookup(boardContext: BoardContextState, uuids: string[]): Lookup {
     tick();
 
     return () => clearTimeout(timer);
-  }, [key, boardContext.scopes, boardContext.services]);
+  }, [key, boardContext.scopes, boardContext.services]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return lookup;
 }
@@ -194,7 +194,16 @@ export function useResolvedService(
     boardContext,
     serviceUuid ? [serviceUuid] : [],
   );
-  return (serviceUuid ? services[serviceUuid] : null) ?? null;
+  if (!serviceUuid) {
+    return null;
+  }
+
+  // A service already present during render must be returned during that same
+  // render. Waiting for useLookup's effect costs one commit, which is enough
+  // for a parent facade's one-shot init action to run and report its result
+  // before a display widget has subscribed. Polling remains the fallback for
+  // services that genuinely arrive later while a board is assembling.
+  return findService(boardContext, serviceUuid) ?? services[serviceUuid] ?? null;
 }
 
 /**

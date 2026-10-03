@@ -1,6 +1,12 @@
-import { useRef, useState, useEffect, useMemo } from "react";
+import {
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
-export type SeriesPoint = { time: number; price: number };
+export type SeriesPoint = { time: number; price: number; context?: string };
 
 type Props = {
   series: Record<string, SeriesPoint[]>;
@@ -9,6 +15,9 @@ type Props = {
   // Show each series as % change from its first price.
   // Required when multiple symbols at different price levels share one chart.
   normalize?: boolean;
+  unit?: string;
+  contextLabel?: string;
+  emptyLabel?: string;
 };
 
 const PALETTE = [
@@ -24,25 +33,55 @@ const GRID_LINES = 4;
 // Starting symmetric range for normalized mode (±%). Only ever expands.
 const PCT_FLOOR = 0.5;
 
-function fmtTime(ms: number): string {
+function fmtTime(ms: number, span: number): string {
   const d = new Date(ms);
+  if (span >= 24 * 60 * 60 * 1000) {
+    return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
   return (
     String(d.getHours()).padStart(2, "0") +
     ":" +
     String(d.getMinutes()).padStart(2, "0") +
-    ":" +
-    String(d.getSeconds()).padStart(2, "0")
+    (span < 60 * 60 * 1000
+      ? `:${String(d.getSeconds()).padStart(2, "0")}`
+      : "")
   );
+}
+
+function fmtHoverTime(ms: number): string {
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(new Date(ms));
+}
+
+function nearestPoint(points: SeriesPoint[], targetTime: number) {
+  let nearest = points[0];
+  for (const point of points.slice(1)) {
+    if (Math.abs(point.time - targetTime) < Math.abs(nearest.time - targetTime)) {
+      nearest = point;
+    }
+  }
+  return nearest;
 }
 
 export default function LineChart({
   series,
   height = 200,
-  width: width_ = 600,
+  width: requestedWidth,
   normalize = false,
+  unit,
+  contextLabel = "Context",
+  emptyLabel = "Waiting for data…",
 }: Props) {
+  const initialWidth = requestedWidth ?? 600;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(width_);
+  const [width, setWidth] = useState(initialWidth);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
 
   // Expand-only Y bounds for normalized mode — prevents axis jumping.
   const [normPMin, setNormPMin] = useState(-PCT_FLOOR);
@@ -80,6 +119,7 @@ export default function LineChart({
       out[sym] = pts.map((p) => ({
         time: p.time,
         price: base > 0 ? (p.price / base - 1) * 100 : 0,
+        context: p.context,
       }));
     }
     return out;
@@ -104,7 +144,17 @@ export default function LineChart({
 
   const symbols = Object.keys(activeSeries);
   const allPoints = symbols.flatMap((s) => activeSeries[s]);
-  const chartW = width - PAD.left - PAD.right;
+  const longestEndLabel = symbols.reduce((longest, symbol) => {
+    const points = series[symbol];
+    const latestValue = points?.[points.length - 1]?.price;
+    const label = `${symbol}${latestValue === undefined ? "" : ` ${latestValue.toFixed(2)}`}${unit ? ` ${unit}` : ""}`;
+    return Math.max(longest, label.length);
+  }, 0);
+  const rightPad = Math.min(
+    180,
+    Math.max(PAD.right, longestEndLabel * 6 + 12),
+  );
+  const chartW = Math.max(80, width - PAD.left - rightPad);
   const chartH = height - PAD.top - PAD.bottom;
   const empty = allPoints.length === 0;
 
@@ -145,9 +195,66 @@ export default function LineChart({
   });
 
   const zeroY = normalize ? yOf(0) : null;
+  const hovered =
+    hoverTime === null
+      ? []
+      : symbols.flatMap((symbol, index) => {
+          const activePoints = activeSeries[symbol];
+          const originalPoints = series[symbol] ?? [];
+          if (!activePoints.length || !originalPoints.length) {
+            return [];
+          }
+          const point = nearestPoint(activePoints, hoverTime);
+          const original = nearestPoint(originalPoints, point.time);
+          return [
+            {
+              symbol,
+              point,
+              original,
+              color: PALETTE[index % PALETTE.length],
+            },
+          ];
+        });
+  const hoverX = hoverTime === null ? 0 : xOf(hoverTime);
+  const tooltipWidth = 260;
+  const tooltipLeft = Math.max(
+    4,
+    Math.min(width - tooltipWidth - 4, hoverX + 10),
+  );
+
+  const handlePointerMove = (event: ReactPointerEvent<SVGRectElement>) => {
+    const svg = event.currentTarget.ownerSVGElement;
+    if (!svg || !allPoints.length) {
+      return;
+    }
+    const bounds = svg.getBoundingClientRect();
+    if (bounds.width <= 0) {
+      return;
+    }
+    const pointerX =
+      ((event.clientX - bounds.left) / bounds.width) * width;
+    const plotX = Math.max(PAD.left, Math.min(PAD.left + chartW, pointerX));
+    const targetTime = tMin + ((plotX - PAD.left) / chartW) * tRange;
+    setHoverTime(nearestPoint(allPoints, targetTime).time);
+  };
+  const hoverContexts = [
+    ...new Set(
+      hovered
+        .map(({ original }) => original.context?.trim())
+        .filter((context): context is string => !!context),
+    ),
+  ];
 
   return (
-    <div ref={containerRef} style={{ width, height }}>
+    <div
+      ref={containerRef}
+      style={{
+        position: "relative",
+        width: requestedWidth ?? "100%",
+        maxWidth: "100%",
+        height,
+      }}
+    >
       {empty ? (
         <div
           style={{
@@ -161,7 +268,7 @@ export default function LineChart({
             fontFamily: "monospace",
           }}
         >
-          Waiting for data…
+          {emptyLabel}
         </div>
       ) : (
         <svg width={width} height={height} style={{ display: "block" }}>
@@ -217,7 +324,7 @@ export default function LineChart({
               fill="hsl(var(--muted-foreground))"
               fontFamily="monospace"
             >
-              {fmtTime(t)}
+              {fmtTime(t, tRange)}
             </text>
           ))}
 
@@ -265,11 +372,140 @@ export default function LineChart({
                   fontFamily="monospace"
                 >
                   {sym} {origLast ? origLast.price.toFixed(2) : ""}
+                  {origLast && unit ? ` ${unit}` : ""}
                 </text>
               </g>
             );
           })}
+
+          {/* Pointer surface, crosshair and selected values. */}
+          <rect
+            data-testid="line-chart-hit-area"
+            x={PAD.left}
+            y={PAD.top}
+            width={chartW}
+            height={chartH}
+            fill="transparent"
+            style={{ cursor: "crosshair" }}
+            onPointerMove={handlePointerMove}
+            onPointerDown={handlePointerMove}
+            onPointerLeave={() => setHoverTime(null)}
+          />
+          {hoverTime !== null && (
+            <g pointerEvents="none">
+              <line
+                x1={hoverX}
+                y1={PAD.top}
+                x2={hoverX}
+                y2={PAD.top + chartH}
+                stroke="hsl(var(--foreground))"
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                opacity={0.55}
+              />
+              {hovered.map(({ symbol, point, color }) => (
+                <circle
+                  key={symbol}
+                  cx={xOf(point.time)}
+                  cy={yOf(point.price)}
+                  r={3.5}
+                  fill="hsl(var(--background))"
+                  stroke={color}
+                  strokeWidth={2}
+                />
+              ))}
+            </g>
+          )}
         </svg>
+      )}
+      {hoverTime !== null && hovered.length > 0 && (
+        <div
+          role="tooltip"
+          style={{
+            position: "absolute",
+            left: tooltipLeft,
+            top: PAD.top + 6,
+            width: tooltipWidth,
+            maxWidth: "calc(100% - 8px)",
+            padding: "7px 9px",
+            border: "1px solid hsl(var(--border))",
+            borderRadius: 6,
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
+            boxShadow: "0 4px 12px rgb(0 0 0 / 0.16)",
+            fontFamily: "monospace",
+            fontSize: 10,
+            lineHeight: 1.4,
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        >
+          <div
+            style={{
+              marginBottom: 4,
+              color: "hsl(var(--muted-foreground))",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {fmtHoverTime(hoverTime)}
+          </div>
+          {hovered.map(({ symbol, original, color }) => (
+            <div
+              key={symbol}
+              style={{ display: "flex", alignItems: "center", gap: 5 }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: color,
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{ flex: 1, overflowWrap: "anywhere" }}>{symbol}</span>
+              <span style={{ whiteSpace: "nowrap" }}>
+                {original.price.toFixed(2)}
+                {unit ? ` ${unit}` : ""}
+              </span>
+            </div>
+          ))}
+          {hoverContexts.length > 0 && (
+            <div
+              style={{
+                marginTop: 6,
+                paddingTop: 5,
+                borderTop: "1px solid hsl(var(--border))",
+              }}
+            >
+              <div
+                style={{
+                  marginBottom: 2,
+                  color: "hsl(var(--muted-foreground))",
+                  fontWeight: 600,
+                }}
+              >
+                {contextLabel}
+              </div>
+              {hoverContexts.map((context) => (
+                <div
+                  key={context}
+                  title={context}
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    overflow: "hidden",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 5,
+                    WebkitBoxOrient: "vertical",
+                  }}
+                >
+                  {context}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

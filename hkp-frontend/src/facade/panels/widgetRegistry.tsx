@@ -19,6 +19,7 @@ import { StatusIndicatorRenderer } from "./renderers/StatusIndicatorRenderer";
 import { TextRenderer } from "./renderers/TextRenderer";
 import { CalendarRenderer } from "./renderers/CalendarRenderer";
 import { AudioPlayerRenderer } from "./renderers/AudioPlayerRenderer";
+import { SwimlaneRenderer } from "./renderers/SwimlaneRenderer";
 
 export type PanelContext = {
   knobValues: Record<string, number>;
@@ -54,4 +55,5 @@ export const widgetRegistry: Record<
   text: TextRenderer,
   calendar: CalendarRenderer,
   "audio-player": AudioPlayerRenderer,
+  swimlane: SwimlaneRenderer,
 };

@@ -1,0 +1,413 @@
+{
+  "boardName": "Private Health Log — Loaded Review",
+  "description": "A disposable review variant of the Private Health Log, preloaded with six months of deterministic fictional measurements in its own SQLite database. It uses the same services and facade as the normal demo so its charts, table and editing behavior can be reviewed after substantial use. This is generated test data, not medical data or medical guidance. A daily free-text journal is stored beside the measurements and appears in chart hover details.",
+  "runtimes": [
+    {
+      "id": "health",
+      "name": "Personal health data",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "health": [
+      {
+        "uuid": "add-value",
+        "serviceId": "sql",
+        "serviceName": "Record one value",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "private-health-log-review",
+          "schema": "CREATE TABLE IF NOT EXISTS health_measurement (\n  id          INTEGER PRIMARY KEY,\n  event_id    TEXT NOT NULL CHECK(event_id <> ''),\n  kind        TEXT NOT NULL CHECK(kind <> ''),\n  value       REAL NOT NULL CHECK(value > 0),\n  unit        TEXT NOT NULL CHECK(unit <> ''),\n  observed_at TEXT NOT NULL CHECK(observed_at <> ''),\n  created     TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE UNIQUE INDEX IF NOT EXISTS health_measurement_event_kind\n  ON health_measurement(event_id, kind);\nCREATE INDEX IF NOT EXISTS health_measurement_kind_time\n  ON health_measurement(kind, observed_at);\nCREATE TABLE IF NOT EXISTS health_log_meta (\n  key   TEXT PRIMARY KEY,\n  value TEXT NOT NULL\n);\nCREATE TABLE IF NOT EXISTS health_journal (\n  day        TEXT PRIMARY KEY CHECK(day <> ''),\n  entry      TEXT NOT NULL CHECK(entry <> ''),\n  updated_at TEXT NOT NULL DEFAULT (datetime('now'))\n);\nWITH RECURSIVE\n  days(day) AS (\n    SELECT 0\n    UNION ALL\n    SELECT day + 1 FROM days WHERE day < 179\n  ),\n  glucose_slots(slot, hour) AS (\n    VALUES (0, '08'), (1, '13')\n  )\nINSERT OR IGNORE INTO health_measurement (event_id, kind, value, unit, observed_at)\nSELECT\n  printf('review-glucose-%03d-%d', day, slot),\n  'glucose',\n  round(100 + ((day * 17 + slot * 29) % 55) + ((day % 5) * 0.4), 1),\n  'mg/dL',\n  strftime('%Y-%m-%dT' || hour || ':00:00Z', 'now', printf('-%d days', day))\nFROM days CROSS JOIN glucose_slots\nWHERE NOT EXISTS (\n  SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-seeded-v1'\n)\nUNION ALL\nSELECT\n  printf('review-bp-%03d', day),\n  'blood-pressure-systolic',\n  112 + ((day * 7) % 24),\n  'mmHg',\n  strftime('%Y-%m-%dT19:00:00Z', 'now', printf('-%d days', day))\nFROM days\nWHERE day % 2 = 0\n  AND NOT EXISTS (\n    SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-seeded-v1'\n  )\nUNION ALL\nSELECT\n  printf('review-bp-%03d', day),\n  'blood-pressure-diastolic',\n  70 + ((day * 5) % 14),\n  'mmHg',\n  strftime('%Y-%m-%dT19:00:00Z', 'now', printf('-%d days', day))\nFROM days\nWHERE day % 2 = 0\n  AND NOT EXISTS (\n    SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-seeded-v1'\n  )\nUNION ALL\nSELECT\n  printf('review-weight-%03d', day),\n  'weight',\n  round(77.4 + (day * 0.006) + ((((day * 11) % 9) - 4) * 0.05), 1),\n  'kg',\n  strftime('%Y-%m-%dT07:30:00Z', 'now', printf('-%d days', day))\nFROM days\nWHERE NOT EXISTS (\n  SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-seeded-v1'\n);\nINSERT OR IGNORE INTO health_log_meta (key, value)\nVALUES ('loaded-review-seeded-v1', '720 fictional rows across 180 days');\nWITH RECURSIVE note_days(day) AS (\n  SELECT 0\n  UNION ALL\n  SELECT day + 3 FROM note_days WHERE day < 177\n)\nINSERT OR IGNORE INTO health_journal (day, entry)\nSELECT\n  date('now', printf('-%d days', day)),\n  CASE day % 15\n    WHEN 0 THEN 'Poor sleep. Headache in the afternoon and less water than usual.'\n    WHEN 3 THEN 'Long walk after lunch. Felt energetic. No alcohol.'\n    WHEN 6 THEN 'Late pasta dinner and one glass of wine.'\n    WHEN 9 THEN 'Busy workday. Skipped lunch and had a migraine in the evening.'\n    ELSE 'Normal meals, plenty of water and light exercise.'\n  END\nFROM note_days\nWHERE NOT EXISTS (\n  SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-journal-seeded-v1'\n);\nINSERT OR IGNORE INTO health_log_meta (key, value)\nVALUES ('loaded-review-journal-seeded-v1', '60 fictional journal entries');",
+          "statement": "INSERT INTO health_measurement (event_id, kind, value, unit, observed_at)\nSELECT $eventId, $kind, CAST($value AS REAL), $unit, $observedAt\n WHERE $operation = 'add-value'"
+        }
+      },
+      {
+        "uuid": "add-blood-pressure",
+        "serviceId": "sql",
+        "serviceName": "Record blood pressure",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "private-health-log-review",
+          "statement": "WITH parsed AS (\n  SELECT\n    CASE WHEN instr($value, '/') > 1\n      THEN CAST(trim(substr($value, 1, instr($value, '/') - 1)) AS REAL) ELSE 0 END AS systolic,\n    CASE WHEN instr($value, '/') > 1\n      THEN CAST(trim(substr($value, instr($value, '/') + 1)) AS REAL) ELSE 0 END AS diastolic\n)\nINSERT INTO health_measurement (event_id, kind, value, unit, observed_at)\nSELECT $eventId, 'blood-pressure-systolic', systolic, $unit, $observedAt\n  FROM parsed\n WHERE $operation = 'add-blood-pressure'\nUNION ALL\nSELECT $eventId, 'blood-pressure-diastolic', diastolic, $unit, $observedAt\n  FROM parsed\n WHERE $operation = 'add-blood-pressure'"
+        }
+      },
+      {
+        "uuid": "save-journal",
+        "serviceId": "sql",
+        "serviceName": "Save daily journal",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "private-health-log-review",
+          "statement": "INSERT INTO health_journal (day, entry, updated_at)\nSELECT date($observedAt), trim($journal), datetime('now')\n WHERE $operation = 'save-journal'\n   AND trim($journal) <> ''\nON CONFLICT(day) DO UPDATE SET\n  entry = excluded.entry,\n  updated_at = excluded.updated_at"
+        }
+      },
+      {
+        "uuid": "after-entry",
+        "serviceId": "sub-service",
+        "serviceName": "After a new entry",
+        "state": {
+          "pipeline": [
+            {
+              "uuid": "entry-event",
+              "serviceId": "monitor",
+              "serviceName": "Entry event",
+              "state": {}
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "delete-entry",
+        "serviceId": "sql",
+        "serviceName": "Delete selected entries",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "private-health-log-review",
+          "statement": "DELETE FROM health_measurement\n WHERE $operation = 'delete'\n   AND event_id IN (SELECT value FROM json_each($eventIds))"
+        }
+      },
+      {
+        "uuid": "read-history",
+        "serviceId": "sql",
+        "serviceName": "Read personal history",
+        "state": {
+          "mode": "query",
+          "database": "private-health-log-review",
+          "schema": "CREATE TABLE IF NOT EXISTS health_measurement (\n  id          INTEGER PRIMARY KEY,\n  event_id    TEXT NOT NULL CHECK(event_id <> ''),\n  kind        TEXT NOT NULL CHECK(kind <> ''),\n  value       REAL NOT NULL CHECK(value > 0),\n  unit        TEXT NOT NULL CHECK(unit <> ''),\n  observed_at TEXT NOT NULL CHECK(observed_at <> ''),\n  created     TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE UNIQUE INDEX IF NOT EXISTS health_measurement_event_kind\n  ON health_measurement(event_id, kind);\nCREATE INDEX IF NOT EXISTS health_measurement_kind_time\n  ON health_measurement(kind, observed_at);\nCREATE TABLE IF NOT EXISTS health_log_meta (\n  key   TEXT PRIMARY KEY,\n  value TEXT NOT NULL\n);\nCREATE TABLE IF NOT EXISTS health_journal (\n  day        TEXT PRIMARY KEY CHECK(day <> ''),\n  entry      TEXT NOT NULL CHECK(entry <> ''),\n  updated_at TEXT NOT NULL DEFAULT (datetime('now'))\n);\nWITH RECURSIVE\n  days(day) AS (\n    SELECT 0\n    UNION ALL\n    SELECT day + 1 FROM days WHERE day < 179\n  ),\n  glucose_slots(slot, hour) AS (\n    VALUES (0, '08'), (1, '13')\n  )\nINSERT OR IGNORE INTO health_measurement (event_id, kind, value, unit, observed_at)\nSELECT\n  printf('review-glucose-%03d-%d', day, slot),\n  'glucose',\n  round(100 + ((day * 17 + slot * 29) % 55) + ((day % 5) * 0.4), 1),\n  'mg/dL',\n  strftime('%Y-%m-%dT' || hour || ':00:00Z', 'now', printf('-%d days', day))\nFROM days CROSS JOIN glucose_slots\nWHERE NOT EXISTS (\n  SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-seeded-v1'\n)\nUNION ALL\nSELECT\n  printf('review-bp-%03d', day),\n  'blood-pressure-systolic',\n  112 + ((day * 7) % 24),\n  'mmHg',\n  strftime('%Y-%m-%dT19:00:00Z', 'now', printf('-%d days', day))\nFROM days\nWHERE day % 2 = 0\n  AND NOT EXISTS (\n    SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-seeded-v1'\n  )\nUNION ALL\nSELECT\n  printf('review-bp-%03d', day),\n  'blood-pressure-diastolic',\n  70 + ((day * 5) % 14),\n  'mmHg',\n  strftime('%Y-%m-%dT19:00:00Z', 'now', printf('-%d days', day))\nFROM days\nWHERE day % 2 = 0\n  AND NOT EXISTS (\n    SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-seeded-v1'\n  )\nUNION ALL\nSELECT\n  printf('review-weight-%03d', day),\n  'weight',\n  round(77.4 + (day * 0.006) + ((((day * 11) % 9) - 4) * 0.05), 1),\n  'kg',\n  strftime('%Y-%m-%dT07:30:00Z', 'now', printf('-%d days', day))\nFROM days\nWHERE NOT EXISTS (\n  SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-seeded-v1'\n);\nINSERT OR IGNORE INTO health_log_meta (key, value)\nVALUES ('loaded-review-seeded-v1', '720 fictional rows across 180 days');\nWITH RECURSIVE note_days(day) AS (\n  SELECT 0\n  UNION ALL\n  SELECT day + 3 FROM note_days WHERE day < 177\n)\nINSERT OR IGNORE INTO health_journal (day, entry)\nSELECT\n  date('now', printf('-%d days', day)),\n  CASE day % 15\n    WHEN 0 THEN 'Poor sleep. Headache in the afternoon and less water than usual.'\n    WHEN 3 THEN 'Long walk after lunch. Felt energetic. No alcohol.'\n    WHEN 6 THEN 'Late pasta dinner and one glass of wine.'\n    WHEN 9 THEN 'Busy workday. Skipped lunch and had a migraine in the evening.'\n    ELSE 'Normal meals, plenty of water and light exercise.'\n  END\nFROM note_days\nWHERE NOT EXISTS (\n  SELECT 1 FROM health_log_meta WHERE key = 'loaded-review-journal-seeded-v1'\n);\nINSERT OR IGNORE INTO health_log_meta (key, value)\nVALUES ('loaded-review-journal-seeded-v1', '60 fictional journal entries');",
+          "statement": "SELECT\n  m.event_id AS eventId,\n  CASE m.kind\n    WHEN 'glucose' THEN 'Blood glucose'\n    WHEN 'blood-pressure-systolic' THEN 'Systolic'\n    WHEN 'blood-pressure-diastolic' THEN 'Diastolic'\n    WHEN 'weight' THEN 'Weight'\n    ELSE m.kind\n  END AS measurement,\n  CASE m.kind\n    WHEN 'glucose' THEN 'Blood glucose'\n    WHEN 'blood-pressure-systolic' THEN 'Systolic'\n    WHEN 'blood-pressure-diastolic' THEN 'Diastolic'\n    WHEN 'weight' THEN 'Weight'\n    ELSE m.kind\n  END AS series,\n  round(m.value, 1) AS value,\n  m.unit,\n  m.observed_at AS observedAt,\n  j.entry AS journal\nFROM health_measurement AS m\nLEFT JOIN health_journal AS j\n  ON j.day = date(m.observed_at)\nORDER BY m.observed_at DESC, m.id DESC"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "state": {
+      "selectedEvents": []
+    },
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "read-history",
+        "payload": {}
+      }
+    ],
+    "panels": [
+      {
+        "id": "entry",
+        "title": "New entry",
+        "layout": {
+          "direction": "column",
+          "gap": 16,
+          "paddingX": 16,
+          "paddingY": 14,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Keep an independent copy of measurements you choose to enter. Each value is timestamped when you submit it and stored in this board's SQLite database.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text-input",
+              "label": "Blood glucose · mg/dL",
+              "placeholder": "e.g. 118",
+              "submitLabel": "Record",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "add-value",
+                  "payload": {
+                    "operation": "add-value",
+                    "eventId": {
+                      "$uuid": true
+                    },
+                    "observedAt": {
+                      "$now": true
+                    },
+                    "kind": "glucose",
+                    "value": "$$input",
+                    "unit": "mg/dL"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Blood pressure · mmHg",
+              "placeholder": "e.g. 120/80",
+              "submitLabel": "Record",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "add-blood-pressure",
+                  "payload": {
+                    "operation": "add-blood-pressure",
+                    "eventId": {
+                      "$uuid": true
+                    },
+                    "observedAt": {
+                      "$now": true
+                    },
+                    "kind": "blood-pressure",
+                    "value": "$$input",
+                    "unit": "mmHg"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Weight · kg",
+              "placeholder": "e.g. 78.2",
+              "submitLabel": "Record",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "add-value",
+                  "payload": {
+                    "operation": "add-value",
+                    "eventId": {
+                      "$uuid": true
+                    },
+                    "observedAt": {
+                      "$now": true
+                    },
+                    "kind": "weight",
+                    "value": "$$input",
+                    "unit": "kg"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Today's journal",
+              "placeholder": "Meals, drinks, exercise, sleep, stress, migraine, alcohol—or anything else that felt relevant today.",
+              "submitLabel": "Save journal",
+              "multiline": true,
+              "rows": 4,
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "save-journal",
+                  "payload": {
+                    "operation": "save-journal",
+                    "eventId": {
+                      "$uuid": true
+                    },
+                    "observedAt": {
+                      "$now": true
+                    },
+                    "kind": "daily-journal",
+                    "journal": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "This demo does not interpret measurements, recommend targets, or replace professional care, your meter or your official device application.",
+              "tone": "muted",
+              "fontSize": 11
+            }
+          ]
+        }
+      },
+      {
+        "id": "trends",
+        "title": "Trends",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Blood glucose · mg/dL",
+              "fontSize": 12
+            },
+            {
+              "type": "line-chart",
+              "source": {
+                "serviceUuid": "read-history",
+                "path": "rows"
+              },
+              "seriesField": "series",
+              "valueField": "value",
+              "timeField": "observedAt",
+              "symbol": "Blood glucose",
+              "unit": "mg/dL",
+              "height": 190,
+              "maxPoints": 500,
+              "emptyLabel": "No blood glucose entries yet.",
+              "contextField": "journal",
+              "contextLabel": "Daily journal"
+            },
+            {
+              "type": "text",
+              "placeholder": "Blood pressure · mmHg",
+              "fontSize": 12
+            },
+            {
+              "type": "line-chart",
+              "source": {
+                "serviceUuid": "read-history",
+                "path": "rows"
+              },
+              "seriesField": "series",
+              "valueField": "value",
+              "timeField": "observedAt",
+              "symbols": [
+                "Systolic",
+                "Diastolic"
+              ],
+              "unit": "mmHg",
+              "height": 190,
+              "maxPoints": 500,
+              "emptyLabel": "No blood pressure entries yet.",
+              "contextField": "journal",
+              "contextLabel": "Daily journal"
+            },
+            {
+              "type": "text",
+              "placeholder": "Weight · kg",
+              "fontSize": 12
+            },
+            {
+              "type": "line-chart",
+              "source": {
+                "serviceUuid": "read-history",
+                "path": "rows"
+              },
+              "seriesField": "series",
+              "valueField": "value",
+              "timeField": "observedAt",
+              "symbol": "Weight",
+              "unit": "kg",
+              "height": 190,
+              "maxPoints": 500,
+              "emptyLabel": "No weight entries yet.",
+              "contextField": "journal",
+              "contextLabel": "Daily journal"
+            }
+          ]
+        }
+      },
+      {
+        "id": "history",
+        "title": "Your data",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "fill": true,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "The rows below are the board's own database records. Select one or more events to remove them; one blood-pressure event removes both of its values.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "data-table",
+              "grow": true,
+              "source": {
+                "serviceUuid": "read-history",
+                "path": "rows"
+              },
+              "columns": [
+                "measurement",
+                "value",
+                "unit",
+                "observedAt"
+              ],
+              "selectable": true,
+              "rowKey": "eventId",
+              "selectionState": "selectedEvents",
+              "pageSize": 12,
+              "maxPages": 100
+            },
+            {
+              "type": "button",
+              "label": "Delete selected entries",
+              "confirm": "Delete the selected health entries from your database?",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "delete-entry",
+                  "payload": {
+                    "operation": "delete",
+                    "eventIds": {
+                      "$state": "selectedEvents"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "tabs": [
+      {
+        "id": "log",
+        "title": "Log",
+        "panels": [
+          "entry"
+        ]
+      },
+      {
+        "id": "trends",
+        "title": "Trends",
+        "panels": [
+          "trends"
+        ]
+      },
+      {
+        "id": "data",
+        "title": "Your data",
+        "panels": [
+          "history"
+        ]
+      }
+    ],
+    "defaultTab": "log",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "add-value",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "add-blood-pressure",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "delete-entry",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "read-history",
+          "path": "error"
+        }
+      }
+    ]
+  }
+}
