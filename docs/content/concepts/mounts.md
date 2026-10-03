@@ -81,7 +81,7 @@ only node and python assign paths:
 | Browser | hosts nothing; it consumes mounts | — |
 
 Services that own a mount today: `http-server-subservices` (node, python,
-hkp-rt) and `peer-server` (node).
+hkp-rt), `peer-server` (node) and `websocket-reader` (node).
 
 On hkp-rt the port is part of the board and is restored on load. A board that
 says `"port": 0` asks the operating system for any free port; whatever it got is

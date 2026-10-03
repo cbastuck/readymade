@@ -106,6 +106,7 @@ public:
     return data;
   }
 
+  void post(std::function<void()> fn) override { fn(); }
   void scheduleProcessFrom(const Service& svc, Data data,
                            bool advanceBefore) override {
     processFrom(svc, data, advanceBefore, nullptr);

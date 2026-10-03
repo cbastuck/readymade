@@ -38,6 +38,7 @@ import {
 import {
   configureKey,
   pendingMountConfigures,
+  withReportedMount,
 } from "./core/mountPublication";
 import { connectDevTools } from "./core/DevTools";
 import { restoreAvailableRuntimeEngines } from "./common";
@@ -974,6 +975,31 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         snapshotsRef.current?.cancel();
       };
     }, []);
+
+    // A remote owner that claims its mount after load — unbypassed from a
+    // facade, say — reports the address to its panel only. Taking it into
+    // board state is what lets the effect below resolve references to it.
+    useEffect(() => {
+      const unregister = Object.entries(scopes).map(([runtimeId, scope]) =>
+        scope.registerReportTarget?.((serviceUuid, report) => {
+          const current = providerStateRef.current.services;
+          if (
+            withReportedMount(current, runtimeId, serviceUuid, report) !==
+            current
+          ) {
+            setServices((prev) =>
+              withReportedMount(prev, runtimeId, serviceUuid, report),
+            );
+          }
+        }),
+      );
+      return () => {
+        for (const release of unregister) {
+          release?.();
+        }
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scopes]);
 
     // Services on remote runtimes cannot resolve a mount reference themselves —
     // only whoever owns the board sees across runtimes. When this browser is

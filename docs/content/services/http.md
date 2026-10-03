@@ -243,7 +243,10 @@ the handler produced, and answered `206` with a `content-range`. That is what a
 player dragging a scrubber sends, and a server that ignores it re-sends the whole
 file each time.
 
-Available on hkp-node and hkp-python.
+Available on hkp-node, hkp-python and hkp-rt. hkp-rt does not honour `Range` on
+an answer. An hkp-rt pipeline sends a page by putting it in the envelope, e.g. a
+[Static](./static.md) whose `out` is
+`{ "meta": { "status": 200, "contentType": "text/html; charset=utf-8" }, "body": "<!doctype html>…" }`.
 
 ### The two ways in
 
@@ -294,6 +297,77 @@ one document**: two endpoints in one chain, each answering what reached it. The
 services after an endpoint still run on every request, though, so a feed and a
 playlist are better off one runtime each: a request should not drag a tail of
 SQL behind it.
+
+### Streaming
+
+A document is answered and done. A **stream** is the one answer that keeps
+coming: a caller on its path stays connected, and what every pass produces is
+written to it as it happens.
+
+```json
+{
+  "stream": { "path": "/live.mp3", "contentType": "audio/mpeg" },
+  "onProcess": [ { "serviceId": "audio-encode", "state": { "stream": true } } ]
+}
+```
+
+A `GET` on `path` is not a request to answer but a **listener to keep**. What the
+pass produces — `onProcess`'s result, or the pass's own input where there is no
+`onProcess` — goes to every listener at once. There is one stream, not one per
+listener, and the endpoint owns it because the connections are its own.
+
+| Property | Default | Means |
+|---|---|---|
+| `path` | — | where a player connects; declaring it is what turns the stream on |
+| `contentType` | `application/octet-stream` | what the stream is |
+| `burstBytes` | `0` | how much of the most recent stream a newcomer gets at once, so a player has something to buffer; `0` starts it at the next chunk |
+| `maxQueueBytes` | `32768` | how far one listener may fall behind before the oldest of what it has not been sent is dropped |
+| `stallTimeoutMs` | `5000` | how long a write may wait on a caller that has stopped reading before it no longer counts as listening |
+
+**Nobody holds up the stream.** Every write is asynchronous and every listener
+has its own queue, so a slow connection falls behind on its own. Past
+`maxQueueBytes` it loses its oldest unsent chunks — a gap, then back near the
+live edge — instead of drifting further behind for as long as it stays.
+
+**A caller that stops reading stops counting.** A paused player, or a request a
+browser parked instead of closing, keeps its connection open without hearing
+anything. Once a write has waited `stallTimeoutMs` it is let go. The wait only
+starts once the caller's own network buffers are full, so on a fast link that
+can take tens of seconds.
+
+**Chunks are the unit.** They are kept, replayed and dropped whole, so a stream
+whose chunks each start where a decoder can start — whole MP3 frames, as
+[Audio Encode](./audio-encode.md) emits in `stream` mode — can be joined at any
+point.
+
+**A range probe is answered, not streamed.** Before it plays anything, Safari
+asks for `Range: bytes=0-1` to learn what the resource is. A bounded range is
+answered `206` with that many bytes from the start of the latest chunk and a
+length of `*`, and the connection closes. Served the stream instead, the probe
+would stay open alongside the real request and count as a second listener. An
+open-ended range (`bytes=0-`) is a player streaming, and gets the stream.
+
+The response has no length and closes with the connection (`Connection:
+close`), which every player understands. Bytes, strings and MixedData's `binary`
+are streamed; anything else a pass produces is not. The state reports the
+`streamUrl`, how many `listeners` there are and, in `listenerDetails`, who they
+are — address, user agent, time connected, bytes sent; setting `stream` to `null` ends
+it and lets them go. Declaring a different stream ends the old one the same way
+— its listeners were answered under the old path and content type — and nothing
+it kept for late joiners or probes carries over; declaring the same one again
+changes nothing.
+
+**Where the passes come from is the board's business.** Whatever reaches the
+endpoint is streamed: the output of the service before it, the result of the
+runtime before this one, or messages a [websocket-reader](./websocket.md#on-hkp-node)
+takes in from a runtime elsewhere — a home machine behind a NAT feeding a relay
+in the cloud, say. The endpoint itself only fans out.
+
+On hkp-node the stream answers through the reverse proxy in front of the server
+too. It sends `X-Accel-Buffering: no`, so nginx passes it on at once instead of
+collecting it first.
+
+Available on hkp-rt and hkp-node.
 
 ### The older spelling
 

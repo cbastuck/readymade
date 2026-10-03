@@ -18,6 +18,7 @@ import {
   User,
 } from "hkp-frontend/src/types";
 import RuntimeRestScope from "./RuntimeRestScope";
+import { isBinaryData } from "./Data";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 import { startedRun } from "../processContext";
 
@@ -452,6 +453,22 @@ export async function processRuntime(
     )
   ) {
     // if sending failed, we probably don't have a runtimeOutput, we send a REST request
+    if (isBinaryData(payload)) {
+      // A JSON body cannot carry bytes, and a body the runtime misreads is
+      // worse than none: this pass is dropped until the socket is open.
+      // Logged as a running total at most once a second, since a stream
+      // arrives many times that often.
+      scope.droppedBytes += payload.byteLength;
+      const now = Date.now();
+      if (now - scope.droppedLoggedAt >= 1000) {
+        console.warn(
+          `processRuntime: ${runtime.id} has no open socket; dropped ${scope.droppedBytes} bytes`,
+        );
+        scope.droppedBytes = 0;
+        scope.droppedLoggedAt = now;
+      }
+      return;
+    }
     const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
       method: "POST",
       headers: {
@@ -574,6 +591,7 @@ export async function configureService(
 
   const data = await res.json();
   scope.onConfig?.(service.uuid, { state: data }); // TODO: this only works for full state due to see RuntimeRestScope scope.onConfig = ...
+  (scope as RuntimeRestScope).emitReport?.(service.uuid, data);
 
   return data;
 }

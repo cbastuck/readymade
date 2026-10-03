@@ -20,6 +20,7 @@
 #include "runtime_host.h"
 #include "sub_runtime.h"
 #include "services/http_server/http_server_subservices.h"
+#include "services/static.h"
 
 using namespace hkp;
 
@@ -110,6 +111,7 @@ public:
     return data;
   }
 
+  void post(std::function<void()> fn) override { fn(); }
   void scheduleProcessFrom(const Service& svc, Data data,
                            bool advanceBefore) override {
     processFrom(svc, data, advanceBefore, nullptr);
@@ -302,4 +304,90 @@ TEST_CASE("an endpoint reports the entry points it was given, and no pipeline",
   REQUIRE(state.contains("onRequest"));
   REQUIRE(state["onRequest"].size() == 1);
   REQUIRE(state["onRequest"][0]["instanceId"] == "on-request");
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// A handler that spells out its response: the envelope hkp-node and hkp-python
+// answer by — `meta.status` beside a `body`.
+// ──────────────────────────────────────────────────────────────────────────────
+
+namespace {
+
+// The whole response, head included.
+std::string httpGetRaw(unsigned short port, const std::string& target) {
+  namespace net = boost::asio;
+  using tcp = net::ip::tcp;
+  net::io_context ioc;
+  tcp::socket socket(ioc);
+  net::connect(socket, tcp::resolver(ioc).resolve("127.0.0.1", std::to_string(port)));
+  const std::string request =
+    "GET " + target + " HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n";
+  net::write(socket, net::buffer(request));
+  std::string response;
+  boost::system::error_code ec;
+  char buffer[4096];
+  for (;;) {
+    const std::size_t n = socket.read_some(net::buffer(buffer), ec);
+    if (ec) break;
+    response.append(buffer, n);
+  }
+  return response;
+}
+
+// An endpoint whose onRequest is one Static answering with `out`.
+std::shared_ptr<Endpoint> serveStatic(json out) {
+  auto endpoint = std::make_shared<Endpoint>();
+  endpoint->host.factory = [](const std::string& serviceId, const std::string& instanceId)
+    -> std::shared_ptr<Service> {
+    if (serviceId == "static") {
+      return std::make_shared<Static>(instanceId);
+    }
+    return std::make_shared<ReplacingService>(instanceId, "subservice");
+  };
+  endpoint->server = std::make_shared<HttpServerSubservices>("http-1");
+  endpoint->host.addService(endpoint->server);
+  endpoint->server->configure(Data(json{
+    {"port", 0},
+    {"bypass", true},
+    {"onRequest", json::array({json{{"instanceId", "page"}, {"serviceId", "static"},
+                                    {"state", json{{"out", out}}}}})},
+  }));
+  endpoint->server->configure(Data(json{{"bypass", false}}));
+  return endpoint;
+}
+
+} // namespace
+
+TEST_CASE("an envelope with a string body is answered as the text it is",
+          "[http-server-subservices][answer]") {
+  auto endpoint = serveStatic(json{
+    {"meta", {{"status", 200}, {"contentType", "text/html; charset=utf-8"}}},
+    {"body", "<!doctype html><p>hello</p>"}});
+  const auto response = httpGetRaw(endpoint->port(), "/");
+  REQUIRE(response.rfind("HTTP/1.1 200 OK\r\n", 0) == 0);
+  REQUIRE(response.find("Content-Type: text/html; charset=utf-8\r\n") != std::string::npos);
+  REQUIRE(response.substr(response.find("\r\n\r\n") + 4) == "<!doctype html><p>hello</p>");
+}
+
+TEST_CASE("an envelope's status and headers are the response's",
+          "[http-server-subservices][answer]") {
+  auto endpoint = serveStatic(json{
+    {"meta", {{"status", 404}, {"headers", {{"Cache-Control", "no-store"}}}}},
+    {"body", {{"error", "not here"}}}});
+  const auto response = httpGetRaw(endpoint->port(), "/missing");
+  REQUIRE(response.rfind("HTTP/1.1 404 Not Found\r\n", 0) == 0);
+  REQUIRE(response.find("Content-Type: application/json\r\n") != std::string::npos);
+  REQUIRE(response.find("cache-control: no-store\r\n") != std::string::npos);
+  REQUIRE(response.substr(response.find("\r\n\r\n") + 4) == R"({"error":"not here"})");
+}
+
+TEST_CASE("a value without a status is not an envelope, and stays JSON",
+          "[http-server-subservices][answer]") {
+  // A pipeline passing its request through returns `meta` beside `body` too;
+  // reading that as an answer would reply with the caller's own content type.
+  auto endpoint = serveStatic(json{{"meta", {{"contentType", "text/html"}}}, {"body", "x"}});
+  const auto response = httpGetRaw(endpoint->port(), "/");
+  REQUIRE(response.find("Content-Type: application/json\r\n") != std::string::npos);
+  REQUIRE(response.substr(response.find("\r\n\r\n") + 4) ==
+          R"({"body":"x","meta":{"contentType":"text/html"}})");
 }

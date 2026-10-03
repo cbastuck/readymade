@@ -4,6 +4,7 @@ import { createBoardCoordinator } from "../coordinator";
 import {
   configureKey,
   pendingMountConfigures,
+  withReportedMount,
 } from "../mountPublication";
 
 const isRemote = (type: string) => type !== "browser";
@@ -212,5 +213,78 @@ describe("the two fields", () => {
         isRemote,
       ),
     ).toHaveLength(1);
+  });
+});
+
+describe("withReportedMount", () => {
+  // An owner still in bypass when the board loaded: no address yet.
+  const unclaimed = () => {
+    const state = board();
+    state.services["endpoint-node"][0].state = { __hkpMount: "" };
+    return state;
+  };
+  const ADDRESS = "http://127.0.0.1:8080/hosted/abc123";
+
+  it("takes over an address the owner reports after load", () => {
+    const state = unclaimed();
+    const services = withReportedMount(
+      state.services,
+      "endpoint-node",
+      "echo-server",
+      { __hkpMount: ADDRESS, status: "online" },
+    );
+
+    expect(services["endpoint-node"][0].state).toEqual({ __hkpMount: ADDRESS });
+    // Nothing else the service said is taken into the board.
+    expect(services["caller-node"]).toBe(state.services["caller-node"]);
+
+    const updated = { ...state, services };
+    expect(
+      pendingMountConfigures(
+        updated,
+        createBoardCoordinator(() => updated),
+        new Map(),
+        isRemote,
+      ),
+    ).toEqual([
+      { runtimeId: "caller-node", serviceUuid: "call", url: ADDRESS },
+    ]);
+  });
+
+  it("returns the same services when the report changes nothing", () => {
+    const state = board();
+    for (const report of [
+      { __hkpMount: ADDRESS },
+      { __hkpMount: "" },
+      { listeners: 2 },
+      "a string",
+      null,
+      [ADDRESS],
+    ]) {
+      expect(
+        withReportedMount(
+          state.services,
+          "endpoint-node",
+          "echo-server",
+          report,
+        ),
+      ).toBe(state.services);
+    }
+  });
+
+  it("ignores services the board does not list", () => {
+    const state = unclaimed();
+    const report = { __hkpMount: ADDRESS };
+    expect(
+      withReportedMount(state.services, "endpoint-node", "elsewhere", report),
+    ).toBe(state.services);
+    expect(
+      withReportedMount(
+        state.services,
+        "no-such-runtime",
+        "echo-server",
+        report,
+      ),
+    ).toBe(state.services);
   });
 });

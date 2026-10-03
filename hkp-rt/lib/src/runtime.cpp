@@ -512,6 +512,11 @@ void Runtime::sendServiceLifecycleNotification(const Service& service, const std
     service.getId());
 }
 
+void Runtime::post(std::function<void()> fn)
+{
+  m_app->postCallback(std::move(fn));
+}
+
 void Runtime::scheduleProcessFrom(const Service &service, Data data, bool advanceBefore)
 {
   auto pService = &service;

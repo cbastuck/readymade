@@ -1,6 +1,6 @@
 # WebSocket
 
-Four hkp-rt services for bidirectional WebSocket communication: reader, writer, server, and client.
+Four hkp-rt services for bidirectional WebSocket communication: reader, writer, server, and client. hkp-node has the reader.
 
 ---
 
@@ -9,6 +9,7 @@ Four hkp-rt services for bidirectional WebSocket communication: reader, writer, 
 | Runtime | Service IDs |
 |---|---|
 | hkp-rt | `websocket-reader`, `websocket-writer`, `websocket-server`, `websocket-client` |
+| hkp-node | `websocket-reader` |
 
 These services are not available in the browser runtime. For browser-side
 WebSocket connectivity use [Input](./input.md) and [Output](./output.md).
@@ -22,7 +23,7 @@ The four services cover the two axes of WebSocket communication:
 | | Accepts connections (passive) | Initiates connections (active) |
 |---|---|---|
 | **Receives data** | `websocket-reader` | `websocket-client` |
-| **Sends data** | `websocket-writer` | `websocket-server` |
+| **Sends data** | `websocket-server` | `websocket-writer` |
 
 Mix and match based on which side initiates and which side produces data.
 
@@ -47,26 +48,70 @@ a pipeline trigger.
 - **Input**: ignored
 - **Output**: each received WebSocket message, parsed as JSON if valid
 
+### On hkp-node
+
+hkp-node binds no ports: the reader is served at a mount its runtime assigns,
+published in `__hkpMount` like every hkp-node endpoint, and a
+[websocket-writer](#websocket-writer) points at it with
+`hkp-mount://<runtime>/<service>`. Because that address is public, a client
+must present a key.
+
+| Property | Type | Description |
+|---|---|---|
+| `key` | `string` | What a client must present, as `Authorization: Bearer <key>` — never in the query string, where proxies and logs would keep it; usually `{{secret.<alias>}}`. Unset, nobody is let in. Changing it closes every connection, and a secret given a new value takes no more messages from a client that connected with the old one (closed with code 1008) |
+| `exclusive` | `boolean` | One client at a time: a new one closes the one before, which is what a client reconnecting after its network dropped looks like from here. Default `false`, every client's messages are handed on |
+| `mountName` | `string` | Names the mount; renaming it rotates the address |
+
+Each message is a pass of its own through the services after the reader and
+on to the next runtime, in the order they arrive: a binary message as bytes
+(a `Buffer`), a text message parsed as JSON where it is JSON and as a string
+otherwise. What passes through the reader itself is handed on unchanged.
+
+State reports `connections`: each client's `address`, `seconds` connected,
+`messages` and `bytesReceived`. `host`, `port` and `path` are accepted and
+ignored, so a board written for hkp-rt still loads.
+
 ---
 
 ## websocket-writer
 
-Connects to an existing WebSocket server and sends each upstream pipeline
-value as a JSON message.
+Sends what passes through to a WebSocket somewhere else, one message per pass,
+and hands the pass on unchanged. It connects **outward**, so a runtime behind a
+NAT can feed a server that could never reach it. For example, a home machine
+can stream to a relay in the cloud ([Live Radio (Cloud, direct)](../boards/live-radio-cloud-direct-demo-board.md)).
 
 ### Configuration
 
 | Property | Type | Description |
 |---|---|---|
-| `host` | `string` | Remote server hostname |
-| `port` | `string` | Remote server port |
-| `path` | `string` | URL path on the remote server |
+| `url` | `string` | `ws://…` or `wss://…`. An `http(s)://` address is taken to mean the WebSocket at the same place. `hkp-mount://<runtime>/<service>` names an endpoint instead (see below) |
+| `path` | `string` | Appended to a mount's address, e.g. `/live.mp3` |
+| `headers` | `object` | Sent with the handshake; `{{secret.<alias>}}` in a value is resolved for the host being connected to |
+| `maxQueueBytes` | `number` | How much may wait while the connection is slow or down (default 16384, about a second at 128 kbit/s); past it the oldest messages are dropped |
+
+**Nothing waits on the network.** Each pass is queued and handed on at once. A
+thread of the service's own connects, writes one message at a time, and
+reconnects with backoff (0.5 s, doubling to 10 s) when the connection drops.
+Keep-alive pings detect a connection that died without closing. For anything
+live, the newest data is what matters, which is why the queue drops the oldest.
+
+**A mount reference** works like [http-client](./http.md#calling-an-endpoint-whose-address-is-assigned-at-load-time):
+the board's coordinator writes the endpoint's address into `__hkpMount`, and the
+writer connects to that address plus `path`. Until then its status is `waiting`.
 
 ### Input / Output
 
-- **Input**: any JSON value — serialised and sent
-- **Output**: `null` by default (terminates pipeline); the original input
-  if `flow: "pass"` is set
+- **Input**: bytes are sent as binary messages; text and JSON as text
+  messages; MixedData's binary as bytes; a ring buffer as its serialised samples
+- **Output**: the input, unchanged
+
+State reports `status` (`idle`, `waiting`, `connecting`, `connected`,
+`reconnecting`), the last `error`, the `target` actually dialled, and
+`sentBytes`, `droppedMessages` and `reconnects`.
+
+**The older form.** Boards that give `host`, `port` and `path` instead of `url`
+connect over plain `ws://` and open with the `{"type":"writer"}` hello that
+hkp-rt's own websocket-server uses to pair a writer.
 
 ---
 
@@ -121,6 +166,18 @@ Browser Output sends to a WebSocket URL; hkp-rt websocket-reader receives:
 Browser:  Timer → Map → Output (ws://hkp-rt:9000/in)
 hkp-rt:   websocket-reader (port 9000) → FFT → monitor
 ```
+
+### Relay: hkp-rt at home → hkp-node in the cloud
+
+The writer connects outward, so the home machine needs no open port; the
+reader's key decides who may feed the relay:
+
+```
+hkp-rt:   core-input → audio-encode → websocket-writer (hkp-mount://relay/ingest) → stopper
+hkp-node: websocket-reader "ingest" (key) → http-server-subservices (stream) → stopper
+```
+
+See [Live Radio (Cloud, direct)](../boards/live-radio-cloud-direct-demo-board.md).
 
 ### Bridge: hkp-rt → browser
 

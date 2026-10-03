@@ -78,7 +78,7 @@ is the one worth being pedantic in.
 | **Sub-service / nested pipeline** | A service owning a pipeline of its own, run as one step of the outer one. | `hkp-node/src/services/sub-service.ts`, `hkp-rt/lib/src/sub_runtime.cpp` |
 | **Runtime API / scope / app** | The three seams: verbs per runtime *type*, one live runtime, and what a service may do. | `hkp-frontend/src/types.ts#RuntimeApi`, `#RuntimeScope`, `hkp-frontend/src/runtime/browser/BrowserRuntimeApp.ts` |
 | **Registry** | What services a runtime can create, sent back when it is provisioned. | `hkp-frontend/src/runtime/browser/BrowserRegistry.tsx`, `hkp-node/src/server.ts` |
-| **YAS** | The binary wire format for non-textual data over REST — 7-byte header, type-prefixed payload. | `hkp-frontend/src/runtime/rest/Message.ts`, `hkp-python/src/hkp/yas.py` |
+| **YAS** | The binary wire format for non-textual data over REST — 7-byte header, type-prefixed payload. | `hkp-frontend/src/runtime/rest/Message.ts`, `hkp-python/src/hkp/yas.py`, `hkp-node/src/yas.ts` |
 | **Remote** | A runtime server the host knows by name. `hkp://remotes/<name>` addresses the app's own embedded runtime. | `meander/backend/remoteRoute.h`, `meander/frontend/src/useBackendRemotes.ts` |
 
 ---

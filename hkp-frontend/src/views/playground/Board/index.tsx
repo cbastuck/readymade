@@ -11,6 +11,7 @@ import {
 } from "../../../types";
 import { getDraggedFiles, readFile } from "../common";
 import { BoardContextState } from "../../../BoardContext";
+import { passesNothing } from "../../../runtime/rest/Data";
 import BoardRuntime from "./BoardRuntime";
 import { useThemeControl } from "../../../ui-components/ThemeContext";
 import RuntimeMenu from "../../../ui-components/toolbar/RuntimeMenu";
@@ -82,11 +83,12 @@ export default function Board(props: Props) {
           toCanonicalRuntimeClassType(nextRuntime.type)
         ]);
 
-    if (nextApi && result !== null) {
+    const carriesOn = !passesNothing(result);
+    if (nextApi && carriesOn) {
       nextApi.processRuntime(nextScope, result, null, context);
     } else {
       processPendingBoardCallbacks(context, result);
-      if (props.onResult && result !== null) {
+      if (props.onResult && carriesOn) {
         props.onResult(result);
       }
     }

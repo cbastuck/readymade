@@ -9,6 +9,7 @@ Turns the samples a board made into a file a board can keep.
 | Runtime | Service ID |
 |---|---|
 | Python (hkp-python) | `audio-encode` |
+| C++ (hkp-rt) | `audio-encode` |
 
 ---
 
@@ -33,13 +34,17 @@ that also decided names would have to be told about both.
 | `quality` | `number` | `5` | LAME quality, 0 (best) to 9 |
 | `sampleRate` | `number` | `24000` | What the incoming samples are |
 | `channels` | `1 \| 2` | `1` | How to read them |
+| `stream` | `boolean` | `false` | One recording across all passes rather than one per pass — hkp-rt, mp3 only |
 
 `wav` needs nothing beyond the standard library and is always available. `mp3`
-is an optional extra:
+is an optional extra on hkp-python:
 
 ```
 pip install "hkp-python[mp3]"
 ```
+
+and compiled into hkp-rt with LAME (`HKP_MP3_ENABLED`, on for macOS builds). A
+runtime without it lists only `wav` in `availableFormats`.
 
 A board that only plays audio back has no reason to carry an encoder, which is
 why it is an extra; the two formats are one service because choosing between
@@ -51,6 +56,30 @@ A `FloatRingBuffer` carries floats and does not say how fast they were meant to
 be played, so the same samples are a different length of audio depending on what
 a board says they are. Kokoro synthesises at 24 kHz, which is why that is the
 default here and in Audio Output.
+
+### Streaming
+
+Without `stream`, each pass is a whole recording: the input is encoded and the
+encoder flushed, and what comes out is a complete file.
+
+With it, the passes are **one recording that never ends**. A single encoder lives
+across all of them; each pass hands it whatever samples arrived since the last
+and emits the frames that finished — often none, in which case the pass stops
+there. Nothing is flushed until a setting changes, which starts a new stream.
+
+That is what MP3 needs. Frames are not independent: each overlaps its neighbours,
+and may spend bits its predecessors saved, so the encoder keeps back the samples
+its model still needs. Encoding chunk by chunk with a fresh encoder would put a
+seam, and the encoder's start-up delay, into every chunk.
+
+Every chunk a stream emits is **whole frames**, so each is a place a decoder can
+find its footing — which is what lets an [endpoint's stream](./http.md#streaming)
+take listeners at any moment. It is not always a place the audio is complete: a
+frame that spends bits its predecessors saved needs bytes a listener joining
+there never received, and a decoder plays such a frame as silence. Joining
+therefore costs up to a few frames — tens of milliseconds — before sound starts,
+the same as on any MP3 radio stream. State adds `streamedBytes` and `streamedSeconds`, and is
+notified about once a second rather than on every pass.
 
 ## Input / Output
 
@@ -77,6 +106,8 @@ map (the words) → text-to-speech → audio-encode → … → storage
 ## Demo board
 
 `audio-encode-demo-board.json` — type a line, hear what it costs as an mp3.
+
+`live-radio-demo-board.json` — the microphone streamed live as MP3 from hkp-rt.
 
 ## See also
 

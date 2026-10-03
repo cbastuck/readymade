@@ -1,5 +1,8 @@
 #include "./http_session.h"
 
+#include <algorithm>
+#include <optional>
+
 #include "./http_server_impl.h" 
 #include "./request_handler.h"
 #include "./http_listener.h"
@@ -216,8 +219,144 @@ void Session::sendCorsPreflightResponse()
     boost::beast::bind_front_handler(&Session::on_write, shared_from_this(), true));
 }
 
+namespace {
+
+// A response a handler spelled out: status, headers, and what to send.
+struct Answer
+{
+  unsigned status = 200;
+  json headers = json::object(); // lower-cased names, string values
+  std::string contentType;
+  std::string payload;
+};
+
+// Whether `meta` marks a value as a response rather than a request.
+//
+// A request envelope and a response envelope are the same shape, and a
+// pipeline that passes its input through returns the request. A request never
+// carries a status and a response always does, which is what makes
+// `meta.status` the one field that cannot be a coincidence — the same rule
+// hkp-node and hkp-python answer by.
+bool marksAnswer(const json& meta)
+{
+  return meta.is_object() && meta.contains("status") && meta["status"].is_number_integer();
+}
+
+Answer answerFrom(const json& meta)
+{
+  Answer answer;
+  answer.status = meta["status"].get<unsigned>();
+  if (meta.contains("headers") && meta["headers"].is_object())
+  {
+    for (const auto& [name, value] : meta["headers"].items())
+    {
+      if (value.is_null())
+      {
+        continue;
+      }
+      auto lower = name;
+      std::transform(lower.begin(), lower.end(), lower.begin(),
+                     [](unsigned char c) { return std::tolower(c); });
+      answer.headers[lower] = value.is_string() ? value.get<std::string>() : value.dump();
+    }
+  }
+  if (meta.contains("contentType") && meta["contentType"].is_string())
+  {
+    answer.contentType = meta["contentType"].get<std::string>();
+  }
+  else if (answer.headers.contains("content-type"))
+  {
+    answer.contentType = answer.headers["content-type"].get<std::string>();
+  }
+  answer.headers.erase("content-type");
+  return answer;
+}
+
+// The response a value stands for, or nothing where it is not an envelope.
+//
+//   { meta: { status, contentType?, headers? }, body }   JSON value
+//   MixedData with meta.status                           bytes
+//
+// A string body is sent as text; any other body as JSON.
+std::optional<Answer> answerEnvelope(const Data& data)
+{
+  if (auto mixed = getMixedDataFromData(data))
+  {
+    if (!marksAnswer(mixed->meta))
+    {
+      return std::nullopt;
+    }
+    auto answer = answerFrom(mixed->meta);
+    if (answer.contentType.empty())
+    {
+      answer.contentType = "application/octet-stream";
+    }
+    answer.payload.assign(mixed->binary.begin(), mixed->binary.end());
+    return answer;
+  }
+
+  auto value = getJSONFromData(data);
+  if (!value || !value->is_object() || !value->contains("meta") || !marksAnswer((*value)["meta"])
+      || !(value->contains("body") || value->contains("binary")))
+  {
+    return std::nullopt;
+  }
+  auto answer = answerFrom((*value)["meta"]);
+  const json body = value->contains("body") ? (*value)["body"] : json(nullptr);
+  if (body.is_string())
+  {
+    answer.payload = body.get<std::string>();
+    if (answer.contentType.empty())
+    {
+      answer.contentType = "text/plain; charset=utf-8";
+    }
+  }
+  else
+  {
+    answer.payload = body.dump();
+    if (answer.contentType.empty())
+    {
+      answer.contentType = "application/json";
+    }
+  }
+  return answer;
+}
+
+} // namespace
+
+bool Session::sendAnswerEnvelope(const Data& data)
+{
+  auto answer = answerEnvelope(data);
+  if (!answer)
+  {
+    return false;
+  }
+
+  http::response<http::string_body> res;
+  res.version(11);
+  res.result(answer->status);
+  res.set(http::field::server, kUserAgent);
+  res.set(http::field::access_control_allow_origin, "*");
+  for (const auto& [name, value] : answer->headers.items())
+  {
+    res.set(name, value.get<std::string>());
+  }
+  res.set(http::field::content_type, answer->contentType);
+  res.body() = std::move(answer->payload);
+  res.prepare_payload();
+
+  boost::beast::error_code ec;
+  http::write(stream_, res, ec);
+  do_close();
+  return true;
+}
+
 void Session::sendDataSync(Data& data, bool useEventStream)
 {
+  if (!useEventStream && sendAnswerEnvelope(data))
+  {
+    return;
+  }
   if (auto json = getJSONFromData(data); json)
   {
     sendJsonData(*json, useEventStream);
@@ -271,6 +410,10 @@ void Session::sendJsonData(const json& j, bool useEventStream)
 
 void Session::sendResult(Data& data)
 {
+  if (sendAnswerEnvelope(data))
+  {
+    return;
+  }
   if (auto str = getStringFromData(data))
   {
     sendHtmlResponse(*str);

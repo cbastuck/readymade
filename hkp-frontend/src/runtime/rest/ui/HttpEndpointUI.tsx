@@ -26,6 +26,9 @@ import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
 export default function HttpEndpointUI(props: ServiceUIProps) {
   const [sections, setSections] = useState<NamedPipeline[]>([]);
   const [address, setAddress] = useState("");
+  const [streamUrl, setStreamUrl] = useState("");
+  const [listeners, setListeners] = useState(0);
+  const [listenerDetails, setListenerDetails] = useState<ListenerDetail[]>([]);
 
   const { service } = props;
 
@@ -56,7 +59,28 @@ export default function HttpEndpointUI(props: ServiceUIProps) {
     if (typeof state.__hkpMount === "string") {
       setAddress(state.__hkpMount);
     }
+    if (typeof state.streamUrl === "string") {
+      setStreamUrl(state.streamUrl);
+    }
+    if (typeof state.listeners === "number") {
+      setListeners(state.listeners);
+    }
+    if (Array.isArray(state.listenerDetails)) {
+      setListenerDetails(state.listenerDetails);
+    }
   }, []);
+
+  // A change in the count is announced as the count alone; who is behind it
+  // is in the full state.
+  const onNotification = useCallback(
+    async (state: any) => {
+      read(state);
+      if (typeof state?.listeners === "number" && !state.listenerDetails) {
+        read(await service.getConfiguration?.());
+      }
+    },
+    [read, service],
+  );
 
   const edit = useCallback(
     async (payload: object) => {
@@ -70,7 +94,7 @@ export default function HttpEndpointUI(props: ServiceUIProps) {
     <RuntimeRestServiceUI
       {...props}
       onInit={read}
-      onNotification={read}
+      onNotification={onNotification}
       genericUI={false}
       initialSize={{ width: 420, height: undefined }}
     >
@@ -85,6 +109,35 @@ export default function HttpEndpointUI(props: ServiceUIProps) {
             </div>
             <CopyButton value={address} label="mount URL" />
           </div>
+        )}
+
+        {streamUrl && (
+          // Where a player connects to the endpoint's stream, and who has.
+          <div className="flex items-start gap-1">
+            <div className="text-xs text-neutral-500 break-all font-mono flex-1">
+              {streamUrl}
+              <span className="font-sans">
+                {" "}
+                · {listeners} {listeners === 1 ? "listener" : "listeners"}
+              </span>
+            </div>
+            <CopyButton value={streamUrl} label="stream URL" />
+          </div>
+        )}
+        {streamUrl && listenerDetails.length > 0 && (
+          <ul className="text-xs text-neutral-500 flex flex-col gap-0.5">
+            {listenerDetails.map((listener) => (
+              <li
+                key={listener.address}
+                className="font-mono break-all"
+                title={listener.userAgent}
+              >
+                {listener.address} · {listener.seconds}s ·{" "}
+                {Math.round(listener.bytesSent / 1024)} KB
+                {listener.range ? ` · range ${listener.range}` : ""}
+              </li>
+            ))}
+          </ul>
         )}
 
         <NamedPipelinesPanel
@@ -110,6 +163,16 @@ export default function HttpEndpointUI(props: ServiceUIProps) {
     </RuntimeRestServiceUI>
   );
 }
+
+/** One caller on the endpoint's stream, as the runtime reports it. */
+type ListenerDetail = {
+  address: string;
+  userAgent: string;
+  seconds: number;
+  bytesSent: number;
+  droppedChunks: number;
+  range?: string;
+};
 
 /** Whether a report says anything about the endpoint's pipelines at all. */
 function carriesPipelines(state: Record<string, unknown>): boolean {

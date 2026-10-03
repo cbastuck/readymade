@@ -25,7 +25,9 @@ FloatRingBuffer::FloatRingBuffer(std::string name)
 
 void FloatRingBuffer::append(float value)
 {
-  m_buffer[m_writeIndex++ % N] = value;
+  const auto writeIndex = m_writeIndex.load(std::memory_order_relaxed);
+  m_buffer[writeIndex % N] = value;
+  m_writeIndex.store(writeIndex + 1, std::memory_order_release);
 }
 
 unsigned int FloatRingBuffer::appendBinary(const char *data, unsigned int count)
@@ -33,37 +35,42 @@ unsigned int FloatRingBuffer::appendBinary(const char *data, unsigned int count)
   // std::cout << "FloatRingBuffer.appendBinary: " << m_name << " count: " << count / sizeof(float) << " readpos: " << m_readIndex << " writepos: " << m_writeIndex << std::endl;
   auto numItems = count / sizeof(float);
 
+  // Realtime-safe: called from the audio callback. Samples first, index last.
   const float *src = reinterpret_cast<const float *>(data);
+  const auto writeIndex = m_writeIndex.load(std::memory_order_relaxed);
   for (unsigned int i = 0; i < numItems; ++i, ++src)
   {
-    m_buffer[m_writeIndex++ % N] = *src;
+    m_buffer[(writeIndex + i) % N] = *src;
   }
+  m_writeIndex.store(writeIndex + numItems, std::memory_order_release);
   return numItems;
 }
 
 unsigned int FloatRingBuffer::appendAvailable(FloatRingBuffer& source, bool advanceReadIndex)
 {
   auto srcReadIndex = source.m_readIndex.load(std::memory_order_relaxed);
-  auto srcWriteIndex = source.m_writeIndex.load(std::memory_order_relaxed);
-  unsigned int availableSamples = srcWriteIndex - srcReadIndex;
+  auto srcWriteIndex = source.m_writeIndex.load(std::memory_order_acquire);
+  uint64_t availableSamples = srcWriteIndex - srcReadIndex;
 
   if (availableSamples > N)
   {
     std::cerr << "FloatRingBuffer::appendAvailable the source buffer wrapped twice - increase the buffer size - Resetting indices" << std::endl;
-    srcReadIndex = source.m_writeIndex - N;
+    srcReadIndex = srcWriteIndex - N;
     availableSamples = N; // reset to max size
   }
 
-  for (unsigned int i = 0; i < availableSamples; ++i)
+  const auto writeIndex = m_writeIndex.load(std::memory_order_relaxed);
+  for (uint64_t i = 0; i < availableSamples; ++i)
   {
-    m_buffer[m_writeIndex++ % N] = source.m_buffer[(srcReadIndex + i) % N];
-  } 
+    m_buffer[(writeIndex + i) % N] = source.m_buffer[(srcReadIndex + i) % N];
+  }
+  m_writeIndex.store(writeIndex + availableSamples, std::memory_order_release);
 
   if (advanceReadIndex)
   {
-    source.m_readIndex += availableSamples; // move read index forward
+    source.m_readIndex.store(srcReadIndex + availableSamples); // move read index forward
   }
-  return availableSamples;
+  return static_cast<unsigned int>(availableSamples);
 }
 
 unsigned int FloatRingBuffer::consumeAvailable(FloatRingBuffer& target)
@@ -74,16 +81,16 @@ unsigned int FloatRingBuffer::consumeAvailable(FloatRingBuffer& target)
 unsigned int FloatRingBuffer::consumeAvailableByAppend(std::vector<uint8_t>& target)
 {
   auto srcReadIndex = m_readIndex.load(std::memory_order_relaxed);
-  auto srcWriteIndex = m_writeIndex.load(std::memory_order_relaxed);
-  unsigned int availableSamples = srcWriteIndex - srcReadIndex;
+  auto srcWriteIndex = m_writeIndex.load(std::memory_order_acquire);
+  uint64_t availableSamples = srcWriteIndex - srcReadIndex;
   if (availableSamples > N)
   {
     std::cerr << "FloatRingBuffer::appendAvailable the source buffer wrapped twice - increase the buffer size - Resetting indices" << std::endl;
-    srcReadIndex = m_writeIndex - N;
+    srcReadIndex = srcWriteIndex - N;
     availableSamples = N; // reset to max size
   }
   target.reserve(target.size() + availableSamples * sizeof(float));
-  for (unsigned int i = 0; i < availableSamples; ++i)
+  for (uint64_t i = 0; i < availableSamples; ++i)
   {
     float value = m_buffer[(srcReadIndex + i) % N];
     target.insert(
@@ -93,14 +100,14 @@ unsigned int FloatRingBuffer::consumeAvailableByAppend(std::vector<uint8_t>& tar
     );
   } 
 
-  m_readIndex += availableSamples; // move read index forward
-  return availableSamples;
+  m_readIndex.store(srcReadIndex + availableSamples); // move read index forward
+  return static_cast<unsigned int>(availableSamples);
 }
 
 unsigned int FloatRingBuffer::consumeBinary(float *outputBuffer, unsigned int frameCount, unsigned int numChannels)
 {
   // std::cout << "FloatRingBuffer.consume: " << m_name << " count: " << frameCount << " readpos: " << m_readIndex << " writepos: " << m_writeIndex << std::endl;
-  auto availableSamples = m_writeIndex - m_readIndex;
+  unsigned int availableSamples = m_writeIndex - m_readIndex;
   unsigned int framesToCopy = std::min(availableSamples, frameCount);
   for (unsigned int i = 0; i < framesToCopy; ++i, ++m_readIndex)
   {
@@ -317,9 +324,10 @@ std::ostream& operator<<(std::ostream& os, const FloatRingBuffer& data)
 {
   os << "FloatRingBuffer: " << data.id() << " " << data.availableCount() << std::endl;
   os << "ReadIndex: " << data.getReadIndex() << " WriteIndex: " << data.getWriteIndex() << std::endl;
-  for (unsigned int i = 0, idx=data.m_readIndex; i < data.availableCount(); ++i, ++idx)
+  auto idx = data.m_readIndex.load();
+  for (unsigned int i = 0; i < data.availableCount(); ++i, ++idx)
   {
-    os << data.m_buffer[idx] << " ";
+    os << data.m_buffer[idx % FloatRingBuffer::N] << " ";
   }
   os << std::endl;
   return os;
