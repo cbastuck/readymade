@@ -27,19 +27,68 @@ type State = {
   emit: EmitMode;
 };
 
-/** Values compared by what they say, so an object rebuilt each time is not a change. */
-function same(a: unknown, b: unknown): boolean {
-  if (Object.is(a, b)) {
-    return true;
-  }
-  if (typeof a !== "object" || typeof b !== "object" || !a || !b) {
+/**
+ * Whether JSON has nothing to say about an object: one that is not plain data
+ * and has no fields of its own to write — a Blob, an ArrayBuffer, an ImageData.
+ * All of these serialise to `{}`, whatever they hold.
+ */
+function isOpaque(value: object): boolean {
+  if (Array.isArray(value) || ArrayBuffer.isView(value)) {
     return false;
+  }
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype === Object.prototype || prototype === null) {
+    return false;
+  }
+  return Object.keys(value).length === 0;
+}
+
+const opaqueIds = new WeakMap<object, number>();
+let nextOpaqueId = 0;
+
+/** Writes an opaque object as a token of its own, so it equals only itself. */
+function distinguishOpaque(_key: string, value: unknown): unknown {
+  if (typeof value !== "object" || !value || !isOpaque(value)) {
+    return value;
+  }
+  let id = opaqueIds.get(value);
+  if (id === undefined) {
+    id = nextOpaqueId++;
+    opaqueIds.set(value, id);
+  }
+  return `\u0000opaque:${id}`;
+}
+
+/**
+ * What an object says, as text the next value's is compared with — taken when
+ * the value arrives, so an object changed afterwards by whoever made it is
+ * still compared with what it said then. `undefined` for what has no such
+ * text: anything but an object, and an object that cannot be written.
+ */
+function fingerprint(value: unknown): string | undefined {
+  if (typeof value !== "object" || !value) {
+    return undefined;
   }
   try {
-    return JSON.stringify(a) === JSON.stringify(b);
+    return JSON.stringify(value, distinguishOpaque);
   } catch {
-    return false;
+    return undefined;
   }
+}
+
+type Remembered = { value: unknown; print: string | undefined };
+
+/**
+ * Values compared by what they say, so an object rebuilt each time is not a
+ * change, and one reused with other content is. What cannot be read this way
+ * (see `isOpaque`) is compared by identity instead, on its own or inside
+ * another value: a new one is a change.
+ */
+function same(a: Remembered, b: Remembered): boolean {
+  if (a.print !== undefined || b.print !== undefined) {
+    return a.print === b.print;
+  }
+  return Object.is(a.value, b.value);
 }
 
 /**
@@ -54,6 +103,7 @@ function same(a: unknown, b: unknown): boolean {
  */
 class Changes extends ServiceBase<State> {
   __remembered: unknown = undefined;
+  __rememberedPrint: string | undefined = undefined;
   __seen = false;
   __expression: Expression | SyntaxError | null = null;
 
@@ -93,6 +143,7 @@ class Changes extends ServiceBase<State> {
 
   private forget() {
     this.__remembered = undefined;
+    this.__rememberedPrint = undefined;
     this.__seen = false;
     this.app.notify(this, { remembered: this.remembered });
   }
@@ -115,8 +166,12 @@ class Changes extends ServiceBase<State> {
     }
 
     const previous = this.__remembered;
-    const changed = !this.__seen || !same(previous, current);
+    const print = fingerprint(current);
+    const changed =
+      !this.__seen ||
+      !same({ value: previous, print: this.__rememberedPrint }, { value: current, print });
     this.__remembered = current;
+    this.__rememberedPrint = print;
     this.__seen = true;
     if (changed) {
       this.app.notify(this, { remembered: this.remembered });

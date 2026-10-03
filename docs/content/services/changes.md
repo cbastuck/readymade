@@ -31,7 +31,10 @@ Otherwise it returns `null` and the pipeline stops there, like
 watched value only decides whether it goes on.
 
 Values are compared by what they say: an object rebuilt on every input with the
-same content is not a change.
+same content is not a change, and the same object arriving with other content
+is. Binary content that cannot be read this way — a
+`Blob`, an `ArrayBuffer`, an image — counts as changed whenever it is a
+different object, on its own or as a field of the value watched.
 
 It is the change-detection half of a problem [Debounce](debounce.md) does not
 solve. Debounce limits how often something fires; a state that stays true still

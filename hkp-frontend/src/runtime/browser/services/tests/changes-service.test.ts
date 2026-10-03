@@ -38,6 +38,48 @@ describe("Changes", () => {
     expect(await run(service, [{ n: 1 }, { n: 1 }, { n: 2 }])).toEqual([{ n: 1 }, null, { n: 2 }]);
   });
 
+  it("sees a change in an object that is reused and given other content", async () => {
+    const { service } = makeChanges();
+    const input = { n: 1 };
+    expect(await service.process(input)).toBe(input);
+    expect(await service.process(input)).toBeNull();
+    input.n = 2;
+    expect(await service.process(input)).toBe(input);
+    expect(await service.process(input)).toBeNull();
+  });
+
+  it("takes binary content JSON cannot read as changed whenever it is another object", async () => {
+    const { service } = makeChanges();
+    const first = new Blob(["one"]);
+    const second = new Blob(["two"]);
+    expect(await run(service, [first, first, second, second])).toEqual([
+      first,
+      null,
+      second,
+      null,
+    ]);
+
+    const buffers = makeChanges().service;
+    const a = new ArrayBuffer(4);
+    const b = new ArrayBuffer(4);
+    expect(await run(buffers, [a, b, b])).toEqual([a, b, null]);
+  });
+
+  it("sees binary content change inside an object, and bytes by what they hold", async () => {
+    const { service } = makeChanges();
+    const image = new Blob(["frame"]);
+    const frames = [
+      { id: 1, image },
+      { id: 1, image },
+      { id: 1, image: new Blob(["frame"]) },
+    ];
+    expect(await run(service, frames)).toEqual([frames[0], null, frames[2]]);
+
+    const bytes = makeChanges().service;
+    const inputs = [new Uint8Array([1, 2]), new Uint8Array([1, 2]), new Uint8Array([1, 3])];
+    expect(await run(bytes, inputs)).toEqual([inputs[0], null, inputs[2]]);
+  });
+
   it("watches an expression and passes the input it was read from", async () => {
     const { service } = makeChanges({ value: "params.count > 0", emit: "rise" });
     const frames = [

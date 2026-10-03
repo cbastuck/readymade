@@ -1005,6 +1005,18 @@ saucer::scheme::response SchemeHandler::handleSavePreset(const Router::Params &p
     };
   }
   file.write(reinterpret_cast<const char *>(content.data()), content.size());
+  // Closed before answering: what is still buffered is written here, so a
+  // write that did not reach the disk is answered as one, not as saved.
+  file.close();
+  if (file.fail())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Failed to write preset file"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
   return saucer::scheme::response{
       .data = saucer::stash::from_str(json{{"file", p.at("file")}}.dump()),
       .mime = "application/json",
@@ -1026,7 +1038,19 @@ saucer::scheme::response SchemeHandler::handleDeletePreset(const Router::Params 
     };
   }
   std::error_code ec;
-  if (!std::filesystem::remove(path, ec))
+  const bool removed = std::filesystem::remove(path, ec);
+  // A file that is not there is not an error to `remove`; one it could not
+  // delete is, and is still there.
+  if (ec)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Failed to delete preset file"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  if (!removed)
   {
     return saucer::scheme::response{
         .data = saucer::stash::from_str("Preset file not found"),
