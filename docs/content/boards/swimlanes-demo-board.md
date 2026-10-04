@@ -28,6 +28,12 @@ uses that group to let the destination lane recognise it. Cards and rules never
 move into frontend state: the drop sends an operation to SQL, and the query at
 the end of the pipeline redraws every lane from the database's answer.
 
+Dragging is one way to move a card, not the only one. A card that can be
+dragged also carries a **Move** menu naming the lanes of its group that would
+take it, and — in a lane that takes cards itself — one place up or down. It
+sends the same operation a drop does, so a keyboard, or a host that delivers no
+drag from a touch, reaches everything a pointer does.
+
 ## The services
 
 One REST runtime on hkp-node holds six top-level services:
@@ -92,7 +98,15 @@ draggable and a drop target. A workflow can separate those capabilities with
 `allowDrag` and `acceptDrops`: a review lane can supply the card being dragged,
 while a drop-only destination owns the approval action. This makes the drop a
 domain command rather than pretending the facade has already moved persisted
-state.
+state. The **Move** menu follows the same two permissions: it appears on cards
+that may be dragged and lists only lanes that accept drops.
+
+`selectable` lets a card be selected, by a click or with Enter on a focused
+card; selecting it again lets go. The selection is not kept by the lane: the
+card's id is written to facade state under `selectionState`, so the five lanes
+of this board, which all name `selectedCard`, hold one selection between them,
+and a button can act on it with `{ "$state": "selectedCard" }`. A selected card
+stays selected when it is moved and is let go when it is deleted.
 
 The generic editor wording can also be adapted without introducing a new
 widget. `editorTitle`, `titleLabel`, `descriptionLabel` and `saveLabel` let a

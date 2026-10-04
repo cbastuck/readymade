@@ -15,8 +15,9 @@ the original `syn-board.json`.
 - **Waiting for user response** shows conversations whose approved email was
   sent successfully.
 
-Only review cards can be dragged, and only the waiting lane accepts them. The
-drop asks for confirmation and marks the draft approved through the
+Only review cards can be moved, and only the waiting lane accepts them — by
+dragging the card there, or from the card's **Move** menu. Either way the
+move asks for confirmation and marks the draft approved through the
 Conversations service. It does not move facade state. The unchanged booking
 dispatcher observes the approval, sends through SMTP, files the outbound mail,
 marks the artifact sent and transitions the conversation. The database query

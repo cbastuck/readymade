@@ -103,6 +103,25 @@ function isInsideUse(
 }
 
 /**
+ * The stand-ins handed out for services on remote runtimes, by the scope that
+ * holds them and the address asked for.
+ *
+ * A browser service is one object however often it is looked up, and callers
+ * lean on that: a subscription is kept for as long as the service it was made
+ * on stays the same object. A stand-in built per call would be a different
+ * service on every render, so the same one is handed back for as long as what
+ * it was built from — the scope's app, the runtime's API and the state the
+ * board holds for it — has not changed.
+ */
+type RemoteProxy = {
+  app: unknown;
+  api: RuntimeApi;
+  state: unknown;
+  proxy: ServiceInstance;
+};
+const remoteProxies = new WeakMap<object, Map<string, RemoteProxy>>();
+
+/**
  * The service an address names. An address is unique only within its runtime,
  * so a caller that knows which runtime holds the service says so; without one
  * the first runtime holding the address answers.
@@ -155,10 +174,21 @@ export function findService(
     if (!runtime?.url || !scope || !api) {
       continue;
     }
-    return {
+    const app = (scope as any).app;
+    const state = root === uuid ? desc.state : undefined;
+    const known = remoteProxies.get(scope)?.get(uuid);
+    if (
+      known &&
+      known.app === app &&
+      known.api === api &&
+      known.state === state
+    ) {
+      return known.proxy;
+    }
+    const proxy = {
       uuid,
-      app: (scope as any).app,
-      state: root === uuid ? desc.state : undefined,
+      app,
+      state,
       // The runtime's own API rather than a request written here: configuring a
       // remote service is more than the POST — the secrets a configuration
       // names have to reach the runtime first, and the state it answers with is
@@ -169,6 +199,10 @@ export function findService(
         await api.configureService(scope, { uuid }, config);
       },
     } as unknown as ServiceInstance;
+    const ofScope = remoteProxies.get(scope) ?? new Map<string, RemoteProxy>();
+    ofScope.set(uuid, { app, api, state, proxy });
+    remoteProxies.set(scope, ofScope);
+    return proxy;
   }
   return null;
 }

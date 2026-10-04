@@ -146,7 +146,7 @@
           "items": [
             {
               "type": "text",
-              "placeholder": "Review generated replies before anything is sent. Edit a draft if needed, then drag it to Waiting for user response to approve it. The card moves only after SMTP delivery succeeds.",
+              "placeholder": "Review generated replies before anything is sent. Edit a draft if needed, then drag it to Waiting for user response — or use its Move menu — to approve it. The card moves only after SMTP delivery succeeds.",
               "tone": "muted",
               "fontSize": 12
             },

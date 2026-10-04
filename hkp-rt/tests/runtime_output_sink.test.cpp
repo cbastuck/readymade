@@ -61,6 +61,9 @@ bool eventually(const std::function<bool()>& check) {
   return check();
 }
 
+// Declared before the app in every test, so that it is destroyed after it: the
+// sink is called on the app's event loop, which is still delivering what a
+// test did not wait for until the app is gone.
 struct Heard {
   std::mutex mutex;
   std::vector<json> results;
@@ -96,8 +99,8 @@ struct Heard {
 
 TEST_CASE("a runtime's result reaches its sink as the value it was",
           "[runtime][sink]") {
-  auto app = appWithRuntime();
   Heard heard;
+  auto app = appWithRuntime();
   app->setRuntimeOutputSink("rt-1", heard.sink());
 
   app->processRuntime("rt-1", Data(json{{"n", 1}}));
@@ -107,11 +110,11 @@ TEST_CASE("a runtime's result reaches its sink as the value it was",
 }
 
 TEST_CASE("a sink hears only the runtime it was set for", "[runtime][sink]") {
+  Heard heard;
   auto app = appWithRuntime();
   app->createRuntime(json{
     {"id", "rt-2"}, {"name", "Other"}, {"services", json::array()},
   });
-  Heard heard;
   app->setRuntimeOutputSink("rt-2", heard.sink());
 
   app->processRuntime("rt-1", Data(json{{"n", 1}}));
@@ -122,8 +125,8 @@ TEST_CASE("a sink hears only the runtime it was set for", "[runtime][sink]") {
 }
 
 TEST_CASE("a cleared sink hears nothing more", "[runtime][sink]") {
-  auto app = appWithRuntime();
   Heard heard;
+  auto app = appWithRuntime();
   app->setRuntimeOutputSink("rt-1", heard.sink());
   app->processRuntime("rt-1", Data(json{{"n", 1}}));
   REQUIRE(eventually([&] { return heard.resultCount() == 1; }));
@@ -139,8 +142,8 @@ TEST_CASE("a sink outlives the runtime being rebuilt under its id",
           "[runtime][sink]") {
   // A coordinator builds a runtime by replacing whatever holds its id, and
   // goes on listening over the same connection.
-  auto app = appWithRuntime();
   Heard heard;
+  auto app = appWithRuntime();
   app->setRuntimeOutputSink("rt-1", heard.sink());
 
   app->removeRuntime("rt-1");
@@ -178,8 +181,8 @@ TEST_CASE("changing what a runtime that is not there records says so",
 
 TEST_CASE("entries reach the sink once logging is switched on",
           "[runtime][sink][state]") {
-  auto app = appWithRuntime();
   Heard heard;
+  auto app = appWithRuntime();
   app->setRuntimeOutputSink("rt-1", heard.sink());
 
   app->processRuntime("rt-1", Data(json{{"n", 1}}));

@@ -550,10 +550,19 @@ export type SwimlaneWidget = {
   dragGroup?: string;
   // Source and destination permissions are separate for workflows where a
   // drop is a command (for example, approving an email), not a free move.
-  // Both keep the original moveActions-driven behaviour when omitted.
+  // Both keep the original moveActions-driven behaviour when omitted. They
+  // govern a card's Move menu as they govern dragging: the menu is the same
+  // move, offered to a keyboard or a host without drag-and-drop.
   allowDrag?: boolean;
   acceptDrops?: boolean;
   allowCreate?: boolean;
+  // Lets a card be selected, by a click or from the keyboard; selecting it
+  // again lets go. The selected card's id is written to facade state, so a
+  // button elsewhere in the panel can act on it: { "$state": "<selectionState>" }.
+  selectable?: boolean;
+  // Facade state key the selected card's id is written to. Lanes naming the
+  // same key hold one selection between them. Default: "selection".
+  selectionState?: string;
   emptyLabel?: string;
   width?: number | string;
   minWidth?: number;
