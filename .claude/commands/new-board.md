@@ -518,6 +518,46 @@ straight through. `agree` and `decline` default to "Yes, do it" and "Keep as it 
 work on every widget that takes `actions` (text-input, json-input, calendar, button), not
 only buttons. In a facade's `init` there is nobody to ask, so a confirm step there declines.
 
+A **prompt step** is the other: it asks for a *value*. The person's answer becomes `$$input`
+for every step after it — the way a text-input's text is for its own actions — and
+cancelling ends the sequence like declining a confirm. It is what lets a widget that has no
+value of its own (a button, a table cell) send one:
+
+```json
+{ "type": "prompt", "question": "Change {{item.column}}", "defaultValue": "{{item.value}}" },
+{ "type": "process", "serviceUuid": "rows.change-row", "payload": { "rowid": "{{item.row.rowid}}", "value": "$$input" } }
+```
+
+`question` and `defaultValue` are substituted like a payload; `defaultValue` starts the field
+(typically the value being changed). `multiline: true` makes it a text area. The buttons
+default to "Save" and "Cancel" (`agree` / `decline`). In `init` a prompt cancels.
+
+**data-table** — rows from a service notification. An object is one more row (a log), an
+array replaces the table, columns and all (a query result):
+
+```json
+{
+  "type": "data-table",
+  "source": { "serviceUuid": "rows.show", "path": "rows" },
+  "pageSize": 25,
+  "selectable": true,
+  "rowKey": "rowid",
+  "selectionState": "picked",
+  "cellActions": [
+    { "type": "prompt", "question": "Change {{item.column}}", "defaultValue": "{{item.value}}" },
+    { "type": "process", "serviceUuid": "rows.change-row",
+      "payload": { "rowid": "{{item.row.rowid}}", "column": "{{item.column}}", "value": "$$input" } }
+  ]
+}
+```
+
+- `columns` fixes the column list (dotted names read nested fields); omitted, it follows the data.
+- `selectable` adds a checkbox per row; the picked rows' `rowKey` values are written to facade
+  state under `selectionState`, where a button reads them: `{ "$state": "picked" }`.
+- `cellActions` makes every cell a control. Clicking one runs the actions with the cell as the
+  item: `{{item.value}}`, `{{item.column}}`, and `{{item.row.<column>}}` for its row. With a
+  prompt first it is an editor. See `boards/sql-explorer-board.json`.
+
 **text-input** — text field that configures a service on submit. `$$input` is replaced with the typed value:
 
 ```json

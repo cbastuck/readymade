@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { KeyboardEvent, useState, useEffect, useRef, useMemo } from "react";
 import { DataTableWidget } from "../../types";
 import { findService } from "../../boardServices";
 import { resolvePath } from "../../readValue";
 import { useFacadeState } from "../../FacadeStateContext";
+import { useWidgetActions } from "../../useWidgetActions";
+import { interpolateTemplate } from "../../itemTemplate";
 import { WidgetRendererProps } from "../widgetRegistry";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -102,6 +104,19 @@ export function DataTableRenderer({
   const selectionState = widget.selectionState ?? DEFAULT_SELECTION_STATE;
   const { setState } = useFacadeState();
   const [selected, setSelected] = useState<string[]>([]);
+  const { run, prompt } = useWidgetActions(boardContext);
+  const cellActions = widget.cellActions;
+
+  /** Runs the cell actions with this cell as the item. */
+  const pickCell = (row: Row, column: string) => {
+    if (!cellActions) {
+      return;
+    }
+    const item = { row, column, value: cellValue(row, column) };
+    void run({
+      actions: interpolateTemplate(cellActions, item) as typeof cellActions,
+    });
+  };
 
   const sourceService = useMemo(
     () => findService(boardContext, widget.source.serviceUuid),
@@ -145,6 +160,15 @@ export function DataTableRenderer({
       if (!widget.columns) {
         setColumns((prev) => {
           const seen = update.rows.flatMap((row) => Object.keys(row));
+          // An array is the whole table as it now stands, and so are its
+          // columns: rows of another table — the next query's — must not keep
+          // the last one's. An empty one says nothing about columns.
+          if (update.replace && seen.length > 0) {
+            const columns = seen.filter((k, i) => seen.indexOf(k) === i);
+            return columns.join("\u0000") === prev.join("\u0000")
+              ? prev
+              : columns;
+          }
           const newKeys = seen.filter(
             (k, i) => !prev.includes(k) && seen.indexOf(k) === i,
           );
@@ -341,20 +365,49 @@ export function DataTableRenderer({
                       )}
                     </td>
                   )}
-                  {columns.map((col) => (
-                    <td
-                      key={col}
-                      style={{
-                        padding: "5px 12px",
-                        borderBottom: "1px solid hsl(var(--border))",
-                        whiteSpace: "nowrap",
-                        color: "hsl(var(--foreground))",
-                        fontFamily: "var(--font-mono, monospace)",
-                      }}
-                    >
-                      {formatCell(cellValue(row, col))}
-                    </td>
-                  ))}
+                  {columns.map((col) => {
+                    // Padding rows stand for nothing, so there is nothing in
+                    // them to act on.
+                    const actionable = !!cellActions && i < pageRows.length;
+                    const text = formatCell(cellValue(row, col));
+                    return (
+                      <td
+                        key={col}
+                        style={{
+                          padding: "5px 12px",
+                          borderBottom: "1px solid hsl(var(--border))",
+                          whiteSpace: "nowrap",
+                          color: "hsl(var(--foreground))",
+                          fontFamily: "var(--font-mono, monospace)",
+                        }}
+                      >
+                        {actionable ? (
+                          // Inside the cell rather than instead of it, so the
+                          // table stays a table to whoever reads it by role.
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => pickCell(row, col)}
+                            onKeyDown={(e: KeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                pickCell(row, col);
+                              }
+                            }}
+                            style={{
+                              display: "block",
+                              minHeight: "1em",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {text}
+                          </span>
+                        ) : (
+                          text
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
                 );
               })
@@ -429,6 +482,7 @@ export function DataTableRenderer({
           Download JSON
         </button>
       </div>
+      {prompt}
     </div>
   );
 }

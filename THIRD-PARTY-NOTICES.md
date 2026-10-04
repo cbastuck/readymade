@@ -191,6 +191,7 @@ A `—` in the *Text* column means the package ships no licence file of its own;
 | `@react-dnd/asap` | 4.0.1 | MIT | hkp-frontend | yes |
 | `@react-dnd/invariant` | 2.0.0 | MIT | hkp-frontend | yes |
 | `@react-dnd/shallowequal` | 2.0.0 | MIT | hkp-frontend | yes |
+| `@sqlite.org/sqlite-wasm` | 3.53.4-build1 | Apache-2.0 | hkp-frontend | — |
 | `@types/debug` | 4.1.13 | MIT | hkp-website | yes |
 | `@types/hast` | 3.0.5 | MIT | hkp-website | yes |
 | `@types/mdast` | 4.0.4 | MIT | hkp-website | yes |

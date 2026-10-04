@@ -58,6 +58,18 @@ class FileSource {
     });
   }
 
+  /**
+   * One file, handed over by a facade's `file-pick` widget: read as text and
+   * emitted like a file picked in the panel. `progress` is what the widget
+   * shows while it waits, and an empty one tells it the file has gone on.
+   */
+  async send(file: File): Promise<void> {
+    this.app.notify(this, { progress: `Reading ${file.name}…` });
+    const content = await this.loadFile(file);
+    this.app.notify(this, { progress: "" });
+    await this.app.next(this, content);
+  }
+
   async loadFiles(fileList: FileList): Promise<void> {
     const r: (string | ArrayBuffer | null)[] = [];
     for (const file of fileList) {

@@ -15,6 +15,8 @@
 
 #include <auth.h>
 
+#include "boardName.h"
+
 class Settings
 {
 public:
@@ -130,49 +132,16 @@ public:
     return out.str();
   }
 
+  // The rules themselves are in boardName.h, apart from this class so they
+  // can be tested without the runtime library.
   static bool isValidBoardName(const std::string& boardName)
   {
-    if (boardName.empty())
-    {
-      return false;
-    }
-
-    for (size_t i = 0; i < boardName.size(); ++i)
-    {
-      const unsigned char c = static_cast<unsigned char>(boardName[i]);
-      if (std::isalnum(c) || c == '-' || c == '_' || c == ' ' || c == '/')
-      {
-        continue;
-      }
-
-      return false;
-    }
-
-    return true;
+    return readymade::isValidBoardName(boardName);
   }
 
   static std::string decodeBoardNameFromStorage(const std::string& storageName)
   {
-    std::string result;
-    result.reserve(storageName.size());
-    for (size_t i = 0; i < storageName.size(); ++i)
-    {
-      if (storageName[i] == '%' && i + 2 < storageName.size())
-      {
-        const unsigned char hi = static_cast<unsigned char>(storageName[i + 1]);
-        const unsigned char lo = static_cast<unsigned char>(storageName[i + 2]);
-        if (std::isxdigit(hi) && std::isxdigit(lo))
-        {
-          const std::string hex = storageName.substr(i + 1, 2);
-          const char decoded = static_cast<char>(std::stoi(hex, nullptr, 16));
-          result.push_back(decoded);
-          i += 2;
-          continue;
-        }
-      }
-      result.push_back(storageName[i]);
-    }
-    return result;
+    return readymade::decodeBoardNameFromStorage(storageName);
   }
 
   std::string getBoardsSavePath(const std::string& boardName) const
@@ -529,20 +498,7 @@ public:
 private:
   static std::string encodeBoardNameForStorage(const std::string& boardName)
   {
-    std::ostringstream oss;
-    oss << std::uppercase << std::hex;
-    for (unsigned char c : boardName)
-    {
-      if (std::isalnum(c) || c == '-' || c == '_' || c == ' ')
-      {
-        oss << static_cast<char>(c);
-      }
-      else
-      {
-        oss << '%' << std::setw(2) << std::setfill('0') << static_cast<int>(c);
-      }
-    }
-    return oss.str();
+    return readymade::encodeBoardNameForStorage(boardName);
   }
 
   std::string getSettingsPath() const

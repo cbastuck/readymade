@@ -1,4 +1,9 @@
-import { ConfirmAction, FacadeWidgetAction, WidgetAction } from "./types";
+import {
+  ConfirmAction,
+  FacadeWidgetAction,
+  PromptAction,
+  WidgetAction,
+} from "./types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeBoardActions } from "./FacadeBoardActions";
 import { findService, processService } from "./boardServices";
@@ -48,6 +53,14 @@ function resolveActionRefs(
 export type AskPerson = (question: ConfirmAction) => Promise<boolean>;
 
 /**
+ * Asks the person for a value and resolves with what they entered, or null
+ * when they cancelled.
+ */
+export type AskPersonForValue = (
+  question: PromptAction,
+) => Promise<string | null>;
+
+/**
  * Runs a widget's actions, in the order they are written and one at a time.
  *
  * Order is the whole point of awaiting: a button that configures a service and
@@ -66,6 +79,7 @@ export async function executeActions({
   boardActions,
   byPerson = false,
   ask,
+  askValue,
 }: {
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
@@ -87,7 +101,14 @@ export async function executeActions({
   // How a confirm step reaches the person. Absent where there is nobody to ask,
   // which declines: consent that could not be asked for was not given.
   ask?: AskPerson;
+  // How a prompt step reaches the person. Absent where there is nobody to ask,
+  // which cancels.
+  askValue?: AskPersonForValue;
 }): Promise<void> {
+  // What `$$input` stands for: the widget's value, until a prompt replaces it
+  // with the person's answer.
+  let input = value;
+
   const all: WidgetAction[] = [
     ...(confirm ? [{ type: "confirm" as const, question: confirm }] : []),
     ...(action
@@ -111,7 +132,7 @@ export async function executeActions({
       const configure: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(act.configure)) {
         const withState = resolveActionRefs(v, state ?? {});
-        configure[k] = applyInput(withState, value);
+        configure[k] = applyInput(withState, input);
       }
       await service.configure(configure);
       if (byPerson) {
@@ -124,20 +145,20 @@ export async function executeActions({
       processService(
         boardContext,
         act.serviceUuid,
-        applyInput(withState, value),
+        applyInput(withState, input),
       );
     } else if (act.type === "set-state") {
       // A written value wins over the widget's own, and `undefined` written on
       // purpose is still a value — which is why the field's presence decides
       // rather than its content.
-      setState(act.key, "value" in act ? act.value : value);
+      setState(act.key, "value" in act ? act.value : input);
     } else if (act.type === "board") {
       if (act.action === "partner-board-qr") {
         boardActions?.showPartnerBoardQr();
       }
     } else if (act.type === "confirm") {
       const withState = resolveActionRefs(act.question, state ?? {});
-      const question = applyInput(withState, value);
+      const question = applyInput(withState, input);
       if (typeof question !== "string" || !question) {
         continue;
       }
@@ -145,6 +166,22 @@ export async function executeActions({
       if (!agreed) {
         return;
       }
+    } else if (act.type === "prompt") {
+      const substitute = (template: unknown) =>
+        applyInput(resolveActionRefs(template, state ?? {}), input);
+      const question = substitute(act.question);
+      const defaultValue = substitute(act.defaultValue);
+      const answer = askValue
+        ? await askValue({
+            ...act,
+            question: typeof question === "string" ? question : "",
+            defaultValue,
+          })
+        : null;
+      if (answer === null) {
+        return;
+      }
+      input = answer;
     }
   }
 }

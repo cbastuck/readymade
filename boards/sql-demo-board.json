@@ -1,0 +1,56 @@
+{
+  "boardName": "SQL Demo",
+  "description": "A note list kept in SQLite inside the browser. Each injection is written by one SQL service and the whole list read back by the next, so the Monitor always shows every note so far — and still does after a reload, because the database is kept in this browser.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "note",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Note",
+        "state": {
+          "recentInjection": {
+            "text": "Buy milk"
+          },
+          "plainText": false
+        }
+      },
+      {
+        "uuid": "keep-note",
+        "serviceId": "sql",
+        "serviceName": "Keep the note",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "sql-demo",
+          "schema": "CREATE TABLE IF NOT EXISTS note (\n  id      INTEGER PRIMARY KEY,\n  text    TEXT NOT NULL,\n  created TEXT NOT NULL DEFAULT (datetime('now'))\n);",
+          "statement": "INSERT INTO note (text) VALUES ($text)"
+        }
+      },
+      {
+        "uuid": "all-notes",
+        "serviceId": "sql",
+        "serviceName": "Every note",
+        "state": {
+          "mode": "query",
+          "database": "sql-demo",
+          "statement": "SELECT id, text, created FROM note ORDER BY id DESC"
+        }
+      },
+      {
+        "uuid": "output",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Notes"
+      }
+    ]
+  }
+}

@@ -9,6 +9,13 @@ A board's own SQL database. Tables, columns and meaning all belong to the board.
 | Runtime | Service ID |
 |---|---|
 | Node.js (hkp-node) | `sql` |
+| Browser | `sql` |
+
+Both are SQLite and share one contract — modes, parameters, results — so a
+statement written for one runs unchanged on the other. What differs is **whose
+tables they are**: on hkp-node they belong to a tenant on a server, and every
+person using the board sees the same rows; in the browser they belong to that
+browser alone. See [In the browser](#in-the-browser).
 
 ---
 
@@ -64,6 +71,12 @@ data that looks right until the day it doesn't.
 | `query` (default) | Runs a statement and returns its rows | `{ rows: [...], count }` |
 | `run` | Runs a statement that changes rows | `{ changes, lastInsertRowid }` |
 | `exec` | Runs statements for their effect — DDL, `PRAGMA`, several at once | `{ executed: true }` |
+| `databases` | Lists the databases there are to name | `{ rows: [{ name, bytes }], count }` |
+| `export` | Writes the whole database as SQL | the dump, as text |
+| `import` | Runs SQL text arriving as **input** — a dump, typically | `{ executed: true }` |
+
+`databases`, `export` and `import` need no `statement`. See
+[Moving a database](#moving-a-database) for the last two.
 
 ---
 
@@ -171,7 +184,8 @@ only one of them can be first.
 |---|---|---|---|
 | `mode` | `string` | `"query"` | One of the three above |
 | `emit` | `string` | `"result"` | `"result"` passes the answer on, `"input"` passes the request through |
-| `statement` | `string` | `""` | The SQL to run |
+| `database` | `string` | `""` | Which database; services naming the same one share its tables. Empty: derived from the board's title (hkp-node), `default` (browser). Ignored by `databases` |
+| `statement` | `string` | `""` | The SQL to run (`query`, `run`, `exec`) |
 | `schema` | `string` | `""` | `CREATE TABLE …` applied once per board |
 | `lastCount` | `number` | — | Read-only: rows returned, or rows changed |
 | `error` | `string` | — | Read-only: why the last pass produced nothing |
@@ -182,7 +196,7 @@ only one of them can be first.
 
 | | Shape |
 |---|---|
-| **Input** | JSON carrying the values the statement names |
+| **Input** | JSON carrying the values the statement names; for `import`, SQL text (or its UTF-8 bytes) |
 | **Output** | see the mode table above |
 
 **The answer is returned, not pushed.** SQLite replies inside the call, so
@@ -208,6 +222,146 @@ everything in memory instead, which is what a throwaway run wants.
 Files are created `0600` under a `0700` directory, in WAL mode with foreign keys
 on. Because a board's data is one file, copying it takes that board's data and
 nothing else.
+
+---
+
+## In the browser
+
+The browser's `sql` runs SQLite compiled to WebAssembly
+([`@sqlite.org/sqlite-wasm`](https://sqlite.org/wasm)), in the page. A board
+whose only reason for a server was its tables can drop the server: move the
+`sql` services into a browser runtime and nothing else changes — not the
+statements, not the facade. [Court Booking (Browser)](../boards/court-booking-browser-demo-board.md)
+is exactly that.
+
+**What it gives up is sharing.** The tables are this browser's. Two people on
+two devices see two databases, so a board whose point is that several people
+see the same rows — a booking sheet for a club, a poll — still wants hkp-node.
+A board kept by one person for themselves loses nothing.
+
+### Where it lives
+
+A database lives in memory while the page runs and is kept as a **snapshot in
+the browser's IndexedDB** (`hkp-sql`, one entry per database name): written
+right after a pass changes it, then read back the next time the name is opened.
+Clearing the site's data clears the tables.
+
+Three consequences of keeping snapshots rather than writing a file in place:
+
+- A change reaches storage a few milliseconds after the statement returns, not
+  with it. Leaving the page in that window can lose it.
+- Every pass that changes something writes the whole database. That is nothing
+  for the tables a board keeps for one person; it is the wrong tool for
+  megabytes. One write of a database is on its way at a time: a board changing
+  it faster than the browser stores it gets fewer snapshots, each holding
+  everything up to then.
+- Two tabs holding the same database each work on their own copy, and the last
+  one to write it wins. Keep one board using a database open at a time.
+
+A snapshot is always a committed state. While a transaction is open — a
+`BEGIN` in one pass, its `COMMIT` or `ROLLBACK` in a later one — nothing is
+written, and one snapshot follows when it ends. That makes a transaction the
+way to say *when*: many changes between `BEGIN` and `COMMIT` cost one write.
+
+A snapshot the browser refuses — storage full, say — is reported as an `error`
+by the services whose changes it held. The statement itself succeeded and the
+rows are in the page; they are written with the next change that is, or lost
+with the page.
+
+Where a page has no IndexedDB at all there is nothing to refuse: the database
+lasts as long as the page does, and nothing is reported.
+
+### Which database a `sql` sees
+
+`database` names it, with the same rules as hkp-node — so a board valid in one
+runtime is valid in the other. There are no tenants in a browser, so services
+naming the same database share it across every board open in that browser.
+
+Left empty, the name is **`default`**, not the board's title: a browser service
+does not know the title of the board it is on. Every board that leaves it empty
+shares `default`, which is the sharper edge of the two — name the database.
+
+### Loading
+
+The engine is about 900 KB of WebAssembly, loaded the first time a `sql` runs
+rather than with the page, so boards without one never download it. That first
+pass is the only one that waits; after it, SQLite answers inside the call as it
+does on hkp-node.
+
+### Differences in results
+
+- An integer beyond ±2⁵³ comes back as its decimal **string**, since it cannot
+  travel as a JSON number without being rounded.
+- The panel's **Run** button tries the statement with no parameters and shows
+  what it did; it does not call the rest of the pipeline.
+
+---
+
+## Moving a database
+
+`export` and `import` carry a database from one runtime to another as SQL
+text — most usefully from a browser, where tables are one person's, to
+hkp-node, where a board can keep them for everyone. Both runtimes write and
+read the same format, so a database exported by either loads into the other.
+
+### The dump
+
+An ordinary SQLite dump: what `sqlite3 file .dump` writes, and what
+`sqlite3 file < dump.sql` reads, so a dump is also a file to keep, read and
+diff. The tables with their rows, then indexes, triggers and views, all in one
+transaction:
+
+```sql
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS booking (id INTEGER PRIMARY KEY, member TEXT NOT NULL, …);
+INSERT INTO "booking"("id","member",…) VALUES(1,'you@club.example',…);
+CREATE UNIQUE INDEX IF NOT EXISTS one_per_slot ON booking(court, day, hour);
+COMMIT;
+```
+
+Values are written by SQLite itself, so each comes back exactly — text with its
+quotes and line breaks, blobs as `X'…'`, reals to the last digit — and
+`AUTOINCREMENT` counters come along, so an id used by a row since deleted is
+not handed out again. Every `CREATE` says `IF NOT EXISTS`, which is what lets a
+dump load into a database whose board has already made its (empty) tables from
+its `schema`.
+
+A database with a virtual table (full-text search, say) cannot be exported:
+its rows live in tables of the module's own, and a dump that recreated both
+would load them twice.
+
+`export` reports `{ exported, bytes }` rather than the dump: the text travels
+to the next service — [Download](./download.md), in a browser — and a panel has
+no use for a second copy.
+
+### Importing
+
+`import` runs the text it is given against the database `database` names,
+creating the database if there is none:
+
+- **All or nothing.** A dump is one transaction; if any statement fails — a row
+  colliding with one already there, typically — it is rolled back and the
+  notice says which. A text that begins no transaction of its own is run
+  statement by statement, and what ran before a failure stays.
+- **It is refused anything that reaches past its database.** An import is text
+  from outside the board, and on hkp-node possibly from a mounted endpoint
+  nobody signed in to, so it may not use `ATTACH`, `DETACH`, `VACUUM`,
+  `load_extension`, or any `PRAGMA` but `foreign_keys`. Those words inside
+  string literals and comments are data and pass. The same rule holds in both
+  runtimes, so a dump one accepts the other accepts too.
+- **Foreign keys are on again afterwards.** A dump turns them off to load
+  tables in any order; every statement after it expects them on.
+
+[SQL Explorer](../boards/sql-explorer-board.md) exports a browser database;
+[SQL Import](../boards/sql-import-board.md) loads a dump into hkp-node.
+
+### Listing
+
+`databases` lists the databases a board could name. In a browser, every one
+kept in this browser, and any opened here that already holds something. On
+hkp-node, the owner's named databases — not a board's derived one, whose file
+is named for a hash of its title and cannot be named back, and not `shared`.
 
 ---
 

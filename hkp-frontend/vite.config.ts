@@ -13,6 +13,11 @@ export default defineConfig({
   server: {
     port: 5555,
   },
+  optimizeDeps: {
+    // Locates its .wasm relative to its own module; prebundling moves the
+    // module and breaks that lookup in dev.
+    exclude: ["@sqlite.org/sqlite-wasm"],
+  },
   define: {
     // "process.env": JSON.stringify(process.env),
   },
