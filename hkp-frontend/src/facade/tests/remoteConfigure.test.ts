@@ -54,4 +54,25 @@ describe("findService on a remote runtime", () => {
 
     expect(findService(context, "filesystem-svc")).toBeNull();
   });
+
+  it("answers with the same service until what the board holds for it changes", () => {
+    const context = makeContext(vi.fn());
+
+    const first = findService(context, "filesystem-svc");
+    expect(findService(context, "filesystem-svc")).toBe(first);
+
+    // A view narrowed to some runtimes is a new context over the same scopes.
+    const narrowed = { ...context, scopes: { ...context.scopes } };
+    expect(findService(narrowed, "filesystem-svc")).toBe(first);
+
+    const moved = {
+      ...context,
+      services: {
+        node: [{ ...context.services["node"][0], state: { path: "/tmp/moved" } }],
+      },
+    } as unknown as BoardContextState;
+    const next = findService(moved, "filesystem-svc");
+    expect(next).not.toBe(first);
+    expect(next!.state).toEqual({ path: "/tmp/moved" });
+  });
 });

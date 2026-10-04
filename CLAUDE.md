@@ -291,12 +291,14 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 | `camera`           | Live camera; the frame it captures goes down the pipeline                   |
 | `detect`           | What a Detect service sees: its last frame, with what it found outlined     |
 | `calendar`         | A day as a calendar: hours down the side, one column per bookable thing     |
+| `swimlane`         | One ordered card lane; compose several with a shared drag group             |
 | `xy-pad`           | Embeds an XY Pad service                                                   |
 | `qr-code`          | Displays a QR code from a service notification                             |
 | `message-list`     | Scrolling message thread with optional inline composer                     |
 | `status-indicator` | Coloured dot driven by a service notification                              |
 | `text`             | Whatever a service is saying, as text — a reason, a summary, a count       |
 | `data-table`       | Rows from a service; an array replaces the table, an object appends a row  |
+| `line-chart`       | One or more live or query-backed time series                               |
 | `file-pick`        | File chooser that sends the file to a service                              |
 | `audio-player`     | Plays a service's list of audio files through, one after the next          |
 

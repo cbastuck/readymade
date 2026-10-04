@@ -157,15 +157,9 @@ export default function QrCodeUI(props: ServiceUIProps) {
           setError(null);
         }}
       >
-        <DialogContent
-          className="sm:max-w-[80%] h-[60vh] flex flex-col"
-          aria-describedby="qr-url-editor-description"
-        >
+        <DialogContent className="sm:max-w-[80%] h-[60vh] flex flex-col">
           <DialogTitle>QR Code URL</DialogTitle>
-          <DialogDescription
-            id="qr-url-editor-description"
-            className="text-xs text-gray-500"
-          >
+          <DialogDescription className="text-xs text-gray-500">
             Select a compressed <code>fromLink</code> payload and click{" "}
             <strong>Decompress</strong> to expand it to JSON, or select JSON and
             click <strong>Compress</strong> to produce the payload. With no

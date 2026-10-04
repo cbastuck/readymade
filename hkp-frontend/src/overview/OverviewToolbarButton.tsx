@@ -23,6 +23,9 @@
  * offered and refused rather than by not being there — a control that comes
  * and goes moves the ones beside it, and is not somewhere to look for next
  * time. The deploy control it stands next to greys out the same way.
+ *
+ * Sized for the toolbar group it is drawn in, with the facade editor's and the
+ * assets' controls.
  */
 import { Boxes } from "lucide-react";
 
@@ -31,6 +34,10 @@ import {
   boardHasFacade,
   useFacadeView,
 } from "hkp-frontend/src/facade/FacadeViewContext";
+import {
+  TOOLBAR_GROUP_BUTTON,
+  TOOLBAR_GROUP_ICON_SIZE,
+} from "hkp-frontend/src/components/Toolbar/ToolbarGroup";
 import { useOverview } from "./OverviewContext";
 import { useAssetView } from "hkp-frontend/src/assets/AssetViewContext";
 
@@ -93,34 +100,25 @@ export default function OverviewToolbarButton() {
       aria-pressed={showing}
       onClick={onClick}
       style={{
-        // The same target the deploy control beside it is, so the two read as
-        // one row rather than as a control and a thing next to it.
+        ...TOOLBAR_GROUP_BUTTON,
         position: "relative",
-        width: 30,
-        height: 30,
-        borderRadius: 7,
-        border: "none",
         background: "none",
         cursor: disabled ? "default" : "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         color:
           showing || returning
             ? "var(--hkp-accent, #0abcfb)"
             : "var(--text, #1a1a1a)",
         opacity: disabled ? 0.4 : 1,
-        flexShrink: 0,
       }}
     >
-      <Boxes size={16} strokeWidth={1.75} />
+      <Boxes size={TOOLBAR_GROUP_ICON_SIZE} strokeWidth={1.75} />
       {returning && (
         <span
           aria-hidden="true"
           style={{
             position: "absolute",
-            top: 4,
-            right: 4,
+            top: 2,
+            right: 2,
             width: 5,
             height: 5,
             borderRadius: "50%",

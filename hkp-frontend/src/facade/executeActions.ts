@@ -4,9 +4,9 @@ import { FacadeBoardActions } from "./FacadeBoardActions";
 import { findService, processService } from "./boardServices";
 import { applyInput } from "./applyInput";
 
-// Recursively replaces { "$state": "key" } objects with the corresponding
-// facade state value. Runs before $$input substitution so both can coexist.
-function resolveStateRefs(
+// Recursively resolves facade-state and action-time references. Runs before
+// $$input substitution so all of them can coexist in one payload.
+function resolveActionRefs(
   template: unknown,
   state: Record<string, unknown>,
 ): unknown {
@@ -19,14 +19,23 @@ function resolveStateRefs(
     if ("$state" in obj && typeof obj["$state"] === "string") {
       return state[obj["$state"]];
     }
+    // Values created at the moment somebody acts. A board can persist and
+    // forward the same event identity and timestamp without a purpose-built
+    // browser service in front of every form that records something.
+    if (obj["$now"] === true) {
+      return new Date().toISOString();
+    }
+    if (obj["$uuid"] === true) {
+      return crypto.randomUUID();
+    }
     const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
-      result[k] = resolveStateRefs(v, state);
+      result[k] = resolveActionRefs(v, state);
     }
     return result;
   }
   if (Array.isArray(template)) {
-    return template.map((v) => resolveStateRefs(v, state));
+    return template.map((v) => resolveActionRefs(v, state));
   }
   return template;
 }
@@ -101,7 +110,7 @@ export async function executeActions({
       }
       const configure: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(act.configure)) {
-        const withState = state ? resolveStateRefs(v, state) : v;
+        const withState = resolveActionRefs(v, state ?? {});
         configure[k] = applyInput(withState, value);
       }
       await service.configure(configure);
@@ -111,9 +120,7 @@ export async function executeActions({
     } else if (act.type === "process") {
       // Same substitution as a configure payload: what a board writes into one
       // it can write into the other.
-      const withState = state
-        ? resolveStateRefs(act.payload ?? {}, state)
-        : (act.payload ?? {});
+      const withState = resolveActionRefs(act.payload ?? {}, state ?? {});
       processService(
         boardContext,
         act.serviceUuid,
@@ -129,9 +136,7 @@ export async function executeActions({
         boardActions?.showPartnerBoardQr();
       }
     } else if (act.type === "confirm") {
-      const withState = state
-        ? resolveStateRefs(act.question, state)
-        : act.question;
+      const withState = resolveActionRefs(act.question, state ?? {});
       const question = applyInput(withState, value);
       if (typeof question !== "string" || !question) {
         continue;

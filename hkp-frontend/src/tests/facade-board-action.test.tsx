@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { ButtonRenderer } from "../facade/panels/renderers/ButtonRenderer";
@@ -59,6 +65,25 @@ describe("board widget actions", () => {
     );
     fireEvent.click(screen.getByText("Invite partner"));
     expect(showPartnerBoardQr).toHaveBeenCalledOnce();
+  });
+
+  it("looks the same after the pointer has been and gone", () => {
+    // The hover and press states set the fill and the border colour, and take
+    // them away again; what is left must be the button's own.
+    render(button());
+    const element = screen.getByText("Invite partner");
+
+    // jsdom has no PointerEvent, so the pointer type — which is what tells a
+    // hovering mouse from a tap — has to be put on the event by hand.
+    const over = createEvent.pointerOver(element);
+    Object.defineProperty(over, "pointerType", { value: "mouse" });
+    fireEvent(element, over);
+    expect(element.style.backgroundColor).toBe("hsl(var(--muted))");
+
+    fireEvent.pointerDown(element);
+    fireEvent.pointerLeave(element);
+    expect(element.style.backgroundColor).toBe("hsl(var(--card))");
+    expect(element.style.borderColor).toBe("hsl(var(--border))");
   });
 
   it("does nothing on a host that provides no board actions", () => {

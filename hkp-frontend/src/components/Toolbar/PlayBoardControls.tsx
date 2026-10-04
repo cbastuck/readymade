@@ -17,7 +17,7 @@
  * times.
  */
 import { useContext, useState } from "react";
-import { Play, SlidersHorizontal } from "lucide-react";
+import { Play } from "lucide-react";
 
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { canPlay, play, useRunParams } from "hkp-frontend/src/core/play";
@@ -40,6 +40,40 @@ function controlStyle(enabled: boolean, lit: boolean): React.CSSProperties {
     opacity: enabled ? 1 : 0.4,
     flexShrink: 0,
   };
+}
+
+/**
+ * Play, with a pencil: the same press as the one beside it, after writing what
+ * it is given. The triangle is the plain control's at the same size, opened at
+ * the corner the pencil sits in, so the two read as one action and a variant
+ * of it rather than as two unrelated controls. Drawn on the 24-unit grid the
+ * other icons use, and stroked the same way.
+ */
+function PlayWithInputIcon({
+  size,
+  strokeWidth,
+}: {
+  size: number;
+  strokeWidth: number;
+}) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 4.6a1.6 1.6 0 0 1 2.4-1.38l10.3 6a1.6 1.6 0 0 1 0 2.76L11 14.7" />
+      <path d="M3 4.6V17.4a1.6 1.6 0 0 0 2.4 1.38L8 17.3" />
+      <path d="M19.4 13.3a1.56 1.56 0 0 1 2.2 2.2L15.4 21.7l-3 .8.8-3z" />
+    </svg>
+  );
 }
 
 export default function PlayBoardControls() {
@@ -101,7 +135,7 @@ export default function PlayBoardControls() {
           onClick={() => setAsking(true)}
           style={controlStyle(playable, false)}
         >
-          <SlidersHorizontal size={14} strokeWidth={1.75} />
+          <PlayWithInputIcon size={14} strokeWidth={1.75} />
         </button>
       </div>
 

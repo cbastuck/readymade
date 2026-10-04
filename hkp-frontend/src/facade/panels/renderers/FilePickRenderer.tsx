@@ -129,8 +129,13 @@ export function FilePickRenderer({
             style={{
               padding: "10px 24px",
               borderRadius: 10,
-              border: "1px solid hsl(var(--border))",
-              background: "transparent",
+              // Longhand: the press feedback sets backgroundColor and
+              // borderColor, and React warns when a shorthand is mixed with
+              // the value it covers.
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: "hsl(var(--border))",
+              backgroundColor: "transparent",
               color: "hsl(var(--foreground))",
               cursor: "pointer",
               fontSize: 14,
