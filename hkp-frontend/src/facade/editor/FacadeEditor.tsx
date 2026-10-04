@@ -3,6 +3,7 @@ import { FacadeDescriptor, LayoutItem } from "../types";
 import { EditorPath, getAtPath, setAtPath } from "./editorUtils";
 import { WidgetTree } from "./WidgetTree";
 import { PropertyPanel } from "./PropertyPanel";
+import { StatePanel } from "./StatePanel";
 
 type Props = {
   facade: FacadeDescriptor;
@@ -19,15 +20,25 @@ export function FacadeEditor({ facade, onChange }: Props) {
   };
 
   return (
-    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-      <WidgetTree
-        facade={facade}
-        selectedPath={selectedPath}
-        onSelect={setSelectedPath}
-      />
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        <PropertyPanel node={selectedNode} onChange={handleNodeChange} />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <WidgetTree
+          facade={facade}
+          selectedPath={selectedPath}
+          onSelect={setSelectedPath}
+        />
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          <PropertyPanel node={selectedNode} onChange={handleNodeChange} />
+        </div>
       </div>
+      <StatePanel />
     </div>
   );
 }

@@ -62,7 +62,7 @@ export default function AccountAvatar() {
           height: 30,
           borderRadius: "50%",
           border: "none",
-          background: isLoggedIn ? "#14161c" : "transparent",
+          backgroundColor: isLoggedIn ? "#14161c" : "transparent",
           color: isLoggedIn ? "#fff" : "var(--text-dim, #6b7080)",
           padding: 0,
           display: "flex",

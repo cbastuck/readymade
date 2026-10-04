@@ -1,0 +1,254 @@
+{
+  "boardName": "SYN Mail Desk View",
+  "unit": {
+    "name": "mail-desk"
+  },
+  "description": "The facade adapter for SYN's booking database. It owns no mail or workflow logic: Conversations still owns the schema and approval semantics, and the original booking unit still receives, drafts and sends. This unit reads that shared domain data into facade-shaped cards and provides the one missing human operation, editing a pending draft. Because it names the same syn-booking database explicitly, it can be replaced without changing the booking engine.",
+  "runtimes": [
+    {
+      "id": "view",
+      "name": "Mail desk",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "actions",
+      "name": "Human review",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "view": [
+      {
+        "uuid": "refresh-mail-desk",
+        "serviceId": "timer",
+        "serviceName": "Refresh",
+        "state": {
+          "periodic": true,
+          "periodicValue": 2,
+          "periodicUnit": "s",
+          "oneShotDelay": 0,
+          "oneShotDelayUnit": "ms",
+          "running": true,
+          "counter": 0
+        }
+      },
+      {
+        "uuid": "ensure-conversations",
+        "serviceId": "conversations",
+        "serviceName": "Open conversation store",
+        "state": {
+          "mode": "actionable",
+          "inState": [
+            "init",
+            "needs-follow-up",
+            "ready",
+            "quotes-requested",
+            "waiting-approval",
+            "waiting-reply",
+            "done"
+          ],
+          "idleSeconds": 0,
+          "limit": 500,
+          "database": "syn-booking"
+        }
+      },
+      {
+        "uuid": "read-mail-desk",
+        "serviceId": "sql",
+        "serviceName": "Read mail desk",
+        "state": {
+          "mode": "query",
+          "database": "syn-booking",
+          "statement": "WITH\n  inbound_ranked AS (\n    SELECT e.*,\n           row_number() OVER (\n             PARTITION BY e.conversationId\n             ORDER BY e.receivedAt DESC, e.sentAt DESC, e.messageId DESC\n           ) AS rank\n      FROM email e\n     WHERE e.direction = 'inbound'\n  ),\n  latest_inbound AS (\n    SELECT * FROM inbound_ranked WHERE rank = 1\n  ),\n  follow_up_ranked AS (\n    SELECT a.*,\n           row_number() OVER (\n             PARTITION BY a.conversationId\n             ORDER BY a.createdAt DESC, a.id DESC\n           ) AS rank\n      FROM artifact a\n     WHERE a.kind = 'follow-up'\n       AND a.status IN ('pending', 'approved', 'sent')\n  ),\n  latest_follow_up AS (\n    SELECT * FROM follow_up_ranked WHERE rank = 1\n  ),\n  cards AS (\n    SELECT\n      CASE\n        WHEN c.state = 'waiting-approval' AND f.id IS NOT NULL THEN f.id\n        ELSE c.id\n      END AS cardId,\n      CASE\n        WHEN c.state = 'waiting-approval' AND f.id IS NOT NULL THEN 'review'\n        WHEN c.state = 'waiting-reply' THEN 'waiting-reply'\n        ELSE 'incoming'\n      END AS laneId,\n      CASE\n        WHEN c.state IN ('waiting-approval', 'waiting-reply') AND f.id IS NOT NULL\n          THEN coalesce(nullif(json_extract(f.payload, '$.subject'), ''), c.subject, '(No subject)')\n        ELSE coalesce(nullif(c.subject, ''), '(No subject)')\n      END AS title,\n      CASE\n        WHEN c.state IN ('waiting-approval', 'waiting-reply') AND f.id IS NOT NULL\n          THEN coalesce(json_extract(f.payload, '$.body'), '')\n        ELSE coalesce(i.body, '')\n      END AS description,\n      c.id AS conversationId,\n      f.id AS artifactId,\n      c.state AS workflowState,\n      f.status AS draftStatus,\n      i.sender AS sender,\n      i.receivedAt AS receivedAt,\n      coalesce(f.updatedAt, c.updatedAt) AS sortTime\n    FROM conversation c\n    LEFT JOIN latest_inbound i ON i.conversationId = c.id\n    LEFT JOIN latest_follow_up f ON f.conversationId = c.id\n    WHERE c.state IN (\n      'init',\n      'needs-follow-up',\n      'ready',\n      'quotes-requested',\n      'waiting-approval',\n      'waiting-reply'\n    )\n  )\nSELECT\n  cardId,\n  laneId,\n  title,\n  description,\n  row_number() OVER (\n    PARTITION BY laneId\n    ORDER BY sortTime DESC, cardId\n  ) - 1 AS position,\n  conversationId,\n  artifactId,\n  workflowState,\n  draftStatus,\n  sender,\n  receivedAt,\n  sortTime AS updatedAt\nFROM cards\nORDER BY\n  CASE laneId\n    WHEN 'incoming' THEN 0\n    WHEN 'review' THEN 1\n    ELSE 2\n  END,\n  position"
+        }
+      },
+      {
+        "uuid": "after-mail-desk-read",
+        "serviceId": "stopper",
+        "serviceName": "Stop",
+        "state": {
+          "bypass": false
+        }
+      }
+    ],
+    "actions": [
+      {
+        "uuid": "edit-draft",
+        "serviceId": "sql",
+        "serviceName": "Edit pending draft",
+        "state": {
+          "mode": "run",
+          "database": "syn-booking",
+          "statement": "UPDATE artifact\n   SET payload = json_set(\n         CASE WHEN json_valid(payload) THEN payload ELSE '{}' END,\n         '$.subject', trim($title),\n         '$.body', $description\n       ),\n       updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')\n WHERE $operation = 'edit'\n   AND id = $cardId\n   AND kind = 'follow-up'\n   AND status = 'pending'\n   AND trim($title) <> ''"
+        }
+      },
+      {
+        "uuid": "after-edit",
+        "serviceId": "stopper",
+        "serviceName": "Stop after edit",
+        "state": {
+          "bypass": false
+        }
+      },
+      {
+        "uuid": "approve-draft",
+        "serviceId": "conversations",
+        "serviceName": "Approve draft",
+        "state": {
+          "mode": "set-artifact-status",
+          "idFrom": "cardId",
+          "status": "approved",
+          "database": "syn-booking"
+        }
+      },
+      {
+        "uuid": "approval-event",
+        "serviceId": "monitor",
+        "serviceName": "Approved draft event",
+        "state": {}
+      },
+      {
+        "uuid": "after-approval",
+        "serviceId": "stopper",
+        "serviceName": "Stop after approval",
+        "state": {
+          "bypass": false
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "ensure-conversations",
+        "payload": {}
+      }
+    ],
+    "panels": [
+      {
+        "id": "mail-desk",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 14,
+          "paddingY": 12,
+          "fill": true,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Review generated replies before anything is sent. Edit a draft if needed, then drag it to Waiting for user response — or use its Move menu — to approve it. The card moves only after SMTP delivery succeeds.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "swimlane",
+                  "laneId": "incoming",
+                  "title": "Incoming mail",
+                  "dragGroup": "syn-mail",
+                  "allowDrag": false,
+                  "acceptDrops": false,
+                  "emptyLabel": "No incoming enquiries",
+                  "width": "33.333%",
+                  "minWidth": 280,
+                  "maxHeight": 720,
+                  "source": {
+                    "serviceUuid": "read-mail-desk",
+                    "path": "rows"
+                  }
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "review",
+                  "title": "Needs human review",
+                  "dragGroup": "syn-mail",
+                  "allowDrag": true,
+                  "acceptDrops": false,
+                  "emptyLabel": "No drafts need approval",
+                  "width": "33.333%",
+                  "minWidth": 280,
+                  "maxHeight": 720,
+                  "editorTitle": "Review generated email",
+                  "titleLabel": "Subject",
+                  "descriptionLabel": "Body",
+                  "saveLabel": "Save draft",
+                  "source": {
+                    "serviceUuid": "read-mail-desk",
+                    "path": "rows"
+                  },
+                  "editActions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "edit-draft",
+                      "payload": "{{item}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "waiting-reply",
+                  "title": "Waiting for user response",
+                  "dragGroup": "syn-mail",
+                  "allowDrag": false,
+                  "acceptDrops": true,
+                  "emptyLabel": "Drag an approved draft here",
+                  "width": "33.333%",
+                  "minWidth": 280,
+                  "maxHeight": 720,
+                  "source": {
+                    "serviceUuid": "read-mail-desk",
+                    "path": "rows"
+                  },
+                  "moveActions": [
+                    {
+                      "type": "confirm",
+                      "question": "Approve and send “{{item.card.title}}”?"
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "approve-draft",
+                      "payload": "{{item}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "read-mail-desk",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "edit-draft",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "approve-draft",
+          "path": "error"
+        }
+      }
+    ]
+  }
+}

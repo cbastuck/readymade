@@ -9,6 +9,7 @@ import { executeActions } from "../../../facade/executeActions";
 import { PanelRenderer } from "../../../facade/panels/PanelRenderer";
 import { currentFace, defaultFaceId, resolveFaces } from "../../../facade/tabs";
 import { FacadeDescriptor, FacadePanel } from "../../../facade/types";
+import { SwimlaneDragProvider } from "../../../facade/SwimlaneDragContext";
 
 /**
  * Touch-friendly facade renderer for the mobile board view. Mirrors the core of
@@ -73,7 +74,8 @@ export default function MobileFacadeView({
     <FacadeStateContext.Provider
       value={{ state: facadeState, setState: setFacadeStateEntry }}
     >
-      <FacadeBoardActionsProvider boardContext={boardContext}>
+      <SwimlaneDragProvider>
+        <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}
         <FacadeNotices notices={facade.notices} boardContext={boardContext} />
         <div
@@ -119,7 +121,8 @@ export default function MobileFacadeView({
             ))}
           </div>
         </div>
-      </FacadeBoardActionsProvider>
+        </FacadeBoardActionsProvider>
+      </SwimlaneDragProvider>
     </FacadeStateContext.Provider>
   );
 }

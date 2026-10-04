@@ -6,6 +6,11 @@
  * of them act on the board as a whole; the facade drew its own bar for them
  * before, which put a second menu bar under the first.
  *
+ * Two controls, because they are drawn in two groups: the layout is a choice
+ * among three and has an outline to itself, while the editor is one of the
+ * things shown beside or in place of the board and shares its outline with
+ * the overview and the assets.
+ *
  * A board with no facade has nothing to choose between, so the layout control
  * is not there at all — a board without one is where a facade is started, not
  * where one is switched away from. The editor stays, because starting one is
@@ -19,6 +24,10 @@
 import { AppWindow, PencilRuler, Rows2, Workflow } from "lucide-react";
 
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import ToolbarGroup, {
+  TOOLBAR_GROUP_BUTTON,
+  TOOLBAR_GROUP_ICON_SIZE,
+} from "hkp-frontend/src/components/Toolbar/ToolbarGroup";
 import {
   boardHasFacade,
   boardHasRuntimes,
@@ -68,85 +77,72 @@ export default function FacadeViewControls() {
   const choosable =
     hasBoard && (boardHasFacade(boardContext) || view.editorOpen);
 
-  return (
-    <>
-      {choosable && (
-        <div
-          role="group"
-          aria-label="Board view"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            padding: 2,
-            borderRadius: 9,
-            border: "1px solid var(--border-mid, #d1d5db)",
-            flexShrink: 0,
-          }}
-        >
-          {MODES.map(({ id, Icon, title, label }) => {
-            const active = view.mode === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                title={title}
-                aria-label={label}
-                aria-pressed={active}
-                onClick={() => view.setMode(id)}
-                style={{
-                  width: 26,
-                  height: 24,
-                  borderRadius: 7,
-                  border: "none",
-                  background: active ? "var(--hkp-accent, #0abcfb)" : "none",
-                  color: active ? "#fff" : "var(--text, #1a1a1a)",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon size={14} strokeWidth={1.75} />
-              </button>
-            );
-          })}
-        </div>
-      )}
+  if (!choosable) {
+    return null;
+  }
 
-      <button
-        type="button"
-        disabled={!hasBoard}
-        title={
-          hasBoard
-            ? "Facade editor — lay out this board's facade"
-            : "Facade editor — add a runtime first"
-        }
-        aria-label="Toggle the facade editor"
-        aria-pressed={hasBoard && view.editorOpen}
-        onClick={view.toggleEditor}
-        style={{
-          // The same target the overview and deploy controls beside it are, so
-          // the row reads as one.
-          width: 30,
-          height: 30,
-          borderRadius: 7,
-          border: "none",
-          background: "none",
-          cursor: hasBoard ? "pointer" : "default",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color:
-            hasBoard && view.editorOpen
-              ? "var(--hkp-accent, #0abcfb)"
-              : "var(--text, #1a1a1a)",
-          opacity: hasBoard ? 1 : 0.4,
-          flexShrink: 0,
-        }}
-      >
-        <PencilRuler size={16} strokeWidth={1.75} />
-      </button>
-    </>
+  return (
+    <ToolbarGroup label="Board view">
+      {MODES.map(({ id, Icon, title, label }) => {
+        const active = view.mode === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            title={title}
+            aria-label={label}
+            aria-pressed={active}
+            onClick={() => view.setMode(id)}
+            style={{
+              ...TOOLBAR_GROUP_BUTTON,
+              background: active ? "var(--hkp-accent, #0abcfb)" : "none",
+              color: active ? "#fff" : "var(--text, #1a1a1a)",
+              cursor: "pointer",
+            }}
+          >
+            <Icon size={TOOLBAR_GROUP_ICON_SIZE} strokeWidth={1.75} />
+          </button>
+        );
+      })}
+    </ToolbarGroup>
+  );
+}
+
+/** Opens and closes the facade editor; one of the board's view toggles. */
+export function FacadeEditorButton() {
+  const view = useFacadeView();
+  const boardContext = useBoardContext();
+
+  if (!view) {
+    return null;
+  }
+
+  const hasBoard = boardHasRuntimes(boardContext);
+
+  return (
+    <button
+      type="button"
+      disabled={!hasBoard}
+      title={
+        hasBoard
+          ? "Facade editor — lay out this board's facade"
+          : "Facade editor — add a runtime first"
+      }
+      aria-label="Toggle the facade editor"
+      aria-pressed={hasBoard && view.editorOpen}
+      onClick={view.toggleEditor}
+      style={{
+        ...TOOLBAR_GROUP_BUTTON,
+        background: "none",
+        cursor: hasBoard ? "pointer" : "default",
+        color:
+          hasBoard && view.editorOpen
+            ? "var(--hkp-accent, #0abcfb)"
+            : "var(--text, #1a1a1a)",
+        opacity: hasBoard ? 1 : 0.4,
+      }}
+    >
+      <PencilRuler size={TOOLBAR_GROUP_ICON_SIZE} strokeWidth={1.75} />
+    </button>
   );
 }

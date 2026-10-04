@@ -914,6 +914,20 @@ blockquote:after {
   color: var(--hkp-accent);
 }
 
+/* Sidebar search: a field on the sidebar, so it is painted as the cards are
+   rather than left the colour of what it sits on. */
+[data-theme="playground"] .hkp-sidebar-search {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-mid);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+[data-theme="playground"] .hkp-sidebar-search:focus-within {
+  border-color: var(--hkp-accent);
+  box-shadow: 0 0 0 2px var(--hkp-accent-dim);
+}
+
 /* Flow connectors — hidden in non-playground themes */
 .hkp-flow-connector {
   display: none;

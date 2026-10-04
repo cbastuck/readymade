@@ -19,6 +19,27 @@
   line-height: 1.5;
 }
 
+/* A field in the details strip. The strip is tinted, and the shared input is
+   transparent with a rule under it, so a field that can be typed into looks
+   the same as one that cannot; an enabled one is drawn as a box instead.
+   Opt-in by class, and scoped under the strip so it outranks the utilities on
+   the same element rather than tying with them. */
+.hkp-edit-dialog-details .hkp-edit-dialog-field:enabled {
+  padding: 2px 8px;
+  border: 1px solid var(--set-line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--set-ink);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+.hkp-edit-dialog-details .hkp-edit-dialog-field:enabled:focus {
+  border-color: var(--set-accent);
+  box-shadow: 0 0 0 3px var(--set-accent-dim);
+  outline: none;
+}
+
 .hkp-edit-dialog-editor {
   flex: 1 1 auto;
   min-height: 0;

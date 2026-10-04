@@ -207,6 +207,22 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "SQL"],
   },
   {
+    slug: "swimlanes",
+    label: "Swimlanes",
+    description:
+      "Five SQL-backed lanes composed from independent facade widgets. Create cards where a lane permits it, edit or delete them anywhere, and drag them between or within lanes to reorder them.",
+    icon: "🗂️",
+    tags: ["Needs Node", "SQL"],
+  },
+  {
+    slug: "health-log",
+    label: "Private Health Log",
+    description:
+      "Keep your own timestamped blood-glucose, blood-pressure and weight history in SQLite, inspect it as tables and time-series charts, and expose each new event to an optional analytics board.",
+    icon: "🩺",
+    tags: ["Needs Node", "SQL", "Personal Data"],
+  },
+  {
     slug: "rss-aggregator",
     label: "RSS Aggregator",
     description:

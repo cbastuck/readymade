@@ -11,6 +11,7 @@ import { currentFace, defaultFaceId, resolveFaces } from "./tabs";
 import { useFacadeView } from "./FacadeViewContext";
 import { useChromeRetracted } from "./FacadeChrome";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
+import { SwimlaneDragProvider } from "./SwimlaneDragContext";
 
 type FacadeRendererProps = {
   facade: FacadeDescriptor;
@@ -189,7 +190,8 @@ export default function FacadeRenderer({
     <FacadeStateContext.Provider
       value={{ state: facadeState, setState: setFacadeStateEntry }}
     >
-      <FacadeBoardActionsProvider boardContext={boardContext}>
+      <SwimlaneDragProvider>
+        <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}
         <FacadeNotices
           notices={draftFacade.notices}
@@ -284,7 +286,10 @@ export default function FacadeRenderer({
                     : showFacade
                       ? runtimeHeight
                       : "auto",
-                  flex: showRuntime && !showFacade ? 1 : undefined,
+                  // Longhand: a changing `flex` would reset the flexShrink
+                  // beside it, which React does not write again.
+                  flexGrow: showRuntime && !showFacade ? 1 : 0,
+                  flexBasis: showRuntime && !showFacade ? "0%" : "auto",
                   minHeight: 0,
                   background: "hsl(var(--muted))",
                   flexShrink: 0,
@@ -326,7 +331,8 @@ export default function FacadeRenderer({
             )}
           </div>
         </div>
-      </FacadeBoardActionsProvider>
+        </FacadeBoardActionsProvider>
+      </SwimlaneDragProvider>
     </FacadeStateContext.Provider>
   );
 }

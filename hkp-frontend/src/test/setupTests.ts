@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { afterEach, expect, vi } from "vitest";
 
 // Must mock Monaco BEFORE any modules that use it are imported
 vi.mock("@monaco-editor/react", () => ({
@@ -81,4 +81,26 @@ Object.defineProperty(window, "scrollTo", {
   writable: true,
   configurable: true,
   value: vi.fn(),
+});
+
+// React only says on the console that a style object mixes a shorthand with a
+// longhand it covers (`background` beside `backgroundColor`), and only on the
+// rerender where the covered value changes or goes away — at which point it has
+// already written a style the object does not describe. Collected here so the
+// test that provoked it fails.
+const styleCollisions: string[] = [];
+const reportError = console.error;
+console.error = (...args: unknown[]) => {
+  const [format, ...values] = args;
+  if (
+    typeof format === "string" &&
+    format.includes("a style property during rerender")
+  ) {
+    styleCollisions.push(format.replace(/%s/g, () => String(values.shift())));
+  }
+  reportError(...args);
+};
+
+afterEach(() => {
+  expect(styleCollisions.splice(0)).toEqual([]);
 });

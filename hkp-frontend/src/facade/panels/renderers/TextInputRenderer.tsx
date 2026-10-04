@@ -72,31 +72,62 @@ export function TextInputRenderer({
           {widget.label}
         </label>
       )}
-      <div style={{ display: "flex", gap: 6 }}>
-        <input
-          type={widget.secret ? "password" : "text"}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          placeholder={widget.placeholder}
-          spellCheck={false}
-          style={{
-            flex: 1,
-            padding: "8px 12px",
-            borderRadius: 8,
-            border: "1px solid hsl(var(--border))",
-            background: "hsl(var(--muted))",
-            color: "hsl(var(--foreground))",
-            fontSize: 13,
-            outline: "none",
-            fontFamily: "monospace",
-          }}
-        />
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+        {widget.multiline ? (
+          <textarea
+            value={value}
+            rows={widget.rows ?? 4}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder={widget.placeholder}
+            spellCheck
+            style={{
+              flex: 1,
+              minWidth: 0,
+              resize: "vertical",
+              padding: "8px 12px",
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--muted))",
+              color: "hsl(var(--foreground))",
+              fontSize: 13,
+              lineHeight: 1.4,
+              outline: "none",
+              fontFamily: "monospace",
+            }}
+          />
+        ) : (
+          <input
+            type={widget.secret ? "password" : "text"}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder={widget.placeholder}
+            spellCheck={false}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: "8px 12px",
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--muted))",
+              color: "hsl(var(--foreground))",
+              fontSize: 13,
+              outline: "none",
+              fontFamily: "monospace",
+            }}
+          />
+        )}
         <button
           {...submitPress.handlers}
           onClick={submit}

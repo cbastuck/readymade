@@ -5,6 +5,7 @@ import Toolbar from "../../components/Toolbar";
 import Footer from "hkp-frontend/src/components/Footer";
 import SaveBoardDialog from "../../components/SaveBoardDialog";
 import DeployMenu from "../../components/Toolbar/DeployMenu";
+import ToolbarGroup from "../../components/Toolbar/ToolbarGroup";
 import PlayBoardControls from "../../components/Toolbar/PlayBoardControls";
 import BoardEntryPoint from "./BoardEntryPoint";
 import BoardFetchError from "./BoardFetchError";
@@ -26,7 +27,9 @@ import {
   SelectionProvider,
   useSelection,
 } from "../../selection/SelectionContext";
-import FacadeViewControls from "../../facade/FacadeViewControls";
+import FacadeViewControls, {
+  FacadeEditorButton,
+} from "../../facade/FacadeViewControls";
 import FacadeChrome, { useChromeRetracted } from "../../facade/FacadeChrome";
 
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
@@ -73,8 +76,11 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                     actionsSlot={
                       <>
                         <FacadeViewControls />
-                        <OverviewToolbarButton />
-                        <AssetViewToolbarButton />
+                        <ToolbarGroup label="Board tools">
+                          <FacadeEditorButton />
+                          <OverviewToolbarButton />
+                          <AssetViewToolbarButton />
+                        </ToolbarGroup>
                         <DeployMenu />
                       </>
                     }

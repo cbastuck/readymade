@@ -87,7 +87,6 @@ export default function SettingsDialog({
             ? { ...frameStyle, width: "min(560px, 94vw)", height: "auto", maxHeight: "88vh" }
             : frameStyle
         }
-        aria-describedby={undefined}
         // Focus the dialog itself rather than its first tab, which would open
         // with a focus ring on it before anyone has touched the keyboard.
         onOpenAutoFocus={(event) => event.preventDefault()}

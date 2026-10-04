@@ -801,7 +801,11 @@ export default function Sidebar() {
           )}
           {hasRuntimes && (
             <div style={{ padding: "2px 8px 6px", flexShrink: 0 }}>
+              {/* The field is the row, icon included: a box around the text
+                  alone, see-through on the sidebar, read as one that could
+                  not be typed in. */}
               <div
+                className="hkp-sidebar-search"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -817,15 +821,18 @@ export default function Sidebar() {
                 <input
                   type="text"
                   placeholder="Search…"
+                  aria-label="Search services"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="border rounded px-2 py-0.5"
                   style={{
                     background: "none",
+                    border: "none",
                     outline: "none",
+                    padding: 0,
                     fontSize: 12,
                     color: "var(--text)",
                     width: "100%",
+                    minWidth: 0,
                   }}
                   spellCheck={false}
                 />

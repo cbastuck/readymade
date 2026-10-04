@@ -61,12 +61,14 @@ export default function RuntimeConfigurationDialog({
       <div className="flex">
         <InputField
           label="Id"
+          className="hkp-edit-dialog-field"
           value={config.runtime.id}
           onChange={(id) => onChange({ id })}
           disabled={true}
         />
         <InputField
           label="Name"
+          className="hkp-edit-dialog-field"
           value={config.runtime.name}
           onChange={(name) => onChange({ name })}
         />
@@ -74,6 +76,7 @@ export default function RuntimeConfigurationDialog({
       <div className="flex">
         <InputField
           label="Type"
+          className="hkp-edit-dialog-field"
           value={config.runtime.type}
           onChange={(url) => onChange({ url })}
           disabled={true}
@@ -81,6 +84,7 @@ export default function RuntimeConfigurationDialog({
 
         <InputField
           label="Url"
+          className="hkp-edit-dialog-field"
           value={config.runtime.url}
           disabled={!config.runtime.url}
         />
