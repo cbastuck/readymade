@@ -16,6 +16,10 @@ import {
   boardHasFacade,
   useFacadeView,
 } from "hkp-frontend/src/facade/FacadeViewContext";
+import {
+  TOOLBAR_GROUP_BUTTON,
+  TOOLBAR_GROUP_ICON_SIZE,
+} from "hkp-frontend/src/components/Toolbar/ToolbarGroup";
 import { useOverview } from "hkp-frontend/src/overview/OverviewContext";
 import { useAssetView } from "./AssetViewContext";
 
@@ -60,21 +64,14 @@ export default function AssetViewToolbarButton() {
       aria-pressed={showing}
       onClick={onClick}
       style={{
-        width: 30,
-        height: 30,
-        borderRadius: 7,
-        border: "none",
+        ...TOOLBAR_GROUP_BUTTON,
         background: "none",
         cursor: disabled ? "default" : "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         color: showing ? "var(--hkp-accent, #0abcfb)" : "var(--text, #1a1a1a)",
         opacity: disabled ? 0.4 : 1,
-        flexShrink: 0,
       }}
     >
-      <FileCode2 size={16} strokeWidth={1.75} />
+      <FileCode2 size={TOOLBAR_GROUP_ICON_SIZE} strokeWidth={1.75} />
     </button>
   );
 }

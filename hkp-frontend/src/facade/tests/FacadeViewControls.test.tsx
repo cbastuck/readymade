@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import { BoardCtx, type BoardContextState } from "hkp-frontend/src/BoardContext";
-import FacadeViewControls from "../FacadeViewControls";
+import FacadeViewControls, { FacadeEditorButton } from "../FacadeViewControls";
 import { boardHasFacade, FacadeViewProvider } from "../FacadeViewContext";
 
 function boardContext(state: Partial<BoardContextState>): BoardContextState {
@@ -15,6 +15,7 @@ function renderControls(state: Partial<BoardContextState>) {
     <BoardCtx.Provider value={boardContext(state)}>
       <FacadeViewProvider boardName="Demo">
         <FacadeViewControls />
+        <FacadeEditorButton />
       </FacadeViewProvider>
     </BoardCtx.Provider>,
   );
@@ -108,6 +109,7 @@ describe("FacadeViewControls", () => {
     const { container } = render(
       <BoardCtx.Provider value={boardContext(withFacade)}>
         <FacadeViewControls />
+        <FacadeEditorButton />
       </BoardCtx.Provider>,
     );
     expect(container.innerHTML).toBe("");
