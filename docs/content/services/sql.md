@@ -263,10 +263,13 @@ A snapshot is always a committed state. While a transaction is open — a
 written, and one snapshot follows when it ends. That makes a transaction the
 way to say *when*: many changes between `BEGIN` and `COMMIT` cost one write.
 
-A snapshot the browser refuses — storage full, or not offered at all in some
-private windows — is reported as an `error` by the services whose changes it
-held. The statement itself succeeded and the rows are in the page; they are
-written with the next change that is, or lost with the page.
+A snapshot the browser refuses — storage full, say — is reported as an `error`
+by the services whose changes it held. The statement itself succeeded and the
+rows are in the page; they are written with the next change that is, or lost
+with the page.
+
+Where a page has no IndexedDB at all there is nothing to refuse: the database
+lasts as long as the page does, and nothing is reported.
 
 ### Which database a `sql` sees
 

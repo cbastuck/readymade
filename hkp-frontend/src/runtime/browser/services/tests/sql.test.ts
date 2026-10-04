@@ -192,6 +192,29 @@ describe("the browser SQL service", () => {
     });
   });
 
+  it("does not run the schema in place of a missing exec statement", async () => {
+    // Refused before anything runs. Standing in for the statement, the schema
+    // would run a second time on the first pass and again on every one after.
+    const database = uniqueName();
+    const { svc, app } = create({
+      database,
+      mode: "exec",
+      schema:
+        "CREATE TABLE IF NOT EXISTS seeded (n INTEGER); INSERT INTO seeded VALUES (1);",
+    });
+    expect(await svc.process({})).toBeNull();
+    expect(app.notify).toHaveBeenCalledWith(svc, {
+      error: "sql has no statement to run",
+    });
+
+    const { svc: reader } = create({
+      database,
+      mode: "query",
+      statement: "SELECT count(*) AS n FROM sqlite_master WHERE name = 'seeded'",
+    });
+    expect(await reader.process({})).toMatchObject({ rows: [{ n: 0 }] });
+  });
+
   it("refuses a database name hkp-node would refuse", async () => {
     const { svc, app } = create({ database: "../elsewhere", statement: "SELECT 1" });
     expect(await svc.process({})).toBeNull();

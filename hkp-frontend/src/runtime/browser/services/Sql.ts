@@ -262,9 +262,9 @@ class Sql extends ServiceBase<State> {
   }
 
   private execute(db: Database, input: unknown): Record<string, unknown> {
-    const { mode, statement, schema } = this.state;
+    const { mode, statement } = this.state;
     if (mode === "exec") {
-      db.exec(statement || schema);
+      db.exec(statement);
       return { executed: true };
     }
     if (mode === "import") {
