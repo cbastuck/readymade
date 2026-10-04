@@ -42,7 +42,8 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
   {
     slug: "ascii-cam",
     label: "ASCII Cam",
-    description: "Render your webcam feed as ASCII art entirely in the browser.",
+    description:
+      "Render your webcam feed as ASCII art entirely in the browser.",
     icon: "📷",
     tags: ["Camera", "Canvas"],
   },
@@ -223,6 +224,30 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "SQL", "Personal Data"],
   },
   {
+    slug: "court-booking-browser",
+    label: "Court Booking (Browser)",
+    description:
+      "The same court timetable with nothing to install: SQLite runs in the browser and keeps the bookings between visits. The club rules are still unique indexes — what it gives up is the club, since the tables belong to this browser alone.",
+    icon: "🎾",
+    tags: ["SQL"],
+  },
+  {
+    slug: "sql-explorer",
+    label: "SQL Explorer",
+    description:
+      "Every SQL database this browser keeps: pick one to see its tables, a table to see its rows — click a value to change it, tick rows to delete them — and export any of them as an ordinary SQL dump, the file hkp-node imports to carry on with the same tables.",
+    icon: "🗄️",
+    tags: ["SQL", "Utility"],
+  },
+  {
+    slug: "sql-import",
+    label: "SQL Import",
+    description:
+      "Pick an SQL dump, name a database, send it: hkp-node imports it in one transaction, all of it or none, and every board there naming that database carries on with its tables.",
+    icon: "📥",
+    tags: ["SQL", "Needs Node"],
+  },
+  {
     slug: "rss-aggregator",
     label: "RSS Aggregator",
     description:
@@ -252,6 +277,8 @@ export const ALL_DEMO_TAGS = Array.from(
   new Set(DEMO_CATALOG.flatMap((e) => e.tags)),
 ).sort();
 
-export function demoBoardFor(entry: DemoCatalogEntry): BoardDescriptor | undefined {
+export function demoBoardFor(
+  entry: DemoCatalogEntry,
+): BoardDescriptor | undefined {
   return findDemoBoard(entry.slug);
 }

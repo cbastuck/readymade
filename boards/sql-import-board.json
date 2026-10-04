@@ -1,0 +1,156 @@
+{
+  "boardName": "SQL Import",
+  "description": "Carries a database on to hkp-node. Pick an SQL dump — one the SQL Explorer exported from this browser, or any SQLite dump — name the database it goes into, and send it: the browser reads the file, and hkp-node's SQL service imports it in one transaction, all of it or none. The database then belongs to your hkp-node, where any board naming it carries on with the same tables; the list shows what is there.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "pick",
+        "serviceId": "hookup.to/service/file-source",
+        "serviceName": "The dump"
+      }
+    ],
+    "node": [
+      {
+        "uuid": "load",
+        "serviceId": "sql",
+        "serviceName": "Import",
+        "state": {
+          "mode": "import",
+          "database": "tennis"
+        }
+      },
+      {
+        "uuid": "list",
+        "serviceId": "sql",
+        "serviceName": "What hkp-node keeps",
+        "state": {
+          "mode": "databases"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "list",
+        "payload": {}
+      }
+    ],
+    "panels": [
+      {
+        "id": "import",
+        "title": "Import a dump",
+        "width": "55%",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "The database is created if it does not exist. One that already has the dump's tables takes its rows too, unless a row collides with one already there — then nothing of the dump is kept, and the notice says which row.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text-input",
+              "label": "Into database",
+              "placeholder": "tennis",
+              "submitLabel": "Use this name",
+              "defaultValue": "tennis",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "load",
+                  "configure": {
+                    "database": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "file-pick",
+              "label": "Choose a .sql file",
+              "accept": ".sql,text/plain,application/sql",
+              "progressServiceUuid": "pick",
+              "action": {
+                "serviceUuid": "pick"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "known",
+        "title": "On hkp-node",
+        "width": "45%",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "list",
+                "path": "rows"
+              },
+              "columns": ["name", "bytes"],
+              "pageSize": 20
+            },
+            {
+              "type": "button",
+              "label": "Look again",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "list",
+                  "payload": {}
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "load",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "list",
+          "path": "error"
+        },
+        "tone": "error"
+      }
+    ]
+  }
+}
