@@ -50,7 +50,9 @@ One REST runtime on hkp-node contains:
 4. **After a new entry** — a SubService whose **Entry event** Monitor shows the
    event available for downstream work.
 5. **Delete selected entries** — removes events selected in the data table.
-6. **Read personal history** — joins the daily journal onto each measurement
+6. **Generate fake measurements** and **Generate fake journal** — write six
+   months of fictional history when asked, and nothing otherwise.
+7. **Read personal history** — joins the daily journal onto each measurement
    and returns the history used by both table and
    charts.
 
@@ -89,6 +91,26 @@ an explicit downstream board chosen and configured by the person operating it.
 
 Starter rows are synthetic and are seeded once. A marker in the database keeps
 deleted samples from returning after a restart.
+
+## A history to look at
+
+A handful of starter rows says little about how the charts and the table behave
+after months of use. **Generate fake data**, on the **Your data** tab, asks
+first and then writes 180 days of fictional measurements — two glucose readings
+and a weight every day, a blood pressure every other — and a journal entry
+every third day, all counted back from today.
+
+The rows are computed in SQL from the day's number, so the same press always
+produces the same history, and they carry event ids beginning with `fake-`.
+Pressing again adds nothing, because those ids are already there; deleting some
+of them and pressing again brings those back. A day that already has a journal
+keeps its own. Like deleting, generating enters the pipeline after **After a
+new entry**, so several hundred invented rows are not announced downstream as
+measurements somebody took.
+
+There is no button that removes them again. They are ordinary rows, removable
+from the table like any other, which is the reason to try this on a log that
+does not hold measurements of your own.
 
 ## A query-backed line chart
 

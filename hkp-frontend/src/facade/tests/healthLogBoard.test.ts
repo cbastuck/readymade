@@ -21,6 +21,8 @@ describe("the private health log demo board", () => {
       "save-journal",
       "after-entry",
       "delete-entry",
+      "fake-measurements",
+      "fake-journal",
       "read-history",
     ]);
     expect(board.services.health[3]).toMatchObject({
@@ -91,7 +93,7 @@ describe("the private health log demo board", () => {
     expect(board.services.health[2].state.statement).toContain(
       "ON CONFLICT(day) DO UPDATE",
     );
-    expect(board.services.health[5].state.statement).toContain(
+    expect(board.services.health[7].state.statement).toContain(
       "LEFT JOIN health_journal",
     );
   });
@@ -108,5 +110,36 @@ describe("the private health log demo board", () => {
     expect(board.services.health[4].state.statement).toContain(
       "event_id IN (SELECT value FROM json_each($eventIds))",
     );
+  });
+
+  it("generates a fake history on request, past the new-entry hook", () => {
+    const button = findWidgets<any>(
+      board.facade.panels[2].layout as LayoutItem,
+      "button",
+    ).find((candidate) => candidate.label === "Generate fake data");
+    // Asked first: it writes several hundred rows into a person's own log.
+    expect(button.confirm).toBeTruthy();
+    expect(button.actions).toEqual([
+      {
+        type: "process",
+        serviceUuid: "fake-measurements",
+        payload: { operation: "generate-fake-data" },
+      },
+    ]);
+
+    // Entered after the hook, so generated rows are not announced downstream
+    // as measurements a person took.
+    const order = board.services.health.map((service) => service.uuid);
+    expect(order.indexOf("fake-measurements")).toBeGreaterThan(
+      order.indexOf("after-entry"),
+    );
+    // Every writer sees every request, so each generator answers only its own.
+    for (const uuid of ["fake-measurements", "fake-journal"]) {
+      const service = board.services.health.find((svc) => svc.uuid === uuid)!;
+      expect(service.state.statement).toContain(
+        "$operation = 'generate-fake-data'",
+      );
+      expect(service.state.emit).toBe("input");
+    }
   });
 });

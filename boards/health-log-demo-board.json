@@ -75,6 +75,28 @@
         }
       },
       {
+        "uuid": "fake-measurements",
+        "serviceId": "sql",
+        "serviceName": "Generate fake measurements",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "private-health-log",
+          "statement": "WITH RECURSIVE\n  days(day) AS (\n    SELECT 0 WHERE $operation = 'generate-fake-data'\n    UNION ALL\n    SELECT day + 1 FROM days WHERE day < 179\n  ),\n  glucose_slots(slot, hour) AS (\n    VALUES (0, '08'), (1, '13')\n  )\nINSERT OR IGNORE INTO health_measurement (event_id, kind, value, unit, observed_at)\nSELECT\n  printf('fake-glucose-%03d-%d', day, slot),\n  'glucose',\n  round(100 + ((day * 17 + slot * 29) % 55) + ((day % 5) * 0.4), 1),\n  'mg/dL',\n  strftime('%Y-%m-%dT' || hour || ':00:00Z', 'now', printf('-%d days', day))\nFROM days CROSS JOIN glucose_slots\nUNION ALL\nSELECT\n  printf('fake-bp-%03d', day),\n  'blood-pressure-systolic',\n  112 + ((day * 7) % 24),\n  'mmHg',\n  strftime('%Y-%m-%dT19:00:00Z', 'now', printf('-%d days', day))\nFROM days\nWHERE day % 2 = 0\nUNION ALL\nSELECT\n  printf('fake-bp-%03d', day),\n  'blood-pressure-diastolic',\n  70 + ((day * 5) % 14),\n  'mmHg',\n  strftime('%Y-%m-%dT19:00:00Z', 'now', printf('-%d days', day))\nFROM days\nWHERE day % 2 = 0\nUNION ALL\nSELECT\n  printf('fake-weight-%03d', day),\n  'weight',\n  round(77.4 + (day * 0.006) + ((((day * 11) % 9) - 4) * 0.05), 1),\n  'kg',\n  strftime('%Y-%m-%dT07:30:00Z', 'now', printf('-%d days', day))\nFROM days"
+        }
+      },
+      {
+        "uuid": "fake-journal",
+        "serviceId": "sql",
+        "serviceName": "Generate fake journal",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "private-health-log",
+          "statement": "WITH RECURSIVE note_days(day) AS (\n  SELECT 0 WHERE $operation = 'generate-fake-data'\n  UNION ALL\n  SELECT day + 3 FROM note_days WHERE day < 177\n)\nINSERT OR IGNORE INTO health_journal (day, entry)\nSELECT\n  date('now', printf('-%d days', day)),\n  CASE day % 15\n    WHEN 0 THEN 'Poor sleep. Headache in the afternoon and less water than usual.'\n    WHEN 3 THEN 'Long walk after lunch. Felt energetic. No alcohol.'\n    WHEN 6 THEN 'Late pasta dinner and one glass of wine.'\n    WHEN 9 THEN 'Busy workday. Skipped lunch and had a migraine in the evening.'\n    ELSE 'Normal meals, plenty of water and light exercise.'\n  END\nFROM note_days"
+        }
+      },
+      {
         "uuid": "read-history",
         "serviceId": "sql",
         "serviceName": "Read personal history",
@@ -339,19 +361,39 @@
               "maxPages": 100
             },
             {
-              "type": "button",
-              "label": "Delete selected entries",
-              "confirm": "Delete the selected health entries from your database?",
-              "actions": [
+              "direction": "row",
+              "gap": 8,
+              "items": [
                 {
-                  "type": "process",
-                  "serviceUuid": "delete-entry",
-                  "payload": {
-                    "operation": "delete",
-                    "eventIds": {
-                      "$state": "selectedEvents"
+                  "type": "button",
+                  "label": "Delete selected entries",
+                  "confirm": "Delete the selected health entries from your database?",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "delete-entry",
+                      "payload": {
+                        "operation": "delete",
+                        "eventIds": {
+                          "$state": "selectedEvents"
+                        }
+                      }
                     }
-                  }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Generate fake data",
+                  "confirm": "Add six months of fictional measurements and journal entries to your database?",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "fake-measurements",
+                      "payload": {
+                        "operation": "generate-fake-data"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -399,6 +441,18 @@
       {
         "source": {
           "serviceUuid": "delete-entry",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "fake-measurements",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "fake-journal",
           "path": "error"
         }
       },
