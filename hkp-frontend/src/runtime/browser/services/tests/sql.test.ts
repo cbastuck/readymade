@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import SqlDescriptor from "../Sql";
+import * as sqlDatabase from "../sql-database";
 import {
   SqlPersistence,
   checkDatabaseName,
@@ -201,6 +202,49 @@ describe("the browser SQL service", () => {
     expect(checkDatabaseName("tennis")).toBeNull();
   });
 
+  it("reports a change that could not be kept, where it was made", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const store = createDatabaseStore({
+      persistence: {
+        load: async () => undefined,
+        save: async () => {
+          throw new Error("quota exceeded");
+        },
+        list: async () => [],
+      },
+    });
+    const databases = vi
+      .spyOn(sqlDatabase, "sqlDatabases")
+      .mockReturnValue(store);
+    const database = uniqueName();
+    const writer = create({
+      mode: "run",
+      database,
+      schema: "CREATE TABLE IF NOT EXISTS t (n INTEGER)",
+      statement: "INSERT INTO t VALUES ($n)",
+    });
+    const reader = create({
+      mode: "query",
+      database,
+      statement: "SELECT n FROM t",
+    });
+
+    // The statement itself succeeded, and says so.
+    expect(await writer.svc.process({ n: 1 })).toMatchObject({ changes: 1 });
+    expect(await reader.svc.process({})).toMatchObject({ count: 1 });
+    await store.flush();
+
+    expect(writer.app.notify).toHaveBeenLastCalledWith(writer.svc, {
+      error: `database '${database}' could not be kept in this browser: quota exceeded`,
+    });
+    expect(reader.app.notify).not.toHaveBeenCalledWith(
+      reader.svc,
+      expect.objectContaining({ error: expect.anything() }),
+    );
+    databases.mockRestore();
+    warn.mockRestore();
+  });
+
   it("keeps its configuration, and not what the last pass reported", async () => {
     const { svc } = create({
       database: "tennis",
@@ -289,6 +333,133 @@ describe("the browser SQL database store", () => {
     db.exec("CREATE TABLE t (n INTEGER)");
     await vi.waitFor(() => expect(persistence.kept.has("soon")).toBe(true));
     await store.closeAll();
+  });
+
+  it("keeps nothing of a transaction until it ends", async () => {
+    const persistence = memoryPersistence();
+    const store = createDatabaseStore({ persistence });
+    const db = await store.open("committed");
+    db.exec("CREATE TABLE t (v TEXT)");
+    await store.flush();
+
+    const save = vi.spyOn(persistence, "save");
+    db.exec("BEGIN");
+    db.run("INSERT INTO t VALUES ('held')");
+    // As a page hidden half way through would ask.
+    await store.flush();
+    expect(save).not.toHaveBeenCalled();
+
+    db.exec("COMMIT");
+    await store.closeAll();
+    expect(save).toHaveBeenCalledTimes(1);
+    const reopened = await createDatabaseStore({ persistence }).open(
+      "committed",
+    );
+    expect(reopened.query("SELECT v FROM t")).toEqual([{ v: "held" }]);
+  });
+
+  it("keeps nothing of a transaction that was rolled back", async () => {
+    const persistence = memoryPersistence();
+    const store = createDatabaseStore({ persistence, saveDelayMs: 1 });
+    const db = await store.open("undone");
+    db.exec("CREATE TABLE t (v TEXT)");
+    db.exec("BEGIN");
+    db.run("INSERT INTO t VALUES ('taken back')");
+    // Long enough for the write the insert asked for to have come up.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(persistence.kept.has("undone")).toBe(false);
+
+    db.exec("ROLLBACK");
+    // The table, made before the transaction began, is kept once it is over.
+    await vi.waitFor(() => expect(persistence.kept.has("undone")).toBe(true));
+    await store.closeAll();
+    const reopened = await createDatabaseStore({ persistence }).open("undone");
+    expect(reopened.query("SELECT count(*) AS n FROM t")).toEqual([{ n: 0 }]);
+  });
+
+  it("has one write of a database on its way at a time", async () => {
+    const persistence = memoryPersistence();
+    const finish: Array<() => void> = [];
+    const save = vi.spyOn(persistence, "save").mockImplementation(
+      (name, bytes) =>
+        new Promise<void>((resolve) => {
+          finish.push(() => {
+            persistence.kept.set(name, bytes);
+            resolve();
+          });
+        }),
+    );
+    const store = createDatabaseStore({ persistence, saveDelayMs: 1 });
+    const db = await store.open("busy");
+    db.exec("CREATE TABLE t (n INTEGER)");
+    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+
+    // Changed again, twice over, while that write is still on its way.
+    db.run("INSERT INTO t VALUES (1)");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    db.run("INSERT INTO t VALUES (2)");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(save).toHaveBeenCalledTimes(1);
+
+    // Both changes go in the one write that follows it.
+    finish.shift()!();
+    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+    finish.shift()!();
+    await store.closeAll();
+    expect(save).toHaveBeenCalledTimes(2);
+    const reopened = await createDatabaseStore({ persistence }).open("busy");
+    expect(reopened.query("SELECT count(*) AS n FROM t")).toEqual([{ n: 2 }]);
+  });
+
+  it("does not wait for a write on its way when asked to flush", async () => {
+    const persistence = memoryPersistence();
+    const finish: Array<() => void> = [];
+    const save = vi
+      .spyOn(persistence, "save")
+      .mockImplementation(
+        () => new Promise<void>((resolve) => void finish.push(resolve)),
+      );
+    const store = createDatabaseStore({ persistence, saveDelayMs: 1 });
+    const db = await store.open("leaving");
+    db.exec("CREATE TABLE t (n INTEGER)");
+    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+
+    db.run("INSERT INTO t VALUES (1)");
+    // A page going away gets no later task to start the write in.
+    const flushed = store.flush();
+    expect(save).toHaveBeenCalledTimes(2);
+    finish.forEach((done) => done());
+    await flushed;
+    await store.closeAll();
+  });
+
+  it("tells whoever changed a database that it could not be kept", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const persistence = memoryPersistence();
+    vi.spyOn(persistence, "save").mockRejectedValueOnce(
+      new Error("quota exceeded"),
+    );
+    const store = createDatabaseStore({ persistence });
+    const writer = vi.fn();
+    const reader = vi.fn();
+    const written = await store.open("full", writer);
+    const read = await store.open("full", reader);
+    written.exec("CREATE TABLE t (n INTEGER)");
+    read.query("SELECT * FROM t");
+
+    await store.flush();
+    expect(writer).toHaveBeenCalledTimes(1);
+    expect(writer.mock.calls[0][0]).toEqual(new Error("quota exceeded"));
+    expect(writer.mock.calls[0][1]).toBe("full");
+    expect(reader).not.toHaveBeenCalled();
+    expect(persistence.kept.has("full")).toBe(false);
+
+    // Still to be kept: the next write carries it, and nobody is told twice.
+    await store.flush();
+    expect(persistence.kept.has("full")).toBe(true);
+    expect(writer).toHaveBeenCalledTimes(1);
+    await store.closeAll();
+    warn.mockRestore();
   });
 
   it("strips the engine's result-code preamble from messages", () => {

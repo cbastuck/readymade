@@ -44,7 +44,9 @@ UPDATE "booking" SET "member" = CASE WHEN $column = 'member' THEN $value ELSE "m
 
 Rows are addressed by their `rowid`, the first column shown. A view, or a table
 declared `WITHOUT ROWID`, has none to address, so those are shown but not
-changed.
+changed. Neither is a table with a column of its own called `rowid`: there the
+name means that column, whose values need not be unique, so a statement written
+for one row could reach several.
 
 Editing a cell is the data table's `cellActions`: a **prompt** step asks for the
 new value, starting from the current one, and hands the answer to the update.

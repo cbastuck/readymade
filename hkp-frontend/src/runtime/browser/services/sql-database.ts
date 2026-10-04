@@ -16,6 +16,11 @@
  * pages holding the same database each keep their own copy — the last one to
  * write it wins.
  *
+ * A snapshot is a committed state: none is taken while a transaction is open,
+ * and one follows when it ends. And a database has one write on its way at a
+ * time, so changing it faster than storage takes it costs later snapshots
+ * rather than a queue of copies.
+ *
  * The engine (~900 KB of WebAssembly) is loaded on the first open, so a board
  * without an SQL service never downloads it.
  */
@@ -55,15 +60,29 @@ export type SqlPersistence = {
 /** A database as a list of them shows it. */
 export type DatabaseInfo = { name: string; bytes: number };
 
+/**
+ * Told that changes its caller made could not be written to storage. They are
+ * still in the page's copy, and are written with the next change that is.
+ */
+export type NotKept = (error: unknown, database: string) => void;
+
 export type DatabaseStore = {
-  /** The database of this name, opened on first use and kept open. */
-  open(name: string): Promise<Database>;
+  /**
+   * The database of this name, opened on first use and kept open.
+   *
+   * With `notKept`, the caller hears when a snapshot holding its changes
+   * fails to reach storage — only then, and only for what it changed itself.
+   */
+  open(name: string, notKept?: NotKept): Promise<Database>;
   /**
    * Every database there is: those kept in storage, and those opened here
    * that already hold something. Sorted by name.
    */
   list(): Promise<DatabaseInfo[]>;
-  /** Writes every database changed since it was last kept. */
+  /**
+   * Writes every database changed since it was last kept, except one with a
+   * transaction open: that is written once the transaction ends.
+   */
   flush(): Promise<void>;
   /** Keeps what changed, then closes every open database. For tests. */
   closeAll(): Promise<void>;
@@ -172,9 +191,19 @@ type Handle = {
   sqlite3: Sqlite3Static;
   db: WasmDatabase;
   wrapped: Database;
+  /** The database as each caller that asked to hear of failed writes has it. */
+  wrappedFor: WeakMap<NotKept, Database>;
   /** Changed since it was last kept. */
   dirty: boolean;
+  /** Who changed it since then, of those that asked to hear if keeping fails. */
+  changedBy: Set<NotKept>;
+  /** Snapshots of it handed to persistence and not finished. */
+  writing: number;
 };
+
+/** A transaction is open, so what the database holds may yet be taken back. */
+const inTransaction = (handle: Pick<Handle, "sqlite3" | "db">) =>
+  handle.sqlite3.capi.sqlite3_get_autocommit(handle.db) === 0;
 
 function openWasmDatabase(
   sqlite3: Sqlite3Static,
@@ -204,11 +233,13 @@ function wrap(
   changed: () => void,
 ): Database {
   /**
-   * What moves when the database does: rows changed, and the schema's version,
-   * since a statement that only creates or drops something changes no rows.
+   * What moves when the database does: rows changed; the schema's version,
+   * since a statement that only creates or drops something changes no rows;
+   * and whether a transaction is open, since a rollback takes rows back
+   * without moving either of the others.
    */
   const revision = () =>
-    `${sqlite3.capi.sqlite3_total_changes(db)}:${db.selectValue("PRAGMA schema_version")}`;
+    `${sqlite3.capi.sqlite3_total_changes(db)}:${db.selectValue("PRAGMA schema_version")}:${sqlite3.capi.sqlite3_get_autocommit(db)}`;
 
   /** Runs `fn` and marks the database changed if it was. */
   const tracked = <T>(fn: () => T): T => {
@@ -275,8 +306,13 @@ export function createDatabaseStore({
    * `pagehide`, anything left for a later task may never run. Writes are
    * started in call order, and IndexedDB applies them in the order they were
    * started, so an older snapshot never lands after a newer one.
+   *
+   * A database inside a transaction is left for when it ends: its image would
+   * hold rows a rollback has yet to take back. One whose last snapshot is still
+   * on its way waits for it, unless `evenWhileWriting` — for a caller that
+   * cannot come back, such as a page going away.
    */
-  const keep = (): Promise<void> => {
+  const keep = (evenWhileWriting: boolean): Promise<void> => {
     if (timer) {
       clearTimeout(timer);
       timer = null;
@@ -286,16 +322,48 @@ export function createDatabaseStore({
     }
     const saves: Promise<void>[] = [];
     for (const [name, handle] of ready) {
-      if (!handle.dirty) {
+      if (!handle.dirty || inTransaction(handle)) {
+        continue;
+      }
+      if (handle.writing > 0 && !evenWhileWriting) {
         continue;
       }
       handle.dirty = false;
+      const changedBy = handle.changedBy;
+      handle.changedBy = new Set();
       const bytes = handle.sqlite3.capi.sqlite3_js_db_export(handle.db);
+      handle.writing++;
+      let save: Promise<void>;
+      try {
+        save = persistence.save(name, bytes);
+      } catch (err) {
+        save = Promise.reject(err);
+      }
       saves.push(
-        persistence.save(name, bytes).catch((err) => {
-          handle.dirty = true;
-          console.warn(`sql: could not keep database '${name}'`, err);
-        }),
+        save.then(
+          () => {
+            handle.writing--;
+            // What changed while this one was on its way goes next.
+            if (handle.dirty) {
+              scheduleKeep();
+            }
+          },
+          (err) => {
+            handle.writing--;
+            const changedSince = handle.dirty;
+            handle.dirty = true;
+            console.warn(`sql: could not keep database '${name}'`, err);
+            for (const notKept of changedBy) {
+              notKept(err, name);
+            }
+            // Tried again with the next change rather than on a timer: storage
+            // that is full or refused stays so. A change made meanwhile is that
+            // next change.
+            if (changedSince) {
+              scheduleKeep();
+            }
+          },
+        ),
       );
     }
     if (saves.length > 0) {
@@ -309,7 +377,7 @@ export function createDatabaseStore({
     if (!persistence || timer) {
       return;
     }
-    timer = setTimeout(() => void keep(), saveDelayMs);
+    timer = setTimeout(() => void keep(false), saveDelayMs);
   };
 
   const openHandle = async (name: string): Promise<Handle> => {
@@ -320,7 +388,10 @@ export function createDatabaseStore({
       sqlite3,
       db,
       wrapped: null as unknown as Database,
+      wrappedFor: new WeakMap(),
       dirty: false,
+      changedBy: new Set(),
+      writing: 0,
     };
     handle.wrapped = wrap(sqlite3, db, () => {
       handle.dirty = true;
@@ -330,8 +401,22 @@ export function createDatabaseStore({
     return handle;
   };
 
+  /** The database as one caller has it: its changes are marked as its own. */
+  const wrappedFor = (handle: Handle, notKept: NotKept): Database => {
+    let wrapped = handle.wrappedFor.get(notKept);
+    if (!wrapped) {
+      wrapped = wrap(handle.sqlite3, handle.db, () => {
+        handle.dirty = true;
+        handle.changedBy.add(notKept);
+        scheduleKeep();
+      });
+      handle.wrappedFor.set(notKept, wrapped);
+    }
+    return wrapped;
+  };
+
   return {
-    open: async (name) => {
+    open: async (name, notKept) => {
       const wrong = checkDatabaseName(name);
       if (wrong) {
         throw new Error(wrong);
@@ -343,7 +428,8 @@ export function createDatabaseStore({
         // A failed open is not remembered: the next call tries again.
         pending.catch(() => open.delete(name));
       }
-      return (await pending).wrapped;
+      const handle = await pending;
+      return notKept ? wrappedFor(handle, notKept) : handle.wrapped;
     },
     list: async () => {
       const found = new Map<string, number>();
@@ -367,9 +453,9 @@ export function createDatabaseStore({
         .map(([name, bytes]) => ({ name, bytes }))
         .sort((a, b) => a.name.localeCompare(b.name));
     },
-    flush: keep,
+    flush: () => keep(true),
     closeAll: async () => {
-      await keep();
+      await keep(true);
       for (const pending of open.values()) {
         const handle = await pending.catch(() => null);
         handle?.db.close();
@@ -433,8 +519,11 @@ export function indexedDbPersistence(): SqlPersistence | null {
     tx.objectStore(IDB_STORE).put(bytes, name);
     return new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
+      // An abort can come without a reason, and the reason is what is reported.
+      const refused = () =>
+        reject(tx.error ?? new Error("the browser's storage refused the write"));
+      tx.onerror = refused;
+      tx.onabort = refused;
     });
   };
 

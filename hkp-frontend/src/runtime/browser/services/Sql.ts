@@ -222,7 +222,7 @@ class Sql extends ServiceBase<State> {
     const name = this.state.database || DEFAULT_DATABASE;
     let db: Database;
     try {
-      db = await sqlDatabases().open(name);
+      db = await sqlDatabases().open(name, this.notKept);
       this.applySchema(db, name);
     } catch (err) {
       return this.fail(
@@ -301,6 +301,17 @@ class Sql extends ServiceBase<State> {
     }
     return params;
   }
+
+  /**
+   * Changes this service made did not reach storage. Reported as a failure,
+   * because to whoever is using the board it is one: the statement succeeded,
+   * and what it did is gone with the page unless a later write goes through.
+   */
+  private notKept = (err: unknown, database: string): void => {
+    this.fail(
+      `database '${database}' could not be kept in this browser: ${sqliteMessage(err)}`,
+    );
+  };
 
   /** Reports a failure and produces nothing, so the pipeline stops here. */
   private fail(error: string): null {

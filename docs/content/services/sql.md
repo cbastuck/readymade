@@ -252,9 +252,21 @@ Three consequences of keeping snapshots rather than writing a file in place:
   with it. Leaving the page in that window can lose it.
 - Every pass that changes something writes the whole database. That is nothing
   for the tables a board keeps for one person; it is the wrong tool for
-  megabytes.
+  megabytes. One write of a database is on its way at a time: a board changing
+  it faster than the browser stores it gets fewer snapshots, each holding
+  everything up to then.
 - Two tabs holding the same database each work on their own copy, and the last
   one to write it wins. Keep one board using a database open at a time.
+
+A snapshot is always a committed state. While a transaction is open — a
+`BEGIN` in one pass, its `COMMIT` or `ROLLBACK` in a later one — nothing is
+written, and one snapshot follows when it ends. That makes a transaction the
+way to say *when*: many changes between `BEGIN` and `COMMIT` cost one write.
+
+A snapshot the browser refuses — storage full, or not offered at all in some
+private windows — is reported as an `error` by the services whose changes it
+held. The statement itself succeeded and the rows are in the page; they are
+written with the next change that is, or lost with the page.
 
 ### Which database a `sql` sees
 
