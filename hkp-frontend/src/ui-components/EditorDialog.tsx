@@ -1,4 +1,4 @@
-import { ReactNode, useId, useRef } from "react";
+import { ReactNode, useRef } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
@@ -55,7 +55,6 @@ export default function EditorDialog({
   onClose,
 }: Props) {
   const editor = useRef<any>(null);
-  const descriptionId = useId();
 
   if (!isOpen) {
     return null;
@@ -96,7 +95,6 @@ export default function EditorDialog({
         onPointerDownOutside={avoidDefaultDomBehavior}
         onInteractOutside={avoidDefaultDomBehavior}
         additionalHeaderButtons={additionalHeaderButtons}
-        aria-describedby={description ? descriptionId : undefined}
       >
         <div
           className="hkp-set-pane-header"
@@ -106,7 +104,7 @@ export default function EditorDialog({
             {title}
           </DialogPrimitive.Title>
           {description && (
-            <DialogDescription id={descriptionId} className="sr-only">
+            <DialogDescription className="sr-only">
               {description}
             </DialogDescription>
           )}

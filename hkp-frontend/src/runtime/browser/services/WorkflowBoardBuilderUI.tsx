@@ -389,7 +389,6 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
             overflow: "hidden",
           }}
           className="sm:max-w-[95%]"
-          aria-describedby="workflow-refiner-editor-description"
         >
           {/* Header */}
           <div
@@ -411,7 +410,6 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
               Edit Workflow
             </DialogTitle>
             <DialogDescription
-              id="workflow-refiner-editor-description"
               style={{
                 fontSize: 11.5,
                 color: "var(--text-dim, #9a9590)",

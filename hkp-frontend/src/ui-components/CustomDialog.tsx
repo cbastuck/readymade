@@ -26,7 +26,6 @@ export default function CustomDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={`sm:max-w-[80%] h-[80%] flex flex-col ${className}`}
-        aria-describedby={undefined}
       >
         <DialogTitle>{title}</DialogTitle>
         {description && <DialogDescription>{description}</DialogDescription>}
