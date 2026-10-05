@@ -28,6 +28,11 @@ same day from their own device. Here they belong to this browser: switching the
 name on the **Who you are** tab shows the day from another member's side, but
 only for the people at this screen.
 
+Who is booking is decided by the same statements as on the server: whoever is
+signed in to the app, and the typed name only when nobody is. In a browser
+nothing verifies that — the browser is the person — so what it buys is that
+the board is the same board on both runtimes, not that anybody is kept out.
+
 So this is the version for trying the board, or for booking something that is
 yours to share out — a room at home, a shared car. For a real club, run
 [Court Booking](./court-booking-demo-board.md) on hkp-node.

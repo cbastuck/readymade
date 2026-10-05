@@ -94,10 +94,13 @@ describe("the browser Court Booking demo board", () => {
 
     it("shows the hour as taken from another member's side", async () => {
       const day = await tap({ ...today, state: "free", member: "ben@club" });
+      // Taken, and by nobody's address: a holder is shown by the name the
+      // club gave them, and here nobody is signed in to have been given one.
       expect(cell(day, 1, 9)).toMatchObject({
         state: "taken",
-        label: "anna@club",
+        label: "Member",
       });
+      expect(JSON.stringify(day.rows)).not.toContain("anna@club");
     });
 
     it("gives the hour back", async () => {
@@ -112,15 +115,74 @@ describe("the browser Court Booking demo board", () => {
       // Straight at the table, past the statement's own guards.
       take.instance.configure({
         statement:
-          "INSERT INTO booking (court, day, hour, member) VALUES ($court, date('now','localtime'), $hour, $member)",
+          "INSERT INTO court_booking (court, day, hour, member) VALUES ($court, date('now','localtime'), $hour, $member)",
       });
       take.app.notify.mockClear();
       expect(
         await take.instance.process({ ...today, member: "ben@club" }),
       ).toBeNull();
       expect(take.app.notify.mock.calls[0][1].error).toMatch(
-        /UNIQUE constraint failed: booking\.court, booking\.day, booking\.hour/,
+        /UNIQUE constraint failed: court_booking\.court, court_booking\.day, court_booking\.hour/,
       );
+    });
+  });
+
+  describe("booking as whoever is signed in to the app", () => {
+    // The statements ask who is calling, and in a browser that is the account
+    // signed in to the app — so the board reads the same on both runtimes.
+    // Nothing verifies it here: the browser is the person, and the tables are
+    // theirs alone.
+    const database = `court-booking-signed-in-${Date.now()}`;
+    let signedIn: Record<string, string> | null = null;
+    const pipeline = browserBoard.services.club.map((svc: any) => {
+      const app = {
+        notify: vi.fn(),
+        log: vi.fn(),
+        next: vi.fn(),
+        getAuthenticatedUser: () => signedIn,
+      };
+      const instance: any = SqlDescriptor.create(
+        app as any,
+        "court-booking",
+        SqlDescriptor as any,
+        svc.uuid,
+      );
+      instance.configure({ ...svc.state, database });
+      return instance;
+    });
+    const tap = async (payload: Record<string, unknown>) => {
+      let value: any = payload;
+      for (const instance of pipeline) {
+        value = await instance.process(value);
+        if (value === null) {
+          break;
+        }
+      }
+      return value;
+    };
+    const cell = (day: any, court: number, hour: number) =>
+      day.rows.find((row: any) => row.column === court && row.hour === hour);
+
+    it("books in the account's name, not the one typed into the facade", async () => {
+      signedIn = { userId: "auth0|anna", username: "Anna", email: "anna@example.com" };
+      const hers = await tap({
+        state: "free",
+        dayOffset: 0,
+        court: 2,
+        hour: 11,
+        member: "somebody-else@club",
+      });
+      expect(cell(hers, 2, 11)).toMatchObject({ state: "mine", label: "You" });
+
+      // From the typed name's side, with nobody signed in, it is taken — by
+      // the name her account goes by.
+      signedIn = null;
+      const theirs = await tap({
+        state: "none",
+        dayOffset: 0,
+        member: "somebody-else@club",
+      });
+      expect(cell(theirs, 2, 11)).toMatchObject({ state: "taken", label: "Anna" });
     });
   });
 });

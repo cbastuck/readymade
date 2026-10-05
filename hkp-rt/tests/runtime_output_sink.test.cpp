@@ -13,6 +13,8 @@
 #include <service.h>
 #include <types/data.h>
 
+#include "process_context.h"
+
 using namespace hkp;
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -67,21 +69,29 @@ bool eventually(const std::function<bool()>& check) {
 struct Heard {
   std::mutex mutex;
   std::vector<json> results;
+  // The run each result was produced in, as it is said to another runtime;
+  // null for one produced outside a run.
+  std::vector<json> runs;
   std::vector<std::string> events;
+  // Who each entry says began its run; empty when nobody did.
+  std::vector<std::string> callers;
 
   App::RuntimeOutputSink sink() {
     return App::RuntimeOutputSink{
-      [this](const Data& data, MessagePurpose purpose, const std::string&) {
+      [this](const Data& data, MessagePurpose purpose, const std::string&,
+             const ProcessContext* run) {
         if (purpose == MessagePurpose::NOTIFICATION) {
           return;
         }
         std::lock_guard<std::mutex> lock(mutex);
         const auto asJson = getJSONFromData(data);
         results.push_back(asJson ? *asJson : json(nullptr));
+        runs.push_back(run ? run->toWire() : json(nullptr));
       },
       [this](const LogEntry& entry) {
         std::lock_guard<std::mutex> lock(mutex);
         events.push_back(entry.event);
+        callers.push_back(entry.caller);
       },
     };
   }
@@ -193,4 +203,60 @@ TEST_CASE("entries reach the sink once logging is switched on",
   app->processRuntime("rt-1", Data(json{{"n", 2}}));
 
   REQUIRE(eventually([&] { return heard.eventCount() > 0; }));
+}
+
+TEST_CASE("a sink is told the run a result was produced in, and who began it",
+          "[runtime][sink][caller]") {
+  // What carries a run across the runtimes of a deployed board: the result
+  // leaves with its context, and whoever listens hands that to the next one.
+  Heard heard;
+  auto app = appWithRuntime(json{{"logging", true}, {"logLevel", "debug"}});
+  app->setRuntimeOutputSink("rt-1", heard.sink());
+  Caller alice;
+  alice.sub = "auth0|alice";
+  alice.email = "alice@example.com";
+
+  app->processRuntimeAs(
+    "rt-1", Data(json{{"n", 1}}),
+    ProcessContext::forClient(json{{"runId", "run-1"}}, alice));
+
+  REQUIRE(eventually([&] { return heard.resultCount() == 1; }));
+  REQUIRE(heard.runs[0] == json{
+    {"runId", "run-1"},
+    {"caller", {{"sub", "auth0|alice"}, {"email", "alice@example.com"}}},
+  });
+  // And the log says who it was, by `sub` alone.
+  REQUIRE(eventually([&] { return heard.eventCount() > 0; }));
+  REQUIRE(heard.callers[0] == "auth0|alice");
+}
+
+TEST_CASE("a run a client begins is the token's, whatever its context claims",
+          "[runtime][caller]") {
+  const json forged = {
+    {"runId", "run-from-client"},
+    {"requestId", "reply-here"},
+    {"caller", {{"sub", "auth0|bob"}, {"email", "bob@example.com"}, {"name", "Bob"}}},
+  };
+  Caller alice;
+  alice.sub = "auth0|alice";
+
+  // Read as a client's: the run is kept, the caller is never read.
+  REQUIRE(ProcessContext::fromJson(forged).caller.empty());
+  const auto asAlice = ProcessContext::forClient(forged, alice);
+  REQUIRE(asAlice.runId == "run-from-client");
+  REQUIRE(asAlice.caller.sub == "auth0|alice");
+  REQUIRE(asAlice.caller.name.empty());
+  // Let in without a token: nobody, not somebody called anonymous.
+  REQUIRE(ProcessContext::forClient(forged, Caller()).caller.empty());
+
+  // Read as a coordinator's, over the board's own link: taken as stated.
+  const auto linked = ProcessContext::fromLink(forged);
+  REQUIRE(linked.caller.sub == "auth0|bob");
+  REQUIRE(linked.caller.name == "Bob");
+  REQUIRE(linked.requestId.empty());
+  // A caller without a `sub` is nobody, not somebody with half an identity.
+  REQUIRE(ProcessContext::fromLink(json{{"caller", {{"email", "x@y.z"}}}}).caller.empty());
+
+  // And whoever began a run began everything invoked from inside it.
+  REQUIRE(ProcessContext::childOf(linked).caller.sub == "auth0|bob");
 }

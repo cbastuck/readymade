@@ -60,6 +60,10 @@ The exported file is what hkp-node's SQL service imports — load it with
 [SQL Import](./sql-import-board.md), and a board on hkp-node that names the
 same database carries on with the same tables.
 
+To look into the databases a server keeps instead, use
+[SQL Explorer (hkp-node)](./sql-explorer-node-board.md): the same board with
+the runtime changed.
+
 ## Try it
 
 Open it. Nothing to install; if the list is empty, a board using the browser's

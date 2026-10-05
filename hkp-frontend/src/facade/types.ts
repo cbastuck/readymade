@@ -39,8 +39,8 @@ export type SetStateAction = {
 // *is*, this says do this now. Without it a board could only reach a service by
 // writing into its configuration, which meant anything a button had to cause
 // was smuggled in as a config field the service read as a command.
-// `$$input`, { "$state": ... }, { "$now": true } and { "$uuid": true } are
-// resolved when the action runs. The last two let the exact identity and time
+// `$$input`, { "$state": ... }, { "$user": ... }, { "$now": true } and
+// { "$uuid": true } are resolved when the action runs. The last two let the exact identity and time
 // of an event be stored and forwarded together.
 export type ProcessAction = {
   type: "process";
@@ -207,6 +207,16 @@ export type TextWidget = {
   // a note on what a control is for. The `placeholder` is then the whole text,
   // since there is never a value to replace it.
   source?: FacadeWidgetSource;
+  // A value that is not a service's to say: something another widget
+  // published to facade state ({ "$state": "key" }), or who the facade is
+  // being shown to ({ "$user": "name" | "email" }) — "Booking as …". Shown in
+  // place of the source's value whenever it has something in it, with the
+  // placeholder standing in when it does not.
+  //
+  // { "$user": … } is for *showing* somebody who they are. A service that has
+  // to know who is calling reads the run's caller, which the server states;
+  // nothing a facade can put in a payload proves it.
+  value?: FacadeStateRef | FacadeUserRef | string;
   // Offers the value for the clipboard, for a value whose point is being taken
   // somewhere else rather than read.
   copyable?: boolean;
@@ -451,6 +461,10 @@ export type DataTableWidget = {
 
 // A state reference used in widget props to read from facade state.
 export type FacadeStateRef = { $state: string };
+
+// Who the facade is being shown to: the signed-in address, or what the board
+// calls them. Usable wherever a `$state` reference is; see FacadeIdentity.
+export type FacadeUserRef = { $user: "email" | "name" };
 
 // Renders one child widget per item in an array — a set of controls a board
 // cannot write out by hand because it does not know, at design time, how many

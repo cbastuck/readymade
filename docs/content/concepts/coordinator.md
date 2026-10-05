@@ -189,12 +189,16 @@ Per board, in `BoardSession`:
 | `runtimeErrors` | why each runtime is not as the board wants it — what `error` names |
 | `mountAddresses` | what each service published, keyed `runtimeId/serviceUuid` |
 | `serviceStates`, `registries` | the board as the coordinator knows it — what an attached browser renders |
-| `bridges` | every browser currently watching, each with the runtime ids it hosts |
-| `seq` | ordering, so a browser can tell it missed an update |
+| `bridges` | every browser currently attached, each with what it is to the board (owner or member), who attached with it, the runtime ids it hosts, and its own `seq` — ordering, so a browser can tell it missed an update |
+| `access` | what the board's facade lets a member do and see, read from the facade once per session |
+
+Who a board is shared with is not among them: the member list belongs to the
+board and outlives every session, so `BoardCoordinator` keeps it and a session
+is told who it is admitting.
 
 **It persists the board, not the run.** `hkp-node/src/coordinator/fileBoardStore.ts`
 writes `userId`, `boardName`, `createdAt`, `config`, whether the board was
-stopped, and the hashes of its tickets — and nothing else: built runtimes, live
+stopped, the hashes of its tickets and its member list — and nothing else: built runtimes, live
 state, registries, mount addresses and status each describe one run against
 processes that may not exist on load. A restored board that was running
 therefore comes back **waiting** — in `error`, naming each runtime — and builds
@@ -205,20 +209,23 @@ needed for that, which is what a ticket is for.
 
 ## The bridge
 
-One WebSocket per attached browser, at `/coordinator/bridge`, set up in
-`hkp-node/src/index.ts` and handed to `BoardSession.registerBrowserSocket()`.
+One WebSocket per attached browser, at `/coordinator/bridge`. Who may have one
+is decided in `hkp-node/src/coordinator/bridge.ts` — the board's owner, or
+somebody on its member list — and the socket is then handed to
+`BoardSession.registerBrowserSocket()` with that role.
 Message shapes live in `hkp-node/src/coordinator/bridgeProtocol.ts`; the browser
 half is `hkp-frontend/src/views/cloud/useCoordinatorBridge.ts` and
 `coordinatorSnapshot.ts`.
 
 | Direction | Message | Meaning |
 |---|---|---|
-| → browser | `snapshot` | the whole board at a `seq`: config, each runtime's registry, each service's state |
+| → browser | `snapshot` | the whole board at a `seq`: config, each runtime's registry, each service's state — and what the browser is to it (`role`, `you`). For a member, a projection of all that |
 | → browser | `serviceState` | one service's state changed |
 | → browser | `notification` | a service's output — *not* state; a Monitor's message never appears in `getState()` |
 | → browser | `processRuntime` | run this data through a **browser** runtime the coordinator cannot host |
 | → coordinator | `resync` | I reconnected or saw a gap — tell me the board again |
 | → coordinator | `configureService` | configure a service on a runtime you own |
+| → coordinator | `processService` | have a service do its job with a payload, from that service onward — a facade's `process` action. Answered with `response`: accepted, or why not |
 | → coordinator | `result-from-browser` | what that browser runtime produced, so the chain can continue |
 | → coordinator | `log` | an entry from a browser runtime, which has no other route into the board's log |
 
@@ -227,6 +234,12 @@ Two consequences worth holding on to:
 - **A cloud board with a browser runtime cannot run headless.** The coordinator
   routes results into it over a bridge, so that link of the chain stalls with no
   viewer attached (`routeResult()` / `nextRuntime()`).
+- **A run begun over the bridge is the browser's.** Its caller is whoever
+  attached with that bridge, established when it was admitted and carried
+  across every runtime the run reaches. Nothing in a message can change it.
+- **A member is not sent the board.** Their bridge gets the facade and what it
+  reads, may ask for what the facade asks for, and hosts no runtime. The rules
+  are in **Cloud boards** (`concepts/cloud-boards.md#sharing-a-board-members`).
 - **Attaching is a read.** `views/cloud/bridgeRuntimeApi.ts` builds scopes that
   open no socket, because the bridge already carries every runtime's state and a
   cloud runtime may live where the browser has no route at all. Structural edits
@@ -261,10 +274,11 @@ under `hkp-coordinators` (`restoreCoordinators()` / `storeCoordinators()`).
 | Server-side role | `hkp-node/src/coordinator/coordinator.ts` (`BoardCoordinator`) |
 | One board being coordinated | `hkp-node/src/coordinator/session.ts` (`BoardSession`) |
 | HTTP API | `hkp-node/src/coordinator/router.ts` |
-| Bridge socket | `hkp-node/src/index.ts`, `hkp-node/src/coordinator/bridgeProtocol.ts` |
+| Bridge socket | `hkp-node/src/coordinator/bridge.ts`, `bridgeProtocol.ts`, mounted in `hkp-node/src/index.ts` |
+| Members and what a facade grants them | `hkp-node/src/coordinator/members.ts`, `facadeAccess.ts` |
 | Persistence | `hkp-node/src/coordinator/boardStore.ts`, `fileBoardStore.ts` |
 | Tickets and the runtime servers connected with them | `hkp-node/src/coordinator/participants.ts`, `join.ts`, `participantProtocol.ts` |
-| Tests that pin the rules | `hkp-frontend/src/core/tests/coordinator-ownership.test.tsx`, `board-unmount.test.tsx`; `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts` |
+| Tests that pin the rules | `hkp-frontend/src/core/tests/coordinator-ownership.test.tsx`, `board-unmount.test.tsx`; `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts`, `bridge-process.test.ts`, `board-members.test.ts` |
 
 ---
 

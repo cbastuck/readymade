@@ -46,8 +46,13 @@ function attached() {
     ],
   });
   const configureRemoteService = vi.fn(async () => ({ logToConsole: false }));
-  const api = createBridgeRuntimeApi({ snapshot, configureRemoteService });
-  return { api, snapshot, configureRemoteService };
+  const processRemoteService = vi.fn(async () => ({ accepted: true }));
+  const api = createBridgeRuntimeApi({
+    snapshot,
+    configureRemoteService,
+    processRemoteService,
+  });
+  return { api, snapshot, configureRemoteService, processRemoteService };
 }
 
 describe("restoring an attached runtime", () => {

@@ -192,11 +192,17 @@ has no route to it at all.
 |---|---|
 | Reads | from the coordinator's snapshot (`coordinatorSnapshot.ts`) — config, each runtime's registry, each service's live state |
 | Configure | a request over the bridge; the coordinator makes the call |
+| Process at a service | a request over the bridge (`processService`) — what a facade's `process` action means here. The coordinator begins the run on the runtime holding the service, answers once the work is taken, and carries what the pipeline produces to the board's next runtime |
 | Notifications | their own bridge message. They are **not** state — a Monitor's output is deliberately absent from `getState()`, so a browser rendering state alone would show an empty Monitor on a running board |
 | Structural edits | refused. Adding a service means owning the board |
 
 Leaving the view closes the bridge scopes; it does not delete runtimes. A
 deployed board keeps running.
+
+Nothing here dials a runtime, and that is a rule rather than a convenience: a
+request the browser wrote itself would go around the one party that can say
+who is calling. `processService` in `facade/boardServices.ts` therefore asks
+the runtime's own API, which for an attached scope is the bridge.
 
 Editing a deployed board means editing it in a playground and deploying again —
 or forking it, below.
@@ -293,6 +299,157 @@ separate start path.
 
 ---
 
+## Who began a run
+
+A deployed board is one set of runtimes that several browsers may act on, so
+"who did this" cannot be a field of the request — a payload naming its sender
+proves nothing about them. It travels with the **run** instead
+(`ProcessContext.caller` in `hkp-node/src/types.ts`):
+
+```ts
+caller?: { sub: string; email?: string; name?: string };
+```
+
+`email` is there only when the token carried a **verified** one. `name` is what
+the board's member list calls that address, set by the coordinator and absent
+everywhere else. A run begins in one of three ways, and each has its own code
+path — not one parser with a flag:
+
+| Entered by | Caller |
+|---|---|
+| A client holding a token — `POST /runtimes/:id`, `POST …/services/:uuid/process`, a `processRuntime` on the runtime's socket | whatever the request says is never read; it is whoever the token was verified as (`contextForClient`) |
+| A coordinator, over a participant link | taken as stated — the link is the board's own, and the coordinator on it is what verified the person (`contextFromLink`) |
+| Nobody — a timer, a request at a mount, a service emitting by itself | none |
+
+A server without authentication resolves everyone to one anonymous tenant.
+That is **no caller**, not a caller called anonymous: otherwise everybody on a
+development machine would be the same person.
+
+**The run survives the chain.** A participant's `result` is `{ data, context }`,
+the coordinator hands that context to the next runtime, and a browser runtime
+in between is told the run but not trusted with it — what continues is the
+context the coordinator held. Without this the caller would be known to the
+first runtime of a board and lost to the second. Nested pipelines inherit it
+through `childRun`.
+
+A service asks the run, never its input. [`sql`](../services/sql.md) binds
+`$caller_email`, `$caller_name` and `$caller_sub` from it; a log entry carries
+the caller's `sub`, so the owner's run log answers "who did this" without
+collecting addresses.
+
+All three runtime servers do this the same way — hkp-node (`runtime.ts`),
+hkp-python (`runtime.py`) and hkp-rt (`process_context.h`) each keep the
+client's reader and the link's reader apart — so a run that crosses languages
+keeps its caller.
+
+## Sharing a board: members
+
+A deployed board has one **owner** — whoever deployed it, in whose tenant its
+runtimes run and its data lives — and a list of **members**: people who may
+attach to that board and use its facade, and nothing else. The list is the
+membership.
+
+```
+GET    /coordinator/users/:username/boards/:boardName/members
+POST   /coordinator/users/:username/boards/:boardName/members          { email, name }
+DELETE /coordinator/users/:username/boards/:boardName/members/:email
+GET    /coordinator/shared      → boards whose list names the caller's email
+```
+
+An entry is a **verified email** and a **name**. The name is the owner's to
+set: it is what other members see where the board shows who did something, and
+a name from the person's own token would let them appear as someone else.
+`POST` adds an entry or renames the one with that email. The list is kept by
+the coordinator beside the board — in `PersistedBoard`, never in the board
+document — so it survives the board being deployed again and goes when the
+board is deleted.
+
+### Two questions, not one
+
+`auth.ts` separates who somebody **is** from what they may **own**:
+
+- `identifyToken` — signature, audience, `sub`; the email only if
+  `email_verified`, normalised. An unverified address is dropped, not refused.
+- `authorizeOwner` — that, then the server's allowlist. What every route uses
+  unless it says otherwise.
+
+`ALLOWED_EMAILS` therefore gates **who may own** — runtimes, boards — and a
+board's list gates who may attach to that board. Two paths authenticate their
+own callers and are named explicitly, the way the join endpoint is:
+`GET /coordinator/shared` (`addSelfAuthenticatedRoute`) and the bridge upgrade.
+Everything else a member's token tries is refused as before.
+
+### Attaching by role
+
+A bridge names an owner and a board (`coordinator/bridge.ts`). Admitted: the
+owner (`sub` matches and passes `authorizeOwner`), or a verified email on that
+board's list. Anybody else is closed on the way an unknown board is — after
+the same wait, saying the same nothing. Each bridge remembers its caller and
+role; a redeploy carries both into the new session and **asks the list again**.
+
+| | Owner | Member |
+|---|---|---|
+| Sent | the board, every service's state, the log | a **projection** |
+| `resync` | yes | yes |
+| `processService` | at any service | only at a service the facade names in a `process` action |
+| `configureService`, `log`, `result`, `result-from-browser` | yes | refused |
+| Hosts browser runtimes | yes | never |
+
+**A member is sent a projection, not the board** (`coordinator/facadeAccess.ts`).
+A board's config carries service state and state can carry credentials, so
+hiding the editor would mean little if the bridge sent the JSON. The
+projection is the facade; for each service the facade names its `uuid`,
+`serviceId` and `serviceName`, and of its state only the paths the facade's
+sources read; and whether the board is running. No runtime address, no
+statement, no registry, no log.
+
+**The entry point is the capability, not the payload.** Naming a service in a
+`process` action makes it member-callable with *any* payload — a custom client
+is not bound to what the widget would send. So everything that matters has to
+be checked behind the entry point, from the run's caller. The
+[court-booking board](../boards/court-booking-demo-board.md) is the worked
+example.
+
+**Who hears what.** A notification raised inside a run somebody began goes to
+**that caller's bridges only** — not to other members, and not to the owner.
+One from a run nobody began goes to everyone. A member is sent only
+notifications from services the facade reads, and never the runtime's own
+account of its flow (`__internal`), which carries the data passing through.
+
+**A member's bridge never hosts a runtime.** It is never sent `processRuntime`
+and is not a target when the chain reaches a browser runtime. A board with a
+browser runtime still works for members; that runtime runs only while its
+owner is attached, which is what "a browser runtime with nobody attached"
+already means.
+
+**Removing a member closes their bridges at once** (close code 4403), and a
+client told that does not reconnect.
+
+**Bounds**: members per board, bridges per member, and a member's process
+calls per minute — `HKP_COORDINATOR_MAX_MEMBERS` (200),
+`HKP_COORDINATOR_MAX_MEMBER_BRIDGES` (4),
+`HKP_COORDINATOR_MAX_MEMBER_PROCESS_PER_MINUTE` (120).
+
+### What is still open
+
+- **Telling everyone something changed.** With private notifications, one
+  member's calendar does not move when another books; it is right again on
+  their next action. A live board needs a way for a run to say "everyone, look
+  again" without sending anyone's view.
+- **A service that speaks after its run ended** — from a timer or a callback —
+  has no run: its notification goes to everyone and its result carries no
+  caller. `sql` does neither; anything asynchronous has to be checked before
+  it is used on a shared board.
+- **Shared state.** `sql` keeps `error` and `lastCount` in its state, so a
+  facade reading them shows what the last caller left.
+- **Members cannot configure.** A knob or field that configures a service is a
+  facade action a member cannot take.
+- **A bridge outlives its token.** The socket is authenticated once, at
+  upgrade. Removal evicts; expiry does not.
+- **hkp-rt has no nested runs to inherit into.** Its sub-pipelines run without
+  a context of their own, so a caller is carried across its runtimes and into
+  its log, and not into a scope. Nothing there reads one yet.
+
 ## Persistence, and what deliberately is not persisted
 
 Enabled with `COORDINATOR_ENABLED=true`. Boards are one JSON file each under
@@ -300,7 +457,8 @@ Enabled with `COORDINATOR_ENABLED=true`. Boards are one JSON file each under
 to the empty string keeps them in memory instead.
 
 It persists `userId`, `boardName`, `createdAt`, `config`, whether the board was
-**stopped**, and the **hashes of its tickets** — the board, not the run. Built
+**stopped**, the **hashes of its tickets** and its **member list** — the board,
+not the run. Built
 runtimes, live service state, registries, mount addresses and status each
 describe one run against processes that may not exist on load, so writing them
 down would persist claims that are false when read back.
@@ -401,6 +559,16 @@ Stopping the original and deploying the fork stays the user's call.
   cloud* / *Stopped* / *Failed to start* (`views/start/useCloudBoardsFolder.ts`).
 - **Open one**: the Cloud Boards view on desktop (`views/cloud/index.tsx`), the
   Cloud tab on mobile (`views/cloud/mobile/MobileCloudBoards.tsx`).
+- **Share one**: **Members** on an open board — an address and a name per
+  entry, and *Copy link* (`views/cloud/MembersDialog.tsx`).
+- **Find what is shared with you**: *Shared with me* under each coordinator,
+  in the same three places. Opening one renders the **facade from the
+  projection** — there is no board underneath to show
+  (`views/cloud/SharedBoard.tsx`).
+- **A link to a shared board** names the coordinator, the owner and the board,
+  and is not a credential (`views/cloud/sharedLink.ts`). A client never sends a
+  token to a coordinator the person does not already keep: a link naming any
+  other host asks first, otherwise a link would be a way to collect tokens.
 - **Coordinators themselves** are `{ name, url }` pairs in `localStorage` under
   `hkp-coordinators` (`hkp-frontend/src/common.tsx`), managed in the
   Manage-coordinators dialog. The same host also serves runtimes, so it appears
@@ -435,6 +603,11 @@ registers only when asked.
   error that names it; a browser runtime away is normal operation.
 - **Reconnection is a real state**, on both kinds of connection. A dropped
   bridge re-snapshots; a runtime server that returns is picked up or rebuilt.
+- **A caller is stated, never read.** Anything that begins a run for a client
+  goes through `contextForClient`; only a participant link is believed.
+- **What a member can reach is what the facade names.** A new bridge message
+  is the owner's unless it is added to the member's short list on purpose, and
+  anything new sent to browsers has to say what a member gets of it.
 - **Mount references, not addresses, are what a board stores** — and names, not
   addresses, for its runtime servers. Resolving a mount belongs to the
   coordinator; resolving a remote belongs to the person's client.
@@ -454,12 +627,14 @@ registers only when asked.
 | Fork | `hkp-frontend/src/core/forkBoard.ts` |
 | Coordinator role, sessions | `hkp-node/src/coordinator/coordinator.ts`, `session.ts` |
 | HTTP API | `hkp-node/src/coordinator/router.ts` (`/coordinator/users/:username/boards…`) |
-| Bridge socket | `hkp-node/src/index.ts` (`/coordinator/bridge`), `coordinator/bridgeProtocol.ts` |
+| Bridge socket | `hkp-node/src/coordinator/bridge.ts` (who is admitted, as what), `coordinator/bridgeProtocol.ts`, mounted in `hkp-node/src/index.ts` at `/coordinator/bridge` |
+| Members | `hkp-node/src/coordinator/members.ts`, `facadeAccess.ts` (what a facade grants, the projection); `hkp-frontend/src/views/cloud/MembersDialog.tsx`, `SharedBoard.tsx`, `sharedLink.ts` |
+| Who began a run | `hkp-node/src/runtime.ts` (`contextForClient`, `contextFromLink`, `childRun`), `hkp-node/src/auth.ts` (`identifyToken`, `authorizeOwner`); `hkp-python/src/hkp/runtime.py`, `auth.py`; `hkp-rt/lib/src/process_context.h`, `lib/src/http/server.cpp` |
 | Board + log persistence | `hkp-node/src/coordinator/fileBoardStore.ts`, `logStore.ts` |
 | Tickets, joining, the participant protocol | `hkp-node/src/coordinator/participants.ts`, `join.ts`, `participantProtocol.ts` |
 | Bytes between runtimes | `hkp-node/src/coordinator/binaryFrame.ts`, `hkp-python/src/hkp/binary_frame.py`, `hkp-rt/lib/src/binary_frame.h`, `hkp-frontend/src/views/cloud/bridgeBinary.ts` |
 | A runtime server's link to a coordinator | `hkp-node/src/coordinatorLinks.ts`, `hkp-python/src/hkp/coordinator_links.py`, `hkp-rt/lib/src/coordinator_links.cpp` |
-| Tests | `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts`, `board-log.test.ts`; `hkp-python/tests/test_coordinator_links.py`; `hkp-frontend/src/views/cloud/tests/`, `core/tests/deploy*.test.*`; `e2e/tests/cloud/` |
+| Tests | `hkp-node/tests/coordinator-*.test.ts`, `bridge-snapshot.test.ts`, `bridge-process.test.ts`, `board-members.test.ts`, `caller.test.ts`, `court-booking-board.test.ts`, `board-log.test.ts`; `hkp-python/tests/test_caller.py`; `hkp-rt/tests/runtime_output_sink.test.cpp`; `hkp-python/tests/test_coordinator_links.py`; `hkp-frontend/src/views/cloud/tests/`, `core/tests/deploy*.test.*`; `e2e/tests/cloud/` |
 
 ---
 

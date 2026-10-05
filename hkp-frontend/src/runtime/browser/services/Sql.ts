@@ -33,6 +33,14 @@
  * board writes no parameter list at all. Values are always bound, never
  * interpolated.
  *
+ * **Who is calling is bound by the service, never by the input.** Three
+ * names are reserved, as in hkp-node — `$caller_email`, `$caller_name`,
+ * `$caller_sub` — and an input field of the same name is ignored. Here they
+ * are whoever is signed in to this app, and `NULL` when nobody is. Nothing
+ * verifies that: the browser is the person, and the tables are theirs alone.
+ * What the names buy in a browser is that a board's statements read the same
+ * on both runtimes.
+ *
  * **A database can leave as SQL and arrive as SQL.** `export` hands on the
  * whole database as an SQLite dump and `import` runs one arriving as input,
  * in this runtime and in hkp-node alike (`sql-dump.ts`), which is how tables
@@ -72,6 +80,14 @@ type State = {
 
 /** `$name`, `:name` and `@name` are all named parameters to SQLite. */
 const NAMED_PARAMETER = /[$:@]([A-Za-z_][A-Za-z0-9_]*)/g;
+
+/** The parameter names bound from who is calling rather than from the input. */
+const CALLER_PARAMETERS = ["caller_email", "caller_name", "caller_sub"] as const;
+type CallerParameter = (typeof CALLER_PARAMETERS)[number];
+
+function isCallerParameter(name: string): name is CallerParameter {
+  return (CALLER_PARAMETERS as readonly string[]).includes(name);
+}
 
 /**
  * A value SQLite can store. Booleans and objects have no column type, and a
@@ -293,13 +309,32 @@ class Sql extends ServiceBase<State> {
       input && typeof input === "object" && !Array.isArray(input)
         ? (input as Record<string, unknown>)
         : {};
+    const caller = this.caller();
     const params: SqlParams = {};
     for (const match of codeOf(this.state.statement).matchAll(
       NAMED_PARAMETER,
     )) {
-      params[match[0]] = bindable(record[match[1]]);
+      const name = match[1];
+      // Never the input's to supply, present or not.
+      params[match[0]] = isCallerParameter(name)
+        ? bindable(caller[name])
+        : bindable(record[name]);
     }
     return params;
+  }
+
+  /**
+   * Who is signed in to this app, under the names a statement asks by. The
+   * email is kept the way a server keeps a verified one, so a row written here
+   * and a row written there compare equal.
+   */
+  private caller(): Record<CallerParameter, string | undefined> {
+    const user = this.app.getAuthenticatedUser?.();
+    return {
+      caller_email: user?.email?.trim().toLowerCase() || undefined,
+      caller_name: user?.username || undefined,
+      caller_sub: user?.userId || undefined,
+    };
   }
 
   /**

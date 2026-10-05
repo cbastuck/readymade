@@ -44,12 +44,55 @@ same pipeline and the query at the end re-reads what changed, which is why the
 calendar is correct after somebody else's booking without anything having to
 push an update.
 
+## Who is booking
+
+Every hour is booked in somebody's name, and the board never takes that name
+from the request. Each statement works out who is acting the same way:
+
+```sql
+CASE WHEN $caller_sub IS NULL THEN $member ELSE $caller_email END
+```
+
+`$caller_email` is the address of whoever began the run, **stated by the server
+that verified their sign-in** — see
+[SQL: who is calling](../services/sql.md#who-is-calling). The typed `$member`
+counts only when nobody is signed in at all, which is how the board still runs
+against a local server with no accounts. Somebody signed in without a verified
+address is nobody's member and books nothing; they are not whoever the payload
+says.
+
+This is what makes the board safe to **share**. Deployed to a coordinator and
+[shared with a club](../concepts/cloud-boards.md#sharing-a-board-members),
+every tap of every member enters the same pipeline in the owner's database,
+and a member's client is free to send any payload it likes. It can claim to be
+someone else; the statements do not ask it. What it sends is also held to the
+club's week, courts and whole hours by the insert itself, since the facade's
+buttons are not the only thing that can call it.
+
+Other members are never shown an address. A taken hour is labelled with the
+name the club's member list gave its holder when they booked, and *Member*
+where it gave none.
+
 ## The facade
 
-Two tabs: **Court**, with the calendar, and **Who you are**, holding the
-identity used for *one hour per member*. Two tabs because they belong to
-different moments — you say who you are once and book every week.
+Two tabs: **Court**, with the calendar, and **Who you are**, which says who you
+are booking as (`{ "$user": "name" }`) and keeps a field for running without
+sign-in. Two tabs because they belong to different moments — who you are is
+settled once and you book every week.
+
+## Sharing it with a club
+
+1. Deploy the board to a coordinator.
+2. Open it in Cloud Boards and choose **Members**: one entry per person, the
+   address they sign in with and the name the others should see.
+3. Send them the link from *Copy link*. It opens only for somebody on the list.
+
+Each member sees the calendar from their own side and nothing else of the
+board. One thing to know: a member's calendar is redrawn by their own actions,
+so somebody else's booking shows on their next tap rather than at once.
 
 ## Try it
 
-Needs hkp-node on port 8080. The schema is created on first run.
+Needs hkp-node on port 8080. The schema is created on first run, in a table of
+its own (`court_booking`) — the board's earlier `booking` table is left as it
+was.

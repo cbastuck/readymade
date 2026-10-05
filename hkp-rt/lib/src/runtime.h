@@ -82,6 +82,9 @@ public:
   // runtime holds no service by that id.
   Data processAt(const std::string& instanceId, Data data,
                  ProcessContext context = ProcessContext::newRun());
+  // Whether `processAt` has somewhere to begin for this address: one of this
+  // runtime's own services, or a scope among them to walk the rest of it.
+  bool holdsService(const std::string& instanceId) const;
 
   // ── RuntimeHost overrides ────────────────────────────────────────────────
   Data processFrom(const Service &service, Data data, bool advanceBefore=true, std::function<void(Data)> callback = nullptr) override;
@@ -118,7 +121,10 @@ public:
   // Handles a raw notification-WebSocket frame routed here by the Server's WS
   // layer (after the connection bound itself to this runtime via the protocol
   // handshake). Binary frames are YAS-encoded messages; text frames are JSON.
-  void onWebSocketMessage(const std::string& message, bool isBinary);
+  // `caller` is whoever opened the socket the message arrived on, as the
+  // server verified them; nobody where it let the socket in without a token.
+  void onWebSocketMessage(const std::string& message, bool isBinary,
+                          const Caller& caller = Caller());
 
   json appendService(const ServiceConfiguration& newService);
   bool insertService(std::shared_ptr<Service> newService, std::shared_ptr<Service> predecessor = nullptr);
@@ -155,8 +161,8 @@ private:
   void onProcessBegin();
   const Data& onProcessEnd(const Data& result, ProcessContext context = {}, std::function<void(Data)> callback = nullptr);
 
-  void onSessionJSONData(json msg);
-  void onSessionBinaryData(Data data, MessageHeader header);
+  void onSessionJSONData(json msg, const Caller& caller);
+  void onSessionBinaryData(Data data, MessageHeader header, const Caller& caller);
   
   bool storePendingCallback(const std::string& requestId, std::function<void(Data)> callback);
   std::function<void(Data)> findAndRemovePendingCallback(const std::string& requestId);

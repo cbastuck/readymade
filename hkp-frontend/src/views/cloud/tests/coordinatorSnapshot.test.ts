@@ -235,3 +235,62 @@ describe("resolving mounts against what the coordinator reported", () => {
     });
   });
 });
+
+describe("what the browser is to the board", () => {
+  it("is what the snapshot says, and nothing before one", () => {
+    const store = new CoordinatorSnapshotStore();
+    expect(store.getRole()).toBeNull();
+    expect(store.getYou()).toBeNull();
+
+    store.apply({
+      type: "snapshot",
+      seq: 1,
+      boardName: "court",
+      role: "member",
+      you: { email: "anna@example.com", name: "Anna" },
+      runtimes: [],
+    });
+
+    expect(store.getRole()).toBe("member");
+    expect(store.getYou()).toEqual({ email: "anna@example.com", name: "Anna" });
+  });
+
+  it("keeps the same identity object while it says the same thing", () => {
+    // Read as a store snapshot, so an unchanged identity must not look new.
+    const store = new CoordinatorSnapshotStore();
+    const told = (seq: number, name: string) =>
+      store.apply({
+        type: "snapshot",
+        seq,
+        boardName: "court",
+        role: "member",
+        you: { email: "anna@example.com", name },
+        runtimes: [],
+      });
+
+    told(1, "Anna");
+    const first = store.getYou();
+    told(2, "Anna");
+    expect(store.getYou()).toBe(first);
+    told(3, "Anna K.");
+    expect(store.getYou()).toEqual({ email: "anna@example.com", name: "Anna K." });
+  });
+
+  it("is forgotten with the rest on a reconnect", () => {
+    const store = new CoordinatorSnapshotStore();
+    store.apply({
+      type: "snapshot",
+      seq: 1,
+      boardName: "court",
+      role: "owner",
+      you: { email: "o@example.com" },
+      runtimes: [],
+    });
+
+    store.clear();
+
+    expect(store.getRole()).toBeNull();
+    expect(store.getYou()).toBeNull();
+  });
+});
+

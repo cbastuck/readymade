@@ -102,6 +102,9 @@ struct LogEntry
   nlohmann::json data;
   /// How long the call took, when the entry records one.
   double durationMs = -1;
+  /// The `sub` of whoever began the run, when somebody did. Enough to answer
+  /// "who did this" from a board's log without it collecting addresses.
+  std::string caller;
 
   nlohmann::json toJson() const
   {
@@ -119,6 +122,8 @@ struct LogEntry
       value["data"] = data;
     if (durationMs >= 0)
       value["durationMs"] = durationMs;
+    if (!caller.empty())
+      value["caller"] = caller;
     return value;
   }
 };

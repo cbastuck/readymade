@@ -495,3 +495,54 @@ describe("the browser SQL database store", () => {
     ).toBe("only the organiser");
   });
 });
+
+describe("the caller parameters", () => {
+  const WHOAMI =
+    "SELECT $caller_email AS email, :caller_name AS name, @caller_sub AS sub, $other AS other";
+
+  function createAs(user: unknown) {
+    const { svc, app } = create({
+      database: uniqueName(),
+      mode: "query",
+      statement: WHOAMI,
+    });
+    (app as any).getAuthenticatedUser = () => user;
+    return svc;
+  }
+
+  it("are whoever is signed in to the app, over an input field of the same name", async () => {
+    const svc = createAs({
+      userId: "auth0|ada",
+      username: "Ada",
+      email: " Ada@Example.com ",
+      idToken: "t",
+    });
+
+    const { rows } = await svc.process({
+      caller_email: "mallory@example.com",
+      caller_name: "Mallory",
+      caller_sub: "auth0|mallory",
+      other: "from input",
+    });
+
+    expect(rows).toEqual([
+      {
+        email: "ada@example.com",
+        name: "Ada",
+        sub: "auth0|ada",
+        other: "from input",
+      },
+    ]);
+  });
+
+  it("are NULL when nobody is signed in, whatever the input says", async () => {
+    const svc = createAs(null);
+
+    const { rows } = await svc.process({
+      caller_email: "mallory@example.com",
+      caller_sub: "auth0|mallory",
+    });
+
+    expect(rows).toEqual([{ email: null, name: null, sub: null, other: null }]);
+  });
+});

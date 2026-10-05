@@ -5,6 +5,12 @@ import { copyToClipboard } from "hkp-frontend/src/clipboard";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { usePressFeedback } from "../../pressFeedback";
 import { useNotificationValue } from "./StatusIndicatorRenderer";
+import { useFacadeState } from "../../FacadeStateContext";
+import {
+  isUserRef,
+  resolveUserRef,
+  useFacadeIdentity,
+} from "../../FacadeIdentity";
 
 /**
  * Whatever a service is saying, as text.
@@ -83,14 +89,25 @@ export function TextRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<TextWidget>) {
-  const value = useNotificationValue(boardContext, widget.source);
+  const said = useNotificationValue(boardContext, widget.source);
+  const { state } = useFacadeState();
+  const identity = useFacadeIdentity(boardContext);
+  // A value of the facade's own — state another widget published, or who is
+  // looking — is shown in place of what the service says.
+  const own = isUserRef(widget.value)
+    ? resolveUserRef(widget.value, identity)
+    : widget.value && typeof widget.value === "object"
+      ? state[widget.value.$state]
+      : widget.value;
+  const value = own ?? said;
   const text = extractText(value, undefined, widget.pretty);
   const shown = text && text.trim() ? text : (widget.placeholder ?? "");
   const isPlaceholder = !(text && text.trim());
   const wraps = widget.wrap !== false;
   // With no source the placeholder is the text itself; with one it stands in
   // for a value that has not arrived.
-  const standingIn = !!widget.source && isPlaceholder;
+  const standingIn =
+    (!!widget.source || widget.value !== undefined) && isPlaceholder;
   // A link only where there is both somewhere to go and something to click.
   // Offering a stood-in placeholder as a link is worse than plain text: it
   // dresses up an absent value as something to open.

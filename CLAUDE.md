@@ -47,10 +47,21 @@ again. Which side a runtime is cleaned up by is declared when it is created, in 
 payload: `garbageCollected: true` reaps it when its last client disconnects (what a browser
 asks for), and saying nothing persists it until an explicit DELETE (what a coordinator gets).
 
+A deployed board has one **owner** and may be **shared**: the coordinator keeps a list of
+members beside the board — verified emails, each with a name the owner gives it — and
+whoever is on it may attach and use the board's **facade**, nothing else. A member is sent
+a projection (the facade and what it reads), may ask only for what the facade asks for, and
+hosts no runtime. Every run carries its **caller** (`ProcessContext.caller`), stated by the
+server that verified the token and never read from a request; it survives the hop between
+a board's runtimes, and a service that needs to know who is acting asks the run — `sql`
+binds it as `$caller_email`, `$caller_name`, `$caller_sub`. The server's `ALLOWED_EMAILS`
+gates who may *own*; a board's list gates who may attach to that board.
+
 - `hkp-frontend/src/core/coordinator.ts` — the interface and the browser implementation
 - `hkp-frontend/src/core/deploy.ts` — handing a board to a coordinator
 - `hkp-node/src/coordinator/` — the cloud-board coordinator
-- `docs/content/concepts/cloud-boards.md` — the provisioning walkthrough: who owns what, in what order
+- `hkp-node/src/coordinator/members.ts`, `facadeAccess.ts`, `bridge.ts` — the member list, what a facade grants, who is admitted
+- `docs/content/concepts/cloud-boards.md` — the provisioning walkthrough: who owns what, in what order; callers and members
 - `docs/content/concepts/remotes.md` — naming a runtime server, tickets, and what connects to what
 
 ### Runtime

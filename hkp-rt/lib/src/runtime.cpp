@@ -39,7 +39,8 @@ Runtime::~Runtime()
   }
 }
 
-void Runtime::onWebSocketMessage(const std::string& message, bool isBinary)
+void Runtime::onWebSocketMessage(const std::string& message, bool isBinary,
+                                 const Caller& caller)
 {
   if (isBinary)
   {
@@ -47,7 +48,7 @@ void Runtime::onWebSocketMessage(const std::string& message, bool isBinary)
     {
       MessageHeader header;
       auto data = Message::deserializeFromString(message, &header);
-      onSessionBinaryData(data, header);
+      onSessionBinaryData(data, header, caller);
     }
     catch (const std::exception& e)
     {
@@ -73,7 +74,7 @@ void Runtime::onWebSocketMessage(const std::string& message, bool isBinary)
   }
   try
   {
-    onSessionJSONData(msg);
+    onSessionJSONData(msg, caller);
   }
   catch (const std::exception& e)
   {
@@ -271,12 +272,20 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
   App* app = m_app.get();
   std::string runtimeId = m_runtimeId;
   std::string space = m_space;
-  app->postCallback([app, runtimeId, space, data, purpose, sender]() {
+  // The run this is said in, read now: by the time the callback runs the call
+  // has returned and the runtime is in another run, or in none.
+  std::optional<ProcessContext> run;
+  if (m_hasContext)
+  {
+    run = m_context;
+  }
+  app->postCallback([app, runtimeId, space, data, purpose, sender, run]() {
     try
     {
       // Before serializing for the clients watching: a sink takes the value
       // as it is, and must not lose it to a frame that cannot be built.
-      app->emitRuntimeData(runtimeId, data, purpose, sender, space);
+      app->emitRuntimeData(runtimeId, data, purpose, sender, space,
+                           run ? &*run : nullptr);
     }
     catch (const std::exception& e)
     {
@@ -380,6 +389,16 @@ Data Runtime::processAt(const std::string& instanceId, Data data, ProcessContext
   return out;
 }
 
+bool Runtime::holdsService(const std::string& instanceId) const
+{
+  if (findServiceById(instanceId) != m_services.cend())
+  {
+    return true;
+  }
+  const auto segments = splitAddress(instanceId);
+  return segments.size() > 1 && findServiceById(segments[0]) != m_services.cend();
+}
+
 void Runtime::log(const Service& svc, LogLevel level, const std::string& event,
                   const nlohmann::json& data)
 {
@@ -399,6 +418,7 @@ void Runtime::log(const Service& svc, LogLevel level, const std::string& event,
   LogEntry entry;
   entry.runId = m_context.runId;
   entry.parentRunId = m_context.parentRunId;
+  entry.caller = m_context.caller.sub;
   entry.ts = isoTimestamp();
   entry.runtimeId = m_runtimeId;
   entry.serviceUuid = svc.getId();
@@ -491,6 +511,7 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
       LogEntry done;
       done.runId = m_context.runId;
       done.parentRunId = m_context.parentRunId;
+      done.caller = m_context.caller.sub;
       done.ts = isoTimestamp();
       done.runtimeId = m_runtimeId;
       done.serviceUuid = (*next)->getId();
@@ -799,7 +820,7 @@ std::function<void(Data)> Runtime::findAndRemovePendingCallback(const std::strin
   return nullptr;
 }
 
-void Runtime::onSessionBinaryData(Data data, MessageHeader header)
+void Runtime::onSessionBinaryData(Data data, MessageHeader header, const Caller& caller)
 {
   if (header.messagePurpose == MessagePurpose::NOTIFICATION)
   {
@@ -816,11 +837,13 @@ void Runtime::onSessionBinaryData(Data data, MessageHeader header)
   }
   else
   {
-    this->process(data);
+    // A frame has no room for a run context, so the pass begins a run of its
+    // own — as whoever opened the socket.
+    this->process(data, ProcessContext::forClient(json(), caller));
   }
 }
 
-void Runtime::onSessionJSONData(json msg)
+void Runtime::onSessionJSONData(json msg, const Caller& caller)
 {
   auto data = msg["params"];
   auto context = msg["context"];
@@ -831,7 +854,9 @@ void Runtime::onSessionJSONData(json msg)
     // message: JSON has no undefined, so that is how a sender says it. The
     // first service is handed Undefined, which is what it is given anywhere
     // else nothing precedes it.
-    process(data.is_null() ? Data() : Data(data), ProcessContext::fromJson(context));
+    // The run is the one the message names. Who is calling is not the
+    // message's to say: it is whoever opened this socket.
+    process(data.is_null() ? Data() : Data(data), ProcessContext::forClient(context, caller));
   }
   else if (type == "resolveResult")
   {
