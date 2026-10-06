@@ -30,6 +30,7 @@
  */
 
 import { AppImpl, RuntimeClassType, ServiceClass, ServiceInstance } from "hkp-frontend/src/types";
+import { nestedRun } from "hkp-frontend/src/runtime/processContext";
 import ServiceBase from "./ServiceBase";
 import BrowserSubServiceUI from "./BrowserSubServiceUI";
 import BrowserRegistry from "../BrowserRegistry";
@@ -259,6 +260,9 @@ export class BrowserSubService extends ServiceBase<State> {
     if (this.state.mode === "source") {
       return this.buildBoardDescriptor();
     }
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control.
+    const run = this.app.currentContext?.(this);
 
     // Ensure scope is built before processing.
     if (!this._scope) {
@@ -271,7 +275,13 @@ export class BrowserSubService extends ServiceBase<State> {
       return this.state.stopPropagation ? null : input;
     }
     // Answered by returning, so not reported through onResult as well.
-    const result = await this._scope.next(null, input, null, false, false);
+    const result = await this._scope.next(
+      null,
+      input,
+      nestedRun(run),
+      false,
+      false,
+    );
     return this.state.stopPropagation ? null : result;
   }
 
@@ -434,6 +444,8 @@ export class BrowserSubService extends ServiceBase<State> {
     );
     // The board's assets, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    // And whoever is signed in to the app around it is signed in here.
+    scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
     // Before any service is added: a service may hold a value while it is
     // being configured (a Hold given a value to write), and it has to land in
     // the cells the scope will go on using, not in ones replaced after.

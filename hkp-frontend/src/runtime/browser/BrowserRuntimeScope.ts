@@ -69,6 +69,10 @@ export default class BrowserRuntimeScope implements RuntimeScope {
    */
   private slotsFrom: (() => SlotStore | null) | null = null;
 
+  /** Where who is signed in comes from, when this scope was not told itself;
+   *  see `delegateIdentity`. */
+  private identityFrom: (() => User | null) | null = null;
+
   /** The cells a service in this scope holds values in. */
   slots(): SlotStore {
     return this.slotsFrom?.() ?? this.ownSlots;
@@ -87,6 +91,22 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     this.slotsFrom = source;
   }
 
+  /**
+   * Take who is signed in from somewhere else rather than from this scope.
+   *
+   * A nested pipeline is a scope nobody provisions, so nobody tells it who is
+   * signed in; the service holding it points it at the app around it. Asked
+   * on each lookup, so that signing in or out is seen at any depth.
+   */
+  delegateIdentity(source: () => User | null): void {
+    this.identityFrom = source;
+  }
+
+  /** Who is signed in to the app, as a service in this scope is to see it. */
+  signedInUser(): User | null {
+    return this.identityFrom ? this.identityFrom() : this.authenticatedUser;
+  }
+
   registerLogTarget(target: (entry: LogEntry) => void): () => void {
     this.logTargets.add(target);
     return () => {
@@ -101,6 +121,28 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   emitLog(entry: LogEntry) {
     for (const target of this.logTargets) {
       target(entry);
+    }
+  }
+
+  /** The run a service is being called in; see `AppImpl.currentContext`. */
+  contextOf(svc: InstanceId): ProcessContext | undefined {
+    return this.serviceContexts.get(svc.uuid);
+  }
+
+  /** Calls one service inside a run; see `AppImpl.callInRun`. */
+  async processIn(
+    svc: ServiceInstance,
+    params: any,
+    run: ProcessContext | null | undefined,
+  ): Promise<any> {
+    if (!run) {
+      return svc.process(params);
+    }
+    this.serviceContexts.set(svc.uuid, run);
+    try {
+      return await svc.process(params);
+    } finally {
+      this.serviceContexts.delete(svc.uuid);
     }
   }
 
@@ -122,6 +164,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     };
     if (context.parentRunId) {
       entry.parentRunId = context.parentRunId;
+    }
+    if (context.caller) {
+      entry.caller = context.caller.sub;
     }
     if (this.logData && data !== undefined) {
       entry.data = data;

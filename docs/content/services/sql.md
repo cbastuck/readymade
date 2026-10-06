@@ -281,6 +281,13 @@ the account's id, `$caller_email` its address, `$caller_name` its display name
 and the tables are theirs alone. What the names buy here is that a board's
 statements read the same on both runtimes.
 
+That is for a run that began in the app. On a [deployed board](../concepts/cloud-boards.md#who-began-a-run)
+a browser runtime is also handed runs that began elsewhere, and those are
+whoever the coordinator says began them — a member, or nobody, in which case
+all three are `NULL`. They are never the person whose browser is running the
+statement. A `sql` inside a sub-service, a Switch or a track is told the same
+as one at the top of the runtime.
+
 **What it gives up is sharing.** The tables are this browser's. Two people on
 two devices see two databases, so a board whose point is that several people
 see the same rows — a booking sheet for a club, a poll — still wants hkp-node.

@@ -4,6 +4,7 @@ import {
   ServiceStateMessage,
   SnapshotMessage,
 } from "./coordinatorSnapshot";
+import { continuedRun } from "../../runtime/processContext";
 import { BoardContextState } from "../../BoardContext";
 import {
   decodeBinaryFrame,
@@ -53,11 +54,38 @@ export type CoordinatorBridge = {
  * "removed": the board was shared with this person and no longer is.
  * "not-found": no such board for them — it does not exist, or is not shared
  * with them, which a coordinator answers the same way on purpose.
+ * "too-many": the board is shared with them, and they have it open in as many
+ * places as one member may.
  */
-export type BridgeRefusal = "removed" | "not-found";
+export type BridgeRefusal = "removed" | "not-found" | "too-many";
 
-/** The close code a coordinator ends a member's bridge with on removal. */
+/**
+ * The codes a coordinator closes a bridge with when the close is an answer.
+ * Any other close — none at all, a restart, a network that went away — says
+ * nothing about the board, and the bridge is opened again.
+ */
 const CLOSE_NOT_A_MEMBER = 4403;
+const CLOSE_NO_SUCH_BOARD = 4404;
+const CLOSE_TOO_MANY_BRIDGES = 4429;
+
+/**
+ * What a close tells whoever was attaching, or null when it tells nothing.
+ *
+ * "No such board" is final only for a member: an owner's board is briefly
+ * away while it is deployed again, and their bridge keeps asking.
+ */
+function refusalOf(code: number, asMember: boolean): BridgeRefusal | null {
+  switch (code) {
+    case CLOSE_NOT_A_MEMBER:
+      return "removed";
+    case CLOSE_TOO_MANY_BRIDGES:
+      return "too-many";
+    case CLOSE_NO_SUCH_BOARD:
+      return asMember ? "not-found" : null;
+    default:
+      return null;
+  }
+}
 
 type BridgeInboundMessage =
   | {
@@ -65,6 +93,9 @@ type BridgeInboundMessage =
       runtimeId: string;
       params: unknown;
       requestId: string;
+      /** The run this belongs to and who began it, as the coordinator states
+       *  them; see `continuedRun`. */
+      context?: unknown;
     }
   | SnapshotMessage
   | ServiceStateMessage
@@ -100,9 +131,10 @@ export function useCoordinatorBridge(
   externalSnapshot?: CoordinatorSnapshotStore,
   /**
    * Attaching as somebody the board is shared with rather than as its owner.
-   * A member's bridge hosts no runtime, and a refusal is final for it: the
-   * owner's bridge keeps retrying because a board being deployed again is
-   * briefly away, while a member who is refused has been told.
+   * A member's bridge hosts no runtime, and being told there is no such board
+   * is final for it: the owner's bridge keeps retrying because a board being
+   * deployed again is briefly away, while a member who is refused has been
+   * told. A close that is not an answer is retried by either.
    */
   asMember = false,
 ): CoordinatorBridge {
@@ -163,9 +195,6 @@ export function useCoordinatorBridge(
     // shared ref), so that when onclose finally fires asynchronously it sees
     // the wrong value and triggers a spurious reconnect loop.
     let intentionallyClosed = false;
-    // Whether the coordinator told this bridge the board at all. A member's
-    // bridge that closes without having been told was not let in.
-    let attached = false;
     setRefused(null);
 
     const ws = new WebSocket(withAccessToken(wsUrl, idToken));
@@ -221,7 +250,6 @@ export function useCoordinatorBridge(
       }
 
       if (msg.type === "snapshot" || msg.type === "serviceState") {
-        attached = true;
         const { needsResync } = snapshot.apply(msg);
         if (needsResync && ws.readyState === WebSocket.OPEN) {
           // A gap: better to be told the board again than to render a view
@@ -266,7 +294,11 @@ export function useCoordinatorBridge(
         return;
       }
 
-      api.processRuntime(scope, params, null, {
+      // Run as the run the coordinator says it is, begun by whoever the
+      // coordinator says began it — never as a new one of this browser's own,
+      // which would make whatever it does the doing of the person signed in
+      // here.
+      const run = continuedRun(msg.context, {
         requestId,
         onResolve: (result: unknown) => {
           if (ws.readyState !== WebSocket.OPEN) {
@@ -282,6 +314,7 @@ export function useCoordinatorBridge(
           );
         },
       });
+      api.processRuntime(scope, params, null, run);
     };
 
     ws.onerror = () => {
@@ -290,12 +323,12 @@ export function useCoordinatorBridge(
 
     ws.onclose = (event) => {
       console.log("[bridge] Coordinator bridge disconnected");
-      const removed = event.code === CLOSE_NOT_A_MEMBER;
-      if (removed || (asMember && !attached)) {
+      const refusal = refusalOf(event.code, asMember);
+      if (refusal) {
         // Said, not retried: the answer would be the same, and a client that
         // kept asking would be knocking on a door it was shown out of.
         intentionallyClosed = true;
-        setRefused(removed ? "removed" : "not-found");
+        setRefused(refusal);
       }
       // Whatever was cached describes a session that is gone; the coordinator
       // sends a fresh snapshot when the browser attaches again.

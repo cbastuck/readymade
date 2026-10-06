@@ -36,10 +36,12 @@
 
 import {
   AppImpl,
+  ProcessContext,
   RuntimeClassType,
   ServiceClass,
   ServiceInstance,
 } from "hkp-frontend/src/types";
+import { nestedRun } from "hkp-frontend/src/runtime/processContext";
 import ServiceBase from "./ServiceBase";
 import BrowserRegistry from "../BrowserRegistry";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
@@ -135,20 +137,25 @@ export class BrowserTracks extends ServiceBase<State> {
     if (this.bypass || this.state.tracks.length === 0) {
       return input;
     }
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control.
+    const run = this.app.currentContext?.(this);
     if (this._building) {
       await this._building;
     }
 
     const results =
       this.state.run === "parallel"
-        ? await Promise.all(this.state.tracks.map((track) => this._runTrack(track, input)))
-        : await this._serially(input);
+        ? await Promise.all(
+            this.state.tracks.map((track) => this._runTrack(track, input, run)),
+          )
+        : await this._serially(input, run);
 
     const reducer = this._scopes.get(REDUCE);
     if (!reducer || this.state.reduce.length === 0) {
       return results;
     }
-    return reducer.next(null, { input, results }, null, false, false);
+    return reducer.next(null, { input, results }, nestedRun(run), false, false);
   }
 
   /** Ends every pass running inside any track or the reduce. */
@@ -253,10 +260,13 @@ export class BrowserTracks extends ServiceBase<State> {
     });
   }
 
-  private async _serially(input: any): Promise<any[]> {
+  private async _serially(
+    input: any,
+    run: ProcessContext | undefined,
+  ): Promise<any[]> {
     const results: any[] = [];
     for (const track of this.state.tracks) {
-      results.push(await this._runTrack(track, input));
+      results.push(await this._runTrack(track, input, run));
     }
     return results;
   }
@@ -265,14 +275,18 @@ export class BrowserTracks extends ServiceBase<State> {
    * One track's answer, or null where it has none. A track that throws is
    * reported and leaves a hole rather than taking the others down with it.
    */
-  private async _runTrack(track: TrackState, input: any): Promise<any> {
+  private async _runTrack(
+    track: TrackState,
+    input: any,
+    run: ProcessContext | undefined,
+  ): Promise<any> {
     const scope = this._scopes.get(track.name);
     if (track.bypass || !scope || track.pipeline.length === 0) {
       return null;
     }
     try {
       // Collected for the reduce, so not reported through onResult as well.
-      return await scope.next(null, input, null, false, false);
+      return await scope.next(null, input, nestedRun(run), false, false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.pushErrorNotification(`track '${track.name}' failed: ${message}`);
@@ -314,6 +328,8 @@ export class BrowserTracks extends ServiceBase<State> {
     );
     // The board's assets, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    // And whoever is signed in to the app around it is signed in here.
+    scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
 
     // A service inside a track that emits without being called — a Timer tick,
     // a socket — has its own answer to give; it leaves by the same door this

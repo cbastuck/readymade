@@ -192,11 +192,44 @@ describe("opening a shared board", () => {
   it("says so when the board is not shared with them, and stops asking", async () => {
     const bridge = await open();
 
-    // Closed without a word, the way an unknown board is.
-    bridge.end();
+    // The one answer for a board that is not there and a board that is not
+    // theirs.
+    bridge.end(4404);
 
     await waitFor(() =>
       expect(screen.getByText("This board is not shared with you")).toBeTruthy(),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(sockets.length).toBe(1);
+  });
+
+  it("asks again when the connection goes before the board was told, saying nothing of sharing", async () => {
+    const bridge = await open();
+
+    // No code: a coordinator restarting, a network that went away. Not an
+    // answer about the board.
+    bridge.end();
+
+    await waitFor(() => expect(sockets.length).toBe(2), { timeout: 2000 });
+    expect(screen.queryByText("This board is not shared with you")).toBeNull();
+    expect(screen.getByText("Opening…")).toBeTruthy();
+
+    // And the second try is as good as a first.
+    const again = sockets[1];
+    await waitFor(() => expect(again.last("connect")).toBeTruthy());
+    again.deliver(snapshot());
+    await waitFor(() => expect(screen.getByText("Book")).toBeTruthy());
+  });
+
+  it("says so when they have it open in too many places, and stops asking", async () => {
+    const bridge = await open();
+
+    bridge.end(4429);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("This board is open in too many places"),
+      ).toBeTruthy(),
     );
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect(sockets.length).toBe(1);

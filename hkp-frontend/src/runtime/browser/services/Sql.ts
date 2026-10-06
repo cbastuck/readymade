@@ -84,6 +84,8 @@ const NAMED_PARAMETER = /[$:@]([A-Za-z_][A-Za-z0-9_]*)/g;
 /** The parameter names bound from who is calling rather than from the input. */
 const CALLER_PARAMETERS = ["caller_email", "caller_name", "caller_sub"] as const;
 type CallerParameter = (typeof CALLER_PARAMETERS)[number];
+/** Who began a run, as the values those names are bound to. */
+type CallerValues = Record<CallerParameter, string | undefined>;
 
 function isCallerParameter(name: string): name is CallerParameter {
   return (CALLER_PARAMETERS as readonly string[]).includes(name);
@@ -219,6 +221,9 @@ class Sql extends ServiceBase<State> {
    */
   async process(input: any): Promise<any> {
     const { mode, statement, emit } = this.state;
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control.
+    const caller = this.caller();
     if (!statement.trim() && STATEMENT_MODES.includes(mode)) {
       return this.fail("sql has no statement to run");
     }
@@ -254,7 +259,7 @@ class Sql extends ServiceBase<State> {
         this.app.notify(this, { exported: name, bytes: dump.length });
         return emit === "input" ? input : dump;
       }
-      const result = this.execute(db, input);
+      const result = this.execute(db, input, caller);
       // Reported either way: what the statement did is this service's own
       // news. Only what travels to the next service is `emit`'s to decide.
       this.app.notify(this, result);
@@ -277,7 +282,11 @@ class Sql extends ServiceBase<State> {
     this.prepared.add(name);
   }
 
-  private execute(db: Database, input: unknown): Record<string, unknown> {
+  private execute(
+    db: Database,
+    input: unknown,
+    caller: CallerValues,
+  ): Record<string, unknown> {
     const { mode, statement } = this.state;
     if (mode === "exec") {
       db.exec(statement);
@@ -288,7 +297,7 @@ class Sql extends ServiceBase<State> {
       return { executed: true };
     }
 
-    const params = this.parameters(input);
+    const params = this.parameters(input, caller);
     if (mode === "run") {
       return db.run(statement, params);
     }
@@ -304,12 +313,11 @@ class Sql extends ServiceBase<State> {
    * Only the names the statement mentions are bound: SQLite rejects a
    * parameter it was not asked for.
    */
-  private parameters(input: unknown): SqlParams {
+  private parameters(input: unknown, caller: CallerValues): SqlParams {
     const record =
       input && typeof input === "object" && !Array.isArray(input)
         ? (input as Record<string, unknown>)
         : {};
-    const caller = this.caller();
     const params: SqlParams = {};
     for (const match of codeOf(this.state.statement).matchAll(
       NAMED_PARAMETER,
@@ -324,11 +332,26 @@ class Sql extends ServiceBase<State> {
   }
 
   /**
-   * Who is signed in to this app, under the names a statement asks by. The
-   * email is kept the way a server keeps a verified one, so a row written here
-   * and a row written there compare equal.
+   * Who began the run this call is in, under the names a statement asks by.
+   *
+   * A run that arrived from a board's coordinator says who began it, and that
+   * is who it is — nobody, when it says nobody. Only a run that began in this
+   * app is the doing of whoever is signed in to it: a booking a member made on
+   * a shared board must not become the owner's because the owner's browser is
+   * where the statement happened to run.
+   *
+   * The signed-in user's email is kept the way a server keeps a verified one,
+   * so a row written here and a row written there compare equal.
    */
-  private caller(): Record<CallerParameter, string | undefined> {
+  private caller(): CallerValues {
+    const stated = this.app.currentContext?.(this)?.caller;
+    if (stated !== undefined) {
+      return {
+        caller_email: stated?.email,
+        caller_name: stated?.name,
+        caller_sub: stated?.sub,
+      };
+    }
     const user = this.app.getAuthenticatedUser?.();
     return {
       caller_email: user?.email?.trim().toLowerCase() || undefined,

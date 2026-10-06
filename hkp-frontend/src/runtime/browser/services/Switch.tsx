@@ -1,4 +1,10 @@
-import { AppImpl, RuntimeClassType, ServiceClass } from "hkp-frontend/src/types";
+import {
+  AppImpl,
+  ProcessContext,
+  RuntimeClassType,
+  ServiceClass,
+} from "hkp-frontend/src/types";
+import { nestedRun } from "hkp-frontend/src/runtime/processContext";
 import ServiceBase from "./ServiceBase";
 import SwitchUI from "./SwitchUI";
 import BrowserRegistry from "../BrowserRegistry";
@@ -125,6 +131,9 @@ class Switch extends ServiceBase<State> {
   }
 
   async process(params: any): Promise<any> {
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control.
+    const run = this.app.currentContext?.(this);
     for (let i = 0; i < this.state.cases.length; i++) {
       const condition = this._parsedConditions[i];
       if (condition === null || condition === "syntax-error") {
@@ -133,13 +142,18 @@ class Switch extends ServiceBase<State> {
       const met = await evalExpression(condition, { params }, this.app);
       if (met) {
         this.app.notify(this, { matched: i });
-        return this._runPipeline(i, this.state.cases[i].pipeline, params);
+        return this._runPipeline(i, this.state.cases[i].pipeline, params, run);
       }
     }
 
     if (this.state.default.length > 0) {
       this.app.notify(this, { matched: "default" });
-      return this._runPipeline(this.state.cases.length, this.state.default, params);
+      return this._runPipeline(
+        this.state.cases.length,
+        this.state.default,
+        params,
+        run,
+      );
     }
     this.app.notify(this, { matched: null });
     return params;
@@ -270,6 +284,7 @@ class Switch extends ServiceBase<State> {
     index: number,
     pipeline: PipelineEntry[],
     params: any,
+    run: ProcessContext | undefined,
   ): Promise<any> {
     if (pipeline.length === 0) {
       return params;
@@ -282,7 +297,7 @@ class Switch extends ServiceBase<State> {
       return params;
     }
     // Answered by returning, so not reported through onResult as well.
-    const result = await scope.next(null, params, null, false, false);
+    const result = await scope.next(null, params, nestedRun(run), false, false);
     return this.state.ignoreInnerResult ? params : result;
   }
 
@@ -326,6 +341,8 @@ class Switch extends ServiceBase<State> {
     );
     // The board's assets, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    // And whoever is signed in to the app around it is signed in here.
+    scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
 
     // Propagate runtime variables up through the scope hierarchy
     scope.app.getRuntimeVariable = () => this.app.getRuntimeVariable();

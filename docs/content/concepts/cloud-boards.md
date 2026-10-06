@@ -332,6 +332,21 @@ context the coordinator held. Without this the caller would be known to the
 first runtime of a board and lost to the second. Nested pipelines inherit it
 through `childRun`.
 
+**A browser runtime runs it as the run it was handed** (`continuedRun`,
+`hkp-frontend/src/runtime/processContext.ts`). Its services are called in the
+coordinator's run, under the coordinator's caller, and what it records carries
+both. A run that arrived naming nobody is nobody's there too — *not* the
+doing of whoever is signed in to the browser running it, which on a shared
+board is the owner. Only a run that began in the app is the signed-in
+person's.
+
+That holds at any depth. A service that holds a pipeline — a sub-service, an
+If, a case of a Switch, a track, a Configurator's or a Process Router's
+transform — runs it as a run of its own under the one it was called in
+(`nestedRun`), with the same caller, and points the scope it builds at the app
+around it for who is signed in (`delegateIdentity`). A service inside one is
+told what a service at the top of the runtime is told.
+
 A service asks the run, never its input. [`sql`](../services/sql.md) binds
 `$caller_email`, `$caller_name` and `$caller_sub` from it; a log entry carries
 the caller's `sub`, so the owner's run log answers "who did this" without
@@ -416,6 +431,14 @@ One from a run nobody began goes to everyone. A member is sent only
 notifications from services the facade reads, and never the runtime's own
 account of its flow (`__internal`), which carries the data passing through.
 
+**And how much of it.** A member's copy of a notification is cut down the way
+state is (`projectNotification`): to the paths the facade's sources read from
+that service, so a facade reading `rows` of `{ rows, count, … }` gives a member
+`rows`. A source with no `path` reads the notification whole and is given it
+whole — which is a reason to name a path. A notification holding none of the
+paths still arrives, empty: that the service spoke is itself read, by a widget
+that should stop showing what it said before. The owner is sent what was said.
+
 **A member's bridge never hosts a runtime.** It is never sent `processRuntime`
 and is not a target when the chain reaches a browser runtime. A board with a
 browser runtime still works for members; that runtime runs only while its
@@ -424,6 +447,27 @@ already means.
 
 **Removing a member closes their bridges at once** (close code 4403), and a
 client told that does not reconnect.
+
+**A refusal is a close code, so that it can be told from a dropped
+connection.** Three are answers, and a client stops on them:
+
+| Code | Says |
+|---|---|
+| 4403 | the board was shared with you and no longer is |
+| 4404 | no such board for you — it does not exist, or it is not yours and not shared with you. One code for both, after the same wait, so asking does not reveal which |
+| 4429 | you already hold as many bridges as one member may; only ever said to a member |
+
+Any other close — a coordinator restarting, a network that went away — says
+nothing about the board, and the client opens the bridge again. An owner's
+client keeps asking on 4404 as well: their board is briefly away while it is
+deployed again.
+
+**What is written down is written in order.** A board's writes to the store,
+and its removal, wait in one line per board (`inStoreOrder`), and each write
+takes the board as it is when its turn comes. Two changes made at once
+therefore leave the later one on disk whichever the store finishes first, a
+slow request cannot write down a session a deploy has since replaced, and a
+write still on its way cannot bring back a board that was deleted.
 
 **Bounds**: members per board, bridges per member, and a member's process
 calls per minute — `HKP_COORDINATOR_MAX_MEMBERS` (200),

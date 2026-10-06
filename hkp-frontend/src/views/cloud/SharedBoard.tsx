@@ -61,6 +61,12 @@ const REFUSALS: Record<BridgeRefusal, { title: string; body: string }> = {
       "Either it is not there any more, or its member list does not name the " +
       "address you are signed in with. Its owner can tell you which.",
   },
+  "too-many": {
+    title: "This board is open in too many places",
+    body:
+      "You have it open in as many windows and devices as one member may. " +
+      "Close it in one of them, then open it here again.",
+  },
 };
 
 function Message({ title, body }: { title: string; body?: string }) {

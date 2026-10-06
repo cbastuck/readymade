@@ -28,6 +28,24 @@ as the other, a removed member is dropped) and the open questions below.
 - **Close code 4403** ends a removed member's bridge, and the client stops
   reconnecting on it. Somebody never admitted is closed the way an unknown
   board is, after the same wait.
+- **After a review (2026-10-06)**, five things changed: a member's copy of a
+  notification is cut down to the paths the facade reads (`projectNotification`),
+  as state already was; "no such board" and "too many bridges" are close codes
+  of their own (4404, 4429) and any other close is retried, where before a
+  member's connection dropping before the first snapshot read as "not shared"
+  for good; a board's store writes and removal are serialised per board and
+  written from current state; a browser runtime runs what it is handed as the
+  coordinator's run under the coordinator's caller, and browser `sql` binds
+  from that rather than from the owner's sign-in; hkp-python's binary socket
+  path states the caller.
+- **Nested browser pipelines are told what the top of the runtime is told.**
+  They were not: an inner scope was never told who is signed in and its
+  services were called in no run, so a `sql` inside a sub-service bound `NULL`
+  for the caller in every case. Each of the seven services that hold a
+  pipeline now hands the run inward (`nestedRun`) and points its scope at the
+  app around it (`delegateIdentity`); a Process Router's target is called in
+  the run as well (`AppImpl.callInRun`). A Feedback drives its pipeline
+  itself and is in no run, so it hands down only who is signed in.
 - **`$user` needed somewhere to be shown**: the `text` widget gained `value`,
   taking `{ "$user": … }` or `{ "$state": … }`.
 - **The invite link is `/cloud-boards?shared=<coordinator>&owner=…&board=…`**,

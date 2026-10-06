@@ -185,6 +185,8 @@ export class FeedbackService extends ServiceBase<State> {
     );
     // The board's assets, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    // And whoever is signed in to the app around it is signed in here.
+    scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
 
     scope.onResult = async (_instanceId: string | null, result: any) => {
       this._handleResult(result);

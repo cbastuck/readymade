@@ -355,6 +355,27 @@ export type AppImpl = {
    */
   log: (svc: InstanceId, level: LogLevel, event: string, data?: any) => void;
   /**
+   * The run `svc` is being called in, or undefined when it is not inside a
+   * call that carries one.
+   *
+   * True for as long as the call has not given up control: read it at the
+   * start of `process`, before the first `await`, and keep what was read. A
+   * second call arriving at the same service while the first is waiting
+   * replaces it.
+   */
+  currentContext?: (svc: InstanceId) => ProcessContext | undefined;
+  /**
+   * Calls one service — it alone, not the services after it — as part of
+   * `run`, so that the service called finds itself in that run the way one
+   * reached by the pipeline does. For a service that hands a value sideways
+   * to another, which the pipeline did not call and so told nothing.
+   */
+  callInRun?: (
+    target: ServiceInstance,
+    params: any,
+    run: ProcessContext | null | undefined,
+  ) => Promise<any>;
+  /**
    * Emits `result` as if `svc` had just produced it: the services after `svc`
    * run, `svc` itself and everything before it does not.
    */
@@ -499,6 +520,8 @@ export type LogEntry = {
   event: string;
   data?: unknown;
   durationMs?: number;
+  /** The `sub` of whoever began the run, where the run arrived saying so. */
+  caller?: string;
 };
 
 export type ProcessContext = {
@@ -525,6 +548,32 @@ export type ProcessContext = {
    * makes a trace reconstructable as a tree rather than a list.
    */
   parentRunId?: string;
+  /**
+   * Who began the run, where the run arrived saying so.
+   *
+   * Three answers, and they are not the same:
+   *
+   * - a `Caller` — the run came from a board's coordinator, which named who
+   *   began it. Taken as stated: the coordinator verified them, this app did
+   *   not and cannot.
+   * - `null` — the run came from a coordinator and nobody began it: a timer on
+   *   another runtime, a request at a mount, a server without authentication.
+   * - absent — the run began in this app, and who began it is whoever is
+   *   signed in to it.
+   *
+   * The second is not the third. A run that arrived is never the doing of the
+   * person whose browser happens to be running it.
+   */
+  caller?: Caller | null;
+};
+
+/** Who began a run, as the server that verified them stated it. */
+export type Caller = {
+  sub: string;
+  /** Only ever a verified one. */
+  email?: string;
+  /** What the board's member list calls them. */
+  name?: string;
 };
 
 export type RuntimeApi = {

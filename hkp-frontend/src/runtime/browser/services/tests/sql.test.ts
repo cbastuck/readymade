@@ -535,6 +535,67 @@ describe("the caller parameters", () => {
     ]);
   });
 
+  const OWNER = {
+    userId: "auth0|owner",
+    username: "Owner",
+    email: "owner@club.example",
+    idToken: "t",
+  };
+
+  /** The service as its runtime calls it inside a run a coordinator handed over. */
+  function createInRun(user: unknown, caller: unknown) {
+    const { svc, app } = create({
+      database: uniqueName(),
+      mode: "query",
+      statement: WHOAMI,
+    });
+    (app as any).getAuthenticatedUser = () => user;
+    let run: unknown = { requestId: "r", runId: "run-1", caller };
+    (app as any).currentContext = () => run;
+    return {
+      svc,
+      /** The call has given up control and another run reached the service. */
+      overtakenBy: (next: unknown) => {
+        run = next;
+      },
+    };
+  }
+
+  it("are whoever the run says began it, not whoever's browser it runs in", async () => {
+    const { svc } = createInRun(OWNER, {
+      sub: "auth0|anna",
+      email: "anna@example.com",
+      name: "Anna",
+    });
+
+    const { rows } = await svc.process({ caller_email: OWNER.email });
+
+    expect(rows).toEqual([
+      { email: "anna@example.com", name: "Anna", sub: "auth0|anna", other: null },
+    ]);
+  });
+
+  it("are NULL in a run that arrived naming nobody, though somebody is signed in here", async () => {
+    // A timer on another runtime, a request at a mount: nobody began it, and
+    // the owner whose browser runs the statement did not either.
+    const { svc } = createInRun(OWNER, null);
+
+    const { rows } = await svc.process({});
+
+    expect(rows).toEqual([{ email: null, name: null, sub: null, other: null }]);
+  });
+
+  it("are read when the call begins, and kept while it waits", async () => {
+    const run = createInRun(OWNER, { sub: "auth0|anna", email: "anna@example.com" });
+
+    // Opening the database is awaited; by the time the statement runs, the
+    // service has been reached by a run of somebody else's.
+    const answer = run.svc.process({});
+    run.overtakenBy({ requestId: "r", runId: "run-2", caller: { sub: "auth0|ben" } });
+
+    expect((await answer).rows[0]).toMatchObject({ sub: "auth0|anna" });
+  });
+
   it("are NULL when nobody is signed in, whatever the input says", async () => {
     const svc = createAs(null);
 

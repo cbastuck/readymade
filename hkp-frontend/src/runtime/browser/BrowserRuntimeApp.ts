@@ -5,6 +5,7 @@ import {
   InstanceId,
   LogLevel,
   NextOptions,
+  ProcessContext,
   ServiceAction,
   ServiceClass,
   ServiceDescriptor,
@@ -23,7 +24,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
   const notificationTargets = new NotificationTargets();
   const boardVariables: Record<string, any> = {};
   const app = {
-    getAuthenticatedUser: () => scope.authenticatedUser,
+    getAuthenticatedUser: () => scope.signedInUser(),
 
     // Backed by the module-level platform bridge (set by PlatformProvider at the
     // app root), so it works regardless of when this app was constructed or
@@ -99,6 +100,14 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     ) => {
       scope.log(service, level, event, data);
     },
+
+    currentContext: (service: InstanceId) => scope.contextOf(service),
+
+    callInRun: (
+      target: ServiceInstance,
+      params: any,
+      run: ProcessContext | null | undefined,
+    ) => scope.processIn(target, params, run),
 
     notify: (service: InstanceId, notification: any) => {
       if (!notificationTargets.hasCallbacks(service)) {
