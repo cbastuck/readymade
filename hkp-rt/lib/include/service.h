@@ -9,6 +9,7 @@ namespace hkp {
 class Runtime;
 class SubRuntime;
 class RuntimeHost;
+struct ProcessContext;
 
 class Service
 {
@@ -34,6 +35,8 @@ public:
 
   Data next(Data data = Undefined(), bool immediately = true);
   void nextAsync(Data data = Undefined(), std::function<void(Data)> callback = nullptr);
+  Data nextInRun(Data data, const ProcessContext& context,
+                 std::function<void(Data)> callback = nullptr);
   bool isConnected() const;
 
   // ── Sub-runtime support ──────────────────────────────────────────────────
@@ -140,6 +143,9 @@ private:
   // process() returns — both on the pipeline thread, so a plain bool is enough
   // (emit(), which runs on the worker, never touches it).
   bool m_processDeferred = false;
+  // One-shot authority captured by deferCompletion(). Further emissions are
+  // autonomous board work, not delegation of the person who began this call.
+  std::shared_ptr<ProcessContext> m_deferredContext;
 
 protected:
   std::string m_instanceName;

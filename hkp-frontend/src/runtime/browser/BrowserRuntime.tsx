@@ -110,6 +110,7 @@ const BrowserRuntime = forwardRef<BrowserRuntimeHandle, Props>(
         runtimeId,
         serviceUuid,
         config,
+        run,
       ) => {
         const targetScope = context?.scopes[runtimeId] as
           | BrowserRuntimeScope
@@ -122,7 +123,11 @@ const BrowserRuntime = forwardRef<BrowserRuntimeHandle, Props>(
         }
         const [svc] = targetScope.findServiceInstance(serviceUuid);
         if (svc?.configure) {
-          await svc.configure(config);
+          if (run) {
+            await targetScope.callInContext(svc, run, () => svc.configure(config));
+          } else {
+            await svc.configure(config);
+          }
         }
       };
       // Hosting a runtime and coordinating the board are separate roles that

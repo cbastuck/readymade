@@ -47,19 +47,18 @@ push an update.
 ## Who is booking
 
 Every hour is booked in somebody's name, and the board never takes that name
-from the request. Each statement works out who is acting the same way:
+from the request. Each statement uses the verified caller directly:
 
 ```sql
-CASE WHEN $caller_sub IS NULL THEN $member ELSE $caller_email END
+$caller_email
 ```
 
 `$caller_email` is the address of whoever began the run, **stated by the server
 that verified their sign-in** — see
-[SQL: who is calling](../services/sql.md#who-is-calling). The typed `$member`
-counts only when nobody is signed in at all, which is how the board still runs
-against a local server with no accounts. Somebody signed in without a verified
-address is nobody's member and books nothing; they are not whoever the payload
-says.
+[SQL: who is calling](../services/sql.md#who-is-calling). There is no member
+field in the facade or its process payloads. Without a signed-in caller with a
+verified address, the board displays its calendar but offers no bookable hours.
+A timer, mount request, or forged identity field therefore books nothing.
 
 This is what makes the board safe to **share**. Deployed to a coordinator and
 [shared with a club](../concepts/cloud-boards.md#sharing-a-board-members),
@@ -75,10 +74,9 @@ where it gave none.
 
 ## The facade
 
-Two tabs: **Court**, with the calendar, and **Who you are**, which says who you
-are booking as (`{ "$user": "name" }`) and keeps a field for running without
-sign-in. Two tabs because they belong to different moments — who you are is
-settled once and you book every week.
+Two tabs: **Court**, with the calendar, and **Who you are**, which says which
+signed-in account is booking (`{ "$user": "name" }`). There is no editable
+booking identity.
 
 ## Sharing it with a club
 
@@ -93,6 +91,6 @@ so somebody else's booking shows on their next tap rather than at once.
 
 ## Try it
 
-Needs hkp-node on port 8080. The schema is created on first run, in a table of
-its own (`court_booking`) — the board's earlier `booking` table is left as it
-was.
+Needs a signed-in account and hkp-node on port 8080. The schema is created on
+first run, in a table of its own (`court_booking`) — the board's earlier
+`booking` table is left as it was.

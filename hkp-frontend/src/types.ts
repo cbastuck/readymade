@@ -359,9 +359,9 @@ export type AppImpl = {
    * call that carries one.
    *
    * True for as long as the call has not given up control: read it at the
-   * start of `process`, before the first `await`, and keep what was read. A
-   * second call arriving at the same service while the first is waiting
-   * replaces it.
+   * start of `process`, before the first `await`, and keep what was read. If
+   * overlapping calls make the service's active run ambiguous, this is absent
+   * rather than attributing work to either one.
    */
   currentContext?: (svc: InstanceId) => ProcessContext | undefined;
   /**
@@ -375,6 +375,12 @@ export type AppImpl = {
     params: any,
     run: ProcessContext | null | undefined,
   ) => Promise<any>;
+  /** Configure one service as part of an existing run. */
+  configureInRun?: (
+    target: ServiceInstance,
+    config: any,
+    run: ProcessContext | null | undefined,
+  ) => Promise<any>;
   /**
    * Emits `result` as if `svc` had just produced it: the services after `svc`
    * run, `svc` itself and everything before it does not.
@@ -384,6 +390,23 @@ export type AppImpl = {
     result: any,
     options?: NextOptions,
   ) => void;
+  /**
+   * Capture the current run for one late answer. Calling the returned function
+   * exactly once resumes after `svc`; until then the original pass reports no
+   * result. Standing callbacks and subscriptions must use `next` instead.
+   */
+  defer: (
+    svc: InstanceId,
+  ) => (result: any) => void;
+  /**
+   * The service handle handed to interactive controls.
+   *
+   * Browser services otherwise expose their live object directly. This handle
+   * routes calls back through the runtime so the framework, rather than the
+   * service, can begin a run for the signed-in person. Remote service handles
+   * already cross an API boundary and need no wrapper.
+   */
+  serviceForUserInterface?: (svc: ServiceInstance) => ServiceInstance;
   getServiceById: (uuid: string) => ServiceInstance | null;
   sendAction: (action: ServiceAction) => void;
   storeServiceData: (serviceUuid: string, key: string, value: string) => void;
@@ -408,7 +431,12 @@ export type AppImpl = {
   ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
   processRuntimeByName?: (name: string, params: any) => Promise<any>;
-  configureServiceInRuntime?: (runtimeId: string, serviceUuid: string, config: any) => Promise<void>;
+  configureServiceInRuntime?: (
+    runtimeId: string,
+    serviceUuid: string,
+    config: any,
+    run?: ProcessContext | null,
+  ) => Promise<void>;
   // The coordinator of the board this service belongs to, for questions that
   // span runtimes — resolving an address a runtime assigns at load time, say.
   // Absent on hosts that do not know the board they are part of; callers treat
@@ -478,6 +506,21 @@ export type ServiceInstance = ServiceState &
     };
   };
 
+/**
+ * The handle a runtime wants interactive controls to use for a service.
+ *
+ * A browser runtime wraps its in-process object so calls cross a framework
+ * boundary that can attach the signed-in person. Remote handles already cross
+ * their runtime API and are returned unchanged.
+ */
+export function serviceForUserInterface(
+  service: ServiceInstance | null,
+): ServiceInstance | null {
+  return service
+    ? (service.app?.serviceForUserInterface?.(service) ?? service)
+    : null;
+}
+
 export type RuntimeImpl = {
   configureService: (uuid: string, config: any) => Promise<void>;
   getServiceById: (uuid: string) => ServiceInstance | null;
@@ -524,6 +567,13 @@ export type LogEntry = {
   caller?: string;
 };
 
+/** What is acting in a run. Person identity is present only in that case. */
+export type RunActor =
+  | ({ kind: "person"; expiresAt: number } & Caller)
+  | { kind: "board" }
+  | { kind: "mount" }
+  | { kind: "local" };
+
 export type ProcessContext = {
   /**
    * Where to send a result somebody is waiting for.
@@ -538,8 +588,8 @@ export type ProcessContext = {
    * Identifies one invocation of a board — one user action, one timer tick, one
    * arriving message — across every service and runtime it reaches.
    *
-   * Optional while the browser runtime does not mint one for every call; a
-   * context arriving from another runtime carries it.
+   * Optional in the legacy wire shape, but every current browser entry point
+   * mints or continues one before services run.
    */
   runId?: string;
   /**
@@ -549,22 +599,10 @@ export type ProcessContext = {
    */
   parentRunId?: string;
   /**
-   * Who began the run, where the run arrived saying so.
-   *
-   * Three answers, and they are not the same:
-   *
-   * - a `Caller` — the run came from a board's coordinator, which named who
-   *   began it. Taken as stated: the coordinator verified them, this app did
-   *   not and cannot.
-   * - `null` — the run came from a coordinator and nobody began it: a timer on
-   *   another runtime, a request at a mount, a server without authentication.
-   * - absent — the run began in this app, and who began it is whoever is
-   *   signed in to it.
-   *
-   * The second is not the third. A run that arrived is never the doing of the
-   * person whose browser happens to be running it.
+   * What is acting in this run. A person actor is stated only by the server
+   * that verified them and carries the deadline of that delegated authority.
    */
-  caller?: Caller | null;
+  actor: RunActor;
 };
 
 /** Who began a run, as the server that verified them stated it. */

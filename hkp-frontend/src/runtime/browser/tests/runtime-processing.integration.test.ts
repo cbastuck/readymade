@@ -170,7 +170,10 @@ describe("runtime processing integration", () => {
     const onResultSpy = vi.fn();
     scope.onResult = onResultSpy;
 
-    const context = { requestId: "req-1" };
+    const context = {
+      requestId: "req-1",
+      actor: { kind: "local" as const },
+    };
     const result = await processRuntime(scope as any, { x: 1 }, null, context);
 
     expect(result).toEqual({ x: 1, done: true });
@@ -210,11 +213,29 @@ describe("runtime processing integration", () => {
         scope as any,
         {},
         null,
-        continuedRun({ runId: "run-1", caller: ANNA }, { requestId: "r-1" }),
+        continuedRun(
+          {
+            runId: "run-1",
+            actor: {
+              kind: "person",
+              ...ANNA,
+              expiresAt: Date.now() + 60_000,
+            },
+          },
+          { requestId: "r-1" },
+        ),
       );
 
       expect(first.seen).toEqual([
-        { requestId: "r-1", runId: "run-1", caller: ANNA },
+        {
+          requestId: "r-1",
+          runId: "run-1",
+          actor: {
+            kind: "person",
+            ...ANNA,
+            expiresAt: expect.any(Number),
+          },
+        },
       ]);
       expect(second.seen).toEqual(first.seen);
       // What the browser records of the run belongs to it, and to her.
@@ -226,16 +247,65 @@ describe("runtime processing integration", () => {
       expect(scope.app.currentContext?.(first.svc)).toBeUndefined();
     });
 
-    it("names no caller when it began here", async () => {
+    it("uses a local actor when auth is off", async () => {
       const scope = createScope();
       const only = witness(scope, "svc-a");
       scope.serviceInstances = [only.svc];
 
       await processRuntime(scope as any, {}, null, null);
 
-      // Absent rather than null: whoever is signed in to this app began it.
-      expect(only.seen[0]).toMatchObject({ runId: expect.any(String) });
-      expect("caller" in (only.seen[0] as object)).toBe(false);
+      expect(only.seen[0]).toMatchObject({
+        runId: expect.any(String),
+        actor: { kind: "local" },
+      });
+    });
+
+    it("captures the signed-in person when a local run begins", async () => {
+      const scope = createScope();
+      scope.authenticatedUser = {
+        userId: "auth0|owner",
+        username: "Owner",
+        email: "OWNER@example.com",
+      } as any;
+      const only = witness(scope, "svc-a");
+      scope.serviceInstances = [only.svc];
+
+      await processRuntime(scope as any, {}, null, null);
+
+      expect(only.seen[0]).toMatchObject({
+        runId: expect.any(String),
+        actor: {
+          kind: "person",
+          sub: "auth0|owner",
+          email: "owner@example.com",
+          name: "Owner",
+          expiresAt: expect.any(Number),
+        },
+      });
+    });
+
+    it("captures the signed-in person when processing starts at a service", async () => {
+      const scope = createScope();
+      scope.authenticatedUser = {
+        userId: "auth0|owner",
+        username: "Owner",
+        email: "owner@example.com",
+      } as any;
+      const only = witness(scope, "svc-a");
+      scope.serviceInstances = [only.svc];
+
+      await processService(scope as any, only.svc, {}, null);
+
+      expect(only.seen[0]).toMatchObject({
+        runId: expect.any(String),
+        actor: {
+          kind: "person",
+          sub: "auth0|owner",
+          email: "owner@example.com",
+          name: "Owner",
+          expiresAt: expect.any(Number),
+        },
+      });
     });
   });
 });

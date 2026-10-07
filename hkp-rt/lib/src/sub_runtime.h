@@ -5,6 +5,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "runtime_host.h"
 
@@ -65,6 +66,14 @@ public:
   Data processFrom(const Service& svc, Data data,
                    bool advanceBefore = true,
                    std::function<void(Data)> callback = nullptr) override;
+  const ProcessContext* currentContext() const override
+  {
+    return m_parent.currentContext();
+  }
+  Data withContext(const ProcessContext& context, std::function<Data()> fn) override
+  {
+    return m_parent.withContext(context, std::move(fn));
+  }
   void scheduleProcessFrom(const Service& svc, Data data,
                            bool advanceBefore = true) override;
   void post(std::function<void()> fn) override { m_post(std::move(fn)); }

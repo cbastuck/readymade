@@ -6,7 +6,7 @@
       "id": "club",
       "name": "Club",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "NodeJS",
       "state": {
         "wrapServices": false
       }
@@ -23,7 +23,7 @@
           "emit": "input",
           "database": "tennis",
           "schema": "CREATE TABLE IF NOT EXISTS court_booking (\n  id       INTEGER PRIMARY KEY,\n  court    INTEGER NOT NULL,\n  day      TEXT    NOT NULL,\n  hour     INTEGER NOT NULL,\n  -- Who holds the hour: the address they are signed in with.\n  member   TEXT    NOT NULL,\n  -- What the board's member list called them when they booked. It is what\n  -- other members are shown; the address never is.\n  name     TEXT,\n  created  TEXT    NOT NULL DEFAULT (datetime('now'))\n);\n-- A court-hour belongs to one member.\nCREATE UNIQUE INDEX IF NOT EXISTS court_booking_one_per_slot\n  ON court_booking(court, day, hour);\n-- A member holds one hour a day, across all three courts.\nCREATE UNIQUE INDEX IF NOT EXISTS court_booking_one_per_member_day\n  ON court_booking(member, day);",
-          "statement": "WITH me(member) AS (\n  -- Who is acting: the caller the server verified. The typed address counts\n  -- only where nobody is signed in at all, and a caller without a verified\n  -- address is nobody's member rather than whoever the payload names.\n  SELECT CASE WHEN $caller_sub IS NULL THEN $member ELSE $caller_email END\n)\nDELETE FROM court_booking\n WHERE $state = 'mine'\n   AND day    = date('now','localtime', CAST($dayOffset AS INTEGER) || ' days')\n   AND court  = $court\n   AND hour   = $hour\n   AND member = (SELECT member FROM me)"
+          "statement": "DELETE FROM court_booking\n WHERE $state = 'mine'\n   AND day    = date('now','localtime', CAST($dayOffset AS INTEGER) || ' days')\n   AND court  = $court\n   AND hour   = $hour\n   AND member = $caller_email"
         }
       },
       {
@@ -34,7 +34,7 @@
           "mode": "run",
           "emit": "input",
           "database": "tennis",
-          "statement": "WITH me(member, name) AS (\n  SELECT CASE WHEN $caller_sub IS NULL THEN $member ELSE $caller_email END,\n         $caller_name\n)\nINSERT INTO court_booking (court, day, hour, member, name)\nSELECT CAST($court AS INTEGER),\n       date('now','localtime', CAST($dayOffset AS INTEGER) || ' days'),\n       CAST($hour AS INTEGER),\n       me.member,\n       me.name\n  FROM me\n WHERE $state = 'free'\n   AND me.member <> ''\n   -- Whole numbers inside the club's week, courts and hours, whatever was sent.\n   AND $dayOffset = CAST($dayOffset AS INTEGER) AND $dayOffset BETWEEN 0 AND 7\n   AND $court     = CAST($court AS INTEGER)     AND $court BETWEEN 1 AND 3\n   AND $hour      = CAST($hour AS INTEGER)      AND $hour BETWEEN 7 AND 21\n   AND NOT EXISTS (\n     SELECT 1 FROM court_booking taken\n      WHERE taken.day = date('now','localtime', CAST($dayOffset AS INTEGER) || ' days') AND taken.court = $court AND taken.hour = $hour\n   )\n   AND NOT EXISTS (\n     SELECT 1 FROM court_booking already\n      WHERE already.day = date('now','localtime', CAST($dayOffset AS INTEGER) || ' days') AND already.member = me.member\n   )"
+          "statement": "WITH me(member, name) AS (\n  SELECT $caller_email, $caller_name\n)\nINSERT INTO court_booking (court, day, hour, member, name)\nSELECT CAST($court AS INTEGER),\n       date('now','localtime', CAST($dayOffset AS INTEGER) || ' days'),\n       CAST($hour AS INTEGER),\n       me.member,\n       me.name\n  FROM me\n WHERE $state = 'free'\n   AND me.member <> ''\n   -- Whole numbers inside the club's week, courts and hours, whatever was sent.\n   AND $dayOffset = CAST($dayOffset AS INTEGER) AND $dayOffset BETWEEN 0 AND 7\n   AND $court     = CAST($court AS INTEGER)     AND $court BETWEEN 1 AND 3\n   AND $hour      = CAST($hour AS INTEGER)      AND $hour BETWEEN 7 AND 21\n   AND NOT EXISTS (\n     SELECT 1 FROM court_booking taken\n      WHERE taken.day = date('now','localtime', CAST($dayOffset AS INTEGER) || ' days') AND taken.court = $court AND taken.hour = $hour\n   )\n   AND NOT EXISTS (\n     SELECT 1 FROM court_booking already\n      WHERE already.day = date('now','localtime', CAST($dayOffset AS INTEGER) || ' days') AND already.member = me.member\n   )"
         }
       },
       {
@@ -45,26 +45,20 @@
           "mode": "query",
           "database": "tennis",
           "schema": "CREATE TABLE IF NOT EXISTS court_booking (\n  id       INTEGER PRIMARY KEY,\n  court    INTEGER NOT NULL,\n  day      TEXT    NOT NULL,\n  hour     INTEGER NOT NULL,\n  -- Who holds the hour: the address they are signed in with.\n  member   TEXT    NOT NULL,\n  -- What the board's member list called them when they booked. It is what\n  -- other members are shown; the address never is.\n  name     TEXT,\n  created  TEXT    NOT NULL DEFAULT (datetime('now'))\n);\n-- A court-hour belongs to one member.\nCREATE UNIQUE INDEX IF NOT EXISTS court_booking_one_per_slot\n  ON court_booking(court, day, hour);\n-- A member holds one hour a day, across all three courts.\nCREATE UNIQUE INDEX IF NOT EXISTS court_booking_one_per_member_day\n  ON court_booking(member, day);",
-          "statement": "WITH\n  me(member)    AS (SELECT CASE WHEN $caller_sub IS NULL THEN $member ELSE $caller_email END),\n  hours(hour)   AS (VALUES (7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17),(18),(19),(20),(21)),\n  courts(court) AS (VALUES (1),(2),(3)),\n  -- The day asked for, kept inside the week the club books.\n  asked(off)    AS (SELECT max(0, min(7, CAST(coalesce($dayOffset, 0) AS INTEGER)))),\n  shown(day, off) AS (SELECT date('now','localtime', asked.off || ' days'), asked.off FROM asked),\n  held(n)       AS (SELECT count(*) FROM court_booking, shown, me\n                     WHERE court_booking.day = shown.day AND court_booking.member = me.member)\nSELECT\n  shown.day    AS day,\n  shown.off    AS dayOffset,\n  courts.court AS column,\n  hours.hour   AS hour,\n  CASE\n    WHEN b.member = me.member THEN 'mine'\n    WHEN b.member IS NOT NULL THEN 'taken'\n    WHEN held.n = 0 AND me.member <> '' THEN 'free'\n    ELSE 'blocked'\n  END AS state,\n  CASE\n    WHEN b.member = me.member THEN 'You'\n    -- Somebody else's hour says who by the name the club gave them, never by\n    -- their address.\n    WHEN b.member IS NOT NULL THEN coalesce(nullif(b.name, ''), 'Member')\n    ELSE ''\n  END AS label,\n  CASE\n    WHEN b.member = me.member\n      THEN 'Give back your hour on court ' || courts.court || ' at ' || printf('%02d:00', hours.hour) || ' on ' || shown.day || '?'\n    WHEN b.member IS NULL AND held.n = 0 AND me.member <> ''\n      THEN 'Book court ' || courts.court || ' at ' || printf('%02d:00', hours.hour) || ' on ' || shown.day || '?'\n    ELSE ''\n  END AS prompt\nFROM hours\nCROSS JOIN courts\nCROSS JOIN shown\nCROSS JOIN held\nCROSS JOIN me\nLEFT JOIN court_booking b\n       ON b.day   = shown.day\n      AND b.court = courts.court\n      AND b.hour  = hours.hour\nORDER BY hours.hour, courts.court"
+          "statement": "WITH\n  me(member)    AS (SELECT $caller_email),\n  hours(hour)   AS (VALUES (7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17),(18),(19),(20),(21)),\n  courts(court) AS (VALUES (1),(2),(3)),\n  -- The day asked for, kept inside the week the club books.\n  asked(off)    AS (SELECT max(0, min(7, CAST(coalesce($dayOffset, 0) AS INTEGER)))),\n  shown(day, off) AS (SELECT date('now','localtime', asked.off || ' days'), asked.off FROM asked),\n  held(n)       AS (SELECT count(*) FROM court_booking, shown, me\n                     WHERE court_booking.day = shown.day AND court_booking.member = me.member)\nSELECT\n  shown.day    AS day,\n  shown.off    AS dayOffset,\n  courts.court AS column,\n  hours.hour   AS hour,\n  CASE\n    WHEN b.member = me.member THEN 'mine'\n    WHEN b.member IS NOT NULL THEN 'taken'\n    WHEN held.n = 0 AND me.member <> '' THEN 'free'\n    ELSE 'blocked'\n  END AS state,\n  CASE\n    WHEN b.member = me.member THEN 'You'\n    -- Somebody else's hour says who by the name the club gave them, never by\n    -- their address.\n    WHEN b.member IS NOT NULL THEN coalesce(nullif(b.name, ''), 'Member')\n    ELSE ''\n  END AS label,\n  CASE\n    WHEN b.member = me.member\n      THEN 'Give back your hour on court ' || courts.court || ' at ' || printf('%02d:00', hours.hour) || ' on ' || shown.day || '?'\n    WHEN b.member IS NULL AND held.n = 0 AND me.member <> ''\n      THEN 'Book court ' || courts.court || ' at ' || printf('%02d:00', hours.hour) || ' on ' || shown.day || '?'\n    ELSE ''\n  END AS prompt\nFROM hours\nCROSS JOIN courts\nCROSS JOIN shown\nCROSS JOIN held\nCROSS JOIN me\nLEFT JOIN court_booking b\n       ON b.day   = shown.day\n      AND b.court = courts.court\n      AND b.hour  = hours.hour\nORDER BY hours.hour, courts.court"
         }
       }
     ]
   },
   "facade": {
     "layout": "single",
-    "state": {
-      "member": "you@club.example"
-    },
     "init": [
       {
         "type": "process",
         "serviceUuid": "give-back",
         "payload": {
           "state": "none",
-          "dayOffset": 0,
-          "member": {
-            "$state": "member"
-          }
+          "dayOffset": 0
         }
       }
     ],
@@ -130,10 +124,7 @@
                     "serviceUuid": "give-back",
                     "payload": {
                       "state": "none",
-                      "dayOffset": "{{item.off}}",
-                      "member": {
-                        "$state": "member"
-                      }
+                      "dayOffset": "{{item.off}}"
                     }
                   }
                 ]
@@ -145,11 +136,7 @@
                 "serviceUuid": "day-grid",
                 "path": "rows"
               },
-              "columns": [
-                "Court 1",
-                "Court 2",
-                "Court 3"
-              ],
+              "columns": ["Court 1", "Court 2", "Court 3"],
               "fromHour": 7,
               "toHour": 21,
               "rowHeight": 32,
@@ -162,10 +149,7 @@
                     "state": "{{item.state}}",
                     "dayOffset": "{{item.dayOffset}}",
                     "court": "{{item.column}}",
-                    "hour": "{{item.hour}}",
-                    "member": {
-                      "$state": "member"
-                    }
+                    "hour": "{{item.hour}}"
                   }
                 }
               ],
@@ -188,7 +172,7 @@
           "items": [
             {
               "type": "text",
-              "placeholder": "Every hour is booked in somebody's name. Signed in, that is you — the server says who is booking, and nothing typed here can change it.",
+              "placeholder": "Every hour is booked in the verified account that is signed in. Sign in to book or give back an hour.",
               "tone": "muted",
               "fontSize": 12
             },
@@ -198,35 +182,7 @@
               "value": {
                 "$user": "name"
               },
-              "placeholder": "nobody — you are not signed in"
-            },
-            {
-              "type": "text",
-              "placeholder": "Running without sign-in — a local server, a demo — there is nobody to verify, and the address below stands in. It is ignored as soon as somebody is signed in.",
-              "tone": "muted",
-              "fontSize": 12
-            },
-            {
-              "type": "text-input",
-              "label": "Without sign-in, book as",
-              "placeholder": "member@example.com",
-              "submitLabel": "Use this email",
-              "actions": [
-                {
-                  "type": "set-state",
-                  "key": "member"
-                },
-                {
-                  "type": "process",
-                  "serviceUuid": "give-back",
-                  "payload": {
-                    "state": "none",
-                    "dayOffset": 0,
-                    "member": "$$input"
-                  }
-                }
-              ],
-              "defaultValue": "you@club.example"
+              "placeholder": "nobody — sign in to book"
             }
           ]
         }
@@ -236,16 +192,12 @@
       {
         "id": "court",
         "title": "Court",
-        "panels": [
-          "book"
-        ]
+        "panels": ["book"]
       },
       {
         "id": "who",
         "title": "Who you are",
-        "panels": [
-          "member"
-        ]
+        "panels": ["member"]
       }
     ],
     "defaultTab": "court",

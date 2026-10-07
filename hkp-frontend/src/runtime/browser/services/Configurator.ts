@@ -154,11 +154,20 @@ export class Configurator extends ServiceBase<State> {
 
     if (targetServiceUuid && configured !== null) {
       if (targetRuntime && this.app.configureServiceInRuntime) {
-        await this.app.configureServiceInRuntime(targetRuntime, targetServiceUuid, configured);
+        await this.app.configureServiceInRuntime(
+          targetRuntime,
+          targetServiceUuid,
+          configured,
+          run,
+        );
       } else {
         const target = this.app.getServiceById(targetServiceUuid);
         if (target) {
-          await target.configure(configured);
+          if (this.app.configureInRun) {
+            await this.app.configureInRun(target, configured, run);
+          } else {
+            await target.configure(configured);
+          }
         }
       }
     }

@@ -266,7 +266,17 @@ describe.each(HOLDERS)("a service inside $name", (holder) => {
   it("is called by whoever the coordinator says began the run", async () => {
     const answer = await run(
       holder,
-      continuedRun({ runId: "run-1", caller: ANNA }, { requestId: "r" }),
+      continuedRun(
+        {
+          runId: "run-1",
+          actor: {
+            kind: "person",
+            ...ANNA,
+            expiresAt: Date.now() + 60_000,
+          },
+        },
+        { requestId: "r" },
+      ),
     );
 
     // Not the owner, in whose browser this is running.
@@ -294,10 +304,40 @@ describe.each(HOLDERS)("a service inside $name", (holder) => {
   });
 });
 
+it("configures a Configurator's target inside the run that reached it", async () => {
+  const scope = await runtimeOf([
+    {
+      serviceId: "hookup.to/service/configurator",
+      instanceId: "holder",
+      state: { targetServiceUuid: "target" },
+    },
+    { serviceId: "hookup.to/service/map", instanceId: "target", state: {} },
+  ]);
+  const [target] = scope.findServiceInstance("target");
+  let configuredIn: ProcessContext | undefined;
+  vi.spyOn(target!, "configure").mockImplementation(() => {
+    configuredIn = scope.app.currentContext?.(target!);
+    return undefined;
+  });
+  const run: ProcessContext = {
+    requestId: "",
+    runId: "configure-run",
+    actor: {
+      kind: "person",
+      ...ANNA,
+      expiresAt: Date.now() + 60_000,
+    },
+  };
+
+  await processRuntime(scope, { rows: 2 }, null, run);
+
+  expect(configuredIn).toBe(run);
+});
+
 describe("a service inside a Feedback's pipeline", () => {
   // A Feedback drives its pipeline itself, from what the pipeline produces: it
-  // is never called inside a run, so there is none to hand down. Who is signed
-  // in is still the app's to say.
+  // is board-origin work, not a fresh gesture by whoever happens to be signed
+  // in to the surrounding app.
   async function witnessIn(user: User | null) {
     const witness = whoami("witness");
     const scope = await runtimeOf(
@@ -319,13 +359,10 @@ describe("a service inside a Feedback's pipeline", () => {
     return feedback.getInnerInstance("witness");
   }
 
-  it("sees whoever is signed in to the app around it", async () => {
+  it("does not acquire whoever is signed in to the app around it", async () => {
     const witness = await witnessIn(OWNER);
 
-    expect(who(await witness.process({}))).toEqual({
-      sub: "auth0|owner",
-      email: "owner@club.example",
-    });
+    expect(who(await witness.process({}))).toEqual({ sub: null, email: null });
   });
 
   it("sees nobody when nobody is", async () => {

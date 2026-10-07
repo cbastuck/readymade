@@ -51,6 +51,10 @@ export default function CloudBoard({
           type: "result-from-browser",
           runtimeId: runtime.id,
           data: result,
+          // A source or callback with no active user run is the board's own.
+          // The coordinator must not turn it into the owner's merely because
+          // the owner's browser happened to host this runtime.
+          ...(context?.actor.kind === "board" ? { boardOrigin: true } : {}),
         }),
       );
     }

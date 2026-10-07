@@ -1153,6 +1153,7 @@ function useWireBrowserScopes(
                 type: "result-from-browser",
                 runtimeId: rt.id,
                 data: result,
+                ...(context?.actor.kind === "board" ? { boardOrigin: true } : {}),
               }),
             );
           }
@@ -1202,13 +1203,18 @@ function useWireBrowserScopes(
         runtimeId: string,
         serviceUuid: string,
         config: unknown,
+        run,
       ) => {
         const targetScope = scopes[runtimeId] as
           | BrowserRuntimeScope
           | undefined;
         const svc = targetScope?.findServiceInstance(serviceUuid)?.[0];
         if (svc?.configure) {
-          await svc.configure(config);
+          if (run && targetScope) {
+            await targetScope.callInContext(svc, run, () => svc.configure(config));
+          } else {
+            await svc.configure(config);
+          }
         }
       };
 

@@ -19,11 +19,45 @@ import {
 } from "hkp-frontend/src/platform/PlatformContext";
 import NotificationTargets from "../NotificationsTargets";
 import { onServiceProcess, onServiceResult } from "../serviceState";
+import { boardRun, personRun, runExpired } from "../processContext";
 
 export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
   const notificationTargets = new NotificationTargets();
   const boardVariables: Record<string, any> = {};
-  const app = {
+  const interactiveServices = new WeakMap<object, ServiceInstance>();
+
+  const reportAndContinue = (
+    svc: InstanceId | null,
+    result: any,
+    options: NextOptions | undefined,
+    run: ProcessContext,
+  ) => {
+    // The loop in scope.next only reports the services it calls, and this one
+    // is not among them: it emitted on its own. A replay is the case with
+    // nothing to report because the value came from outside.
+    if (svc && !options?.replay) {
+      onServiceProcess(app, svc, undefined);
+      onServiceResult(app, svc, result);
+    }
+    return scope.next(svc, result, run);
+  };
+
+  const captureAnswer = (svc: InstanceId, run: ProcessContext) => {
+    scope.defer(run);
+    let pending = true;
+    return (result: any) => {
+      if (!pending) {
+        return;
+      }
+      pending = false;
+      scope.resume(run);
+      if (!runExpired(run)) {
+        void scope.next(svc, result, run);
+      }
+    };
+  };
+
+  const app: AppImpl = {
     getAuthenticatedUser: () => scope.signedInUser(),
 
     // Backed by the module-level platform bridge (set by PlatformProvider at the
@@ -32,17 +66,91 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     mintToken: (request: RuntimeTokenRequest): Promise<string | null> =>
       mintTokenViaPlatform(request),
     next: (svc: InstanceId | null, result: any, options?: NextOptions) => {
-      // The loop in scope.next only reports the services it calls, and this one
-      // is not among them: it emitted on its own. Reporting it here is what
-      // keeps a Timer from looking idle while the service after it plainly
-      // receives data. A replay is the case with nothing to report — the value
-      // came from outside, so the service produced nothing.
-      if (svc && !options?.replay) {
-        onServiceProcess(app, svc, undefined);
-        onServiceResult(app, svc, result);
+      // Continue the run while the emitting service is still inside one. A
+      // timer or standing subscription that speaks outside an active call
+      // begins a board-origin run. Interactive controls enter their person run
+      // through serviceForUserInterface below. A one-shot answer that belongs
+      // to an earlier call uses defer() below instead.
+      const active = svc ? scope.contextOf(svc) : undefined;
+      return reportAndContinue(svc, result, options, active ?? boardRun());
+    },
+
+    defer: (svc: InstanceId) =>
+      captureAnswer(svc, scope.contextOf(svc) ?? boardRun()),
+
+    serviceForUserInterface: (service: ServiceInstance) => {
+      const known = interactiveServices.get(service);
+      if (known) {
+        return known;
       }
 
-      return scope.next(svc, result);
+      type ServiceMethod = (...args: any[]) => any;
+      const methods = new Map<
+        PropertyKey,
+        { source: ServiceMethod; routed: ServiceMethod }
+      >();
+      const personCall = <T,>(call: () => T): T =>
+        scope.callInContext(service, personRun(scope.signedInUser()), call);
+
+      // A few panels emit through service.app directly instead of calling a
+      // service method. Give those calls the same API boundary as methods on
+      // the service handle. Other app operations remain the real runtime app.
+      const interactiveApp = new Proxy(app, {
+        get(target, property, receiver) {
+          if (property === "next") {
+            return (
+              svc: InstanceId | null,
+              result: any,
+              options?: NextOptions,
+            ) =>
+              reportAndContinue(
+                svc,
+                result,
+                options,
+                personRun(scope.signedInUser()),
+              );
+          }
+          if (property === "defer") {
+            return (svc: InstanceId) =>
+              captureAnswer(svc, personRun(scope.signedInUser()));
+          }
+          if (property === "log" || property === "configureService") {
+            const member = Reflect.get(target, property, target);
+            if (typeof member !== "function") {
+              return member;
+            }
+            return (...args: any[]) =>
+              personCall(() => Reflect.apply(member, target, args));
+          }
+          return Reflect.get(target, property, receiver);
+        },
+      });
+
+      const routed = new Proxy(service, {
+        get(target, property) {
+          if (property === "app") {
+            return interactiveApp;
+          }
+          const member = Reflect.get(target, property, target);
+          if (typeof member !== "function") {
+            return member;
+          }
+          const method = member as ServiceMethod;
+          const cached = methods.get(property);
+          if (cached && cached.source === method) {
+            return cached.routed;
+          }
+          const call = (...args: any[]) =>
+            personCall(() => Reflect.apply(method, target, args));
+          methods.set(property, { source: method, routed: call });
+          return call;
+        },
+        set(target, property, value) {
+          return Reflect.set(target, property, value, target);
+        },
+      });
+      interactiveServices.set(service, routed);
+      return routed;
     },
 
     getServiceById: (instanceId: string) =>
@@ -109,6 +217,15 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       run: ProcessContext | null | undefined,
     ) => scope.processIn(target, params, run),
 
+    configureInRun: async (
+      target: ServiceInstance,
+      config: any,
+      run: ProcessContext | null | undefined,
+    ) =>
+      run
+        ? scope.callInContext(target, run, () => target.configure(config))
+        : target.configure(config),
+
     notify: (service: InstanceId, notification: any) => {
       if (!notificationTargets.hasCallbacks(service)) {
         // console.warn("BrowserRuntimeApp.notify no targets for", service.uuid);
@@ -135,7 +252,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       return React.createElement(ui || "div", {
         resizable: false,
         frameless: true,
-        service: ssvc,
+        service: app.serviceForUserInterface?.(ssvc) ?? ssvc,
         onServiceAction: () => {
           console.warn("No service actions available for sub services");
         },
@@ -161,7 +278,8 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       runtimeId: string,
       serviceUuid: string,
       config: any,
-    ) => scope.configureServiceInRuntime(runtimeId, serviceUuid, config),
+      run?: ProcessContext | null,
+    ) => scope.configureServiceInRuntime(runtimeId, serviceUuid, config, run),
     get coordinator() {
       // Read through, not captured: the host assigns the coordinator after the
       // scope exists, and a board can be torn down under a live service.

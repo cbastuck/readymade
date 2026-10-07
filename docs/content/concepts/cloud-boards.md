@@ -303,23 +303,32 @@ separate start path.
 
 A deployed board is one set of runtimes that several browsers may act on, so
 "who did this" cannot be a field of the request — a payload naming its sender
-proves nothing about them. It travels with the **run** instead
-(`ProcessContext.caller` in `hkp-node/src/types.ts`):
+proves nothing about them. A run therefore carries one actor:
 
 ```ts
-caller?: { sub: string; email?: string; name?: string };
+type RunActor =
+  | { kind: "person"; sub: string; email?: string; name?: string; expiresAt: number }
+  | { kind: "board" }
+  | { kind: "mount" }
+  | { kind: "local" };
 ```
 
 `email` is there only when the token carried a **verified** one. `name` is what
 the board's member list calls that address, set by the coordinator and absent
-everywhere else. A run begins in one of three ways, and each has its own code
+everywhere else. A run begins in one of these ways, and each has its own code
 path — not one parser with a flag:
 
-| Entered by | Caller |
+| Entered by | Actor |
 |---|---|
-| A client holding a token — `POST /runtimes/:id`, `POST …/services/:uuid/process`, a `processRuntime` on the runtime's socket | whatever the request says is never read; it is whoever the token was verified as (`contextForClient`) |
-| A coordinator, over a participant link | taken as stated — the link is the board's own, and the coordinator on it is what verified the person (`contextFromLink`) |
-| Nobody — a timer, a request at a mount, a service emitting by itself | none |
+| A client holding a token — runtime or service `process`, service `configure`, or a `processRuntime` on the runtime's socket | `person`; whatever the request says is never read, and identity comes from the verified token (`contextForClient`) |
+| A coordinator, over a participant link | taken as stated — the link is the board's own, and the coordinator on it verified any person (`contextFromLink`) |
+| A board timer or standing subscription | `board` |
+| A request at a public mount | `mount` |
+| A runtime with authentication disabled | `local` |
+
+`local` names the auth-off trust mode, not a network location; a runtime in
+that mode may still be reached beyond loopback if its host explicitly allows
+that configuration.
 
 A server without authentication resolves everyone to one anonymous tenant.
 That is **no caller**, not a caller called anonymous: otherwise everybody on a
@@ -333,24 +342,48 @@ first runtime of a board and lost to the second. Nested pipelines inherit it
 through `childRun`.
 
 **A browser runtime runs it as the run it was handed** (`continuedRun`,
-`hkp-frontend/src/runtime/processContext.ts`). Its services are called in the
-coordinator's run, under the coordinator's caller, and what it records carries
-both. A run that arrived naming nobody is nobody's there too — *not* the
-doing of whoever is signed in to the browser running it, which on a shared
-board is the owner. Only a run that began in the app is the signed-in
-person's.
+`hkp-frontend/src/runtime/processContext.ts`). Its services are called with the
+coordinator's actor, and what it records carries that attribution. A board,
+mount or local run does not become the person signed in to the
+browser running it, which on a shared board is the owner. Only a run that began
+as their gesture gets that person actor.
+
+`app.next()` keeps that context while the emitting service is still answering
+its call. A service which will answer once after returning calls `app.defer()`
+before it gives up control; the returned resolver carries that same run exactly
+once. Standing timers, sockets and subscriptions do not continue the person who
+created them: each emission starts a `board` run. Browser panels receive a
+runtime-routed service handle, so the framework snapshots the signed-in person
+when a panel calls a service method and keeps that run across an `await`.
+Services use ordinary `next()` and `defer()`; they do not label their own calls
+as user actions. Once the panel call ends, a timer or other standing callback
+installed by it uses the underlying service handle and therefore starts a
+`board` run.
+
+Configuration is a run entry too. A browser panel crosses the in-process
+runtime boundary above; REST runtime servers derive its actor from the bearer
+token; and an attached cloud board sends it through the authenticated bridge.
+If configuring one service makes it configure another, the framework carries
+the same run into that call. The configured service therefore may inspect or
+emit under the actor without either service deciding who that actor is.
+
+Person authority is bounded twice. Every runtime checks the actor's `expiresAt`
+before each service, including after an awaited service returns. At every
+coordinator hop the coordinator checks the deadline again and checks that the
+person is still the owner or a current member. Removing a member therefore also
+revokes work that finishes late.
 
 That holds at any depth. A service that holds a pipeline — a sub-service, an
 If, a case of a Switch, a track, a Configurator's or a Process Router's
 transform — runs it as a run of its own under the one it was called in
-(`nestedRun`), with the same caller, and points the scope it builds at the app
+(`nestedRun`), with the same actor, and points the scope it builds at the app
 around it for who is signed in (`delegateIdentity`). A service inside one is
 told what a service at the top of the runtime is told.
 
 A service asks the run, never its input. [`sql`](../services/sql.md) binds
-`$caller_email`, `$caller_name` and `$caller_sub` from it; a log entry carries
-the caller's `sub`, so the owner's run log answers "who did this" without
-collecting addresses.
+`$caller_email`, `$caller_name`, `$caller_sub` and `$actor_kind` from it; a log
+entry carries the person actor's `sub`, so the owner's run log answers "who did
+this" without collecting addresses.
 
 All three runtime servers do this the same way — hkp-node (`runtime.ts`),
 hkp-python (`runtime.py`) and hkp-rt (`process_context.h`) each keep the
@@ -421,13 +454,13 @@ statement, no registry, no log.
 **The entry point is the capability, not the payload.** Naming a service in a
 `process` action makes it member-callable with *any* payload — a custom client
 is not bound to what the widget would send. So everything that matters has to
-be checked behind the entry point, from the run's caller. The
+be checked behind the entry point, from the run's person actor. The
 [court-booking board](../boards/court-booking-demo-board.md) is the worked
 example.
 
-**Who hears what.** A notification raised inside a run somebody began goes to
-**that caller's bridges only** — not to other members, and not to the owner.
-One from a run nobody began goes to everyone. A member is sent only
+**Who hears what.** A notification raised with a person actor goes to **that
+person's bridges only** — not to other members, and not to the owner. One from
+a board, mount or local actor goes to everyone. A member is sent only
 notifications from services the facade reads, and never the runtime's own
 account of its flow (`__internal`), which carries the data passing through.
 
@@ -436,8 +469,10 @@ state is (`projectNotification`): to the paths the facade's sources read from
 that service, so a facade reading `rows` of `{ rows, count, … }` gives a member
 `rows`. A source with no `path` reads the notification whole and is given it
 whole — which is a reason to name a path. A notification holding none of the
-paths still arrives, empty: that the service spoke is itself read, by a widget
-that should stop showing what it said before. The owner is sent what was said.
+paths is not sent to a member: an empty projection would reveal that the
+service spoke without changing or clearing the widget. Clearing is explicit —
+for example, a table sends `rows: []` — and that value is projected normally.
+The owner is sent what was said.
 
 **A member's bridge never hosts a runtime.** It is never sent `processRuntime`
 and is not a target when the chain reaches a browser runtime. A board with a
@@ -472,7 +507,8 @@ write still on its way cannot bring back a board that was deleted.
 **Bounds**: members per board, bridges per member, and a member's process
 calls per minute — `HKP_COORDINATOR_MAX_MEMBERS` (200),
 `HKP_COORDINATOR_MAX_MEMBER_BRIDGES` (4),
-`HKP_COORDINATOR_MAX_MEMBER_PROCESS_PER_MINUTE` (120).
+`HKP_COORDINATOR_MAX_MEMBER_PROCESS_PER_MINUTE` (120), and person-run lifetime
+`HKP_COORDINATOR_MAX_PERSON_RUN_AGE_MS` (15 minutes).
 
 ### What is still open
 
@@ -480,10 +516,6 @@ calls per minute — `HKP_COORDINATOR_MAX_MEMBERS` (200),
   member's calendar does not move when another books; it is right again on
   their next action. A live board needs a way for a run to say "everyone, look
   again" without sending anyone's view.
-- **A service that speaks after its run ended** — from a timer or a callback —
-  has no run: its notification goes to everyone and its result carries no
-  caller. `sql` does neither; anything asynchronous has to be checked before
-  it is used on a shared board.
 - **Shared state.** `sql` keeps `error` and `lastCount` in its state, so a
   facade reading them shows what the last caller left.
 - **Members cannot configure.** A knob or field that configures a service is a
@@ -647,7 +679,7 @@ registers only when asked.
   error that names it; a browser runtime away is normal operation.
 - **Reconnection is a real state**, on both kinds of connection. A dropped
   bridge re-snapshots; a runtime server that returns is picked up or rebuilt.
-- **A caller is stated, never read.** Anything that begins a run for a client
+- **A person actor is stated, never read.** Anything that begins a run for a client
   goes through `contextForClient`; only a participant link is believed.
 - **What a member can reach is what the facade names.** A new bridge message
   is the owner's unless it is added to the member's short list on purpose, and

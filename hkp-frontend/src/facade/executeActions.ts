@@ -4,6 +4,7 @@ import {
   PromptAction,
   WidgetAction,
 } from "./types";
+import { serviceForUserInterface } from "../types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeBoardActions } from "./FacadeBoardActions";
 import { findService, processService } from "./boardServices";
@@ -145,7 +146,10 @@ export async function executeActions({
         const withState = resolveActionRefs(v, state ?? {}, identity);
         configure[k] = applyInput(withState, input);
       }
-      await service.configure(configure);
+      const target = byPerson
+        ? (serviceForUserInterface(service) ?? service)
+        : service;
+      await target.configure(configure);
       if (byPerson) {
         boardContext.markBoardChanged?.();
       }

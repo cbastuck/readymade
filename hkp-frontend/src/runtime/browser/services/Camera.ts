@@ -39,13 +39,19 @@ class Camera extends ServiceBase<State> {
     }
 
     if (action == "triggerSnapshot") {
+      const resume =
+        this.app.defer?.(this) ??
+        ((result: any) => this.app.next(this, result));
       const screenshot = await this.process({});
-      this.app.next(this, screenshot);
+      resume(screenshot);
     }
   }
 
   inject(blob: Blob) {
-    setImmediate(() => this.app.next(this, blob));
+    const resume =
+      this.app.defer?.(this) ??
+      ((result: any) => this.app.next(this, result));
+    setImmediate(() => resume(blob));
   }
 
   // null when whatever was showing the camera goes away: a stale shooter holds

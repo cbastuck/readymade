@@ -5,6 +5,7 @@ import {
   splitAddress,
 } from "hkp-frontend/src/runtime/board/address";
 import { blockUseContaining } from "hkp-frontend/src/runtime/board/blocks";
+import { personRun } from "hkp-frontend/src/runtime/processContext";
 import {
   RuntimeApi,
   RuntimeClassType,
@@ -240,7 +241,10 @@ export function processService(
     const svc = (scope as any).findServiceInstance?.(uuid)?.[0];
     if (svc) {
       // false: begin *at* this service; the default advances past it.
-      void (scope as any).next?.(svc, payload, null, false);
+      const run = personRun(
+        (scope as any).signedInUser?.() ?? scope.authenticatedUser ?? null,
+      );
+      void (scope as any).next?.(svc, payload, run, false);
       return;
     }
     // A scoped address is entered through the scope holding it, so that what
@@ -248,7 +252,10 @@ export function processService(
     // follow the scope in the runtime's own list.
     const owner = ownerOfNested(scope, uuid);
     if (owner) {
-      void owner.service.processNested(owner.rest, payload);
+      const run = personRun(
+        (scope as any).signedInUser?.() ?? scope.authenticatedUser ?? null,
+      );
+      void owner.service.processNested(owner.rest, payload, run);
       return;
     }
   }

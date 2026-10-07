@@ -202,7 +202,13 @@ describe("a browser runtime on a deployed board", () => {
         context: {
           runId: "run-7",
           parentRunId: "run-6",
-          caller: { sub: "auth0|anna", email: "anna@example.com", name: "Anna" },
+          actor: {
+            kind: "person",
+            sub: "auth0|anna",
+            email: "anna@example.com",
+            name: "Anna",
+            expiresAt: Date.now() + 60_000,
+          },
           // Nothing a coordinator says of a run is where its answer goes.
           requestId: "somebody-else",
         },
@@ -213,7 +219,13 @@ describe("a browser runtime on a deployed board", () => {
       requestId: "r-2",
       runId: "run-7",
       parentRunId: "run-6",
-      caller: { sub: "auth0|anna", email: "anna@example.com", name: "Anna" },
+      actor: {
+        kind: "person",
+        sub: "auth0|anna",
+        email: "anna@example.com",
+        name: "Anna",
+        expiresAt: expect.any(Number),
+      },
     });
   });
 
@@ -233,14 +245,27 @@ describe("a browser runtime on a deployed board", () => {
 
     hand({ context: { runId: "run-8" } });
     hand({});
-    hand({ context: { runId: "run-9", caller: { email: "no-sub@example.com" } } });
+    hand({
+      context: {
+        runId: "run-9",
+        actor: { kind: "person", email: "no-sub@example.com" },
+      },
+    });
 
     const runs = processRuntime.mock.calls.map(
-      (call) => call[3] as unknown as { runId?: string; caller?: unknown },
+      (call) =>
+        call[3] as unknown as {
+          runId?: string;
+          actor?: { kind?: string; sub?: string };
+        },
     );
-    // `null`, which is not the same as absent: absent is how a run that began
-    // here reads, and such a run is the signed-in person's.
-    expect(runs.map((run) => run.caller)).toEqual([null, null, null]);
+    // Invalid or missing actor data never acquires the browser's signed-in
+    // person. A malformed person actor is expired immediately.
+    expect(runs.map((run) => run.actor)).toEqual([
+      { kind: "board" },
+      { kind: "board" },
+      { kind: "person", sub: "", expiresAt: 0 },
+    ]);
     expect(runs[0].runId).toBe("run-8");
     // A run was handed over even where none was named.
     expect(runs[1].runId).toBeTruthy();
@@ -255,7 +280,7 @@ describe("a browser runtime on a deployed board", () => {
     // The frame names no run; it is still one that arrived.
     expect(processRuntime.mock.calls[0][3]).toMatchObject({
       requestId: "r-1",
-      caller: null,
+      actor: { kind: "board" },
     });
   });
 

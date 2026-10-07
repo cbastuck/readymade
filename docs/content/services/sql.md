@@ -143,7 +143,7 @@ subject line — not a syntax error, and not an injection.
 
 ### Who is calling
 
-Three names are **reserved**, and bound from the run rather than from the
+Four names are **reserved**, and bound from the run rather than from the
 input:
 
 | Parameter | What it is |
@@ -151,6 +151,7 @@ input:
 | `$caller_email` | the caller's verified email, lowercased |
 | `$caller_name` | what the board's member list calls them — set on a [shared, deployed board](../concepts/cloud-boards.md#sharing-a-board-members) |
 | `$caller_sub` | the id their sign-in gives them |
+| `$actor_kind` | `person`, `board`, `mount`, or `local` |
 
 The caller is whoever began the run, **stated by the server that verified their
 token**. Each is `NULL` when the run has no caller — a timer, a request at a
@@ -164,17 +165,9 @@ the input by a service placed in front, because a stamp can be walked around —
 a process call that enters the pipeline *at* this service never passes the one
 before it.
 
-A statement that should also work with nobody signed in says so itself, and
-says it carefully:
-
-```sql
-CASE WHEN $caller_sub IS NULL THEN $member ELSE $caller_email END
-```
-
-The typed `$member` counts only when there is no caller at all. Not
-`coalesce($caller_email, $member)`: somebody signed in *without* a verified
-address has a `NULL` email, and that must act as nobody rather than as whoever
-the payload names.
+For identity-sensitive work, act only when the required caller value is
+present. Do not fall back to an identity supplied in the input: an
+local/auth-disabled client can choose that value itself.
 
 ---
 
@@ -275,7 +268,7 @@ whose only reason for a server was its tables can drop the server: move the
 statements, not the facade. [Court Booking (Browser)](../boards/court-booking-browser-demo-board.md)
 is exactly that.
 
-**The caller parameters are whoever is signed in to the app** — `$caller_sub`
+**Person runs use whoever was signed in when the run began** — `$caller_sub`
 the account's id, `$caller_email` its address, `$caller_name` its display name
 — and `NULL` when nobody is. Nothing verifies that: the browser is the person,
 and the tables are theirs alone. What the names buy here is that a board's

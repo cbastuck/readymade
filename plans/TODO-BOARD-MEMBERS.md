@@ -37,7 +37,9 @@ as the other, a removed member is dropped) and the open questions below.
   written from current state; a browser runtime runs what it is handed as the
   coordinator's run under the coordinator's caller, and browser `sql` binds
   from that rather than from the owner's sign-in; hkp-python's binary socket
-  path states the caller.
+  path states the caller. Empty notification projections are now suppressed:
+  they revealed that a hidden service spoke but did not clear any widget;
+  explicit values such as `rows: []` still pass through.
 - **Nested browser pipelines are told what the top of the runtime is told.**
   They were not: an inner scope was never told who is signed in and its
   services were called in no run, so a `sql` inside a sub-service bound `NULL`
@@ -60,6 +62,23 @@ as the other, a removed member is dropped) and the open questions below.
 - **An unverified email is no longer copied into an identity** (hkp-node and
   hkp-python). One existing hkp-python test pinned the old behaviour and was
   changed.
+- **The court board has no manually entered identity.** The transitional
+  auth-off field was removed on 2026-10-07; both board variants now book only
+  as `$caller_email`, and require sign-in to offer a bookable hour.
+- **Run identity is one discriminated actor.** Also on 2026-10-07, the separate
+  optional `caller`, `origin` and `expiresAt` fields became a required
+  `RunActor`. This makes invalid combinations unrepresentable and names
+  authentication-disabled work explicitly as `local`.
+- **Browser panels cross a runtime boundary too.** A panel receives a stable
+  runtime-routed service handle rather than being asked to mark emissions with
+  `byUser`. Calls through that handle snapshot the signed-in person and keep
+  the run across an awaited answer; the underlying service object is still
+  used for board loading, internal configuration and standing callbacks.
+- **Configuration carries its run.** Browser panels, authenticated REST
+  configure routes and coordinator configure requests all enter framework
+  context before calling a service. A Configurator carries its current run to
+  the target service, including across runtimes; neither service states who
+  invoked it.
 
 A deployed board already has an owner — the coordinator keeps `userId` beside
 each board, and builds its runtimes in that person's tenant. What is missing is
@@ -76,10 +95,10 @@ board), `TODO-COORDINATOR-CONNECTIONS.md` (participants, tickets, the bridge),
 
 ## The problem
 
-The court-booking board has a **Who you are** tab: a text field holding an
-email, kept in facade state and sent as `member` with every action. Three
-things are wrong with that once the board is used by a club rather than shown
-as a demo:
+The first court-booking board had a **Who you are** tab with a text field
+holding an email, kept in facade state and sent as `member` with every action.
+Three things were wrong with that once the board was used by a club rather
+than shown as a demo:
 
 1. **Anyone can be anyone.** The SQL trusts the `member` the payload carries.
    Limiting who can open the board does not change that — a member can still
@@ -122,8 +141,8 @@ Facts found on the way, which this work has to fix because it depends on them:
   `isEmailAllowed` already does.
 - **Other members do not see emails.** What is shown on a taken slot is a
   display name.
-- **The typed field stays for the cases with no identity** — auth off, and the
-  browser-only variant of the board.
+- **There is no typed identity fallback.** Both court-board variants require a
+  signed-in caller with a verified email to book or give back an hour.
 - **Bookings are keyed by email** — it matches the list and reads well in the
   table. The review argued for `sub`, on the grounds that a changed address
   orphans a booking and frees a second hour; the risk was judged small for
@@ -135,50 +154,57 @@ Facts found on the way, which this work has to fix because it depends on them:
 
 ## Design
 
-### 1. The caller travels with the run
+### 1. The actor travels with the run
 
-`ProcessContext` (`hkp-node/src/types.ts`) gains an optional `caller`:
+`ProcessContext` carries one discriminated actor:
 
 ```ts
-caller?: { sub: string; email?: string; name?: string };
+type RunActor =
+  | { kind: "person"; sub: string; email?: string; name?: string; expiresAt: number }
+  | { kind: "board" }
+  | { kind: "mount" }
+  | { kind: "local" };
 ```
 
 `email` is present only when verified. `name` is the name the board's list
 gives that email, and absent elsewhere.
 
-**Three ways a run begins, three explicit code paths** — not one parser with a
+**Each way a run begins has an explicit entry path** — not one parser with a
 flag:
 
-| Entered by | Run metadata (`runId`…) | Caller |
-| --- | --- | --- |
-| A client holding a token: `POST /runtimes/:id`, `POST …/services/:uuid/process`, and the runtime **WebSocket's** `processRuntime` | kept, as today | whatever the wire says is **discarded**, then set from the verified token |
-| A coordinator, over a participant link | kept | taken as stated — the link is the board's own |
-| Nobody: a timer, a mount request, a service emitting by itself | new | none |
+| Entered by | Actor |
+| --- | --- |
+| A client holding a token | `person`; whatever the wire says is discarded, then identity is set from the verified token |
+| A coordinator, over a participant link | taken as stated — the link is the board's own |
+| A timer or standing subscription | `board` |
+| A mount request | `mount` |
+| Authentication off | `local` |
 
-`contextFromWire` stays as it is and never learns about `caller`; the trusted
-path gets a reader of its own. Auth off (`sub` is `anonymous`) is *no caller*,
-not a caller called anonymous — otherwise everybody on a dev machine is the
+`contextFromWire` never reads `actor`; the trusted path gets a reader of its
+own. Auth off (`sub` is `anonymous`) becomes a `local` actor, not a
+person called anonymous — otherwise everybody on a dev machine would be the
 same person.
 
 **The context survives the chain.** A participant's `result` becomes
 `{ data, context }`; the coordinator hands that context to the next runtime;
 a browser-runtime round trip returns the one it was given. Without this the
-caller is known to the first runtime of a board only. Nested runs inherit it
+actor is known to the first runtime of a board only. Nested runs inherit it
 through `childRun`.
 
 ### 2. `sql` binds the caller
 
-Reserved parameter names, bound from the run's caller and never from the
-input: `$caller_email`, `$caller_name`, `$caller_sub`. Each is
-`NULL` when there is no caller or the value is missing. An input field of the
+Reserved parameter names, bound from the run and never from the input:
+`$caller_email`, `$caller_name`, `$caller_sub`, `$actor_kind`. Each caller value
+is `NULL` when there is no caller or the value is missing. An input field of the
 same name is ignored.
 
 Reserved in the service rather than stamped by a service placed in front,
 because a stamp can be walked around: a process call that enters the pipeline
 *at* the SQL service never passes it.
 
-The browser runtime's `sql` binds the same names from the signed-in user of the
-app. Nothing verifies that — the browser is the person — and the docs say so.
+The browser runtime's `sql` binds the same names from the captured run context.
+A local person run snapshots the signed-in user at its entry point; a board or
+mount run never falls back to whoever is signed in when the statement executes.
 
 ### 3. Process goes over the bridge
 
@@ -284,10 +310,10 @@ JSON. A member's snapshot contains:
 Notifications are filtered the same way — only from services the facade reads —
 and `log` entries are never sent.
 
-**Who hears what.** A notification raised inside a run that has a caller goes
-to **that caller's bridges only**; one from a run with no caller goes to
-everyone (projected for members). This is what the context envelope in section
-1 is also for: the notification carries the caller of its run.
+**Who hears what.** A notification raised with a person actor goes to **that
+person's bridges only**; one with a board, mount or local actor goes
+to everyone (projected for members). This is what the context envelope in
+section 1 is also for: the notification carries its run's actor.
 
 **Removing a member** closes their bridges at once.
 
@@ -312,11 +338,10 @@ log answers "who did this" without collecting addresses.
 
 ### 6. The court-booking board
 
-- The member is `CASE WHEN $caller_sub IS NULL THEN $member ELSE $caller_email
-  END`: the typed address only when nobody is signed in at all. Not
-  `coalesce($caller_email, $member)` — a signed-in caller without a verified
-  email has a `NULL` email, and that must book nothing rather than fall back to
-  what the payload claims.
+- The member is always `$caller_email`. The facade has no editable member
+  field, and neither its state nor its process payloads carry an identity.
+  Without a signed-in caller with a verified email, the board offers no
+  bookable hours.
 - The label on a taken slot is the stored `$caller_name`, falling back to
   "Member".
 - **A new table, not a migration.** `CREATE TABLE IF NOT EXISTS` adds no
@@ -325,8 +350,8 @@ log answers "who did this" without collecting addresses.
   with a week of bookings at most: it moves to a new table and leaves the old
   one behind. That `sql` has no migration story is a gap of its own, noted and
   not solved here.
-- **Who you are** shows "Booking as …" from `$user` and keeps the field for
-  running without sign-in. The browser-only variant keeps working as it does.
+- **Who you are** shows "Booking as …" from `$user` and has no editable
+  fallback. The browser-only variant therefore also requires sign-in to book.
 
 ---
 
@@ -334,14 +359,15 @@ log answers "who did this" without collecting addresses.
 
 Each one leaves the system working and is worth having on its own.
 
-1. **Caller in the run (hkp-node).** The `identifyToken` / `authorizeOwner`
-   split; `ProcessContext.caller` on the three paths; `sql`'s binds, in node
+1. **Actor in the run (hkp-node).** The `identifyToken` / `authorizeOwner`
+   split; `ProcessContext.actor` on the three paths; `sql`'s binds, in node
    and the browser. Tests: a forged caller is ignored over **REST service
-   process, REST runtime process and the runtime WebSocket**; a nested run
-   inherits; a reserved bind beats an input field; auth off gives no caller.
+   configure, REST service process, REST runtime process and the runtime
+   WebSocket**; a nested run inherits; a reserved bind beats an input field;
+   auth off gives no caller.
 2. **Process over the bridge, context across the chain.** The bridge message,
    the participant op, the `{ data, context }` envelope, the frontend routing.
-   Owner only. A two-runtime integration test proves the same caller reaches
+   Owner only. A two-runtime integration test proves the same actor reaches
    both. Verify first that a facade `process` action on a deployed board fails
    today the way the code suggests.
 3. **Members on the coordinator.** The list and its persistence across
@@ -355,10 +381,23 @@ Each one leaves the system working and is worth having on its own.
    CLAUDE.md's coordinator section; `/vocabulary` over the changeset. A
    two-person pass by hand: two accounts, one board, each sees their own
    "mine", neither can book as the other, a removed member is dropped.
-6. **The other runtimes.** `processService`, the caller and the envelope in
+6. **The other runtimes.** `processService`, the actor and the envelope in
    hkp-python's and hkp-rt's coordinator links and REST routes.
 
 ---
+
+## Run-boundary conclusion
+
+- **Late work is explicit and bounded.** A service may capture one continuation
+  before returning and resolve it once; it retains the run id and actor. A
+  timer or subscription is a standing arrangement and starts `board` runs.
+  Runtimes enforce the person-run deadline at service boundaries; the
+  coordinator also rechecks the deadline and current membership at every hop.
+- **Services do not declare who invoked them.** Browser service panels and
+  facade controls call through the browser runtime's interactive service
+  handle. The framework starts the person run at that boundary, so service
+  methods use plain `next()` and `defer()` and remain correct when the same
+  method is later called by a mount, another service or the board itself.
 
 ## Open questions
 
@@ -366,11 +405,6 @@ Each one leaves the system working and is worth having on its own.
   calendar does not move when A books; it is right again on B's next tap. A
   live board needs a way for a run to say "everyone, look again" without
   sending anyone's view. Not needed to ship; needed for a chat-like board.
-- **A service that speaks after its run ended.** The caller is read off the
-  running context. A service that notifies or emits later, from a timer or a
-  callback, has no run: its notification goes to everyone and its result
-  carries no caller. `sql` does neither; anything asynchronous has to be
-  checked before it is used on a shared board.
 - **Shared state.** `sql` keeps `error` and `lastCount` in its state, so a
   facade reading them shows what the last caller left. Probably these should be
   news (notifications) only.

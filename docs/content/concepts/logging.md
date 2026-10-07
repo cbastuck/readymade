@@ -42,6 +42,7 @@ running as*. It travels as a `ProcessContext`:
 | `runId` | This invocation. Minted where the invocation begins. |
 | `parentRunId` | The run this one was invoked *from*, for a nested pipeline. Absent when the trigger came from outside, which is what makes a trace a tree rather than a list. |
 | `requestId` | A **reply address**, not an identity: built from a message's sender, alive only while a response is awaited, consumed on resolution. |
+| `actor` | What is acting: a verified person with an authority deadline, the board, a public mount, or a local/auth-disabled client. |
 
 `runId` is deliberately not folded into `requestId`. They have different
 lifetimes — one run makes any number of awaited calls.

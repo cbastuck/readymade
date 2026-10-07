@@ -29,7 +29,13 @@
  *   }
  */
 
-import { AppImpl, RuntimeClassType, ServiceClass, ServiceInstance } from "hkp-frontend/src/types";
+import {
+  AppImpl,
+  ProcessContext,
+  RuntimeClassType,
+  ServiceClass,
+  ServiceInstance,
+} from "hkp-frontend/src/types";
 import { nestedRun } from "hkp-frontend/src/runtime/processContext";
 import ServiceBase from "./ServiceBase";
 import BrowserSubServiceUI from "./BrowserSubServiceUI";
@@ -383,7 +389,11 @@ export class BrowserSubService extends ServiceBase<State> {
    * "process at" one level down: what follows the named service inside this
    * scope runs, and what precedes it does not.
    */
-  async processNested(address: string, payload: unknown): Promise<unknown> {
+  async processNested(
+    address: string,
+    payload: unknown,
+    run?: ProcessContext | null,
+  ): Promise<unknown> {
     if (!this._scope) {
       await this._scopeBuilding;
     }
@@ -398,11 +408,11 @@ export class BrowserSubService extends ServiceBase<State> {
     if (segments.length > 1) {
       const deeper = here as unknown as BrowserSubService;
       return typeof deeper.processNested === "function"
-        ? deeper.processNested(segments.slice(1).join("."), payload)
+        ? deeper.processNested(segments.slice(1).join("."), payload, run)
         : null;
     }
     // false: begin *at* this service; the default advances past it.
-    return this._scope.next(here, payload, null, false);
+    return this._scope.next(here, payload, run, false);
   }
 
   destroy(): void {

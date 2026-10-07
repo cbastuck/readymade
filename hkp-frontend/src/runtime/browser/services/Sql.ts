@@ -33,13 +33,12 @@
  * board writes no parameter list at all. Values are always bound, never
  * interpolated.
  *
- * **Who is calling is bound by the service, never by the input.** Three
+ * **Who is calling is bound by the service, never by the input.** Four
  * names are reserved, as in hkp-node — `$caller_email`, `$caller_name`,
- * `$caller_sub` — and an input field of the same name is ignored. Here they
- * are whoever is signed in to this app, and `NULL` when nobody is. Nothing
- * verifies that: the browser is the person, and the tables are theirs alone.
- * What the names buy in a browser is that a board's statements read the same
- * on both runtimes.
+ * `$caller_sub`, `$actor_kind` — and an input field of the same name is ignored.
+ * They come from the run context just as they do remotely. A local gesture
+ * captures the app's signed-in person when its run begins; board and mount
+ * runs do not acquire whoever happens to be signed in when SQL executes.
  *
  * **A database can leave as SQL and arrive as SQL.** `export` hands on the
  * whole database as an SQLite dump and `import` runs one arriving as input,
@@ -82,7 +81,12 @@ type State = {
 const NAMED_PARAMETER = /[$:@]([A-Za-z_][A-Za-z0-9_]*)/g;
 
 /** The parameter names bound from who is calling rather than from the input. */
-const CALLER_PARAMETERS = ["caller_email", "caller_name", "caller_sub"] as const;
+const CALLER_PARAMETERS = [
+  "caller_email",
+  "caller_name",
+  "caller_sub",
+  "actor_kind",
+] as const;
 type CallerParameter = (typeof CALLER_PARAMETERS)[number];
 /** Who began a run, as the values those names are bound to. */
 type CallerValues = Record<CallerParameter, string | undefined>;
@@ -334,29 +338,20 @@ class Sql extends ServiceBase<State> {
   /**
    * Who began the run this call is in, under the names a statement asks by.
    *
-   * A run that arrived from a board's coordinator says who began it, and that
-   * is who it is — nobody, when it says nobody. Only a run that began in this
-   * app is the doing of whoever is signed in to it: a booking a member made on
-   * a shared board must not become the owner's because the owner's browser is
-   * where the statement happened to run.
-   *
-   * The signed-in user's email is kept the way a server keeps a verified one,
-   * so a row written here and a row written there compare equal.
+   * The entry point captures a local person's normalized identity when the run
+   * begins. SQL only reads that context: absence cannot silently become the
+   * owner whose browser happens to execute the statement.
    */
   private caller(): CallerValues {
-    const stated = this.app.currentContext?.(this)?.caller;
-    if (stated !== undefined) {
-      return {
-        caller_email: stated?.email,
-        caller_name: stated?.name,
-        caller_sub: stated?.sub,
-      };
-    }
-    const user = this.app.getAuthenticatedUser?.();
+    const context = this.app.currentContext?.(this);
+    const stated = context?.actor.kind === "person" ? context.actor : undefined;
     return {
-      caller_email: user?.email?.trim().toLowerCase() || undefined,
-      caller_name: user?.username || undefined,
-      caller_sub: user?.userId || undefined,
+      caller_email: stated?.email,
+      caller_name: stated?.name,
+      caller_sub: stated?.sub,
+      // A missing run is a programming error. Treat it as board work rather
+      // than inventing a person from whoever happens to be signed in.
+      actor_kind: context?.actor.kind ?? "board",
     };
   }
 

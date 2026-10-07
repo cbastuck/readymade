@@ -329,8 +329,8 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
    *
    * `run` is the run it was said in, or null outside one. A result carries it
    * whole, so the coordinator can tell the board's next runtime which run this
-   * continues and who began it; a notification carries the caller, which is
-   * how the coordinator knows whose it is to hear.
+   * continues and who began it. A notification carries the same context so the
+   * coordinator can address it and recheck person authority.
    */
   void emitData(const std::shared_ptr<Link>& link, const Data& data,
                 MessagePurpose purpose, const std::string& sender,
@@ -350,9 +350,9 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
         {"serviceUuid", sender},
         {"payload", asJson ? *asJson : json(describeData(data))},
       };
-      if (run && !run->caller.empty())
+      if (run)
       {
-        said["caller"] = run->caller.toJson();
+        said["context"] = run->toWire();
       }
       link->socket->sendText(said.dump(-1, ' ', false, json::error_handler_t::replace));
       return;
@@ -812,7 +812,10 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
       {
         throw std::runtime_error("a service is configured with an object");
       }
-      const json state = app->configureService(runtimeId, serviceUuid, config, space);
+      const auto context = ProcessContext::fromLink(
+        request.contains("context") ? request["context"] : json());
+      const json state = app->configureService(
+        runtimeId, serviceUuid, config, space, &context);
       if (state.is_boolean() && !state.get<bool>())
       {
         throw std::runtime_error("no service \"" + serviceUuid + "\"");

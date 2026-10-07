@@ -70,8 +70,11 @@ class Fetcher extends ServiceBase<State> {
 
     if (config.command) {
       if (config.command.action === "fetch") {
+        const resume =
+          this.app.defer?.(this) ??
+          ((result: any) => this.app.next(this, result));
         const result = await this.process(config.command?.params);
-        this.app.next(this, result);
+        resume(result);
       }
     }
   }

@@ -542,8 +542,11 @@ function PipelineStrip({
           (descriptor as ServiceModule | undefined)?.createUI ||
           FallbackUI;
 
+        const interactiveSubService =
+          subServiceInstance.app.serviceForUserInterface?.(subServiceInstance) ??
+          subServiceInstance;
         const uiElement = React.createElement(SubServiceUI as any, {
-          service: subServiceInstance,
+          service: interactiveSubService,
           showBypassOnlyIfExplicit: true,
           draggable: true,
           onServiceAction: onSubServiceAction,

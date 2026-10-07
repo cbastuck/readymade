@@ -139,14 +139,14 @@ void App::removeAllRuntimes()
 }
 
 json App::configureService(const std::string &runtimeId, const std::string &instanceId, json config,
-                           const std::string& space)
+                           const std::string& space, const ProcessContext* context)
 {
   auto rt = findRuntimeShared(runtimeId, space);
   if (!rt)
   {
     return false;
   }
-  return rt->configureService(instanceId, config);
+  return rt->configureService(instanceId, config, context);
 }
 
 json App::getServiceState(const std::string &runtimeId, const std::string &instanceId) const

@@ -1,6 +1,9 @@
 #pragma once
 
 #include <string>
+#include <chrono>
+#include <cstdint>
+#include <variant>
 
 #include <nlohmann/json.hpp>
 
@@ -75,6 +78,19 @@ struct Caller
   }
 };
 
+struct PersonRunActor
+{
+  Caller caller;
+  std::int64_t expiresAt = 0;
+};
+
+struct BoardRunActor {};
+struct MountRunActor {};
+struct LocalRunActor {};
+
+using RunActor = std::variant<PersonRunActor, BoardRunActor, MountRunActor,
+                              LocalRunActor>;
+
 struct ProcessContext
 {
   /// One invocation of a board, across every service and runtime it reaches.
@@ -83,16 +99,79 @@ struct ProcessContext
   std::string parentRunId;
   /// Where to send a result somebody is waiting for; empty when nobody is.
   std::string requestId;
-  /// Who began this run, when somebody did. It travels with the run across
-  /// the runtimes of a deployed board.
-  Caller caller;
+  /// What is acting in this run. Only the person variant carries identity and
+  /// the deadline of its delegated authority.
+  RunActor actor = BoardRunActor{};
+
+  static constexpr std::int64_t personRunTtlMs = 15 * 60 * 1000;
+
+  static std::int64_t nowMs()
+  {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count();
+  }
 
   /// A run with no parent: something outside the board asked for this.
-  static ProcessContext newRun()
+  static ProcessContext newRun(const std::string& kind = "board")
   {
     ProcessContext context;
     context.runId = generateUUID();
+    if (kind == "mount")
+      context.actor = MountRunActor{};
+    else if (kind == "local")
+      context.actor = LocalRunActor{};
+    else
+      context.actor = BoardRunActor{};
     return context;
+  }
+
+  const PersonRunActor* personActor() const
+  {
+    return std::get_if<PersonRunActor>(&actor);
+  }
+
+  std::string actorKind() const
+  {
+    if (std::holds_alternative<PersonRunActor>(actor))
+      return "person";
+    if (std::holds_alternative<MountRunActor>(actor))
+      return "mount";
+    if (std::holds_alternative<LocalRunActor>(actor))
+      return "local";
+    return "board";
+  }
+
+  static RunActor actorFromJson(const nlohmann::json& value)
+  {
+    if (!value.is_object())
+      return BoardRunActor{};
+    const auto kind = value.value("kind", std::string());
+    if (kind == "person")
+    {
+      PersonRunActor person;
+      person.caller = Caller::fromJson(value);
+      if (const auto it = value.find("expiresAt");
+          it != value.end() && it->is_number_integer())
+        person.expiresAt = it->get<std::int64_t>();
+      return person;
+    }
+    if (kind == "mount")
+      return MountRunActor{};
+    if (kind == "local")
+      return LocalRunActor{};
+    return BoardRunActor{};
+  }
+
+  nlohmann::json actorToJson() const
+  {
+    if (const auto person = personActor())
+    {
+      auto value = person->caller.toJson();
+      value["kind"] = "person";
+      value["expiresAt"] = person->expiresAt;
+      return value;
+    }
+    return {{"kind", actorKind()}};
   }
 
   /**
@@ -108,8 +187,7 @@ struct ProcessContext
     ProcessContext context;
     context.runId = generateUUID();
     context.parentRunId = parent.runId;
-    // Who began the work is the same person however deep it goes.
-    context.caller = parent.caller;
+    context.actor = parent.actor;
     return context;
   }
 
@@ -127,6 +205,7 @@ struct ProcessContext
   static ProcessContext fromJson(const nlohmann::json& value)
   {
     ProcessContext context;
+    context.actor = LocalRunActor{};
     if (value.is_object())
     {
       if (const auto it = value.find("runId"); it != value.end() && it->is_string())
@@ -150,7 +229,10 @@ struct ProcessContext
   static ProcessContext forClient(const nlohmann::json& value, const Caller& verified)
   {
     ProcessContext context = fromJson(value);
-    context.caller = verified;
+    if (!verified.empty())
+      context.actor = PersonRunActor{verified, nowMs() + personRunTtlMs};
+    else
+      context.actor = LocalRunActor{};
     return context;
   }
 
@@ -167,10 +249,14 @@ struct ProcessContext
     ProcessContext context = fromJson(value);
     // The reply address belongs to whoever was waiting at the other end.
     context.requestId.clear();
+    // A coordinator message without an actor is autonomous board work. Do
+    // this before inspecting the value because an absent context is JSON null,
+    // not an object whose missing `actor` can take the branch below.
+    context.actor = BoardRunActor{};
     if (value.is_object())
     {
-      if (const auto it = value.find("caller"); it != value.end())
-        context.caller = Caller::fromJson(*it);
+      if (const auto it = value.find("actor"); it != value.end())
+        context.actor = actorFromJson(*it);
     }
     return context;
   }
@@ -184,9 +270,14 @@ struct ProcessContext
       value["runId"] = runId;
     if (!parentRunId.empty())
       value["parentRunId"] = parentRunId;
-    if (!caller.empty())
-      value["caller"] = caller.toJson();
+    value["actor"] = actorToJson();
     return value;
+  }
+
+  bool expired(std::int64_t now = nowMs()) const
+  {
+    const auto person = personActor();
+    return person && person->expiresAt <= now;
   }
 
   /// Only the fields that carry something, so a peer sees absence as absence.

@@ -53,7 +53,7 @@ public:
   void removeAllRuntimes();
 
   json configureService(const std::string &runtimeId, const std::string &instanceId, json config,
-                        const std::string& space = "");
+                        const std::string& space = "", const ProcessContext* context = nullptr);
   json getServiceState(const std::string &runtimeId, const std::string &instanceId) const;
   json getServices(const std::string &runtimeId, const std::string& space = "") const;
   json appendService(const std::string& runtimeId, const ServiceConfiguration& service);

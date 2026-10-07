@@ -215,7 +215,8 @@ RuntimeConfiguration Runtime::getConfiguration() const
   return config;
 }
 
-json Runtime::configureService(const std::string &instanceId, json config)
+json Runtime::configureService(const std::string &instanceId, json config,
+                               const ProcessContext* context)
 {
   auto svc = resolveService(instanceId);
   if (!svc)
@@ -223,7 +224,28 @@ json Runtime::configureService(const std::string &instanceId, json config)
     return false;
   }
 
-  return svc->configure(config);
+  if (!context)
+  {
+    return svc->configure(config);
+  }
+
+  const auto previous = m_context;
+  const auto hadContext = m_hasContext;
+  m_context = *context;
+  m_hasContext = true;
+  try
+  {
+    auto state = svc->configure(config);
+    m_context = previous;
+    m_hasContext = hadContext;
+    return state;
+  }
+  catch (...)
+  {
+    m_context = previous;
+    m_hasContext = hadContext;
+    throw;
+  }
 }
 
 json Runtime::getServiceState(const std::string &instanceId) const
@@ -389,6 +411,27 @@ Data Runtime::processAt(const std::string& instanceId, Data data, ProcessContext
   return out;
 }
 
+Data Runtime::withContext(const ProcessContext& context, std::function<Data()> fn)
+{
+  const auto previous = m_context;
+  const auto hadContext = m_hasContext;
+  m_context = context;
+  m_hasContext = true;
+  try
+  {
+    auto result = fn();
+    m_context = previous;
+    m_hasContext = hadContext;
+    return result;
+  }
+  catch (...)
+  {
+    m_context = previous;
+    m_hasContext = hadContext;
+    throw;
+  }
+}
+
 bool Runtime::holdsService(const std::string& instanceId) const
 {
   if (findServiceById(instanceId) != m_services.cend())
@@ -418,7 +461,8 @@ void Runtime::log(const Service& svc, LogLevel level, const std::string& event,
   LogEntry entry;
   entry.runId = m_context.runId;
   entry.parentRunId = m_context.parentRunId;
-  entry.caller = m_context.caller.sub;
+  if (const auto person = m_context.personActor())
+    entry.caller = person->caller.sub;
   entry.ts = isoTimestamp();
   entry.runtimeId = m_runtimeId;
   entry.serviceUuid = svc.getId();
@@ -476,6 +520,13 @@ void Runtime::registerLogTarget(std::function<void(const LogEntry&)> target)
 
 Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore, std::function<void(Data)> callback)
 {
+  if (!m_hasContext)
+  {
+    const auto autonomous = ProcessContext::newRun("board");
+    return withContext(autonomous, [this, &service, data = std::move(data), advanceBefore, callback]() mutable {
+      return processFrom(service, std::move(data), advanceBefore, callback);
+    });
+  }
   onProcessBegin();
   auto it = findServiceById(service.getId());
   if (it == m_services.cend())
@@ -487,6 +538,8 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
        next != m_services.cend();
        ++next)
   {
+    if (m_hasContext && m_context.expired())
+      return onProcessEnd(Null());
     sendServiceLifecycleNotification(**next, "call-process", data);
     // The flow itself, at debug: which service the runtime called, and below,
     // what it returned and how long it took.
@@ -511,7 +564,8 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
       LogEntry done;
       done.runId = m_context.runId;
       done.parentRunId = m_context.parentRunId;
-      done.caller = m_context.caller.sub;
+      if (const auto person = m_context.personActor())
+        done.caller = person->caller.sub;
       done.ts = isoTimestamp();
       done.runtimeId = m_runtimeId;
       done.serviceUuid = (*next)->getId();

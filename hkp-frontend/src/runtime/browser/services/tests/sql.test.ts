@@ -507,6 +507,30 @@ describe("the caller parameters", () => {
       statement: WHOAMI,
     });
     (app as any).getAuthenticatedUser = () => user;
+    (app as any).currentContext = () => {
+      const person = user as
+        | { userId?: string; username?: string; email?: string }
+        | null;
+      return person?.userId
+        ? {
+            requestId: "",
+            runId: "local-person-run",
+            actor: {
+              kind: "person",
+              sub: person.userId,
+              expiresAt: Date.now() + 60_000,
+              ...(person.email
+                ? { email: person.email.trim().toLowerCase() }
+                : {}),
+              ...(person.username ? { name: person.username } : {}),
+            },
+          }
+        : {
+            requestId: "",
+            runId: "auth-off-run",
+            actor: { kind: "local" },
+          };
+    };
     return svc;
   }
 
@@ -550,7 +574,17 @@ describe("the caller parameters", () => {
       statement: WHOAMI,
     });
     (app as any).getAuthenticatedUser = () => user;
-    let run: unknown = { requestId: "r", runId: "run-1", caller };
+    let run: unknown = {
+      requestId: "r",
+      runId: "run-1",
+      actor: caller
+        ? {
+            kind: "person",
+            ...(caller as object),
+            expiresAt: Date.now() + 60_000,
+          }
+        : { kind: "board" },
+    };
     (app as any).currentContext = () => run;
     return {
       svc,
@@ -591,7 +625,15 @@ describe("the caller parameters", () => {
     // Opening the database is awaited; by the time the statement runs, the
     // service has been reached by a run of somebody else's.
     const answer = run.svc.process({});
-    run.overtakenBy({ requestId: "r", runId: "run-2", caller: { sub: "auth0|ben" } });
+    run.overtakenBy({
+      requestId: "r",
+      runId: "run-2",
+      actor: {
+        kind: "person",
+        sub: "auth0|ben",
+        expiresAt: Date.now() + 60_000,
+      },
+    });
 
     expect((await answer).rows[0]).toMatchObject({ sub: "auth0|anna" });
   });

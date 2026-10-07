@@ -9,6 +9,7 @@
 #include "./http_session.h"
 #include "./request_decode.h"
 #include "mount.h"
+#include "../../process_context.h"
 
 #include <algorithm>
 #include <cctype>
@@ -166,7 +167,7 @@ void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::strin
       if (complete)
       {
         auto data = Data(assembled);
-        nextAsync(data, [session](Data result) {
+        nextInRun(data, ProcessContext::newRun("mount"), [session](Data result) {
           session->sendResult(result);
         });
       }
@@ -211,7 +212,7 @@ void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::strin
     data = Data(request);
   }
 
-  nextAsync(data, [session](Data result) {
+  nextInRun(data, ProcessContext::newRun("mount"), [session](Data result) {
     session->sendResult(result);
   });
 }

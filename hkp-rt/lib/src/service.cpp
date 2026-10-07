@@ -93,6 +93,16 @@ void Service::nextAsync(Data data, std::function<void(Data)> callback)
   m_host->processFrom(*this, data, true, callback);
 }
 
+Data Service::nextInRun(Data data, const ProcessContext& context,
+                        std::function<void(Data)> callback)
+{
+  if (!m_host)
+    throw std::runtime_error("Service::nextInRun: host not set");
+  return m_host->withContext(context, [this, data = std::move(data), callback]() mutable {
+    return m_host->processFrom(*this, std::move(data), true, callback);
+  });
+}
+
 Data Service::next(Data data, bool immediately)
 {
   if (!m_host)
@@ -139,10 +149,32 @@ bool Service::isBypass() const
 
 void Service::sendNotification(const Data& value) const
 {
-  if (m_host)
+  if (!m_host)
+    return;
+
+  const auto continued = m_deferredContext;
+  if (continued)
+  {
+    m_host->withContext(*continued, [this, &value]() {
+      m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
+      return Null();
+    });
+    return;
+  }
+
+  if (m_host->currentContext())
   {
     m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
+    return;
   }
+
+  // A standing source speaking outside a service call is board work, not an
+  // auth-off run and not whoever happens to host the runtime.
+  const auto board = ProcessContext::newRun("board");
+  m_host->withContext(board, [this, &value]() {
+    m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
+    return Null();
+  });
 }
 
 void Service::log(LogLevel level, const std::string& event,
@@ -150,7 +182,18 @@ void Service::log(LogLevel level, const std::string& event,
 {
   if (m_host)
   {
-    m_host->log(*this, level, event, data);
+    const auto continued = m_deferredContext;
+    if (continued)
+    {
+      m_host->withContext(*continued, [this, level, &event, &data]() {
+        m_host->log(*this, level, event, data);
+        return Null();
+      });
+    }
+    else
+    {
+      m_host->log(*this, level, event, data);
+    }
   }
 }
 
@@ -191,20 +234,25 @@ std::shared_ptr<SubRuntime> Service::createSubRuntime(const json& servicesConfig
 
 void Service::emit(Data partialResult)
 {
-  // Close this service's process lifecycle bracket at the true end of the async
-  // work: the runtime withheld "call-process-finished" when process() deferred
-  // (see deferCompletion), so send it now with the real result before driving
-  // the rest of the pipeline. A host without a per-service processing indicator
-  // (SubRuntime) ignores it.
-  if (m_host)
+  // A deferred answer consumes the context captured by deferCompletion(). Both
+  // its lifecycle notification and the pipeline it resumes belong to that
+  // same run. Later emissions are a standing arrangement and therefore start
+  // independently through nextAsync().
+  auto continued = std::move(m_deferredContext);
+  m_deferredContext.reset();
+  if (continued && m_host)
   {
-    m_host->notifyProcessFinished(*this, partialResult);
+    m_host->withContext(*continued, [this, data = std::move(partialResult)]() mutable {
+      m_host->notifyProcessFinished(*this, data);
+      return m_host->processFrom(*this, std::move(data), true);
+    });
   }
-
-  // nextAsync posts via App::postCallback, making this safe to call from
-  // a background thread.  Each emission drives an independent traversal of
-  // the services that follow this one in the outer pipeline.
-  nextAsync(std::move(partialResult));
+  else
+  {
+    if (m_host)
+      m_host->notifyProcessFinished(*this, partialResult);
+    nextAsync(std::move(partialResult));
+  }
 }
 
 MountHandle Service::mountEndpoint(const std::string& name, MountAdopter adopter)
@@ -215,6 +263,11 @@ MountHandle Service::mountEndpoint(const std::string& name, MountAdopter adopter
 Data Service::deferCompletion()
 {
   m_processDeferred = true;
+  if (m_host)
+  {
+    if (const auto* context = m_host->currentContext())
+      m_deferredContext = std::make_shared<ProcessContext>(*context);
+  }
   return Null();
 }
 

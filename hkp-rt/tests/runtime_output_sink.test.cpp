@@ -14,6 +14,7 @@
 #include <types/data.h>
 
 #include "process_context.h"
+#include "runtime_host.h"
 
 using namespace hkp;
 
@@ -36,6 +37,23 @@ public:
   static std::string serviceId() { return "pass-through"; }
   std::string getServiceId() const override { return serviceId(); }
   Data process(Data data) override { return data; }
+};
+
+class ConfigureContext final : public Service {
+public:
+  explicit ConfigureContext(const std::string& instanceId)
+    : Service(instanceId, serviceId()) {}
+  static std::string serviceId() { return "configure-context"; }
+  std::string getServiceId() const override { return serviceId(); }
+  Data process(Data data) override { return data; }
+  json configure(Data) override {
+    const auto* run = parentHost() ? parentHost()->currentContext() : nullptr;
+    return json{
+      {"runId", run ? run->runId : ""},
+      {"actorKind", run ? run->actorKind() : "none"},
+      {"caller", run && run->personActor() ? run->personActor()->caller.sub : ""},
+    };
+  }
 };
 
 std::shared_ptr<App> appWithRuntime(json state = json::object()) {
@@ -117,6 +135,33 @@ TEST_CASE("a runtime's result reaches its sink as the value it was",
 
   REQUIRE(eventually([&] { return heard.resultCount() == 1; }));
   REQUIRE(heard.results[0] == json{{"n", 1}});
+}
+
+TEST_CASE("configuration runs as the context supplied by the framework",
+          "[runtime][context][configure]") {
+  auto app = std::make_shared<App>();
+  app->registerService<ConfigureContext>();
+  app->createRuntime(json{
+    {"id", "rt-configure"},
+    {"name", "Runtime"},
+    {"services", json::array({
+      json{{"serviceId", ConfigureContext::serviceId()}, {"uuid", "svc-1"}},
+    })},
+  });
+  auto run = ProcessContext::newRun();
+  run.runId = "configured-by-member";
+  run.actor = PersonRunActor{Caller{"auth0|member", "member@example.com", ""},
+                             ProcessContext::nowMs() + 60'000};
+
+  const auto attributed = app->configureService(
+    "rt-configure", "svc-1", json::object(), "", &run);
+  const auto internal = app->configureService(
+    "rt-configure", "svc-1", json::object());
+
+  REQUIRE(attributed["runId"] == "configured-by-member");
+  REQUIRE(attributed["actorKind"] == "person");
+  REQUIRE(attributed["caller"] == "auth0|member");
+  REQUIRE(internal["actorKind"] == "none");
 }
 
 TEST_CASE("a sink hears only the runtime it was set for", "[runtime][sink]") {
@@ -221,10 +266,13 @@ TEST_CASE("a sink is told the run a result was produced in, and who began it",
     ProcessContext::forClient(json{{"runId", "run-1"}}, alice));
 
   REQUIRE(eventually([&] { return heard.resultCount() == 1; }));
-  REQUIRE(heard.runs[0] == json{
-    {"runId", "run-1"},
-    {"caller", {{"sub", "auth0|alice"}, {"email", "alice@example.com"}}},
+  REQUIRE(heard.runs[0]["runId"] == "run-1");
+  REQUIRE(heard.runs[0]["actor"] == json{
+    {"kind", "person"}, {"sub", "auth0|alice"},
+    {"email", "alice@example.com"},
+    {"expiresAt", heard.runs[0]["actor"]["expiresAt"]}
   });
+  REQUIRE(heard.runs[0]["actor"]["expiresAt"].is_number_integer());
   // And the log says who it was, by `sub` alone.
   REQUIRE(eventually([&] { return heard.eventCount() > 0; }));
   REQUIRE(heard.callers[0] == "auth0|alice");
@@ -235,28 +283,37 @@ TEST_CASE("a run a client begins is the token's, whatever its context claims",
   const json forged = {
     {"runId", "run-from-client"},
     {"requestId", "reply-here"},
-    {"caller", {{"sub", "auth0|bob"}, {"email", "bob@example.com"}, {"name", "Bob"}}},
+    {"actor", {{"kind", "person"}, {"sub", "auth0|bob"},
+               {"email", "bob@example.com"}, {"name", "Bob"},
+               {"expiresAt", 9999999999999LL}}},
   };
   Caller alice;
   alice.sub = "auth0|alice";
 
   // Read as a client's: the run is kept, the caller is never read.
-  REQUIRE(ProcessContext::fromJson(forged).caller.empty());
+  REQUIRE(ProcessContext::fromJson(forged).actorKind() == "local");
   const auto asAlice = ProcessContext::forClient(forged, alice);
   REQUIRE(asAlice.runId == "run-from-client");
-  REQUIRE(asAlice.caller.sub == "auth0|alice");
-  REQUIRE(asAlice.caller.name.empty());
+  REQUIRE(asAlice.personActor());
+  REQUIRE(asAlice.personActor()->caller.sub == "auth0|alice");
+  REQUIRE(asAlice.personActor()->expiresAt > ProcessContext::nowMs());
+  REQUIRE(asAlice.personActor()->caller.name.empty());
   // Let in without a token: nobody, not somebody called anonymous.
-  REQUIRE(ProcessContext::forClient(forged, Caller()).caller.empty());
+  REQUIRE(ProcessContext::forClient(forged, Caller()).actorKind() == "local");
 
   // Read as a coordinator's, over the board's own link: taken as stated.
   const auto linked = ProcessContext::fromLink(forged);
-  REQUIRE(linked.caller.sub == "auth0|bob");
-  REQUIRE(linked.caller.name == "Bob");
+  REQUIRE(linked.personActor());
+  REQUIRE(linked.personActor()->caller.sub == "auth0|bob");
+  REQUIRE(linked.personActor()->caller.name == "Bob");
   REQUIRE(linked.requestId.empty());
-  // A caller without a `sub` is nobody, not somebody with half an identity.
-  REQUIRE(ProcessContext::fromLink(json{{"caller", {{"email", "x@y.z"}}}}).caller.empty());
+  // A malformed person is expired, rather than gaining another actor kind.
+  const auto malformed = ProcessContext::fromLink(
+    json{{"actor", {{"kind", "person"}, {"email", "x@y.z"}}}});
+  REQUIRE(malformed.personActor());
+  REQUIRE(malformed.personActor()->caller.empty());
+  REQUIRE(malformed.expired());
 
   // And whoever began a run began everything invoked from inside it.
-  REQUIRE(ProcessContext::childOf(linked).caller.sub == "auth0|bob");
+  REQUIRE(ProcessContext::childOf(linked).personActor()->caller.sub == "auth0|bob");
 }

@@ -35,7 +35,8 @@ public:
 
   RuntimeConfiguration getConfiguration() const;
   
-  json configureService(const std::string &instanceId, json config);
+  json configureService(const std::string &instanceId, json config,
+                        const ProcessContext* context = nullptr);
 
   // The values for the references this runtime's services carry, held apart
   // from every service's state and reachable only through here.
@@ -88,6 +89,11 @@ public:
 
   // ── RuntimeHost overrides ────────────────────────────────────────────────
   Data processFrom(const Service &service, Data data, bool advanceBefore=true, std::function<void(Data)> callback = nullptr) override;
+  const ProcessContext* currentContext() const override
+  {
+    return m_hasContext ? &m_context : nullptr;
+  }
+  Data withContext(const ProcessContext& context, std::function<Data()> fn) override;
   void scheduleProcessFrom(const Service &service, Data data, bool advanceBefore=true) override;
   void post(std::function<void()> fn) override;
   bool isConnected(const Service &svc) const override;

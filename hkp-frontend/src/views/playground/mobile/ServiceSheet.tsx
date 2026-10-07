@@ -31,6 +31,7 @@ import {
   getServiceConfig as getBrowserServiceConfig,
   configureService as configureBrowserService,
 } from "../../../runtime/browser/BrowserRuntimeApi";
+import { personRun } from "../../../runtime/processContext";
 import { makeServiceInstance as makeRestInstance } from "../../../runtime/rest/RuntimeRest";
 import { findServiceUI as findRestServiceUI } from "../../../runtime/rest/UIRegistry";
 import RuntimeRestServiceUI from "../../../runtime/rest/RuntimeRestServiceUI";
@@ -325,7 +326,13 @@ export default function ServiceSheet({
       throw new Error("Runtime not initialized");
     }
     if (isRuntimeBrowserClassType(runtime.type)) {
-      await configureBrowserService(sc, service, payload);
+      const browserScope = sc as BrowserRuntimeScope;
+      await configureBrowserService(
+        browserScope,
+        service,
+        payload,
+        personRun(browserScope.signedInUser()),
+      );
     } else if (isRuntimeRestClassType(runtime.type)) {
       await configureRestService(sc, service, payload);
     } else if (isRuntimeGraphQLClassType(runtime.type)) {

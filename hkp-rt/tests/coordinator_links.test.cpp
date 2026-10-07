@@ -674,7 +674,12 @@ TEST_CASE("it takes the run and its caller from the coordinator, and hands them 
   REQUIRE(links.introduce(introduction(coordinator)).empty());
   REQUIRE(coordinator.request("provision", provision())["ok"] == true);
   const json alice = {{"sub", "auth0|alice"}, {"email", "alice@example.com"}, {"name", "Alice"}};
-  const json run = {{"runId", "run-1"}, {"caller", alice}};
+  const json run = {
+    {"runId", "run-1"},
+    {"actor", {{"kind", "person"}, {"sub", alice["sub"]},
+               {"email", alice["email"]}, {"name", alice["name"]},
+               {"expiresAt", 9999999999999LL}}}
+  };
 
   coordinator.send(json{{"type", "processRuntime"}, {"params", {{"n", 1}}}, {"context", run}});
 
@@ -684,11 +689,11 @@ TEST_CASE("it takes the run and its caller from the coordinator, and hands them 
   REQUIRE(eventually([&] { return !coordinator.events("notification").empty(); }));
   for (const auto& said : coordinator.events("notification"))
   {
-    REQUIRE(said["caller"] == alice);
+    REQUIRE(said["context"] == run);
   }
 }
 
-TEST_CASE("a run nobody began names nobody", "[links][caller]") {
+TEST_CASE("a run without a stated actor is the board's", "[links][actor]") {
   FakeCoordinator coordinator;
   auto app = makeApp();
   CoordinatorLinks links(app, createMemoryLinkStore(), fast());
@@ -700,10 +705,10 @@ TEST_CASE("a run nobody began names nobody", "[links][caller]") {
   REQUIRE(eventually([&] { return coordinator.events("result").size() == 1; }));
   const auto context = coordinator.events("result")[0]["context"];
   REQUIRE(context["runId"].is_string());
-  REQUIRE_FALSE(context.contains("caller"));
+  REQUIRE(context["actor"] == json{{"kind", "board"}});
   for (const auto& said : coordinator.events("notification"))
   {
-    REQUIRE_FALSE(said.contains("caller"));
+    REQUIRE(said["context"]["actor"] == json{{"kind", "board"}});
   }
 }
 
@@ -722,7 +727,11 @@ TEST_CASE("it begins at one service when asked, and says what came of it",
     json{{"uuid", "second"}, {"serviceId", "echo"}, {"serviceName", "Echo"},
          {"state", json::object()}},
   })))["ok"] == true);
-  const json run = {{"runId", "run-2"}, {"caller", {{"sub", "auth0|alice"}}}};
+  const json run = {
+    {"runId", "run-2"},
+    {"actor", {{"kind", "person"}, {"sub", "auth0|alice"},
+               {"expiresAt", 9999999999999LL}}}
+  };
 
   const auto answer = coordinator.request(
     "processService",

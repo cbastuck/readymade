@@ -659,7 +659,8 @@ crow::response Server::impl::configureService(const crow::request &req, const st
   {
     return crow::response(crow::status::BAD_REQUEST);
   }
-  auto config = app->configureService(runtimeId, instanceId, body);
+  const auto context = ProcessContext::forClient(json(), callerOfRequest(req));
+  auto config = app->configureService(runtimeId, instanceId, body, "", &context);
   if (config.is_null())
   {
     return crow::response(crow::status::NOT_FOUND);
