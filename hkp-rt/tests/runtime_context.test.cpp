@@ -147,12 +147,13 @@ struct Heard {
     };
   }
 
-  // What a service reported itself, leaving out the flow the runtime reports.
+  // Only reports made by these test services. Configuration also sends a
+  // bypass notification, which can reach a newly attached sink after setup.
   std::vector<Said> reports(const std::string& sender) {
     std::lock_guard<std::mutex> lock(mutex);
     std::vector<Said> own;
     for (const auto& said : notifications) {
-      if (said.sender == sender && !said.payload.contains("__internal"))
+      if (said.sender == sender && said.payload.contains("level"))
         own.push_back(said);
     }
     return own;
