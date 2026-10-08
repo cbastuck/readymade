@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, MouseEvent } from "react";
+import { useState, useRef, useEffect, useCallback, MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import ResizeObserver from "resize-observer-polyfill";
 
 import { zLayers } from "../../../../styles";
@@ -84,15 +85,15 @@ export default function CanvasUI(props: ServiceUIProps) {
     }
   };
 
-  const registerClickHandler = (
+  const registerClickHandler = useCallback((
     rect: { x: number; y: number; width: number; height: number },
     action: any,
   ) => {
     const id = `${rect.x}${rect.y}`;
     clickHandlersRef.current[id] = { rect: rect as Rect, action };
-  };
+  }, []);
 
-  const triggerUpdate = (objectOrArray: any) => {
+  const triggerUpdate = useCallback((objectOrArray: any) => {
     recentDataRef.current = objectOrArray;
     if (!canvasRef.current) {
       return;
@@ -106,7 +107,15 @@ export default function CanvasUI(props: ServiceUIProps) {
       imageCacheRef.current,
       registerClickHandler,
     );
-  };
+  }, [registerClickHandler]);
+
+  const attachCanvas = useCallback((canvas: HTMLCanvasElement | null) => {
+    canvasRef.current = canvas;
+    // Entering or leaving fullscreen mounts a new canvas in the other tree.
+    if (canvas && recentDataRef.current !== undefined) {
+      triggerUpdate(recentDataRef.current);
+    }
+  }, [triggerUpdate]);
 
   const onClick = (service: ServiceInstance, ev: MouseEvent) => {
     const { clientX: x, clientY: y } = ev;
@@ -137,9 +146,9 @@ export default function CanvasUI(props: ServiceUIProps) {
     const fullscreenVal = fullscreen || service.fullscreen;
     const w = fullscreenVal ? fullWidth : canvasWidth;
     const h = fullscreenVal ? fullHeight : canvasHeight - 4; // TODO: could not figure out why we grows otherwise
-    return (
+    const canvas = (
       <canvas
-        ref={(ref) => { canvasRef.current = ref; }}
+        ref={attachCanvas}
         style={{
           position: fullscreenVal ? "fixed" : undefined,
           top: fullscreenVal ? 0 : undefined,
@@ -162,6 +171,9 @@ export default function CanvasUI(props: ServiceUIProps) {
         height={h}
       />
     );
+    // The runtime may be zoomed. A fixed canvas inside it inherits that zoom,
+    // so render fullscreen at the document level instead.
+    return fullscreenVal ? createPortal(canvas, document.body) : canvas;
   };
 
   const onNotification = (notification: any) => {
