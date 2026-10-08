@@ -728,6 +728,22 @@ any other value, which is what gives each row of a `repeat` its own destination:
 { "type": "text", "placeholder": "{{item.title}}", "href": "{{item.link}}", "grow": true }
 ```
 
+`value` shows something that is not a service's to say, in place of the source's value: facade
+state another widget published (`{ "$state": "key" }`), or who the facade is being shown to
+(`{ "$user": "name" }`, `{ "$user": "email" }`). On a deployed, shared board `name` is what the
+board's member list calls the person:
+
+```json
+{ "type": "text", "label": "Booking as", "value": { "$user": "name" }, "placeholder": "nobody — not signed in" }
+```
+
+`$user` is for *showing* somebody who they are, and also resolves in a payload. It is never
+what a service should act on — anybody can put a name in a payload. A board several people use
+decides who is acting from the run's caller, which the server states: in `sql`, the reserved
+parameters `$caller_email`, `$caller_name` and `$caller_sub`. A facade's `process` action is
+callable by a member with any payload, so every rule that matters is checked in the service
+behind it, not in the widget.
+
 Nothing is linked where there is nothing to click, so a widget whose source has not answered yet
 shows its placeholder as plain text rather than as a link that goes nowhere.
 

@@ -29,7 +29,14 @@
  *   }
  */
 
-import { AppImpl, RuntimeClassType, ServiceClass, ServiceInstance } from "hkp-frontend/src/types";
+import {
+  AppImpl,
+  ProcessContext,
+  RuntimeClassType,
+  ServiceClass,
+  ServiceInstance,
+} from "hkp-frontend/src/types";
+import { nestedRun } from "hkp-frontend/src/runtime/processContext";
 import ServiceBase from "./ServiceBase";
 import BrowserSubServiceUI from "./BrowserSubServiceUI";
 import BrowserRegistry from "../BrowserRegistry";
@@ -259,6 +266,9 @@ export class BrowserSubService extends ServiceBase<State> {
     if (this.state.mode === "source") {
       return this.buildBoardDescriptor();
     }
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control.
+    const run = this.app.currentContext?.(this);
 
     // Ensure scope is built before processing.
     if (!this._scope) {
@@ -271,7 +281,13 @@ export class BrowserSubService extends ServiceBase<State> {
       return this.state.stopPropagation ? null : input;
     }
     // Answered by returning, so not reported through onResult as well.
-    const result = await this._scope.next(null, input, null, false, false);
+    const result = await this._scope.next(
+      null,
+      input,
+      nestedRun(run),
+      false,
+      false,
+    );
     return this.state.stopPropagation ? null : result;
   }
 
@@ -373,7 +389,11 @@ export class BrowserSubService extends ServiceBase<State> {
    * "process at" one level down: what follows the named service inside this
    * scope runs, and what precedes it does not.
    */
-  async processNested(address: string, payload: unknown): Promise<unknown> {
+  async processNested(
+    address: string,
+    payload: unknown,
+    run?: ProcessContext | null,
+  ): Promise<unknown> {
     if (!this._scope) {
       await this._scopeBuilding;
     }
@@ -388,11 +408,11 @@ export class BrowserSubService extends ServiceBase<State> {
     if (segments.length > 1) {
       const deeper = here as unknown as BrowserSubService;
       return typeof deeper.processNested === "function"
-        ? deeper.processNested(segments.slice(1).join("."), payload)
+        ? deeper.processNested(segments.slice(1).join("."), payload, run)
         : null;
     }
     // false: begin *at* this service; the default advances past it.
-    return this._scope.next(here, payload, null, false);
+    return this._scope.next(here, payload, run, false);
   }
 
   destroy(): void {
@@ -434,6 +454,8 @@ export class BrowserSubService extends ServiceBase<State> {
     );
     // The board's assets, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    // And whoever is signed in to the app around it is signed in here.
+    scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
     // Before any service is added: a service may hold a value while it is
     // being configured (a Hold given a value to write), and it has to land in
     // the cells the scope will go on using, not in ones replaced after.
@@ -441,7 +463,7 @@ export class BrowserSubService extends ServiceBase<State> {
 
     // Forward async results from the inner pipeline (e.g. Timer ticks) to the
     // outer pipeline so downstream services see the output.
-    scope.onResult = async (_instanceId, result) => {
+    scope.onResult = async (_instanceId, result, context) => {
       // The second route out, and the one a scope would otherwise leak
       // through. What arrives here was not produced by a call this service is
       // answering, so nothing has already been stopped on its behalf: a Timer
@@ -452,7 +474,11 @@ export class BrowserSubService extends ServiceBase<State> {
         return;
       }
       if (result !== null && result !== undefined) {
-        this.app.next(this, result);
+        // In the run it was produced in: by now this service is usually in no
+        // call of its own — the answer came late, or the pipeline was entered
+        // at a scoped address — and without it the services after the scope
+        // would run as the board, for whoever it was that asked.
+        this.app.next(this, result, { run: context });
       }
     };
 

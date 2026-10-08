@@ -4,13 +4,17 @@ import { useAppContext } from "../../AppContext";
 import { CoordinatorDescriptor, restoreCoordinators } from "../../common";
 import {
   CoordinatorBoardInfo,
+  SharedBoardInfo,
   deleteCoordinatorBoard,
   listCoordinatorBoards,
+  listSharedBoards,
 } from "../cloud/coordinatorClient";
 import { BoardNode, CoordinatorsController, FolderNode } from "./types";
 
 type CoordinatorState = {
   boards?: CoordinatorBoardInfo[];
+  /** Boards somebody else owns and shared with the person signed in. */
+  shared?: SharedBoardInfo[];
   error?: boolean;
   loading?: boolean;
 };
@@ -41,6 +45,25 @@ function boardNode(
     // view (the same live coordinator session the toolbar icon uses).
     action: { kind: "cloud", coordinatorUrl, boardName: board.boardName },
     onUndeploy,
+  };
+}
+
+/**
+ * A board somebody else owns. It is theirs to stop or delete, so the row
+ * offers neither; opening it opens its facade.
+ */
+function sharedNode(coordinatorUrl: string, board: SharedBoardInfo): BoardNode {
+  return {
+    type: "board",
+    name: board.boardName,
+    state: board.status === "running" ? "running" : "needs-input",
+    sub: `Shared with you as “${board.name}”`,
+    action: {
+      kind: "cloud",
+      coordinatorUrl,
+      boardName: board.boardName,
+      sharedBy: board.owner,
+    },
   };
 }
 
@@ -99,19 +122,29 @@ export function useCloudBoardsFolder(
         ...prev,
         [coordinator.url]: {
           boards: prev[coordinator.url]?.boards,
+          shared: prev[coordinator.url]?.shared,
           loading: true,
         },
       }));
       try {
-        const boards = await listCoordinatorBoards(
-          coordinator.url,
-          user.userId,
-          user.idToken,
-        );
+        // Asked separately: somebody a board is shared with need not be
+        // allowed to own boards on that coordinator, and is then refused the
+        // first question and answered the second.
+        const [own, shared] = await Promise.allSettled([
+          listCoordinatorBoards(coordinator.url, user.userId, user.idToken),
+          listSharedBoards(coordinator.url, user.idToken),
+        ]);
+        const sharedBoards = shared.status === "fulfilled" ? shared.value : [];
+        if (own.status === "rejected" && sharedBoards.length === 0) {
+          throw own.reason;
+        }
         if (mountedRef.current) {
           setByCoordinator((prev) => ({
             ...prev,
-            [coordinator.url]: { boards },
+            [coordinator.url]: {
+              boards: own.status === "fulfilled" ? own.value : [],
+              shared: sharedBoards,
+            },
           }));
         }
       } catch {
@@ -177,10 +210,13 @@ export function useCloudBoardsFolder(
           undeploy(coordinator, board.boardName),
         ),
       );
+      const shared = (state?.shared ?? []).map((board) =>
+        sharedNode(coordinator.url, board),
+      );
       return {
         type: "folder",
         name: coordinator.name || coordinator.url,
-        children: boards,
+        children: [...boards, ...shared],
         emptyHint: state?.loading
           ? "Loading…"
           : state?.error

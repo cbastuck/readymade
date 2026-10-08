@@ -1,0 +1,474 @@
+{
+  "boardName": "SQL Explorer (hkp-node)",
+  "description": "Every SQL database your hkp-node keeps for you, and what is in it. Pick a database to see its tables, pick a table to see its rows — click a value to change it, tick rows to delete them — and export any database as an ordinary SQL dump. \"Yours\" is exact: hkp-node files databases under whoever is signed in, so this lists the ones your boards made there, deployed ones included, and nobody else's.",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "ask",
+      "name": "Ask for a dump",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "dump",
+      "name": "hkp-node (dump)",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "save",
+      "name": "Save",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "databases",
+        "serviceId": "sub-service",
+        "serviceName": "Which databases",
+        "state": {
+          "stopPropagation": true,
+          "pipeline": [
+            {
+              "instanceId": "list",
+              "serviceId": "sql",
+              "serviceName": "Databases",
+              "state": {
+                "mode": "databases"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "tables",
+        "serviceId": "sub-service",
+        "serviceName": "Which tables",
+        "state": {
+          "stopPropagation": true,
+          "pipeline": [
+            {
+              "instanceId": "list",
+              "serviceId": "sql",
+              "serviceName": "Tables",
+              "state": {
+                "mode": "query",
+                "statement": "-- Every table and view, and the statements that read and change its rows.\n-- A table or column name cannot be a bound parameter, so they are written\n-- here, each name quoted as an identifier; the values stay parameters.\n-- Views and WITHOUT ROWID tables get no-ops: their rows have no rowid to\n-- address. So does a table with a column of its own called rowid, where the\n-- name means that column, which need not tell one row from another.\nWITH shown AS (\n  SELECT name, type,\n         type = 'table' AND wr = 0 AND NOT EXISTS (\n           SELECT 1 FROM pragma_table_info(listed.name) AS c\n            WHERE lower(c.name) = 'rowid'\n         ) AS editable,\n         '\"' || replace(name, '\"', '\"\"') || '\"' AS ident\n  FROM pragma_table_list AS listed\n  WHERE schema = 'main'\n    AND type IN ('table', 'view')\n    AND name NOT LIKE 'sqlite_%'\n)\nSELECT\n  $database AS database,\n  name,\n  type,\n  editable,\n  CASE WHEN editable\n    THEN 'SELECT rowid AS rowid, * FROM ' || ident || ' LIMIT 500'\n    ELSE 'SELECT * FROM ' || ident || ' LIMIT 500'\n  END AS readRows,\n  CASE WHEN editable\n    THEN 'UPDATE ' || ident || ' SET ' || (\n      SELECT group_concat(\n        '\"' || replace(c.name, '\"', '\"\"') || '\" = CASE WHEN $column = ' || quote(c.name)\n          || ' THEN $value ELSE \"' || replace(c.name, '\"', '\"\"') || '\" END',\n        ', ')\n      FROM pragma_table_info(shown.name) AS c\n    ) || ' WHERE $action = ''update'' AND rowid = $rowid'\n    ELSE 'SELECT 0'\n  END AS updateRow,\n  CASE WHEN editable\n    THEN 'DELETE FROM ' || ident || ' WHERE $action = ''delete'' AND rowid IN (SELECT value FROM json_each($rowids))'\n    ELSE 'SELECT 0'\n  END AS deleteRows\nFROM shown\nORDER BY type, name"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "rows",
+        "serviceId": "sub-service",
+        "serviceName": "Which rows",
+        "state": {
+          "stopPropagation": true,
+          "pipeline": [
+            {
+              "instanceId": "change-row",
+              "serviceId": "sql",
+              "serviceName": "Change a value",
+              "state": {
+                "mode": "run",
+                "emit": "input",
+                "statement": "SELECT 0"
+              }
+            },
+            {
+              "instanceId": "drop-rows",
+              "serviceId": "sql",
+              "serviceName": "Delete rows",
+              "state": {
+                "mode": "run",
+                "emit": "input",
+                "statement": "SELECT 0"
+              }
+            },
+            {
+              "instanceId": "show",
+              "serviceId": "sql",
+              "serviceName": "Rows",
+              "state": {
+                "mode": "query",
+                "statement": "SELECT 'Pick a table' AS hint"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "ask": [
+      {
+        "uuid": "which",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Start a dump"
+      }
+    ],
+    "dump": [
+      {
+        "uuid": "export",
+        "serviceId": "sql",
+        "serviceName": "Export",
+        "state": {
+          "mode": "export"
+        }
+      }
+    ],
+    "save": [
+      {
+        "uuid": "save",
+        "serviceId": "hookup.to/service/download",
+        "serviceName": "Save",
+        "state": {
+          "filename": "database.sql",
+          "mimeType": "application/sql"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "databases.list",
+        "payload": {}
+      }
+    ],
+    "panels": [
+      {
+        "id": "databases",
+        "title": "Databases",
+        "width": "30%",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "What hkp-node's SQL service keeps under your sign-in, by the names boards gave them — Court Booking puts `tennis` here. A database of a board that named none is filed under a name nobody can write, and is not listed.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "databases.list",
+                "path": "rows"
+              },
+              "gap": 0,
+              "stripe": {
+                "even": "rgba(127,127,127,0.08)",
+                "padding": 6,
+                "radius": 6
+              },
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "items": [
+                  {
+                    "type": "button",
+                    "label": "{{item.name}}",
+                    "actions": [
+                      {
+                        "type": "configure",
+                        "serviceUuid": "tables.list",
+                        "configure": {
+                          "database": "{{item.name}}"
+                        }
+                      },
+                      {
+                        "type": "configure",
+                        "serviceUuid": "rows.show",
+                        "configure": {
+                          "database": "{{item.name}}",
+                          "statement": "SELECT 'Pick a table' AS hint"
+                        }
+                      },
+                      {
+                        "type": "configure",
+                        "serviceUuid": "rows.change-row",
+                        "configure": {
+                          "database": "{{item.name}}",
+                          "statement": "SELECT 0"
+                        }
+                      },
+                      {
+                        "type": "configure",
+                        "serviceUuid": "rows.drop-rows",
+                        "configure": {
+                          "database": "{{item.name}}",
+                          "statement": "SELECT 0"
+                        }
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "tables.list",
+                        "payload": {
+                          "database": "{{item.name}}"
+                        }
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "rows.show",
+                        "payload": {}
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.bytes}} bytes",
+                    "tone": "muted",
+                    "fontSize": 12
+                  },
+                  {
+                    "type": "button",
+                    "label": "Export .sql",
+                    "actions": [
+                      {
+                        "type": "configure",
+                        "serviceUuid": "export",
+                        "configure": {
+                          "database": "{{item.name}}"
+                        }
+                      },
+                      {
+                        "type": "configure",
+                        "serviceUuid": "save",
+                        "configure": {
+                          "filename": "{{item.name}}.sql"
+                        }
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "which",
+                        "payload": {}
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "label": "Look again",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "databases.list",
+                  "payload": {}
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "tables",
+        "title": "Tables",
+        "width": "20%",
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "label": "In",
+              "source": {
+                "serviceUuid": "tables.list",
+                "path": "rows.0.database"
+              },
+              "placeholder": "Pick a database",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "tables.list",
+                "path": "rows"
+              },
+              "gap": 6,
+              "template": {
+                "type": "button",
+                "label": "{{item.name}}",
+                "actions": [
+                  {
+                    "type": "configure",
+                    "serviceUuid": "rows.show",
+                    "configure": {
+                      "statement": "{{item.readRows}}"
+                    }
+                  },
+                  {
+                    "type": "configure",
+                    "serviceUuid": "rows.change-row",
+                    "configure": {
+                      "statement": "{{item.updateRow}}"
+                    }
+                  },
+                  {
+                    "type": "configure",
+                    "serviceUuid": "rows.drop-rows",
+                    "configure": {
+                      "statement": "{{item.deleteRows}}"
+                    }
+                  },
+                  {
+                    "type": "process",
+                    "serviceUuid": "rows.show",
+                    "payload": {}
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "rows",
+        "title": "Rows",
+        "width": "50%",
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Click a value to change it; tick rows to delete them. This is the live database: a board using it — a deployed one too — sees the change on its next read. Views and WITHOUT ROWID tables are read-only here — their rows have no rowid to point at. So is a table with a column of its own called rowid.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "button",
+              "label": "Delete picked rows",
+              "confirm": "Delete the picked rows? This cannot be undone — unless you exported the database first.",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "rows.drop-rows",
+                  "payload": {
+                    "action": "delete",
+                    "rowids": {
+                      "$state": "picked"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "data-table",
+              "source": {
+                "serviceUuid": "rows.show",
+                "path": "rows"
+              },
+              "pageSize": 25,
+              "selectable": true,
+              "rowKey": "rowid",
+              "selectionState": "picked",
+              "cellActions": [
+                {
+                  "type": "prompt",
+                  "question": "Change {{item.column}}",
+                  "defaultValue": "{{item.value}}"
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "rows.change-row",
+                  "payload": {
+                    "action": "update",
+                    "rowid": "{{item.row.rowid}}",
+                    "column": "{{item.column}}",
+                    "value": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "The first 500 rows of the table.",
+              "tone": "muted",
+              "fontSize": 12
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "databases.list",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "tables.list",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "rows.show",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "export",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "save",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "rows.change-row",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "rows.drop-rows",
+          "path": "error"
+        },
+        "tone": "error"
+      }
+    ]
+  }
+}

@@ -42,6 +42,7 @@ export function createRuntimeGraphQLApp(scope: RuntimeGraphQLScope): AppImpl {
       notificationTargets.notify(service, notification);
     },
     next: (_svc: InstanceId | null, _result: any): void => {},
+    defer: () => () => {},
     getServiceById: (_uuid: string): ServiceInstance | null => {
       return null;
     },

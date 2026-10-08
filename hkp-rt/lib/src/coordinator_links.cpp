@@ -26,6 +26,7 @@
 #include <log_entry.h>
 
 #include "./binary_frame.h"
+#include "./process_context.h"
 #include "./common/link_socket.h"
 
 namespace hkp
@@ -323,9 +324,17 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     });
   }
 
-  /** The runtime said something; only a welcomed link has anyone to tell. */
+  /**
+   * The runtime said something; only a welcomed link has anyone to tell.
+   *
+   * `run` is the run it was said in, or null outside one. A result carries it
+   * whole, so the coordinator can tell the board's next runtime which run this
+   * continues and who began it. A notification carries the same context so the
+   * coordinator can address it and recheck person authority.
+   */
   void emitData(const std::shared_ptr<Link>& link, const Data& data,
-                MessagePurpose purpose, const std::string& sender)
+                MessagePurpose purpose, const std::string& sender,
+                const ProcessContext* run)
   {
     if (!link->welcomed || link->disposed || !link->socket)
     {
@@ -336,11 +345,16 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     {
       // For a person to read, so bytes are described rather than carried.
       const auto asJson = getJSONFromData(data);
-      link->socket->sendText(json{
+      json said = {
         {"type", "notification"},
         {"serviceUuid", sender},
         {"payload", asJson ? *asJson : json(describeData(data))},
-      }.dump(-1, ' ', false, json::error_handler_t::replace));
+      };
+      if (run)
+      {
+        said["context"] = run->toWire();
+      }
+      link->socket->sendText(said.dump(-1, ' ', false, json::error_handler_t::replace));
       return;
     }
 
@@ -350,10 +364,17 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     {
       return;
     }
+    // The header is the message without its value, so the run it belongs to
+    // travels in it whether the value is bytes or not.
+    json header = {{"type", "result"}};
+    if (run)
+    {
+      header["context"] = run->toWire();
+    }
     if (const auto binary = binary_frame::toBinary(value))
     {
       link->socket->sendBinary(
-        binary_frame::encode(json{{"type", "result"}}, binary->first, binary->second));
+        binary_frame::encode(header, binary->first, binary->second));
       return;
     }
     json carried;
@@ -369,9 +390,8 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     {
       return;
     }
-    link->socket->sendText(
-      json{{"type", "result"}, {"data", carried}}
-        .dump(-1, ' ', false, json::error_handler_t::replace));
+    header["data"] = carried;
+    link->socket->sendText(header.dump(-1, ' ', false, json::error_handler_t::replace));
   }
 
   void emitLog(const std::shared_ptr<Link>& link, const LogEntry& entry)
@@ -391,12 +411,13 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
     std::weak_ptr<Link> weakLink = link;
     App::RuntimeOutputSink sink;
     sink.onData = [weakSelf, weakLink](const Data& data, MessagePurpose purpose,
-                                       const std::string& sender) {
+                                       const std::string& sender,
+                                       const ProcessContext* run) {
       auto self = weakSelf.lock();
       auto held = weakLink.lock();
       if (self && held)
       {
-        self->emitData(held, data, purpose, sender);
+        self->emitData(held, data, purpose, sender, run);
       }
     };
     sink.onLog = [weakSelf, weakLink](const LogEntry& entry) {
@@ -663,7 +684,11 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
       // The result is not sent from here: a run's result leaves through the
       // runtime's output, which this link listens to, the same as a result
       // the runtime produces on its own.
-      app->processRuntime(link->record.runtimeId, data, context, spaceOf(link->record));
+      //
+      // The coordinator names the run its call belongs to — and who began it,
+      // which is taken as stated on this path and on no other.
+      app->processRuntimeAs(link->record.runtimeId, data, ProcessContext::fromLink(context),
+                            spaceOf(link->record));
     }
     catch (const std::exception& e)
     {
@@ -787,12 +812,58 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
       {
         throw std::runtime_error("a service is configured with an object");
       }
-      const json state = app->configureService(runtimeId, serviceUuid, config, space);
+      const auto context = ProcessContext::fromLink(
+        request.contains("context") ? request["context"] : json());
+      const json state = app->configureService(
+        runtimeId, serviceUuid, config, space, &context);
       if (state.is_boolean() && !state.get<bool>())
       {
         throw std::runtime_error("no service \"" + serviceUuid + "\"");
       }
       return state;
+    }
+
+    if (op == "processService")
+    {
+      // Begin at one service: what a facade's process action means on a
+      // deployed board. Answered once the work is taken; what the pipeline
+      // produces leaves through the runtime's output, as any result does.
+      if (!app->getRuntime(runtimeId, space))
+      {
+        throw std::runtime_error("the runtime is not running");
+      }
+      const auto serviceUuid = request.value("serviceUuid", std::string());
+      if (serviceUuid.empty() || !app->hasService(runtimeId, serviceUuid, space))
+      {
+        throw std::runtime_error("no service \"" + serviceUuid + "\"");
+      }
+      const json params = request.contains("params") ? request["params"] : json();
+      // As on `process`: the run and its caller are the coordinator's to
+      // state, over this link and nowhere else.
+      const auto context = ProcessContext::fromLink(
+        request.contains("context") ? request["context"] : json());
+      auto self = shared_from_this();
+      // After the answer, which says only that the work was taken: a pipeline
+      // may run for longer than a coordinator waits for one.
+      net::post(work, [self, link, serviceUuid, params, context]() {
+        if (link->disposed)
+        {
+          return;
+        }
+        try
+        {
+          self->app->processServiceAtAs(
+            link->record.runtimeId, serviceUuid,
+            params.is_null() ? Data() : Data(params), context, spaceOf(link->record));
+        }
+        catch (const std::exception& e)
+        {
+          std::cerr << "[coordinator-link] Runtime \"" << link->record.runtimeId
+                    << "\" failed to process at \"" << serviceUuid << "\": " << e.what()
+                    << std::endl;
+        }
+      });
+      return json{{"accepted", true}};
     }
 
     if (op == "setState")

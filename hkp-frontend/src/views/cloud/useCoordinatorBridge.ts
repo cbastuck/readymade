@@ -4,6 +4,7 @@ import {
   ServiceStateMessage,
   SnapshotMessage,
 } from "./coordinatorSnapshot";
+import { continuedRun } from "../../runtime/processContext";
 import { BoardContextState } from "../../BoardContext";
 import {
   decodeBinaryFrame,
@@ -30,7 +31,61 @@ export type CoordinatorBridge = {
     serviceUuid: string,
     config: unknown,
   ) => Promise<unknown>;
+  /**
+   * Asks the coordinator to have a service do its job with a payload, running
+   * the pipeline from that service onward. Resolves once the work is taken;
+   * what it produces arrives as notifications. The run is this browser's: its
+   * caller is whoever the coordinator verified when the bridge attached.
+   */
+  processRemoteService: (
+    runtimeId: string,
+    serviceUuid: string,
+    payload: unknown,
+  ) => Promise<unknown>;
+  /**
+   * Why the coordinator will not have this browser on the board, once it has
+   * said so; null while attached or still trying. A bridge that is refused is
+   * not reconnected: asking again gets the same answer.
+   */
+  refused: BridgeRefusal | null;
 };
+
+/**
+ * "removed": the board was shared with this person and no longer is.
+ * "not-found": no such board for them — it does not exist, or is not shared
+ * with them, which a coordinator answers the same way on purpose.
+ * "too-many": the board is shared with them, and they have it open in as many
+ * places as one member may.
+ */
+export type BridgeRefusal = "removed" | "not-found" | "too-many";
+
+/**
+ * The codes a coordinator closes a bridge with when the close is an answer.
+ * Any other close — none at all, a restart, a network that went away — says
+ * nothing about the board, and the bridge is opened again.
+ */
+const CLOSE_NOT_A_MEMBER = 4403;
+const CLOSE_NO_SUCH_BOARD = 4404;
+const CLOSE_TOO_MANY_BRIDGES = 4429;
+
+/**
+ * What a close tells whoever was attaching, or null when it tells nothing.
+ *
+ * "No such board" is final only for a member: an owner's board is briefly
+ * away while it is deployed again, and their bridge keeps asking.
+ */
+function refusalOf(code: number, asMember: boolean): BridgeRefusal | null {
+  switch (code) {
+    case CLOSE_NOT_A_MEMBER:
+      return "removed";
+    case CLOSE_TOO_MANY_BRIDGES:
+      return "too-many";
+    case CLOSE_NO_SUCH_BOARD:
+      return asMember ? "not-found" : null;
+    default:
+      return null;
+  }
+}
 
 type BridgeInboundMessage =
   | {
@@ -38,6 +93,9 @@ type BridgeInboundMessage =
       runtimeId: string;
       params: unknown;
       requestId: string;
+      /** The run this belongs to and who began it, as the coordinator states
+       *  them; see `continuedRun`. */
+      context?: unknown;
     }
   | SnapshotMessage
   | ServiceStateMessage
@@ -71,9 +129,18 @@ export function useCoordinatorBridge(
    * live outside this hook. Omitted, the hook keeps its own.
    */
   externalSnapshot?: CoordinatorSnapshotStore,
+  /**
+   * Attaching as somebody the board is shared with rather than as its owner.
+   * A member's bridge hosts no runtime, and being told there is no such board
+   * is final for it: the owner's bridge keeps retrying because a board being
+   * deployed again is briefly away, while a member who is refused has been
+   * told. A close that is not an answer is retried by either.
+   */
+  asMember = false,
 ): CoordinatorBridge {
   const wsRef = useRef<WebSocket | null>(null);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [refused, setRefused] = useState<BridgeRefusal | null>(null);
   // One store for the hook's lifetime: scopes and the board coordinator hold a
   // reference to it and read through, so replacing it would strand them.
   const snapshotRef = useRef<CoordinatorSnapshotStore | null>(null);
@@ -85,9 +152,11 @@ export function useCoordinatorBridge(
     new Map<string, { resolve: (data: unknown) => void; reject: (err: Error) => void }>(),
   );
 
-  const runtimeIds = (boardContext?.runtimes ?? [])
-    .filter((rt) => isRuntimeBrowserClassType(rt.type))
-    .map((rt) => rt.id);
+  const runtimeIds = asMember
+    ? []
+    : (boardContext?.runtimes ?? [])
+        .filter((rt) => isRuntimeBrowserClassType(rt.type))
+        .map((rt) => rt.id);
   const runtimeIdsKey = runtimeIds.join(",");
 
   // Capture the latest boardContext in a ref so the onmessage handler always
@@ -126,6 +195,7 @@ export function useCoordinatorBridge(
     // shared ref), so that when onclose finally fires asynchronously it sees
     // the wrong value and triggers a spurious reconnect loop.
     let intentionallyClosed = false;
+    setRefused(null);
 
     const ws = new WebSocket(withAccessToken(wsUrl, idToken));
     // Input that holds bytes arrives as a binary frame; see bridgeBinary.
@@ -224,7 +294,11 @@ export function useCoordinatorBridge(
         return;
       }
 
-      api.processRuntime(scope, params, null, {
+      // Run as the run the coordinator says it is, begun by whoever the
+      // coordinator says began it — never as a new one of this browser's own,
+      // which would make whatever it does the doing of the person signed in
+      // here.
+      const run = continuedRun(msg.context, {
         requestId,
         onResolve: (result: unknown) => {
           if (ws.readyState !== WebSocket.OPEN) {
@@ -240,14 +314,22 @@ export function useCoordinatorBridge(
           );
         },
       });
+      api.processRuntime(scope, params, null, run);
     };
 
     ws.onerror = () => {
       console.warn("[bridge] Coordinator bridge WebSocket error");
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       console.log("[bridge] Coordinator bridge disconnected");
+      const refusal = refusalOf(event.code, asMember);
+      if (refusal) {
+        // Said, not retried: the answer would be the same, and a client that
+        // kept asking would be knocking on a door it was shown out of.
+        intentionallyClosed = true;
+        setRefused(refusal);
+      }
       // Whatever was cached describes a session that is gone; the coordinator
       // sends a fresh snapshot when the browser attaches again.
       snapshot.clear();
@@ -279,7 +361,16 @@ export function useCoordinatorBridge(
         ws.close();
       }
     };
-  }, [wsUrl, userId, boardName, reconnectAttempt, idToken, sendRegistration, snapshot]);
+  }, [
+    wsUrl,
+    userId,
+    boardName,
+    reconnectAttempt,
+    idToken,
+    sendRegistration,
+    snapshot,
+    asMember,
+  ]);
 
   // Re-register runtimeIds with the already-open socket when new browser
   // runtimes are added to the board.
@@ -327,28 +418,49 @@ export function useCoordinatorBridge(
     };
   }, [runtimeIdsKey]);
 
-  const configureRemoteService = useCallback(
-    (runtimeId: string, serviceUuid: string, config: unknown) =>
+  /** Sends a request over the bridge and resolves with what answers it. */
+  const request = useCallback(
+    (prefix: string, message: Record<string, unknown>) =>
       new Promise<unknown>((resolve, reject) => {
         const ws = wsRef.current;
         if (!ws || ws.readyState !== WebSocket.OPEN) {
           reject(new Error("Not attached to a coordinator"));
           return;
         }
-        const requestId = `cfg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const requestId = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         pendingRef.current.set(requestId, { resolve, reject });
-        ws.send(
-          JSON.stringify({
-            type: "configureService",
-            requestId,
-            runtimeId,
-            serviceUuid,
-            config,
-          }),
-        );
+        ws.send(JSON.stringify({ ...message, requestId }));
       }),
     [],
   );
 
-  return { ws: wsRef.current, snapshot, configureRemoteService };
+  const configureRemoteService = useCallback(
+    (runtimeId: string, serviceUuid: string, config: unknown) =>
+      request("cfg", {
+        type: "configureService",
+        runtimeId,
+        serviceUuid,
+        config,
+      }),
+    [request],
+  );
+
+  const processRemoteService = useCallback(
+    (runtimeId: string, serviceUuid: string, payload: unknown) =>
+      request("proc", {
+        type: "processService",
+        runtimeId,
+        serviceUuid,
+        payload,
+      }),
+    [request],
+  );
+
+  return {
+    ws: wsRef.current,
+    snapshot,
+    configureRemoteService,
+    processRemoteService,
+    refused,
+  };
 }

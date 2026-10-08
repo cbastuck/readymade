@@ -662,6 +662,110 @@ TEST_CASE("it is driven over the link and says what its runtime says",
   REQUIRE(coordinator.events("result")[0]["data"] == json{{"hello", "there"}});
 }
 
+TEST_CASE("it takes the run and its caller from the coordinator, and hands them back",
+          "[links][caller]") {
+  // The link is the board's own, and the coordinator on it is what verified
+  // the person — so here, and nowhere else, a caller is taken as stated. It
+  // comes back with the result, which is how the board's next runtime learns
+  // who began the run.
+  FakeCoordinator coordinator;
+  auto app = makeApp();
+  CoordinatorLinks links(app, createMemoryLinkStore(), fast());
+  REQUIRE(links.introduce(introduction(coordinator)).empty());
+  REQUIRE(coordinator.request("provision", provision())["ok"] == true);
+  const json alice = {{"sub", "auth0|alice"}, {"email", "alice@example.com"}, {"name", "Alice"}};
+  const json run = {
+    {"runId", "run-1"},
+    {"actor", {{"kind", "person"}, {"sub", alice["sub"]},
+               {"email", alice["email"]}, {"name", alice["name"]},
+               {"expiresAt", 9999999999999LL}}}
+  };
+
+  coordinator.send(json{{"type", "processRuntime"}, {"params", {{"n", 1}}}, {"context", run}});
+
+  REQUIRE(eventually([&] { return coordinator.events("result").size() == 1; }));
+  REQUIRE(coordinator.events("result")[0]["context"] == run);
+  // What a service said while it ran is the caller's to hear, and says so.
+  REQUIRE(eventually([&] { return !coordinator.events("notification").empty(); }));
+  for (const auto& said : coordinator.events("notification"))
+  {
+    REQUIRE(said["context"] == run);
+  }
+}
+
+TEST_CASE("a run without a stated actor is the board's", "[links][actor]") {
+  FakeCoordinator coordinator;
+  auto app = makeApp();
+  CoordinatorLinks links(app, createMemoryLinkStore(), fast());
+  REQUIRE(links.introduce(introduction(coordinator)).empty());
+  REQUIRE(coordinator.request("provision", provision())["ok"] == true);
+
+  coordinator.send(json{{"type", "processRuntime"}, {"params", {{"n", 1}}}});
+
+  REQUIRE(eventually([&] { return coordinator.events("result").size() == 1; }));
+  const auto context = coordinator.events("result")[0]["context"];
+  REQUIRE(context["runId"].is_string());
+  REQUIRE(context["actor"] == json{{"kind", "board"}});
+  for (const auto& said : coordinator.events("notification"))
+  {
+    REQUIRE(said["context"]["actor"] == json{{"kind", "board"}});
+  }
+}
+
+TEST_CASE("it begins at one service when asked, and says what came of it",
+          "[links][caller]") {
+  // What a facade's process action means on a deployed board: the answer says
+  // the work was taken, and what the pipeline produced follows as the
+  // runtime's output, in the same run.
+  FakeCoordinator coordinator;
+  auto app = makeApp();
+  CoordinatorLinks links(app, createMemoryLinkStore(), fast());
+  REQUIRE(links.introduce(introduction(coordinator)).empty());
+  REQUIRE(coordinator.request("provision", provision(json::array({
+    json{{"uuid", "first"}, {"serviceId", "echo"}, {"serviceName", "Echo"},
+         {"state", json::object()}},
+    json{{"uuid", "second"}, {"serviceId", "echo"}, {"serviceName", "Echo"},
+         {"state", json::object()}},
+  })))["ok"] == true);
+  const json run = {
+    {"runId", "run-2"},
+    {"actor", {{"kind", "person"}, {"sub", "auth0|alice"},
+               {"expiresAt", 9999999999999LL}}}
+  };
+
+  const auto answer = coordinator.request(
+    "processService",
+    json{{"serviceUuid", "second"}, {"params", {{"n", 2}}}, {"context", run}});
+
+  REQUIRE(answer["ok"] == true);
+  REQUIRE(answer["data"] == json{{"accepted", true}});
+  REQUIRE(eventually([&] { return coordinator.events("result").size() == 1; }));
+  REQUIRE(coordinator.events("result")[0]["data"] == json{{"n", 2}});
+  REQUIRE(coordinator.events("result")[0]["context"] == run);
+  // It began at the second service: the first never ran.
+  for (const auto& said : coordinator.events("notification"))
+  {
+    REQUIRE(said["serviceUuid"] != "first");
+  }
+}
+
+TEST_CASE("it says why it cannot begin at a service that is not there",
+          "[links][caller]") {
+  FakeCoordinator coordinator;
+  auto app = makeApp();
+  CoordinatorLinks links(app, createMemoryLinkStore(), fast());
+  REQUIRE(links.introduce(introduction(coordinator)).empty());
+
+  const auto before = coordinator.request("processService", json{{"serviceUuid", "echo-1"}});
+  REQUIRE(before["ok"] == false);
+  REQUIRE(before["error"] == "the runtime is not running");
+
+  REQUIRE(coordinator.request("provision", provision())["ok"] == true);
+  const auto unknown = coordinator.request("processService", json{{"serviceUuid", "nobody"}});
+  REQUIRE(unknown["ok"] == false);
+  REQUIRE(unknown["error"] == "no service \"nobody\"");
+}
+
 TEST_CASE("it is built with the assets the coordinator sends", "[links]") {
   FakeCoordinator coordinator;
   auto app = makeApp();
@@ -703,7 +807,10 @@ TEST_CASE("bytes arrive as bytes and leave as bytes", "[links][binary]") {
 
   REQUIRE(eventually([&] { return coordinator.binary().size() == 1; }));
   const auto frame = coordinator.binary()[0];
-  REQUIRE(frame.header == json{{"type", "result"}});
+  // The header is the message without its value: what it is, and the run it
+  // was produced in — which a coordinator hands to the next runtime.
+  REQUIRE(frame.header["type"] == "result");
+  REQUIRE(frame.header["context"]["runId"].is_string());
   REQUIRE(frame.shape == json{{"kind", "bytes"}});
   REQUIRE(frame.payload == sent);
   // Nothing was also said as text.

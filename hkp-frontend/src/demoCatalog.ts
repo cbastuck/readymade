@@ -240,6 +240,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["SQL", "Utility"],
   },
   {
+    slug: "sql-explorer-node",
+    label: "SQL Explorer (hkp-node)",
+    description:
+      "Every SQL database your hkp-node keeps for you — the ones your boards made there, deployed ones included, and nobody else's: pick one to see its tables, a table to see its rows, change a value, delete rows, and export any of them as an ordinary SQL dump.",
+    icon: "🗄️",
+    tags: ["SQL", "Utility", "Needs Node"],
+  },
+  {
     slug: "sql-import",
     label: "SQL Import",
     description:

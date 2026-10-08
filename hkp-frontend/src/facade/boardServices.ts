@@ -5,6 +5,7 @@ import {
   splitAddress,
 } from "hkp-frontend/src/runtime/board/address";
 import { blockUseContaining } from "hkp-frontend/src/runtime/board/blocks";
+import { personRun } from "hkp-frontend/src/runtime/processContext";
 import {
   RuntimeApi,
   RuntimeClassType,
@@ -32,6 +33,17 @@ import {
  * uses: a runtime may name its class in a board-specific spelling, which falls
  * back to the canonical one the engines register under.
  */
+/**
+ * Whether a remote runtime's services can be reached at all: it has an address
+ * to dial, or its scope goes through the board's coordinator and needs none.
+ */
+function isReachable(runtime: { url?: string } | undefined, scope: unknown): boolean {
+  return (
+    !!runtime?.url ||
+    (scope as { viaCoordinator?: boolean } | undefined)?.viaCoordinator === true
+  );
+}
+
 function runtimeApiFor(
   boardContext: BoardContextState,
   type: RuntimeClassType | undefined,
@@ -171,7 +183,7 @@ export function findService(
     const runtime = boardContext.runtimes.find((rt) => rt.id === holderId);
     const scope = boardContext.scopes[holderId];
     const api = runtimeApiFor(boardContext, runtime?.type);
-    if (!runtime?.url || !scope || !api) {
+    if (!isReachable(runtime, scope) || !scope || !api) {
       continue;
     }
     const app = (scope as any).app;
@@ -229,7 +241,10 @@ export function processService(
     const svc = (scope as any).findServiceInstance?.(uuid)?.[0];
     if (svc) {
       // false: begin *at* this service; the default advances past it.
-      void (scope as any).next?.(svc, payload, null, false);
+      const run = personRun(
+        (scope as any).signedInUser?.() ?? scope.authenticatedUser ?? null,
+      );
+      void (scope as any).next?.(svc, payload, run, false);
       return;
     }
     // A scoped address is entered through the scope holding it, so that what
@@ -237,7 +252,10 @@ export function processService(
     // follow the scope in the runtime's own list.
     const owner = ownerOfNested(scope, uuid);
     if (owner) {
-      void owner.service.processNested(owner.rest, payload);
+      const run = personRun(
+        (scope as any).signedInUser?.() ?? scope.authenticatedUser ?? null,
+      );
+      void owner.service.processNested(owner.rest, payload, run);
       return;
     }
   }
@@ -251,21 +269,21 @@ export function processService(
     }
     const runtime = boardContext.runtimes.find((rt) => rt.id === runtimeId);
     const scope = boardContext.scopes[runtimeId];
-    if (!runtime?.url || !scope) {
+    const api = runtimeApiFor(boardContext, runtime?.type);
+    if (!isReachable(runtime, scope) || !scope || !api) {
       continue;
     }
-    const idToken = (scope as any).authenticatedUser?.idToken;
-    void fetch(
-      `${runtime.url}/runtimes/${runtime.id}/services/${uuid}/process`,
-      {
-        method: "POST",
-        body: JSON.stringify(payload ?? {}),
-        headers: {
-          "content-type": "application/json",
-          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-        },
-      },
-    );
+    // The runtime's own API rather than a request written here, for the reason
+    // configure uses it: how a runtime is reached is the API's to know. On a
+    // board attached through a coordinator that is the bridge, and nothing is
+    // dialled — the browser may have no route to the runtime at all, and a
+    // request of its own would bypass the party that says who is calling.
+    void api.processService(scope, { uuid }, payload ?? {}).catch((err) => {
+      console.error(
+        `Could not ask "${uuid}" to process:`,
+        err instanceof Error ? err.message : err,
+      );
+    });
     return;
   }
 }

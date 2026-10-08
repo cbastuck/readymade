@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import { ServiceInstance } from "../types";
+import { serviceForUserInterface, ServiceInstance } from "../types";
 import { useBoardContext } from "../BoardContext";
 
 /**
@@ -55,7 +55,8 @@ export function useEditReportingService(): (
     }
     let wrapped = reporting.current.get(service);
     if (!wrapped) {
-      wrapped = withEditReporting(service, () => markRef.current?.());
+      const interactive = serviceForUserInterface(service) ?? service;
+      wrapped = withEditReporting(interactive, () => markRef.current?.());
       reporting.current.set(service, wrapped);
     }
     return wrapped;

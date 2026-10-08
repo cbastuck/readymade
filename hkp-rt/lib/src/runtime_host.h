@@ -18,6 +18,7 @@ namespace hkp {
 
 class Service;
 class SubRuntime;
+struct ProcessContext;
 
 // RuntimeHost — abstract interface through which a Service interacts with its
 // containing runtime.  Both Runtime (the top-level pipeline) and SubRuntime
@@ -43,6 +44,15 @@ public:
   virtual Data processFrom(const Service& svc, Data data,
                            bool advanceBefore = true,
                            std::function<void(Data)> callback = nullptr) = 0;
+
+  /** The run currently calling a service, if any. */
+  virtual const ProcessContext* currentContext() const { return nullptr; }
+
+  /** Execute one explicit late continuation under the context it captured. */
+  virtual Data withContext(const ProcessContext&, std::function<Data()> fn)
+  {
+    return fn();
+  }
 
   // Schedule processFrom to run on the host's event loop (non-blocking).
   virtual void scheduleProcessFrom(const Service& svc, Data data,

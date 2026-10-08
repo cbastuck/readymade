@@ -1,4 +1,5 @@
 import { AppImpl, RuntimeClassType, ServiceClass } from "hkp-frontend/src/types";
+import { nestedRun } from "hkp-frontend/src/runtime/processContext";
 import ServiceBase from "./ServiceBase";
 import IfServiceUI from "./IfServiceUI";
 import BrowserRegistry from "../BrowserRegistry";
@@ -119,18 +120,27 @@ class IfService extends ServiceBase<State> {
   }
 
   async process(params: any): Promise<any> {
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control.
+    const run = this.app.currentContext?.(this);
     if (this._parsedCondition !== null) {
       const conditionMet = await evalExpression(
         this._parsedCondition,
         { params },
         this.app,
+        this,
       );
       if (conditionMet && this.state.pipeline.length > 0) {
         if (!this._scope) {
           await this._scopeBuilding;
         }
         if (this._scope) {
-          const result = await this._scope.next(null, params, null, false);
+          const result = await this._scope.next(
+            null,
+            params,
+            nestedRun(run),
+            false,
+          );
           if (!this.state.ignoreInnerResult) {
             return result;
           }
@@ -180,6 +190,8 @@ class IfService extends ServiceBase<State> {
     );
     // The board's assets, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    // And whoever is signed in to the app around it is signed in here.
+    scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
 
     // Propagate runtime variables up through the scope hierarchy
     scope.app.getRuntimeVariable = () => this.app.getRuntimeVariable();

@@ -4,16 +4,19 @@ import {
   PromptAction,
   WidgetAction,
 } from "./types";
+import { serviceForUserInterface } from "../types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeBoardActions } from "./FacadeBoardActions";
 import { findService, processService } from "./boardServices";
 import { applyInput } from "./applyInput";
+import { FacadeIdentity, isUserRef, resolveUserRef } from "./FacadeIdentity";
 
 // Recursively resolves facade-state and action-time references. Runs before
 // $$input substitution so all of them can coexist in one payload.
 function resolveActionRefs(
   template: unknown,
   state: Record<string, unknown>,
+  identity?: FacadeIdentity,
 ): unknown {
   if (
     template !== null &&
@@ -23,6 +26,12 @@ function resolveActionRefs(
     const obj = template as Record<string, unknown>;
     if ("$state" in obj && typeof obj["$state"] === "string") {
       return state[obj["$state"]];
+    }
+    // Who the person is, as the facade may show it. A payload carrying it is
+    // carrying a claim: a service that has to know who is calling asks the
+    // run, not its input.
+    if (isUserRef(obj)) {
+      return resolveUserRef(obj, identity);
     }
     // Values created at the moment somebody acts. A board can persist and
     // forward the same event identity and timestamp without a purpose-built
@@ -35,12 +44,12 @@ function resolveActionRefs(
     }
     const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
-      result[k] = resolveActionRefs(v, state);
+      result[k] = resolveActionRefs(v, state, identity);
     }
     return result;
   }
   if (Array.isArray(template)) {
-    return template.map((v) => resolveActionRefs(v, state));
+    return template.map((v) => resolveActionRefs(v, state, identity));
   }
   return template;
 }
@@ -76,6 +85,7 @@ export async function executeActions({
   boardContext,
   setState,
   state,
+  identity,
   boardActions,
   byPerson = false,
   ask,
@@ -94,6 +104,8 @@ export async function executeActions({
   // When provided, { "$state": "key" } references in configure payloads are
   // resolved against these values before $$input substitution runs.
   state?: Record<string, unknown>;
+  // Who the facade is being shown to, for { "$user": … } references.
+  identity?: FacadeIdentity;
   // A person set these actions off — pressed, typed, picked — so what they
   // configure is an edit to the board. False for what a facade runs by itself,
   // such as its init actions.
@@ -131,17 +143,20 @@ export async function executeActions({
       }
       const configure: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(act.configure)) {
-        const withState = resolveActionRefs(v, state ?? {});
+        const withState = resolveActionRefs(v, state ?? {}, identity);
         configure[k] = applyInput(withState, input);
       }
-      await service.configure(configure);
+      const target = byPerson
+        ? (serviceForUserInterface(service) ?? service)
+        : service;
+      await target.configure(configure);
       if (byPerson) {
         boardContext.markBoardChanged?.();
       }
     } else if (act.type === "process") {
       // Same substitution as a configure payload: what a board writes into one
       // it can write into the other.
-      const withState = resolveActionRefs(act.payload ?? {}, state ?? {});
+      const withState = resolveActionRefs(act.payload ?? {}, state ?? {}, identity);
       processService(
         boardContext,
         act.serviceUuid,
@@ -157,7 +172,7 @@ export async function executeActions({
         boardActions?.showPartnerBoardQr();
       }
     } else if (act.type === "confirm") {
-      const withState = resolveActionRefs(act.question, state ?? {});
+      const withState = resolveActionRefs(act.question, state ?? {}, identity);
       const question = applyInput(withState, input);
       if (typeof question !== "string" || !question) {
         continue;
@@ -168,7 +183,7 @@ export async function executeActions({
       }
     } else if (act.type === "prompt") {
       const substitute = (template: unknown) =>
-        applyInput(resolveActionRefs(template, state ?? {}), input);
+        applyInput(resolveActionRefs(template, state ?? {}, identity), input);
       const question = substitute(act.question);
       const defaultValue = substitute(act.defaultValue);
       const answer = askValue

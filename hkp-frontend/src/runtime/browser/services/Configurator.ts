@@ -30,7 +30,13 @@
  *   }
  */
 
-import { AppImpl, ServiceClass, ServiceInstance } from "hkp-frontend/src/types";
+import {
+  AppImpl,
+  ProcessContext,
+  ServiceClass,
+  ServiceInstance,
+} from "hkp-frontend/src/types";
+import { nestedRun } from "hkp-frontend/src/runtime/processContext";
 import ServiceBase from "./ServiceBase";
 import BrowserRegistry from "../BrowserRegistry";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
@@ -140,16 +146,28 @@ export class Configurator extends ServiceBase<State> {
 
   async process(params: any): Promise<any> {
     const { targetServiceUuid, targetRuntime, passThrough } = this.state;
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control.
+    const run = this.app.currentContext?.(this);
 
-    const configured = await this._transform(params);
+    const configured = await this._transform(params, run);
 
     if (targetServiceUuid && configured !== null) {
       if (targetRuntime && this.app.configureServiceInRuntime) {
-        await this.app.configureServiceInRuntime(targetRuntime, targetServiceUuid, configured);
+        await this.app.configureServiceInRuntime(
+          targetRuntime,
+          targetServiceUuid,
+          configured,
+          run,
+        );
       } else {
         const target = this.app.getServiceById(targetServiceUuid);
         if (target) {
-          await target.configure(configured);
+          if (this.app.configureInRun) {
+            await this.app.configureInRun(target, configured, run);
+          } else {
+            await target.configure(configured);
+          }
         }
       }
     }
@@ -164,7 +182,10 @@ export class Configurator extends ServiceBase<State> {
   // -------------------------------------------------------------------------
 
   /** Run params through the inner pipeline if one is configured. */
-  private async _transform(params: any): Promise<any> {
+  private async _transform(
+    params: any,
+    run: ProcessContext | undefined,
+  ): Promise<any> {
     if (this.state.pipeline.length === 0) {
       return params;
     }
@@ -174,7 +195,7 @@ export class Configurator extends ServiceBase<State> {
     if (!this._scope) {
       return params;
     }
-    return this._scope.next(null, params, null, false);
+    return this._scope.next(null, params, nestedRun(run), false);
   }
 
   private _teardownScope(): void {
@@ -205,6 +226,8 @@ export class Configurator extends ServiceBase<State> {
     );
     // The board's assets, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    // And whoever is signed in to the app around it is signed in here.
+    scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
 
     for (const entry of this.state.pipeline) {
       const descriptor = await addService(

@@ -39,11 +39,28 @@ export type SnapshotMessage = {
    * something this browser is told, not something it has to go and ask.
    */
   errors?: string[];
+  /**
+   * What this browser is to the board. An owner is sent the board whole; a
+   * member is sent a projection — the facade and what it reads — and
+   * `config` then has no board underneath to show.
+   */
+  role?: BoardRole;
+  /** Who this browser is to the board, as its coordinator established it. */
+  you?: BoardIdentity;
   /** The board as authored. Also fetchable over REST, but sent here so that
    *  structure and live state arrive as one thing at one `seq`. */
   config?: unknown;
   runtimes: RuntimeSnapshot[];
 };
+
+export type BoardRole = "owner" | "member";
+
+/**
+ * The verified address this browser attached as, and what the board's member
+ * list calls it. For showing somebody who they are acting as; a service is
+ * told who is calling by the coordinator, never by this.
+ */
+export type BoardIdentity = { email?: string; name?: string };
 
 export type ServiceStateMessage = {
   type: "serviceState";
@@ -60,6 +77,8 @@ export class CoordinatorSnapshotStore {
   private status: string | null = null;
   private errors: string[] | null = null;
   private config: unknown = null;
+  private role: BoardRole | null = null;
+  private you: BoardIdentity | null = null;
   private runtimes = new Map<string, RuntimeSnapshot>();
   private seq = 0;
   private listeners = new Set<() => void>();
@@ -77,6 +96,13 @@ export class CoordinatorSnapshotStore {
       this.status = message.status ?? null;
       this.errors = Array.isArray(message.errors) ? message.errors : null;
       this.config = message.config ?? null;
+      this.role = message.role ?? null;
+      // Kept as one object while it says the same thing, so it can be read as
+      // a store snapshot.
+      const you = message.you ?? null;
+      if (you?.email !== this.you?.email || you?.name !== this.you?.name) {
+        this.you = you;
+      }
       this.runtimes = new Map(
         message.runtimes.map((runtime) => [runtime.runtimeId, runtime]),
       );
@@ -107,9 +133,22 @@ export class CoordinatorSnapshotStore {
     this.status = null;
     this.errors = null;
     this.config = null;
+    this.role = null;
+    this.you = null;
     this.runtimes = new Map();
     this.seq = 0;
     this.emit();
+  }
+
+  /** "owner", "member", or null before the first snapshot. */
+  getRole(): BoardRole | null {
+    return this.role;
+  }
+
+  /** Who this browser is to the board, or null where the coordinator names
+   *  nobody — before the first snapshot, and on one without authentication. */
+  getYou(): BoardIdentity | null {
+    return this.you;
   }
 
   getBoardName(): string | null {

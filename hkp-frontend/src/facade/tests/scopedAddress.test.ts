@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { findService, processService } from "../boardServices";
+import { processService as processOverRest } from "hkp-frontend/src/runtime/rest/RuntimeRestApi";
 import type { BoardContextState } from "hkp-frontend/src/BoardContext";
 
 /**
@@ -16,12 +17,21 @@ import type { BoardContextState } from "hkp-frontend/src/BoardContext";
 
 function contextWithScope(): BoardContextState {
   return {
-    scopes: { node: { app: {}, authenticatedUser: undefined } },
+    scopes: {
+      node: {
+        app: {},
+        authenticatedUser: undefined,
+        descriptor: { id: "node", type: "rest", url: "http://127.0.0.1:8080" },
+      },
+    },
     services: {
       node: [{ uuid: "read", serviceId: "sub-service", state: { pipeline: [] } }],
     },
     runtimes: [{ id: "node", type: "rest", url: "http://127.0.0.1:8080" }],
-    runtimeApis: { rest: { configureService: vi.fn() } },
+    runtimeApis: {
+      // The runtime's own way of asking, which for a REST runtime dials it.
+      rest: { configureService: vi.fn(), processService: processOverRest },
+    },
   } as unknown as BoardContextState;
 }
 
@@ -49,7 +59,9 @@ describe("a facade addressing a service inside a scope", () => {
   });
 
   it("processes a nested service at its full address", () => {
-    const fetchMock = vi.fn(() => Promise.resolve({ ok: true } as Response));
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, text: async () => "" } as Response),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     processService(contextWithScope(), "read.record-article", { intent: "keep" });

@@ -104,7 +104,12 @@ export type OnResult = (
   context?: ProcessContext | null,
 ) => Promise<void>;
 
-export type ProcessRuntimeByName = (name: string, params: any) => Promise<any>;
+export type ProcessRuntimeByName = (
+  name: string,
+  params: any,
+  /** The run this continues; absent, the call is a gesture of its own. */
+  run?: ProcessContext | null,
+) => Promise<any>;
 
 export interface RuntimeScope {
   descriptor: RuntimeDescriptor;
@@ -341,6 +346,14 @@ export type NextOptions = {
    * button.
    */
   replay?: boolean;
+  /**
+   * The run the value was produced in, for a service handing on what a
+   * pipeline inside it produced after the service's own call had returned —
+   * or without one, where the pipeline was entered directly. Used only while
+   * the service is in no call of its own: inside one, that call's run is the
+   * one being continued.
+   */
+  run?: ProcessContext | null;
 };
 
 export type AppImpl = {
@@ -355,6 +368,22 @@ export type AppImpl = {
    */
   log: (svc: InstanceId, level: LogLevel, event: string, data?: any) => void;
   /**
+   * The run `svc` is being called in, or undefined when it is not inside a
+   * call that carries one.
+   *
+   * True for as long as the call has not given up control: read it at the
+   * start of `process`, before the first `await`, and keep what was read. If
+   * overlapping calls make the service's active run ambiguous, this is absent
+   * rather than attributing work to either one.
+   */
+  currentContext?: (svc: InstanceId) => ProcessContext | undefined;
+  /** Configure one service as part of an existing run. */
+  configureInRun?: (
+    target: ServiceInstance,
+    config: any,
+    run: ProcessContext | null | undefined,
+  ) => Promise<any>;
+  /**
    * Emits `result` as if `svc` had just produced it: the services after `svc`
    * run, `svc` itself and everything before it does not.
    */
@@ -363,6 +392,23 @@ export type AppImpl = {
     result: any,
     options?: NextOptions,
   ) => void;
+  /**
+   * Capture the current run for one late answer. Calling the returned function
+   * exactly once resumes after `svc`; until then the original pass reports no
+   * result. Standing callbacks and subscriptions must use `next` instead.
+   */
+  defer: (
+    svc: InstanceId,
+  ) => (result: any) => void;
+  /**
+   * The service handle handed to interactive controls.
+   *
+   * Browser services otherwise expose their live object directly. This handle
+   * routes calls back through the runtime so the framework, rather than the
+   * service, can begin a run for the signed-in person. Remote service handles
+   * already cross an API boundary and need no wrapper.
+   */
+  serviceForUserInterface?: (svc: ServiceInstance) => ServiceInstance;
   getServiceById: (uuid: string) => ServiceInstance | null;
   sendAction: (action: ServiceAction) => void;
   storeServiceData: (serviceUuid: string, key: string, value: string) => void;
@@ -386,8 +432,18 @@ export type AppImpl = {
     onNotification: (notification: any) => void,
   ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
-  processRuntimeByName?: (name: string, params: any) => Promise<any>;
-  configureServiceInRuntime?: (runtimeId: string, serviceUuid: string, config: any) => Promise<void>;
+  /**
+   * Runs another runtime of the board. `run` is the run the asking service is
+   * in, which the other runtime continues; a service that names none is not
+   * acting for anybody, and what it starts is the board's.
+   */
+  processRuntimeByName?: ProcessRuntimeByName;
+  configureServiceInRuntime?: (
+    runtimeId: string,
+    serviceUuid: string,
+    config: any,
+    run?: ProcessContext | null,
+  ) => Promise<void>;
   // The coordinator of the board this service belongs to, for questions that
   // span runtimes — resolving an address a runtime assigns at load time, say.
   // Absent on hosts that do not know the board they are part of; callers treat
@@ -457,6 +513,21 @@ export type ServiceInstance = ServiceState &
     };
   };
 
+/**
+ * The handle a runtime wants interactive controls to use for a service.
+ *
+ * A browser runtime wraps its in-process object so calls cross a framework
+ * boundary that can attach the signed-in person. Remote handles already cross
+ * their runtime API and are returned unchanged.
+ */
+export function serviceForUserInterface(
+  service: ServiceInstance | null,
+): ServiceInstance | null {
+  return service
+    ? (service.app?.serviceForUserInterface?.(service) ?? service)
+    : null;
+}
+
 export type RuntimeImpl = {
   configureService: (uuid: string, config: any) => Promise<void>;
   getServiceById: (uuid: string) => ServiceInstance | null;
@@ -499,7 +570,16 @@ export type LogEntry = {
   event: string;
   data?: unknown;
   durationMs?: number;
+  /** The `sub` of whoever began the run, where the run arrived saying so. */
+  caller?: string;
 };
+
+/** What is acting in a run. Person identity is present only in that case. */
+export type RunActor =
+  | ({ kind: "person"; expiresAt: number } & Caller)
+  | { kind: "board" }
+  | { kind: "mount" }
+  | { kind: "local" };
 
 export type ProcessContext = {
   /**
@@ -515,8 +595,8 @@ export type ProcessContext = {
    * Identifies one invocation of a board — one user action, one timer tick, one
    * arriving message — across every service and runtime it reaches.
    *
-   * Optional while the browser runtime does not mint one for every call; a
-   * context arriving from another runtime carries it.
+   * Optional in the legacy wire shape, but every current browser entry point
+   * mints or continues one before services run.
    */
   runId?: string;
   /**
@@ -525,6 +605,20 @@ export type ProcessContext = {
    * makes a trace reconstructable as a tree rather than a list.
    */
   parentRunId?: string;
+  /**
+   * What is acting in this run. A person actor is stated only by the server
+   * that verified them and carries the deadline of that delegated authority.
+   */
+  actor: RunActor;
+};
+
+/** Who began a run, as the server that verified them stated it. */
+export type Caller = {
+  sub: string;
+  /** Only ever a verified one. */
+  email?: string;
+  /** What the board's member list calls them. */
+  name?: string;
 };
 
 export type RuntimeApi = {

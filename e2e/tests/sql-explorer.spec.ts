@@ -36,7 +36,7 @@ test("shows a database another board made, exports it, and changes it", async ({
 
   await openBoard("e2e-explorer");
   await page.getByRole("button", { name: "tennis" }).click({ timeout: 15_000 });
-  await page.getByRole("button", { name: "booking" }).click();
+  await page.getByRole("button", { name: "court_booking" }).click();
   // The rows panel shows the table's own columns, not the placeholder's.
   await expect(page.getByRole("columnheader", { name: "member" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "hint" })).toHaveCount(0);
@@ -48,9 +48,9 @@ test("shows a database another board made, exports it, and changes it", async ({
   expect(file.suggestedFilename()).toBe("tennis.sql");
   const dump = readFileSync(await file.path(), "utf8");
   expect(dump).toMatch(/^PRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\n/);
-  expect(dump).toContain("CREATE TABLE IF NOT EXISTS booking");
-  expect(dump).toMatch(/INSERT INTO "booking"\(.*\) VALUES\(1,1,'\d{4}-\d{2}-\d{2}',9,'you@club.example',/);
-  expect(dump).toContain("CREATE UNIQUE INDEX IF NOT EXISTS one_per_slot");
+  expect(dump).toContain("CREATE TABLE IF NOT EXISTS court_booking");
+  expect(dump).toMatch(/INSERT INTO "court_booking"\(.*\) VALUES\(1,1,'\d{4}-\d{2}-\d{2}',9,'you@club.example',/);
+  expect(dump).toContain("CREATE UNIQUE INDEX IF NOT EXISTS court_booking_one_per_slot");
   expect(dump.trimEnd().endsWith("COMMIT;")).toBe(true);
 
   // A value, changed in place: the cell opens a field holding it.

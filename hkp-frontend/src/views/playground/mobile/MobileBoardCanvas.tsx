@@ -21,6 +21,7 @@ import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import MobileFacadeView from "./MobileFacadeView";
 import { passesNothing } from "../../../runtime/rest/Data";
+import { boardRun } from "../../../runtime/processContext";
 import { narrowBoardContext } from "../../../facade/boardServices";
 import { useEditReportingService } from "../../../core/editedServices";
 
@@ -1153,6 +1154,7 @@ function useWireBrowserScopes(
                 type: "result-from-browser",
                 runtimeId: rt.id,
                 data: result,
+                ...(context?.actor.kind === "board" ? { boardOrigin: true } : {}),
               }),
             );
           }
@@ -1168,7 +1170,14 @@ function useWireBrowserScopes(
           (runtimeApis[next.type] ||
             runtimeApis[toCanonicalRuntimeClassType(next.type)]);
         if (nextApi && nextScope && carriesOn) {
-          nextApi.processRuntime(nextScope, result, null, context);
+          // Without a run named for it, what a runtime produced is not a
+          // gesture of whoever is signed in here; see Board.onRuntimeResult.
+          nextApi.processRuntime(
+            nextScope,
+            result,
+            null,
+            context ?? boardRun(),
+          );
         }
       };
 
@@ -1182,6 +1191,7 @@ function useWireBrowserScopes(
       browserScope.processRuntimeByName = async (
         name: string,
         params: unknown,
+        run?: ProcessContext | null,
       ) => {
         const target = runtimes.find((r) => r.name === name);
         if (target) {
@@ -1190,7 +1200,7 @@ function useWireBrowserScopes(
             runtimeApis[target.type] ||
             runtimeApis[toCanonicalRuntimeClassType(target.type)];
           if (targetScope && targetApi) {
-            return targetApi.processRuntime(targetScope, params, null);
+            return targetApi.processRuntime(targetScope, params, null, run);
           }
         }
         console.error(
@@ -1202,13 +1212,18 @@ function useWireBrowserScopes(
         runtimeId: string,
         serviceUuid: string,
         config: unknown,
+        run,
       ) => {
         const targetScope = scopes[runtimeId] as
           | BrowserRuntimeScope
           | undefined;
         const svc = targetScope?.findServiceInstance(serviceUuid)?.[0];
         if (svc?.configure) {
-          await svc.configure(config);
+          if (run && targetScope) {
+            await targetScope.callInContext(svc, run, () => svc.configure(config));
+          } else {
+            await svc.configure(config);
+          }
         }
       };
 

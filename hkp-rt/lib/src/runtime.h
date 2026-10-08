@@ -35,7 +35,8 @@ public:
 
   RuntimeConfiguration getConfiguration() const;
   
-  json configureService(const std::string &instanceId, json config);
+  json configureService(const std::string &instanceId, json config,
+                        const ProcessContext* context = nullptr);
 
   // The values for the references this runtime's services carry, held apart
   // from every service's state and reachable only through here.
@@ -71,7 +72,10 @@ public:
   json getServiceState(const std::string &instanceId) const;
   json getServices() const;
 
-  Data process(Data data, ProcessContext context = ProcessContext::newRun());
+  // Without a context this is board work: nobody outside asked for it. See
+  // processFrom for what run that is.
+  Data process(Data data);
+  Data process(Data data, const ProcessContext& context);
 
   // Runs the pipeline starting **at** a named service rather than after it.
   //
@@ -80,11 +84,17 @@ public:
   // question: something outside the pipeline wants one service to do its job
   // with a given payload, and that service must actually run. Throws when the
   // runtime holds no service by that id.
+  Data processAt(const std::string& instanceId, Data data);
   Data processAt(const std::string& instanceId, Data data,
-                 ProcessContext context = ProcessContext::newRun());
+                 const ProcessContext& context);
+  // Whether `processAt` has somewhere to begin for this address: one of this
+  // runtime's own services, or a scope among them to walk the rest of it.
+  bool holdsService(const std::string& instanceId) const;
 
   // ── RuntimeHost overrides ────────────────────────────────────────────────
   Data processFrom(const Service &service, Data data, bool advanceBefore=true, std::function<void(Data)> callback = nullptr) override;
+  const ProcessContext* currentContext() const override;
+  Data withContext(const ProcessContext& context, std::function<Data()> fn) override;
   void scheduleProcessFrom(const Service &service, Data data, bool advanceBefore=true) override;
   void post(std::function<void()> fn) override;
   bool isConnected(const Service &svc) const override;
@@ -118,7 +128,10 @@ public:
   // Handles a raw notification-WebSocket frame routed here by the Server's WS
   // layer (after the connection bound itself to this runtime via the protocol
   // handshake). Binary frames are YAS-encoded messages; text frames are JSON.
-  void onWebSocketMessage(const std::string& message, bool isBinary);
+  // `caller` is whoever opened the socket the message arrived on, as the
+  // server verified them; nobody where it let the socket in without a token.
+  void onWebSocketMessage(const std::string& message, bool isBinary,
+                          const Caller& caller = Caller());
 
   json appendService(const ServiceConfiguration& newService);
   bool insertService(std::shared_ptr<Service> newService, std::shared_ptr<Service> predecessor = nullptr);
@@ -153,10 +166,12 @@ private:
   void sendServiceLifecycleNotification(const Service& service, const std::string& state, const Data& data);
 
   void onProcessBegin();
-  const Data& onProcessEnd(const Data& result, ProcessContext context = {}, std::function<void(Data)> callback = nullptr);
+  const Data& onProcessEnd(const Data& result, const ProcessContext* context = nullptr, std::function<void(Data)> callback = nullptr);
+  // The run work begun by nobody is done in; see m_boardRun.
+  std::shared_ptr<const ProcessContext> autonomousRun() const;
 
-  void onSessionJSONData(json msg);
-  void onSessionBinaryData(Data data, MessageHeader header);
+  void onSessionJSONData(json msg, const Caller& caller);
+  void onSessionBinaryData(Data data, MessageHeader header, const Caller& caller);
   
   bool storePendingCallback(const std::string& requestId, std::function<void(Data)> callback);
   std::function<void(Data)> findAndRemovePendingCallback(const std::string& requestId);
@@ -174,9 +189,17 @@ private:
   SlotStore m_slots;
   std::vector<RuntimeInput> m_inputs;
   ProcessDepth m_processDepth;
-  // The call being processed right now, so an entry can name its run.
-  ProcessContext m_context;
-  bool m_hasContext = false;
+  // The run of what this runtime does by itself: a source emitting, a service
+  // reporting outside a call. One for the runtime's lifetime rather than one
+  // per emission, because the emissions are the hot path — an audio source
+  // hands on a buffer a hundred times a second, a meter reports as often —
+  // and an identity of its own for each would cost an id and its allocations
+  // every time. A board that keeps a log gets a run per emission all the same;
+  // see autonomousRun.
+  //
+  // The call in progress is not kept here: it is the calling thread's, see
+  // currentContext.
+  std::shared_ptr<const ProcessContext> m_boardRun;
   bool m_logData = false;
   bool m_logging = false;
   LogLevel m_logLevel = LogLevel::Info;

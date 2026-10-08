@@ -14,6 +14,7 @@ import {
   WidgetAction,
 } from "./types";
 import { useFacadeState } from "./FacadeStateContext";
+import { useFacadeIdentity } from "./FacadeIdentity";
 import { executeActions } from "./executeActions";
 import { useFacadeBoardActions } from "./FacadeBoardActions";
 
@@ -165,6 +166,7 @@ export function useWidgetActions(boardContext: BoardContextState): {
   prompt: ReactNode;
 } {
   const { state, setState } = useFacadeState();
+  const identity = useFacadeIdentity(boardContext);
   const boardActions = useFacadeBoardActions();
   const [pending, setPending] = useState<Pending | null>(null);
   // The question on screen, read when a new one arrives: only one is shown at
@@ -224,6 +226,7 @@ export function useWidgetActions(boardContext: BoardContextState): {
       // the reference object itself, and the service receives a shape it
       // cannot read rather than the value a widget published.
       state,
+      identity,
       byPerson: true,
       ask,
       askValue,

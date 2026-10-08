@@ -37,11 +37,14 @@ class XYPad extends ServiceBase<State> {
     }
 
     if (position !== undefined) {
-      this.app.next(this, {
-        ...position,
-        eventType,
-        timestamp: performance.now(),
-      });
+      this.app.next(
+        this,
+        {
+          ...position,
+          eventType,
+          timestamp: performance.now(),
+        },
+      );
     }
   }
 

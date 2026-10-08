@@ -124,12 +124,16 @@ export default class RuntimeRestScope implements RuntimeScope {
                         const context = { requestId: message.sender };
                         this.sendMessageViaWebsocket(
                           data,
-                          context,
+                          {
+                            ...context,
+                            actor: { kind: "local" },
+                          },
                           "resolveResult",
                         );
                       }
                     : undefined, // only resolve the runtime that is actually awaiting the result
                 requestId: message.sender,
+                actor: { kind: "local" },
               };
             }
             this.deliverResult(message.data, context);

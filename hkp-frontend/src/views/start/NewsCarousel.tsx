@@ -32,7 +32,32 @@ export default function NewsCarousel({ items }: { items: NewsItem[] }) {
   };
 
   return (
-    <div style={{ flex: "0 0 auto", padding: "14px 26px 0" }}>
+    <div style={{ flex: "0 0 auto", padding: "16px 26px 0" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: "-0.01em",
+            whiteSpace: "nowrap",
+          }}
+        >
+          News
+        </h2>
+        {items.length > 1 && (
+          <span style={{ fontSize: 12, color: "#8b90a0", fontWeight: 500 }}>
+            {i + 1} of {items.length}
+          </span>
+        )}
+      </div>
       <div
         className={cardClass}
         onClick={(event) => toggleMediaWidth(event.target)}

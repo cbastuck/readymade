@@ -76,7 +76,7 @@ class Filter {
 
       const results = await Promise.all(
         this._parsedConditions.map(async (pc) =>
-          evalExpression(pc, { params: x }, this.app),
+          evalExpression(pc, { params: x }, this.app, this),
         ),
       );
 

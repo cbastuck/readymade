@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FacadeStateContext } from "./FacadeStateContext";
 import { executeActions } from "./executeActions";
+import { useFacadeIdentity } from "./FacadeIdentity";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeDescriptor } from "./types";
 import { PanelRow } from "./panels/PanelRow";
@@ -49,6 +50,7 @@ export default function FacadeRenderer({
   // Keep a ref so the init effect always sees the latest state at fire time.
   const facadeStateRef = useRef(facadeState);
   facadeStateRef.current = facadeState;
+  const identity = useFacadeIdentity(boardContext);
 
   useEffect(() => {
     if (!facade.init?.length) {
@@ -60,6 +62,7 @@ export default function FacadeRenderer({
       boardContext,
       setState: setFacadeStateEntry,
       state: facadeStateRef.current,
+      identity,
     });
   }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
 

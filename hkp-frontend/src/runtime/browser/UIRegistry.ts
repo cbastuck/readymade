@@ -23,7 +23,6 @@ import HttpClientUI from "./services/HttpClientUI";
 import OllamaPromptUI from "./services/OllamaPromptUI";
 import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
 import ConfiguratorUI from "./services/ConfiguratorUI";
-import ProcessRouterUI from "./services/ProcessRouterUI";
 import IfServiceUI from "./services/IfServiceUI";
 import ImagePickerDescriptor from "./services/ImagePicker";
 import ChunkedFileProviderDescriptor from "./services/ChunkedFileProvider";
@@ -103,8 +102,6 @@ export function findServiceUI(
       return BrowserSubServiceUI;
     case "hookup.to/service/configurator":
       return ConfiguratorUI;
-    case "hookup.to/service/process-router":
-      return ProcessRouterUI;
     case "hookup.to/service/if":
       return IfServiceUI;
     case "hookup.to/service/image-picker":

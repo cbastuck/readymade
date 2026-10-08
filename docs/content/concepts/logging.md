@@ -42,6 +42,7 @@ running as*. It travels as a `ProcessContext`:
 | `runId` | This invocation. Minted where the invocation begins. |
 | `parentRunId` | The run this one was invoked *from*, for a nested pipeline. Absent when the trigger came from outside, which is what makes a trace a tree rather than a list. |
 | `requestId` | A **reply address**, not an identity: built from a message's sender, alive only while a response is awaited, consumed on resolution. |
+| `actor` | What is acting: a verified person with an authority deadline, the board, a public mount, or a local/auth-disabled client. |
 
 `runId` is deliberately not folded into `requestId`. They have different
 lifetimes — one run makes any number of awaited calls.
@@ -70,6 +71,12 @@ spanning several runtimes reads as one trace rather than one per runtime:
 A caller that names no run is not continuing one, so a run is *begun* rather
 than left unidentified. Work attributed to a run of its own is recoverable;
 work attributed to nothing is not.
+
+What a runtime does by itself — a timer ticking, a source handing on a buffer —
+begins a run per emission for the same reason. hkp-rt does so only while the
+board keeps a log: an identity per emission is paid on the path audio takes,
+and the log is the only thing that reads it. Without one, its autonomous work
+shares a single standing board run per runtime.
 
 ### Nesting, and leaving the call
 
