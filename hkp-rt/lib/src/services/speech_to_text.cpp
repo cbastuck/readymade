@@ -426,9 +426,9 @@ Data SpeechToText::process(Data data)
   if (!m_impl->generating.compare_exchange_strong(expected, true))
   {
     setStatus("error", "a transcription is already in progress");
-    // Defer rather than stop: the in-flight transcription is still running and
-    // its emit() will close this service's processing bracket.
-    return deferCompletion();
+    // This invocation owns no worker and therefore cannot borrow the earlier
+    // invocation's eventual answer or authority.
+    return Null();
   }
 
   SttParams params;
@@ -563,6 +563,9 @@ Data SpeechToText::process(Data data)
   {
     m_impl->worker.join();
   }
+  // Capture this invocation before the worker can finish. The resulting token
+  // is one-shot: its first emit() is the answer to this call.
+  Data deferred = deferCompletion();
   m_impl->worker = std::thread([this, transcribe]()
   {
     try
@@ -577,13 +580,16 @@ Data SpeechToText::process(Data data)
     {
       std::cerr << "speech-to-text worker failed: " << e.what() << std::endl;
     }
+    // Nothing to hand on, or it failed: the call is over all the same. Before
+    // the next one may begin, so that it is this call that is ended.
+    endDeferred();
     m_impl->generating = false;
   });
 
   // Stop the synchronous push; the worker emit()s the result when it is ready,
   // which also closes this service's processing bracket (deferCompletion tells
   // the runtime to withhold the immediate "call-process-finished").
-  return deferCompletion();
+  return deferred;
 }
 
 }

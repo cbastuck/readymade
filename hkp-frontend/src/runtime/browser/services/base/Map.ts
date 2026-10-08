@@ -161,7 +161,7 @@ class Map extends ServiceBase<State> {
       // map to scalar value (not an object) if only an '=', i.e. empty string
       if (keys.length === 1 && keys[0] === "") {
         const expression = this._terms[keys[0]];
-        return await evalExpression(expression, { params: x }, this.app);
+        return await evalExpression(expression, { params: x }, this.app, this);
       }
 
       const initial =
@@ -178,7 +178,7 @@ class Map extends ServiceBase<State> {
         }
 
         const accumulated = await acc;
-        const y = await evalExpression(expression, { params: x }, this.app);
+        const y = await evalExpression(expression, { params: x }, this.app, this);
         return key.indexOf(".") !== -1 // dynamic expression
           ? {
               .../*this.state.mode === "replace"
@@ -233,7 +233,7 @@ class Map extends ServiceBase<State> {
     }
 
     if (node.type === "expression") {
-      return await evalExpression(node.expression, { params }, this.app);
+      return await evalExpression(node.expression, { params }, this.app, this);
     }
 
     if (node.type === "array") {

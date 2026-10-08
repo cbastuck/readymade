@@ -148,6 +148,8 @@ class ChunkedFileProvider {
           totalChunks,
           uploadId,
         };
+        // A chunk stream is a standing arrangement, not one answer to one
+        // call. Each chunk therefore begins a board-originated run.
         this.app.next(this, payload);
         readChunk(offset + this.chunkSize);
       };

@@ -189,6 +189,101 @@ describe("a browser runtime on a deployed board", () => {
     expect([...decoded!.value.bytes]).toEqual([4, 5, 6]);
   });
 
+  it("runs it as the run the coordinator says it is, begun by whoever it says began it", async () => {
+    const processRuntime = attach(() => null);
+    await waitFor(() => expect(sockets.length).toBe(1));
+
+    sockets[0].onmessage?.({
+      data: JSON.stringify({
+        type: "processRuntime",
+        runtimeId: "ui",
+        requestId: "r-2",
+        params: {},
+        context: {
+          runId: "run-7",
+          parentRunId: "run-6",
+          actor: {
+            kind: "person",
+            sub: "auth0|anna",
+            email: "anna@example.com",
+            name: "Anna",
+            expiresAt: Date.now() + 60_000,
+          },
+          // Nothing a coordinator says of a run is where its answer goes.
+          requestId: "somebody-else",
+        },
+      }),
+    });
+
+    expect(processRuntime.mock.calls[0][3]).toMatchObject({
+      requestId: "r-2",
+      runId: "run-7",
+      parentRunId: "run-6",
+      actor: {
+        kind: "person",
+        sub: "auth0|anna",
+        email: "anna@example.com",
+        name: "Anna",
+        expiresAt: expect.any(Number),
+      },
+    });
+  });
+
+  it("runs it as nobody's when the coordinator names nobody, never as a run of this browser's own", async () => {
+    const processRuntime = attach(() => null);
+    await waitFor(() => expect(sockets.length).toBe(1));
+    const hand = (message: object) =>
+      sockets[0].onmessage?.({
+        data: JSON.stringify({
+          type: "processRuntime",
+          runtimeId: "ui",
+          requestId: "r-3",
+          params: {},
+          ...message,
+        }),
+      });
+
+    hand({ context: { runId: "run-8" } });
+    hand({});
+    hand({
+      context: {
+        runId: "run-9",
+        actor: { kind: "person", email: "no-sub@example.com" },
+      },
+    });
+
+    const runs = processRuntime.mock.calls.map(
+      (call) =>
+        call[3] as unknown as {
+          runId?: string;
+          actor?: { kind?: string; sub?: string };
+        },
+    );
+    // Invalid or missing actor data never acquires the browser's signed-in
+    // person. A malformed person actor is expired immediately.
+    expect(runs.map((run) => run.actor)).toEqual([
+      { kind: "board" },
+      { kind: "board" },
+      { kind: "person", sub: "", expiresAt: 0 },
+    ]);
+    expect(runs[0].runId).toBe("run-8");
+    // A run was handed over even where none was named.
+    expect(runs[1].runId).toBeTruthy();
+  });
+
+  it("keeps the run of a frame that carries bytes", async () => {
+    const processRuntime = attach(() => null);
+    await waitFor(() => expect(sockets.length).toBe(1));
+
+    sockets[0].onmessage?.({ data: hex(NODE_FRAME) });
+
+    // The frame names no run; it is still one that arrived.
+    expect(processRuntime.mock.calls[0][3]).toMatchObject({
+      requestId: "r-1",
+      actor: { kind: "board" },
+    });
+  });
+
   it("still answers JSON as text", async () => {
     attach(() => ({ n: 1 }));
     await waitFor(() => expect(sockets.length).toBe(1));

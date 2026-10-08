@@ -60,6 +60,7 @@ export default class RuntimeGraphQLScope implements RuntimeScope {
   processBoardFromRuntime = async (data: any, requestId: string) => {
     const context = {
       requestId,
+      actor: { kind: "local" as const },
     };
     const boardResult = await new Promise<any>((onResolve) =>
       this.onResult(null, data, { ...context, onResolve }),

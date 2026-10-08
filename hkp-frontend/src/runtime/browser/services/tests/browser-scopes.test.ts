@@ -253,7 +253,8 @@ describe("what a scope hands on", () => {
 
     const inner = scope.getInnerInstance("m")!;
     await (scope as any)._scope.next(inner, { tick: 1 }, null, false);
-    expect(app.next).toHaveBeenCalledWith(scope, { tick: 1 });
+    // With the run it was emitted in, which here is none.
+    expect(app.next).toHaveBeenCalledWith(scope, { tick: 1 }, { run: null });
   });
 });
 

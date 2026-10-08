@@ -64,18 +64,24 @@ class FileSource {
    * shows while it waits, and an empty one tells it the file has gone on.
    */
   async send(file: File): Promise<void> {
+    const resume =
+      this.app.defer?.(this) ??
+      ((result: any) => this.app.next(this, result));
     this.app.notify(this, { progress: `Reading ${file.name}…` });
     const content = await this.loadFile(file);
     this.app.notify(this, { progress: "" });
-    await this.app.next(this, content);
+    resume(content);
   }
 
   async loadFiles(fileList: FileList): Promise<void> {
+    const resume =
+      this.app.defer?.(this) ??
+      ((result: any) => this.app.next(this, result));
     const r: (string | ArrayBuffer | null)[] = [];
     for (const file of fileList) {
       r.push(await this.loadFile(file));
     }
-    await this.app.next(this, r.length === 1 ? r[0] : r);
+    resume(r.length === 1 ? r[0] : r);
   }
 
   process(params: any): any {

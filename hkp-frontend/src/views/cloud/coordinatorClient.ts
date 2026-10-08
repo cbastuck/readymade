@@ -226,3 +226,120 @@ export async function deleteCoordinatorBoard(
     throw new Error(`Failed to delete board: ${res.status}`);
   }
 }
+
+// ── Members ───────────────────────────────────────────────────────────────────
+
+/**
+ * Somebody a deployed board is shared with: the verified address they sign in
+ * with, and what the board calls them — which is what the other members see.
+ */
+export type BoardMember = { email: string; name: string };
+
+/** A board somebody else owns, as a member is told about it. */
+export type SharedBoardInfo = {
+  /** The owner's id: what a member names, with the board, to attach to it. */
+  owner: string;
+  boardName: string;
+  status: "running" | "stopped" | "error";
+  /** What the board's list calls the person asking. */
+  name: string;
+};
+
+function membersUrl(
+  coordinatorUrl: string,
+  username: string,
+  boardName: string,
+): string {
+  return `${coordinatorUrl}/users/${encodeURIComponent(username)}/boards/${encodeURIComponent(boardName)}/members`;
+}
+
+async function readMembers(res: Response, doing: string): Promise<BoardMember[]> {
+  if (res.status === 404 || res.status === 405) {
+    throw new Error(
+      "This coordinator cannot share boards — it needs updating, or the board is gone",
+    );
+  }
+  if (!res.ok) {
+    const said = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(said?.error ?? `Failed to ${doing}: ${res.status}`);
+  }
+  const data = (await res.json()) as { members?: BoardMember[] };
+  return data.members ?? [];
+}
+
+/** Who a board is shared with. Only its owner may ask. */
+export async function listBoardMembers(
+  coordinatorUrl: string,
+  username: string,
+  idToken: string,
+  boardName: string,
+): Promise<BoardMember[]> {
+  return readMembers(
+    await coordinatorFetch(
+      membersUrl(coordinatorUrl, username, boardName),
+      idToken,
+    ),
+    "list members",
+  );
+}
+
+/**
+ * Shares a board with an address under a name, or renames the entry that
+ * address already has. Answers with the list as it now stands.
+ */
+export async function setBoardMember(
+  coordinatorUrl: string,
+  username: string,
+  idToken: string,
+  boardName: string,
+  member: BoardMember,
+): Promise<BoardMember[]> {
+  return readMembers(
+    await coordinatorFetch(
+      membersUrl(coordinatorUrl, username, boardName),
+      idToken,
+      { method: "POST", body: JSON.stringify(member) },
+    ),
+    "share the board",
+  );
+}
+
+/**
+ * Stops sharing a board with an address. Whatever that person has open on the
+ * board closes at once. Answers with the list as it now stands.
+ */
+export async function removeBoardMember(
+  coordinatorUrl: string,
+  username: string,
+  idToken: string,
+  boardName: string,
+  email: string,
+): Promise<BoardMember[]> {
+  return readMembers(
+    await coordinatorFetch(
+      `${membersUrl(coordinatorUrl, username, boardName)}/${encodeURIComponent(email)}`,
+      idToken,
+      { method: "DELETE" },
+    ),
+    "stop sharing",
+  );
+}
+
+/**
+ * The boards on a coordinator that somebody else owns and has shared with the
+ * person signed in. A coordinator that predates sharing has none.
+ */
+export async function listSharedBoards(
+  coordinatorUrl: string,
+  idToken: string,
+): Promise<SharedBoardInfo[]> {
+  const res = await coordinatorFetch(`${coordinatorUrl}/shared`, idToken);
+  if (res.status === 404) {
+    return [];
+  }
+  if (!res.ok) {
+    throw new Error(`Failed to list shared boards: ${res.status}`);
+  }
+  const data = (await res.json()) as { boards?: SharedBoardInfo[] };
+  return data.boards ?? [];
+}

@@ -22,7 +22,8 @@ import { CoordinatorSnapshotStore } from "./coordinatorSnapshot";
  * runtimes and holds their state, and this browser is a viewer. So nothing here
  * dials a runtime — which is the point, since a cloud board's runtimes may live
  * where the browser has no route to them. Reads come from the snapshot the
- * coordinator pushes; a configure is a request over the same bridge socket.
+ * coordinator pushes; a configure, and asking a service to do its job, are
+ * requests over the same bridge socket.
  *
  * Structural edits are absent on purpose. Adding or removing services means
  * owning the board, and a board is owned where it is built: the playground.
@@ -35,6 +36,11 @@ export type CoordinatorBridgeAccess = {
     runtimeId: string,
     serviceUuid: string,
     config: unknown,
+  ) => Promise<unknown>;
+  processRemoteService: (
+    runtimeId: string,
+    serviceUuid: string,
+    payload: unknown,
   ) => Promise<unknown>;
 };
 
@@ -52,6 +58,12 @@ function notWhileAttached(what: string): never {
 class CoordinatorRuntimeScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;
   authenticatedUser: User | null;
+  /**
+   * Its services are reached through the board's coordinator, so nothing that
+   * finds one needs the runtime to have an address — and a member's view of a
+   * board is given none.
+   */
+  readonly viaCoordinator = true;
   registry: ServiceRegistry = [];
   onResult: RuntimeScope["onResult"] = async () => {};
   onConfig?: (instanceId: string, config: object) => void;
@@ -79,6 +91,16 @@ class CoordinatorRuntimeScope implements RuntimeScope {
   }
 
   getApp(): AppImpl {
+    return this.appImpl;
+  }
+
+  /**
+   * The same app under the name a REST scope has it by, which is where a
+   * facade looks for the notification targets of a service it has no live
+   * instance of. Without it a widget on an attached board finds its service
+   * and never hears it.
+   */
+  get app(): AppImpl {
     return this.appImpl;
   }
 
@@ -173,7 +195,15 @@ export function createBridgeRuntimeApi(
     addService: async (_scope: RuntimeScope, _service: ServiceClass) =>
       notWhileAttached("add a service"),
     removeService: async () => notWhileAttached("remove a service"),
-    processService: async () => notWhileAttached("run a service"),
+    // What a facade's `process` action means on a deployed board: begin at
+    // this service. The coordinator starts the run, as whoever attached with
+    // this bridge, and what the pipeline produces comes back as notifications.
+    processService: async (
+      scope: RuntimeScope,
+      service: InstanceId,
+      params: unknown,
+    ) =>
+      bridge.processRemoteService(scope.descriptor.id, service.uuid, params),
     rearrangeServices: async () => notWhileAttached("reorder services"),
   };
 

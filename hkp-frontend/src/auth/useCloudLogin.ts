@@ -74,7 +74,7 @@ export function useCloudLogin(): () => Promise<void> {
       );
       toast.warning("Signing in is not available here", {
         description:
-          "This page is served from a local network address, which the sign-in provider will not redirect back to. A board opened from a shared link is already authorized by the link itself.",
+          "This address is not registered for sign-in. Shared boards require sign-in with an email on the board's member list. Open the board on readymadeit.com using a publicly reachable HTTPS coordinator.",
       });
       return;
     }

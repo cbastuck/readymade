@@ -4,6 +4,7 @@ import { MessageListWidget } from "../../types";
 import { findService } from "../../boardServices";
 import { extractText } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
+import { serviceForUserInterface } from "hkp-frontend/src/types";
 
 type ChatMessage = {
   id: string;
@@ -29,15 +30,17 @@ export function MessageListRenderer({
 
   const sourceService = useMemo(
     () => findService(boardContext, widget.source.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.source.serviceUuid],
+    [boardContext, widget.source.serviceUuid],
   );
 
   const actionService = useMemo(
     () =>
       widget.composer
-        ? findService(boardContext, widget.composer.action.serviceUuid)
+        ? serviceForUserInterface(
+            findService(boardContext, widget.composer.action.serviceUuid),
+          )
         : null,
-    [boardContext.scopes, boardContext.services, widget.composer?.action.serviceUuid],
+    [boardContext, widget.composer],
   );
 
   useEffect(() => {

@@ -9,7 +9,7 @@
  *   first and the third service would take the second out from between them.
  * - **Nothing that names a service is cut in two by the new boundary.** A
  *   service inside a sub-service finds others by id only within that
- *   sub-service (a Configurator's `targetServiceUuid`, a ProcessRouter's), so a
+ *   sub-service (a Configurator's `targetServiceUuid`), so a
  *   reference from inside the run to outside it, or from outside into it,
  *   would stop resolving. A reference with both ends in the run moves with it.
  *

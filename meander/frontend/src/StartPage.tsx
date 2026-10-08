@@ -292,6 +292,8 @@ export default function StartPage({ onRestoreBoard }: Props) {
             openBoard: {
               coordinatorUrl: action.coordinatorUrl,
               boardName: action.boardName,
+              // Set on a board somebody shared: it opens as its member.
+              owner: action.sharedBy,
               at: Date.now(),
             },
           },

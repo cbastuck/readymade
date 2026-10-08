@@ -12,7 +12,7 @@ const serviceName = "Considered Hacker";
 class ConsideredHacker extends Hacker {
   process(params: any): any {
     return this.baseProcess((buffer: string) =>
-      evalExpression(parseExpression(buffer), { params }, this.app),
+      evalExpression(parseExpression(buffer), { params }, this.app, this),
     );
   }
 }

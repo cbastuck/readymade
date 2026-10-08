@@ -210,7 +210,9 @@ class HttpClient extends ServiceBase<State> {
       return null;
     }
 
-    void this.send(target, input);
+    const deferred = this.app.defer?.(this);
+    const resume = deferred ?? ((result: any) => this.app.next(this, result));
+    void this.send(target, input, resume, () => deferred?.(null));
     return null;
   }
 
@@ -275,7 +277,12 @@ class HttpClient extends ServiceBase<State> {
     return `${target}${target.includes("?") ? "&" : "?"}${params}`;
   }
 
-  private async send(url: string, input: any): Promise<void> {
+  private async send(
+    url: string,
+    input: any,
+    resume: (result: any) => void,
+    cancel: () => void,
+  ): Promise<void> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.state.timeoutMs);
     const method = this.state.method;
@@ -306,6 +313,7 @@ class HttpClient extends ServiceBase<State> {
           error: problem,
           inFlight: this.inFlight - 1,
         });
+        cancel();
         return;
       }
 
@@ -341,7 +349,7 @@ class HttpClient extends ServiceBase<State> {
       // Emits as if this service had produced it: the services after this one
       // run with the response, and the runtime's result goes on to the next
       // runtime.
-      this.app.next(this, result);
+      resume(result);
     } catch (err: any) {
       const aborted = err?.name === "AbortError";
       // Status 0: there was no response to have one, so the status of the
@@ -356,6 +364,7 @@ class HttpClient extends ServiceBase<State> {
           : String(err?.message ?? err),
         inFlight: this.inFlight - 1,
       });
+      cancel();
       // A failed request produces no result to pass on: the pipeline behind
       // this service is not called, rather than called with a fabricated one.
     } finally {

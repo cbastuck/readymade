@@ -33,6 +33,13 @@
  * board writes no parameter list at all. Values are always bound, never
  * interpolated.
  *
+ * **Who is calling is bound by the service, never by the input.** Four
+ * names are reserved, as in hkp-node — `$caller_email`, `$caller_name`,
+ * `$caller_sub`, `$actor_kind` — and an input field of the same name is ignored.
+ * They come from the run context just as they do remotely. A local gesture
+ * captures the app's signed-in person when its run begins; board and mount
+ * runs do not acquire whoever happens to be signed in when SQL executes.
+ *
  * **A database can leave as SQL and arrive as SQL.** `export` hands on the
  * whole database as an SQLite dump and `import` runs one arriving as input,
  * in this runtime and in hkp-node alike (`sql-dump.ts`), which is how tables
@@ -72,6 +79,21 @@ type State = {
 
 /** `$name`, `:name` and `@name` are all named parameters to SQLite. */
 const NAMED_PARAMETER = /[$:@]([A-Za-z_][A-Za-z0-9_]*)/g;
+
+/** The parameter names bound from who is calling rather than from the input. */
+const CALLER_PARAMETERS = [
+  "caller_email",
+  "caller_name",
+  "caller_sub",
+  "actor_kind",
+] as const;
+type CallerParameter = (typeof CALLER_PARAMETERS)[number];
+/** Who began a run, as the values those names are bound to. */
+type CallerValues = Record<CallerParameter, string | undefined>;
+
+function isCallerParameter(name: string): name is CallerParameter {
+  return (CALLER_PARAMETERS as readonly string[]).includes(name);
+}
 
 /**
  * A value SQLite can store. Booleans and objects have no column type, and a
@@ -203,6 +225,9 @@ class Sql extends ServiceBase<State> {
    */
   async process(input: any): Promise<any> {
     const { mode, statement, emit } = this.state;
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control.
+    const caller = this.caller();
     if (!statement.trim() && STATEMENT_MODES.includes(mode)) {
       return this.fail("sql has no statement to run");
     }
@@ -238,7 +263,7 @@ class Sql extends ServiceBase<State> {
         this.app.notify(this, { exported: name, bytes: dump.length });
         return emit === "input" ? input : dump;
       }
-      const result = this.execute(db, input);
+      const result = this.execute(db, input, caller);
       // Reported either way: what the statement did is this service's own
       // news. Only what travels to the next service is `emit`'s to decide.
       this.app.notify(this, result);
@@ -261,7 +286,11 @@ class Sql extends ServiceBase<State> {
     this.prepared.add(name);
   }
 
-  private execute(db: Database, input: unknown): Record<string, unknown> {
+  private execute(
+    db: Database,
+    input: unknown,
+    caller: CallerValues,
+  ): Record<string, unknown> {
     const { mode, statement } = this.state;
     if (mode === "exec") {
       db.exec(statement);
@@ -272,7 +301,7 @@ class Sql extends ServiceBase<State> {
       return { executed: true };
     }
 
-    const params = this.parameters(input);
+    const params = this.parameters(input, caller);
     if (mode === "run") {
       return db.run(statement, params);
     }
@@ -288,7 +317,7 @@ class Sql extends ServiceBase<State> {
    * Only the names the statement mentions are bound: SQLite rejects a
    * parameter it was not asked for.
    */
-  private parameters(input: unknown): SqlParams {
+  private parameters(input: unknown, caller: CallerValues): SqlParams {
     const record =
       input && typeof input === "object" && !Array.isArray(input)
         ? (input as Record<string, unknown>)
@@ -297,9 +326,33 @@ class Sql extends ServiceBase<State> {
     for (const match of codeOf(this.state.statement).matchAll(
       NAMED_PARAMETER,
     )) {
-      params[match[0]] = bindable(record[match[1]]);
+      const name = match[1];
+      // Never the input's to supply, present or not.
+      params[match[0]] = isCallerParameter(name)
+        ? bindable(caller[name])
+        : bindable(record[name]);
     }
     return params;
+  }
+
+  /**
+   * Who began the run this call is in, under the names a statement asks by.
+   *
+   * The entry point captures a local person's normalized identity when the run
+   * begins. SQL only reads that context: absence cannot silently become the
+   * owner whose browser happens to execute the statement.
+   */
+  private caller(): CallerValues {
+    const context = this.app.currentContext?.(this);
+    const stated = context?.actor.kind === "person" ? context.actor : undefined;
+    return {
+      caller_email: stated?.email,
+      caller_name: stated?.name,
+      caller_sub: stated?.sub,
+      // A missing run is a programming error. Treat it as board work rather
+      // than inventing a person from whoever happens to be signed in.
+      actor_kind: context?.actor.kind ?? "board",
+    };
   }
 
   /**

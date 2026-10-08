@@ -10,6 +10,7 @@ import BrowserRegistry from "../BrowserRegistry";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
 import { renameLiveServices, renamedEntries } from "../pipelineNames";
 import { addService, configureService } from "../BrowserRuntimeApi";
+import { boardRun } from "../../processContext";
 
 const serviceId = "hookup.to/service/feedback";
 const serviceName = "Feedback";
@@ -149,7 +150,10 @@ export class FeedbackService extends ServiceBase<State> {
     if (shouldForward) {
       this.app.next(this, result);
     } else {
-      this._scope?.next(null, result, null, false);
+      // The feedback loop drives itself rather than answering a person's
+      // active call. State that boundary so an inner SQL service cannot fall
+      // back to the owner signed in to the browser hosting a cloud board.
+      this._scope?.next(null, result, boardRun(), false);
     }
   }
 
@@ -185,6 +189,8 @@ export class FeedbackService extends ServiceBase<State> {
     );
     // The board's assets, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    // And whoever is signed in to the app around it is signed in here.
+    scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
 
     scope.onResult = async (_instanceId: string | null, result: any) => {
       this._handleResult(result);

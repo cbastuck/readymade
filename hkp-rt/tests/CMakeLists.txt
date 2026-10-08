@@ -65,6 +65,7 @@ add_executable(hkp-rt-service-tests
   runtime_no_input.test.cpp
   service_asset.test.cpp
   runtime_output_sink.test.cpp
+  runtime_context.test.cpp
   link_socket.test.cpp
   coordinator_links.test.cpp
   mounts.test.cpp

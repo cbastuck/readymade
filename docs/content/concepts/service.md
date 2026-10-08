@@ -155,9 +155,8 @@ deferred emit — and which runtimes implement each, are in
 
 A service *can* reach another one: `app.getServiceById(uuid)` hands over the live
 instance, `configureServiceInRuntime` reconfigures one on another runtime, and
-the **Configurator** and **Process Router** services exist to call `configure()`
-or `process()` on a service named by `targetServiceUuid`. There are shapes that
-need this — a feedback loop, a state machine, a panel driving something elsewhere.
+the **Configurator** service calls `configure()` on a service named by
+`targetServiceUuid`. A panel can use this to control something elsewhere.
 
 But a service that names another service's id is a service that cannot be
 reused, moved or read on its own, and the id it holds is one more field the

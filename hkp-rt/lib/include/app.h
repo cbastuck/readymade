@@ -22,6 +22,8 @@ namespace hkp
 class Service;
 class Runtime;
 class Server;
+struct ProcessContext;
+struct Caller;
 
 class App
 {
@@ -51,7 +53,7 @@ public:
   void removeAllRuntimes();
 
   json configureService(const std::string &runtimeId, const std::string &instanceId, json config,
-                        const std::string& space = "");
+                        const std::string& space = "", const ProcessContext* context = nullptr);
   json getServiceState(const std::string &runtimeId, const std::string &instanceId) const;
   json getServices(const std::string &runtimeId, const std::string& space = "") const;
   json appendService(const std::string& runtimeId, const ServiceConfiguration& service);
@@ -62,10 +64,22 @@ public:
   // filled in. See ProcessContext::fromJson.
   Data processRuntime(const std::string& runtimeId, const Data& data, const json& context,
                       const std::string& space = "");
+  // The same, as a run whose context has already been established — by a
+  // route that knows who is calling, or a link that was told. Whoever builds
+  // the context decides what of it to believe; see ProcessContext.
+  Data processRuntimeAs(const std::string& runtimeId, const Data& data,
+                        const ProcessContext& context, const std::string& space = "");
   // Runs a runtime's pipeline starting at one service; see Runtime::processAt.
   // Throws std::runtime_error when the runtime holds no such service.
   Data processServiceAt(const std::string& runtimeId,
                         const std::string& instanceId, const Data& data);
+  // The same, as a run whose context has already been established.
+  Data processServiceAtAs(const std::string& runtimeId, const std::string& instanceId,
+                          const Data& data, const ProcessContext& context,
+                          const std::string& space = "");
+  // Whether a runtime holds the service an address names.
+  bool hasService(const std::string& runtimeId, const std::string& instanceId,
+                  const std::string& space = "") const;
   json getRegistry() const;
 
   json rearrangeServices(const std::string& runtimeId, const std::vector<std::string>& newOrder);
@@ -100,10 +114,14 @@ public:
   // One sink per runtime, replaced by the next and removed by an empty one. It
   // is called on the event loop, with what the runtime hands to the next one
   // (`onData`, under a result purpose), what its services say (`onData`, as a
-  // notification from `sender`) and what it records (`onLog`).
+  // notification from `sender`) and what it records (`onLog`). `run` is the
+  // run the data was produced in — which a coordinator hands to the next
+  // runtime, and reads whose a notification is to hear from — or null when it
+  // was produced outside one.
   struct RuntimeOutputSink
   {
-    std::function<void(const Data&, MessagePurpose, const std::string& sender)> onData;
+    std::function<void(const Data&, MessagePurpose, const std::string& sender,
+                       const ProcessContext* run)> onData;
     std::function<void(const LogEntry&)> onLog;
   };
   void setRuntimeOutputSink(const std::string& runtimeId, RuntimeOutputSink sink,
@@ -112,7 +130,7 @@ public:
   // Hands a runtime's output to its sink, when it has one. For the runtime.
   void emitRuntimeData(const std::string& runtimeId, const Data& data,
                        MessagePurpose purpose, const std::string& sender,
-                       const std::string& space = "");
+                       const std::string& space = "", const ProcessContext* run = nullptr);
   void emitRuntimeLog(const std::string& runtimeId, const LogEntry& entry,
                       const std::string& space = "");
 
@@ -125,7 +143,10 @@ public:
   // Delivers a notification-WebSocket message (raw frame) to the runtime it
   // belongs to. Called by the Server's WS layer once a connection has bound
   // itself to a runtimeId via the protocol handshake.
-  void dispatchRuntimeWsMessage(const std::string& runtimeId, const std::string& message, bool isBinary);
+  // `caller` is whoever opened the socket, as the server verified them; null
+  // where it let the socket in without a token.
+  void dispatchRuntimeWsMessage(const std::string& runtimeId, const std::string& message, bool isBinary,
+                                const Caller* caller = nullptr);
 
   void postCallback(std::function<void()> callback);
   // The loop `postCallback` posts to, for something that keeps a connection

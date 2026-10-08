@@ -2,7 +2,11 @@ import { useRef } from "react";
 import Runtime, { RuntimeHandle } from "../../../components/Runtime";
 import DragProvider from "../../../DragContext";
 import { BoardContextState } from "../../../BoardContext";
-import { RuntimeDescriptor, ProcessContext } from "../../../types";
+import {
+  RuntimeDescriptor,
+  ProcessContext,
+  ProcessRuntimeByName,
+} from "../../../types";
 import RuntimeWithDropBars from "../RuntimeWithDropBars";
 
 type Props = {
@@ -18,7 +22,7 @@ type Props = {
     context: ProcessContext | null | undefined,
   ) => void;
   onDrop: (runtimeId: string, newIndex: number) => void;
-  processRuntimeByName: (name: string, params: any) => Promise<any>;
+  processRuntimeByName: ProcessRuntimeByName;
 };
 
 export default function BoardRuntime({

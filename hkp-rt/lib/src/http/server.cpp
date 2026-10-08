@@ -16,6 +16,7 @@
 #include "common/websocket_protocol.h"
 #include "discovery/discovery.h"
 #include "uuid.h"
+#include "process_context.h"
 #include "http/front_door.h"
 
 #include <atomic>
@@ -36,7 +37,23 @@ struct WsConnState
 {
   std::string runtimeId;
   std::string type;  // "writer" | "reader" | "readwrite"
+  // Whoever opened the socket, when a token said so; nobody for a socket let
+  // in without one (no-auth mode, the local machine).
+  Caller caller;
 };
+
+// Who a verified token speaks for, to a run they begin. The token's `sub` is
+// the identity; hkp-rt only ever authorizes a verified, allow-listed email.
+inline Caller callerOf(const std::optional<Principal>& principal)
+{
+  Caller caller;
+  if (principal && !principal->sub.empty())
+  {
+    caller.sub = principal->sub;
+    caller.email = principal->email;
+  }
+  return caller;
+}
 
 // Crow middleware that gates every route on the runtime's Authenticator.
 // In no-auth mode (loopback bind) it is a pass-through. CORS preflight
@@ -69,7 +86,13 @@ inline std::string callerAddress(const crow::request& req, const std::string& fr
 
 struct AuthMiddleware
 {
-  struct context {};
+  struct context
+  {
+    // Set when a bearer token was verified for this request. Left empty for
+    // every request let in some other way — no-auth mode, the local machine, a
+    // scoped capability grant — which is a request with nobody to name.
+    std::optional<Principal> principal;
+  };
 
   // Set once mounts are enabled; see callerAddress.
   std::string frontSecret;
@@ -78,7 +101,7 @@ struct AuthMiddleware
   CapabilityStore* capabilities = nullptr;
   std::string allowedOrigins = "*";
 
-  void before_handle(crow::request& req, crow::response& res, context&)
+  void before_handle(crow::request& req, crow::response& res, context& ctx)
   {
     if (!authenticator || authenticator->isNoAuth())
     {
@@ -119,6 +142,7 @@ struct AuthMiddleware
     const auto result = authenticator->authorize(req.get_header_value("Authorization"));
     if (result.status == AuthStatus::Ok)
     {
+      ctx.principal = result.principal;
       return;
     }
     res.code = (result.status == AuthStatus::Forbidden) ? 403 : 401;
@@ -330,6 +354,8 @@ struct Server::impl
   crow::response setRuntimeState(const crow::request &req, const std::string& runtimeId);
   crow::response introduceCoordinator(const crow::request &req);
   crow::response processRuntime(const crow::request &req, const std::string& runtimeId);
+  // Who a request is from, when a token said so; see AuthMiddleware::context.
+  Caller callerOfRequest(const crow::request& req);
   crow::response processService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId);
   crow::response getRuntimeInputs(const crow::request &req, const std::string& runtimeId);
   crow::response getRuntimeInput(const crow::request &req, const std::string& runtimeId, const std::string& inputId);
@@ -633,7 +659,8 @@ crow::response Server::impl::configureService(const crow::request &req, const st
   {
     return crow::response(crow::status::BAD_REQUEST);
   }
-  auto config = app->configureService(runtimeId, instanceId, body);
+  const auto context = ProcessContext::forClient(json(), callerOfRequest(req));
+  auto config = app->configureService(runtimeId, instanceId, body, "", &context);
   if (config.is_null())
   {
     return crow::response(crow::status::NOT_FOUND);
@@ -970,6 +997,11 @@ static std::optional<Data> buildInputData(const crow::request& req,
     }
 }
 
+Caller Server::impl::callerOfRequest(const crow::request& req)
+{
+  return callerOf(crow.get_context<AuthMiddleware>(req).principal);
+}
+
 crow::response Server::impl::processRuntime(const crow::request &req, const std::string& runtimeId)
 {
   auto rt = app->getRuntime(runtimeId);
@@ -994,7 +1026,10 @@ crow::response Server::impl::processRuntime(const crow::request &req, const std:
 
   try
   {
-    auto result = app->processRuntime(runtimeId, std::move(*inputData));
+    // An external HTTP caller is not continuing a run, it is starting one —
+    // as whoever its token says it is.
+    auto result = app->processRuntimeAs(
+      runtimeId, std::move(*inputData), ProcessContext::forClient(json(), callerOfRequest(req)));
 
     if (auto j = getJSONFromData(result))
       return makeJsonResponse(*j);
@@ -1052,7 +1087,19 @@ crow::response Server::impl::processService(const crow::request &req, const std:
 
   try
   {
-    auto result = app->processServiceAt(runtimeId, instanceId, std::move(*inputData));
+    // The run is the one the body names, or a new one. The caller is never
+    // the body's to name: it is whoever the token was verified as.
+    json wire;
+    if (const auto asJson = getJSONFromData(*inputData); asJson && asJson->is_object())
+    {
+      if (const auto it = asJson->find("__context"); it != asJson->end())
+      {
+        wire = *it;
+      }
+    }
+    auto result = app->processServiceAtAs(
+      runtimeId, instanceId, std::move(*inputData),
+      ProcessContext::forClient(wire, callerOfRequest(req)));
 
     if (auto j = getJSONFromData(result))
       return makeJsonResponse(*j);
@@ -1126,18 +1173,27 @@ bool Server::impl::wsOnAccept(const crow::request& req, void** userdata)
   // a browser can't set headers on a handshake) must verify and be allow-listed.
   bool allowed = authenticator->isNoAuth() ||
     isLoopbackHost(callerAddress(req, frontDoor ? frontDoor->frontSecret() : std::string()));
+  // Whoever a token names; nobody for a socket let in without one.
+  Caller caller;
   if (!allowed)
   {
     if (const char* token = req.url_params.get("access_token"))
     {
-      allowed = authenticator->authorize(std::string("Bearer ") + token).status == AuthStatus::Ok;
+      const auto result = authenticator->authorize(std::string("Bearer ") + token);
+      allowed = result.status == AuthStatus::Ok;
+      if (allowed)
+      {
+        caller = callerOf(result.principal);
+      }
     }
   }
   if (!allowed)
   {
     return false;  // reject the upgrade
   }
-  *userdata = new WsConnState();
+  auto* state = new WsConnState();
+  state->caller = caller;
+  *userdata = state;
   return true;
 }
 
@@ -1168,7 +1224,7 @@ void Server::impl::wsOnMessage(crow::websocket::connection& conn, const std::str
     return;
   }
 
-  app->dispatchRuntimeWsMessage(state->runtimeId, message, isBinary);
+  app->dispatchRuntimeWsMessage(state->runtimeId, message, isBinary, &state->caller);
 }
 
 void Server::impl::wsOnClose(crow::websocket::connection& conn)

@@ -17,10 +17,52 @@
 namespace hkp
 {
 
+namespace
+{
+
+// The calls a thread is inside, innermost first.
+//
+// Per thread, because a call is: a pass runs to its end on the thread that
+// began it, while other threads are in calls of their own — a REST request, a
+// coordinator's message, a worker reporting progress, an audio callback. Kept
+// on the runtime instead, a call beginning on one thread would save the context
+// of a call on another and put it back after that one had ended, leaving a
+// finished run — and whoever began it — in place for everything that followed.
+//
+// A frame points at a context its caller keeps alive for as long as the frame
+// stands, so entering a call copies nothing.
+struct ContextFrame
+{
+  const Runtime* runtime;
+  const ProcessContext* context;
+  const ContextFrame* outer;
+};
+
+thread_local const ContextFrame* t_frame = nullptr;
+
+class ContextScope
+{
+public:
+  ContextScope(const Runtime* runtime, const ProcessContext* context)
+    : m_frame{runtime, context, t_frame}
+  {
+    t_frame = &m_frame;
+  }
+  ~ContextScope() { t_frame = m_frame.outer; }
+  ContextScope(const ContextScope&) = delete;
+  ContextScope& operator=(const ContextScope&) = delete;
+
+private:
+  ContextFrame m_frame;
+};
+
+}
+
 Runtime::Runtime(OwnsMe<App> app, const std::string& runtimeId, const std::string& runtimeName)
   : m_app(app)
   , m_runtimeId(runtimeId)
   , m_runtimeName(runtimeName)
+  , m_boardRun(std::make_shared<const ProcessContext>(ProcessContext::newRun("board")))
 {
   // Notifications are served by the shared Server WebSocket (one port for the
   // whole process, multiplexed by runtimeId), not a per-runtime socket. Nothing
@@ -39,7 +81,8 @@ Runtime::~Runtime()
   }
 }
 
-void Runtime::onWebSocketMessage(const std::string& message, bool isBinary)
+void Runtime::onWebSocketMessage(const std::string& message, bool isBinary,
+                                 const Caller& caller)
 {
   if (isBinary)
   {
@@ -47,7 +90,7 @@ void Runtime::onWebSocketMessage(const std::string& message, bool isBinary)
     {
       MessageHeader header;
       auto data = Message::deserializeFromString(message, &header);
-      onSessionBinaryData(data, header);
+      onSessionBinaryData(data, header, caller);
     }
     catch (const std::exception& e)
     {
@@ -73,7 +116,7 @@ void Runtime::onWebSocketMessage(const std::string& message, bool isBinary)
   }
   try
   {
-    onSessionJSONData(msg);
+    onSessionJSONData(msg, caller);
   }
   catch (const std::exception& e)
   {
@@ -214,7 +257,8 @@ RuntimeConfiguration Runtime::getConfiguration() const
   return config;
 }
 
-json Runtime::configureService(const std::string &instanceId, json config)
+json Runtime::configureService(const std::string &instanceId, json config,
+                               const ProcessContext* context)
 {
   auto svc = resolveService(instanceId);
   if (!svc)
@@ -222,6 +266,12 @@ json Runtime::configureService(const std::string &instanceId, json config)
     return false;
   }
 
+  if (!context)
+  {
+    return svc->configure(config);
+  }
+
+  ContextScope scope(this, context);
   return svc->configure(config);
 }
 
@@ -271,12 +321,29 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
   App* app = m_app.get();
   std::string runtimeId = m_runtimeId;
   std::string space = m_space;
-  app->postCallback([app, runtimeId, space, data, purpose, sender]() {
+  // The run this is said in, read now: by the time the callback runs the call
+  // has returned and the runtime is in another run, or in none.
+  //
+  // Said outside any call it is the board's own work, and that run is shared
+  // rather than copied: this is the path a meter or a streaming source takes
+  // many times a second.
+  std::shared_ptr<const ProcessContext> run;
+  if (const auto* current = currentContext())
+  {
+    run = current == m_boardRun.get()
+      ? m_boardRun
+      : std::make_shared<const ProcessContext>(*current);
+  }
+  else
+  {
+    run = autonomousRun();
+  }
+  app->postCallback([app, runtimeId, space, data, purpose, sender, run = std::move(run)]() {
     try
     {
       // Before serializing for the clients watching: a sink takes the value
       // as it is, and must not lose it to a frame that cannot be built.
-      app->emitRuntimeData(runtimeId, data, purpose, sender, space);
+      app->emitRuntimeData(runtimeId, data, purpose, sender, space, run.get());
     }
     catch (const std::exception& e)
     {
@@ -318,15 +385,40 @@ void Runtime::notifyProcessFinished(const Service& service, const Data& data)
   sendServiceLifecycleNotification(service, "call-process-finished", data);
 }
 
-Data Runtime::process(Data data, ProcessContext context)
+const ProcessContext* Runtime::currentContext() const
+{
+  // Another runtime's call on this thread is not this runtime's: the nearest
+  // frame of its own is, and there are never more than a few to pass over.
+  for (const auto* frame = t_frame; frame; frame = frame->outer)
+  {
+    if (frame->runtime == this)
+      return frame->context;
+  }
+  return nullptr;
+}
+
+std::shared_ptr<const ProcessContext> Runtime::autonomousRun() const
+{
+  // An identity per emission is what lets a log tell one tick from the next,
+  // and a log is the only thing that reads it. A board that keeps none gets
+  // the one run this runtime stands in, at the cost of a reference count.
+  if (m_logging)
+    return std::make_shared<const ProcessContext>(ProcessContext::newRun("board"));
+  return m_boardRun;
+}
+
+Data Runtime::process(Data data)
+{
+  const auto run = autonomousRun();
+  return process(std::move(data), *run);
+}
+
+Data Runtime::process(Data data, const ProcessContext& context)
 {
   // Restored rather than cleared, so that a service calling back into this
   // runtime from inside its own process — the pull a cache miss performs —
   // leaves the outer call running under what it started with.
-  const auto previous = m_context;
-  const auto hadContext = m_hasContext;
-  m_context = context;
-  m_hasContext = true;
+  ContextScope scope(this, &context);
 
   // Every onProcessBegin is paired with an onProcessEnd, empty runtime included:
   // the depth they count decides when a result leaves this runtime, and one
@@ -334,14 +426,17 @@ Data Runtime::process(Data data, ProcessContext context)
   // input is the result, passed on unchanged.
   onProcessBegin();
   auto result = m_services.empty() ? data : processFrom(*m_services.front(), data, false);
-  const auto& out = onProcessEnd(result, context);
-
-  m_context = previous;
-  m_hasContext = hadContext;
-  return out;
+  return onProcessEnd(result, &context);
 }
 
-Data Runtime::processAt(const std::string& instanceId, Data data, ProcessContext context)
+Data Runtime::processAt(const std::string& instanceId, Data data)
+{
+  const auto run = autonomousRun();
+  return processAt(instanceId, std::move(data), *run);
+}
+
+Data Runtime::processAt(const std::string& instanceId, Data data,
+                        const ProcessContext& context)
 {
   auto it = findServiceById(instanceId);
   if (it == m_services.cend())
@@ -366,18 +461,27 @@ Data Runtime::processAt(const std::string& instanceId, Data data, ProcessContext
   // The same context bookkeeping process() does, and for the same reason: a
   // service pulling back into this runtime from inside its own call must leave
   // the outer call running under what it started with.
-  const auto previous = m_context;
-  const auto hadContext = m_hasContext;
-  m_context = context;
-  m_hasContext = true;
+  ContextScope scope(this, &context);
 
   onProcessBegin();
   auto result = processFrom(**it, data, /*advanceBefore=*/false);
-  const auto& out = onProcessEnd(result, context);
+  return onProcessEnd(result, &context);
+}
 
-  m_context = previous;
-  m_hasContext = hadContext;
-  return out;
+Data Runtime::withContext(const ProcessContext& context, std::function<Data()> fn)
+{
+  ContextScope scope(this, &context);
+  return fn();
+}
+
+bool Runtime::holdsService(const std::string& instanceId) const
+{
+  if (findServiceById(instanceId) != m_services.cend())
+  {
+    return true;
+  }
+  const auto segments = splitAddress(instanceId);
+  return segments.size() > 1 && findServiceById(segments[0]) != m_services.cend();
 }
 
 void Runtime::log(const Service& svc, LogLevel level, const std::string& event,
@@ -393,12 +497,17 @@ void Runtime::log(const Service& svc, LogLevel level, const std::string& event,
   // attached to that socket is the server's to know.
   //
   // Below the level the board keeps is the same as off: no entry is built.
-  if (!m_logging || levelRank(level) < levelRank(m_logLevel) || !m_hasContext)
+  if (!m_logging || levelRank(level) < levelRank(m_logLevel))
+    return;
+  const auto* run = currentContext();
+  if (!run)
     return;
 
   LogEntry entry;
-  entry.runId = m_context.runId;
-  entry.parentRunId = m_context.parentRunId;
+  entry.runId = run->runId;
+  entry.parentRunId = run->parentRunId;
+  if (const auto person = run->personActor())
+    entry.caller = person->caller.sub;
   entry.ts = isoTimestamp();
   entry.runtimeId = m_runtimeId;
   entry.serviceUuid = svc.getId();
@@ -456,6 +565,16 @@ void Runtime::registerLogTarget(std::function<void(const LogEntry&)> target)
 
 Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore, std::function<void(Data)> callback)
 {
+  const ProcessContext* run = currentContext();
+  if (!run)
+  {
+    // Nobody asked for this: a source handing on what it produced. Entered
+    // without a copy, a closure or an id of its own, because a streaming
+    // source arrives here for every buffer.
+    const auto autonomous = autonomousRun();
+    ContextScope scope(this, autonomous.get());
+    return processFrom(service, std::move(data), advanceBefore, std::move(callback));
+  }
   onProcessBegin();
   auto it = findServiceById(service.getId());
   if (it == m_services.cend())
@@ -467,6 +586,8 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
        next != m_services.cend();
        ++next)
   {
+    if (run->expired())
+      return onProcessEnd(Null());
     sendServiceLifecycleNotification(**next, "call-process", data);
     // The flow itself, at debug: which service the runtime called, and below,
     // what it returned and how long it took.
@@ -476,7 +597,11 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
     // recording the data — what flows through is recorded only where a service
     // was configured to record it.
     log(**next, LogLevel::Debug, "service.process");
-    const auto startedAt = std::chrono::steady_clock::now();
+    // Timed only when the duration will be kept; see below.
+    const bool timed = m_logging && levelRank(LogLevel::Debug) >= levelRank(m_logLevel);
+    const auto startedAt = timed
+      ? std::chrono::steady_clock::now()
+      : std::chrono::steady_clock::time_point();
     data = (*next)->startProcess(data);
     if ((*next)->takeProcessDeferred())
     {
@@ -487,10 +612,15 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
       return onProcessEnd(Null());
     }
     sendServiceLifecycleNotification(**next, "call-process-finished", data);
+    // Built only when it will be kept: this is inside the loop every pass
+    // runs, and an entry is several strings and a timestamp.
+    if (timed)
     {
       LogEntry done;
-      done.runId = m_context.runId;
-      done.parentRunId = m_context.parentRunId;
+      done.runId = run->runId;
+      done.parentRunId = run->parentRunId;
+      if (const auto person = run->personActor())
+        done.caller = person->caller.sub;
       done.ts = isoTimestamp();
       done.runtimeId = m_runtimeId;
       done.serviceUuid = (*next)->getId();
@@ -498,8 +628,7 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
       done.event = "service.processed";
       done.durationMs = std::chrono::duration<double, std::milli>(
                           std::chrono::steady_clock::now() - startedAt).count();
-      if (m_logging && levelRank(LogLevel::Debug) >= levelRank(m_logLevel) && m_hasContext)
-        forwardLog(done);
+      forwardLog(done);
     }
     if (isNull(data)) // stop processing on null
     {
@@ -510,10 +639,10 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
     }
     if (isEarlyReturn(data))
     {
-      return onProcessEnd(getControlFlowData(data), {}, callback);
+      return onProcessEnd(getControlFlowData(data), nullptr, callback);
     }
   }
-  return onProcessEnd(data, {}, callback);
+  return onProcessEnd(data, nullptr, callback);
 }
 
 void Runtime::sendServiceLifecycleNotification(const Service& service, const std::string& state, const Data& data)
@@ -734,8 +863,10 @@ void Runtime::onProcessBegin()
   m_processDepth.increment();
 }
 
-const Data& Runtime::onProcessEnd(const Data& data, ProcessContext context, std::function<void(Data)> callback)
+const Data& Runtime::onProcessEnd(const Data& data, const ProcessContext* context, std::function<void(Data)> callback)
 {
+  static const std::string noRequest;
+  const std::string& awaited = context ? context->requestId : noRequest;
   if (m_processDepth.decrement() == 0)
   {  
     // If we are the last initiator, communicate the result to whoever is
@@ -748,9 +879,9 @@ const Data& Runtime::onProcessEnd(const Data& data, ProcessContext context, std:
     {
       requestId = generateUUID();
     }
-    else if (!context.requestId.empty())
+    else if (!awaited.empty())
     {
-      requestId = context.requestId;
+      requestId = awaited;
     }
     if (callback)
     {
@@ -761,7 +892,7 @@ const Data& Runtime::onProcessEnd(const Data& data, ProcessContext context, std:
         std::cerr << "Runtime::onProcessEnd: No empty slot available in m_pendingResolve" << std::endl;
       }
     }
-    else if (!context.requestId.empty())
+    else if (!awaited.empty())
     {
       purpose = MessagePurpose::RESULT_WITH_REQUEST_ID;
     }
@@ -799,7 +930,7 @@ std::function<void(Data)> Runtime::findAndRemovePendingCallback(const std::strin
   return nullptr;
 }
 
-void Runtime::onSessionBinaryData(Data data, MessageHeader header)
+void Runtime::onSessionBinaryData(Data data, MessageHeader header, const Caller& caller)
 {
   if (header.messagePurpose == MessagePurpose::NOTIFICATION)
   {
@@ -816,11 +947,13 @@ void Runtime::onSessionBinaryData(Data data, MessageHeader header)
   }
   else
   {
-    this->process(data);
+    // A frame has no room for a run context, so the pass begins a run of its
+    // own — as whoever opened the socket.
+    this->process(data, ProcessContext::forClient(json(), caller));
   }
 }
 
-void Runtime::onSessionJSONData(json msg)
+void Runtime::onSessionJSONData(json msg, const Caller& caller)
 {
   auto data = msg["params"];
   auto context = msg["context"];
@@ -831,7 +964,9 @@ void Runtime::onSessionJSONData(json msg)
     // message: JSON has no undefined, so that is how a sender says it. The
     // first service is handed Undefined, which is what it is given anywhere
     // else nothing precedes it.
-    process(data.is_null() ? Data() : Data(data), ProcessContext::fromJson(context));
+    // The run is the one the message names. Who is calling is not the
+    // message's to say: it is whoever opened this socket.
+    process(data.is_null() ? Data() : Data(data), ProcessContext::forClient(context, caller));
   }
   else if (type == "resolveResult")
   {

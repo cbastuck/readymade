@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { XYPadWidget } from "../../types";
 import { findService } from "../../boardServices";
 import { WidgetRendererProps } from "../widgetRegistry";
+import { serviceForUserInterface } from "hkp-frontend/src/types";
 
 const THUMB_RADIUS = 18;
 
@@ -14,8 +15,8 @@ export function XYPadRenderer({
   const { markBoardChanged } = boardContext;
 
   const service = useMemo(
-    () => findService(boardContext, widget.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.serviceUuid],
+    () => serviceForUserInterface(findService(boardContext, widget.serviceUuid)),
+    [boardContext, widget.serviceUuid],
   );
 
   const draw = useCallback(() => {

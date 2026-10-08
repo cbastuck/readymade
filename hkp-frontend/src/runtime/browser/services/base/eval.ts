@@ -2,7 +2,7 @@ import { parse, eval as expEval } from "expression-eval";
 import moment from "moment";
 import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import jsep from "jsep";
-import { AppImpl, AppInstance } from "hkp-frontend/src/types";
+import { AppImpl, AppInstance, InstanceId } from "hkp-frontend/src/types";
 import { vaultGet, vaultSet } from "hkp-frontend/src/vault";
 
 export type Expression = jsep.Expression;
@@ -139,8 +139,9 @@ export async function parseAndEvalExpression(
   exp: string,
   params: any,
   app?: AppInstance,
+  caller?: InstanceId,
 ) {
-  return evalExpression(parseExpression(exp), params, app);
+  return evalExpression(parseExpression(exp), params, app, caller);
 }
 
 export function checkSyntax(statement: string | SyntaxError): true | string {
@@ -160,6 +161,11 @@ export async function evalExpression(
   ast: Expression | SyntaxError,
   params: any,
   app?: AppImpl,
+  /**
+   * The service evaluating, so that what the expression starts elsewhere
+   * continues the run that service is in.
+   */
+  caller?: InstanceId,
 ) {
   if (ast === "syntax-error") {
     throw new Error("evalExpression with syntax error");
@@ -168,7 +174,11 @@ export async function evalExpression(
   const processRuntime =
     app !== undefined
       ? (rtName: string, params: any) =>
-          app?.processRuntimeByName?.(rtName, params)
+          app?.processRuntimeByName?.(
+            rtName,
+            params,
+            caller ? app.currentContext?.(caller) : undefined,
+          )
       : () => console.warn("processRuntime is not supported in this scope");
 
   const getServiceConfig = (rtId: string, svcId: string, prop: string) =>

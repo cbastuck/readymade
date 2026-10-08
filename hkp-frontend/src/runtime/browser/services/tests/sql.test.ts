@@ -495,3 +495,157 @@ describe("the browser SQL database store", () => {
     ).toBe("only the organiser");
   });
 });
+
+describe("the caller parameters", () => {
+  const WHOAMI =
+    "SELECT $caller_email AS email, :caller_name AS name, @caller_sub AS sub, $other AS other";
+
+  function createAs(user: unknown) {
+    const { svc, app } = create({
+      database: uniqueName(),
+      mode: "query",
+      statement: WHOAMI,
+    });
+    (app as any).getAuthenticatedUser = () => user;
+    (app as any).currentContext = () => {
+      const person = user as
+        | { userId?: string; username?: string; email?: string }
+        | null;
+      return person?.userId
+        ? {
+            requestId: "",
+            runId: "local-person-run",
+            actor: {
+              kind: "person",
+              sub: person.userId,
+              expiresAt: Date.now() + 60_000,
+              ...(person.email
+                ? { email: person.email.trim().toLowerCase() }
+                : {}),
+              ...(person.username ? { name: person.username } : {}),
+            },
+          }
+        : {
+            requestId: "",
+            runId: "auth-off-run",
+            actor: { kind: "local" },
+          };
+    };
+    return svc;
+  }
+
+  it("are whoever is signed in to the app, over an input field of the same name", async () => {
+    const svc = createAs({
+      userId: "auth0|ada",
+      username: "Ada",
+      email: " Ada@Example.com ",
+      idToken: "t",
+    });
+
+    const { rows } = await svc.process({
+      caller_email: "mallory@example.com",
+      caller_name: "Mallory",
+      caller_sub: "auth0|mallory",
+      other: "from input",
+    });
+
+    expect(rows).toEqual([
+      {
+        email: "ada@example.com",
+        name: "Ada",
+        sub: "auth0|ada",
+        other: "from input",
+      },
+    ]);
+  });
+
+  const OWNER = {
+    userId: "auth0|owner",
+    username: "Owner",
+    email: "owner@club.example",
+    idToken: "t",
+  };
+
+  /** The service as its runtime calls it inside a run a coordinator handed over. */
+  function createInRun(user: unknown, caller: unknown) {
+    const { svc, app } = create({
+      database: uniqueName(),
+      mode: "query",
+      statement: WHOAMI,
+    });
+    (app as any).getAuthenticatedUser = () => user;
+    let run: unknown = {
+      requestId: "r",
+      runId: "run-1",
+      actor: caller
+        ? {
+            kind: "person",
+            ...(caller as object),
+            expiresAt: Date.now() + 60_000,
+          }
+        : { kind: "board" },
+    };
+    (app as any).currentContext = () => run;
+    return {
+      svc,
+      /** The call has given up control and another run reached the service. */
+      overtakenBy: (next: unknown) => {
+        run = next;
+      },
+    };
+  }
+
+  it("are whoever the run says began it, not whoever's browser it runs in", async () => {
+    const { svc } = createInRun(OWNER, {
+      sub: "auth0|anna",
+      email: "anna@example.com",
+      name: "Anna",
+    });
+
+    const { rows } = await svc.process({ caller_email: OWNER.email });
+
+    expect(rows).toEqual([
+      { email: "anna@example.com", name: "Anna", sub: "auth0|anna", other: null },
+    ]);
+  });
+
+  it("are NULL in a run that arrived naming nobody, though somebody is signed in here", async () => {
+    // A timer on another runtime, a request at a mount: nobody began it, and
+    // the owner whose browser runs the statement did not either.
+    const { svc } = createInRun(OWNER, null);
+
+    const { rows } = await svc.process({});
+
+    expect(rows).toEqual([{ email: null, name: null, sub: null, other: null }]);
+  });
+
+  it("are read when the call begins, and kept while it waits", async () => {
+    const run = createInRun(OWNER, { sub: "auth0|anna", email: "anna@example.com" });
+
+    // Opening the database is awaited; by the time the statement runs, the
+    // service has been reached by a run of somebody else's.
+    const answer = run.svc.process({});
+    run.overtakenBy({
+      requestId: "r",
+      runId: "run-2",
+      actor: {
+        kind: "person",
+        sub: "auth0|ben",
+        expiresAt: Date.now() + 60_000,
+      },
+    });
+
+    expect((await answer).rows[0]).toMatchObject({ sub: "auth0|anna" });
+  });
+
+  it("are NULL when nobody is signed in, whatever the input says", async () => {
+    const svc = createAs(null);
+
+    const { rows } = await svc.process({
+      caller_email: "mallory@example.com",
+      caller_sub: "auth0|mallory",
+    });
+
+    expect(rows).toEqual([{ email: null, name: null, sub: null, other: null }]);
+  });
+});

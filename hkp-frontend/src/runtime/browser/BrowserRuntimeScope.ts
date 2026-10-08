@@ -19,6 +19,7 @@ import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 import api from "./BrowserRuntimeApi";
 import { onServiceProcess, onServiceResult } from "../serviceState";
 import { createSlotStore, SlotStore } from "../slots";
+import { runExpired } from "../processContext";
 
 export type InstanceIndexTuple = [ServiceInstance | null, number];
 
@@ -39,15 +40,18 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   private passGeneration = 0;
   state: { [key: string]: any } = {};
   /**
-   * The run each service is currently being called in, keyed by service uuid.
+   * The runs each service is currently being called in, keyed by service uuid.
    *
    * Kept per service rather than one value for the whole scope, because this
    * runtime's pass awaits: two calls can be in flight at once and a single
-   * ambient value would hand one call's run to the other. Keyed this way the
-   * only case that stays ambiguous is one service being called twice at once,
-   * which is the case that genuinely is.
+   * ambient value would hand one call's run to the other. More than one entry
+   * for a service is kept rather than overwritten: if concurrent calls emit
+   * while their origins are ambiguous, `contextOf` fails closed instead of
+   * assigning one person's output to the other.
    */
-  private serviceContexts = new Map<string, ProcessContext>();
+  private serviceContexts = new Map<string, ProcessContext[]>();
+  /** Number of explicit late answers still outstanding in each run. */
+  private deferredRuns = new Map<ProcessContext, number>();
   private logTargets = new Set<(entry: LogEntry) => void>();
   /**
    * Whether entries may carry their `data` payload. Off unless a board turns it
@@ -69,6 +73,10 @@ export default class BrowserRuntimeScope implements RuntimeScope {
    */
   private slotsFrom: (() => SlotStore | null) | null = null;
 
+  /** Where who is signed in comes from, when this scope was not told itself;
+   *  see `delegateIdentity`. */
+  private identityFrom: (() => User | null) | null = null;
+
   /** The cells a service in this scope holds values in. */
   slots(): SlotStore {
     return this.slotsFrom?.() ?? this.ownSlots;
@@ -85,6 +93,22 @@ export default class BrowserRuntimeScope implements RuntimeScope {
    */
   delegateSlots(source: () => SlotStore | null): void {
     this.slotsFrom = source;
+  }
+
+  /**
+   * Take who is signed in from somewhere else rather than from this scope.
+   *
+   * A nested pipeline is a scope nobody provisions, so nobody tells it who is
+   * signed in; the service holding it points it at the app around it. Asked
+   * on each lookup, so that signing in or out is seen at any depth.
+   */
+  delegateIdentity(source: () => User | null): void {
+    this.identityFrom = source;
+  }
+
+  /** Who is signed in to the app, as a service in this scope is to see it. */
+  signedInUser(): User | null {
+    return this.identityFrom ? this.identityFrom() : this.authenticatedUser;
   }
 
   registerLogTarget(target: (entry: LogEntry) => void): () => void {
@@ -104,8 +128,84 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     }
   }
 
+  /** The run a service is being called in; see `AppImpl.currentContext`. */
+  contextOf(svc: InstanceId): ProcessContext | undefined {
+    const active = this.serviceContexts.get(svc.uuid) ?? [];
+    if (active.length === 0) {
+      return undefined;
+    }
+    const only = active[0];
+    return active.every((run) => run === only) ? only : undefined;
+  }
+
+  private enterContext(svc: InstanceId, run: ProcessContext): void {
+    const active = this.serviceContexts.get(svc.uuid) ?? [];
+    active.push(run);
+    this.serviceContexts.set(svc.uuid, active);
+  }
+
+  private leaveContext(svc: InstanceId, run: ProcessContext): void {
+    const active = this.serviceContexts.get(svc.uuid);
+    if (!active) {
+      return;
+    }
+    const index = active.lastIndexOf(run);
+    if (index !== -1) {
+      active.splice(index, 1);
+    }
+    if (active.length === 0) {
+      this.serviceContexts.delete(svc.uuid);
+    }
+  }
+
+  /**
+   * Calls arbitrary service-facing code inside a run without changing whether
+   * that code is synchronous or asynchronous.
+   *
+   * Browser panels share a JavaScript process with their services, so they do
+   * not naturally cross the authenticated REST/coordinator boundary. The UI
+   * service handle uses this method to create the same boundary in-process.
+   */
+  callInContext<T>(svc: InstanceId, run: ProcessContext, call: () => T): T {
+    this.enterContext(svc, run);
+    try {
+      const result = call();
+      if (
+        result !== null &&
+        (typeof result === "object" || typeof result === "function") &&
+        typeof (result as any).then === "function"
+      ) {
+        return Promise.resolve(result).finally(() => {
+          this.leaveContext(svc, run);
+        }) as T;
+      }
+      this.leaveContext(svc, run);
+      return result;
+    } catch (error) {
+      this.leaveContext(svc, run);
+      throw error;
+    }
+  }
+
+  defer(run: ProcessContext): void {
+    this.deferredRuns.set(run, (this.deferredRuns.get(run) ?? 0) + 1);
+  }
+
+  resume(run: ProcessContext): boolean {
+    const pending = this.deferredRuns.get(run) ?? 0;
+    if (pending <= 0) {
+      return false;
+    }
+    if (pending === 1) {
+      this.deferredRuns.delete(run);
+    } else {
+      this.deferredRuns.set(run, pending - 1);
+    }
+    return true;
+  }
+
   log(svc: InstanceId, level: LogLevel, event: string, data?: unknown) {
-    const context = this.serviceContexts.get(svc.uuid);
+    const context = this.contextOf(svc);
     // Nothing to attribute an entry to means nothing worth recording: an entry
     // that names no run cannot be found again.
     if (!context?.runId || this.logTargets.size === 0) {
@@ -122,6 +222,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     };
     if (context.parentRunId) {
       entry.parentRunId = context.parentRunId;
+    }
+    if (context.actor.kind === "person") {
+      entry.caller = context.actor.sub;
     }
     if (this.logData && data !== undefined) {
       entry.data = data;
@@ -245,6 +348,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       return null;
     }
     const generation = this.passGeneration;
+    const deferredBefore = context
+      ? (this.deferredRuns.get(context) ?? 0)
+      : 0;
 
     const services = this.serviceInstances;
     const [svc_, position] = this.findServiceInstance(service?.uuid || null);
@@ -265,6 +371,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       !!services[i] && result !== null;
       ++i
     ) {
+      if (runExpired(context)) {
+        return null;
+      }
       if (this.isDisposing || generation !== this.passGeneration) {
         return null;
       }
@@ -273,7 +382,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
         try {
           onServiceProcess(this.app, svc, params);
           if (context) {
-            this.serviceContexts.set(svc.uuid, context);
+            this.enterContext(svc, context);
           }
           result = await svc.process(params);
           onServiceResult(this.app, svc, result);
@@ -285,7 +394,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
             } caused error: ${JSON.stringify(err.message)}`,
           );
         } finally {
-          this.serviceContexts.delete(svc.uuid);
+          if (context) {
+            this.leaveContext(svc, context);
+          }
         }
       }
     }
@@ -293,7 +404,12 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     if (generation !== this.passGeneration) {
       return null;
     }
-    if (reportResult && !this.isDisposing) {
+    if (
+      reportResult &&
+      !this.isDisposing &&
+      (!context ||
+        (this.deferredRuns.get(context) ?? 0) <= deferredBefore)
+    ) {
       this.onResult(svc ? svc.uuid : null, result, context);
     }
     return result;
@@ -321,7 +437,11 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     );
   };
 
-  processRuntimeByName = async (_name: string, _params: any) => {
+  processRuntimeByName = async (
+    _name: string,
+    _params: any,
+    _run?: ProcessContext | null,
+  ): Promise<any> => {
     console.warn("processRuntimeByName not implemented");
   };
 
@@ -329,6 +449,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     _runtimeId: string,
     _serviceUuid: string,
     _config: any,
+    _run?: ProcessContext | null,
   ): Promise<void> => {
     console.warn("configureServiceInRuntime not implemented");
   };

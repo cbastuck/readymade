@@ -103,6 +103,7 @@ export function connectDevTools(context?: BoardContextState) {
           const context = {
             requestId: uuidv4(),
             onResolve: resolve,
+            actor: { kind: "local" as const },
           };
           api.processRuntime(scope, params, null, context);
         }

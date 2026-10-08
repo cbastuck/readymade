@@ -139,14 +139,14 @@ void App::removeAllRuntimes()
 }
 
 json App::configureService(const std::string &runtimeId, const std::string &instanceId, json config,
-                           const std::string& space)
+                           const std::string& space, const ProcessContext* context)
 {
   auto rt = findRuntimeShared(runtimeId, space);
   if (!rt)
   {
     return false;
   }
-  return rt->configureService(instanceId, config);
+  return rt->configureService(instanceId, config, context);
 }
 
 json App::getServiceState(const std::string &runtimeId, const std::string &instanceId) const
@@ -169,7 +169,8 @@ json App::getServices(const std::string &runtimeId, const std::string& space) co
   return rt->getServices();
 }
 
-void App::dispatchRuntimeWsMessage(const std::string& runtimeId, const std::string& message, bool isBinary)
+void App::dispatchRuntimeWsMessage(const std::string& runtimeId, const std::string& message, bool isBinary,
+                                   const Caller* caller)
 {
   auto rt = findRuntimeShared(runtimeId);
   if (!rt)
@@ -177,7 +178,7 @@ void App::dispatchRuntimeWsMessage(const std::string& runtimeId, const std::stri
     std::cerr << "App::dispatchRuntimeWsMessage: unknown runtime " << runtimeId << std::endl;
     return;
   }
-  rt->onWebSocketMessage(message, isBinary);
+  rt->onWebSocketMessage(message, isBinary, caller ? *caller : Caller());
 }
 
 json App::appendService(const std::string& runtimeId, const ServiceConfiguration& service) {
@@ -222,6 +223,17 @@ Data App::processRuntime(const std::string& runtimeId, const Data& data, const j
   return rt->process(data, ProcessContext::fromJson(context));
 }
 
+Data App::processRuntimeAs(const std::string& runtimeId, const Data& data,
+                           const ProcessContext& context, const std::string& space)
+{
+  auto rt = findRuntimeShared(runtimeId, space);
+  if (!rt)
+  {
+    return false;
+  }
+  return rt->process(data, context);
+}
+
 Data App::processServiceAt(const std::string& runtimeId,
                            const std::string& instanceId, const Data& data)
 {
@@ -231,6 +243,25 @@ Data App::processServiceAt(const std::string& runtimeId,
     return false;
   }
   return rt->processAt(instanceId, data);
+}
+
+Data App::processServiceAtAs(const std::string& runtimeId, const std::string& instanceId,
+                             const Data& data, const ProcessContext& context,
+                             const std::string& space)
+{
+  auto rt = findRuntimeShared(runtimeId, space);
+  if (!rt)
+  {
+    return false;
+  }
+  return rt->processAt(instanceId, data, context);
+}
+
+bool App::hasService(const std::string& runtimeId, const std::string& instanceId,
+                     const std::string& space) const
+{
+  auto rt = findRuntimeShared(runtimeId, space);
+  return rt && rt->holdsService(instanceId);
 }
 
 json App::getRegistry() const
@@ -386,11 +417,12 @@ void App::clearRuntimeOutputSink(const std::string& runtimeId, const std::string
 
 void App::emitRuntimeData(const std::string& runtimeId, const Data& data,
                           MessagePurpose purpose, const std::string& sender,
-                          const std::string& space)
+                          const std::string& space, const ProcessContext* run)
 {
   // Copied out under the lock and called without it: a sink may take a while,
   // and may itself replace or remove a sink.
-  std::function<void(const Data&, MessagePurpose, const std::string&)> onData;
+  std::function<void(const Data&, MessagePurpose, const std::string&,
+                     const ProcessContext*)> onData;
   {
     std::lock_guard<std::mutex> lock(m_sinksMutex);
     auto it = m_sinks.find(sinkKey(runtimeId, space));
@@ -401,7 +433,7 @@ void App::emitRuntimeData(const std::string& runtimeId, const Data& data,
   }
   if (onData)
   {
-    onData(data, purpose, sender);
+    onData(data, purpose, sender, run);
   }
 }
 

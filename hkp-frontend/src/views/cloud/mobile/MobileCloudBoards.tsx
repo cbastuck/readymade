@@ -26,11 +26,16 @@ import { useMobileConnections } from "../../playground/mobile/MobileConnections"
 import {
   CoordinatorBoardInfo,
   listCoordinatorBoards,
+  listSharedBoards,
+  SharedBoardInfo,
   registerCoordinatorBoard,
   stopCoordinatorBoard,
   deleteCoordinatorBoard,
 } from "../coordinatorClient";
 import { useCoordinatorBridge } from "../useCoordinatorBridge";
+import MembersDialog from "../MembersDialog";
+import SharedBoard from "../SharedBoard";
+import { SharedBoardLink, coordinatorNameFor } from "../sharedLink";
 import MobileBoardCanvas from "../../playground/mobile/MobileBoardCanvas";
 import CloudLoginGate from "../CloudLoginGate";
 import ManageCoordinatorsDialog from "../ManageCoordinatorsDialog";
@@ -41,6 +46,8 @@ import NewBoardDialog from "../NewBoardDialog";
 type AllCoordinatorBoards = {
   coordinator: CoordinatorDescriptor;
   boards: CoordinatorBoardInfo[];
+  /** Boards on this coordinator that somebody else owns and shared. */
+  shared: SharedBoardInfo[];
   error: boolean;
 };
 
@@ -51,6 +58,8 @@ type AllCoordinatorBoards = {
 export interface OpenCloudBoardSignal {
   coordinatorUrl: string;
   boardName: string;
+  /** Set for a board somebody else owns: their id on that coordinator. */
+  owner?: string;
   at: number;
 }
 
@@ -264,6 +273,66 @@ function BoardRow({
   );
 }
 
+/**
+ * A board somebody else owns. Opens as its facade; there is nothing to delete
+ * — it is not this person's board — so the row has no action behind it.
+ */
+function SharedRow({
+  board,
+  onOpen,
+}: {
+  board: SharedBoardInfo;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      onClick={onOpen}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 14px",
+        background: M.card,
+        border: `1px solid ${M.border}`,
+        borderRadius: 12,
+        cursor: "pointer",
+        textAlign: "left",
+        boxSizing: "border-box",
+        fontFamily: "inherit",
+      }}
+    >
+      <div
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: board.status === "running" ? M.green : M.textMuted,
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: M.textPrimary,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {board.boardName}
+        </div>
+        <div style={{ fontSize: 11, color: M.textMuted, marginTop: 1 }}>
+          You are “{board.name}” here
+        </div>
+      </div>
+      <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
+    </button>
+  );
+}
+
 // ── Overview screen ─────────────────────────────────────────────────────────────
 
 function CloudOverview({
@@ -271,6 +340,7 @@ function CloudOverview({
   allCoordinatorBoards,
   isLoading,
   onOpenBoard,
+  onOpenShared,
   onNewBoard,
   onDeleteBoard,
   onManageCoordinators,
@@ -281,6 +351,10 @@ function CloudOverview({
   onOpenBoard: (
     coordinator: CoordinatorDescriptor,
     board: CoordinatorBoardInfo,
+  ) => void;
+  onOpenShared: (
+    coordinator: CoordinatorDescriptor,
+    board: SharedBoardInfo,
   ) => void;
   onNewBoard: (coordinator: CoordinatorDescriptor) => void;
   onDeleteBoard: (
@@ -358,7 +432,9 @@ function CloudOverview({
                     padding: "8px 4px",
                   }}
                 >
-                  No boards yet — tap New to create one.
+                  {group.shared.length > 0
+                    ? "No boards of your own here."
+                    : "No boards yet — tap New to create one."}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -370,6 +446,33 @@ function CloudOverview({
                       onDelete={() => onDeleteBoard(group.coordinator, board)}
                     />
                   ))}
+                </div>
+              )}
+              {group.shared.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <div
+                    style={{
+                      padding: "0 4px 8px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: M.textMuted,
+                    }}
+                  >
+                    Shared with me
+                  </div>
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                  >
+                    {group.shared.map((board) => (
+                      <SharedRow
+                        key={`${board.owner} ${board.boardName}`}
+                        board={board}
+                        onOpen={() => onOpenShared(group.coordinator, board)}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -478,6 +581,7 @@ function CloudTopBar({
   onBack,
   onRefresh,
   runState,
+  onMembers,
 }: {
   title: string;
   /** Where the board lives, e.g. "Deployed to node1"; absent on the overview. */
@@ -491,6 +595,8 @@ function CloudTopBar({
     busy: boolean;
     onToggle: () => void;
   };
+  /** Opens who the open board is shared with; its owner's to see. */
+  onMembers?: () => void;
 }) {
   return (
     <div
@@ -591,6 +697,26 @@ function CloudTopBar({
           {runState.stopped ? "Start" : "Stop"}
         </button>
       )}
+      {onMembers && (
+        <button
+          onClick={onMembers}
+          title="Who this board is shared with"
+          style={{
+            flexShrink: 0,
+            padding: "7px 12px",
+            borderRadius: 9,
+            border: `1px solid ${M.border}`,
+            background: "#fff",
+            color: M.textSecondary,
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "inherit",
+            cursor: "pointer",
+          }}
+        >
+          Members
+        </button>
+      )}
       {onRefresh && (
         <button
           onClick={onRefresh}
@@ -653,6 +779,11 @@ export default function MobileCloudBoards({
   // True while a start/stop request is in flight, so a second tap cannot
   // register the board twice.
   const [runToggleBusy, setRunToggleBusy] = useState(false);
+  const [isMembersOpen, setIsMembersOpen] = useState(false);
+  // A board somebody else owns, opened as its member; it takes the screen.
+  const [openShared, setOpenShared] = useState<
+    (SharedBoardLink & { on: string }) | null
+  >(null);
 
   // ── Coordinator management ────────────────────────────────────────────────────
 
@@ -694,16 +825,26 @@ export default function MobileCloudBoards({
       return [];
     }
     const results = await Promise.allSettled(
-      coordinators.map(async (c) => ({
-        coordinator: c,
-        boards: await listCoordinatorBoards(c.url, user.userId, user.idToken),
-        error: false,
-      })),
+      coordinators.map(async (c) => {
+        // Asked separately: somebody a board is shared with need not be
+        // allowed to own boards on that coordinator.
+        const [own, shared] = await Promise.allSettled([
+          listCoordinatorBoards(c.url, user.userId, user.idToken),
+          listSharedBoards(c.url, user.idToken),
+        ]);
+        const sharedBoards = shared.status === "fulfilled" ? shared.value : [];
+        return {
+          coordinator: c,
+          boards: own.status === "fulfilled" ? own.value : [],
+          shared: sharedBoards,
+          error: own.status === "rejected" && sharedBoards.length === 0,
+        };
+      }),
     );
     return results.map((r, i) =>
       r.status === "fulfilled"
         ? r.value
-        : { coordinator: coordinators[i], boards: [], error: true },
+        : { coordinator: coordinators[i], boards: [], shared: [], error: true },
     );
   }, [coordinators, user]);
 
@@ -749,6 +890,19 @@ export default function MobileCloudBoards({
   // revalidation can't yank the user back to it.
   const pendingOpenBoard = useRef<OpenCloudBoardSignal | null>(null);
   useEffect(() => {
+    if (openBoard?.owner) {
+      // Somebody else's board: opened as its member, nothing of ours to find.
+      pendingOpenBoard.current = null;
+      setOpenShared({
+        coordinatorUrl: openBoard.coordinatorUrl,
+        owner: openBoard.owner,
+        boardName: openBoard.boardName,
+        on:
+          coordinators.find((c) => c.url === openBoard.coordinatorUrl)?.name ??
+          coordinatorNameFor(openBoard.coordinatorUrl),
+      });
+      return;
+    }
     if (openBoard) {
       pendingOpenBoard.current = openBoard;
     }
@@ -987,6 +1141,37 @@ export default function MobileCloudBoards({
 
   const boardIsOpen = !showOverview && !!selectedCoordinator && !!selectedBoard;
 
+  // A shared board has a provider of its own, around the projection that is
+  // all a member is sent, so it is shown instead of this view's.
+  if (openShared) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          background: M.bg,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          fontFamily: "'DM Sans', system-ui, sans-serif",
+        }}
+      >
+        <SharedBoard
+          shared={openShared}
+          user={user}
+          compact
+          header={
+            <CloudTopBar
+              title={openShared.boardName}
+              subtitle={`Shared with you on ${openShared.on}`}
+              onBack={() => setOpenShared(null)}
+            />
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <BoardProvider
       ref={boardProviderRef}
@@ -1034,6 +1219,7 @@ export default function MobileCloudBoards({
                 }
               : undefined
           }
+          onMembers={boardIsOpen ? () => setIsMembersOpen(true) : undefined}
         />
 
         {/* Keep the board mounted in the background while browsing the overview
@@ -1063,6 +1249,14 @@ export default function MobileCloudBoards({
             allCoordinatorBoards={allCoordinatorBoards}
             isLoading={isLoadingAllBoards}
             onOpenBoard={onOpenBoard}
+            onOpenShared={(coordinator, board) =>
+              setOpenShared({
+                coordinatorUrl: coordinator.url,
+                owner: board.owner,
+                boardName: board.boardName,
+                on: coordinator.name,
+              })
+            }
             onNewBoard={onNewBoard}
             onDeleteBoard={onDeleteBoard}
             onManageCoordinators={() => setIsManageOpen(true)}
@@ -1076,6 +1270,15 @@ export default function MobileCloudBoards({
         onAdd={onAddCoordinator}
         onRemove={onRemoveCoordinator}
         onClose={() => setIsManageOpen(false)}
+      />
+
+      <MembersDialog
+        isOpen={isMembersOpen && !!selectedCoordinator && !!selectedBoard}
+        coordinatorUrl={selectedCoordinator?.url ?? ""}
+        userId={user.userId}
+        idToken={user.idToken}
+        boardName={selectedBoard?.boardName ?? ""}
+        onClose={() => setIsMembersOpen(false)}
       />
 
       <NewBoardDialog

@@ -6,6 +6,7 @@ import { FacadeBoardActionsProvider } from "../../../facade/FacadeBoardActions";
 import { FacadeNotices } from "../../../facade/FacadeNotices";
 import { FacadeTabBar } from "../../../facade/FacadeTabBar";
 import { executeActions } from "../../../facade/executeActions";
+import { useFacadeIdentity } from "../../../facade/FacadeIdentity";
 import { PanelRenderer } from "../../../facade/panels/PanelRenderer";
 import { currentFace, defaultFaceId, resolveFaces } from "../../../facade/tabs";
 import { FacadeDescriptor, FacadePanel } from "../../../facade/types";
@@ -45,6 +46,7 @@ export default function MobileFacadeView({
   // Keep a ref so the init effect always sees the latest state at fire time.
   const facadeStateRef = useRef(facadeState);
   facadeStateRef.current = facadeState;
+  const identity = useFacadeIdentity(boardContext);
 
   useEffect(() => {
     if (!facade.init?.length) {
@@ -56,6 +58,7 @@ export default function MobileFacadeView({
       boardContext,
       setState: setFacadeStateEntry,
       state: facadeStateRef.current,
+      identity,
     });
   }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
 

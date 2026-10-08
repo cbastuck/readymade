@@ -203,6 +203,15 @@ what everybody gets. **Notices** are what a board says without being looked at: 
 toast raised from what a service reports, instead of a row kept free for a
 problem that is usually not there.
 
+A facade can say **who it is being shown to**: `{ "$user": "name" }` or
+`{ "$user": "email" }`, usable wherever a `{ "$state": … }` reference is — in a
+payload, or as a `text` widget's `value`. On a deployed board `name` is what
+that board's member list calls the person; elsewhere it is the account's own.
+It is for *showing* somebody who they are acting as. A service that has to
+know who is calling asks the run, which the server states — see
+[SQL: who is calling](../services/sql.md#who-is-calling). Nothing a facade puts
+in a payload proves it.
+
 ---
 
 ## Who owns a board
@@ -213,6 +222,7 @@ Exactly one instance, always — and which one changes what the browser may do:
 |---|---|---|
 | Playground / Readymade | this browser | owns it: provisions runtimes, holds engine state |
 | Deployed | a coordinator | viewer: reads, configures, cannot edit structure |
+| Deployed, shared with you | a coordinator, for its owner | member: sees the facade and what it reads, does what the facade does, and is shown nothing else of the board |
 
 The role that owns the board is the **coordinator**
 (`concepts/coordinator.md`), and moving between the two rows is

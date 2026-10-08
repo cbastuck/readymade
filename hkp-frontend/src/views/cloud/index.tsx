@@ -17,6 +17,7 @@ import {
   Plus,
   TriangleAlert,
   ScrollText,
+  Users,
 } from "lucide-react";
 
 import BoardProvider, {
@@ -41,11 +42,27 @@ import {
 } from "../../types";
 import {
   CoordinatorBoardInfo,
+  SharedBoardInfo,
   listCoordinatorBoards,
+  listSharedBoards,
   registerCoordinatorBoard,
   setCoordinatorBoardLogging,
   stopCoordinatorBoard,
 } from "./coordinatorClient";
+import MembersDialog from "./MembersDialog";
+import SharedBoard from "./SharedBoard";
+import {
+  SharedBoardLink,
+  coordinatorNameFor,
+  findKnownCoordinator,
+  readSharedBoardLink,
+} from "./sharedLink";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "hkp-frontend/src/ui-components/primitives/dialog";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { toast } from "sonner";
 import CoordinatorsMenu from "./CoordinatorsMenu";
 import CloudBoard from "./Board";
@@ -76,6 +93,8 @@ import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 type AllCoordinatorBoards = {
   coordinator: CoordinatorDescriptor;
   boards: CoordinatorBoardInfo[];
+  /** Boards on this coordinator that somebody else owns and shared. */
+  shared: SharedBoardInfo[];
   error: boolean;
 };
 
@@ -193,6 +212,38 @@ function BoardLandingCard({
   );
 }
 
+/** A board somebody else owns: opened as its facade, with no board to show. */
+function SharedBoardCard({
+  board,
+  onClick,
+}: {
+  board: SharedBoardInfo;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-start gap-2 p-4 rounded-xl border border-slate-200 bg-white text-left cursor-pointer transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+    >
+      <div className="flex items-center gap-2 w-full">
+        <span
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{
+            background: board.status === "running" ? "#22c55e" : "#94a3b8",
+          }}
+        />
+        <span className="text-[13px] font-semibold text-slate-800 truncate flex-1">
+          {board.boardName}
+        </span>
+        <ArrowRight size={13} className="text-slate-400 shrink-0" />
+      </div>
+      <span className="text-[11px] text-slate-400 ml-4">
+        You are “{board.name}” here
+      </span>
+    </button>
+  );
+}
+
 type LandingProps = {
   user: { username: string; idToken: string } | null;
   coordinators: CoordinatorDescriptor[];
@@ -201,6 +252,10 @@ type LandingProps = {
   onSelectBoard: (
     coordinator: CoordinatorDescriptor,
     board: CoordinatorBoardInfo,
+  ) => void;
+  onSelectShared: (
+    coordinator: CoordinatorDescriptor,
+    board: SharedBoardInfo,
   ) => void;
   onNewBoard: (coordinator: CoordinatorDescriptor) => void;
   onManageCoordinators: () => void;
@@ -212,6 +267,7 @@ function CloudBoardsLanding({
   allCoordinatorBoards,
   isLoading,
   onSelectBoard,
+  onSelectShared,
   onNewBoard,
   onManageCoordinators,
 }: LandingProps) {
@@ -298,7 +354,9 @@ function CloudBoardsLanding({
                       </p>
                     ) : group.boards.length === 0 ? (
                       <p className="text-slate-400 text-sm py-4">
-                        No boards yet — create one to get started.
+                        {group.shared.length > 0
+                          ? "No boards of your own here."
+                          : "No boards yet — create one to get started."}
                       </p>
                     ) : (
                       <div
@@ -319,6 +377,34 @@ function CloudBoardsLanding({
                           />
                         ))}
                       </div>
+                    )}
+                    {group.shared.length > 0 && (
+                      <>
+                        <p
+                          className="uppercase tracking-[0.2em] text-slate-400 mt-6 mb-3"
+                          style={{ fontSize: "0.68rem", fontWeight: 600 }}
+                        >
+                          Shared with me
+                        </p>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fill, minmax(200px, 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {group.shared.map((board) => (
+                            <SharedBoardCard
+                              key={`${board.owner} ${board.boardName}`}
+                              board={board}
+                              onClick={() =>
+                                onSelectShared(group.coordinator, board)
+                              }
+                            />
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -351,7 +437,11 @@ function CloudBoardInner({
   onHydrate,
 }: InnerProps) {
   const boardContext = useBoardContext();
-  const { ws: bridgeWs, configureRemoteService } = useCoordinatorBridge(
+  const {
+    ws: bridgeWs,
+    configureRemoteService,
+    processRemoteService,
+  } = useCoordinatorBridge(
     bridgeWsUrl,
     userId,
     board.boardName,
@@ -363,6 +453,7 @@ function CloudBoardInner({
   // The host built the attached-mode api around this object before the socket
   // existed; give it the way to send now that it does.
   bridgeAccess.configureRemoteService = configureRemoteService;
+  bridgeAccess.processRemoteService = processRemoteService;
 
   // The board is hydrated from what the coordinator says it is — which only
   // arrives once it has said it. Hydrating from the saved config first would
@@ -432,14 +523,16 @@ export default function CloudBoards({
   // provider that hosts the hook.
   const bridgeAccessRef = useRef<CoordinatorBridgeAccess | null>(null);
   if (!bridgeAccessRef.current) {
+    const notAttached = async () => {
+      throw new Error("Not attached to a coordinator");
+    };
     bridgeAccessRef.current = {
       snapshot: new CoordinatorSnapshotStore(),
-      configureRemoteService: async () => {
-        throw new Error("Not attached to a coordinator");
-      },
+      configureRemoteService: notAttached,
+      processRemoteService: notAttached,
     };
   }
-  const bridgeAccess = bridgeAccessRef.current;
+  const bridgeAccess: CoordinatorBridgeAccess = bridgeAccessRef.current;
 
   const [initialRuntimeEngines] = useState<RuntimeClass[]>(() => [
     { name: "Browser Runtime", type: "browser" },
@@ -467,6 +560,15 @@ export default function CloudBoards({
   const [mountedBoard, setMountedBoard] = useState<
     CoordinatorBoardInfo | undefined
   >();
+  const [isMembersOpen, setIsMembersOpen] = useState(false);
+  // A board somebody else owns, opened as its member. It replaces this view's
+  // own board while it is open: there is no board of the member's to show.
+  const [openShared, setOpenShared] = useState<SharedBoardLink | null>(null);
+  // A link naming a coordinator this person does not keep, waiting on their
+  // answer. Nothing is sent to that coordinator until they give one.
+  const [pendingInvite, setPendingInvite] = useState<SharedBoardLink | null>(
+    null,
+  );
 
   // ── Coordinator management ──────────────────────────────────────────────────
 
@@ -527,16 +629,28 @@ export default function CloudBoards({
       return [];
     }
     const results = await Promise.allSettled(
-      coordinators.map(async (c) => ({
-        coordinator: c,
-        boards: await listCoordinatorBoards(c.url, user.userId, user.idToken),
-        error: false,
-      })),
+      coordinators.map(async (c) => {
+        // Asked separately and allowed to fail separately: somebody a board
+        // is shared with need not be allowed to own boards on that
+        // coordinator, and is then refused the first question and answered
+        // the second.
+        const [own, shared] = await Promise.allSettled([
+          listCoordinatorBoards(c.url, user.userId, user.idToken),
+          listSharedBoards(c.url, user.idToken),
+        ]);
+        const sharedBoards = shared.status === "fulfilled" ? shared.value : [];
+        return {
+          coordinator: c,
+          boards: own.status === "fulfilled" ? own.value : [],
+          shared: sharedBoards,
+          error: own.status === "rejected" && sharedBoards.length === 0,
+        };
+      }),
     );
     return results.map((r, i) =>
       r.status === "fulfilled"
         ? r.value
-        : { coordinator: coordinators[i], boards: [], error: true },
+        : { coordinator: coordinators[i], boards: [], shared: [], error: true },
     );
   }, [coordinators, user]);
 
@@ -626,6 +740,69 @@ export default function CloudBoards({
   const location = useLocation();
   const navigate = useNavigate();
 
+  // ── Shared boards ───────────────────────────────────────────────────────────
+
+  const onSelectShared = (
+    coordinator: CoordinatorDescriptor,
+    board: SharedBoardInfo,
+  ) => {
+    setOpenShared({
+      coordinatorUrl: coordinator.url,
+      owner: board.owner,
+      boardName: board.boardName,
+    });
+  };
+
+  /**
+   * A link to a shared board, in this location's query.
+   *
+   * Acted on at once only for a coordinator this person already keeps. A link
+   * can be written by anybody and can name any host, and opening a board means
+   * sending that host the person's sign-in — so for any other coordinator they
+   * are asked first.
+   */
+  const invite = readSharedBoardLink(location.search);
+  const inviteKey = invite
+    ? `${invite.coordinatorUrl} ${invite.owner} ${invite.boardName}`
+    : "";
+  useEffect(() => {
+    if (!invite || !user) {
+      return;
+    }
+    const known = findKnownCoordinator(coordinators, invite.coordinatorUrl);
+    if (known) {
+      setPendingInvite(null);
+      setOpenShared({ ...invite, coordinatorUrl: known.url });
+    } else {
+      setPendingInvite(invite);
+    }
+    // The link is what this follows; the list of coordinators changing under
+    // an open board is not a reason to open it again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteKey, !!user]);
+
+  /** Leaves a shared board, and the link that led to it. */
+  const closeShared = () => {
+    setOpenShared(null);
+    setPendingInvite(null);
+    if (invite) {
+      navigate(location.pathname, { replace: true });
+    }
+  };
+
+  const acceptInvite = () => {
+    const link = pendingInvite;
+    if (!link) {
+      return;
+    }
+    onAddCoordinator({
+      name: coordinatorNameFor(link.coordinatorUrl),
+      url: link.coordinatorUrl,
+    });
+    setPendingInvite(null);
+    setOpenShared(link);
+  };
+
   // Open a specific board on arrival — the start page's "Cloud Boards" source
   // navigates here with this signal instead of driving the internal state
   // itself. The `at` nonce re-triggers it on repeat navigations; the pending
@@ -633,7 +810,13 @@ export default function CloudBoards({
   // yank the user back to it.
   const openBoardSignal = (
     location.state as {
-      openBoard?: { coordinatorUrl: string; boardName: string; at: number };
+      openBoard?: {
+        coordinatorUrl: string;
+        boardName: string;
+        /** Set for a board somebody else owns: their id on that coordinator. */
+        owner?: string;
+        at: number;
+      };
     } | null
   )?.openBoard;
   const pendingOpenBoard = useRef<{
@@ -641,6 +824,17 @@ export default function CloudBoards({
     boardName: string;
   } | null>(null);
   useEffect(() => {
+    if (openBoardSignal?.owner) {
+      // Somebody else's board, picked from this person's own list of
+      // coordinators: opened as its member, with nothing of ours to select.
+      pendingOpenBoard.current = null;
+      setOpenShared({
+        coordinatorUrl: openBoardSignal.coordinatorUrl,
+        owner: openBoardSignal.owner,
+        boardName: openBoardSignal.boardName,
+      });
+      return;
+    }
     if (openBoardSignal) {
       pendingOpenBoard.current = {
         coordinatorUrl: openBoardSignal.coordinatorUrl,
@@ -972,8 +1166,133 @@ export default function CloudBoards({
           onPick={(level) => void applyLogging(true, level)}
         />
       )}
+      <button
+        type="button"
+        onClick={() => setIsMembersOpen(true)}
+        title="Who this board is shared with"
+        style={{
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          border: "none",
+          background: "none",
+          padding: "2px 4px",
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: "var(--hkp-accent, #3b5bff)",
+          cursor: "pointer",
+        }}
+      >
+        <Users size={14} strokeWidth={1.75} />
+        Members
+      </button>
     </div>
   ) : null;
+
+  const inviteDialog = (
+    <Dialog
+      open={!!pendingInvite}
+      onOpenChange={(open) => {
+        if (!open) {
+          closeShared();
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-[480px] flex flex-col gap-4">
+        <DialogTitle className="text-lg font-semibold tracking-widest">
+          Open a shared board?
+        </DialogTitle>
+        <p className="text-sm text-muted-foreground -mt-2">
+          This link is for “{pendingInvite?.boardName}” on{" "}
+          <strong>
+            {pendingInvite ? coordinatorNameFor(pendingInvite.coordinatorUrl) : ""}
+          </strong>
+          , a coordinator you have not added. Opening it sends your sign-in to
+          that server, so continue only if you trust whoever gave you the link.
+        </p>
+        <div className="mt-2 flex justify-end gap-2">
+          <Button className="text-md" variant="outline" onClick={closeShared}>
+            Cancel
+          </Button>
+          <Button className="text-md" onClick={acceptInvite}>
+            Add coordinator and open
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // A shared board is shown instead of this view's own: it has a provider of
+  // its own, around a projection that is all a member is sent.
+  if (openShared) {
+    const sharedOn =
+      findKnownCoordinator(coordinators, openShared.coordinatorUrl)?.name ??
+      coordinatorNameFor(openShared.coordinatorUrl);
+    return (
+      <SharedBoard
+        shared={openShared}
+        user={user}
+        header={
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "6px 12px",
+              flexShrink: 0,
+              borderBottom: "1px solid var(--border, #e5e7eb)",
+              background: "var(--bg-app, #fafafa)",
+            }}
+          >
+            {logoSlot}
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {openShared.boardName}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontSize: 12,
+                  color: "var(--text-dim, #6b7280)",
+                }}
+              >
+                <Users size={12} strokeWidth={1.75} />
+                Shared with you on {sharedOn}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={closeShared}
+              style={{
+                flexShrink: 0,
+                border: "none",
+                background: "none",
+                padding: "2px 4px",
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: "var(--hkp-accent, #3b5bff)",
+                cursor: "pointer",
+              }}
+            >
+              Cloud boards
+            </button>
+            {menuSlot}
+          </div>
+        }
+      />
+    );
+  }
 
   return (
     <BoardProvider
@@ -1088,6 +1407,7 @@ export default function CloudBoards({
                   allCoordinatorBoards={allCoordinatorBoards}
                   isLoading={isLoadingAllBoards}
                   onSelectBoard={onSelectBoardFromLanding}
+                  onSelectShared={onSelectShared}
                   onNewBoard={onNewBoard}
                   onManageCoordinators={() => setIsManageCoordinatorsOpen(true)}
                 />
@@ -1103,6 +1423,17 @@ export default function CloudBoards({
         onAdd={onAddCoordinator}
         onRemove={onRemoveCoordinator}
         onClose={() => setIsManageCoordinatorsOpen(false)}
+      />
+
+      {inviteDialog}
+
+      <MembersDialog
+        isOpen={isMembersOpen && !!selectedCoordinator && !!selectedBoard}
+        coordinatorUrl={selectedCoordinator?.url ?? ""}
+        userId={user.userId}
+        idToken={user.idToken}
+        boardName={selectedBoard?.boardName ?? ""}
+        onClose={() => setIsMembersOpen(false)}
       />
 
       <NewBoardDialog

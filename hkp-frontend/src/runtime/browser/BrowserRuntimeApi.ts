@@ -17,7 +17,7 @@ import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { extractServiceConfiguration } from "./services/helpers";
 import { defaultBundles } from "./registry/Default";
-import { startedRun } from "../processContext";
+import { personRun, startedRun } from "../processContext";
 import { AssetsSource } from "../board/assets";
 
 export async function addRuntime(
@@ -94,7 +94,12 @@ export function processRuntime(
   context?: ProcessContext | null,
 ) {
   const scope = scope_ as BrowserRuntimeScope;
-  return scope.next(svc, params, startedRun(context), false);
+  return scope.next(
+    svc,
+    params,
+    context ? startedRun(context) : personRun(scope.signedInUser()),
+    false,
+  );
 }
 
 export async function addService(
@@ -133,12 +138,16 @@ export async function configureService(
   scope_: RuntimeScope,
   service: InstanceId,
   config: any,
+  context?: ProcessContext | null,
 ): Promise<void> {
   const scope = scope_ as BrowserRuntimeScope;
   const [svc] = scope.findServiceInstance(service.uuid);
   if (svc) {
     const actualConfig = config?.state !== undefined ? config.state : config;
-    return svc.configure?.(actualConfig);
+    const configure = () => svc.configure?.(actualConfig);
+    return context
+      ? scope.callInContext(svc, startedRun(context), configure)
+      : configure();
   }
 }
 
@@ -191,7 +200,12 @@ export async function processService(
 
   const data = params;
   if (service) {
-    return scope.next(service, data, context, false);
+    return scope.next(
+      service,
+      data,
+      context ? startedRun(context) : personRun(scope.signedInUser()),
+      false,
+    );
   }
 }
 

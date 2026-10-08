@@ -93,6 +93,16 @@ void Service::nextAsync(Data data, std::function<void(Data)> callback)
   m_host->processFrom(*this, data, true, callback);
 }
 
+Data Service::nextInRun(Data data, const ProcessContext& context,
+                        std::function<void(Data)> callback)
+{
+  if (!m_host)
+    throw std::runtime_error("Service::nextInRun: host not set");
+  return m_host->withContext(context, [this, data = std::move(data), callback]() mutable {
+    return m_host->processFrom(*this, std::move(data), true, callback);
+  });
+}
+
 Data Service::next(Data data, bool immediately)
 {
   if (!m_host)
@@ -139,10 +149,23 @@ bool Service::isBypass() const
 
 void Service::sendNotification(const Data& value) const
 {
-  if (m_host)
+  if (!m_host)
+    return;
+
+  if (const auto continued = deferredContext())
   {
-    m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
+    m_host->withContext(*continued, [this, &value]() {
+      m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
+      return Null();
+    });
+    return;
   }
+
+  // Inside a call this is said in its run. Outside one — a standing source, a
+  // meter — it is board work, not an auth-off run and not whoever happens to
+  // host the runtime; the runtime says so itself, without a run being made for
+  // each report.
+  m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
 }
 
 void Service::log(LogLevel level, const std::string& event,
@@ -150,7 +173,17 @@ void Service::log(LogLevel level, const std::string& event,
 {
   if (m_host)
   {
-    m_host->log(*this, level, event, data);
+    if (const auto continued = deferredContext())
+    {
+      m_host->withContext(*continued, [this, level, &event, &data]() {
+        m_host->log(*this, level, event, data);
+        return Null();
+      });
+    }
+    else
+    {
+      m_host->log(*this, level, event, data);
+    }
   }
 }
 
@@ -191,20 +224,25 @@ std::shared_ptr<SubRuntime> Service::createSubRuntime(const json& servicesConfig
 
 void Service::emit(Data partialResult)
 {
-  // Close this service's process lifecycle bracket at the true end of the async
-  // work: the runtime withheld "call-process-finished" when process() deferred
-  // (see deferCompletion), so send it now with the real result before driving
-  // the rest of the pipeline. A host without a per-service processing indicator
-  // (SubRuntime) ignores it.
-  if (m_host)
+  // A deferred answer consumes the context captured by deferCompletion(). Both
+  // its lifecycle notification and the pipeline it resumes belong to that
+  // same run. Later emissions are a standing arrangement and therefore start
+  // independently through nextAsync().
+  std::shared_ptr<const ProcessContext> continued;
+  takeDeferred(continued);
+  if (continued && m_host)
   {
-    m_host->notifyProcessFinished(*this, partialResult);
+    m_host->withContext(*continued, [this, data = std::move(partialResult)]() mutable {
+      m_host->notifyProcessFinished(*this, data);
+      return m_host->processFrom(*this, std::move(data), true);
+    });
   }
-
-  // nextAsync posts via App::postCallback, making this safe to call from
-  // a background thread.  Each emission drives an independent traversal of
-  // the services that follow this one in the outer pipeline.
-  nextAsync(std::move(partialResult));
+  else
+  {
+    if (m_host)
+      m_host->notifyProcessFinished(*this, partialResult);
+    nextAsync(std::move(partialResult));
+  }
 }
 
 MountHandle Service::mountEndpoint(const std::string& name, MountAdopter adopter)
@@ -215,7 +253,56 @@ MountHandle Service::mountEndpoint(const std::string& name, MountAdopter adopter
 Data Service::deferCompletion()
 {
   m_processDeferred = true;
+  std::shared_ptr<const ProcessContext> captured;
+  if (m_host)
+  {
+    if (const auto* context = m_host->currentContext())
+      captured = std::make_shared<const ProcessContext>(*context);
+  }
+  std::lock_guard<std::mutex> lock(m_deferred.mutex);
+  m_deferred.context = std::move(captured);
+  m_deferred.open.store(true, std::memory_order_release);
   return Null();
+}
+
+void Service::endDeferred()
+{
+  std::shared_ptr<const ProcessContext> continued;
+  if (!takeDeferred(continued) || !m_host)
+    return;
+  // The call is over, with nothing to hand on: the bracket emit() would have
+  // closed is closed here, in the run the call was made in.
+  if (continued)
+  {
+    m_host->withContext(*continued, [this]() {
+      m_host->notifyProcessFinished(*this, Null());
+      return Null();
+    });
+  }
+  else
+  {
+    m_host->notifyProcessFinished(*this, Null());
+  }
+}
+
+std::shared_ptr<const ProcessContext> Service::deferredContext() const
+{
+  if (!m_deferred.open.load(std::memory_order_acquire))
+    return nullptr;
+  std::lock_guard<std::mutex> lock(m_deferred.mutex);
+  return m_deferred.context;
+}
+
+bool Service::takeDeferred(std::shared_ptr<const ProcessContext>& context)
+{
+  if (!m_deferred.open.load(std::memory_order_acquire))
+    return false;
+  std::lock_guard<std::mutex> lock(m_deferred.mutex);
+  if (!m_deferred.open.exchange(false, std::memory_order_acq_rel))
+    return false;
+  context = std::move(m_deferred.context);
+  m_deferred.context.reset();
+  return true;
 }
 
 bool Service::takeProcessDeferred()

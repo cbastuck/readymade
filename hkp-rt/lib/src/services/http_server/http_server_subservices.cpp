@@ -1,4 +1,5 @@
 #include "./http_server_subservices.h"
+#include "../../process_context.h"
 
 #include "../../mount.h"
 
@@ -258,28 +259,33 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
   // effects of having served a request live, not where the answer is shaped.
   // Without a handler the rest of the board is the handler instead, and its
   // result is the answer.
+  const auto requestRun = ProcessContext::newRun("mount");
   const auto handler = entryFor(HttpEntry::kOnRequest);
   if (handler && !handler->empty())
   {
-    Data answer = handler->process(data);
+    Data answer = parentHost()
+      ? parentHost()->withContext(requestRun, [&handler, &data]() {
+          return handler->process(data);
+        })
+      : handler->process(data);
     Data served = resolveAssetBody(answer);
     session->sendDataSync(served);
     // No callback: nothing downstream is awaited, because the caller has been
     // answered already. Registering one would leave the runtime waiting for a
     // response to a request nobody is holding open.
-    next(answer, true);
+    nextInRun(answer, requestRun);
     return;
   }
 
   if (!awaitResponse)
   {
-    Data result = next(data, true);
+    Data result = nextInRun(data, requestRun);
     Data served = resolveAssetBody(result);
     session->sendDataSync(served);
     return;
   }
 
-  nextAsync(data, [this, session](Data result) {
+  nextInRun(data, requestRun, [this, session](Data result) {
     Data served = resolveAssetBody(result);
     session->sendDataSync(served);
   });

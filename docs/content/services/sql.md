@@ -141,6 +141,34 @@ subject line — not a syntax error, and not an injection.
 | object, array | its JSON |
 | `undefined`, missing | `NULL` |
 
+### Who is calling
+
+Four names are **reserved**, and bound from the run rather than from the
+input:
+
+| Parameter | What it is |
+|---|---|
+| `$caller_email` | the caller's verified email, lowercased |
+| `$caller_name` | what the board's member list calls them — set on a [shared, deployed board](../concepts/cloud-boards.md#sharing-a-board-members) |
+| `$caller_sub` | the id their sign-in gives them |
+| `$actor_kind` | `person`, `board`, `mount`, or `local` |
+
+The caller is whoever began the run, **stated by the server that verified their
+token**. Each is `NULL` when the run has no caller — a timer, a request at a
+mount, a server running without authentication — or the caller has no such
+value. An input field of the same name is ignored.
+
+That is the point of reserving them: a payload naming its sender proves
+nothing, and on a board several people use, "whose booking is this" cannot be
+answered from the request. Reserved in the service rather than stamped onto
+the input by a service placed in front, because a stamp can be walked around —
+a process call that enters the pipeline *at* this service never passes the one
+before it.
+
+For identity-sensitive work, act only when the required caller value is
+present. Do not fall back to an identity supplied in the input: an
+local/auth-disabled client can choose that value itself.
+
 ---
 
 ## The schema
@@ -148,6 +176,12 @@ subject line — not a syntax error, and not an injection.
 `schema` holds the `CREATE TABLE` statements the board needs. They are applied
 **once per board, before the first statement runs** — not on configure, because
 a service is configured before the runtime tells it which board it belongs to.
+
+There is **no migration**. `CREATE TABLE IF NOT EXISTS` adds no column to a
+table that already exists, and the schema is applied once per process. A board
+whose tables have to change shape moves to a new table — and gives its indexes
+new names too, since an index name is the database's, not the table's, and
+`CREATE INDEX IF NOT EXISTS` would silently keep the old one.
 
 Write it with `IF NOT EXISTS`, since it is applied to a database that may
 already have been set up by an earlier run.
@@ -233,6 +267,19 @@ whose only reason for a server was its tables can drop the server: move the
 `sql` services into a browser runtime and nothing else changes — not the
 statements, not the facade. [Court Booking (Browser)](../boards/court-booking-browser-demo-board.md)
 is exactly that.
+
+**Person runs use whoever was signed in when the run began** — `$caller_sub`
+the account's id, `$caller_email` its address, `$caller_name` its display name
+— and `NULL` when nobody is. Nothing verifies that: the browser is the person,
+and the tables are theirs alone. What the names buy here is that a board's
+statements read the same on both runtimes.
+
+That is for a run that began in the app. On a [deployed board](../concepts/cloud-boards.md#who-began-a-run)
+a browser runtime is also handed runs that began elsewhere, and those are
+whoever the coordinator says began them — a member, or nobody, in which case
+all three are `NULL`. They are never the person whose browser is running the
+statement. A `sql` inside a sub-service, a Switch or a track is told the same
+as one at the top of the runtime.
 
 **What it gives up is sharing.** The tables are this browser's. Two people on
 two devices see two databases, so a board whose point is that several people
@@ -354,7 +401,9 @@ creating the database if there is none:
   tables in any order; every statement after it expects them on.
 
 [SQL Explorer](../boards/sql-explorer-board.md) exports a browser database;
-[SQL Import](../boards/sql-import-board.md) loads a dump into hkp-node.
+[SQL Import](../boards/sql-import-board.md) loads a dump into hkp-node; and
+[SQL Explorer (hkp-node)](../boards/sql-explorer-node-board.md) browses, changes
+and exports the databases hkp-node keeps for whoever is signed in.
 
 ### Listing
 

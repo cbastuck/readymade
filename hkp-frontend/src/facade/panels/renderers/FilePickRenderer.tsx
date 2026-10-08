@@ -3,6 +3,7 @@ import { FilePickWidget } from "../../types";
 import { findService } from "../../boardServices";
 import { usePressFeedback } from "../../pressFeedback";
 import { WidgetRendererProps } from "../widgetRegistry";
+import { serviceForUserInterface } from "hkp-frontend/src/types";
 
 type UploadState = "idle" | "sending" | "done";
 
@@ -32,8 +33,11 @@ export function FilePickRenderer({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const actionService = useMemo(
-    () => findService(boardContext, widget.action.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.action.serviceUuid],
+    () =>
+      serviceForUserInterface(
+        findService(boardContext, widget.action.serviceUuid),
+      ),
+    [boardContext, widget.action.serviceUuid],
   );
 
   const progressService = useMemo(
@@ -41,7 +45,7 @@ export function FilePickRenderer({
       widget.progressServiceUuid
         ? findService(boardContext, widget.progressServiceUuid)
         : null,
-    [boardContext.scopes, boardContext.services, widget.progressServiceUuid],
+    [boardContext, widget.progressServiceUuid],
   );
 
   useEffect(() => {

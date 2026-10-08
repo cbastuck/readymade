@@ -3,6 +3,7 @@ import Knob from "hkp-frontend/src/ui-components/Knob";
 import { KnobWidget } from "../../types";
 import { findService } from "../../boardServices";
 import { WidgetRendererProps } from "../widgetRegistry";
+import { serviceForUserInterface } from "hkp-frontend/src/types";
 
 function applyValue(template: unknown, value: number): unknown {
   if (typeof template === "string") {
@@ -20,8 +21,11 @@ export function KnobRenderer({
   panelContext,
 }: WidgetRendererProps<KnobWidget>) {
   const service = useMemo(
-    () => findService(boardContext, widget.action.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.action.serviceUuid],
+    () =>
+      serviceForUserInterface(
+        findService(boardContext, widget.action.serviceUuid),
+      ),
+    [boardContext, widget.action.serviceUuid],
   );
 
   // A panel holds knob positions under this key. Two knobs driving the same

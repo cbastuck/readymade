@@ -111,9 +111,12 @@ export class OpenAIPrompt extends ServiceBase<State> {
   }
 
   processAndInject = async (prompt: string) => {
+    const resume =
+      this.app.defer?.(this) ??
+      ((result: any) => this.app.next(this, result));
     const result = await this.process(prompt);
     this.app.notify(this, { answer: result });
-    this.app.next(this, result);
+    resume(result);
   };
 
   async process(params: any) {

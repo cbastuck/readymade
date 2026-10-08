@@ -62,7 +62,15 @@ export type BoardAction =
    *  source, possibly edited in the source editor. The host opens it without
    *  writing anything; `name` is what to call the session. */
   | { kind: "source"; name: string; source: string }
-  | { kind: "cloud"; coordinatorUrl: string; boardName: string }
+  /** A deployed board. `sharedBy` is set on one somebody else owns and
+   *  shared — their id on that coordinator — and the host passes it on with
+   *  the rest: such a board is opened as its member, by its facade. */
+  | {
+      kind: "cloud";
+      coordinatorUrl: string;
+      boardName: string;
+      sharedBy?: string;
+    }
   | { kind: "cloud-stored"; id: string; name: string }
   /** Watch a runtime running on a remote server. Carries the server by the name
    *  the Remotes source shows — what a host looks it up by in its own store —

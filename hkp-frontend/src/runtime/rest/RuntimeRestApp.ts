@@ -63,6 +63,10 @@ export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
         console.error("RuntimeRestApp.next", err);
       });
     },
+    // Services do not execute in this proxy app; keep the interface total for
+    // panels compiled against AppImpl.
+    defer: (svc: InstanceId) => (result: any) =>
+      scope.onResult(svc.uuid, result, null),
     getServiceById: (_uuid: string): ServiceInstance | null => {
       return null;
     },
