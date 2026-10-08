@@ -29,8 +29,8 @@
  * which is what an action on several services at once — wrapping them in a
  * sub-service, making a block of them — acts on. Unlike the runtime it can be
  * empty, and it is emptied by Escape, by an action that used it, and by
- * another runtime being selected. Picking is by shift-click, from an anchor:
- * the first service picked, which the run then stretches from.
+ * another runtime being selected. Clicking a card picks it as the anchor;
+ * Shift-clicking another service header stretches the run from there.
  */
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 

@@ -324,7 +324,7 @@ export default function RuntimeHeader({
         </div>
       </div>
 
-      {picked.length > 0 && (
+      {picked.length > 1 && (
         <SelectionBar runtimeId={runtimeId} uuids={picked} />
       )}
 
