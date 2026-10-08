@@ -31,6 +31,7 @@ import FacadeViewControls, {
   FacadeEditorButton,
 } from "../../facade/FacadeViewControls";
 import FacadeChrome, { useChromeRetracted } from "../../facade/FacadeChrome";
+import { RuntimeZoomProvider, RuntimeZoomToolbarButton } from "./RuntimeZoom";
 
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -54,6 +55,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                 boardContext.boardName || props.requestedBoardName || ""
               }
             >
+              <RuntimeZoomProvider>
               <div
                 className="w-full h-full flex flex-col"
                 style={{
@@ -75,6 +77,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                     centreSlot={<PlayBoardControls />}
                     actionsSlot={
                       <>
+                        <RuntimeZoomToolbarButton />
                         <FacadeViewControls />
                         <ToolbarGroup label="Board tools">
                           <FacadeEditorButton />
@@ -131,6 +134,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                 <ChromeFooter />
                 {props.children || null}
               </div>
+              </RuntimeZoomProvider>
             </FacadeViewProvider>
           </PlayProvider>
           </AssetViewProvider>
