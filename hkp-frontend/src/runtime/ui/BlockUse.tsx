@@ -306,7 +306,10 @@ export default function BlockUseFrame({
     return panel;
   }
   return (
-    <div className="inline-flex items-center" data-block-use={use.placed.use.block}>
+    <div
+      className="inline-flex items-center"
+      data-block-use={use.placed.use.block}
+    >
       <UsePlugSlotContext.Provider
         value={plugSlot ? { element: plugSlot, locked: inside } : null}
       >
@@ -369,7 +372,7 @@ function UseBar({
 
   return (
     <div
-      className="hkp-block-use-bar flex flex-col gap-1 mb-1 px-2 py-1 rounded"
+      className="hkp-block-use-bar flex flex-col gap-1 my-1 px-2 py-1 rounded"
       style={{
         // The bar is all a use shows, so it is as wide as what it says.
         minWidth: 180,
