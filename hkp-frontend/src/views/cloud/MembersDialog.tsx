@@ -103,7 +103,8 @@ export default function MembersDialog({
     [],
   );
 
-  const canAdd = !busy && /^[^\s@]+@[^\s@]+$/.test(email.trim()) && !!name.trim();
+  const canAdd =
+    !busy && /^[^\s@]+@[^\s@]+$/.test(email.trim()) && !!name.trim();
 
   const add = async () => {
     if (!canAdd) {
@@ -141,7 +142,13 @@ export default function MembersDialog({
 
   const remove = (member: BoardMember) =>
     change(() =>
-      removeBoardMember(coordinatorUrl, userId, idToken, boardName, member.email),
+      removeBoardMember(
+        coordinatorUrl,
+        userId,
+        idToken,
+        boardName,
+        member.email,
+      ),
     );
 
   const copyLink = async () => {
@@ -170,9 +177,9 @@ export default function MembersDialog({
           Members
         </DialogTitle>
         <p className="text-sm text-muted-foreground -mt-2">
-          People “{boardName}” is shared with. They sign in with the address
-          you list, see the board’s facade and nothing else of it, and appear
-          to each other under the name you give them — never by address.
+          People “{boardName}” is shared with. They sign in with the address you
+          list, see the board’s facade and nothing else of it, and appear to
+          each other under the name you give them — never by address.
         </p>
 
         <div className="flex flex-col gap-1" aria-label="Members">
@@ -207,6 +214,7 @@ export default function MembersDialog({
                         }
                       }}
                       onBlur={() => void rename(member)}
+                      spellCheck={false}
                     />
                   ) : (
                     <div className="text-sm font-medium truncate">
@@ -269,8 +277,13 @@ export default function MembersDialog({
                   void add();
                 }
               }}
+              spellCheck={false}
             />
-            <Button className="text-md" disabled={!canAdd} onClick={() => void add()}>
+            <Button
+              className="text-md"
+              disabled={!canAdd}
+              onClick={() => void add()}
+            >
               Add
             </Button>
           </div>

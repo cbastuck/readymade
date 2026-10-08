@@ -24,11 +24,11 @@ type Call = { url: string; method: string; body: unknown; auth: string | null };
 let calls: Call[] = [];
 let members: Array<{ email: string; name: string }> = [];
 
-function open() {
+function open(coordinatorUrl = COORDINATOR) {
   return render(
     <MembersDialog
       isOpen
-      coordinatorUrl={COORDINATOR}
+      coordinatorUrl={coordinatorUrl}
       userId="auth0|owner"
       idToken="owner-token"
       boardName="Court booking"
@@ -73,6 +73,25 @@ describe("the members dialog", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("copies the configured member link for an HTTP coordinator", async () => {
+    vi.stubEnv("VITE_MEMBER_WEBAPP_ORIGIN", "http://localhost:4000");
+    vi.mocked(navigator.clipboard.writeText).mockClear();
+    open("http://192.168.1.5:8080/coordinator");
+
+    fireEvent.click(screen.getByText("Copy link"));
+
+    await waitFor(() =>
+      expect(navigator.clipboard.writeText).toHaveBeenCalledOnce(),
+    );
+    const copied = vi.mocked(navigator.clipboard.writeText).mock.calls[0][0];
+    const url = new URL(copied);
+    expect(url.origin).toBe("http://localhost:4000");
+    expect(url.searchParams.get("shared")).toBe(
+      "http://192.168.1.5:8080/coordinator",
+    );
   });
 
   it("shows who the board is shared with, asked as its owner", async () => {

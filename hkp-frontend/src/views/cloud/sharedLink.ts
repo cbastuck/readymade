@@ -1,5 +1,4 @@
 import { CoordinatorDescriptor } from "../../common";
-import { getTemplateVarMap } from "../../templateVars";
 
 /**
  * A link to a board somebody shared.
@@ -26,6 +25,15 @@ export type SharedBoardLink = {
 
 /** Where the cloud view lives in every host that has one. */
 const CLOUD_PATH = "/cloud-boards";
+const DEFAULT_MEMBER_WEBAPP_ORIGIN = "https://readymadeit.com";
+
+/** The website that serves member links, optionally overridden for local builds. */
+function memberWebappOrigin(): string {
+  const configured = import.meta.env.VITE_MEMBER_WEBAPP_ORIGIN?.trim();
+  return configured
+    ? new URL(configured).origin
+    : DEFAULT_MEMBER_WEBAPP_ORIGIN;
+}
 
 const PARAMS = {
   coordinator: "shared",
@@ -39,13 +47,15 @@ function sameAddress(a: string, b: string): boolean {
 }
 
 export function createSharedBoardLink(link: SharedBoardLink): string {
-  const origin = getTemplateVarMap().HKP_WEBAPP_URL ?? window.location.origin;
+  // Members use the website's registered sign-in origin. The coordinator URL
+  // is only the board's destination; the local frontend and playground links
+  // have their own LAN sharing path (see BoardLink and Dropitapp).
   const query = new URLSearchParams({
     [PARAMS.coordinator]: link.coordinatorUrl,
     [PARAMS.owner]: link.owner,
     [PARAMS.board]: link.boardName,
   });
-  return `${origin}${CLOUD_PATH}?${query.toString()}`;
+  return `${memberWebappOrigin()}${CLOUD_PATH}?${query.toString()}`;
 }
 
 /** The board a location's query names, or null when it names none. */

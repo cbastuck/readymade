@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   bridgeUrlFor,
@@ -22,11 +22,44 @@ const LINK = {
 };
 
 describe("a shared board link", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it("reads back what it was made from", () => {
     const made = createSharedBoardLink(LINK);
 
-    expect(made).toContain("/cloud-boards?");
+    expect(new URL(made).origin).toBe("https://readymadeit.com");
     expect(readSharedBoardLink(new URL(made).search)).toEqual(LINK);
+  });
+
+  it("uses the hosted frontend even when made in the native app", () => {
+    (globalThis as any).__MEANDER_CONFIG__ = {
+      lanIp: "192.168.1.5",
+      frontendPort: 9090,
+      apiPort: 8887,
+    };
+    try {
+      expect(new URL(createSharedBoardLink(LINK)).origin).toBe(
+        "https://readymadeit.com",
+      );
+    } finally {
+      delete (globalThis as any).__MEANDER_CONFIG__;
+    }
+  });
+
+  it("uses the configured local website origin for a development build", () => {
+    vi.stubEnv("VITE_MEMBER_WEBAPP_ORIGIN", "http://localhost:4000/");
+    const made = createSharedBoardLink(LINK);
+
+    expect(new URL(made).origin).toBe("http://localhost:4000");
+    expect(readSharedBoardLink(new URL(made).search)).toEqual(LINK);
+  });
+
+  it("does not choose a local frontend from the coordinator's scheme", () => {
+    const made = createSharedBoardLink({
+      ...LINK,
+      coordinatorUrl: "http://127.0.0.1:8080/coordinator",
+    });
+    expect(new URL(made).origin).toBe("https://readymadeit.com");
   });
 
   it("carries names and nothing else", () => {
