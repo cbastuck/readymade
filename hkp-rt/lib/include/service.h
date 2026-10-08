@@ -1,5 +1,9 @@
 #pragma once
 
+#include <atomic>
+#include <memory>
+#include <mutex>
+
 #include <types/types.h>
 #include <log_entry.h>
 #include <mounts.h>
@@ -125,6 +129,13 @@ protected:
   // "call-process-finished" lifecycle event until emit() actually delivers.
   Data deferCompletion();
 
+  // Call from the worker when a deferred call is over with nothing to pass on
+  // — it produced nothing, or it failed. emit() is how such a call ends when
+  // there is a result; this is how it ends otherwise, so that the processing
+  // bracket closes and the run the call was made in is given up. Does nothing
+  // when emit() already ended it.
+  void endDeferred();
+
   // A path on the runtime server's own port for this service, held for as
   // long as the handle is; empty when the server serves none. See
   // RuntimeHost::mountEndpoint.
@@ -145,7 +156,30 @@ private:
   bool m_processDeferred = false;
   // One-shot authority captured by deferCompletion(). Further emissions are
   // autonomous board work, not delegation of the person who began this call.
-  std::shared_ptr<ProcessContext> m_deferredContext;
+  //
+  // Written on the pipeline thread and read and consumed on the worker, so it
+  // is only touched under its mutex. `open` is what the paths
+  // that report many times a second look at first: a service that never
+  // defers never takes the lock.
+  //
+  // A copy of a service is in no call, whatever the one it was made from is
+  // in the middle of — so copying carries none of this over.
+  struct DeferredCall
+  {
+    std::shared_ptr<const ProcessContext> context;
+    mutable std::mutex mutex;
+    std::atomic<bool> open{false};
+
+    DeferredCall() = default;
+    DeferredCall(const DeferredCall&) {}
+    DeferredCall& operator=(const DeferredCall&) { return *this; }
+  };
+  DeferredCall m_deferred;
+
+  // The run a deferred call is still open in, if one is.
+  std::shared_ptr<const ProcessContext> deferredContext() const;
+  // Ends the deferred call, answering whether one was open and in which run.
+  bool takeDeferred(std::shared_ptr<const ProcessContext>& context);
 
 protected:
   std::string m_instanceName;

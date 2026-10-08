@@ -7,10 +7,28 @@
 
 #include <nlohmann/json.hpp>
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "./uuid.h"
 
 namespace hkp
 {
+
+/**
+ * An identity for a run.
+ *
+ * Apart from generateUUID() because of what each is for: that one also makes
+ * secrets, so it asks the system for entropy every time; this one only has to
+ * tell runs apart, and is asked for on every call a client or a mount makes.
+ * One generator per thread, seeded once, so an id costs no system call.
+ */
+inline std::string generateRunId()
+{
+  static thread_local boost::uuids::random_generator_mt19937 generator;
+  return boost::uuids::to_string(generator());
+}
 
 /**
  * What travels with a process call rather than with the data it carries.
@@ -115,7 +133,7 @@ struct ProcessContext
   static ProcessContext newRun(const std::string& kind = "board")
   {
     ProcessContext context;
-    context.runId = generateUUID();
+    context.runId = generateRunId();
     if (kind == "mount")
       context.actor = MountRunActor{};
     else if (kind == "local")
@@ -185,7 +203,7 @@ struct ProcessContext
   static ProcessContext childOf(const ProcessContext& parent)
   {
     ProcessContext context;
-    context.runId = generateUUID();
+    context.runId = generateRunId();
     context.parentRunId = parent.runId;
     context.actor = parent.actor;
     return context;
@@ -216,7 +234,7 @@ struct ProcessContext
         context.requestId = it->get<std::string>();
     }
     if (context.runId.empty())
-      context.runId = generateUUID();
+      context.runId = generateRunId();
     return context;
   }
 
@@ -274,10 +292,18 @@ struct ProcessContext
     return value;
   }
 
-  bool expired(std::int64_t now = nowMs()) const
+  bool expired(std::int64_t now) const
   {
     const auto person = personActor();
     return person && person->expiresAt <= now;
+  }
+
+  /// Asked before every service of every pass, so the clock is read only for
+  /// a run that can expire at all.
+  bool expired() const
+  {
+    const auto person = personActor();
+    return person && person->expiresAt <= nowMs();
   }
 
   /// Only the fields that carry something, so a peer sees absence as absence.

@@ -158,7 +158,7 @@ class Changes extends ServiceBase<State> {
     }
     if (this.__expression) {
       try {
-        current = await evalExpression(this.__expression, { params }, this.app);
+        current = await evalExpression(this.__expression, { params }, this.app, this);
       } catch (err: any) {
         this.pushErrorNotification(`Changes: ${err?.message ?? err}`);
         return null;

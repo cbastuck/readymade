@@ -70,9 +70,15 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       // timer or standing subscription that speaks outside an active call
       // begins a board-origin run. Interactive controls enter their person run
       // through serviceForUserInterface below. A one-shot answer that belongs
-      // to an earlier call uses defer() below instead.
+      // to an earlier call uses defer() below instead. A service carrying a
+      // nested pipeline's answer outward says which run that was.
       const active = svc ? scope.contextOf(svc) : undefined;
-      return reportAndContinue(svc, result, options, active ?? boardRun());
+      return reportAndContinue(
+        svc,
+        result,
+        options,
+        active ?? options?.run ?? boardRun(),
+      );
     },
 
     defer: (svc: InstanceId) =>
@@ -211,12 +217,6 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
 
     currentContext: (service: InstanceId) => scope.contextOf(service),
 
-    callInRun: (
-      target: ServiceInstance,
-      params: any,
-      run: ProcessContext | null | undefined,
-    ) => scope.processIn(target, params, run),
-
     configureInRun: async (
       target: ServiceInstance,
       config: any,
@@ -272,8 +272,13 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       boardVariables[key] = value;
     },
     listAvailableServices: () => scope.registry.allowedServices(),
-    processRuntimeByName: (name: string, params: any) =>
-      scope?.processRuntimeByName(name, params),
+    // Asked by a service, so never a gesture: it continues the run the
+    // service says it is in, and is the board's own where it says none.
+    processRuntimeByName: (
+      name: string,
+      params: any,
+      run?: ProcessContext | null,
+    ) => scope?.processRuntimeByName(name, params, run ?? boardRun()),
     configureServiceInRuntime: (
       runtimeId: string,
       serviceUuid: string,

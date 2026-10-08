@@ -334,9 +334,10 @@ export class BrowserTracks extends ServiceBase<State> {
     // A service inside a track that emits without being called — a Timer tick,
     // a socket — has its own answer to give; it leaves by the same door this
     // service's output does.
-    scope.onResult = async (_instanceId, result) => {
+    scope.onResult = async (_instanceId, result, context) => {
       if (result !== null && result !== undefined) {
-        this.app.next(this, result);
+        // In the run it was produced in, as a SubService hands it on.
+        this.app.next(this, result, { run: context });
       }
     };
 

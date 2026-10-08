@@ -100,9 +100,12 @@ describe("app.next", () => {
       seen.push(scope.app.currentContext?.(second));
       return value;
     });
-    first.process = vi.fn(() => scope.app.next(first, { tick: 1 }));
+    first.process = vi.fn(async () => {
+      await scope.app.next(first, { tick: 1 });
+      return null;
+    });
 
-    await scope.processIn(first, {}, run);
+    await scope.next(first, {}, run, false, false);
 
     expect(seen).toEqual([run]);
   });
@@ -205,8 +208,8 @@ describe("app.next", () => {
       return value;
     });
 
-    const a = scope.processIn(first, "a", runs.a);
-    const b = scope.processIn(first, "b", runs.b);
+    const a = scope.next(first, "a", runs.a, false, false);
+    const b = scope.next(first, "b", runs.b, false, false);
     await vi.waitFor(() => expect(release.a).toBeTypeOf("function"));
     await vi.waitFor(() => expect(release.b).toBeTypeOf("function"));
 

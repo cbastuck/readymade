@@ -16,8 +16,8 @@ import { MOUNT_FIELD, formatMountRef, parseMountRef } from "../runtime/board/mou
  * - the structure itself — `runtimes[].id`, the keys of `services`, each
  *   service's `uuid`, and the `instanceId` of every service nested in a
  *   pipeline;
- * - fields that name a service or a runtime: `targetServiceUuid` (Configurator,
- *   ProcessRouter), `targetRuntime`, and the facade's `serviceUuid` widgets;
+ * - fields that name a service or a runtime: `targetServiceUuid` (Configurator),
+ *   `targetRuntime`, and the facade's `serviceUuid` widgets;
  * - any `hkp-mount://<runtimeId>/<serviceUuid>` reference, in whatever field
  *   holds it.
  *

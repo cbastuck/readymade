@@ -72,6 +72,12 @@ A caller that names no run is not continuing one, so a run is *begun* rather
 than left unidentified. Work attributed to a run of its own is recoverable;
 work attributed to nothing is not.
 
+What a runtime does by itself — a timer ticking, a source handing on a buffer —
+begins a run per emission for the same reason. hkp-rt does so only while the
+board keeps a log: an identity per emission is paid on the path audio takes,
+and the log is the only thing that reads it. Without one, its autonomous work
+shares a single standing board run per runtime.
+
 ### Nesting, and leaving the call
 
 A nested pipeline gets a run of its own with `parentRunId` set to the run around

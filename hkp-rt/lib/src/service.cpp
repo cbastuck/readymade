@@ -152,8 +152,7 @@ void Service::sendNotification(const Data& value) const
   if (!m_host)
     return;
 
-  const auto continued = m_deferredContext;
-  if (continued)
+  if (const auto continued = deferredContext())
   {
     m_host->withContext(*continued, [this, &value]() {
       m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
@@ -162,19 +161,11 @@ void Service::sendNotification(const Data& value) const
     return;
   }
 
-  if (m_host->currentContext())
-  {
-    m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
-    return;
-  }
-
-  // A standing source speaking outside a service call is board work, not an
-  // auth-off run and not whoever happens to host the runtime.
-  const auto board = ProcessContext::newRun("board");
-  m_host->withContext(board, [this, &value]() {
-    m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
-    return Null();
-  });
+  // Inside a call this is said in its run. Outside one — a standing source, a
+  // meter — it is board work, not an auth-off run and not whoever happens to
+  // host the runtime; the runtime says so itself, without a run being made for
+  // each report.
+  m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
 }
 
 void Service::log(LogLevel level, const std::string& event,
@@ -182,8 +173,7 @@ void Service::log(LogLevel level, const std::string& event,
 {
   if (m_host)
   {
-    const auto continued = m_deferredContext;
-    if (continued)
+    if (const auto continued = deferredContext())
     {
       m_host->withContext(*continued, [this, level, &event, &data]() {
         m_host->log(*this, level, event, data);
@@ -238,8 +228,8 @@ void Service::emit(Data partialResult)
   // its lifecycle notification and the pipeline it resumes belong to that
   // same run. Later emissions are a standing arrangement and therefore start
   // independently through nextAsync().
-  auto continued = std::move(m_deferredContext);
-  m_deferredContext.reset();
+  std::shared_ptr<const ProcessContext> continued;
+  takeDeferred(continued);
   if (continued && m_host)
   {
     m_host->withContext(*continued, [this, data = std::move(partialResult)]() mutable {
@@ -263,12 +253,56 @@ MountHandle Service::mountEndpoint(const std::string& name, MountAdopter adopter
 Data Service::deferCompletion()
 {
   m_processDeferred = true;
+  std::shared_ptr<const ProcessContext> captured;
   if (m_host)
   {
     if (const auto* context = m_host->currentContext())
-      m_deferredContext = std::make_shared<ProcessContext>(*context);
+      captured = std::make_shared<const ProcessContext>(*context);
   }
+  std::lock_guard<std::mutex> lock(m_deferred.mutex);
+  m_deferred.context = std::move(captured);
+  m_deferred.open.store(true, std::memory_order_release);
   return Null();
+}
+
+void Service::endDeferred()
+{
+  std::shared_ptr<const ProcessContext> continued;
+  if (!takeDeferred(continued) || !m_host)
+    return;
+  // The call is over, with nothing to hand on: the bracket emit() would have
+  // closed is closed here, in the run the call was made in.
+  if (continued)
+  {
+    m_host->withContext(*continued, [this]() {
+      m_host->notifyProcessFinished(*this, Null());
+      return Null();
+    });
+  }
+  else
+  {
+    m_host->notifyProcessFinished(*this, Null());
+  }
+}
+
+std::shared_ptr<const ProcessContext> Service::deferredContext() const
+{
+  if (!m_deferred.open.load(std::memory_order_acquire))
+    return nullptr;
+  std::lock_guard<std::mutex> lock(m_deferred.mutex);
+  return m_deferred.context;
+}
+
+bool Service::takeDeferred(std::shared_ptr<const ProcessContext>& context)
+{
+  if (!m_deferred.open.load(std::memory_order_acquire))
+    return false;
+  std::lock_guard<std::mutex> lock(m_deferred.mutex);
+  if (!m_deferred.open.exchange(false, std::memory_order_acq_rel))
+    return false;
+  context = std::move(m_deferred.context);
+  m_deferred.context.reset();
+  return true;
 }
 
 bool Service::takeProcessDeferred()

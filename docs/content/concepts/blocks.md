@@ -183,7 +183,7 @@ Wrapping keeps the board doing what it did:
 - The sub-service reads the runtime's slots (`scope.slots: "inherit"`), so a
   Hold or a tempo reader inside reaches the cells it reached before.
 - A service inside a sub-service finds others by id only within it. A
-  Configurator or ProcessRouter whose target is on the other side of the new
+  Configurator whose target is on the other side of the new
   boundary, or an `hkp-mount://` reference to a service in the run, would stop
   resolving, so the wrap is **refused** and says which. A reference with both
   ends in the run moves with it.

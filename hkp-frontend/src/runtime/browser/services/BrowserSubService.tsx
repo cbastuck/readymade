@@ -463,7 +463,7 @@ export class BrowserSubService extends ServiceBase<State> {
 
     // Forward async results from the inner pipeline (e.g. Timer ticks) to the
     // outer pipeline so downstream services see the output.
-    scope.onResult = async (_instanceId, result) => {
+    scope.onResult = async (_instanceId, result, context) => {
       // The second route out, and the one a scope would otherwise leak
       // through. What arrives here was not produced by a call this service is
       // answering, so nothing has already been stopped on its behalf: a Timer
@@ -474,7 +474,11 @@ export class BrowserSubService extends ServiceBase<State> {
         return;
       }
       if (result !== null && result !== undefined) {
-        this.app.next(this, result);
+        // In the run it was produced in: by now this service is usually in no
+        // call of its own — the answer came late, or the pipeline was entered
+        // at a scoped address — and without it the services after the scope
+        // would run as the board, for whoever it was that asked.
+        this.app.next(this, result, { run: context });
       }
     };
 

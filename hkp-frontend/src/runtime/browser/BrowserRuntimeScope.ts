@@ -204,23 +204,6 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     return true;
   }
 
-  /** Calls one service inside a run; see `AppImpl.callInRun`. */
-  async processIn(
-    svc: ServiceInstance,
-    params: any,
-    run: ProcessContext | null | undefined,
-  ): Promise<any> {
-    if (!run) {
-      return svc.process(params);
-    }
-    this.enterContext(svc, run);
-    try {
-      return await svc.process(params);
-    } finally {
-      this.leaveContext(svc, run);
-    }
-  }
-
   log(svc: InstanceId, level: LogLevel, event: string, data?: unknown) {
     const context = this.contextOf(svc);
     // Nothing to attribute an entry to means nothing worth recording: an entry
@@ -454,7 +437,11 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     );
   };
 
-  processRuntimeByName = async (_name: string, _params: any) => {
+  processRuntimeByName = async (
+    _name: string,
+    _params: any,
+    _run?: ProcessContext | null,
+  ): Promise<any> => {
     console.warn("processRuntimeByName not implemented");
   };
 

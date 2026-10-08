@@ -128,6 +128,7 @@ class IfService extends ServiceBase<State> {
         this._parsedCondition,
         { params },
         this.app,
+        this,
       );
       if (conditionMet && this.state.pipeline.length > 0) {
         if (!this._scope) {

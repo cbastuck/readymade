@@ -838,6 +838,9 @@ Data TextToSpeech::process(Data data)
     {
       std::cerr << "text-to-speech worker failed: " << e.what() << std::endl;
     }
+    // Nothing to hand on, or it failed: the call is over all the same. Before
+    // the next one may begin, so that it is this call that is ended.
+    endDeferred();
     m_impl->generating = false;
   });
 

@@ -1110,6 +1110,9 @@ Data TextGeneration::process(Data data)
     {
       std::cerr << "text-generation worker failed: " << e.what() << std::endl;
     }
+    // Nothing to hand on, or it failed: the call is over all the same. Before
+    // the next one may begin, so that it is this call that is ended.
+    endDeferred();
     m_impl->generating = false;
   });
 

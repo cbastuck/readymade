@@ -208,47 +208,6 @@ const HOLDERS: Array<{
       return vi.mocked(sink!.configure).mock.calls.at(-1)?.[0];
     },
   },
-  {
-    name: "a Process Router's pipeline",
-    entries: () => [
-      {
-        serviceId: "hookup.to/service/process-router",
-        instanceId: "holder",
-        state: { passThrough: true, pipeline: [whoami()] },
-      },
-    ],
-    watch: (scope) => {
-      const [holder] = scope.findServiceInstance("holder");
-      vi.spyOn(holder as never, "_transform");
-    },
-    answer: async (_result, scope) => {
-      const [holder] = scope.findServiceInstance("holder");
-      const transform = (holder as unknown as { _transform: unknown })
-        ._transform;
-      return vi.mocked(transform as () => Promise<unknown>).mock.results.at(-1)
-        ?.value;
-    },
-  },
-  {
-    name: "the service a Process Router hands a value to",
-    entries: () => [
-      {
-        serviceId: "hookup.to/service/process-router",
-        instanceId: "holder",
-        state: { targetServiceUuid: "target" },
-      },
-      // After the router, which answers null: the pipeline never reaches it.
-      { ...whoami("target") },
-    ],
-    watch: (scope) => {
-      const [target] = scope.findServiceInstance("target");
-      vi.spyOn(target!, "process");
-    },
-    answer: (_result, scope) => {
-      const [target] = scope.findServiceInstance("target");
-      return vi.mocked(target!.process).mock.results.at(-1)?.value;
-    },
-  },
 ];
 
 async function run(
@@ -369,6 +328,76 @@ describe("a service inside a Feedback's pipeline", () => {
     const witness = await witnessIn(null);
 
     expect(who(await witness.process({}))).toEqual({ sub: null, email: null });
+  });
+});
+
+describe("what follows a scope entered at a scoped address", () => {
+  const annaRun = () =>
+    continuedRun(
+      {
+        runId: "run-1",
+        actor: { kind: "person", ...ANNA, expiresAt: Date.now() + 60_000 },
+      },
+      { requestId: "r" },
+    );
+
+  async function entered(run: ProcessContext | null) {
+    const scope = await runtimeOf([
+      {
+        serviceId: "sub-service",
+        instanceId: "holder",
+        state: { pipeline: [whoami("inner")] },
+      },
+      whoami("after"),
+    ]);
+    const [after] = scope.findServiceInstance("after");
+    const calls = vi.spyOn(after!, "process");
+    const [holder] = scope.findServiceInstance("holder");
+
+    // The service holding the scope is in no call of its own: the pipeline
+    // inside it is entered directly, as a facade action on `holder.inner` is.
+    await (holder as any).processNested("inner", {}, run);
+    await vi.waitFor(() => expect(calls).toHaveBeenCalledTimes(1));
+    return who(await calls.mock.results[0].value);
+  }
+
+  it("runs as whoever entered it", async () => {
+    // Not the board, and not the owner in whose browser this is running.
+    expect(await entered(annaRun())).toEqual({
+      sub: ANNA.sub,
+      email: ANNA.email,
+    });
+  });
+
+  it("runs as nobody when the run that entered it names nobody", async () => {
+    expect(
+      await entered(continuedRun({ runId: "run-1" }, { requestId: "r" })),
+    ).toEqual({ sub: null, email: null });
+  });
+});
+
+describe("a service asking for another runtime to be run", () => {
+  it("continues the run it names, and is the board's when it names none", async () => {
+    const scope = await runtimeOf([whoami("asking")]);
+    const asked = vi.fn(async (..._args: unknown[]) => null);
+    scope.processRuntimeByName = asked;
+    const run = continuedRun(
+      {
+        runId: "run-1",
+        actor: { kind: "person", ...ANNA, expiresAt: Date.now() + 60_000 },
+      },
+      { requestId: "r" },
+    );
+
+    await scope.getApp().processRuntimeByName?.("Other", { n: 1 }, run);
+    await scope.getApp().processRuntimeByName?.("Other", { n: 2 });
+
+    expect(asked.mock.calls[0][2]).toBe(run);
+    // Never left for the runtime's api to read as a gesture of whoever is
+    // signed in here.
+    expect((asked.mock.calls[1][2] as ProcessContext).actor).toEqual({
+      kind: "board",
+    });
   });
 });
 

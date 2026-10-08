@@ -104,7 +104,12 @@ export type OnResult = (
   context?: ProcessContext | null,
 ) => Promise<void>;
 
-export type ProcessRuntimeByName = (name: string, params: any) => Promise<any>;
+export type ProcessRuntimeByName = (
+  name: string,
+  params: any,
+  /** The run this continues; absent, the call is a gesture of its own. */
+  run?: ProcessContext | null,
+) => Promise<any>;
 
 export interface RuntimeScope {
   descriptor: RuntimeDescriptor;
@@ -341,6 +346,14 @@ export type NextOptions = {
    * button.
    */
   replay?: boolean;
+  /**
+   * The run the value was produced in, for a service handing on what a
+   * pipeline inside it produced after the service's own call had returned —
+   * or without one, where the pipeline was entered directly. Used only while
+   * the service is in no call of its own: inside one, that call's run is the
+   * one being continued.
+   */
+  run?: ProcessContext | null;
 };
 
 export type AppImpl = {
@@ -364,17 +377,6 @@ export type AppImpl = {
    * rather than attributing work to either one.
    */
   currentContext?: (svc: InstanceId) => ProcessContext | undefined;
-  /**
-   * Calls one service — it alone, not the services after it — as part of
-   * `run`, so that the service called finds itself in that run the way one
-   * reached by the pipeline does. For a service that hands a value sideways
-   * to another, which the pipeline did not call and so told nothing.
-   */
-  callInRun?: (
-    target: ServiceInstance,
-    params: any,
-    run: ProcessContext | null | undefined,
-  ) => Promise<any>;
   /** Configure one service as part of an existing run. */
   configureInRun?: (
     target: ServiceInstance,
@@ -430,7 +432,12 @@ export type AppImpl = {
     onNotification: (notification: any) => void,
   ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
-  processRuntimeByName?: (name: string, params: any) => Promise<any>;
+  /**
+   * Runs another runtime of the board. `run` is the run the asking service is
+   * in, which the other runtime continues; a service that names none is not
+   * acting for anybody, and what it starts is the board's.
+   */
+  processRuntimeByName?: ProcessRuntimeByName;
   configureServiceInRuntime?: (
     runtimeId: string,
     serviceUuid: string,

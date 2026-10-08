@@ -63,6 +63,7 @@ export default function CloudBoard({
   const processRuntimeByName = async (
     name: string,
     params: unknown,
+    run?: ProcessContext | null,
   ): Promise<unknown> => {
     const rt = boardContext.runtimes.find((r) => r.name === name);
     if (rt) {
@@ -71,7 +72,7 @@ export default function CloudBoard({
         boardContext.runtimeApis[rt.type] ||
         boardContext.runtimeApis[toCanonicalRuntimeClassType(rt.type)];
       if (scope && api) {
-        return api.processRuntime(scope, params, null);
+        return api.processRuntime(scope, params, null, run);
       }
     }
     console.error(

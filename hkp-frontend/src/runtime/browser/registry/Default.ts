@@ -90,7 +90,6 @@ import AssetDescriptor from "../services/Asset";
 import TimelineDescriptor from "../services/Timeline";
 import StopperDescriptor from "../services/Stopper";
 import ConfiguratorDescriptor from "../services/Configurator";
-import ProcessRouterDescriptor from "../services/ProcessRouter";
 import AudioInputDescriptor from "../services/AudioInput";
 import AudioOutputDescriptor from "../services/AudioOutput";
 import SoundDescriptor from "../services/Sound";
@@ -206,7 +205,6 @@ export const defaultRegistry: Array<ServiceModule> = [
   TimelineDescriptor,
   StopperDescriptor,
   ConfiguratorDescriptor,
-  ProcessRouterDescriptor,
   SetRuntimeVariableDescriptor,
   IfServiceDescriptor,
   FeedbackServiceDescriptor,

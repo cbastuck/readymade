@@ -139,7 +139,7 @@ class Switch extends ServiceBase<State> {
       if (condition === null || condition === "syntax-error") {
         continue;
       }
-      const met = await evalExpression(condition, { params }, this.app);
+      const met = await evalExpression(condition, { params }, this.app, this);
       if (met) {
         this.app.notify(this, { matched: i });
         return this._runPipeline(i, this.state.cases[i].pipeline, params, run);

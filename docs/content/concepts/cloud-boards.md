@@ -374,8 +374,8 @@ person is still the owner or a current member. Removing a member therefore also
 revokes work that finishes late.
 
 That holds at any depth. A service that holds a pipeline — a sub-service, an
-If, a case of a Switch, a track, a Configurator's or a Process Router's
-transform — runs it as a run of its own under the one it was called in
+If, a case of a Switch, a track, or a Configurator's transform — runs it as a
+run of its own under the one it was called in
 (`nestedRun`), with the same actor, and points the scope it builds at the app
 around it for who is signed in (`delegateIdentity`). A service inside one is
 told what a service at the top of the runtime is told.

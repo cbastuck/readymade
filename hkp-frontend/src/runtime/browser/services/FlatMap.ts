@@ -48,7 +48,7 @@ class FlatMap extends ServiceBase<State> {
 
     const items = Array.isArray(params) ? params : [params];
     const results = await Promise.all(
-      items.map((item) => evalExpression(this._parsed!, { params: item }, this.app)),
+      items.map((item) => evalExpression(this._parsed!, { params: item }, this.app, this)),
     );
 
     return results

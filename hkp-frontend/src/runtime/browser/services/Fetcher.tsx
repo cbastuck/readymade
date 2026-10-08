@@ -115,7 +115,7 @@ class Fetcher extends ServiceBase<State> {
     }
 
     const payload = this.state.bodyExpression
-      ? await parseAndEvalExpression(this.state.bodyExpression, { params }, this.app)
+      ? await parseAndEvalExpression(this.state.bodyExpression, { params }, this.app, this)
       : this.getBody(paramsBody);
 
     const substitutedUrl = data?.variables
@@ -129,7 +129,7 @@ class Fetcher extends ServiceBase<State> {
         const resolvedAcc = await acc;
         if (key.endsWith("=")) {
           const value = headers[key];
-          const processed = await parseAndEvalExpression(value, {}, this.app);
+          const processed = await parseAndEvalExpression(value, {}, this.app, this);
           return Promise.resolve({
             ...resolvedAcc,
             [key.slice(0, -1)]: processed,

@@ -275,11 +275,9 @@ reach a *named* service or runtime and act on it directly:
 | `app.processRuntimeByName(name, params)` | run a whole runtime by its name, out of order | `AppImpl` |
 | `app.next(svc, result)` | emit as if `svc` had just produced this — the services after it run, it does not | `AppImpl` |
 | **Configurator** service | calls `configure()` on `targetServiceUuid` (+ optional `targetRuntime`), then stops by default | `services/Configurator.ts` |
-| **Process Router** service | calls `process()` on `targetServiceUuid` — feedback loops, state machines | `services/ProcessRouter.ts` |
 
-These exist because some things genuinely are not a line: a value that has to go
-back to an earlier stage, a panel that reconfigures something elsewhere on the
-board, a state machine that picks its own next step.
+These exist for actions such as a panel reconfiguring a service elsewhere on
+the board. Processing still follows the ordered services or a nested pipeline.
 
 **They are `goto`, and they cost what `goto` costs.** Two parts of the board now
 know about each other, neither can be moved or reused alone, and the ordered list

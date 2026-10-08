@@ -12,6 +12,7 @@ import {
 import { getDraggedFiles, readFile } from "../common";
 import { BoardContextState } from "../../../BoardContext";
 import { passesNothing } from "../../../runtime/rest/Data";
+import { boardRun } from "../../../runtime/processContext";
 import BoardRuntime from "./BoardRuntime";
 import { useThemeControl } from "../../../ui-components/ThemeContext";
 import RuntimeMenu from "../../../ui-components/toolbar/RuntimeMenu";
@@ -85,7 +86,10 @@ export default function Board(props: Props) {
 
     const carriesOn = !passesNothing(result);
     if (nextApi && carriesOn) {
-      nextApi.processRuntime(nextScope, result, null, context);
+      // A runtime that names no run for what it produced — a remote one's
+      // timer, a request arriving at its mount — did not hand over a gesture
+      // of whoever is signed in here. It goes on as the board's.
+      nextApi.processRuntime(nextScope, result, null, context ?? boardRun());
     } else {
       processPendingBoardCallbacks(context, result);
       if (props.onResult && carriesOn) {
@@ -97,6 +101,7 @@ export default function Board(props: Props) {
   const processRuntimeByName = async (
     name: string,
     params: any,
+    run?: ProcessContext | null,
   ): Promise<any> => {
     const rt = props.boardContext.runtimes.find((rt) => rt.name === name);
     if (rt) {
@@ -105,7 +110,7 @@ export default function Board(props: Props) {
         props.boardContext.runtimeApis[rt.type] ||
         props.boardContext.runtimeApis[toCanonicalRuntimeClassType(rt.type)];
       if (scope && api) {
-        return api.processRuntime(scope, params, null);
+        return api.processRuntime(scope, params, null, run);
       }
     }
     console.error(`Board.processRuntimeByName: no runtime named "${name}"`);
