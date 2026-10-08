@@ -102,14 +102,7 @@ export default function ServiceUiContainer(props: Props) {
       : [],
   );
 
-  /**
-   * Shift-click on a service's own header picks it, or stretches what is
-   * picked to reach it: always a run, since a run is what can be wrapped.
-   * Anywhere on the header — its name and buttons included, which a shift
-   * gives no meaning of their own — but only there, so shift-clicking inside
-   * a panel keeps meaning what it means there. A field being typed in (a
-   * rename) keeps its shift-click for selecting text.
-   */
+  /** Shift-click on a service header extends the selection from its anchor. */
   const pickedByShiftClick = (ev: React.MouseEvent, uuid: string) => {
     if (!ev.shiftKey || !selection?.selectServices) {
       return false;
@@ -124,26 +117,42 @@ export default function ServiceUiContainer(props: Props) {
     return frame?.id === `service-frame-${uuid}`;
   };
   const onPick = (ev: React.MouseEvent, uuid: string) => {
-    if (!pickedByShiftClick(ev, uuid) || !services) {
+    if (!selection?.selectServices || !services) {
       return;
     }
-    ev.preventDefault();
-    ev.stopPropagation();
-    const order = services.map((svc) => svc.uuid);
-    const current = selection!.selectedServices;
-    if (current?.runtimeId === runtimeId && order.includes(current.anchor)) {
-      if (current.anchor === uuid && current.uuids.length === 1) {
-        selection!.selectServices!(null);
+    if (ev.shiftKey) {
+      // A panel can use Shift-click for its own controls. Only the outer
+      // service header participates in selecting a contiguous run.
+      if (!pickedByShiftClick(ev, uuid)) {
         return;
       }
-      selection!.selectServices!({
-        runtimeId,
-        anchor: current.anchor,
-        uuids: runBetween(order, current.anchor, uuid),
-      });
+      ev.preventDefault();
+      ev.stopPropagation();
+      const order = services.map((svc) => svc.uuid);
+      const current = selection.selectedServices;
+      if (current?.runtimeId === runtimeId && order.includes(current.anchor)) {
+        selection.selectServices({
+          runtimeId,
+          anchor: current.anchor,
+          uuids: runBetween(order, current.anchor, uuid),
+        });
+      } else {
+        selection.selectServices({ runtimeId, anchor: uuid, uuids: [uuid] });
+      }
       return;
     }
-    selection!.selectServices!({ runtimeId, anchor: uuid, uuids: [uuid] });
+
+    const target = ev.target as HTMLElement;
+    // Ordinary clicks select the card without changing the meaning of a
+    // control in its panel or header (including the service options menu).
+    if (
+      target.closest(
+        "input, textarea, select, button, a, [contenteditable='true'], [role='button']",
+      )
+    ) {
+      return;
+    }
+    selection.selectServices({ runtimeId, anchor: uuid, uuids: [uuid] });
   };
 
   if (!services) {
