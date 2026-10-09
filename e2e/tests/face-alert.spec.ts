@@ -50,6 +50,9 @@ async function answerNtfy(page: import("@playwright/test").Page) {
 }
 
 const video = process.env.HKP_E2E_FACE_Y4M;
+if (process.env.HKP_E2E_REQUIRE_FACE === "1" && !video) {
+  throw new Error("Required face-video fixture is missing: set HKP_E2E_FACE_Y4M");
+}
 if (video) {
   const header = Buffer.alloc(9);
   let fd: number | undefined;

@@ -27,7 +27,7 @@ Update this table in place. Mark a milestone done only after its checks pass in 
 | Milestone | State | Depends on | Completion evidence |
 | --- | --- | --- | --- |
 | 1. Reliable fixtures and baseline | done | — | Three complete default runs without retries: 124 passed / 36 documented skips each; cloud 7 passed including C++; diagnostics and failure-safe cleanup verified |
-| 2. PR and cloud CI | open | 1 | Required PR jobs and failure artifacts demonstrated |
+| 2. PR and cloud CI | in progress | 1 | PR/browser and pinned Node cloud jobs implemented; local dependency/artifact/flaky-policy checks pass; hosted PR evidence pending |
 | 3. Core board journeys | open | 1 | UI lifecycle/composition/mobile journeys passing |
 | 4. Authenticated sharing and secrets | open | 1, 2; relevant security fixes | Real verifier and multi-context journeys passing |
 | 5. Distributed persistence and recovery | open | 2, 4 | Restart/failure journeys against Node, Python and C++ |
@@ -86,14 +86,23 @@ Done when existing enabled journeys pass in three consecutive clean runs without
 
 Extend the existing workflow rather than duplicating its default E2E job.
 
-- [ ] Enable PR execution with appropriate permissions, cancellation of obsolete runs and required check names documented for repository settings.
-- [ ] Keep a fast default-suite job and add a separate Node cloud job. Check out the required submodules at pinned revisions and install required application dependencies from lockfiles.
-- [ ] Add an explicit trusted-origin configuration matching the test servers, compatible with the local security changes.
-- [ ] Include E2E in the documented aggregate test entry point, or provide an explicit aggregate option if running browsers by default is too costly. Document that distinction.
+- [x] Enable PR execution with appropriate permissions, cancellation of obsolete runs and required check names documented for repository settings.
+- [x] Keep a fast default-suite job and add a separate Node cloud job. Check out the required submodules at pinned revisions and install required application dependencies from lockfiles.
+- [x] Add an explicit trusted-origin configuration matching the test servers, compatible with the local security changes.
+- [x] Include E2E in the documented aggregate test entry point, or provide an explicit aggregate option if running browsers by default is too costly. Document that distinction.
 - [ ] Publish executed/skipped/retried counts and upload traces, screenshots, browser errors and server logs on failure, with bounded retention. Use synthetic data; prevent credential disclosure in artifacts.
-- [ ] Make required runtime/media fixtures fail configuration checks when missing; keep genuinely optional capability lanes explicitly optional.
+- [x] Make required runtime/media fixtures fail configuration checks when missing; keep genuinely optional capability lanes explicitly optional.
 
 Done when a PR runs both jobs, a deliberately failing test produces useful artifacts, and required missing dependencies cannot silently turn a job green. Record actual runtimes before deciding budgets or sharding.
+
+### Implementation evidence
+
+- Extended the existing workflow with PR events, read-only permissions, non-persisted checkout credentials and obsolete-run cancellation. Stable job names: `E2E browser`, `E2E Node cloud`; repository protection selection is documented rather than changed.
+- Node cloud CI checks out only the public Node submodule at its gitlink revision, uses lockfile installs and explicitly selects the Node lane. C++/Python are outside this required check; the local all-runtime lane preserves optional C++ discovery and adds a required-binary switch.
+- After clean `npm ci` installs in all four application/test folders, the CI-style browser run passed **124 tests (120 normal + 4 expected failures), 36 profile/media skips, 3.4 minutes**, with no retries or flakes. Node-only cloud passed **6 tests, no skips/retries, 17.4 seconds** against pinned `c911bd08`.
+- Local intentional failure verified the HTML report's embedded Node log/browser error plus trace, screenshot, video, browser JSON and server log files. The flaky probe failed once, passed its retry and still returned failure with one flaky/one retried test in the summary. It is excluded from ordinary discovery.
+- Missing Node dependencies, mandatory C++ binary and mandatory face media, plus an explicitly invalid C++ binary path, all rejected configuration. Reporter count-contract tests, TypeScript, workflow lint and aggregate shell syntax checks pass.
+- Hosted PR/check execution and the seven-day failure-artifact upload are still pending. Keep milestone 2 in progress until those checks are demonstrated.
 
 ## 3. Core board journeys
 
