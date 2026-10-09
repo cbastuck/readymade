@@ -12,6 +12,10 @@ test.beforeEach(async ({ seedBoard }) => {
 test("a saved edit survives reload and reopening from the library", async ({
   page, profile, openBoard, hostState,
 }) => {
+  // Save, reload and two library reopens span several full document loads.
+  // Hosted WebKit takes 6–12s per load; keep a bounded journey budget while
+  // individual assertions retain their normal timeouts.
+  test.setTimeout(60_000);
   await openBoard(name);
   const frame = service(page, "e2e-timer");
   const press = async (target: Locator) =>

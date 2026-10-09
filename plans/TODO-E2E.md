@@ -90,7 +90,7 @@ Extend the existing workflow rather than duplicating its default E2E job.
 - [x] Keep a fast default-suite job and add a separate Node cloud job. Check out the required submodules at pinned revisions and install required application dependencies from lockfiles.
 - [x] Add an explicit trusted-origin configuration matching the test servers, compatible with the local security changes.
 - [x] Include E2E in the documented aggregate test entry point, or provide an explicit aggregate option if running browsers by default is too costly. Document that distinction.
-- [ ] Publish executed/skipped/retried counts and upload traces, screenshots, browser errors and server logs on failure, with bounded retention. Use synthetic data; prevent credential disclosure in artifacts.
+- [x] Publish executed/skipped/retried counts and upload traces, screenshots, browser errors and server logs on failure, with bounded retention. Use synthetic data; prevent credential disclosure in artifacts.
 - [x] Make required runtime/media fixtures fail configuration checks when missing; keep genuinely optional capability lanes explicitly optional.
 
 Done when a PR runs both jobs, a deliberately failing test produces useful artifacts, and required missing dependencies cannot silently turn a job green. Record actual runtimes before deciding budgets or sharding.
@@ -102,7 +102,8 @@ Done when a PR runs both jobs, a deliberately failing test produces useful artif
 - After clean `npm ci` installs in all four application/test folders, the CI-style browser run passed **124 tests (120 normal + 4 expected failures), 36 profile/media skips, 3.4 minutes**, with no retries or flakes. Node-only cloud passed **6 tests, no skips/retries, 17.4 seconds** against pinned `c911bd08`.
 - Local intentional failure verified the HTML report's embedded Node log/browser error plus trace, screenshot, video, browser JSON and server log files. The flaky probe failed once, passed its retry and still returned failure with one flaky/one retried test in the summary. It is excluded from ordinary discovery.
 - Missing Node dependencies, mandatory C++ binary and mandatory face media, plus an explicitly invalid C++ binary path, all rejected configuration. Reporter count-contract tests, TypeScript, workflow lint and aggregate shell syntax checks pass.
-- Hosted PR/check execution and the seven-day failure-artifact upload are still pending. Keep milestone 2 in progress until those checks are demonstrated.
+- Hosted PR [#41](https://github.com/cbastuck/readymade/pull/41): Node cloud passed. The first browser run completed 123 passing outcomes and 36 skips in 9.5 minutes, but mobile persistence exceeded its 30s total budget on both attempts. Traces showed successful 6–12s document loads; that multi-navigation journey now has a bounded 60s budget. A new hosted run must pass before milestone completion.
+- Hosted [intentional failure probe](https://github.com/cbastuck/readymade/actions/runs/37952298004) successfully uploaded `e2e-node-cloud-failure-report`. The downloaded artifact contains its HTML report/embedded runtime log, trace, screenshot, video, browser diagnostics and failed/retried counts. GitHub confirms expiry on 2026-10-16 (seven-day retention).
 
 ## 3. Core board journeys
 
