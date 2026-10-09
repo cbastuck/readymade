@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-
 import { test, expect } from "../support/test";
+import { courtBookingForSqlTests } from "../support/courtBooking";
 
 /**
  * The browser's `sql` service in the page: SQLite loads as WebAssembly, runs
@@ -17,9 +16,7 @@ import { test, expect } from "../support/test";
 test.skip(({ profile }) => profile === "mobile", "the facade is not the mobile shell's first view");
 
 const NAME = "e2e-court-booking-browser";
-const board = JSON.parse(
-  readFileSync("../boards/court-booking-browser-demo-board.json", "utf8"),
-);
+const board = courtBookingForSqlTests();
 
 test("a booking made in the browser is still there when the board is reopened", async ({
   page,
