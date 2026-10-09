@@ -3,7 +3,7 @@
 One suite, driving the same webapp as each of the hosts it ships inside.
 
 ```
-npm install
+npm ci
 npx playwright install chromium webkit
 npm test                 # all three profiles
 npm run test:desktop     # one of them
@@ -259,3 +259,60 @@ Its injected browser exception is an intentional expected failure on each host:
 if diagnostics stop enforcing it, the unexpected pass fails the suite.
 `runtime-server.spec.ts` checks process startup failure and graceful cleanup
 once on web; these process contracts are independent of desktop/mobile shells.
+
+
+## PR and cloud CI
+
+`.github/workflows/run-all-tests.yml` runs two E2E checks on pull requests,
+main pushes and normal manual runs: **E2E browser** and **E2E Node cloud**.
+Use those exact job names as required checks in the target branch's protection
+settings after their first run. This change documents the checks; it does not
+change repository protection rules. The existing C++/unit job stays on main
+pushes and normal manual runs.
+
+The workflow has read-only repository permissions, does not persist checkout
+credentials, and cancels obsolete runs for the same PR/ref. The browser job
+installs Chromium/WebKit; the cloud job installs Chromium and initializes only
+`hkp-node` at the gitlink revision, without following a remote branch or pulling
+the unrelated SSH submodules. Both use Node 22 and lockfile installs.
+
+Cloud CI explicitly sets `HKP_E2E_CLOUD_TARGET=node`: six real Node/coordinator
+journeys, with no C++ cases counted as skips. C++ and Python are not covered by
+that required check. The local cloud default remains `all`, including C++ when
+built. `HKP_E2E_REQUIRE_RT=1` makes a missing C++ binary fail configuration;
+a supplied invalid `HKP_RT_BIN` also fails rather than falling back. Missing
+Node checkout/dependencies always fail cloud configuration. The servers trust
+only the configured localhost application origin in addition to their built-in
+local/native origin policy. This lane still uses synthetic unsigned identities
+with server authentication disabled; authenticated tests belong to milestone 4.
+
+Every run writes `test-results/summary.json`. GitHub step summaries separate
+executed/passed/expected-failure/failed/flaky/skipped counts and retries. CI
+permits one retry for diagnostics, but `failOnFlakyTests` makes a passing retry
+leave the job red. Failed jobs upload the HTML report and test-results directory
+(traces, screenshots, video, browser diagnostics, summary and runtime logs) for
+seven days. Use synthetic credentials/data; artifact retention is not a secret
+scrubber. See the diagnostics section above.
+
+To check uploads deliberately, dispatch the workflow with
+`e2e_failure_probe=true` on a ref containing this workflow. It runs only the
+Node cloud artifact probe and is supposed to fail. Download its
+`e2e-node-cloud-failure-report` artifact and check the HTML report, trace,
+screenshot, browser diagnostics and Node log. Locally, from `e2e/`:
+
+```sh
+HKP_E2E_CLOUD_TARGET=node HKP_E2E_FAILURE_PROBE=1 npm run test:cloud
+CI=true HKP_E2E_CLOUD_TARGET=node HKP_E2E_FAILURE_PROBE=flaky npm run test:cloud
+npm run test:reporter
+```
+
+The flaky probe fails on its first attempt, passes its retry, and must still
+return a failing exit status under CI. Neither probe is discovered in normal
+runs. `HKP_E2E_REQUIRE_FACE=1` makes the optional face journey mandatory: it
+requires `HKP_E2E_FACE_Y4M` and rejects a missing/invalid camera fixture. The
+standard PR checks intentionally leave this media-dependent journey optional.
+
+The repository aggregate runner keeps browsers opt-in:
+`./run-all-tests.sh --with-e2e` installs the extra dependencies/browsers and runs
+both default and local cloud suites after the existing suites. Without the flag,
+it runs the existing unit/runtime suites. Node 22 is required for this option.

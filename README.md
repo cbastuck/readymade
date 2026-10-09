@@ -62,11 +62,19 @@ cmake -S . -B build -DMEANDER_USE_EMBEDDED_FRONTEND=OFF
 
 ## Run tests
 
-Run each project's test suite from the repository root:
+Run the unit and runtime suites from the repository root:
 
 ```bash
 ./run-all-tests.sh
 ```
+
+To also install and run the browser and cloud E2E suites (Node 22 required):
+
+```sh
+./run-all-tests.sh --with-e2e
+```
+
+See [the E2E README](e2e/README.md) for profiles, CI checks and required fixtures.
 
 Or run suites individually:
 
