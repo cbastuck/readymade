@@ -124,8 +124,6 @@ export default function AppMenu() {
             */}
           </DropdownMenuGroup>
 
-          <DropdownMenuSeparator />
-
           <DropdownMenuItem
             className="text-base"
             disabled={!isLoggedIn}
