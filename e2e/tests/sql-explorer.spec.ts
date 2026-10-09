@@ -22,6 +22,8 @@ test("shows a database another board made, exports it, and changes it", async ({
   seedBoard,
   openBoard,
 }) => {
+  // Three document loads plus export/edit/delete on hosted runners.
+  test.setTimeout(60_000);
   const crashes: string[] = [];
   page.on("pageerror", (error) => crashes.push(String(error)));
 

@@ -27,7 +27,7 @@ Update this table in place. Mark a milestone done only after its checks pass in 
 | Milestone | State | Depends on | Completion evidence |
 | --- | --- | --- | --- |
 | 1. Reliable fixtures and baseline | done | — | Three complete default runs without retries: 124 passed / 36 documented skips each; cloud 7 passed including C++; diagnostics and failure-safe cleanup verified |
-| 2. PR and cloud CI | done | 1 | PR #41: browser 124 passed / 36 documented skips, Node cloud 6 passed; hosted failure-artifact upload and seven-day retention verified |
+| 2. PR and cloud CI | in progress | 1 | PR #41: browser 124 passed / 36 documented skips, Node cloud 6 passed; hosted failure-artifact upload and seven-day retention verified |
 | 3. Core board journeys | open | 1 | UI lifecycle/composition/mobile journeys passing |
 | 4. Authenticated sharing and secrets | open | 1, 2; relevant security fixes | Real verifier and multi-context journeys passing |
 | 5. Distributed persistence and recovery | open | 2, 4 | Restart/failure journeys against Node, Python and C++ |
@@ -171,3 +171,5 @@ After each change, run the affected journey/profile first, then the suite whose 
 For v1 require core lifecycle, authenticated access/revocation, secret boundaries, persisted distributed recovery, and supported-host smoke evidence. Required cases cannot be skipped. Record optional hardware/provider coverage separately. CI workflow execution alone does not establish branch protection; configure required checks in repository settings when job names are stable.
 
 First implementation slice: milestone 1's reload-safe fixtures and persistence regression, followed by PR/default and Node-cloud CI. This makes later tests trustworthy and gives every subsequent change feedback.
+
+Follow-up verification: the final documentation run exposed the exact informational MediaPipe CPU startup line and SQL writes that had not finished before downstream UI completion/navigation. The face smoke expectation is scoped to that exact line; SQL processing now awaits persistence before returning downstream. SQL unit regressions: 29 passed. Affected browser journeys repeated three times without retries: 6 passed / 6 profile exclusions, 23 seconds. Hosted follow-up pending.
