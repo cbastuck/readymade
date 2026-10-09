@@ -39,6 +39,7 @@ export {
 } from "./news";
 export { createEmptyBoard } from "./emptyBoard";
 export { useLocalStorageCoordinators } from "./useLocalStorageCoordinators";
+export { useLocalStorageRemotes } from "./useLocalStorageRemotes";
 export { useCloudBoardSources } from "./useCloudBoardSources";
 export { useDraftsSource } from "./useDraftsSource";
 export type { CloudBoardSources } from "./useCloudBoardSources";
