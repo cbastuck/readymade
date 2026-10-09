@@ -123,6 +123,23 @@ Use `"HKP_RUNTIME_HOST"` as a template variable in URLs when the remote host add
 not known at design time (e.g. `"url": "http://HKP_RUNTIME_HOST:8080"`). The playground
 resolves this at runtime.
 
+A runtime on the **hkp-rt the Readymade app embeds** names it instead of giving an
+address — `remote` in place of `url`, never both:
+
+```json
+{
+  "id": "rt",
+  "name": "hkp-rt",
+  "type": "rest",
+  "remote": "embedded",
+  "state": { "wrapServices": false, "minimized": false }
+}
+```
+
+`embedded` is the same name in the desktop, iOS and Android apps. Do not write the app's
+port (`http://127.0.0.1:8887`) or one app's own name (`hkp://remotes/meander-cpp`) into
+a board.
+
 ### UUID naming convention
 
 Use descriptive kebab-case with a `-svc` suffix. Make the name hint at the role, not the

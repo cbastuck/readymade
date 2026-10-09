@@ -20,6 +20,7 @@ import {
 import BoardMenuSheet from "./BoardMenuSheet";
 import DeployBoardSheet from "./DeployBoardSheet";
 import SaveBoardSheet from "./SaveBoardSheet";
+import RuntimeUnreachableDialog from "../../../ui-components/RuntimeUnreachableDialog";
 
 type Tab = "board" | "cloud" | "hub";
 
@@ -415,6 +416,7 @@ export default function MobilePlaygroundInner({
           onHome={onHome}
           openCloudBoard={openCloudBoard}
         />
+        <RuntimeUnreachableDialog />
       </MobileConnectionsProvider>
     </MobileHostContext.Provider>
   );

@@ -4,6 +4,7 @@ import {
   SecretRelease,
   allowedSecrets,
 } from "hkp-frontend/src/core/secretConsent";
+import { requestFromServer } from "hkp-frontend/src/core/runtimeReach";
 
 import {
   InstanceId,
@@ -891,14 +892,20 @@ async function createRuntimeRequest(
   const runtimesUrl = `${runtime.url}/runtimes`;
   let res: Response;
   try {
-    res = await fetch(runtimesUrl, {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: {
-        "content-type": "application/json",
-        ...authHeaders(user ?? null),
-      },
-    });
+    // A server that gives no answer is either not running or does not allow
+    // this page, and somebody can fix both while this waits; see runtimeReach.
+    res = await requestFromServer(
+      { url: runtime.url ?? "", runtimeName: runtime.name },
+      () =>
+        fetch(runtimesUrl, {
+          method: "POST",
+          body: JSON.stringify(payload),
+          headers: {
+            "content-type": "application/json",
+            ...authHeaders(user ?? null),
+          },
+        }),
+    );
   } catch (err: any) {
     throw new Error(`${err?.message ?? "Load failed"}: ${runtimesUrl}`);
   }

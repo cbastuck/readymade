@@ -6,6 +6,8 @@ import {
   authoredAddressing,
   bakeAddressing,
   remoteNameFromUrl,
+  EMBEDDED_REMOTE_NAME,
+  embeddedRemote,
   resolveRuntimeAddress,
 } from "../remote";
 
@@ -136,6 +138,96 @@ describe("resolving a runtime's address on this client", () => {
         remotes,
       ),
     ).toThrow(RuntimeAddressingError);
+  });
+});
+
+describe("the runtime a host embeds", () => {
+  // What each app lists for its own runtime: its own name for it, and an
+  // address only the app itself can serve.
+  const desktop = [
+    { name: "meander-cpp", type: "rest", url: "hkp://remotes/meander-cpp" },
+    ...remotes,
+  ];
+  const phone = [
+    { name: "meander-ios", type: "rest", url: "hkp://remotes/meander-ios" },
+  ];
+  const board = { id: "rt", remote: EMBEDDED_REMOTE_NAME };
+
+  it("is what the name resolves to, whatever the app calls it", () => {
+    expect(resolveRuntimeAddress(board, desktop)).toEqual({
+      ok: true,
+      url: "hkp://remotes/meander-cpp",
+      mode: "remote",
+      remoteName: "meander-cpp",
+    });
+    expect(resolveRuntimeAddress(board, phone)).toMatchObject({
+      ok: true,
+      url: "hkp://remotes/meander-ios",
+    });
+  });
+
+  it("is found by how it is reached, not by where it stands in the list", () => {
+    expect(embeddedRemote([...remotes, desktop[0]])).toBe(desktop[0]);
+    expect(embeddedRemote(remotes)).toBeUndefined();
+  });
+
+  it("wins over a server somebody keeps under the same name", () => {
+    // A board asking for the app's own runtime must not land elsewhere.
+    const withImpostor = [
+      { name: "embedded", type: "rest", url: "http://elsewhere.example:8887" },
+      ...desktop,
+    ];
+
+    expect(resolveRuntimeAddress(board, withImpostor)).toMatchObject({
+      ok: true,
+      url: "hkp://remotes/meander-cpp",
+    });
+  });
+
+  it("is a name like any other where nothing is embedded", () => {
+    // A browser tab: the person may call a server of theirs by it.
+    const browser = [
+      ...remotes,
+      { name: "embedded", type: "rest", url: "http://127.0.0.1:8887" },
+    ];
+
+    expect(resolveRuntimeAddress(board, browser)).toEqual({
+      ok: true,
+      url: "http://127.0.0.1:8887",
+      mode: "remote",
+      remoteName: "embedded",
+    });
+  });
+
+  it("does not resolve where there is none, and says what was wanted", () => {
+    const resolution = resolveRuntimeAddress(board, remotes);
+
+    expect(resolution).toMatchObject({ ok: false, reason: "unknown-remote" });
+    expect((resolution as { message: string }).message).toContain(
+      "the runtime the Readymade app embeds",
+    );
+  });
+
+  it("is still reached by the name its app gives it, in either spelling", () => {
+    expect(
+      resolveRuntimeAddress({ id: "rt", remote: "meander-cpp" }, desktop),
+    ).toMatchObject({ ok: true, url: "hkp://remotes/meander-cpp" });
+    expect(
+      resolveRuntimeAddress(
+        { id: "rt", url: "hkp://remotes/meander-cpp" },
+        desktop,
+      ),
+    ).toMatchObject({ ok: true, url: "hkp://remotes/meander-cpp" });
+  });
+
+  it("is kept as the name when the board is saved", () => {
+    expect(
+      authoredAddressing({
+        id: "rt",
+        remote: EMBEDDED_REMOTE_NAME,
+        url: "hkp://remotes/meander-cpp",
+      }),
+    ).toEqual({ remote: EMBEDDED_REMOTE_NAME });
   });
 });
 

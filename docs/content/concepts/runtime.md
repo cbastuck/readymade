@@ -123,6 +123,50 @@ machine has to reach it, and then a runtime that binds every interface still
 hands out an address only the host can dial. That is what makes a runtime look
 provisioned and unreachable at once, and setting it to the LAN address is the fix.
 
+### Who may call a server from a browser
+
+A runtime server on a person's own machine usually runs without
+authentication, on the grounds that only that machine can reach it. That keeps
+other machines out. It does not keep out a web page: every site open in a
+browser on the machine can address `127.0.0.1`, and a board's runtime is not
+something a stranger's page should be able to build.
+
+So a request that carries no credential is let in only when it does not come
+from a foreign page, and that is decided from what a browser states and a page
+cannot forge:
+
+| The request says | It is |
+|---|---|
+| no `Origin` | a caller that is not a browser — a coordinator, another runtime, `curl` — and is let in |
+| an `Origin` the server allows | let in, and told it may read the answer |
+| any other `Origin` | refused |
+| no `Origin`, and `Sec-Fetch-Site: cross-site` | a page fetching the address as an image or a script; refused |
+| a `Host` that is a name the server was not given | a page that resolved its own name to this machine; refused |
+
+What a server allows without being told is the origins Readymade's own apps
+run from and any page served from the machine itself, whatever its port. Every
+other site — the playground on the public website included — is allowed at the
+server's end and nowhere else: `ALLOWED_ORIGINS` for hkp-node, hkp-python and a
+standalone hkp-rt, which replaces the default with exactly what it names; and
+**Settings → Access → Allowed websites** in the Readymade app, which adds to it
+and applies at once.
+
+A refusal is a `403` with nothing in it a page can read. To the page that was
+refused it is indistinguishable from a server that is not running, and that is
+the point: a site somebody merely has open learns nothing about what runs on
+their machine. The playground therefore says both things when a board's server
+gives no answer — it is not running, or it does not allow this page — with
+what to change for each, and waits. **Check again** asks the server once more,
+and the board carries on by itself the moment it answers.
+
+Three things this does not cover. A request carrying a verified token is let
+in by the token, and the origin list then says only which pages may send one.
+A mount is reachable by anyone holding its address, as it is meant to be. And
+another *program* on the same machine — or another account on it — is not a
+browser, states no origin and is let in: a loopback bind is a boundary against
+other machines and, with this, against web pages, not against the machine's own
+software.
+
 ### Adding one to a board
 
 In the app: the runtimes menu, **add an external runtime**, a name and a host URL

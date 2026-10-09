@@ -22,6 +22,23 @@ namespace readymade
 using RouteParams = std::unordered_map<std::string, std::string>;
 
 /**
+ * What every Readymade app calls the runtime it embeds, and lists it as.
+ *
+ * A board says `"remote": "embedded"` to mean the runtime of whichever app
+ * opened it (`EMBEDDED_REMOTE_NAME` in hkp-frontend's runtime/board/remote.ts).
+ * The name an app gave its runtime before this one — the server's own name,
+ * `meander-cpp` here — is still answered to, for the boards that say it.
+ */
+inline const std::string kEmbeddedRemoteName = "embedded";
+
+/** Whether `name` is one this app's own runtime goes by — and so not one a
+ *  runtime server somebody keeps may take. */
+inline bool isOwnRemoteName(const std::string& name, const std::string& serverName)
+{
+  return name == kEmbeddedRemoteName || name == serverName;
+}
+
+/**
  * Whether a forwarded request names this app's own runtime.
  *
  * False for an unknown name and for a missing parameter alike: both mean the
@@ -39,7 +56,7 @@ inline bool isOwnRemote(const RouteParams& params, const std::string& serverName
   {
     return false;
   }
-  return remote->second == serverName;
+  return isOwnRemoteName(remote->second, serverName);
 }
 
 /** The remote a request named, or empty when it named none. */

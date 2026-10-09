@@ -79,6 +79,8 @@ catch_discover_tests(hkp-rt-service-tests)
 add_executable(hkp-rt-auth-tests
   auth.test.cpp
   standalone_config.test.cpp
+  origins.test.cpp
+  server_origins.test.cpp
 )
 target_link_libraries(hkp-rt-auth-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2::Catch2WithMain)
 target_compile_features(hkp-rt-auth-tests PRIVATE cxx_std_20)

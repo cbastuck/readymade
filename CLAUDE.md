@@ -197,6 +197,12 @@ name resolves to is never written back into the board
 (`hkp-frontend/src/runtime/board/remote.ts`). A board never has a client *choose* a
 server for it: a runtime lands only where the board or the person named.
 
+One name is the same in every host: **`"remote": "embedded"`** is the hkp-rt the
+Readymade app that opened the board embeds, whatever that app calls it. A board meant
+for the embedded runtime uses it — never the app's port (`http://127.0.0.1:8887`) and
+never one app's own name for its runtime (`hkp://remotes/meander-cpp`, which stays
+supported for boards that already say it).
+
 Runtime ids are unique **per user**, not globally — hkp-node namespaces runtimes by the
 authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) don't collide when
 two people load the same board against one server. What a coordinator builds for a

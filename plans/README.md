@@ -8,6 +8,8 @@ plan is deleted.
 
 | Document | What it covers | State |
 | --- | --- | --- |
+| [TODO-E2E.md](TODO-E2E.md) | E2E implementation milestones: reliable fixtures, PR/cloud CI, board journeys, authenticated sharing/secrets, distributed recovery, and native release checks | planned 2026-10-09; milestone 1 next |
+| [REVIEW-V1-E2E-SECURITY.md](REVIEW-V1-E2E-SECURITY.md) | The v1 review: ten security findings ordered by severity, E2E coverage and test-infrastructure proposals. Its Progress table says which finding is being worked on and which are done | reviewed 2026-10-06, revised 2026-10-09; finding 1 in progress, the rest open |
 | [TODO-ASSETS.md](TODO-ASSETS.md) | Content (pages, scripts, samples, models) declared once in a board as inline text, base64 or a URL, and referenced from service state as `hkp-asset://id`; each runtime resolves at point of use from a pushed asset store; its own board view for editing | built 2026-09-30 across browser, hkp-node, hkp-python and hkp-rt; Make asset, s3, host-local upload and model loaders open |
 | [TODO-BLOCKS.md](TODO-BLOCKS.md) | Services defined once in a board and used by reference: frozen uses, params, detach, towards presets | built 2026-09-26; a few gaps and open questions left |
 | [TODO-BOARD-MEMBERS.md](TODO-BOARD-MEMBERS.md) | A deployed board with one owner and a list of members who may attach and use its facade; a run actor stated by the server that verified a person, down to a service; process calls over the bridge | built 2026-10-05 across hkp-node, the frontend, hkp-python and hkp-rt; the two-person pass by hand and the open questions remain |

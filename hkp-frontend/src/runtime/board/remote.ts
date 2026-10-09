@@ -21,6 +21,9 @@
  * used before `remote` existed. It counts as a name, not as an address, and is
  * left for the host that serves the `hkp:` scheme to resolve, as it always was.
  *
+ * One name is the same for everybody: `embedded`, the runtime the host itself
+ * embeds (`EMBEDDED_REMOTE_NAME`).
+ *
  * Resolution is never written back. The address a name resolved to lives on
  * the live runtime descriptor, beside the `remote` it came from, and a board
  * being saved writes only what was authored (`authoredAddressing`).
@@ -50,6 +53,29 @@ export type RuntimeAddressing =
 
 /** Scheme and authority of the legacy spelling of a remote's name. */
 export const REMOTE_URL_PREFIX = "hkp://remotes/";
+
+/**
+ * The name of the runtime a host embeds, the same in every host that has one.
+ *
+ * Each app calls its own runtime something else — the desktop app, the iOS
+ * app and the Android app each have their name for it — and outside the app
+ * it runs in, such a name means nothing. A board that should run on whichever
+ * app opens it says `"remote": "embedded"` instead: no address, so no port
+ * that has to be free and known, and no name that is one app's alone.
+ */
+export const EMBEDDED_REMOTE_NAME = "embedded";
+
+/**
+ * The remote a host keeps for the runtime it embeds: the one it serves itself
+ * through the `hkp:` scheme rather than reaches over a network. Undefined for
+ * a host that embeds none — a browser tab.
+ */
+export function embeddedRemote(remotes: KnownRemote[]): KnownRemote | undefined {
+  return remotes.find(
+    (remote) =>
+      typeof remote.url === "string" && remote.url.startsWith(REMOTE_URL_PREFIX),
+  );
+}
 
 /** A runtime that does not say, or says more than once, where it runs. */
 export class RuntimeAddressingError extends Error {
@@ -205,14 +231,26 @@ export function resolveRuntimeAddress(
           remoteName: addressing.name,
         };
       }
-      const found = dialable(remotes).find(
+      const named = dialable(remotes).find(
         (remote) => remote.name === addressing.name,
       );
+      // In a host that embeds a runtime the name is that runtime's, whatever
+      // else is kept under it: a board asking for the app's own runtime must
+      // not land on a server somebody happened to call the same. A host that
+      // embeds none has no such runtime, and there it is a name like any other
+      // — one a person may give a server of theirs.
+      const found =
+        addressing.name === EMBEDDED_REMOTE_NAME
+          ? (embeddedRemote(remotes) ?? named)
+          : named;
       if (!found) {
         return {
           ok: false,
           reason: "unknown-remote",
-          message: `Runtime "${runtime.id}" wants the remote "${addressing.name}", which this client does not know`,
+          message:
+            addressing.name === EMBEDDED_REMOTE_NAME
+              ? `Runtime "${runtime.id}" wants the runtime the Readymade app embeds ("${EMBEDDED_REMOTE_NAME}"), and there is none here. Open the board in the app, or keep a runtime server under that name`
+              : `Runtime "${runtime.id}" wants the remote "${addressing.name}", which this client does not know`,
         };
       }
       return {

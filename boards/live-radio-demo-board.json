@@ -6,7 +6,7 @@
       "id": "rt",
       "name": "hkp-rt",
       "type": "rest",
-      "url": "http://127.0.0.1:8887",
+      "remote": "embedded",
       "state": {
         "wrapServices": false
       }

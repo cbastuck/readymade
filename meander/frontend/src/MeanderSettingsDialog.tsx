@@ -236,6 +236,7 @@ function AccessTab() {
   const [supported, setSupported] = useState(true);
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState("");
+  const [newOrigin, setNewOrigin] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -303,6 +304,25 @@ function AccessTab() {
     void persist({ allowedUsers: allowedUsers.filter((e) => e !== email) });
   };
 
+  // The backend keeps an origin whatever address was typed, and answers with
+  // the list as it stands — so what is shown is what the runtime compares.
+  const allowedOrigins = settings.allowedOrigins ?? [];
+
+  const addOrigin = () => {
+    const origin = newOrigin.trim();
+    setNewOrigin("");
+    if (!origin) {
+      return;
+    }
+    void persist({ allowedOrigins: [...allowedOrigins, origin] });
+  };
+
+  const removeOrigin = (origin: string) => {
+    void persist({
+      allowedOrigins: allowedOrigins.filter((o) => o !== origin),
+    });
+  };
+
   return (
     <SettingsStack>
       <SettingsSection label="Local network">
@@ -364,8 +384,46 @@ function AccessTab() {
       </SettingsSection>
 
       <SettingsNote tone="warn">
-        Changes take effect after restarting the app.
+        Changes above take effect after restarting the app.
       </SettingsNote>
+
+      {settings.allowedOrigins !== undefined && (
+        <SettingsSection
+          label="Allowed websites"
+          hint="Websites whose pages may use this runtime from a browser — the playground on readymadeit.com, for one. The app itself and pages served from this computer are always allowed; every other site is refused until it is listed here. Takes effect immediately."
+        >
+          <SettingsList empty="No websites — only this app and this computer's own pages can use the runtime.">
+            {allowedOrigins.map((origin) => (
+              <SettingsRow
+                key={origin}
+                title={origin}
+                trailing={
+                  <RemoveButton
+                    label={`Remove ${origin}`}
+                    onClick={() => removeOrigin(origin)}
+                  />
+                }
+              />
+            ))}
+          </SettingsList>
+          <div className="hkp-set-inline">
+            <SettingsInput
+              value={newOrigin}
+              onChange={(e) => setNewOrigin(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  addOrigin();
+                }
+              }}
+              placeholder="https://readymadeit.com"
+            />
+            <SettingsButton onClick={addOrigin} disabled={!newOrigin.trim()}>
+              <Plus size={14} />
+              Add
+            </SettingsButton>
+          </div>
+        </SettingsSection>
+      )}
     </SettingsStack>
   );
 }

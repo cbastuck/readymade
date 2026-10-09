@@ -23,7 +23,11 @@ using json = nlohmann::json;
 SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings& settings)
     : m_server(server), m_defaultHeaders(
                             {
-                                {"Access-Control-Allow-Origin", server->allowedOrigins()},
+                                // Any origin, because only one can ask: this
+                                // scheme exists inside the app's own webview and
+                                // nowhere else. Which pages may call the runtime
+                                // over the network is the server's to say.
+                                {"Access-Control-Allow-Origin", "*"},
                                 {"Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE"},
                                 {"Access-Control-Allow-Headers", "Content-Type"},
                             })
@@ -192,15 +196,17 @@ saucer::scheme::response SchemeHandler::handleRequest(const saucer::scheme::requ
 saucer::scheme::response SchemeHandler::handleGetRemotes(const Router::Params &p, const saucer::scheme::request &req) const
 {
   auto remotesArr = json::array();
+  // The runtime this app embeds, under the name every Readymade app lists its
+  // own by; see kEmbeddedRemoteName.
   remotesArr.push_back({
-      {"url", "hkp://remotes/" + m_server->name()},
+      {"url", "hkp://remotes/" + readymade::kEmbeddedRemoteName},
       {"port", m_server->port()},
-      {"name", m_server->name()},
+      {"name", readymade::kEmbeddedRemoteName},
   });
 
   for (const auto& runtime : m_settings.getRemoteRuntimeEngines())
   {
-    if (runtime.name == m_server->name() ||
+    if (readymade::isOwnRemoteName(runtime.name, m_server->name()) ||
         Settings::isInternalRuntimeUrl(runtime.url))
     {
       continue;
@@ -268,7 +274,7 @@ saucer::scheme::response SchemeHandler::handleSaveRemote(const Router::Params &p
         .color = "",
     };
 
-    if (runtime.name == m_server->name())
+    if (readymade::isOwnRemoteName(runtime.name, m_server->name()))
     {
       return saucer::scheme::response{
           .data = saucer::stash::from_str("The local runtime name is reserved"),
@@ -363,7 +369,7 @@ saucer::scheme::response SchemeHandler::handleDeleteRemote(const Router::Params 
     }
 
     const auto runtimeName = nameIt->get<std::string>();
-    if (runtimeName == m_server->name())
+    if (readymade::isOwnRemoteName(runtimeName, m_server->name()))
     {
       return saucer::scheme::response{
           .data = saucer::stash::from_str("The local runtime cannot be deleted"),
@@ -415,7 +421,7 @@ saucer::scheme::response SchemeHandler::handleRemoteForward(const Router::Params
           json{
             {"error", "Unknown remote"},
             {"remote", readymade::requestedRemote(p)},
-            {"expected", m_server->name()},
+            {"expected", readymade::kEmbeddedRemoteName},
           }).dump()
         ),
         .mime = "application/json",
@@ -898,7 +904,24 @@ json SchemeHandler::currentRuntimeSettings() const
   return json{
       {"allowExternalRuntimeAccess", m_settings.getAllowExternalAccess()},
       {"allowedUsers", allowedUsers},
+      {"allowedOrigins", m_settings.getAllowedOrigins()},
   };
+}
+
+void SchemeHandler::setOwnOrigins(std::vector<std::string> origins)
+{
+  m_ownOrigins = std::move(origins);
+  applyAllowedOrigins();
+}
+
+void SchemeHandler::applyAllowedOrigins() const
+{
+  auto origins = m_ownOrigins;
+  for (const auto& origin : m_settings.getAllowedOrigins())
+  {
+    origins.push_back(origin);
+  }
+  m_server->allowOrigins(origins);
 }
 
 saucer::scheme::response SchemeHandler::handleGetSettings(const Router::Params &p, const saucer::scheme::request &req) const
@@ -1324,6 +1347,23 @@ saucer::scheme::response SchemeHandler::handleSaveSettings(const Router::Params 
       }
     }
     m_settings.setAllowedUsers(emails);
+  }
+
+  const auto originsIt = payload.find("allowedOrigins");
+  if (originsIt != payload.end() && originsIt->is_array())
+  {
+    std::vector<std::string> origins;
+    for (const auto& entry : *originsIt)
+    {
+      if (entry.is_string())
+      {
+        origins.push_back(entry.get<std::string>());
+      }
+    }
+    m_settings.setAllowedOrigins(origins);
+    // In force from the next request on: a page waiting to be let in is told
+    // to change this and try again, not to restart the app.
+    applyAllowedOrigins();
   }
 
   return saucer::scheme::response{

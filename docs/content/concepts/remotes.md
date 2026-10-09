@@ -54,6 +54,29 @@ If an unresolvable name fell back to a `url`, they would get two attempts at
 making your client dial an address and need only the second. A runtime carrying
 both is refused before anything is dialled.
 
+### The runtime the app embeds: `embedded`
+
+One name is the same for everybody. The Readymade apps each embed an hkp-rt and
+keep it among their remotes, under a name of their own — and a name that is one
+app's alone is as local a fact as an address. So every host that embeds a
+runtime also answers to **`embedded`** for it:
+
+```json
+{ "id": "rt", "name": "hkp-rt", "type": "rest", "remote": "embedded" }
+```
+
+A board that should run on the app that opens it says this, and nothing else
+about where: no address, so no port that has to be free and that the board and
+the app have to agree on; no name that works in one app and not the next. It is
+what every shipped board meant for the embedded runtime uses.
+
+Inside an app the name is that app's runtime, whatever else is kept under it —
+a board asking for the app's own runtime must not land on a server somebody
+happened to call the same. A host that embeds nothing, a browser tab, has no
+such runtime; there `embedded` is a name like any other, which a person may
+give a server of theirs to open such a board from the playground, and
+otherwise the board says what it wanted and stops.
+
 `hkp://remotes/<name>` — the spelling boards used for the app's embedded runtime
 before `remote` existed — is a name in a url's clothing. It **counts as a name**
 (so it cannot sit beside a `remote`), and is still resolved by the host that

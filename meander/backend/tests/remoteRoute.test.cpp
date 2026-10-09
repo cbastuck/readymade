@@ -52,3 +52,33 @@ TEST_CASE("the requested remote is reported for the error body", "[remotes]") {
   REQUIRE(requestedRemote({{"remote", "hkp-node"}}) == "hkp-node");
   REQUIRE(requestedRemote({}).empty());
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// The name every app answers to for its own runtime.
+//
+// `meander-cpp` is this app's name for its runtime and no other app's, so a
+// board that said it ran in one app only. `embedded` is the same everywhere:
+// it is what the app lists its runtime as, and what a board says to mean the
+// runtime of whichever app opened it.
+// ──────────────────────────────────────────────────────────────────────────────
+
+TEST_CASE("a request naming the embedded runtime is accepted", "[remotes]") {
+  REQUIRE(kEmbeddedRemoteName == "embedded");
+  REQUIRE(isOwnRemote({{"remote", "embedded"}}, "meander-cpp"));
+}
+
+TEST_CASE("the name this app gave its runtime before is still answered to", "[remotes]") {
+  // Boards saved before carry hkp://remotes/meander-cpp.
+  REQUIRE(isOwnRemote({{"remote", "meander-cpp"}}, "meander-cpp"));
+}
+
+TEST_CASE("another app's name for its runtime is still not ours", "[remotes]") {
+  REQUIRE_FALSE(isOwnRemote({{"remote", "meander-ios"}}, "meander-cpp"));
+  REQUIRE_FALSE(isOwnRemote({{"remote", "Embedded"}}, "meander-cpp"));
+}
+
+TEST_CASE("neither of this runtime's names can be taken by a kept server", "[remotes]") {
+  REQUIRE(isOwnRemoteName("embedded", "meander-cpp"));
+  REQUIRE(isOwnRemoteName("meander-cpp", "meander-cpp"));
+  REQUIRE_FALSE(isOwnRemoteName("Laptop", "meander-cpp"));
+}

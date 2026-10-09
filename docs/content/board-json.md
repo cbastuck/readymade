@@ -91,6 +91,9 @@ A `url` need not be a plain address:
 - `hkp://remotes/<name>` addresses the runtime the app itself embeds →
   `concepts/runtime.md`. It is a name in a url's clothing — the spelling from
   before `remote` existed — and counts as one: it cannot sit beside a `remote`.
+  It names one app's runtime by that app's name for it; a board meant for
+  whichever app opens it says `"remote": "embedded"` instead →
+  `concepts/remotes.md`.
 
 `state` holds what the runtime remembers between loads: display preferences like
 `minimized` and `wrapServices`, and — once a board is deployed and logging is

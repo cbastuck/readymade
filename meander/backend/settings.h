@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./allowedOrigins.h"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -358,6 +359,35 @@ public:
         },
       });
     }
+    return writeSettings(settings);
+  }
+
+  // The sites the person lets call the runtime from a browser, beside the app
+  // itself and pages served from this machine; see allowedOrigins.h.
+  std::vector<std::string> getAllowedOrigins() const
+  {
+    std::vector<std::string> origins;
+    const auto settings = readSettings();
+    const auto it = settings.find("allowedOrigins");
+    if (it != settings.end() && it->is_array())
+    {
+      for (const auto& entry : *it)
+      {
+        if (entry.is_string())
+        {
+          origins.push_back(entry.get<std::string>());
+        }
+      }
+    }
+    return readymade::normalizeOrigins(origins);
+  }
+
+  // Writes allowedOrigins, as origins. Unlike the settings above this is not
+  // read once at startup: the caller hands the list to the running server.
+  bool setAllowedOrigins(const std::vector<std::string>& origins) const
+  {
+    auto settings = readSettings();
+    settings["allowedOrigins"] = readymade::normalizeOrigins(origins);
     return writeSettings(settings);
   }
 

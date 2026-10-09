@@ -324,12 +324,19 @@ int real_main(int argc, char *argv[])
     .code   = "window.__HKP_GRANTS__ = " + grants.getAll().dump() + ";",
     .run_at = saucer::script::time::creation,
   });
-  auto allowedOrigins = "*"; // allow all origins for CORS
+  // Nothing said: the runtime answers the Readymade apps and pages served from
+  // this machine, and no other site. What this app adds to that — where it
+  // serves itself from, and the sites the person allowed — is handed over once
+  // the scheme handler exists (setOwnOrigins below), and again whenever the
+  // setting changes.
+  const std::string allowedOrigins;
 
-  // Auth gate. A loopback bind is itself the access boundary, so no auth is
-  // required there. When exposed on the LAN we require a verified, allow-listed
-  // user — and fail closed: an exposed runtime with no issuers/allowed users
-  // configured denies every request rather than running open.
+  // Auth gate. A loopback bind keeps other machines out, so no auth is
+  // required there; what keeps out a page in this machine's browser is the
+  // runtime's origin check (hkp-rt's origins.h). When exposed on the LAN we
+  // require a verified, allow-listed user — and fail closed: an exposed
+  // runtime with no issuers/allowed users configured denies every request
+  // rather than running open.
   hkp::AuthConfig authConfig;
   if (!hkp::isLoopbackHost(bindAddress))
   {
@@ -404,6 +411,9 @@ int real_main(int argc, char *argv[])
   std::cout << "Loaded " << numLoadedPlugins << " plugins from bundles path: " << settings.getBundlesPath() << std::endl;
 
   SchemeHandler handler(server, settings);
+  // A phone on the LAN loads the app from the frontend server and calls the
+  // runtime from there.
+  handler.setOwnOrigins({"http://" + lanIP + ":" + std::to_string(FRONTEND_HTTP_PORT)});
   webview->handle_scheme(
     "hkp",
     [&handler](const saucer::scheme::request &req, saucer::scheme::executor executor)

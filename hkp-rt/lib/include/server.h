@@ -3,6 +3,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "auth.h"
 #include "coordinator_links.h"
@@ -35,6 +36,12 @@ namespace hkp
     const std::string& externalIP() const;
     const std::string& name() const;
     const std::string& allowedOrigins() const;
+
+    // Origins this server lets call it besides the ones it was started with
+    // (thread-safe); each call replaces what the last one added. For a host
+    // that learns them after start — the address it serves the app from, or
+    // ones the person using it chose. See origins.h.
+    void allowOrigins(const std::vector<std::string>& origins);
 
     // Fans a serialized notification frame out to every WebSocket connection
     // bound to `runtimeId` (skipping write-only clients). Thread-safe.

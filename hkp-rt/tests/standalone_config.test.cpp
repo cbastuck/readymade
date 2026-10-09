@@ -53,7 +53,8 @@ TEST_CASE("saying nothing listens on this machine only, with no auth",
   REQUIRE(config.bind == "127.0.0.1");
   REQUIRE(config.port == 5556);
   REQUIRE(config.auth.mode == AuthMode::None);
-  REQUIRE(config.allowedOrigins == "*");
+  // Nothing said: the apps' own origins and pages served from this machine.
+  REQUIRE(config.allowedOrigins.empty());
 }
 
 TEST_CASE("the arguments it always took still mean what they meant",
