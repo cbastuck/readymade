@@ -48,7 +48,25 @@ test("rename a service inside a sub-service", async ({ page }) => {
   expect(pipeline[0].serviceName).toBe("Heartbeat");
 
   // And it survives a reload, through the draft.
-  await page.waitForTimeout(3000);
+  await expect.poll(() => page.evaluate(() =>
+    new Promise<string>((resolve, reject) => {
+      const open = indexedDB.open("hkp-board-drafts", 1);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const database = open.result;
+        const read = database.transaction("drafts", "readonly")
+          .objectStore("drafts").get("e2e-inner-rename");
+        read.onsuccess = () => {
+          database.close();
+          resolve(JSON.stringify(read.result) ?? "");
+        };
+        read.onerror = () => {
+          database.close();
+          reject(read.error);
+        };
+      };
+    }),
+  )).toContain("Heartbeat");
   await page.reload();
   await page.locator("#service-frame-sub").getByRole("button", { name: "Show content inline" }).click();
   await expect(page.locator("#service-frame-inner-timer").getByText("Heartbeat")).toBeVisible();

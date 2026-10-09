@@ -20,7 +20,8 @@
  * `page.route` cannot serve any of this: `hkp://` is not http, so it never
  * reaches Playwright's proxy. Wrapping `window.fetch` is the only way in.
  *
- * Everything the host is asked to store stays in memory and is mirrored on
+ * Everything the host is asked to store survives navigation in test-local
+ * browser storage and is mirrored on
  * `window.__HKP_FAKE_HOST__`, so a test can assert on what the app actually
  * handed the platform rather than only on what the UI shows.
  */
@@ -52,7 +53,8 @@ export type FakeHostConfig = {
  * arrives through `config`.
  */
 export function installFakeNativeHost(config: FakeHostConfig): void {
-  const store = {
+  const storageKey = "__hkp_e2e_native_store__";
+  const initial = {
     shell: config.shell,
     boards: { ...(config.boards ?? {}) } as Record<string, unknown>,
     /** Board name -> ISO timestamp, as the host reports for `?meta=1`. */
@@ -74,11 +76,52 @@ export function installFakeNativeHost(config: FakeHostConfig): void {
     /** Owner emails pushed to the embedded runtime (the iOS auth bridge). */
     runtimeAllowedUsers: [] as Array<string | null>,
   };
+  // Playwright gives each test a fresh context. Keeping the fake's backing
+  // store in that context's origin storage preserves writes across reloads
+  // without involving the developer's native library.
+  const saved = localStorage.getItem(storageKey);
+  const backing = saved ? JSON.parse(saved) as typeof initial : initial;
+  const proxies = new WeakMap<object, object>();
+  const persist = () => localStorage.setItem(storageKey, JSON.stringify(backing));
+  function persistent<T extends object>(value: T): T {
+    const existing = proxies.get(value);
+    if (existing) return existing as T;
+    const proxy = new Proxy(value, {
+      get(target, key, receiver) {
+        const found = Reflect.get(target, key, receiver);
+        return found !== null && typeof found === "object" ? persistent(found) : found;
+      },
+      set(target, key, value) {
+        const changed = Reflect.set(target, key, value);
+        persist();
+        return changed;
+      },
+      deleteProperty(target, key) {
+        const changed = Reflect.deleteProperty(target, key);
+        persist();
+        return changed;
+      },
+    });
+    proxies.set(value, proxy);
+    return proxy;
+  }
+  const store = persistent(backing);
   (window as unknown as Record<string, unknown>).__HKP_FAKE_HOST__ = store;
 
-  for (const name of Object.keys(store.boards)) {
+  if (!saved) {
+    for (const name of Object.keys(store.boards)) {
+      store.modified[name] = new Date().toISOString();
+    }
+    persist();
+  }
+  // Init-script ordering is unspecified. Seeds queued before this script
+  // runs are consumed here; later seeds update the persistent proxy directly.
+  const seeds = JSON.parse(localStorage.getItem("__hkp_e2e_native_seeds__") ?? "{}");
+  for (const [name, board] of Object.entries(seeds)) {
+    store.boards[name] = board;
     store.modified[name] = new Date().toISOString();
   }
+  localStorage.removeItem("__hkp_e2e_native_seeds__");
 
   // Which shell `main.tsx` mounts. Desktop is the absence of both flags.
   if (config.shell === "ios") {
@@ -164,7 +207,23 @@ export function installFakeNativeHost(config: FakeHostConfig): void {
         return json(store.remotes);
       }
       if (method === "POST") {
-        store.remotes = Array.isArray(body) ? body : store.remotes;
+        // The host keys its remotes by name: saving one it has replaces it.
+        const saved = body as { name?: string } | unknown[] | undefined;
+        if (Array.isArray(saved)) {
+          store.remotes = saved;
+        } else if (saved && typeof saved.name === "string") {
+          const kept = (store.remotes as Array<{ name?: string }>).filter(
+            (remote) => remote.name !== saved.name,
+          );
+          store.remotes = [...kept, saved];
+        }
+        return empty();
+      }
+      if (method === "DELETE") {
+        const named = (body as { name?: string } | undefined)?.name;
+        store.remotes = (store.remotes as Array<{ name?: string }>).filter(
+          (remote) => remote.name !== named,
+        );
         return empty();
       }
     }

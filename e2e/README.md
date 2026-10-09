@@ -90,6 +90,24 @@ Everything the host is asked to store is mirrored on `window.__HKP_FAKE_HOST__`
 and reachable through the `hostState()` fixture, so a spec can assert on what
 the app actually handed the platform, not only on what the UI shows.
 
+The fake's backing store lives in origin-local browser storage inside each
+test's fresh Playwright context. Writes to boards, files, settings, secrets,
+audiences and grants survive document reloads; another test starts clean.
+This is a test adapter, not native disk/keychain coverage. It does not provide
+live synchronization between simultaneously open documents; concurrent native
+library tests will need a shared host adapter.
+
+`seedBoard` seeds each name once per origin. Its marker survives a board's
+deletion, so reloads neither overwrite saved edits nor recreate deleted boards.
+Native seeds are queued when the fake has not booted yet; correctness does not
+depend on the order Playwright runs initialization scripts. Set up seeds before
+the first navigation. Reopening should use the same fixture/context without
+calling a fresh seed helper.
+
+`tests/board-persistence.spec.ts` edits a timer through its panel, saves through
+each shell, reloads and reopens, and checks both the saved setting and the UI.
+It also checks deletion and native host writes across document replacement.
+
 ### What this does and does not cover
 
 It covers everything above the platform boundary, given a conforming host. It

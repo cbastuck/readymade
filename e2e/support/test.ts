@@ -37,9 +37,8 @@ export const test = base.extend<HostOptions & HostFixtures>({
   profile: ["web", { option: true }],
   hostConfig: [{}, { option: true }],
 
-  // Installed on the context so it covers every page it opens — which is what
-  // the multi-page (two-user, peer) specs will need. Init scripts accumulate,
-  // so per-test seeding can add to this later.
+  // Installed on the context so it covers every page it opens. Init-script
+  // ordering is unspecified; seedBoard queues native seeds when necessary.
   context: async ({ context, profile, hostConfig }, use) => {
     if (profile !== "web") {
       await context.addInitScript(installFakeNativeHost, {
@@ -50,15 +49,18 @@ export const test = base.extend<HostOptions & HostFixtures>({
     await use(context);
   },
 
-  seedBoard: async ({ context }, use) => {
+  seedBoard: async ({ context, profile }, use) => {
     await use(async (name: string, descriptor: unknown) => {
       // A board has to be put where the shell about to look for it will look:
       // the web and mobile shells read a local library out of localStorage,
       // the desktop shell asks the platform host. Seeding both keeps the specs
-      // free of that distinction — the init scripts run in the order they were
-      // added, so the fake host is already installed by the time this lands.
+      // free of that distinction. A separate marker survives deletion too:
+      // reloading must never resurrect a board the test has removed.
       await context.addInitScript(
-        ([boardName, item, board]: [string, string, unknown]) => {
+        ([boardName, item, board, native]: [string, string, unknown, boolean]) => {
+          const marker = `__hkp_e2e_seeded__${boardName}`;
+          if (window.localStorage.getItem(marker)) return;
+          window.localStorage.setItem(marker, "true");
           window.localStorage.setItem(`hkp-playground-${boardName}`, item);
           const host = (
             window as unknown as Record<
@@ -69,6 +71,11 @@ export const test = base.extend<HostOptions & HostFixtures>({
           if (host) {
             host.boards[boardName] = board;
             host.modified[boardName] = new Date().toISOString();
+          } else if (native) {
+            const key = "__hkp_e2e_native_seeds__";
+            const seeds = JSON.parse(window.localStorage.getItem(key) ?? "{}");
+            seeds[boardName] = board;
+            window.localStorage.setItem(key, JSON.stringify(seeds));
           }
         },
         [
@@ -79,7 +86,8 @@ export const test = base.extend<HostOptions & HostFixtures>({
             createdAt: new Date().toISOString(),
           }),
           descriptor,
-        ] as [string, string, unknown],
+          profile !== "web",
+        ] as [string, string, unknown, boolean],
       );
     });
   },
