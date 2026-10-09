@@ -13,7 +13,8 @@
     "test:desktop": "playwright test --project=desktop",
     "test:mobile": "playwright test --project=mobile",
     "test:cloud": "playwright test --config=playwright.cloud.config.ts",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "test:reporter": "node --experimental-strip-types --test support/tests/summary-reporter.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",
