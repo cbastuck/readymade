@@ -53,6 +53,7 @@ export type FakeHostConfig = {
  * arrives through `config`.
  */
 export function installFakeNativeHost(config: FakeHostConfig): void {
+  if (!/^https?:$/.test(location.protocol) || window !== window.top) return;
   const storageKey = "__hkp_e2e_native_store__";
   const initial = {
     shell: config.shell,
@@ -71,6 +72,7 @@ export function installFakeNativeHost(config: FakeHostConfig): void {
     audiences: {} as Record<string, string[]>,
     grants: {} as Record<string, string[]>,
     files: { ...(config.files ?? {}) } as Record<string, string>,
+    presets: {} as Record<string, string>,
     /** Every write the app made, in order — the platform-seam assertion target. */
     calls: [] as Array<{ method: string; url: string; body?: unknown }>,
     /** Owner emails pushed to the embedded runtime (the iOS auth bridge). */
@@ -284,6 +286,15 @@ export function installFakeNativeHost(config: FakeHostConfig): void {
 
     if (root === "mint-token") {
       return json({ token: "fake-capability-token" });
+    }
+
+    if (root === "presets") {
+      if (method === "GET") return json(Object.entries(store.presets).map(([file, source]) => ({ file, source })));
+      if (method === "POST") {
+        store.presets[tail] = typeof init.body === "string" ? init.body : JSON.stringify(body);
+        return empty();
+      }
+      if (method === "DELETE") { delete store.presets[tail]; return empty(); }
     }
 
     return notFound();

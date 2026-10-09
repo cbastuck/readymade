@@ -1,5 +1,6 @@
 import { test, expect, service } from "../../support/test";
 import { NODE_URL, RT_BIN, RT_URL } from "../../playwright.cloud.config";
+import { cleanupCloud } from "../../support/cloudCleanup";
 
 /**
  * Deploying a board whose runtime lives on hkp-rt, the C++ runtime server.
@@ -44,6 +45,7 @@ test.use({
 test.beforeEach(async ({ context }) => {
   await context.addInitScript(
     ([token, coordinators]) => {
+      if (!/^https?:$/.test(location.protocol) || window !== window.top) return;
       window.localStorage.setItem("readymade-id-token", token);
       window.localStorage.setItem("hkp-coordinators", coordinators);
     },
@@ -51,16 +53,9 @@ test.beforeEach(async ({ context }) => {
   );
 });
 
-test.afterEach(async ({ request }) => {
-  const boards = await request.get(
-    `${COORDINATOR.url}/users/${USER_ID}/boards`,
-  );
-  for (const board of (await boards.json()).boards ?? []) {
-    await request.delete(
-      `${COORDINATOR.url}/users/${USER_ID}/boards/${encodeURIComponent(board.boardName)}`,
-    );
-  }
-  await request.delete(`${RT_URL}/runtimes`);
+test.afterEach(async ({ request }, testInfo) => {
+  if (testInfo.status === "skipped") return;
+  await cleanupCloud(request, testInfo, COORDINATOR.url, USER_ID, [RT_URL, NODE_URL]);
 });
 
 test("hands over a board whose runtime is on the C++ runtime server, and runs it", async ({

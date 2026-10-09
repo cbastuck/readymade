@@ -6,6 +6,9 @@ import {
 } from "@playwright/test";
 
 import { installFakeNativeHost, type FakeHostConfig } from "./fakeNativeHost";
+import { redact, safeUrl } from "./diagnostics";
+import { readdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 /**
  * The host the webapp is running as. Every spec runs against all three unless
@@ -22,6 +25,10 @@ export type HostOptions = {
   profile: Profile;
   /** Extra configuration for the fake native host; ignored on `web`. */
   hostConfig: Partial<FakeHostConfig>;
+  /** Additional disposable servers the browser may actually contact. */
+  serverOrigins: string[];
+  /** Exact reviewed message patterns for intentional console errors. */
+  expectedConsoleErrors: string[];
 };
 
 type HostFixtures = {
@@ -31,15 +38,97 @@ type HostFixtures = {
   openBoard: (name: string) => Promise<void>;
   /** What the fake native host has been asked to store. Empty on `web`. */
   hostState: () => Promise<Record<string, unknown>>;
+  _diagnostics: void;
 };
 
 export const test = base.extend<HostOptions & HostFixtures>({
   profile: ["web", { option: true }],
   hostConfig: [{}, { option: true }],
+  serverOrigins: [[], { option: true }],
+  expectedConsoleErrors: [[], { option: true }],
+
+  _diagnostics: [async ({ context, expectedConsoleErrors }, use, testInfo) => {
+    const events: Array<{ kind: string; message: string }> = [];
+    const crashes: string[] = [];
+    const consoleFailures: string[] = [];
+    const expected = expectedConsoleErrors.map((pattern) => new RegExp(pattern));
+    let omitted = 0;
+    const record = (kind: string, message: string) => {
+      if (events.length < 200) events.push({ kind, message: redact(message) });
+      else omitted++;
+    };
+    const watch = (page: Page) => {
+      page.on("pageerror", (error) => {
+        crashes.push(redact(String(error)));
+        record("pageerror", String(error));
+      });
+      page.on("console", (message) => {
+        if (message.type() !== "error") return;
+        record("console", message.text());
+        // Browser-generated resource messages are recorded with the matching
+        // HTTP/request-failure URL instead. API negative cases intentionally
+        // produce these statuses; application console errors need a reviewed
+        // per-spec pattern and are never ignored merely for mentioning fetch.
+        const annotated = testInfo.annotations.filter((entry) => entry.type === "expected-console-error")
+          .some((entry) => new RegExp(entry.description!).test(message.text()));
+        if (!/^Failed to load resource:/.test(message.text()) && !expected.some((pattern) => pattern.test(message.text())) && !annotated) {
+          consoleFailures.push(redact(message.text()));
+        }
+      });
+      page.on("requestfailed", (request) => record("requestfailed",
+        `${request.method()} ${safeUrl(request.url())}: ${request.failure()?.errorText ?? "unknown failure"}`,
+      ));
+      page.on("response", (response) => {
+        if (response.status() >= 400) record("http", `${response.status()} ${safeUrl(response.url())}`);
+      });
+    };
+    context.pages().forEach(watch);
+    context.on("page", watch);
+    await use();
+    if (events.length) {
+      const file = testInfo.outputPath("browser-diagnostics.json");
+      await writeFile(file, JSON.stringify({ events, omitted }, null, 2));
+      await testInfo.attach("browser-diagnostics", { path: file, contentType: "application/json" });
+    }
+    // Preserve an assertion's original failure; don't replace it with teardown
+    // noise. Successful product journeys may not hide uncaught exceptions.
+    if (crashes.length || consoleFailures.length || testInfo.status !== testInfo.expectedStatus) {
+      const directory = path.join(testInfo.project.outputDir, "servers");
+      for (const file of await readdir(directory).catch(() => [] as string[])) {
+        await testInfo.attach(`runtime-${file}`, {
+          body: redact(await readFile(path.join(directory, file), "utf8")),
+          contentType: "text/plain",
+        });
+      }
+    }
+    if (testInfo.status === "passed") {
+      expect(crashes, "uncaught browser exceptions (see browser-diagnostics)").toEqual([]);
+      expect(consoleFailures, "unexpected application console errors (see browser-diagnostics)").toEqual([]);
+    }
+    context.off("page", watch);
+  }, { auto: true }],
 
   // Installed on the context so it covers every page it opens. Init-script
   // ordering is unspecified; seedBoard queues native seeds when necessary.
-  context: async ({ context, profile, hostConfig }, use) => {
+  context: async ({ context, profile, hostConfig, baseURL, serverOrigins }, use) => {
+    const allowed = new Set([baseURL, ...serverOrigins].filter(Boolean).map((url) => new URL(url!).origin));
+    const permitted = (value: string) => {
+      const url = new URL(value);
+      if (url.protocol === "ws:") url.protocol = "http:";
+      if (url.protocol === "wss:") url.protocol = "https:";
+      return allowed.has(url.origin);
+    };
+    // Per-page fixture routes (e.g. ntfy) take precedence over this guard.
+    // Browser traffic can reach only this suite's local servers; an unmocked
+    // dependency gets an immediate deterministic response instead of a hang.
+    await context.route(/^https?:\/\//, async (route) => {
+      if (permitted(route.request().url())) return route.continue();
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"External dependency is not mocked in this E2E test"}' });
+    });
+    // Leave allowed sockets untouched to preserve their transport behavior.
+    await context.routeWebSocket((url) => !permitted(url.toString()), (socket) => {
+      socket.close({ code: 1008, reason: "External dependency is not mocked" });
+    });
     if (profile !== "web") {
       await context.addInitScript(installFakeNativeHost, {
         shell: profile === "mobile" ? "ios" : "desktop",
@@ -58,6 +147,7 @@ export const test = base.extend<HostOptions & HostFixtures>({
       // reloading must never resurrect a board the test has removed.
       await context.addInitScript(
         ([boardName, item, board, native]: [string, string, unknown, boolean]) => {
+          if (!/^https?:$/.test(location.protocol) || window !== window.top) return;
           const marker = `__hkp_e2e_seeded__${boardName}`;
           if (window.localStorage.getItem(marker)) return;
           window.localStorage.setItem(marker, "true");

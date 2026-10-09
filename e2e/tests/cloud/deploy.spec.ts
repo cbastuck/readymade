@@ -1,5 +1,6 @@
 import { test, expect, service } from "../../support/test";
 import { NODE_URL } from "../../playwright.cloud.config";
+import { cleanupCloud } from "../../support/cloudCleanup";
 
 /**
  * Deploying a board, end to end: a real playground, a real runtime server and
@@ -59,6 +60,7 @@ test.beforeEach(async ({ context }) => {
   // desktop shell reads as it boots.
   await context.addInitScript(
     ([token, coordinators]) => {
+      if (!/^https?:$/.test(location.protocol) || window !== window.top) return;
       window.localStorage.setItem("readymade-id-token", token);
       window.localStorage.setItem("hkp-coordinators", coordinators);
     },
@@ -66,17 +68,9 @@ test.beforeEach(async ({ context }) => {
   );
 });
 
-test.afterEach(async ({ request }) => {
+test.afterEach(async ({ request }, testInfo) => {
   // The runtime server outlives the spec, and so would anything left on it.
-  const boards = await request.get(
-    `${COORDINATOR.url}/users/${USER_ID}/boards`,
-  );
-  for (const board of (await boards.json()).boards ?? []) {
-    await request.delete(
-      `${COORDINATOR.url}/users/${USER_ID}/boards/${encodeURIComponent(board.boardName)}`,
-    );
-  }
-  await request.delete(`${NODE_URL}/runtimes`);
+  await cleanupCloud(request, testInfo, COORDINATOR.url, USER_ID, [NODE_URL]);
 });
 
 async function openDeployDialog(page: import("@playwright/test").Page) {

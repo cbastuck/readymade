@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
 #include <chrono>
 #include <map>
 #include <memory>
@@ -171,6 +172,44 @@ public:
     all["Sec-WebSocket-Key"] = "dGhlIHNhbXBsZSBub25jZQ==";
     all["Sec-WebSocket-Version"] = "13";
     return send("GET", "/notifications", all);
+  }
+
+  // Send the masked close frame a browser sends with close() (no code),
+  // or close(1000), then inspect the server's reply directly on the wire.
+  std::string closeReply(bool withCode) const
+  {
+    boost::asio::io_context io;
+    tcp::socket socket(io);
+    socket.connect(tcp::endpoint(boost::asio::ip::make_address("127.0.0.1"), m_port));
+    const std::string request = "GET /notifications HTTP/1.1\r\nHost: 127.0.0.1:" +
+      std::to_string(m_port) + "\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+      "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n";
+    boost::asio::write(socket, boost::asio::buffer(request));
+    boost::asio::streambuf response;
+    boost::asio::read_until(socket, response, "\r\n\r\n");
+    std::istream stream(&response);
+    std::string status;
+    std::getline(stream, status);
+    REQUIRE(status.find("101") != std::string::npos);
+
+    const std::array<unsigned char, 8> frame = {0x88, static_cast<unsigned char>(withCode ? 0x82 : 0x80),
+      0, 0, 0, 0, 0x03, 0xe8}; // zero mask; 1000 in network byte order
+    boost::asio::write(socket, boost::asio::buffer(frame.data(), withCode ? 8 : 6));
+    socket.non_blocking(true);
+    std::string reply;
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+    while (std::chrono::steady_clock::now() < deadline)
+    {
+      char bytes[128];
+      boost::system::error_code error;
+      const auto count = socket.read_some(boost::asio::buffer(bytes), error);
+      reply.append(bytes, count);
+      if (reply.size() >= 2 && reply.size() >= 2 + (static_cast<unsigned char>(reply[1]) & 0x7f)) break;
+      if (error && error != boost::asio::error::would_block && error != boost::asio::error::try_again) break;
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    REQUIRE(reply.size() >= 2);
+    return reply;
   }
 
   size_t runtimeCount() const
@@ -446,4 +485,20 @@ TEST_CASE("a request handed over in-process is served, and names nobody",
   const auto processed = inProcess(
     server, crow::HTTPMethod::Post, "/runtimes/local", R"({"tick":1})");
   REQUIRE(processed.code < 500);
+}
+
+TEST_CASE("notification WebSockets reply to empty close frames without a reserved wire status", "[server][websocket][close]") {
+  Listening listening("");
+  const auto reply = listening.closeReply(false);
+  REQUIRE(static_cast<unsigned char>(reply[0]) == 0x88);
+  REQUIRE(static_cast<unsigned char>(reply[1]) == 0);
+  REQUIRE(reply.size() == 2);
+}
+
+TEST_CASE("notification WebSockets echo a normal close status", "[server][websocket][close]") {
+  Listening listening("");
+  const auto reply = listening.closeReply(true);
+  REQUIRE(static_cast<unsigned char>(reply[0]) == 0x88);
+  REQUIRE(static_cast<unsigned char>(reply[1]) == 2);
+  REQUIRE(reply.substr(2) == std::string("\x03\xe8", 2));
 }

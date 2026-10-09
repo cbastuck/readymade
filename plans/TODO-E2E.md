@@ -14,7 +14,7 @@ Prioritize boundaries between components. Keep detailed service semantics, parse
 - Main-branch/manual CI now runs the default E2E configuration, installs from lockfiles and uploads failure artifacts. PR execution and cloud execution still need adding.
 - `playwright.cloud.config.ts` runs real Node/coordinator deployment tests with authentication disabled; C++ coverage depends on a locally available binary. Python is not included in this configuration.
 - Native behavior comes from `support/fakeNativeHost.ts`, not the actual packaged apps.
-- Initialization scripts reseed boards and recreate fake native storage on navigation. Several specs use fixed sleeps. Both need addressing before adding persistence journeys.
+- Milestone 1 now keeps seeds/native storage across reloads and polls positive persistence conditions. Bounded negative observation windows remain intentional.
 - Existing SQL tests replace caller fields with a fixed identity: useful for persistence, but not a test of authenticated callers.
 - Local-runtime origin protections are currently being implemented separately. Test configurations must use explicit trusted origins and verify legitimate clients still connect; do not restore wildcard access to make tests pass.
 
@@ -26,7 +26,7 @@ Update this table in place. Mark a milestone done only after its checks pass in 
 
 | Milestone | State | Depends on | Completion evidence |
 | --- | --- | --- | --- |
-| 1. Reliable fixtures and baseline | in progress | — | Reload-safe fixtures and regressions implemented; full default suite passing; diagnostics/cleanup work remains |
+| 1. Reliable fixtures and baseline | done | — | Three complete default runs without retries: 124 passed / 36 documented skips each; cloud 7 passed including C++; diagnostics and failure-safe cleanup verified |
 | 2. PR and cloud CI | open | 1 | Required PR jobs and failure artifacts demonstrated |
 | 3. Core board journeys | open | 1 | UI lifecycle/composition/mobile journeys passing |
 | 4. Authenticated sharing and secrets | open | 1, 2; relevant security fixes | Real verifier and multi-context journeys passing |
@@ -42,9 +42,9 @@ Work primarily in `e2e/support/test.ts`, `fakeNativeHost.ts`, existing draft/ren
 - [x] Give the fake host persistent, test-owned storage across document reloads. Choose a fixture storage adapter consistent with the real host contract; test the adapter explicitly. Keep state isolated between tests.
 - [x] Add a regression that changes a seeded value, saves, reloads and sees the changed value, then reopens from the library. Ensure it fails if initialization restores the original fixture.
 - [x] Replace draft/rename sleeps with polling of persisted state or a visible saved condition. Retain bounded observation windows where the requirement is that an event does not repeat.
-- [ ] Centralize page-error collection, relevant console/network failures and attachments. Review expected failures individually; avoid a blanket ignore for network errors.
-- [ ] Provide unique names, cleanup in failure-safe fixtures and disposable directories for servers. Cleanup must not conceal the original failure; attach cleanup failures separately.
-- [ ] Prevent external side effects: route fixture APIs to controlled responses and use synthetic credentials. Make any external model/media dependency explicit.
+- [x] Centralize page-error collection, relevant console/network failures and attachments. Review expected failures individually; avoid a blanket ignore for network errors.
+- [x] Provide unique names, cleanup in failure-safe fixtures and disposable directories for servers. Cleanup must not conceal the original failure; attach cleanup failures separately.
+- [x] Prevent external side effects: route fixture APIs to controlled responses and use synthetic credentials. Make any external model/media dependency explicit.
 
 Done when existing enabled journeys pass in three consecutive clean runs without retries, the reload regression passes on applicable profiles, and remaining skips have documented owners/reasons. This establishes a local baseline, not a claim that flakes are eliminated.
 
@@ -60,7 +60,27 @@ Done when existing enabled journeys pass in three consecutive clean runs without
 - Cloud baseline: **7 passed, no skips, 17.6 seconds**, including C++ deployment. Authentication remains disabled in this existing lane; Python is not covered.
 - TypeScript verification passes. Existing fake-host preset-library 404/fallback console errors still need an explicit solution during diagnostics work. Mobile rename-display and expanded-view control overlap observed while designing the regression need separate investigation; the final persistence journey uses the normal card-view save flow.
 
-Remaining in this milestone: centralize diagnostics and reviewed expected failures, failure-safe server cleanup, explicit external-dependency handling, and the full-default three-run check. Do not mark the milestone done after only the fixture slice.
+### Diagnostics and cleanup slice
+
+- Automatic context-wide diagnostics collect page exceptions, application console errors, failed requests and HTTP errors. Uncaught exceptions/unreviewed application console errors fail successful journeys; original failures survive teardown. Browser diagnostics and failing-cloud runtime logs are attached with basic token redaction.
+- Browser HTTP/WS traffic is limited to application/server origins, service workers are blocked, and explicit page mocks take precedence. Cloud credentials are synthetic. This does not sandbox runtime-server outbound traffic; current cloud boards use local services only.
+- The native preset adapter now persists source text through list/save/delete and reload. Initialization ignores blank/subframe documents, fixing previously hidden localStorage SecurityErrors.
+- Cloud cleanup attempts every deletion, verifies empty board/runtime lists and attaches errors separately. Runtime wrappers allocate fresh data directories, retain logs and remove data on startup failure or graceful termination. The independent WebRTC probe closes its owned browser in a finally block.
+- Fixture contract checks exercise diagnostics with intentional browser failures, redaction/mock precedence/native presets, and cleanup after partial failure. Process checks verify startup exit code/logs and graceful data removal.
+- **Application defects resolved before milestone 2:** Fetcher keeps URL/body/body-expression UI values as empty strings when service state is null, avoiding uncontrolled inputs and allowing a previously configured URL to clear. Its panel regression rejects the original implementation and passes with the fix. The vendored Crow WebSocket close path now replies to a close without status using an empty frame, preserving 1005 only as local callback metadata. It previously transmitted that reserved code, causing the C++ handover browser error. Wire-level server tests cover both empty close and normal 1000 close. Both per-spec console exceptions are removed.
+- The reduce demo's existing expected failure remains owned by the shipped-board/service registry work in milestone 3. Optional face media is owned by the capability-fixture work: absence skips, an explicitly supplied invalid file fails configuration. Other skips are declared host/profile exclusions, not missing product coverage disguised as passing tests.
+- Three consecutive complete default runs with the finished fixtures: **124 passed / 36 skipped each**, **5.0, 5.1 and 3.6 minutes**, two workers, no retries. The passed count includes four expected failures: the three injected diagnostic probes and the existing reduce demo. Thirty-five skips are explicit host/profile exclusions; one is the absent optional web face-video fixture. Reload/save/reopen passed on all three profiles in every run.
+- Final cloud run: **7 passed, no skips, 21.0 seconds**, no retries, including C++ deployment/output. Both runtime logs recorded disposable-data removal, and both temporary directories were verified absent after shutdown. This remains the existing no-auth Node/C++ lane; authenticated deployment and Python belong to later milestones.
+- TypeScript validation and staged/unstaged whitespace checks pass. Diagnostics, mock precedence, cleanup after partial failure, process startup failure and normal shutdown are covered by executable fixture contract checks.
+- A four-worker trial hit the 30-second overall budget in desktop/mobile persistence journeys; it is not counted as clean evidence. The milestone baseline uses the existing two-worker CI concurrency. Explicitly naming a missing face-video fixture was separately verified to fail discovery.
+
+### Application defect verification
+
+- send-ntfy smoke: **1 passed, 5.6 seconds**, no retries and no console exception.
+- Full Node/C++ cloud suite against the rebuilt runtime: **7 passed, 22.2 seconds**, no retries and no handover console exception.
+- Fetcher panel regression: **1 passed**; a temporary restoration of the original setters made this same test fail, after which the fix was restored and verified again. Frontend TypeScript validation passes.
+- C++ close regressions: **2 passed, 10 assertions**. Broader C++ server/auth validation passed **58 cases, 245 assertions** on its second execution.
+- **Separate reliability observation:** the first broader C++ execution crashed with SIGSEGV in the existing `a request handed over in-process is served, and names nobody` case (55 preceding cases passed). That case then passed in isolation and the full suite passed on rerun. Its cause is not established; it is not counted as an unconditionally clean first run and remains a runtime/test-lifecycle follow-up before v1. The two repaired product journeys passed without retries.
 
 ## 2. PR and cloud CI
 

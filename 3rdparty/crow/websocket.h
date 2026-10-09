@@ -267,13 +267,23 @@ namespace crow // NOTE: Already documented in "crow/app.h"
                         if (close_handler_)
                             close_handler_(*this, msg, status_code);
                     }
-                    auto header = build_header(0x8, msg.size() + 2);
-                    char status_buf[2];
-                    *(uint16_t*)(status_buf) = htons(status_code);
+                    // 1005 describes an absent status locally; RFC 6455 forbids
+                    // sending it on the wire. Reply to an empty close frame with
+                    // another empty frame, preserving that local callback status.
+                    if (status_code == CloseStatusCode::NoStatusCodePresent)
+                    {
+                        write_buffers_.emplace_back(build_header(0x8, 0));
+                    }
+                    else
+                    {
+                        auto header = build_header(0x8, msg.size() + 2);
+                        char status_buf[2];
+                        *(uint16_t*)(status_buf) = htons(status_code);
 
-                    write_buffers_.emplace_back(std::move(header));
-                    write_buffers_.emplace_back(std::string(status_buf, 2));
-                    write_buffers_.emplace_back(msg);
+                        write_buffers_.emplace_back(std::move(header));
+                        write_buffers_.emplace_back(std::string(status_buf, 2));
+                        write_buffers_.emplace_back(msg);
+                    }
                     do_write();
                 });
             }

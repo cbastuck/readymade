@@ -21,7 +21,7 @@ export default function FetcherUI(props: ServiceUIProps) {
 
   const update = (config: any) => {
     if (needsUpdate(config?.url, url)) {
-      setUrl(config.url);
+      setUrl(config.url ?? "");
     }
 
     if (needsUpdate(config?.method, method)) {
@@ -33,11 +33,11 @@ export default function FetcherUI(props: ServiceUIProps) {
     }
 
     if (needsUpdate(config?.body, body)) {
-      setBody(config.body);
+      setBody(config.body ?? "");
     }
 
     if (needsUpdate(config?.bodyExpression, bodyExpression)) {
-      setBodyExpression(config.bodyExpression);
+      setBodyExpression(config.bodyExpression ?? "");
     }
 
     if (needsUpdate(config?.bodyFormat, bodyFormat)) {
