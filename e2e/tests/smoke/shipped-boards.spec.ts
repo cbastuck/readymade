@@ -42,7 +42,7 @@ test.describe("shipped boards", () => {
 
   for (const board of boards) {
     test(board.slug, async ({ page, seedBoard, openBoard }, testInfo) => {
-      if (board.slug === "face-alert-board") {
+      if (["face-alert-board", "detect-demo-board"].includes(board.slug)) {
         // MediaPipe writes this CPU delegate startup notice to stderr.
         // Retain diagnostics; expect only this exact informational line.
         testInfo.annotations.push({ type: "expected-console-error",
