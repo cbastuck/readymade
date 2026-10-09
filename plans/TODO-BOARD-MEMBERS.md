@@ -350,8 +350,9 @@ log answers "who did this" without collecting addresses.
   with a week of bookings at most: it moves to a new table and leaves the old
   one behind. That `sql` has no migration story is a gap of its own, noted and
   not solved here.
-- **Who you are** shows "Booking as …" from `$user` and has no editable
-  fallback. The browser-only variant therefore also requires sign-in to book.
+- A line above the calendar shows "Booking as …" from `$user` and has no
+  editable fallback. (It had a **Who you are** tab of its own until that tab
+  held nothing else.) The browser-only variant therefore also requires sign-in to book.
 
 ---
 

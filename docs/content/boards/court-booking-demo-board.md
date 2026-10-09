@@ -74,9 +74,11 @@ where it gave none.
 
 ## The facade
 
-Two tabs: **Court**, with the calendar, and **Who you are**, which says which
-signed-in account is booking (`{ "$user": "name" }`). There is no editable
-booking identity.
+One panel: the calendar, the days of the week above it, and a line saying who
+is booking and for which day — *Booking as Anna on 2026-10-09*. The name is the
+signed-in account (`{ "$user": "name" }`), the day is the one **The day** last
+returned. That line is for the person reading it — nothing the server acts on —
+and there is no editable booking identity.
 
 ## Sharing it with a club
 
