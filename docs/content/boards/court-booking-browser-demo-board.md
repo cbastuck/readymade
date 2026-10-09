@@ -24,14 +24,14 @@ schema, and **The day** still returns cells that already know what they are.
 ## What moving it cost
 
 The club. On hkp-node the tables belong to a server, and every member sees the
-same day from their own device. Here they belong to this browser: switching the
-name on the **Who you are** tab shows the day from another member's side, but
-only for the people at this screen.
+same day from their own device. Here they belong to this browser, so the only
+member there is to be is whoever is signed in at this screen.
 
 Who is booking is decided by the same statements as on the server: whoever is
-signed in to the app, and the typed name only when nobody is. In a browser
-nothing verifies that — the browser is the person — so what it buys is that
-the board is the same board on both runtimes, not that anybody is kept out.
+signed in to the app, named on the line above the calendar. Signed out, the
+calendar is drawn but offers no hour. In a browser nothing verifies the
+account — the browser is the person — so what it buys is that the board is the
+same board on both runtimes, not that anybody is kept out.
 
 So this is the version for trying the board, or for booking something that is
 yours to share out — a room at home, a shared car. For a real club, run
@@ -39,5 +39,5 @@ yours to share out — a room at home, a shared car. For a real club, run
 
 ## Try it
 
-Open it. The schema is created on first run, and the bookings are kept in the
+Open it signed in. The schema is created on first run, and the bookings are kept in the
 browser's IndexedDB under the database name `tennis`.

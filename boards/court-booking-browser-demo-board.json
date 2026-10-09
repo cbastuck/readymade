@@ -77,6 +77,30 @@
               "tone": "muted"
             },
             {
+              "direction": "row",
+              "gap": 4,
+              "wrap": true,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Booking as",
+                  "value": {
+                    "$user": "name"
+                  },
+                  "placeholder": "nobody"
+                },
+                {
+                  "type": "text",
+                  "label": "on",
+                  "source": {
+                    "serviceUuid": "day-grid",
+                    "path": "rows.0.day"
+                  },
+                  "placeholder": "…"
+                }
+              ]
+            },
+            {
               "type": "repeat",
               "items": [
                 {
@@ -143,6 +167,7 @@
               "fromHour": 7,
               "toHour": 21,
               "rowHeight": 32,
+              "dayField": "",
               "confirm": "{{item.prompt}}",
               "actions": [
                 {
@@ -163,51 +188,8 @@
             }
           ]
         }
-      },
-      {
-        "id": "member",
-        "title": "Who you are",
-        "layout": {
-          "direction": "column",
-          "gap": 14,
-          "paddingX": 16,
-          "paddingY": 12,
-          "items": [
-            {
-              "type": "text",
-              "placeholder": "Every hour is booked in the verified account that is signed in. Sign in to book or give back an hour.",
-              "tone": "muted",
-              "fontSize": 12
-            },
-            {
-              "type": "text",
-              "label": "Booking as",
-              "value": {
-                "$user": "name"
-              },
-              "placeholder": "nobody — sign in to book"
-            }
-          ]
-        }
       }
     ],
-    "tabs": [
-      {
-        "id": "court",
-        "title": "Court",
-        "panels": [
-          "book"
-        ]
-      },
-      {
-        "id": "who",
-        "title": "Who you are",
-        "panels": [
-          "member"
-        ]
-      }
-    ],
-    "defaultTab": "court",
     "notices": [
       {
         "source": {
