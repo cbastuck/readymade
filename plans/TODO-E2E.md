@@ -27,7 +27,7 @@ Update this table in place. Mark a milestone done only after its checks pass in 
 | Milestone | State | Depends on | Completion evidence |
 | --- | --- | --- | --- |
 | 1. Reliable fixtures and baseline | done | — | Three complete default runs without retries: 124 passed / 36 documented skips each; cloud 7 passed including C++; diagnostics and failure-safe cleanup verified |
-| 2. PR and cloud CI | in progress | 1 | PR/browser and pinned Node cloud jobs implemented; local dependency/artifact/flaky-policy checks pass; hosted PR evidence pending |
+| 2. PR and cloud CI | done | 1 | PR #41: browser 124 passed / 36 documented skips, Node cloud 6 passed; hosted failure-artifact upload and seven-day retention verified |
 | 3. Core board journeys | open | 1 | UI lifecycle/composition/mobile journeys passing |
 | 4. Authenticated sharing and secrets | open | 1, 2; relevant security fixes | Real verifier and multi-context journeys passing |
 | 5. Distributed persistence and recovery | open | 2, 4 | Restart/failure journeys against Node, Python and C++ |
@@ -102,7 +102,8 @@ Done when a PR runs both jobs, a deliberately failing test produces useful artif
 - After clean `npm ci` installs in all four application/test folders, the CI-style browser run passed **124 tests (120 normal + 4 expected failures), 36 profile/media skips, 3.4 minutes**, with no retries or flakes. Node-only cloud passed **6 tests, no skips/retries, 17.4 seconds** against pinned `c911bd08`.
 - Local intentional failure verified the HTML report's embedded Node log/browser error plus trace, screenshot, video, browser JSON and server log files. The flaky probe failed once, passed its retry and still returned failure with one flaky/one retried test in the summary. It is excluded from ordinary discovery.
 - Missing Node dependencies, mandatory C++ binary and mandatory face media, plus an explicitly invalid C++ binary path, all rejected configuration. Reporter count-contract tests, TypeScript, workflow lint and aggregate shell syntax checks pass.
-- Hosted PR [#41](https://github.com/cbastuck/readymade/pull/41): Node cloud passed. The first browser run completed 123 passing outcomes and 36 skips in 9.5 minutes, but mobile persistence exceeded its 30s total budget on both attempts. Traces showed successful 6–12s document loads; that multi-navigation journey now has a bounded 60s budget. A new hosted run must pass before milestone completion.
+- Hosted PR [#41](https://github.com/cbastuck/readymade/pull/41): Node cloud passed. The first browser run completed 123 passing outcomes and 36 skips in 9.5 minutes, but mobile persistence exceeded its 30s total budget on both attempts. Traces showed successful 6–12s document loads; that multi-navigation journey now has a bounded 60s budget. The adjusted journey passed in the subsequent hosted run.
+- Hosted [passing PR run](https://github.com/cbastuck/readymade/actions/runs/37954358315): **browser 124 passed / 36 documented skips in 3.2 minutes**, **Node cloud 6 passed / no skips in 37.2 seconds**. Both named checks are green under the policy that rejects flakes. The Node job log confirms checkout of pinned `c911bd08`.
 - Hosted [intentional failure probe](https://github.com/cbastuck/readymade/actions/runs/37952298004) successfully uploaded `e2e-node-cloud-failure-report`. The downloaded artifact contains its HTML report/embedded runtime log, trace, screenshot, video, browser diagnostics and failed/retried counts. GitHub confirms expiry on 2026-10-16 (seven-day retention).
 
 ## 3. Core board journeys
