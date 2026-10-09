@@ -84,6 +84,7 @@ export default function MeanderPlayground({
           name: remote.name,
           url: remote.url,
           color: remote.color,
+          aliases: remote.aliases,
           description: isBuiltInRemote(remote.url)
             ? `Local runtime proxy at ${remote.url}`
             : `Runtime engine at ${remote.url}${remote.port ? ` with port ${remote.port}` : ""}`,
@@ -108,6 +109,7 @@ export default function MeanderPlayground({
         url: runtime.url || "",
         port: existing?.port || 0,
         color: runtime.color,
+        aliases: runtime.aliases,
       });
       await loadRemotes();
     };

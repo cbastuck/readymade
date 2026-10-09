@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useBoardContext } from "../../../BoardContext";
@@ -21,6 +21,11 @@ import BoardMenuSheet from "./BoardMenuSheet";
 import DeployBoardSheet from "./DeployBoardSheet";
 import SaveBoardSheet from "./SaveBoardSheet";
 import RuntimeUnreachableDialog from "../../../ui-components/RuntimeUnreachableDialog";
+import UnknownRemoteDialog from "../../../ui-components/UnknownRemoteDialog";
+import {
+  RemoteRuntimeStore,
+  RemoteRuntimeStoreCtx,
+} from "../../../ui-components/toolbar/useRemoteRuntimeEditing";
 
 type Tab = "board" | "cloud" | "hub";
 
@@ -226,7 +231,12 @@ function PlaygroundShell({
       const existing = available.find((e) => e.url === rt.url);
       if (!existing) {
         boardContext.addAvailableRuntime(rt, true);
-      } else if (existing.type !== rt.type || existing.name !== rt.name) {
+      } else if (
+        existing.type !== rt.type ||
+        existing.name !== rt.name ||
+        // The other names a server answers to are the Hub's to say as well.
+        (existing.aliases ?? []).join("\n") !== (rt.aliases ?? []).join("\n")
+      ) {
         // addAvailableRuntime overwrites by name, so drop the stale entry first
         // (its name may differ from the corrected one) before re-adding.
         boardContext.removeAvailableRuntime(existing);
@@ -234,6 +244,19 @@ function PlaygroundShell({
       }
     }
   }, [runtimeEngines, coordinators, boardContext]);
+
+  // A board that could not be restored says why. This shell has no error view,
+  // and a board naming a runtime server this device keeps none under would
+  // otherwise open empty with nothing to show for it.
+  const restoreError = boardContext?.errorOnFetch;
+  useEffect(() => {
+    if (restoreError) {
+      toast.error("Could not open the board", {
+        description: restoreError.message,
+        duration: Infinity,
+      });
+    }
+  }, [restoreError]);
 
   if (!boardContext) {
     return null;
@@ -396,6 +419,32 @@ function PlaygroundShell({
   );
 }
 
+// ── Unknown remote ─────────────────────────────────────────────
+// What the person answers is kept where this shell keeps its runtime servers:
+// the Hub's connections, which is what the Manage Runtimes sheet lists.
+function HubUnknownRemoteDialog() {
+  const { addRuntimeEngine, removeRuntimeEngine } = useMobileConnections();
+  const store = useMemo<RemoteRuntimeStore>(
+    () => ({
+      onAdd: addRuntimeEngine,
+      onRemove: removeRuntimeEngine,
+      // The Hub keys its servers by address, and adding one it has replaces it.
+      onUpdate: (previous, next) => {
+        if (previous.url !== next.url) {
+          removeRuntimeEngine(previous);
+        }
+        addRuntimeEngine(next);
+      },
+    }),
+    [addRuntimeEngine, removeRuntimeEngine],
+  );
+  return (
+    <RemoteRuntimeStoreCtx.Provider value={store}>
+      <UnknownRemoteDialog />
+    </RemoteRuntimeStoreCtx.Provider>
+  );
+}
+
 // ── Root ───────────────────────────────────────────────────────
 export default function MobilePlaygroundInner({
   suggestedName,
@@ -417,6 +466,7 @@ export default function MobilePlaygroundInner({
           openCloudBoard={openCloudBoard}
         />
         <RuntimeUnreachableDialog />
+        <HubUnknownRemoteDialog />
       </MobileConnectionsProvider>
     </MobileHostContext.Provider>
   );

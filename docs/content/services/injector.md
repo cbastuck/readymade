@@ -101,7 +101,7 @@ Same behaviour, and the same REST-vs-in-process differences as hkp-rt above:
   hkp-rt: a large payload is not echoed back to the UI.
 
 See the Node runtime in the demo board below for a working example
-(needs hkp-node running locally on port 8080).
+(needs hkp-node, kept under the name `node` in *Manage runtime servers*).
 
 ---
 

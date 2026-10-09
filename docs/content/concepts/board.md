@@ -33,7 +33,7 @@ services inside each runtime run in the order they are listed.
   "boardName": "My Board",
   "runtimes": [
     { "id": "ui",   "name": "Browser", "type": "browser", "state": {} },
-    { "id": "node", "name": "Node", "type": "rest", "url": "http://127.0.0.1:8080", "state": {} }
+    { "id": "node", "name": "Node", "type": "rest", "remote": "node", "state": {} }
   ],
   "services": {
     "ui":   [ { "uuid": "tick", "serviceId": "hookup.to/service/timer", "serviceName": "Timer", "state": {} } ],
@@ -119,10 +119,11 @@ where it is needed, and then nothing has to reach anywhere.
 |---|---|---|
 | Secret values | the host's secret store, referenced as `{{secret.alias}}` | a board is meant to be shared, downloaded, handed to a model — there is nothing to redact because it never held the value (`core/secrets.ts`) |
 | Mount addresses | published by the owning service at load, referenced as `hkp-mount://…` | the address is assigned when the board loads, so no file can know it (see `concepts/mounts.md`) |
+| Where a runtime server listens | the remotes each client keeps, referenced by name as `"remote": "node"` | an address is only true from where it is dialled; the name opens on each person's own server (see `concepts/remotes.md`) |
 | Host-specific URLs | substituted from `HKP_RUNTIME_HOST`, `HKP_RUNTIME_URL`, `HKP_WEBAPP_URL` at load | the same board opens on a laptop and a phone (`hkp-frontend/src/templateVars.ts`) |
 | Live service output | nowhere — it is a notification, not state | a Monitor's messages are its output; `getState()` reports configuration |
 
-The rule behind all four: **a board records intent, not the circumstances of one
+The rule behind all five: **a board records intent, not the circumstances of one
 run.** Anything only true of one machine on one day is resolved on load, not
 written down.
 

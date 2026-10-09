@@ -1,6 +1,6 @@
 {
   "boardName": "Live Radio (Cloud Relay)",
-  "description": "Your microphone as an internet radio station. The hkp-rt runtime at home captures the mic and encodes it to MP3; the encoded stream goes on to the next runtime, an hkp-node relay in the cloud, which passes it to every listener and serves the player page. The home machine needs no open port and uploads one stream however many people listen.\n\nPoint the Relay runtime at your hkp-node server (it is 127.0.0.1:8080 here). Press Start, then share the QR code or the player address.\n\nThe stream travels between the runtimes the way every result does, through whoever runs the board — this window — so the board has to stay open while it is on air. Live Radio (Cloud, direct) connects the two runtimes itself instead.",
+  "description": "Your microphone as an internet radio station. The hkp-rt runtime at home captures the mic and encodes it to MP3; the encoded stream goes on to the next runtime, an hkp-node relay in the cloud, which passes it to every listener and serves the player page. The home machine needs no open port and uploads one stream however many people listen.\n\nThe Relay runtime runs on the hkp-node server you keep as the remote `node`. Press Start, then share the QR code or the player address.\n\nThe stream travels between the runtimes the way every result does, through whoever runs the board — this window — so the board has to stay open while it is on air. Live Radio (Cloud, direct) connects the two runtimes itself instead.",
   "runtimes": [
     {
       "id": "home",
@@ -15,7 +15,7 @@
       "id": "relay",
       "name": "Relay (hkp-node)",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

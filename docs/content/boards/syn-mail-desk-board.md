@@ -34,7 +34,8 @@ event** Monitor exposes the approval artifact after every approved drop; more
 services, including a call to another board, can be composed after that
 Monitor later.
 
-Run hkp-node on port 8080 and load these four sibling board documents
+Run hkp-node, keep it under the name `node` in *Manage runtime servers*, and
+load these four sibling board documents
 together when opening the composition:
 
 - `syn-mail-desk-board.json`

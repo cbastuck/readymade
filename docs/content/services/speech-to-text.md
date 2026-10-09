@@ -116,7 +116,8 @@ record in the browser, transcribe in Python, display in the browser:
 }
 ```
 
-Start the Python runtime (`hkp-python`, default port 8080), open the
+Start the Python runtime (`hkp-python`), keep it under the name `python` in
+*Manage runtime servers*, open the
 board, hit **Record**, speak, then **Stop & Transcribe**.
 
 ---

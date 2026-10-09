@@ -5,7 +5,7 @@
       "id": "node",
       "name": "hkp-node",
       "type": "rest",
-      "url": "hkp://remotes/hkp-node",
+      "remote": "node",
       "state": { "wrapServices": false }
     }
   ],

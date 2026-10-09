@@ -109,22 +109,35 @@ Produce a valid board JSON file at `boards/<slug>-board.json`.
 
 ### Remote runtime entry (Node, hkp-rt, Python)
 
+A remote runtime **names** the runtime server it runs on — `remote`, never an address:
+
 ```json
 {
   "id": "node-runtime",
   "name": "Node",
   "type": "rest",
-  "url": "http://127.0.0.1:8080",
+  "remote": "node",
   "state": { "wrapServices": false, "minimized": false }
 }
 ```
+
+| `remote` | The server |
+|---|---|
+| `"node"` | an hkp-node — whichever the person opening the board keeps under that name |
+| `"python"` | an hkp-python, likewise |
+| `"embedded"` | the hkp-rt the Readymade app that opened the board embeds |
+
+Do not write `"url": "http://127.0.0.1:8080"` into a board: both hkp-node and hkp-python
+default to that port, and where one person's server listens is not a fact about the
+board. A `url` is for a board tied to one particular address, and a runtime carries
+`url` or `remote`, never both. Say in the board's `description` which remotes it needs
+("Needs hkp-node, kept as the remote `node`").
 
 Use `"HKP_RUNTIME_HOST"` as a template variable in URLs when the remote host address is
 not known at design time (e.g. `"url": "http://HKP_RUNTIME_HOST:8080"`). The playground
 resolves this at runtime.
 
-A runtime on the **hkp-rt the Readymade app embeds** names it instead of giving an
-address — `remote` in place of `url`, never both:
+A runtime on the **hkp-rt the Readymade app embeds**:
 
 ```json
 {
@@ -199,7 +212,7 @@ service type: `threshold-filter-svc` not `filter-1-svc`.
       "id": "node",
       "name": "Node",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": { "wrapServices": false }
     },
     {

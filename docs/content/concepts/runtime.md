@@ -172,11 +172,19 @@ software.
 In the app: the runtimes menu, **add an external runtime**, a name and a host URL
 (`http://localhost:8080`). The name is yours; the URL is what is dialled.
 
-A saved server and the board are deliberately separate things. The list of
-servers is the host's — kept by whoever is running the app, edited and deleted
-there — while the board carries the runtime's own descriptor, URL included. So
-removing a saved server does not break boards that used it: they still hold the
-address and reconnect on their own.
+A saved server and the board are separate things, joined by the server's
+**name**. The list of servers is the host's — kept by whoever is running the
+app, edited and deleted there — and a runtime added from it gives the board the
+name and nothing else: `"remote": "node"` for a server that answers to `node`,
+`"remote": "Laptop"` for one that is only called that. The board holds no
+address at all, and opens on whichever server the person opening it keeps under
+that name, on whatever port and machine that is for them.
+
+So a board depends on the name staying answered. Renaming a server keeps the
+old name as an alias, and a name nobody is kept under any more is asked about
+when the board opens — *which runtime server is `Laptop`?* — rather than left
+to fail (`concepts/remotes.md`). A board that carries a `url` instead, written
+by hand or from before any of this, still opens exactly as it did.
 
 `hkp://remotes/<name>` is the other way in, and it means something narrower than
 it looks: it addresses the runtime **the app itself hosts**, under the name that
@@ -420,9 +428,12 @@ port of its own — see `concepts/mounts.md`.
   same board can point a runtime at a different server tomorrow.
 - **State**: presentation and per-runtime settings, e.g. `color`,
   `wrapServices`, `minimized`, `logData` — `runtime.state` in the board.
-- **A URL**, for remote runtimes. `hkp://remotes/<name>` addresses the app's own
-  embedded runtime (above); `HKP_RUNTIME_HOST` is substituted at load for boards
-  that cannot know the host when they are written.
+- **Where it runs**, for remote runtimes: a `url`, or a `remote` — the name of
+  a runtime server the client opening the board keeps (`embedded`, `node`,
+  `python`, or a name of the person's own; `concepts/remotes.md`).
+  `hkp://remotes/<name>` addresses the app's own embedded runtime (above);
+  `HKP_RUNTIME_HOST` is substituted at load for boards that cannot know the host
+  when they are written.
 - **Bundles**: optional plugin libraries a runtime loads (`bundles[]`).
 - **Custom actions**: host-level buttons a runtime can offer.
 

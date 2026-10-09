@@ -7,7 +7,14 @@ import {
   bakeAddressing,
   remoteNameFromUrl,
   EMBEDDED_REMOTE_NAME,
+  SHARED_REMOTE_NAMES,
+  cleanAliases,
   embeddedRemote,
+  findRemote,
+  remoteNameForBoard,
+  remoteNames,
+  sharedRemoteKind,
+  withAlias,
   resolveRuntimeAddress,
 } from "../remote";
 
@@ -166,6 +173,21 @@ describe("the runtime a host embeds", () => {
     });
   });
 
+  it("is found the same in an app that lists it under the name itself", () => {
+    // The desktop app: `embedded` is what it calls and lists its runtime as.
+    const listedByName = [
+      { name: "embedded", type: "rest", url: "hkp://remotes/embedded" },
+      ...remotes,
+    ];
+
+    expect(resolveRuntimeAddress(board, listedByName)).toEqual({
+      ok: true,
+      url: "hkp://remotes/embedded",
+      mode: "remote",
+      remoteName: "embedded",
+    });
+  });
+
   it("is found by how it is reached, not by where it stands in the list", () => {
     expect(embeddedRemote([...remotes, desktop[0]])).toBe(desktop[0]);
     expect(embeddedRemote(remotes)).toBeUndefined();
@@ -208,7 +230,7 @@ describe("the runtime a host embeds", () => {
     );
   });
 
-  it("is still reached by the name its app gives it, in either spelling", () => {
+  it("is still reached by an app's own name for it, where the app lists that", () => {
     expect(
       resolveRuntimeAddress({ id: "rt", remote: "meander-cpp" }, desktop),
     ).toMatchObject({ ok: true, url: "hkp://remotes/meander-cpp" });
@@ -228,6 +250,136 @@ describe("the runtime a host embeds", () => {
         url: "hkp://remotes/meander-cpp",
       }),
     ).toEqual({ remote: EMBEDDED_REMOTE_NAME });
+  });
+});
+
+describe("the names boards share for a kind of runtime server", () => {
+  it("says which kinds have one", () => {
+    expect(SHARED_REMOTE_NAMES).toEqual({
+      node: "hkp-node",
+      python: "hkp-python",
+    });
+  });
+
+  it("resolves to the server this client keeps under the name, wherever it runs", () => {
+    // The same board on two people's clients: neither address is in it.
+    const board = { id: "reader", remote: "node" };
+
+    expect(
+      resolveRuntimeAddress(board, [
+        { name: "node", type: "rest", url: "http://127.0.0.1:8080" },
+      ]),
+    ).toMatchObject({ ok: true, url: "http://127.0.0.1:8080" });
+    expect(
+      resolveRuntimeAddress(board, [
+        { name: "node", type: "rest", url: "https://node.example.org" },
+      ]),
+    ).toMatchObject({ ok: true, url: "https://node.example.org" });
+  });
+
+  it("is a name like any other: nothing is picked for it by kind", () => {
+    // A client that keeps servers, none of them under the name.
+    const resolution = resolveRuntimeAddress(
+      { id: "reader", remote: "node" },
+      remotes,
+    );
+
+    expect(resolution).toMatchObject({ ok: false, reason: "unknown-remote" });
+  });
+
+  it("says what to keep under it when this client keeps nothing", () => {
+    const message = (name: string) =>
+      (
+        resolveRuntimeAddress({ id: "reader", remote: name }, remotes) as {
+          message: string;
+        }
+      ).message;
+
+    expect(message("node")).toContain('wants the remote "node"');
+    expect(message("node")).toContain("an hkp-node runtime server");
+    expect(message("python")).toContain("an hkp-python runtime server");
+    // A name of somebody's own is explained by nothing but itself.
+    expect(message("Laptop 2")).toBe(
+      'Runtime "reader" wants the remote "Laptop 2", which this client does not know',
+    );
+  });
+});
+
+describe("a remote that answers to more than one name", () => {
+  const kept = [
+    { name: "Laptop", type: "rest", url: "http://laptop:8080", aliases: ["node", "NodeJS"] },
+    { name: "Studio", type: "rest", url: "http://studio:5000", aliases: ["Laptop"] },
+  ];
+
+  it("is found by any of them, and reported under the one it is listed as", () => {
+    for (const name of ["Laptop", "node", "NodeJS"]) {
+      expect(resolveRuntimeAddress({ id: "a", remote: name }, kept)).toEqual({
+        ok: true,
+        url: "http://laptop:8080",
+        mode: "remote",
+        remoteName: "Laptop",
+      });
+    }
+  });
+
+  it("does not lose a board to another server's alias", () => {
+    // Studio also answers to "Laptop"; the server called that comes first.
+    expect(findRemote(kept, "Laptop")).toBe(kept[0]);
+    expect(findRemote([...kept].reverse(), "Laptop")).toBe(kept[0]);
+    expect(findRemote(kept, "python")).toBeUndefined();
+  });
+
+  it("keeps each alias once, and never the name it is listed under", () => {
+    expect(cleanAliases("Laptop", [" node ", "", "Laptop", "node", 7, "NodeJS"])).toEqual([
+      "node",
+      "NodeJS",
+    ]);
+    expect(cleanAliases("Laptop", undefined)).toEqual([]);
+    expect(remoteNames(kept[0])).toEqual(["Laptop", "node", "NodeJS"]);
+  });
+
+  it("takes another name without losing any it has", () => {
+    expect(withAlias(kept[0], "python").aliases).toEqual(["node", "NodeJS", "python"]);
+    // Already answers to it: the same remote.
+    expect(withAlias(kept[0], "node")).toBe(kept[0]);
+    expect(withAlias(kept[0], "Laptop")).toBe(kept[0]);
+  });
+
+  it("does not answer to an alias once the board's name is not among them", () => {
+    expect(
+      resolveRuntimeAddress({ id: "a", remote: "node" }, [kept[1]]),
+    ).toMatchObject({ ok: false, reason: "unknown-remote" });
+  });
+});
+
+describe("the name a board is given for a server this client keeps", () => {
+  const kept = [
+    { name: "Browser Runtime", type: "browser" },
+    { name: "meander-ios", type: "rest", url: "hkp://remotes/meander-ios" },
+    { name: "Laptop", type: "rest", url: "http://laptop:8080", aliases: ["NodeJS", "node"] },
+    { name: "Studio", type: "rest", url: "http://studio:5000/" },
+  ];
+
+  it("is the most portable one the server answers to", () => {
+    // The runtime the host embeds, by the name every host answers to.
+    expect(remoteNameForBoard(kept, "hkp://remotes/meander-ios")).toBe("embedded");
+    // A name boards share for its kind, before the owner's own for it.
+    expect(remoteNameForBoard(kept, "http://laptop:8080")).toBe("node");
+    // Otherwise the name it is listed under.
+    expect(remoteNameForBoard(kept, "http://studio:5000")).toBe("Studio");
+  });
+
+  it("is none for an address nothing is kept under", () => {
+    expect(remoteNameForBoard(kept, "http://elsewhere:1")).toBeUndefined();
+    expect(remoteNameForBoard(kept, undefined)).toBeUndefined();
+  });
+
+  it("is not fooled by a name that is only inherited", () => {
+    const odd = [{ name: "toString", type: "rest", url: "http://h:1", aliases: ["constructor"] }];
+
+    expect(remoteNameForBoard(odd, "http://h:1")).toBe("toString");
+    expect(sharedRemoteKind("constructor")).toBeUndefined();
+    expect(sharedRemoteKind("node")).toBe("hkp-node");
   });
 });
 

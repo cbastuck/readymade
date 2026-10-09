@@ -56,7 +56,71 @@ describe("ExistingRuntimesPanel", () => {
       name: "Studio",
       // Saved as a base URL, the way the add form stores one.
       url: "http://192.168.0.4:8080",
+      // A board that says the old name still finds the server.
+      aliases: ["My Server"],
     });
+  });
+
+  it("lets the old name go when the person takes it out again", () => {
+    const onUpdateRuntime = vi.fn();
+    renderPanel([registered], onUpdateRuntime);
+
+    fireEvent.click(screen.getByLabelText("Edit My Server"));
+    fireEvent.change(screen.getByDisplayValue("My Server"), {
+      target: { value: "Studio" },
+    });
+    // It was put among the other names where it can be seen — and removed.
+    fireEvent.change(screen.getByDisplayValue("My Server"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByText("Save"));
+
+    expect(onUpdateRuntime).toHaveBeenCalledWith(
+      registered,
+      expect.objectContaining({ name: "Studio", aliases: [] }),
+    );
+  });
+
+  it("gives a server the other names it is to answer to", () => {
+    const onUpdateRuntime = vi.fn();
+    renderPanel([registered], onUpdateRuntime);
+
+    fireEvent.click(screen.getByLabelText("Edit My Server"));
+    fireEvent.change(screen.getByPlaceholderText(/names boards may use/), {
+      target: { value: "node, NodeJS , node" },
+    });
+    fireEvent.click(screen.getByText("Save"));
+
+    expect(onUpdateRuntime).toHaveBeenCalledWith(
+      registered,
+      expect.objectContaining({ name: "My Server", aliases: ["node", "NodeJS"] }),
+    );
+  });
+
+  it("shows the other names a server answers to", () => {
+    renderPanel([{ ...registered, aliases: ["node"] }], () => {});
+
+    expect(screen.getByText(/also node/)).toBeDefined();
+  });
+
+  it("does not let two servers answer to one name", () => {
+    const onUpdateRuntime = vi.fn();
+    const other: RuntimeClass = {
+      name: "Studio",
+      type: "rest",
+      url: "http://studio.local:8080",
+      aliases: ["node"],
+    };
+    renderPanel([registered, other], onUpdateRuntime);
+
+    fireEvent.click(screen.getByLabelText("Edit My Server"));
+    fireEvent.change(screen.getByPlaceholderText(/names boards may use/), {
+      target: { value: "node" },
+    });
+
+    expect(screen.getByRole("alert").textContent).toContain("node");
+    fireEvent.click(screen.getByText("Save"));
+    expect(onUpdateRuntime).not.toHaveBeenCalled();
   });
 
   it("offers no edit on a host's own built-in remote", () => {

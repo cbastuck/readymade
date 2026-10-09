@@ -114,6 +114,7 @@ mail board call a card's fields **Subject** and **Body**, for example.
 
 ## Try it
 
-Run hkp-node on port 8080 and open **Swimlanes** from the demo list. The schema
+Run hkp-node, keep it under the name `node` in *Manage runtime servers*, and
+open **Swimlanes** from the demo list. The schema
 and starter cards are created on first run in the board's `swimlanes-demo`
 database.

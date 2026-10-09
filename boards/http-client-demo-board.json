@@ -1,12 +1,12 @@
 {
   "boardName": "HTTP Client",
-  "description": "Compose a request and send it: URL, path, query parameters, headers, and a JSON body, with the verb you press deciding the method. The request leaves from the Node runtime rather than the browser, so no CORS policy has a say in who you can call and a credential in a header never reaches the page. The response comes back into the pipeline as {meta, body} \u2014 the Monitor holds it, and the Response panel reads the status, the headers and the body off it. Needs hkp-node running locally on port 8080.",
+  "description": "Compose a request and send it: URL, path, query parameters, headers, and a JSON body, with the verb you press deciding the method. The request leaves from the Node runtime rather than the browser, so no CORS policy has a say in who you can call and a credential in a header never reaches the page. The response comes back into the pipeline as {meta, body} \u2014 the Monitor holds it, and the Response panel reads the status, the headers and the body off it. Needs hkp-node, kept as the remote `node`.",
   "runtimes": [
     {
       "id": "node",
       "name": "hkp-node",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

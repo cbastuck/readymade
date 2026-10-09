@@ -64,7 +64,7 @@ Two optional fields, on the same board descriptor everything else uses:
 | `units[].uri` | **where** a document is, not what it is called |
 | `units[].as` | the name this instance carries, and the prefix its runtimes get |
 | `units[].params` | values for that instance's parameters |
-| `units[].runtimes` | per-runtime overrides: `url`, `type`, or a pinned `id` |
+| `units[].runtimes` | per-runtime overrides: where it runs (`url` or `remote`, replacing whichever the unit said), `type`, or a pinned `id` |
 
 Both fields live on every board descriptor, because they have to survive every
 path a board arrives by — a file picker, a share link, a coordinator, an iOS

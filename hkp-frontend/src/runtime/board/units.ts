@@ -78,9 +78,35 @@ export type UnitDeclaration = {
 export type UnitRuntimeBinding = {
   /** Pins the id instead of prefixing it. Checked for collisions like any other. */
   id?: string;
+  /** Where the runtime runs, in place of what the unit says: one of the two. */
   url?: string;
+  remote?: string;
   type?: RuntimeClassType;
 };
+
+/**
+ * A unit's runtime, run where a binding says instead of where the unit said.
+ *
+ * A binding that addresses the runtime replaces the unit's addressing whole,
+ * whichever of the two ways either used: a runtime says where it runs exactly
+ * once (`runtime/board/remote`), and a `url` laid over a unit's `remote` would
+ * be a runtime saying it twice. A binding that carries both is passed on as it
+ * is, and refused where every other such runtime is.
+ */
+function withBoundAddressing<T extends { url?: string; remote?: string }>(
+  runtime: T,
+  binding: UnitRuntimeBinding | undefined,
+): T {
+  if (!binding?.url && !binding?.remote) {
+    return runtime;
+  }
+  const { url: _url, remote: _remote, ...unaddressed } = runtime;
+  return {
+    ...unaddressed,
+    ...(binding.url ? { url: binding.url } : {}),
+    ...(binding.remote ? { remote: binding.remote } : {}),
+  } as T;
+}
 
 /** One entry in a composition's `units` list. */
 export type UnitEntry = {
@@ -404,9 +430,8 @@ function placeUnit(
   const runtimes = substituted.runtimes.map((runtime) => {
     const binding = entry.runtimes?.[runtime.id];
     return {
-      ...runtime,
+      ...withBoundAddressing(runtime, binding),
       id: runtimeIds[runtime.id],
-      ...(binding?.url ? { url: binding.url } : {}),
       ...(binding?.type ? { type: binding.type } : {}),
       // Who this runtime is to a server, as against how the composition
       // addresses it. See the note on identity at the top of this file.

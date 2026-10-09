@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pencil } from "lucide-react";
 
 import { RuntimeClass } from "hkp-frontend/src/types";
+import { remoteNames } from "hkp-frontend/src/runtime/board/remote";
 import EditServerForm from "../connections/EditServerForm";
 import { toServerBaseUrl } from "../connections/serverUrl";
 import { ColorPicker } from "../ColorPicker";
@@ -51,7 +52,11 @@ export default function ExistingRuntimesPanel({
                 />
               }
               title={rt.name}
-              subtitle={rt.url}
+              subtitle={
+                rt.aliases?.length
+                  ? `${rt.url} · also ${rt.aliases.join(", ")}`
+                  : rt.url
+              }
               trailing={
                 !builtIn && (
                   <>
@@ -79,10 +84,14 @@ export default function ExistingRuntimesPanel({
                 <EditServerForm
                   name={rt.name}
                   url={rt.url ?? ""}
+                  aliases={rt.aliases ?? []}
+                  takenNames={remoteRuntimes
+                    .filter((_, other) => other !== idx)
+                    .flatMap(remoteNames)}
                   normalizeUrl={toServerBaseUrl}
                   onCancel={() => setEditing(null)}
-                  onSave={({ name, url }) => {
-                    onUpdateRuntime!(rt, { ...rt, name, url });
+                  onSave={({ name, url, aliases }) => {
+                    onUpdateRuntime!(rt, { ...rt, name, url, aliases });
                     setEditing(null);
                   }}
                 />

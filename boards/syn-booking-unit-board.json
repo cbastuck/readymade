@@ -17,7 +17,7 @@
       "id": "test",
       "name": "0 · Test without mail",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -26,7 +26,7 @@
       "id": "intake",
       "name": "1 · Mail in",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -35,7 +35,7 @@
       "id": "dispatch",
       "name": "2 · Decide & act",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -44,7 +44,7 @@
       "id": "review",
       "name": "3 · What is there",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -53,7 +53,7 @@
       "id": "approve",
       "name": "4 · Approve",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -62,7 +62,7 @@
       "id": "reject",
       "name": "5 · Reject",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -791,7 +791,7 @@
       }
     ]
   },
-  "description": "The booking half of SYN, as a unit. Mail comes in, is filed into conversations by its headers, read into structured fields by a model, and answered — nothing is sent without a person approving it.\n\nOnce everything required is known, the manager's 'request-quotes' action publishes the completed request to the topic 'booking.ready' and the conversation moves to quotes-requested. Finding hotels and writing to them is a different job and lives in the hotels unit, which consumes that topic from this server.\n\nThe publish sits *before* the transition on purpose: a failed publish stops the action, the dispatcher does not advance the conversation, and the next tick sends it again. That ordering is what makes an outbox unnecessary.\n\nBoth units run on this hkp-node (127.0.0.1:8080) and share its queue: messages live with the runtime that took them in. This unit names its database 'syn-booking', so its conversations are its own however many boards end up with a similar title.\n\nExtraction, drafting and the manager's decision run against the Claude API on claude-haiku-4-5 using the {{secret.anthropic.key}} alias from Settings → Secrets. The key must be scoped to a workspace, or the API asks for a workspace id this service has no field for.",
+  "description": "The booking half of SYN, as a unit. Mail comes in, is filed into conversations by its headers, read into structured fields by a model, and answered — nothing is sent without a person approving it.\n\nOnce everything required is known, the manager's 'request-quotes' action publishes the completed request to the topic 'booking.ready' and the conversation moves to quotes-requested. Finding hotels and writing to them is a different job and lives in the hotels unit, which consumes that topic from this server.\n\nThe publish sits *before* the transition on purpose: a failed publish stops the action, the dispatcher does not advance the conversation, and the next tick sends it again. That ordering is what makes an outbox unnecessary.\n\nBoth units run on the same hkp-node, the remote `node`, and share its queue: messages live with the runtime that took them in. This unit names its database 'syn-booking', so its conversations are its own however many boards end up with a similar title.\n\nExtraction, drafting and the manager's decision run against the Claude API on claude-haiku-4-5 using the {{secret.anthropic.key}} alias from Settings → Secrets. The key must be scoped to a workspace, or the API asks for a workspace id this service has no field for.",
   "facade": {
     "layout": "columns",
     "panels": [

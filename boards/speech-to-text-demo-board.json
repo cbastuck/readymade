@@ -1,6 +1,6 @@
 {
   "boardName": "Voice Notes",
-  "description": "Speak into the microphone and get the transcript as text — powered by an open-source Whisper model running locally in the hkp-python runtime. The browser records raw PCM audio (16 kHz mono), ships it to Python as a FloatRingBuffer over the YAS wire format, the speech-to-text service transcribes it with faster-whisper, and the resulting JSON flows back into a browser monitor. Requires the Python runtime on port 8080 with the ASR extra installed: pip install \"hkp-python[asr]\". The first transcription downloads the model, so give it a moment.",
+  "description": "Speak into the microphone and get the transcript as text — powered by an open-source Whisper model running locally in the hkp-python runtime. The browser records raw PCM audio (16 kHz mono), ships it to Python as a FloatRingBuffer over the YAS wire format, the speech-to-text service transcribes it with faster-whisper, and the resulting JSON flows back into a browser monitor. Requires hkp-python, kept as the remote `python`, with the ASR extra installed: pip install \"hkp-python[asr]\". The first transcription downloads the model, so give it a moment.",
   "runtimes": [
     {
       "id": "recorder",
@@ -15,7 +15,7 @@
       "id": "python",
       "name": "Python",
       "type": "rest",
-      "url": "http://127.0.0.1:9000",
+      "remote": "python",
       "state": {
         "wrapServices": false,
         "minimized": false

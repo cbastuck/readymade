@@ -67,7 +67,8 @@ dump, and that becomes the input of the last runtime, which saves it.
 
 ## Try it
 
-Needs hkp-node on port 8080. If the list is empty, no board of yours has stored
+Needs an hkp-node kept under the name `node` in *Manage runtime servers*.
+If the list is empty, no board of yours has stored
 anything there under a name yet —
 [Court Booking](./court-booking-demo-board.md) does, as `tennis`.
 

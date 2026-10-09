@@ -17,6 +17,7 @@
 #include <auth.h>
 
 #include "boardName.h"
+#include "remoteRoute.h"
 
 class Settings
 {
@@ -27,7 +28,28 @@ public:
     std::string url;
     int port = 0;
     std::string color;
+    // Other names the server answers to, beside `name`: what lets a board
+    // that says an older or a shared name still find it.
+    std::vector<std::string> aliases;
   };
+
+  /** The aliases in a remote's JSON, as they are kept (`keptAliases`). */
+  static std::vector<std::string> readAliases(const nlohmann::json& entry, const std::string& name)
+  {
+    std::vector<std::string> given;
+    const auto it = entry.find("aliases");
+    if (it != entry.end() && it->is_array())
+    {
+      for (const auto& alias : *it)
+      {
+        if (alias.is_string())
+        {
+          given.push_back(alias.get<std::string>());
+        }
+      }
+    }
+    return readymade::keptAliases(given, name);
+  }
 
   static bool isInternalRuntimeUrl(const std::string& url)
   {
@@ -446,6 +468,8 @@ public:
         runtime.color = colorIt->get<std::string>();
       }
 
+      runtime.aliases = readAliases(entry, runtime.name);
+
       if (!runtime.name.empty() && !runtime.url.empty() &&
           !isInternalRuntimeUrl(runtime.url))
       {
@@ -594,6 +618,10 @@ private:
       if (!runtime.color.empty())
       {
         entry["color"] = runtime.color;
+      }
+      if (!runtime.aliases.empty())
+      {
+        entry["aliases"] = runtime.aliases;
       }
       remotesArray.push_back(std::move(entry));
     }

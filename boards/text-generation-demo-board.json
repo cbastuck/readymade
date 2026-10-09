@@ -11,7 +11,7 @@
       "id": "python",
       "name": "hkp-python",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "python",
       "state": { "wrapServices": false }
     }
   ],

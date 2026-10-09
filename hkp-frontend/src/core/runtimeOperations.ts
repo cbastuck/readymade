@@ -2,10 +2,12 @@ import {
   RuntimeClass,
   RuntimeDescriptor,
   RuntimeConfiguration,
+  isRuntimeRestClassType,
 } from "../types";
 import { reorderRuntime } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { assetsById } from "../runtime/board/assets";
+import { cleanAliases, remoteNameForBoard } from "../runtime/board/remote";
 
 export function registerBrowserRuntime(boardName: string, runtimeId: string) {
   const existing = JSON.parse(
@@ -71,8 +73,19 @@ export async function addRuntime(
         registry: newRegistry = [],
         scope,
       } = result;
+      // A runtime put on a server this client keeps says which server by
+      // name, as a board that is handed on has to: the address stays on the
+      // live runtime beside it, and a save writes the name alone. One put on
+      // an address this client keeps nothing under says the address.
+      const remote = isRuntimeRestClassType(rtClass.type)
+        ? remoteNameForBoard(
+            refs.availableRuntimeEnginesRef?.current ?? [],
+            rtClass.url,
+          )
+        : undefined;
       const runtimeWithUser: RuntimeDescriptor = {
         ...runtime,
+        ...(remote ? { remote } : {}),
         user: currentUser,
         state: { ...runtime.state, color: rtClass.color },
         boardName: currentBoardName,
@@ -229,16 +242,23 @@ export async function arrangeRuntimes(
   refs.setRuntimes(rearranged);
 }
 
+/** A remote as the pool keeps it: its aliases only when it has any. */
+function poolEntry({ name, url, type, color, aliases }: RuntimeClass): RuntimeClass {
+  const kept = cleanAliases(name, aliases);
+  return { name, type, url, color, ...(kept.length ? { aliases: kept } : {}) };
+}
+
 export function addAvailableRuntime(
-  { name, url, type, color }: RuntimeClass,
+  runtime: RuntimeClass,
   overwriteIfExists: boolean,
   refs: BoardStateRefs,
 ): Array<RuntimeClass> {
+  const { name } = runtime;
   const current = refs.availableRuntimeEnginesRef.current!;
   const engines = overwriteIfExists
     ? current.filter((rt) => rt.name !== name)
     : current;
-  const updated = engines.concat({ name, type, url, color });
+  const updated = engines.concat(poolEntry(runtime));
   refs.setAvailableRuntimeEngines(updated);
   return updated;
 }
@@ -249,11 +269,12 @@ export function addAvailableRuntime(
  *  itself, both writes being computed from the same pool. */
 export function updateAvailableRuntime(
   previous: RuntimeClass,
-  { name, url, type, color }: RuntimeClass,
+  next: RuntimeClass,
   refs: BoardStateRefs,
 ): Array<RuntimeClass> {
+  const { name } = next;
   const current = refs.availableRuntimeEnginesRef.current!;
-  const entry = { name, type, url, color };
+  const entry = poolEntry(next);
   const replaced = current.some((rt) => rt.name === previous.name)
     ? current.map((rt) => (rt.name === previous.name ? entry : rt))
     : current.concat(entry);

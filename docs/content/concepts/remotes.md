@@ -38,7 +38,7 @@ A runtime says where it runs in exactly **one** of two ways, both authored:
 | Field | Says | Resolved |
 |---|---|---|
 | `url` | an address the person wrote | used as written. Every board from before remotes; valid forever |
-| `remote` | a name | looked up among this client's remotes |
+| `remote` | a name | looked up among this client's remotes, by any name one of them answers to |
 
 There is no third way that says only *what kind* of server would do and leaves
 the client to pick one. A runtime may reference credentials, and those are
@@ -57,9 +57,11 @@ both is refused before anything is dialled.
 ### The runtime the app embeds: `embedded`
 
 One name is the same for everybody. The Readymade apps each embed an hkp-rt and
-keep it among their remotes, under a name of their own — and a name that is one
-app's alone is as local a fact as an address. So every host that embeds a
-runtime also answers to **`embedded`** for it:
+keep it among their remotes, and each used to have a name of its own for it —
+`meander-cpp` on the desktop, `meander-ios` on a phone — which is as local a
+fact as an address. So every host that embeds a runtime answers to
+**`embedded`** for it, and the desktop app lists it under that name, in
+*Settings → Connections* and in the Add-runtime picker:
 
 ```json
 { "id": "rt", "name": "hkp-rt", "type": "rest", "remote": "embedded" }
@@ -77,10 +79,112 @@ such runtime; there `embedded` is a name like any other, which a person may
 give a server of theirs to open such a board from the playground, and
 otherwise the board says what it wanted and stops.
 
+An app's older name for its runtime is still answered to, so a board that says
+`hkp://remotes/meander-cpp` opens in the desktop app as it did. And no kept
+runtime server may take either name there.
+
 `hkp://remotes/<name>` — the spelling boards used for the app's embedded runtime
 before `remote` existed — is a name in a url's clothing. It **counts as a name**
 (so it cannot sit beside a `remote`), and is still resolved by the host that
 serves the `hkp:` scheme, which refuses a name it does not hold.
+
+### A runtime server of a kind: `node` and `python`
+
+`embedded` settles where a board runs when the app that opens it brings the
+runtime along. hkp-node and hkp-python come with no app: somebody starts them,
+on a port of their choosing, on this machine or on another. A board that wrote
+down `http://127.0.0.1:8080` for one recorded where its author's happened to
+listen — and since both servers default to that port, recorded it for
+whichever of the two it meant, so a board needing both had to move one and say
+so in its description.
+
+So a board that needs a server of a kind, and does not care whose, names the
+kind and nothing else:
+
+```json
+{ "id": "reader", "name": "Reader", "type": "rest", "remote": "node" }
+{ "id": "speech", "name": "Speech", "type": "rest", "remote": "python" }
+```
+
+| Name | The runtime server kept under it |
+|---|---|
+| `node` | an hkp-node |
+| `python` | an hkp-python |
+
+Whoever opens such a board keeps their own server under that name, once, with
+the address it runs at for them — as the name it is listed under, or as
+another name of a server they already keep as something else (below). Every
+board that says the name then opens there, and none of them has to be edited
+to move between people. It is what every shipped board with an hkp-node or
+hkp-python runtime uses.
+
+Unlike `embedded`, nothing about these names is enforced: they are **agreed**.
+No host answers to one unasked, a client that keeps no server under it does not
+resolve it, and nothing checks what kind of server it finds there — a server
+that lacks a board's services says so when they are created. A client that
+keeps nothing under the name asks, as it does for any other, and adds what the
+name stands for (`SHARED_REMOTE_NAMES`).
+
+This is not the third way ruled out above. Nothing is picked: the person said
+which of their servers is `node`, and a board that says `node` lands there and
+nowhere else.
+
+A board that needs one *particular* machine — the one with the model files, the
+one inside a network — is not served by a kind. It names that server for what
+it is (`"remote": "Studio"`), or keeps its `url`.
+
+### More than one name: aliases
+
+A remote answers to the name it is listed under and to any number of
+**aliases**:
+
+```json
+{ "name": "Laptop", "url": "http://127.0.0.1:8080", "aliases": ["node", "NodeJS"] }
+```
+
+Two things need this, and both come from the same fact — a board holds a name
+for as long as the board exists, and the person who keeps the server does not
+hold the board:
+
+- **One server, several roles.** The hkp-node on a laptop is `Laptop` to its
+  owner and `node` to every shipped board. Without aliases it could be one or
+  the other.
+- **Renaming.** A server that is renamed keeps the name it had as an alias, so
+  the boards that say the old one still open. The edit form puts it there as
+  the new name is typed, where it can be seen and taken out again — retiring a
+  name is a decision, not a side effect.
+
+The name a server is listed under comes before anybody's alias, so a second
+name for one server never takes a board away from the server actually called
+that. Two servers may not answer to one name; the form refuses it. And in an
+app, no kept server may take a name the embedded runtime goes by, as an alias
+no more than as its own.
+
+Aliases are the client's, like the rest of a remote: they are kept wherever
+the host keeps its servers and never enter a board.
+
+### What a board is given when a runtime is added
+
+Putting a runtime on a server from the Add-runtime picker gives the board that
+server's **name**, not its address — the address stays on the live runtime
+beside it and a save writes the name alone. So a board built in the playground
+is as portable as one written by hand.
+
+Which name, when the server has several: the most portable one it answers to
+(`remoteNameForBoard`).
+
+| The server | The board says |
+|---|---|
+| the runtime the host embeds | `embedded`, whatever the app lists it as |
+| answers to a name boards share for its kind | that name — `node`, `python` |
+| anything else | the name it is listed under |
+
+A runtime put on an address this client keeps nothing under says the address.
+
+This makes a kept server and the boards that use it depend on each other in a
+way they did not when a board held the address: remove the server, and a board
+that names it no longer resolves. Renaming does not do that, because of
+aliases, and removing leads to the question below rather than to a dead board.
 
 ### Resolution is the person's client's, and is never written back
 
@@ -89,9 +193,21 @@ client keeps, when the board loads there. Nothing else resolves one: a
 coordinator holds no name-to-address table, and a name in a deployed board is a
 label for people.
 
-- A name this client does not hold **fails the load**, naming the remote. There
-  is nothing to fall back to, and a board quietly missing a runtime is worse
-  than one that says which runtime server it wanted.
+- A name this client does not hold is **put to the person**: *which runtime
+  server is `node`?* They answer with one of the servers they keep, which then
+  answers to that name as well, or with the address of one they do not keep
+  yet, which is kept under it. Either way the answer is kept, so it is asked
+  once, and the board carries on opening where it was
+  (`core/remotePrompt.ts`, `UnknownRemoteDialog`).
+- That is a question, not a choice made for them. Nothing matches the name to
+  a server that looks suitable, and what the dialog hands back counts only if
+  it is a remote that answers to the name. Every address is resolved before
+  any runtime is built, so a board the person declines to place has built
+  nothing anywhere.
+- Unanswered — dismissed, or where there is nobody to ask — the name **fails
+  the load**, naming the remote. There is nothing to fall back to, and a board
+  quietly missing a runtime is worse than one that says which runtime server
+  it wanted.
 - A remote runtime that names **no** server — neither a `url` nor a `remote` —
   fails the load the same way. Nothing is chosen for it.
 - The resolved address lives on the **live** runtime, beside the name it came
@@ -264,8 +380,12 @@ in `~/.hkp/cpp/coordinator-links.json`.
 
 | Concern | Where |
 |---|---|
-| `url` / `remote`: vocabulary, lookup, what a save keeps | `hkp-frontend/src/runtime/board/remote.ts` |
+| `url` / `remote`: vocabulary, lookup, aliases, what a save keeps | `hkp-frontend/src/runtime/board/remote.ts` |
 | Resolving on load | `hkp-frontend/src/core/boardPersistence.ts` (`resolveForRestore`) |
+| Asking about a name nobody is kept under | `hkp-frontend/src/core/remotePrompt.ts`, `ui-components/UnknownRemoteDialog.tsx` |
+| The name a board is given when a runtime is added | `hkp-frontend/src/core/runtimeOperations.ts` (`addRuntime`) |
+| Editing a server's names | `hkp-frontend/src/ui-components/connections/EditServerForm.tsx` |
+| Where each host keeps its servers | web: `localStorage` (`available-remote-runtimes`); desktop: `meander/backend/settings.h`, `remoteRoute.h`; iOS: `remotes.json` in the app's documents |
 | Preflight, per runtime | `hkp-frontend/src/core/deployPreflight.ts` |
 | The introduction | `hkp-frontend/src/core/deploy.ts`, `components/Toolbar/DeployDialog.tsx` |
 | Tickets and accepted connections | `hkp-node/src/coordinator/participants.ts`, `join.ts` |

@@ -148,6 +148,7 @@ speech-to-text → skill-router (with a text-generation fallback via
 }
 ```
 
-Start the Python runtime (`hkp-python`, default port 8080), open the board,
+Start the Python runtime (`hkp-python`), keep it under the name `python` in
+*Manage runtime servers*, open the board,
 and inject a request like *"send a notification to topic home saying dinner
 is ready"*.

@@ -82,3 +82,23 @@ TEST_CASE("neither of this runtime's names can be taken by a kept server", "[rem
   REQUIRE(isOwnRemoteName("meander-cpp", "meander-cpp"));
   REQUIRE_FALSE(isOwnRemoteName("Laptop", "meander-cpp"));
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// The other names a kept server answers to.
+//
+// A board holds a name for as long as it exists, so a server keeps the ones it
+// has gone by, and may go by a name boards share for its kind beside its own.
+// ──────────────────────────────────────────────────────────────────────────────
+
+TEST_CASE("a server keeps each of its other names once, and not its own", "[remotes]") {
+  REQUIRE(keptAliases({"node", "", "Laptop", "node", "NodeJS"}, "Laptop") ==
+          std::vector<std::string>{"node", "NodeJS"});
+  REQUIRE(keptAliases({}, "Laptop").empty());
+}
+
+TEST_CASE("this runtime's names cannot be taken as another name either", "[remotes]") {
+  REQUIRE(hasOwnRemoteName({"node", "embedded"}, "meander-cpp"));
+  REQUIRE(hasOwnRemoteName({"meander-cpp"}, "meander-cpp"));
+  REQUIRE_FALSE(hasOwnRemoteName({"node", "python"}, "meander-cpp"));
+  REQUIRE_FALSE(hasOwnRemoteName({}, "meander-cpp"));
+}

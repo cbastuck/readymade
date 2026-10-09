@@ -11,6 +11,7 @@ const toRemote = (desc: RuntimeClass): Remote => ({
   url: desc.url ?? "",
   port: 0,
   color: desc.color,
+  aliases: desc.aliases,
 });
 
 /**
@@ -37,6 +38,7 @@ export function useBackendRemotes(): RemotesController {
         name: r.name,
         url: r.url,
         color: r.color,
+        aliases: r.aliases,
       })),
     [remotes],
   );

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /**
  * Which remote an `hkp://remotes/<name>/…` request is addressed to.
@@ -36,6 +38,38 @@ inline const std::string kEmbeddedRemoteName = "embedded";
 inline bool isOwnRemoteName(const std::string& name, const std::string& serverName)
 {
   return name == kEmbeddedRemoteName || name == serverName;
+}
+
+/**
+ * The other names a kept runtime server answers to, as they are kept: none
+ * empty, each once, and none the name the server is listed under already.
+ *
+ * A board holds a name for as long as it exists, so a server keeps the ones it
+ * has gone by — a rename leaves the old name here — and may go by a name boards
+ * share for its kind (`node`, `python`) beside the one its owner gave it.
+ */
+inline std::vector<std::string> keptAliases(const std::vector<std::string>& given, const std::string& name)
+{
+  std::vector<std::string> aliases;
+  for (const auto& alias : given)
+  {
+    if (alias.empty() || alias == name ||
+        std::find(aliases.begin(), aliases.end(), alias) != aliases.end())
+    {
+      continue;
+    }
+    aliases.push_back(alias);
+  }
+  return aliases;
+}
+
+/** Whether any of `names` is one this app's own runtime goes by. */
+inline bool hasOwnRemoteName(const std::vector<std::string>& names, const std::string& serverName)
+{
+  return std::any_of(names.begin(), names.end(), [&serverName](const std::string& name)
+  {
+    return isOwnRemoteName(name, serverName);
+  });
 }
 
 /**

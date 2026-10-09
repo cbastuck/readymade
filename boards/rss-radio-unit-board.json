@@ -21,7 +21,7 @@
       "id": "radio",
       "name": "Radio",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -30,7 +30,7 @@
       "id": "publish",
       "name": "Published",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -39,7 +39,7 @@
       "id": "playlist",
       "name": "Playlist",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

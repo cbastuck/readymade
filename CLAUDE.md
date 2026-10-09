@@ -171,7 +171,7 @@ saying what the bytes are (`bytes`, `floatRingBuffer`, `mixed`), then the bytes
   "boardName": "string",
   "runtimes": [
     { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } },
-    { "id": "node", "name": "Node", "type": "rest", "url": "http://127.0.0.1:8080", "state": { "wrapServices": false } }
+    { "id": "node", "name": "Node", "type": "rest", "remote": "node", "state": { "wrapServices": false } }
   ],
   "services": {
     "ui":   [ { "uuid": "my-svc", "serviceId": "hookup.to/service/timer", "serviceName": "Timer", "state": {} } ],
@@ -202,6 +202,19 @@ Readymade app that opened the board embeds, whatever that app calls it. A board 
 for the embedded runtime uses it — never the app's port (`http://127.0.0.1:8887`) and
 never one app's own name for its runtime (`hkp://remotes/meander-cpp`, which stays
 supported for boards that already say it).
+
+Two more are agreed rather than enforced: **`"remote": "node"`** and
+**`"remote": "python"`** are the hkp-node and the hkp-python the person opening the
+board keeps under those names, wherever theirs listens. A shipped board with a Node or
+Python runtime uses them — never `http://127.0.0.1:8080`, the port both servers default
+to — and says in its description which it needs (`SHARED_REMOTE_NAMES`).
+
+A kept server answers to the name it is listed under and to any number of **aliases**,
+so one server can be `Laptop` to its owner and `node` to boards, and a renamed one keeps
+the name boards already say. A runtime added from the picker gives the board the server's
+name — the most portable one it answers to (`remoteNameForBoard`) — never its address.
+A name nobody is kept under is asked about when the board opens (`core/remotePrompt.ts`)
+and the answer is kept; unanswered, the load fails naming it.
 
 Runtime ids are unique **per user**, not globally — hkp-node namespaces runtimes by the
 authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) don't collide when

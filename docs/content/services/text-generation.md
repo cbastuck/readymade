@@ -330,7 +330,8 @@ The attached demo board uses the server backend (Injector → text-generation
 }
 ```
 
-Start the Python runtime (`hkp-python`, default port 8080), open the board,
+Start the Python runtime (`hkp-python`), keep it under the name `python` in
+*Manage runtime servers*, open the board,
 and inject a prompt.
 
 For hkp-rt the equivalent runtime config ships as

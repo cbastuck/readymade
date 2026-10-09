@@ -212,12 +212,27 @@ saucer::scheme::response SchemeHandler::handleGetRemotes(const Router::Params &p
       continue;
     }
 
-    remotesArr.push_back({
+    json entry{
         {"url", runtime.url},
         {"port", runtime.port},
         {"name", runtime.name},
         {"color", runtime.color},
-    });
+    };
+    // A kept server answers to no name this app's own runtime goes by, as an
+    // alias no more than as the name it is listed under.
+    json aliases = json::array();
+    for (const auto& alias : runtime.aliases)
+    {
+      if (!readymade::isOwnRemoteName(alias, m_server->name()))
+      {
+        aliases.push_back(alias);
+      }
+    }
+    if (!aliases.empty())
+    {
+      entry["aliases"] = std::move(aliases);
+    }
+    remotesArr.push_back(std::move(entry));
   }
 
   return saucer::scheme::response{
@@ -306,6 +321,17 @@ saucer::scheme::response SchemeHandler::handleSaveRemote(const Router::Params &p
       runtime.color = colorIt->get<std::string>();
     }
 
+    runtime.aliases = Settings::readAliases(payload, runtime.name);
+    if (readymade::hasOwnRemoteName(runtime.aliases, m_server->name()))
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("The local runtime name is reserved"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 409,
+      };
+    }
+
     if (!m_settings.saveRemoteRuntimeEngine(runtime))
     {
       return saucer::scheme::response{
@@ -323,6 +349,7 @@ saucer::scheme::response SchemeHandler::handleSaveRemote(const Router::Params &p
             {"url", runtime.url},
             {"port", runtime.port},
             {"color", runtime.color},
+            {"aliases", runtime.aliases},
         }.dump()),
         .mime = "application/json",
         .headers = m_defaultHeaders,

@@ -12,13 +12,13 @@
       "requestsTopic": "booking.ready"
     }
   },
-  "description": "The hotels half of SYN, as a unit. It knows nothing about mail, conversations or guests — it takes completed booking requests off the topic 'booking.ready', finds hotels that match, and records what it found.\n\nBoth units run on the same hkp-node (127.0.0.1:8080) and so share one queue. That is the same locality rule conversations and sql already have: messages live with the runtime that took them in. Reaching a queue on another server is a job for the coordinator, which already holds a credential for every runtime of a board — a service inside a runtime holds none — and that is not built yet.\n\nThe two units keep separate databases even so: this one names 'syn-hotels' on its sql services, so its tables cannot land in whatever the booking unit's title happens to hash to.\n\nThe hotel directory is a mock, created and seeded by the Find service's own schema — a real one would be an http-client against a supplier API, and nothing else here would change.\n\nThe ack sits last, after the candidates are recorded. A crash before it leaves the claim to expire and the request to be handed out again, which is the guarantee: the same request twice is a nuisance, a request lost is a booking.",
+  "description": "The hotels half of SYN, as a unit. It knows nothing about mail, conversations or guests — it takes completed booking requests off the topic 'booking.ready', finds hotels that match, and records what it found.\n\nBoth units run on the same hkp-node, the remote `node`, and so share one queue. That is the same locality rule conversations and sql already have: messages live with the runtime that took them in. Reaching a queue on another server is a job for the coordinator, which already holds a credential for every runtime of a board — a service inside a runtime holds none — and that is not built yet.\n\nThe two units keep separate databases even so: this one names 'syn-hotels' on its sql services, so its tables cannot land in whatever the booking unit's title happens to hash to.\n\nThe hotel directory is a mock, created and seeded by the Find service's own schema — a real one would be an http-client against a supplier API, and nothing else here would change.\n\nThe ack sits last, after the candidates are recorded. A crash before it leaves the claim to expire and the request to be handed out again, which is the guarantee: the same request twice is a nuisance, a request lost is a booking.",
   "runtimes": [
     {
       "id": "intake",
       "name": "1 · Requests in",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -27,7 +27,7 @@
       "id": "review",
       "name": "2 · What was found",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
