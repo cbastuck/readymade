@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { test, expect } from "../support/test";
+import { courtBookingForSqlTests } from "../support/courtBooking";
 
 /**
  * The SQL Explorer over a database another board made: the browser's `sql`
@@ -24,7 +25,7 @@ test("shows a database another board made, exports it, and changes it", async ({
   const crashes: string[] = [];
   page.on("pageerror", (error) => crashes.push(String(error)));
 
-  await seedBoard("e2e-court", board("court-booking-browser-demo-board.json"));
+  await seedBoard("e2e-court", courtBookingForSqlTests());
   await seedBoard("e2e-explorer", board("sql-explorer-board.json"));
 
   await openBoard("e2e-court");
