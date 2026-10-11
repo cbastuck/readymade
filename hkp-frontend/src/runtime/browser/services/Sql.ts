@@ -267,6 +267,9 @@ class Sql extends ServiceBase<State> {
       // Reported either way: what the statement did is this service's own
       // news. Only what travels to the next service is `emit`'s to decide.
       this.app.notify(this, result);
+      // Finish storage before downstream services render completion. A page
+      // navigation after that output must not discard this change.
+      await sqlDatabases().flush();
       return emit === "input" ? input : result;
     } catch (err) {
       return this.fail(`${this.state.mode} failed: ${sqliteMessage(err)}`);
