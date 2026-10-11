@@ -487,6 +487,34 @@ TEST_CASE("a request handed over in-process is served, and names nobody",
   REQUIRE(processed.code < 500);
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// A server that goes while its app is still saying things.
+//
+// An app outlives its server, and what its services report reaches the server
+// from the app's own loop — which can be in the middle of handing a report
+// over when the server is destroyed.
+//
+// Regression: the loop went on into a server that was no longer there.
+// ──────────────────────────────────────────────────────────────────────────────
+
+TEST_CASE("a server can go while its app's services are still reporting",
+          "[server][lifecycle]") {
+  auto app = std::make_shared<App>();
+  app->createRuntime(json::parse(
+    R"({"id":"local","name":"local","services":[{"uuid":"clock","serviceId":"timer","serviceName":"Timer"}]})"));
+  // Several reports per tick, a tick every millisecond.
+  app->configureService("local", "clock", json{
+    {"periodic", true}, {"periodicValue", 1}, {"periodicUnit", "ms"}, {"restart", true},
+  });
+
+  for (int round = 0; round < 50; ++round)
+  {
+    Server server(app, "test-rt", "", "", {});
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  }
+  SUCCEED("every server was destroyed with nothing still inside it");
+}
+
 TEST_CASE("notification WebSockets reply to empty close frames without a reserved wire status", "[server][websocket][close]") {
   Listening listening("");
   const auto reply = listening.closeReply(false);
