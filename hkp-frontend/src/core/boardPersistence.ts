@@ -33,9 +33,12 @@ import { loadSavedBoardViaPlatform } from "../platform/PlatformContext";
 import { toast } from "sonner";
 import {
   RuntimeAddressingError,
+  addressingOf,
   authoredAddressing,
   resolveRuntimeAddress,
+  sharedRemoteKind,
 } from "../runtime/board/remote";
+import { askAboutRemote } from "./remotePrompt";
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
   arr: Array<RestoreRuntimeResult | null>,
@@ -54,23 +57,41 @@ function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
  * this client. The name stays on the descriptor beside it, which is what a save
  * writes back — see `runtime/board/remote`.
  *
- * A name this client does not hold fails the restore, loudly and by name. There
+ * A name this client does not hold is put to the person first, where there is
+ * somebody to ask: which of their servers it means is theirs to say, and once
+ * said it is kept, so the board resolves by itself from then on
+ * (`remotePrompt`). Unanswered, it fails the restore, loudly and by name. There
  * is nothing to fall back to, and a board quietly missing a runtime is worse
  * than one that says which runtime server it wanted. A runtime that names no
  * server at all fails the same way, before anything is dialled.
  */
-function resolveForRestore(
+async function resolveForRestore(
   runtime: RuntimeDescriptor,
   refs: BoardStateRefs,
-): RuntimeDescriptor {
+): Promise<RuntimeDescriptor> {
   const resolution = resolveRuntimeAddress(
     runtime,
     refs.availableRuntimeEnginesRef?.current ?? [],
   );
-  if (!resolution.ok) {
-    throw new RuntimeAddressingError(runtime.id, resolution.message);
+  if (resolution.ok) {
+    return { ...runtime, url: resolution.url };
   }
-  return { ...runtime, url: resolution.url };
+  if (resolution.reason === "unknown-remote") {
+    const addressing = addressingOf(runtime);
+    const name = addressing.mode === "remote" ? addressing.name : "";
+    const kept = await askAboutRemote({
+      name,
+      runtimeName: runtime.name || runtime.id,
+      kind: sharedRemoteKind(name),
+    });
+    // Resolved again, against what was answered and nothing else: the answer
+    // counts only if it is a remote that answers to the name and can be dialled.
+    const answered = kept ? resolveRuntimeAddress(runtime, [kept]) : undefined;
+    if (answered?.ok) {
+      return { ...runtime, url: answered.url };
+    }
+  }
+  throw new RuntimeAddressingError(runtime.id, resolution.message);
 }
 
 export async function restoreBoard(
@@ -118,12 +139,26 @@ export async function restoreBoard(
       ? ((await refs.appContextRef?.current?.waitForAuthResolved()) ?? null)
       : null);
 
+  const runtimeApiFor = (rt: RuntimeDescriptor) =>
+    propsRef.runtimeApis?.[rt.type] ||
+    propsRef.runtimeApis?.[toCanonicalRuntimeClassType(rt.type)];
+
+  // Every address before any runtime: a name nobody could place fails the
+  // board with nothing built for it, and a person asked which server a name
+  // means is asked before the first of them is dialled.
+  const resolvedRuntimes = new Map<string, RuntimeDescriptor>();
+  await Promise.all(
+    boardRuntimes.map(async (rt) => {
+      if (runtimeApiFor(rt)?.resolvesAddress) {
+        resolvedRuntimes.set(rt.id, await resolveForRestore(rt, refs));
+      }
+    }),
+  );
+
   const missingSecrets: string[] = [];
   const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
     boardRuntimes.map((rt) => {
-      const api =
-        propsRef.runtimeApis?.[rt.type] ||
-        propsRef.runtimeApis?.[toCanonicalRuntimeClassType(rt.type)];
+      const api = runtimeApiFor(rt);
       if (!api) {
         console.error(
           `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
@@ -140,10 +175,9 @@ export async function restoreBoard(
       // Resolution happens where a secret is used — see `withSecrets`.
       const services = boardServices[rt.id];
       if (api.resolvesAddress) {
-        const resolved = resolveForRestore(rt, refs);
         missingSecrets.push(...unavailableSecrets(services));
         return api.restoreRuntime(
-          resolved,
+          resolvedRuntimes.get(rt.id) ?? rt,
           services,
           currentUser,
           rt.boardName ?? restoredBoardName,

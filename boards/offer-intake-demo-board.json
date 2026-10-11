@@ -6,7 +6,7 @@
       "id": "intake",
       "name": "1 · Intake",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -15,7 +15,7 @@
       "id": "queue",
       "name": "2 · Waiting",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -24,7 +24,7 @@
       "id": "process",
       "name": "3 · Processing",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -33,7 +33,7 @@
       "id": "requeue",
       "name": "4 · Back to waiting",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

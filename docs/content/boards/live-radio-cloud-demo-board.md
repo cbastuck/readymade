@@ -63,7 +63,8 @@ window may be busy.
 
 ## Try it
 
-1. Run hkp-rt at home on port 8887 and hkp-node somewhere reachable. Point the
-   **Relay** runtime's URL at the hkp-node server.
+1. Open the board in the Readymade app at home — the **Home** runtime names
+   the app's own runtime (`"remote": "embedded"`) — and run hkp-node somewhere
+   reachable. Point the **Relay** runtime's URL at the hkp-node server.
 2. Load the board and press Start.
 3. Share the QR code or the player address.

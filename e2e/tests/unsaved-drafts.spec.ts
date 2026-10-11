@@ -78,8 +78,7 @@ test("an unsaved sketch survives a reload, and saving drops its draft", async ({
   await page.getByRole("option", { name: /^Timer/ }).first().click();
   await expect.poll(() => pipelineOf(page)).toHaveLength(1);
 
-  await page.waitForTimeout(3000);
-  expect(await draftNames(page)).toEqual([NAME]);
+  await expect.poll(() => draftNames(page)).toEqual([NAME]);
 
   await page.reload();
   await page.waitForFunction(() => !!(window as any).hkp);

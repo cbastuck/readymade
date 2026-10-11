@@ -20,89 +20,92 @@ test("two contexts can open a WebRTC data channel", async () => {
   const browser = await chromium.launch({
     args: ["--disable-features=WebRtcHideLocalIpsWithMdns"],
   });
-  const a = await browser.newContext();
-  const b = await browser.newContext();
-  const pageA = await a.newPage();
-  const pageB = await b.newPage();
-  await pageA.goto("about:blank");
-  await pageB.goto("about:blank");
+  try {
+    const a = await browser.newContext();
+    const b = await browser.newContext();
+    const pageA = await a.newPage();
+    const pageB = await b.newPage();
+    await pageA.goto("about:blank");
+    await pageB.goto("about:blank");
 
-  const setup = async (page: typeof pageA, isOfferer: boolean) =>
-    page.evaluate((offerer) => {
-      const pc = new RTCPeerConnection({ iceServers: [] });
-      (window as any).__pc = pc;
-      (window as any).__received = new Promise<string>((resolve) => {
-        if (offerer) {
-          const channel = pc.createDataChannel("probe");
-          (window as any).__channel = channel;
-          channel.onmessage = (event) => resolve(String(event.data));
-        } else {
-          pc.ondatachannel = (event) => {
-            (window as any).__channel = event.channel;
-            event.channel.onmessage = (message) =>
-              resolve(String(message.data));
-          };
-        }
-      });
-    }, isOfferer);
+    const setup = async (page: typeof pageA, isOfferer: boolean) =>
+      page.evaluate((offerer) => {
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        (window as any).__pc = pc;
+        (window as any).__received = new Promise<string>((resolve) => {
+          if (offerer) {
+            const channel = pc.createDataChannel("probe");
+            (window as any).__channel = channel;
+            channel.onmessage = (event) => resolve(String(event.data));
+          } else {
+            pc.ondatachannel = (event) => {
+              (window as any).__channel = event.channel;
+              event.channel.onmessage = (message) =>
+                resolve(String(message.data));
+            };
+          }
+        });
+      }, isOfferer);
 
-  await setup(pageA, true);
-  await setup(pageB, false);
+    await setup(pageA, true);
+    await setup(pageB, false);
 
-  // Non-trickle: wait for gathering to finish so one SDP carries everything.
-  const localDescription = (page: typeof pageA, kind: "offer" | "answer") =>
-    page.evaluate(async (which) => {
-      const pc = (window as any).__pc as RTCPeerConnection;
-      const description =
-        which === "offer" ? await pc.createOffer() : await pc.createAnswer();
-      await pc.setLocalDescription(description);
-      await new Promise<void>((resolve) => {
-        if (pc.iceGatheringState === "complete") {
-          resolve();
-          return;
-        }
-        pc.onicegatheringstatechange = () => {
+    // Non-trickle: wait for gathering to finish so one SDP carries everything.
+    const localDescription = (page: typeof pageA, kind: "offer" | "answer") =>
+      page.evaluate(async (which) => {
+        const pc = (window as any).__pc as RTCPeerConnection;
+        const description =
+          which === "offer" ? await pc.createOffer() : await pc.createAnswer();
+        await pc.setLocalDescription(description);
+        await new Promise<void>((resolve) => {
           if (pc.iceGatheringState === "complete") {
             resolve();
+            return;
           }
-        };
-      });
-      return JSON.stringify(pc.localDescription);
-    }, kind);
+          pc.onicegatheringstatechange = () => {
+            if (pc.iceGatheringState === "complete") {
+              resolve();
+            }
+          };
+        });
+        return JSON.stringify(pc.localDescription);
+      }, kind);
 
-  const setRemote = (page: typeof pageA, sdp: string) =>
-    page.evaluate(async (raw) => {
-      const pc = (window as any).__pc as RTCPeerConnection;
-      await pc.setRemoteDescription(JSON.parse(raw));
-    }, sdp);
+    const setRemote = (page: typeof pageA, sdp: string) =>
+      page.evaluate(async (raw) => {
+        const pc = (window as any).__pc as RTCPeerConnection;
+        await pc.setRemoteDescription(JSON.parse(raw));
+      }, sdp);
 
-  const offer = await localDescription(pageA, "offer");
-  await setRemote(pageB, offer);
-  const answer = await localDescription(pageB, "answer");
-  await setRemote(pageA, answer);
+    const offer = await localDescription(pageA, "offer");
+    await setRemote(pageB, offer);
+    const answer = await localDescription(pageB, "answer");
+    await setRemote(pageA, answer);
 
-  const opened = await pageA.evaluate(
-    () =>
-      new Promise<boolean>((resolve) => {
-        const channel = (window as any).__channel as RTCDataChannel;
-        if (channel.readyState === "open") {
-          resolve(true);
-          return;
-        }
-        channel.onopen = () => resolve(true);
-        setTimeout(() => resolve(false), 15000);
-      }),
-  );
-  expect(opened, "data channel opened on host candidates alone").toBe(true);
+    const opened = await pageA.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const channel = (window as any).__channel as RTCDataChannel;
+          if (channel.readyState === "open") {
+            resolve(true);
+            return;
+          }
+          channel.onopen = () => resolve(true);
+          setTimeout(() => resolve(false), 15000);
+        }),
+    );
+    expect(opened, "data channel opened on host candidates alone").toBe(true);
 
-  await pageA.evaluate(() =>
-    ((window as any).__channel as RTCDataChannel).send("hello from A"),
-  );
-  await expect
-    .poll(() => pageB.evaluate(() => (window as any).__received), {
-      timeout: 15000,
-    })
-    .toBe("hello from A");
+    await pageA.evaluate(() =>
+      ((window as any).__channel as RTCDataChannel).send("hello from A"),
+    );
+    await expect
+      .poll(() => pageB.evaluate(() => (window as any).__received), {
+        timeout: 15000,
+      })
+      .toBe("hello from A");
 
-  await browser.close();
+  } finally {
+    await browser.close();
+  }
 });

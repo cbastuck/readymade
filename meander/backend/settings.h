@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./allowedOrigins.h"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -16,6 +17,7 @@
 #include <auth.h>
 
 #include "boardName.h"
+#include "remoteRoute.h"
 
 class Settings
 {
@@ -26,7 +28,28 @@ public:
     std::string url;
     int port = 0;
     std::string color;
+    // Other names the server answers to, beside `name`: what lets a board
+    // that says an older or a shared name still find it.
+    std::vector<std::string> aliases;
   };
+
+  /** The aliases in a remote's JSON, as they are kept (`keptAliases`). */
+  static std::vector<std::string> readAliases(const nlohmann::json& entry, const std::string& name)
+  {
+    std::vector<std::string> given;
+    const auto it = entry.find("aliases");
+    if (it != entry.end() && it->is_array())
+    {
+      for (const auto& alias : *it)
+      {
+        if (alias.is_string())
+        {
+          given.push_back(alias.get<std::string>());
+        }
+      }
+    }
+    return readymade::keptAliases(given, name);
+  }
 
   static bool isInternalRuntimeUrl(const std::string& url)
   {
@@ -361,6 +384,35 @@ public:
     return writeSettings(settings);
   }
 
+  // The sites the person lets call the runtime from a browser, beside the app
+  // itself and pages served from this machine; see allowedOrigins.h.
+  std::vector<std::string> getAllowedOrigins() const
+  {
+    std::vector<std::string> origins;
+    const auto settings = readSettings();
+    const auto it = settings.find("allowedOrigins");
+    if (it != settings.end() && it->is_array())
+    {
+      for (const auto& entry : *it)
+      {
+        if (entry.is_string())
+        {
+          origins.push_back(entry.get<std::string>());
+        }
+      }
+    }
+    return readymade::normalizeOrigins(origins);
+  }
+
+  // Writes allowedOrigins, as origins. Unlike the settings above this is not
+  // read once at startup: the caller hands the list to the running server.
+  bool setAllowedOrigins(const std::vector<std::string>& origins) const
+  {
+    auto settings = readSettings();
+    settings["allowedOrigins"] = readymade::normalizeOrigins(origins);
+    return writeSettings(settings);
+  }
+
   std::string getBundlesPath() const
   {
     namespace fs = std::filesystem;
@@ -415,6 +467,8 @@ public:
       {
         runtime.color = colorIt->get<std::string>();
       }
+
+      runtime.aliases = readAliases(entry, runtime.name);
 
       if (!runtime.name.empty() && !runtime.url.empty() &&
           !isInternalRuntimeUrl(runtime.url))
@@ -564,6 +618,10 @@ private:
       if (!runtime.color.empty())
       {
         entry["color"] = runtime.color;
+      }
+      if (!runtime.aliases.empty())
+      {
+        entry["aliases"] = runtime.aliases;
       }
       remotesArray.push_back(std::move(entry));
     }

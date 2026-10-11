@@ -63,6 +63,12 @@ export type RuntimeClass = {
   type: RuntimeClassType;
   name: string;
   url?: string;
+  /**
+   * Other names a kept runtime server answers to, beside `name` — what lets a
+   * board that says an older or a shared name still find it. See
+   * `runtime/board/remote`.
+   */
+  aliases?: Array<string>;
   bundles?: Array<string>;
   color?: string;
 };

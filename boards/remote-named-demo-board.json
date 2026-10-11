@@ -1,12 +1,12 @@
 {
   "boardName": "Remote by name",
-  "description": "A runtime that names its runtime server instead of giving an address: \"remote\": \"NodeJS\" is looked up among the runtime servers this client keeps. A Timer on that server ticks into a Monitor there and one in the browser.",
+  "description": "A runtime that names its runtime server instead of giving an address: \"remote\": \"node\" is looked up among the runtime servers this client keeps. A Timer on that server ticks into a Monitor there and one in the browser.",
   "runtimes": [
     {
       "id": "remote-test-node",
       "name": "Node",
       "type": "rest",
-      "remote": "NodeJS",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

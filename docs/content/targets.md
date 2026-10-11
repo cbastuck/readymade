@@ -214,14 +214,17 @@ rebuilding it.
 
 The C++ runtime also runs with no app around it (`hkp-rt/exe`), which is what a
 server or a container runs. On a person's own machine it needs nothing said: it
-listens on `127.0.0.1`, and a loopback bind is itself the access boundary.
+listens on `127.0.0.1`, which keeps other machines out, and answers only the
+Readymade apps and pages served from that machine, which keeps out the sites
+open in its owner's browser (see [Runtime](concepts/runtime.md), *Who may call
+a server from a browser*).
 Anywhere else its environment says the rest, in the names hkp-node uses:
 
 | Variable | |
 |---|---|
 | `HOST`, `PORT` | what it listens on; `127.0.0.1` and `5556` unless said |
 | `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `ALLOWED_EMAILS` | who may use it. **All three are required for a bind that is not loopback** — without them it refuses to start, rather than serve an open port or deny every request once running |
-| `ALLOWED_ORIGINS` | which origins may call it from a browser |
+| `ALLOWED_ORIGINS` | which origins may call it from a browser, replacing the default — the Readymade apps and pages served from the machine it runs on |
 | `HKP_EXTERNAL_URL` | where it is reached from outside when that is not `http://<host>:<port>` — behind a proxy terminating TLS. Endpoints its services expose are published under it |
 | `HKP_MOUNT_SECRET` | keys those endpoints' addresses; else kept at `~/.hkp/cpp/mount-secret` |
 | `HKP_COORDINATOR_LINKS_FILE` | where coordinator tickets are kept; `~/.hkp/cpp/coordinator-links.json` |

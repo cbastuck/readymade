@@ -1,6 +1,6 @@
 {
   "boardName": "Voice Assistant",
-  "description": "A fully local voice assistant: push Record, speak, push Stop — the browser captures 16 kHz PCM audio and ships it to the hkp-python runtime, where speech-to-text (faster-whisper) transcribes it, text-generation answers via a local llama-server on port 8081, and text-to-speech (Kokoro-82M) synthesizes the reply, which plays back through the browser Audio Output. Requires the Python runtime on port 8080 with both extras installed (pip install \"hkp-python[asr,tts]\") and an OpenAI-compatible LLM server on port 8081. First use downloads the Whisper and Kokoro models, so give it a moment.",
+  "description": "A fully local voice assistant: push Record, speak, push Stop — the browser captures 16 kHz PCM audio and ships it to the hkp-python runtime, where speech-to-text (faster-whisper) transcribes it, text-generation answers via a local llama-server on port 8081, and text-to-speech (Kokoro-82M) synthesizes the reply, which plays back through the browser Audio Output. Requires hkp-python, kept as the remote `python`, with both extras installed (pip install \"hkp-python[asr,tts]\") and an OpenAI-compatible LLM server on port 8081. First use downloads the Whisper and Kokoro models, so give it a moment.",
   "runtimes": [
     {
       "id": "recorder",
@@ -15,7 +15,7 @@
       "id": "python",
       "name": "Python",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "python",
       "state": {
         "wrapServices": false,
         "minimized": false

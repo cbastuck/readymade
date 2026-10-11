@@ -210,7 +210,9 @@ export default function ManageRuntimesSheet({ open, onClose }: Props) {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {rt.url}
+                    {rt.aliases?.length
+                      ? `${rt.url} · also ${rt.aliases.join(", ")}`
+                      : rt.url}
                   </div>
                 </div>
                 <button

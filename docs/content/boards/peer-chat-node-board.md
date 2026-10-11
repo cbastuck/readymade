@@ -43,5 +43,5 @@ survives restarts. A board saved today still points at the right place tomorrow.
 
 ## Try it
 
-It needs an hkp-node runtime at `http://127.0.0.1:8080`. Open the board in two
-browsers, both pointed at the same node.
+It needs an hkp-node kept under the name `node` in *Manage runtime servers*.
+Open the board in two browsers, both keeping the same server under that name.

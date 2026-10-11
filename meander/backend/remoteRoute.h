@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /**
  * Which remote an `hkp://remotes/<name>/…` request is addressed to.
@@ -22,6 +24,55 @@ namespace readymade
 using RouteParams = std::unordered_map<std::string, std::string>;
 
 /**
+ * What every Readymade app calls the runtime it embeds, and lists it as.
+ *
+ * A board says `"remote": "embedded"` to mean the runtime of whichever app
+ * opened it (`EMBEDDED_REMOTE_NAME` in hkp-frontend's runtime/board/remote.ts).
+ * The name an app gave its runtime before this one — the server's own name,
+ * `meander-cpp` here — is still answered to, for the boards that say it.
+ */
+inline const std::string kEmbeddedRemoteName = "embedded";
+
+/** Whether `name` is one this app's own runtime goes by — and so not one a
+ *  runtime server somebody keeps may take. */
+inline bool isOwnRemoteName(const std::string& name, const std::string& serverName)
+{
+  return name == kEmbeddedRemoteName || name == serverName;
+}
+
+/**
+ * The other names a kept runtime server answers to, as they are kept: none
+ * empty, each once, and none the name the server is listed under already.
+ *
+ * A board holds a name for as long as it exists, so a server keeps the ones it
+ * has gone by — a rename leaves the old name here — and may go by a name boards
+ * share for its kind (`node`, `python`) beside the one its owner gave it.
+ */
+inline std::vector<std::string> keptAliases(const std::vector<std::string>& given, const std::string& name)
+{
+  std::vector<std::string> aliases;
+  for (const auto& alias : given)
+  {
+    if (alias.empty() || alias == name ||
+        std::find(aliases.begin(), aliases.end(), alias) != aliases.end())
+    {
+      continue;
+    }
+    aliases.push_back(alias);
+  }
+  return aliases;
+}
+
+/** Whether any of `names` is one this app's own runtime goes by. */
+inline bool hasOwnRemoteName(const std::vector<std::string>& names, const std::string& serverName)
+{
+  return std::any_of(names.begin(), names.end(), [&serverName](const std::string& name)
+  {
+    return isOwnRemoteName(name, serverName);
+  });
+}
+
+/**
  * Whether a forwarded request names this app's own runtime.
  *
  * False for an unknown name and for a missing parameter alike: both mean the
@@ -39,7 +90,7 @@ inline bool isOwnRemote(const RouteParams& params, const std::string& serverName
   {
     return false;
   }
-  return remote->second == serverName;
+  return isOwnRemoteName(remote->second, serverName);
 }
 
 /** The remote a request named, or empty when it named none. */

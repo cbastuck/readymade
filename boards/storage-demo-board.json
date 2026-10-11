@@ -1,12 +1,12 @@
 {
   "boardName": "Storage",
-  "description": "Where a board keeps bytes. Type a line and it is written into a volume as a file; the same volume is served, read-only, at an address you can open in a browser.\n\nTwo instances of the same service, doing opposite things, which is the point: the one the facade writes through accepts writes because nothing outside the board can reach it, and the one behind the endpoint is read-only because a mount is unauthenticated by design. What holds the bytes is neither of them — it is the nested pipeline, `filesystem` here, and swapping it for something speaking S3 changes nothing in front of it.\n\nNeeds hkp-node on port 8080.",
+  "description": "Where a board keeps bytes. Type a line and it is written into a volume as a file; the same volume is served, read-only, at an address you can open in a browser.\n\nTwo instances of the same service, doing opposite things, which is the point: the one the facade writes through accepts writes because nothing outside the board can reach it, and the one behind the endpoint is read-only because a mount is unauthenticated by design. What holds the bytes is neither of them — it is the nested pipeline, `filesystem` here, and swapping it for something speaking S3 changes nothing in front of it.\n\nNeeds hkp-node, kept as the remote `node`.",
   "runtimes": [
     {
       "id": "node",
       "name": "Node",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

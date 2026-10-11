@@ -6,7 +6,7 @@
       "id": "producer",
       "name": "1 · Producer",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -15,7 +15,7 @@
       "id": "consumer",
       "name": "2 · Consumer",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -24,7 +24,7 @@
       "id": "log",
       "name": "3 · The log",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

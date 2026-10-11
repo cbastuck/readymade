@@ -12,8 +12,8 @@ import type { HostOptions } from "./support/test";
  * Kept out of the main config so the fast suite stays fast and starts nothing
  * but the two dev servers. Here a third process joins them: one hkp-node on
  * loopback, serving as both runtime server and coordinator — the single-box
- * setup. On loopback it runs without authentication, and keeps nothing on
- * disk: every directory it would write to is pointed at nowhere.
+ * setup. On loopback it runs without authentication. A wrapper isolates its
+ * data in a temporary directory and removes it after the child exits.
  *
  * A fourth joins where it has been built: hkp-rt, the C++ runtime server, as a
  * second place a board's runtime can live. `hkp-rt/run-tests.sh` builds the
@@ -48,6 +48,8 @@ export default defineConfig<HostOptions>({
   reporter: process.env.CI ? [["github"], ["html"]] : [["list"], ["html"]],
 
   use: {
+    serviceWorkers: "block",
+    serverOrigins: [NODE_URL, RT_URL],
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -76,14 +78,16 @@ export default defineConfig<HostOptions>({
       timeout: 120_000,
     },
     {
-      command: `"${process.execPath}" node_modules/tsx/dist/cli.mjs src/index.ts`,
+      command: `"${process.execPath}" ../e2e/support/runtime-server.mjs node node_modules/tsx/dist/cli.mjs src/index.ts`,
       cwd: "../hkp-node",
       url: `${NODE_URL}/runtimes`,
       // Never reused: a server left over from another run would still hold
       // that run's boards and tickets.
       reuseExistingServer: false,
       timeout: 60_000,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 5_000 },
       env: {
+        HKP_E2E_LOG_DIR: path.join(HERE, "test-results", "servers"),
         SKIP_LOADING_ENV: "true",
         HOST: "127.0.0.1",
         EXTERNAL_HOST: "127.0.0.1",
@@ -104,12 +108,14 @@ export default defineConfig<HostOptions>({
     ...(RT_BIN
       ? [
           {
-            command: `"${RT_BIN}" ${RT_PORT}`,
+            command: `"${process.execPath}" support/runtime-server.mjs rt "${RT_BIN}" ${RT_PORT}`,
             url: `${RT_URL}/runtimes`,
             reuseExistingServer: false,
             timeout: 60_000,
+            gracefulShutdown: { signal: "SIGTERM" as const, timeout: 5_000 },
             env: {
-              HOST: "",
+              HKP_E2E_LOG_DIR: path.join(HERE, "test-results", "servers"),
+              HOST: "127.0.0.1",
               AUTH0_DOMAIN: "",
               AUTH0_AUDIENCE: "",
               ALLOWED_EMAILS: "",

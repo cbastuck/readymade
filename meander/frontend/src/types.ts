@@ -3,4 +3,6 @@ export type Remote = {
   url: string;
   name: string;
   color?: string;
+  /** Other names the server answers to, beside `name`. */
+  aliases?: string[];
 };

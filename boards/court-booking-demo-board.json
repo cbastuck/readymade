@@ -6,7 +6,7 @@
       "id": "club",
       "name": "Club",
       "type": "rest",
-      "remote": "NodeJS",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

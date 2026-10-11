@@ -48,5 +48,6 @@ one request that may not survive a phone's connection.
 
 ## Try it
 
-It needs a runtime reachable as `hkp://remotes/meander-cpp` with write access to
-`/tmp/dropitapp`, and the phone must be able to reach that runtime's URL.
+Open it in the Readymade desktop app: the upload runtime names the app's own
+runtime (`"remote": "embedded"`), which needs write access to `/tmp/dropitapp`,
+and the phone must be able to reach that runtime's URL.

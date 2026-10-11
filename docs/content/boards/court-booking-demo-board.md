@@ -93,6 +93,7 @@ so somebody else's booking shows on their next tap rather than at once.
 
 ## Try it
 
-Needs a signed-in account and hkp-node on port 8080. The schema is created on
+Needs a signed-in account and an hkp-node kept under the name `node` in
+*Manage runtime servers*. The schema is created on
 first run, in a table of its own (`court_booking`) — the board's earlier
 `booking` table is left as it was.
