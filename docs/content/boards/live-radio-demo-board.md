@@ -90,7 +90,11 @@ microphone, so the first samples have somewhere to go; Stop does the reverse.
 
 ## Try it
 
-Run hkp-rt on port 8887 (`hkp-rt 8887`) and load the board. Check the
+Open the board in the Readymade app. Its runtime names the app's own runtime
+(`"remote": "embedded"`), so there is no address to set and no port that has to
+be free. To run it from the playground in a browser against an hkp-rt you
+started yourself, keep that server under the name `embedded` in *Manage runtime
+servers* — outside the app it is a name like any other. Check the
 microphone's **Channels** in its panel: the encoder is set to `1`, which matches
 a built-in mic. For a two-channel interface, set the encoder's `channels` to `2`. If the device
 will not run at the 48 kHz the board asks for, the board says so when you press

@@ -44,7 +44,7 @@
       "id": "upload-server",
       "name": "Upload Server",
       "type": "rest",
-      "url": "hkp://remotes/meander-cpp"
+      "remote": "embedded"
     }
   ],
   "services": {

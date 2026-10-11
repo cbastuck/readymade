@@ -15,8 +15,9 @@ namespace hkp
  * What a standalone hkp-rt is started with, read from its arguments and its
  * environment.
  *
- * On a person's own machine none of it needs saying: it binds loopback, and a
- * loopback bind is itself the access boundary. Anywhere else — a container, a
+ * On a person's own machine none of it needs saying: it binds loopback, which
+ * keeps other machines out, and answers no page but the Readymade apps' and
+ * this machine's own (origins.h). Anywhere else — a container, a
  * server — the bind is opened with `HOST`, and that is only allowed together
  * with who may use it: a non-loopback bind without `AUTH0_DOMAIN`,
  * `AUTH0_AUDIENCE` and `ALLOWED_EMAILS` is refused rather than served open.
@@ -33,8 +34,9 @@ struct StandaloneConfig
   /** Where it is reached from outside, when that is not `http://<externalHost>:<port>`
    *  — behind a proxy that terminates TLS, say. `HKP_EXTERNAL_URL`. */
   std::string externalUrl;
-  /** Origins allowed to call it from a browser. `ALLOWED_ORIGINS`. */
-  std::string allowedOrigins = "*";
+  /** Origins allowed to call it from a browser; empty means the Readymade
+   *  apps and pages served from this machine (see origins.h). `ALLOWED_ORIGINS`. */
+  std::string allowedOrigins;
   AuthConfig auth;
   /** Where coordinator tickets are kept; empty keeps them in memory.
    *  `HKP_COORDINATOR_LINKS_FILE`. */
@@ -184,14 +186,8 @@ inline StandaloneConfig readStandaloneConfig(
         "server: " + missing + " not set. Set them, or leave HOST unset to listen "
         "on 127.0.0.1 only.";
     }
-    // Any browser may call a loopback server; one that is exposed says which.
-    const auto origins = read("ALLOWED_ORIGINS");
-    if (!origins.empty())
-    {
-      config.allowedOrigins = origins;
-    }
   }
-  else if (const auto origins = read("ALLOWED_ORIGINS"); !origins.empty())
+  if (const auto origins = read("ALLOWED_ORIGINS"); !origins.empty())
   {
     config.allowedOrigins = origins;
   }

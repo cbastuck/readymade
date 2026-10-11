@@ -6,7 +6,7 @@
       "id": "endpoint-node",
       "name": "Endpoint",
       "type": "rest",
-      "url": "hkp://remotes/meander-cpp",
+      "remote": "embedded",
       "state": {
         "wrapServices": false
       }
@@ -15,7 +15,7 @@
       "id": "caller-node",
       "name": "Caller",
       "type": "rest",
-      "url": "hkp://remotes/meander-cpp",
+      "remote": "embedded",
       "state": {
         "wrapServices": false
       }

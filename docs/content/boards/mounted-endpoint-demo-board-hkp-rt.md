@@ -11,8 +11,8 @@ other runtime, and the reply appears in a monitor.
 
 ## How it works
 
-Two [REST runtimes](../concepts/runtime.md#the-servers), both on an hkp-rt
-server reached as the `meander-cpp` remote.
+Two [REST runtimes](../concepts/runtime.md#the-servers), both on the hkp-rt
+the Readymade app embeds, named as `"remote": "embedded"`.
 
 ### Endpoint
 
@@ -45,6 +45,6 @@ somebody else's runtime of the same name on the same server.
 
 ## Try it
 
-It needs an hkp-rt runtime reachable as the `meander-cpp` remote. The browser
+Open it in the Readymade app, whose own runtime both of them name. The browser
 variant of the same idea is `mounted-endpoint-demo-board.json`, on the
 [Mounts](../concepts/mounts.md) page.

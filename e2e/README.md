@@ -90,6 +90,24 @@ Everything the host is asked to store is mirrored on `window.__HKP_FAKE_HOST__`
 and reachable through the `hostState()` fixture, so a spec can assert on what
 the app actually handed the platform, not only on what the UI shows.
 
+The fake's backing store lives in origin-local browser storage inside each
+test's fresh Playwright context. Writes to boards, files, settings, secrets,
+audiences and grants survive document reloads; another test starts clean.
+This is a test adapter, not native disk/keychain coverage. It does not provide
+live synchronization between simultaneously open documents; concurrent native
+library tests will need a shared host adapter.
+
+`seedBoard` seeds each name once per origin. Its marker survives a board's
+deletion, so reloads neither overwrite saved edits nor recreate deleted boards.
+Native seeds are queued when the fake has not booted yet; correctness does not
+depend on the order Playwright runs initialization scripts. Set up seeds before
+the first navigation. Reopening should use the same fixture/context without
+calling a fresh seed helper.
+
+`tests/board-persistence.spec.ts` edits a timer through its panel, saves through
+each shell, reloads and reopens, and checks both the saved setting and the UI.
+It also checks deletion and native host writes across document replacement.
+
 ### What this does and does not cover
 
 It covers everything above the platform boundary, given a conforming host. It
@@ -135,7 +153,7 @@ npm run test:cloud       # playwright.cloud.config.ts
 ```
 
 It starts one hkp-node on loopback (port 18080) as both runtime server and
-coordinator, keeping nothing on disk, and drives the desktop shell against it.
+coordinator, using a disposable data directory, and drives the desktop shell against it.
 Where hkp-rt has been built (`hkp-rt/run-tests.sh` builds it; `HKP_RT_BIN`
 names a binary built elsewhere) it is started too, on port 18087, as a second
 runtime server, and `deploy-rt.spec.ts` deploys a board onto it. Without the
@@ -149,7 +167,12 @@ Two things a spec supplies that the shell would otherwise get from a person:
   native host reports as the runtime servers this host knows by name.
 
 The server is shared by every spec and has one tenant, so specs use their own
-runtime ids and board names, and `afterEach` deletes what they left on it.
+runtime ids and board names. `afterEach` attempts every board/runtime deletion,
+verifies both lists are empty, and attaches cleanup failures without replacing
+an earlier test failure. A cleanup failure fails an otherwise passing test.
+`support/runtime-server.mjs` captures Node/C++ logs under
+`test-results/servers/` and removes its own temporary data on startup failure
+or normal SIGTERM shutdown. Forced termination (SIGKILL) cannot run cleanup.
 
 ## Capability checks
 
@@ -192,3 +215,47 @@ the app.
 Prefer boards that need no network: they run identically on all three profiles
 and are the bulk of what is worth covering. Specs that need a real hkp-node go
 in `tests/cloud/`, which the fast suite ignores.
+
+
+## Diagnostics and controlled dependencies
+
+The shared fixture listens before navigation on every page in its browser
+context. Uncaught exceptions and unexpected application console errors fail an
+otherwise passing test. Console errors, failed requests and HTTP error responses
+are attached as `browser-diagnostics.json`; failing cloud tests also attach
+runtime logs. URLs omit credentials, query strings and fragments; common bearer
+and token strings are redacted. Use synthetic data: traces/screenshots and raw
+local server logs are not general-purpose secret scrubbers.
+
+HTTP errors and browser-generated resource messages are recorded, because
+negative API journeys can intentionally produce them. They are not universally
+asserted away: each journey must check its intended visible/API result.
+Application console exceptions require a reviewed, per-spec message pattern via
+`expectedConsoleErrors` or an `expected-console-error` annotation. Keep any
+exception scoped to the affected journey and record its reason in the plan.
+The send-ntfy input warnings and C++ handover close error are now fixed; their
+exceptions have been removed. The reduce demo remains an existing expected
+failure.
+
+Browser HTTP/WebSocket traffic is restricted to the configured application
+origin and explicitly declared `serverOrigins`. Unmocked HTTP dependencies get
+503; unmocked WebSockets close with code 1008. Per-page routes take precedence,
+so tests can supply controlled API responses. Service workers are blocked to
+prevent interception from bypassing the routes. This controls browser traffic,
+not arbitrary outbound traffic from real runtime services. Keep cloud boards
+synthetic and free of messaging/model calls unless their server dependency is
+also controlled. The WebRTC capability probe uses local peers and no STUN.
+
+The optional face-video journey skips when `HKP_E2E_FACE_Y4M` is absent. When
+specified, a missing file or invalid Y4M header fails configuration rather than
+silently skipping. The fixture must contain a face; ntfy is mocked locally, and
+the MediaPipe model/WASM assets are bundled with the application.
+External model downloads receive the same browser guard as other dependencies:
+a model-dependent journey needs bundled assets or an explicit local mock.
+
+`fixture-contract.spec.ts` verifies mock precedence, diagnostic enforcement,
+credential redaction, persistent native presets and cleanup failure handling.
+Its injected browser exception is an intentional expected failure on each host:
+if diagnostics stop enforcing it, the unexpected pass fails the suite.
+`runtime-server.spec.ts` checks process startup failure and graceful cleanup
+once on web; these process contracts are independent of desktop/mobile shells.

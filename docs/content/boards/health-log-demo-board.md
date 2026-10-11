@@ -126,6 +126,7 @@ neither needs a service devoted only to reshaping the other's data.
 
 ## Try it
 
-Run hkp-node on port 8080 and open **Private Health Log** from the demo list.
+Run hkp-node, keep it under the name `node` in *Manage runtime servers*, and
+open **Private Health Log** from the demo list.
 The initial values are fictional and exist only to make the charts immediately
 inspectable.

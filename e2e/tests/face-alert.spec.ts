@@ -50,6 +50,20 @@ async function answerNtfy(page: import("@playwright/test").Page) {
 }
 
 const video = process.env.HKP_E2E_FACE_Y4M;
+if (video) {
+  const header = Buffer.alloc(9);
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(video, "r");
+    if (!fs.fstatSync(fd).isFile() || fs.readSync(fd, header, 0, 9, 0) !== 9 || header.toString() !== "YUV4MPEG2") {
+      throw new Error("invalid Y4M header");
+    }
+  } catch {
+    throw new Error("HKP_E2E_FACE_Y4M must name an existing Y4M camera fixture");
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
 test.skip(!video, "HKP_E2E_FACE_Y4M names no video with a face in it");
 test.use(cameraPlaying(video));
 

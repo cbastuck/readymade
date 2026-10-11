@@ -17,7 +17,7 @@ Three runtimes in chain order, and the split is the design.
 16 kHz PCM. Capture belongs here because the microphone is here; nothing else in
 the board could reach it.
 
-**2 · python — a [REST runtime](../concepts/runtime.md#the-servers) on port 8080.**
+**2 · python — a [REST runtime](../concepts/runtime.md#the-servers), the remote `python`.**
 
 - [Speech To Text](../services/speech-to-text.md) transcribes with
   faster-whisper.
@@ -44,7 +44,8 @@ Python runtime were on another machine, which is the point: moving it there is a
 
 ## Try it
 
-Needs hkp-python on port 8080 with both extras —
+Needs an hkp-python kept under the name `python` in *Manage runtime servers*,
+with both extras —
 `pip install "hkp-python[asr,tts]"` — and an OpenAI-compatible LLM server on
 port 8081. First use downloads the Whisper and Kokoro models, so give it a
 moment.

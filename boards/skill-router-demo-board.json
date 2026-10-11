@@ -1,6 +1,6 @@
 {
   "boardName": "Skill Router",
-  "description": "Voice-controlled skill dispatch: push Record and say e.g. 'send a notification to topic X and message hello'. The browser ships 16 kHz PCM audio to the hkp-python runtime, speech-to-text transcribes it, and the skill-router service asks the local LLM (llama-server on port 8081) to match the request against the configured skills and extract the payload. On a match it emits { board, payload }; a Board-Service in 'board name from input' mode then plays the named saved board ('send ntfy') with that payload. No match stops the pipeline. Requires: hkp-python on port 8080 (pip install \"hkp-python[asr]\"), an OpenAI-compatible LLM server on port 8081, and the 'send ntfy' board saved locally.",
+  "description": "Voice-controlled skill dispatch: push Record and say e.g. 'send a notification to topic X and message hello'. The browser ships 16 kHz PCM audio to the hkp-python runtime, speech-to-text transcribes it, and the skill-router service asks the local LLM (llama-server on port 8081) to match the request against the configured skills and extract the payload. On a match it emits { board, payload }; a Board-Service in 'board name from input' mode then plays the named saved board ('send ntfy') with that payload. No match stops the pipeline. Requires: hkp-python, kept as the remote `python` (pip install \"hkp-python[asr]\"), an OpenAI-compatible LLM server on port 8081, and the 'send ntfy' board saved locally.",
   "runtimes": [
     {
       "id": "recorder",
@@ -15,7 +15,7 @@
       "id": "python",
       "name": "Python",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "python",
       "state": {
         "wrapServices": false,
         "minimized": false

@@ -6,7 +6,7 @@
       "id": "node",
       "name": "hkp-node",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

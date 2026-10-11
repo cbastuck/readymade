@@ -226,6 +226,32 @@ describe("projection", () => {
     expect(diagnostics.some((d) => d.code === "unit-runtime-collision")).toBe(false);
   });
 
+  it("replaces how a runtime is addressed, whichever way the unit said it", () => {
+    // A unit that names its runtime server, as the shipped ones do.
+    const named: UnitBoard = {
+      ...hotels,
+      runtimes: hotels.runtimes.map(({ url: _url, ...runtime }) => ({
+        ...runtime,
+        remote: "node",
+      })),
+    };
+    const placed = (binding: { url?: string; remote?: string }, unit: UnitBoard) =>
+      projectUnits(emptyComposition, [
+        { entry: { uri: "hotels", runtimes: { intake: binding } }, board: unit, name: "hotels" },
+      ]).board.runtimes;
+
+    // An address over a name leaves no name behind: a runtime says it once.
+    const [overNamed, untouched] = placed({ url: "https://prod:8080" }, named);
+    expect(overNamed.url).toBe("https://prod:8080");
+    expect(overNamed.remote).toBeUndefined();
+    expect(untouched.remote).toBe("node");
+
+    // And a name over an address leaves no address behind.
+    const [overAddressed] = placed({ remote: "Studio" }, hotels);
+    expect(overAddressed.remote).toBe("Studio");
+    expect(overAddressed.url).toBeUndefined();
+  });
+
   it("rejects a pin that collides with another runtime", () => {
     const { diagnostics } = projectUnits(emptyComposition, [
       {

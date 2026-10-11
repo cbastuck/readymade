@@ -80,6 +80,12 @@ whoever wrote it two attempts at making a client dial something. A board with a
 `url` and nothing else is valid forever — nothing here asks an existing board to
 change.
 
+Three names are the same in every board that uses them: `embedded`, the hkp-rt
+the Readymade app that opened the board embeds, and `node` and `python`, the
+hkp-node and the hkp-python the person opening it keeps under those names. A
+board meant to be handed on uses them rather than an address, which is one
+person's → `concepts/remotes.md`.
+
 The address a `remote` resolves to is **never written into the
 document**. It lives with the running board on the client that resolved it, and
 a save writes the name back → `concepts/remotes.md`.
@@ -91,6 +97,9 @@ A `url` need not be a plain address:
 - `hkp://remotes/<name>` addresses the runtime the app itself embeds →
   `concepts/runtime.md`. It is a name in a url's clothing — the spelling from
   before `remote` existed — and counts as one: it cannot sit beside a `remote`.
+  It names one app's runtime by that app's name for it; a board meant for
+  whichever app opens it says `"remote": "embedded"` instead →
+  `concepts/remotes.md`.
 
 `state` holds what the runtime remembers between loads: display preferences like
 `minimized` and `wrapServices`, and — once a board is deployed and logging is

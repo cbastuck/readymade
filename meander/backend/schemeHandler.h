@@ -2,6 +2,8 @@
 
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "./router.h"
 #include "./settings.h"
@@ -20,6 +22,11 @@ public:
 
   saucer::scheme::response handleRequest(const saucer::scheme::request &req);
   void addRoute(const Router::Method &method, const std::string &path, Router::Handler handler);
+
+  // The origins the app itself is loaded from over the network — e.g. the
+  // address its frontend server gives a phone on the LAN. Allowed at the
+  // runtime beside whatever the person added in the settings.
+  void setOwnOrigins(std::vector<std::string> origins);
 
 private:
   saucer::scheme::response handleGetRemotes(const Router::Params &p, const saucer::scheme::request &req) const;
@@ -53,10 +60,13 @@ private:
   saucer::scheme::response handleGetLocalImage(const Router::Params &p, const saucer::scheme::request &req) const;
 
   nlohmann::json currentRuntimeSettings() const;
+  // Hands the runtime the origins it should answer besides its defaults.
+  void applyAllowedOrigins() const;
 
 private:
   std::shared_ptr<hkp::Server> m_server;
   std::map<std::string, std::string> m_defaultHeaders;
   Router m_router;
   Settings m_settings;
+  std::vector<std::string> m_ownOrigins;
 };

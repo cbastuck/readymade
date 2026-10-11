@@ -4,6 +4,33 @@ Reviewed 2026-10-06 against the current working tree, including uncommitted chan
 
 Revised 2026-10-09 after a second pass that checked each security finding against the code. The findings are reordered by severity: the loopback finding and the hosted-network one are raised, the WebSocket, JWT and secret-storage ones lowered, and two findings plus three smaller items added. The E2E sections were not re-checked, apart from the CI item, which a commit of the same day changed.
 
+## Progress
+
+The security findings are worked through one at a time, in the order of the table below. This table is the only record of where that work stands: a session picks up the first row that is not `done`, and needs nothing but this document to do so.
+
+| # | Finding | State | Since | Outcome, or what is pending |
+| --- | --- | --- | --- | --- |
+| 1 | Local runtimes trust every loopback caller | in progress | 2026-10-09 | Built in all three runtime servers, the desktop host and the playground, with tests and docs. Remaining: the pass by hand listed under the finding |
+| 2 | Prototype pollution in facade projection | open | | |
+| 3 | Native page trust and navigation policy | open | | |
+| 4 | Hosted boards can reach private networks | open | | |
+| 5 | Unbounded coordinator WebSocket payloads | open | | |
+| 6 | The board document as untrusted input | open | | Also carries confining hkp-rt's `filesystem`, moved here from finding 1 (D4) and required |
+| 7 | Same-host reverse proxy and address-based trust | open | | |
+| 8 | JWT checks differ across runtimes | open | | |
+| 9 | Secret and session exposure at rest | open | | |
+| 10 | Facade capabilities and remaining shared-host items | open | | |
+
+States, in order: `open` — nothing beyond the finding; `proposed` — a fix is written under the finding and waits for a decision; `decided` — the decisions are recorded there and nothing is built; `in progress` — partly built, with what remains listed under the finding; `done`.
+
+How a finding is kept while it moves:
+
+- While it is `proposed`, `decided` or `in progress`, the finding carries one working subsection ("Proposed fix", then "Decided", then "Remaining") that is rewritten in place — never appended to.
+- When it is `done`, the whole finding section is cut down to three things: what was changed, the tests that pin it, and what was deliberately left. The reasoning moves to the docs page the row names, and the row says in one line what the outcome was.
+- A decision that moves work to another finding is recorded in both rows.
+
+The E2E and test-infrastructure sections further down are not tracked here.
+
 ## Assessment
 
 The project has substantial unit and integration coverage, including tenancy, mount claims, secrets, coordinator restart/reprovision, binary transport, and lifecycle tests. The E2E suite adds valuable checks for real UI behavior, block editing, browser SQL persistence, and coordinator deployment. Stable service UUID locators, touch-driven mobile interactions, failure traces, and expected-failure tracking are good foundations.
@@ -42,6 +69,53 @@ Status: read from code. No hostile-origin request was sent to a running runtime.
 Proposal: make the default allowed origins the app's own rather than `*`. On control routes, refuse a request that carries a foreign `Origin` even when its source address is loopback, and validate `Host` to address DNS rebinding. Consider a per-launch capability token handed to the webview the way `__MEANDER_CONFIG__` is, so that being local is no longer sufficient. Independently, decide whether hkp-rt's `filesystem` should be confined to roots the user picked. Origin checks must protect control routes without breaking intentional public mounts or machine clients, which send no `Origin`.
 
 Required tests: a hostile browser origin against actual loopback servers for both runtimes — simple requests, preflighted JSON, WebSocket upgrade and a rebinding `Host` — creating a runtime, configuring `filesystem` and reading a file must all fail.
+
+#### Decided 2026-10-09, in progress
+
+Checked while deciding: hkp-rt parses a request body whatever its `Content-Type` (`json::parse(req.body)` throughout `server.cpp`), so a `text/plain` POST from any page creates a runtime without a preflight. Narrowing the CORS header alone would hide responses and stop nothing; the refusal happens on the server. hkp-python has the same defaults as hkp-node and is in scope.
+
+**The rule.** A request let in without a credential — a server in no-auth mode, or hkp-rt's loopback pass in JWT mode — is let in only when both hold:
+
+- it does not come from a foreign page: its `Origin` is absent or on the server's origin list, and when `Origin` is absent its `Sec-Fetch-Site` is not `cross-site` (a browser omits `Origin` on a plain cross-site GET, but says so there);
+- it addresses the server by a name the server knows: the `Host` is an IP literal, `localhost`, or the configured external host. A rebinding attack needs a name the attacker resolves, so this is what stops it.
+
+It covers HTTP control routes and WebSocket upgrades alike. Mounts stay exempt — they are matched before it. A request carrying a verified token keeps its current treatment. A request a native host forwards in-process from its own webview (`Server::handleRequest`, the `hkp://` scheme) never crossed the network and is not subject to it.
+
+**The origin list.** Unset, it is the origins Readymade's own apps run from — `saucer://embedded` (desktop), `hkp://app` (iOS), `https://appassets.androidplatform.net` (Android) — and any loopback origin, whatever its port (D2). The public website is not on it (D1). `ALLOWED_ORIGINS` replaces it with exactly what it names. `*` remains something an operator may write, and then applies to CORS headers and token-bearing requests only; for the rule above it reads as unset. The CORS header echoes the matched origin with `Vary: Origin`.
+
+**The refusal.** `403` with no CORS headers and nothing in it that says why. To the page that was refused this is the same opaque network error a server that is not running produces — no status, nothing to read — and that is intended: a page is told nothing about what refused it. (That a port is open stays observable to a page that probes for it, as for any local server; not something this changes.)
+
+A preflight is not where a page is refused. hkp-rt cannot answer one per origin — Crow answers `OPTIONS` before it has read the headers naming the page — so it answers every preflight alike, and the request that follows states its origin and is refused on it. The other runtimes may answer preflights per origin, but nothing may rest on that: the rule is applied to the request.
+
+**Allowing a remote origin (D1)** is a change at the local end only:
+
+- `ALLOWED_ORIGINS` for hkp-node, hkp-python and a standalone hkp-rt; for the desktop app an `allowedOrigins` list in `~/.hkp/settings.json`, editable in its settings dialog and applied without a restart.
+- The page says what to do. When a board cannot reach a runtime server, the playground shows a dialog worded for both causes — the server is not running, or it does not allow this page's origin — naming the server and the origin, what to change locally for each kind of server, and a **Check again** button that repeats the connection and proceeds when it succeeds. It lives in hkp-frontend and is not specific to loopback.
+
+**Left as it is.**
+
+- D3 — no per-launch token for the desktop's port. `Origin` is enforced by browsers, so what remains after this fix is other processes and other accounts on the same machine.
+- D4 — confining hkp-rt's `filesystem` is not part of this finding. Moved to finding 6, where it is required, not optional.
+
+**Built 2026-10-09**, each with the hostile cases (foreign `Origin` on a simple POST, on preflighted JSON and on the upgrade; no `Origin` with `Sec-Fetch-Site: cross-site`; a foreign `Host`) and the callers that must keep working (no `Origin` at all, each app origin, a loopback origin, a mount):
+
+- hkp-rt — the rule in `lib/include/origins.h`; `http/server.cpp` applies it in `AuthMiddleware` and `wsOnAccept` and states who may read an answer in one place (`CorsMiddleware`); `Server::allowOrigins` adds origins while running. Tests: `tests/origins.test.cpp`, `tests/server_origins.test.cpp`.
+  Found by running the app, and fixed with it: a request the desktop host hands over in-process carries no middleware context, and `callerOfRequest` read a caller out of it — a crash on the first service configured from the app's own page. The read dates from the board-members work, not from this finding; `server_origins.test.cpp` now drives that path too.
+- hkp-node — `src/origins.ts`; `server.ts` applies it ahead of everything that reads a request, and in the upgrade handler. Tests: `tests/origins.test.ts`, `tests/server-origins.test.ts`.
+- hkp-python — `src/hkp/origins.py`; `server.py` applies it in the auth middleware and decides CORS per request (`aiohttp-cors`, which takes a fixed list, is gone). Tests: `tests/test_origins.py`.
+- Desktop host — passes nothing instead of `*`, names the frontend server's LAN address, and keeps `allowedOrigins` in `~/.hkp/settings.json` (`backend/allowedOrigins.h`, `settings.h`, `schemeHandler.cpp`), handed to the running runtime as it is saved; Settings → Access → Allowed websites edits it. Tests: `backend/tests/allowedOrigins.test.cpp`.
+- Playground dialog — `hkp-frontend/src/core/runtimeReach.ts` holds a runtime create request that got no answer and makes it again once told to; `ui-components/RuntimeUnreachableDialog.tsx` says both causes and checks again. One dialog per server, however many runtimes wait on it. Tests beside each.
+- iOS — a development build names the origin of `DEV_WEBAPP_URL` (`HKPRuntimeHost.mm`). **Not compiled in the app**: `build-ios.sh` stops earlier, at its frontend type-check, on errors in files this did not touch (`Uint8Array` used as a generic), and the simulator build directory is stale. The lines were compiled and run on their own. Android already named its own origin.
+- Docs — `docs/content/concepts/runtime.md` ("Who may call a server from a browser"), `docs/content/targets.md`, and the `ALLOWED_ORIGINS` rows of the three READMEs.
+
+**Remaining.**
+
+1. A pass by hand, which nothing above replaces — the tests send a browser's headers, they are not a browser on another site, and nothing was run in the packaged app:
+   - from a page on another origin, against a running desktop app and a local hkp-node: nothing can be created or read, and the socket does not open;
+   - the playground on the public website against a local runtime: the dialog appears, and Check again lets the board through once the site is allowed — in the app's settings without a restart, for a command-line server after one;
+   - the packaged desktop app, and a phone on the LAN with external access on, still drive the runtime;
+   - an iOS build at all, once `build-ios.sh` gets past its frontend step, and then a development build on a device.
+2. Move what is settled here into the docs' own words where it is not yet, then cut this section down as the Progress rules say.
 
 ### 2. High: prototype pollution in facade projection, reaching identity
 
@@ -92,6 +166,8 @@ Required tests: oversize/truncated frames, notification floods, slow readers, di
 Boards are shared as files and links, and opening one builds its runtimes. Neither pass established what a board somebody else wrote can do before the person opening it has agreed to anything. A board naming the local runtime with a `filesystem` or `core-input` service is finding 1 without a browser in between. Secrets have a consent prompt and remembered grants; whether building runtimes on a local or named server has an equivalent was not checked.
 
 Proposal: state the trust model for an opened board, then test it. Inventory what a board can cause on open, per host: runtimes created, services configured, requests sent, files touched, devices opened. Anything reaching the local machine or a credentialed server should be behind the same kind of consent secrets are.
+
+Moved here from finding 1 (2026-10-09), and required rather than optional: hkp-rt's `filesystem` reads and writes whatever path it is configured with (`hkp-rt/lib/src/services/filesystem.h`). Confine it to roots the person chose, as hkp-node's is confined to tenant volumes.
 
 Required tests: a hostile board opened in the playground, the desktop app and on mobile creates nothing on a local or remote runtime and sends nothing until consent is given.
 

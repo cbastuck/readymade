@@ -6,7 +6,7 @@
       "id": "ios",
       "name": "meander-ios",
       "type": "rest",
-      "url": "hkp://remotes/meander-ios",
+      "remote": "embedded",
       "state": { "wrapServices": false }
     }
   ],

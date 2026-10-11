@@ -73,7 +73,7 @@ docker run --rm \
 | `AUTH0_DOMAIN` | — | The Auth0 tenant whose tokens are accepted |
 | `AUTH0_AUDIENCE` | — | Accepted `aud` values, comma-separated |
 | `ALLOWED_EMAILS` | — | Who may use the server, comma-separated. Matched against the verified `email` claim |
-| `ALLOWED_ORIGINS` | `*` | Browser origins allowed to call it |
+| `ALLOWED_ORIGINS` | the Readymade apps and pages served from this machine | Browser origins allowed to call it, comma-separated; replaces the default. A page loaded from anywhere else — a hosted frontend, the public playground — has to be named here. `*` allows any page that carries a token, never one that carries none |
 | `HKP_EXTERNAL_URL` | — | Where the server is reached from outside when that is not `http://<host>:<port>` — behind a proxy that terminates TLS. Endpoints its services expose are published under it |
 | `EXTERNAL_HOST` | `127.0.0.1` | The host it says it is reached at, when `HKP_EXTERNAL_URL` is not set |
 | `HKP_MOUNT_SECRET` | — | Keys the addresses of its endpoints. Unset, one is drawn and kept in the volume |

@@ -77,8 +77,9 @@ listener.
 
 ## Try it
 
-1. Run hkp-rt at home on port 8887 and hkp-node somewhere reachable. Point the
-   **Relay** runtime's URL at the hkp-node server.
+1. Open the board in the Readymade app at home — the **Home** runtime names
+   the app's own runtime (`"remote": "embedded"`) — and run hkp-node somewhere
+   reachable. Point the **Relay** runtime's URL at the hkp-node server.
 2. Load the board. When asked, give the secret `radio-ingest` a value; any long
    random string will do.
 3. Press Start. The uplink dot turns green once the home runtime is connected.

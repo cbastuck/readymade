@@ -1,6 +1,6 @@
 {
   "boardName": "Radio Voice",
-  "description": "A voice, as an endpoint. POST {\"path\": \"episodes/x.mp3\", \"text\": \"\u2026\"} and the answer is that text spoken, as an mp3.\n\nIt keeps nothing and knows nothing about what it is reading: no feed, no library, no idea what an episode is. That is what makes it reusable \u2014 anything with text and somewhere to put audio can call it.\n\nThe answer carries the path it was asked about in an `x-episode-path` header, because a caller holding many items needs to know which one came back. Inside, a Join is what carries that path across the speaking: text-to-speech answers with audio rather than with the request and the audio, so the request is kept beside the detour rather than replaced by it.\n\nNeeds hkp-python on port 9000 with the speech and mp3 extras: pip install \"hkp-python[tts,mp3]\". The first call downloads the Kokoro model (~310 MB) and takes a while; later ones do not.",
+  "description": "A voice, as an endpoint. POST {\"path\": \"episodes/x.mp3\", \"text\": \"\u2026\"} and the answer is that text spoken, as an mp3.\n\nIt keeps nothing and knows nothing about what it is reading: no feed, no library, no idea what an episode is. That is what makes it reusable \u2014 anything with text and somewhere to put audio can call it.\n\nThe answer carries the path it was asked about in an `x-episode-path` header, because a caller holding many items needs to know which one came back. Inside, a Join is what carries that path across the speaking: text-to-speech answers with audio rather than with the request and the audio, so the request is kept beside the detour rather than replaced by it.\n\nNeeds hkp-python, kept as the remote `python`, with the speech and mp3 extras: pip install \"hkp-python[tts,mp3]\". The first call downloads the Kokoro model (~310 MB) and takes a while; later ones do not.",
   "unit": {
     "name": "voice",
     "params": {
@@ -14,7 +14,7 @@
       "id": "speech",
       "name": "Speech",
       "type": "rest",
-      "url": "http://127.0.0.1:9000",
+      "remote": "python",
       "state": {
         "wrapServices": false
       }

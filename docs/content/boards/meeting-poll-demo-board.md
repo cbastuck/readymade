@@ -48,4 +48,4 @@ Vote, because answering is the common case and setting up happens once.
 
 ## Try it
 
-Needs hkp-node on port 8080. Press **The example dates** to seed a poll.
+Needs an hkp-node kept under the name `node` in *Manage runtime servers*. Press **The example dates** to seed a poll.

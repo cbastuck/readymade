@@ -34,4 +34,4 @@ database — no `ATTACH`, `VACUUM`, `load_extension`, or `PRAGMA` beyond
 
 ## Try it
 
-Needs hkp-node on port 8080.
+Needs an hkp-node kept under the name `node` in *Manage runtime servers*.

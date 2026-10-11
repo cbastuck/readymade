@@ -5,7 +5,7 @@
       "id": "test",
       "name": "0 · Test without mail",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -14,7 +14,7 @@
       "id": "intake",
       "name": "1 · Mail in",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -23,7 +23,7 @@
       "id": "dispatch",
       "name": "2 · Decide & act",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -32,7 +32,7 @@
       "id": "review",
       "name": "3 · What is there",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -41,7 +41,7 @@
       "id": "approve",
       "name": "4 · Approve",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }
@@ -50,7 +50,7 @@
       "id": "reject",
       "name": "5 · Reject",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

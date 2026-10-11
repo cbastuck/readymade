@@ -1,6 +1,6 @@
 {
   "boardName": "Radio Library",
-  "description": "A folder of audio, served. Whatever is written into the volume this names is readable over one address: ask the address itself for a listing, or a path under it for the file, with the content type its extension means and range requests answered so a player can seek.\n\nThe listing is JSON, because a store answers callers rather than browsers \u2014 the panel here turns it into something to click, and a player wants the feed the Radio publishes rather than either. A file opened on its own does play in a browser: it is an audio/mpeg response, which is all a browser needs.\n\nIt is the public half of the library and nothing else: the Storage services here are read-only, which is what makes an unauthenticated endpoint safe to hand out. Writing happens through a different instance, inside the board that renders \u2014 see the Radio unit.\n\nStorage names a place on the board rather than a place on a disk: what actually holds the bytes is its nested pipeline, `filesystem` here. Swapping that for something speaking S3 changes nothing outside this service.\n\nTwo boards share a volume by naming the same one, the way two boards share a database. Needs hkp-node on port 8080.",
+  "description": "A folder of audio, served. Whatever is written into the volume this names is readable over one address: ask the address itself for a listing, or a path under it for the file, with the content type its extension means and range requests answered so a player can seek.\n\nThe listing is JSON, because a store answers callers rather than browsers \u2014 the panel here turns it into something to click, and a player wants the feed the Radio publishes rather than either. A file opened on its own does play in a browser: it is an audio/mpeg response, which is all a browser needs.\n\nIt is the public half of the library and nothing else: the Storage services here are read-only, which is what makes an unauthenticated endpoint safe to hand out. Writing happens through a different instance, inside the board that renders \u2014 see the Radio unit.\n\nStorage names a place on the board rather than a place on a disk: what actually holds the bytes is its nested pipeline, `filesystem` here. Swapping that for something speaking S3 changes nothing outside this service.\n\nTwo boards share a volume by naming the same one, the way two boards share a database. Needs hkp-node, kept as the remote `node`.",
   "unit": {
     "name": "library",
     "params": {
@@ -12,7 +12,7 @@
       "id": "files",
       "name": "Library",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

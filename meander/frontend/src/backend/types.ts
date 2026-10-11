@@ -34,10 +34,14 @@ export type PickerOptions = {
 };
 
 // Runtime-access settings backed by ~/.hkp/settings.json (desktop). Changes take
-// effect on the next app start.
+// effect on the next app start — except `allowedOrigins`, which the running
+// runtime is handed as it is saved.
 export type RuntimeSettings = {
   allowExternalRuntimeAccess: boolean;
   allowedUsers: string[];
+  // The sites allowed to call the runtime from a browser, as origins. Absent
+  // on a backend that predates the setting.
+  allowedOrigins?: string[];
 };
 
 export interface BackendAdapter {

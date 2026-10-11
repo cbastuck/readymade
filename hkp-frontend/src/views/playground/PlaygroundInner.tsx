@@ -32,6 +32,8 @@ import FacadeViewControls, {
 } from "../../facade/FacadeViewControls";
 import FacadeChrome, { useChromeRetracted } from "../../facade/FacadeChrome";
 import { RuntimeZoomProvider, RuntimeZoomToolbarButton } from "./RuntimeZoom";
+import RuntimeUnreachableDialog from "../../ui-components/RuntimeUnreachableDialog";
+import UnknownRemoteDialog from "../../ui-components/UnknownRemoteDialog";
 
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -91,6 +93,8 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                   />
                 </FacadeChrome>
 
+                <RuntimeUnreachableDialog />
+                <UnknownRemoteDialog />
                 <ShareQRCodeDialog
                   isOpen={props.showShareBoardQRCodeURL !== null}
                   url={props.showShareBoardQRCodeURL}

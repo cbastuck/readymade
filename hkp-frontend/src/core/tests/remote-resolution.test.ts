@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { restoreBoard, serializeBoard } from "../boardPersistence";
 import type { BoardStateRefs } from "../boardContextTypes";
+import { registerRemotePrompt, resetRemotePrompt } from "../remotePrompt";
+import { addRuntime } from "../runtimeOperations";
 
 /**
  * A board that names a remote, from load to save.
@@ -47,6 +49,7 @@ function board(runtime: Record<string, unknown>) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  resetRemotePrompt();
 });
 
 describe("restoring a board that names a remote", () => {
@@ -154,6 +157,176 @@ describe("restoring a board that names a remote", () => {
       type: "rest",
       remote: "Elsewhere",
     });
+  });
+});
+
+describe("a name this client keeps no server under, with somebody to ask", () => {
+  function twoOnNode() {
+    return {
+      boardName: "b",
+      runtimes: [
+        { id: "in", name: "Intake", type: "rest", remote: "node" },
+        { id: "out", name: "Review", type: "rest", remote: "node" },
+      ],
+      services: { in: [], out: [] },
+    } as any;
+  }
+
+  it("restores at the server the person says the name means", async () => {
+    const { refs, restoreRuntime } = makeRefs();
+    const prompt = vi.fn(async () => ({
+      name: "Laptop",
+      type: "rest",
+      url: "http://laptop:8080",
+      aliases: ["node"],
+    }));
+    registerRemotePrompt(prompt);
+
+    const restored = await restoreBoard(twoOnNode(), refs, async () => {});
+
+    // Asked once for the name, however many runtimes say it, and told what
+    // the name stands for.
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith({
+      name: "node",
+      runtimeName: expect.any(String),
+      kind: "hkp-node",
+    });
+    expect(restoreRuntime.mock.calls.map(([rt]) => rt.url)).toEqual([
+      "http://laptop:8080",
+      "http://laptop:8080",
+    ]);
+    // The board still says the name, which is what it saves.
+    expect(restored.runtimes.map((rt: any) => rt.remote)).toEqual([
+      "node",
+      "node",
+    ]);
+  });
+
+  it("is not asked about a name this client does hold", async () => {
+    const { refs } = makeRefs();
+    const prompt = vi.fn(async () => null);
+    registerRemotePrompt(prompt);
+
+    await restoreBoard(board({ remote: "Studio" }), refs, async () => {});
+
+    expect(prompt).not.toHaveBeenCalled();
+  });
+
+  it("fails as before, with nothing built, when the person says none", async () => {
+    const { refs, restoreRuntime } = makeRefs();
+    registerRemotePrompt(async () => null);
+
+    await expect(
+      restoreBoard(
+        {
+          ...twoOnNode(),
+          runtimes: [
+            { id: "first", name: "First", type: "rest", remote: "Studio" },
+            ...twoOnNode().runtimes,
+          ],
+          services: { first: [], in: [], out: [] },
+        },
+        refs,
+        async () => {},
+      ),
+    ).rejects.toThrow(/wants the remote "node"/);
+    // Not even the runtime whose name did resolve.
+    expect(restoreRuntime).not.toHaveBeenCalled();
+  });
+
+  it("does not take an answer that does not answer to the name", async () => {
+    // Whatever a prompt hands back, the board lands only on a remote kept
+    // under the name it said.
+    const { refs, restoreRuntime } = makeRefs();
+    registerRemotePrompt(async () => ({
+      name: "Laptop",
+      type: "rest",
+      url: "http://laptop:8080",
+    }));
+
+    await expect(
+      restoreBoard(board({ remote: "node" }), refs, async () => {}),
+    ).rejects.toThrow(/wants the remote "node"/);
+    expect(restoreRuntime).not.toHaveBeenCalled();
+  });
+
+  it("is not asked about a runtime that is malformed", async () => {
+    const { refs } = makeRefs();
+    const prompt = vi.fn(async () => null);
+    registerRemotePrompt(prompt);
+
+    await expect(
+      restoreBoard(
+        board({ remote: "Elsewhere", url: "http://evil.example" }),
+        refs,
+        async () => {},
+      ),
+    ).rejects.toThrow(/more than once/);
+    expect(prompt).not.toHaveBeenCalled();
+  });
+});
+
+describe("putting a runtime on a server this client keeps", () => {
+  const kept = [
+    { name: "Browser Runtime", type: "browser" },
+    { name: "embedded", type: "rest", url: "hkp://remotes/embedded" },
+    { name: "Laptop", type: "rest", url: "http://laptop:8080", aliases: ["node"] },
+    { name: "Studio", type: "rest", url: "http://studio:5000" },
+  ];
+
+  async function added(url: string) {
+    const runtimes: any[] = [];
+    const refs = {
+      userRef: asRef(null),
+      boardNameRef: asRef("board"),
+      availableRuntimeEnginesRef: asRef(kept),
+      propsRef: asRef({
+        runtimeApis: {
+          rest: {
+            addRuntime: async (rtClass: any) => ({
+              runtime: { id: "new", name: rtClass.name, type: "rest", url: rtClass.url },
+              services: [],
+              registry: [],
+              scope: {},
+            }),
+          },
+        },
+      }),
+      setRuntimes: (update: any) => runtimes.splice(0, runtimes.length, ...update(runtimes)),
+      setServices: () => {},
+      setRegistry: () => {},
+      setScopes: () => {},
+    } as unknown as BoardStateRefs;
+    return addRuntime(
+      { type: "rest", name: "Runtime 1", url } as any,
+      refs,
+      async () => {},
+    );
+  }
+
+  it("gives the board the server's name, and keeps the address beside it", async () => {
+    expect(await added("http://studio:5000")).toMatchObject({
+      remote: "Studio",
+      url: "http://studio:5000",
+    });
+  });
+
+  it("prefers a name boards share over the one the server is listed under", async () => {
+    expect(await added("http://laptop:8080")).toMatchObject({ remote: "node" });
+  });
+
+  it("calls the runtime a host embeds `embedded`, whatever it is listed as", async () => {
+    expect(await added("hkp://remotes/embedded")).toMatchObject({
+      remote: "embedded",
+    });
+  });
+
+  it("gives an address this client keeps nothing under as an address", async () => {
+    const runtime = await added("http://elsewhere:9000");
+
+    expect(runtime).toMatchObject({ url: "http://elsewhere:9000" });
+    expect(runtime?.remote).toBeUndefined();
   });
 });
 

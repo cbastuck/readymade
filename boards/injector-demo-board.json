@@ -1,6 +1,6 @@
 {
   "boardName": "Injector Demo",
-  "description": "The Browser runtime shows Injector running in-process, with no backend needed. The Node runtime shows the same service behind hkp-node's REST API — needs hkp-node running locally on port 8080.",
+  "description": "The Browser runtime shows Injector running in-process, with no backend needed. The Node runtime shows the same service behind hkp-node's REST API — needs hkp-node, kept as the remote `node`.",
   "runtimes": [
     {
       "id": "ui",
@@ -14,7 +14,7 @@
       "id": "node",
       "name": "Node",
       "type": "rest",
-      "url": "http://127.0.0.1:8080",
+      "remote": "node",
       "state": {
         "wrapServices": false
       }

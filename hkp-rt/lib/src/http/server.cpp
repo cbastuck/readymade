@@ -7,7 +7,7 @@
 #include <set>
 
 #include <crow.h>
-#include <crow/middlewares/cors.h>
+#include "origins.h"
 
 #include <app.h>
 #include <auth.h>
@@ -84,6 +84,52 @@ inline std::string callerAddress(const crow::request& req, const std::string& fr
   return req.remote_ip_address;
 }
 
+// What the server knows about who may call it from a browser: the origins it
+// was told, and the names it answers to. Shared by the middleware and the
+// WebSocket accept, and changed while requests are being served.
+struct OriginGate
+{
+  AllowedOrigins allowed() const
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_allowed;
+  }
+
+  void setAllowed(AllowedOrigins allowed)
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_allowed = std::move(allowed);
+  }
+
+  void add(const std::vector<std::string>& origins)
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_allowed.add(origins);
+  }
+
+  void addOwnName(const std::string& name)
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_ownNames.push_back(name);
+  }
+
+  // Whether a request carrying no credential may be let in; see origins.h.
+  bool admits(const crow::request& req) const
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return admitsWithoutCredential(
+      RequestSource{req.get_header_value("Origin"),
+                    req.get_header_value("Sec-Fetch-Site"),
+                    req.get_header_value("Host")},
+      m_allowed, m_ownNames);
+  }
+
+private:
+  mutable std::mutex m_mutex;
+  AllowedOrigins m_allowed;
+  std::vector<std::string> m_ownNames;
+};
+
 struct AuthMiddleware
 {
   struct context
@@ -99,11 +145,11 @@ struct AuthMiddleware
 
   Authenticator* authenticator = nullptr;
   CapabilityStore* capabilities = nullptr;
-  std::string allowedOrigins = "*";
+  OriginGate* origins = nullptr;
 
   void before_handle(crow::request& req, crow::response& res, context& ctx)
   {
-    if (!authenticator || authenticator->isNoAuth())
+    if (!authenticator)
     {
       return;
     }
@@ -118,15 +164,33 @@ struct AuthMiddleware
     {
       return;
     }
-    // The local machine is always trusted, even when the runtime is bound to
-    // 0.0.0.0 for LAN access: the loopback interface cannot be reached from
-    // off-host, so a loopback-source request is necessarily this machine's own
-    // UI. This lets the owner drive (and start discovery on) their own runtime
-    // without having to add themselves to the allow-list; only genuine LAN peers
-    // are challenged for a token.
-    if (isLoopbackHost(callerAddress(req, frontSecret)))
+    const bool noAuth = authenticator->isNoAuth();
+    // The local machine is trusted, even when the runtime is bound to 0.0.0.0
+    // for LAN access: the loopback interface cannot be reached from off-host.
+    // This lets the owner drive (and start discovery on) their own runtime
+    // without having to add themselves to the allow-list; only genuine LAN
+    // peers are challenged for a token.
+    //
+    // A page in the owner's browser is on this machine too, though, and so is
+    // every site it has open. Being local therefore lets a request in only
+    // when it does not come from a foreign page; see origins.h.
+    if (noAuth || isLoopbackHost(callerAddress(req, frontSecret)))
     {
-      return;
+      if (!origins || origins->admits(req))
+      {
+        return;
+      }
+      if (noAuth)
+      {
+        // Nothing else could let it in. Answered without CORS headers (see
+        // CorsMiddleware), so the page that sent it can read neither this nor
+        // that anything answered: what a server that is not there looks like.
+        res.code = 403;
+        res.end();
+        return;
+      }
+      // With auth configured, a request refused as a local one may still
+      // carry a credential, and is asked for it like any other.
     }
     // Scoped capability tokens are checked before JWT, exactly like an opaque
     // token — but bound to a single method+path. For example, a phone that
@@ -146,21 +210,74 @@ struct AuthMiddleware
       return;
     }
     res.code = (result.status == AuthStatus::Forbidden) ? 403 : 401;
-    res.add_header("Access-Control-Allow-Origin", allowedOrigins);
     res.end();
   }
 
   void after_handle(crow::request&, crow::response&, context&) {}
 };
 
-using CrowApp = crow::Crow<crow::CORSHandler, AuthMiddleware>;
+// Says which page may read an answer and send a request that has to be asked
+// for first: the page that is asking, when it is one this server allows.
+//
+// One place states it for every response — a handler's, an error's — so that
+// none can answer a page the server does not allow.
+//
+// A preflight is the exception. Crow answers one as soon as it has read the
+// request line, before the headers that say which page is asking, so it is
+// answered the same for every page: yes, the request may be sent. That gives a
+// foreign page nothing — the request it then sends states its origin and is
+// refused on it, exactly as one that needs no preflight is.
+struct CorsMiddleware
+{
+  struct context {};
+
+  OriginGate* origins = nullptr;
+  Authenticator* authenticator = nullptr;
+
+  void before_handle(crow::request&, crow::response&, context&) {}
+
+  void after_handle(crow::request& req, crow::response& res, context&)
+  {
+    if (req.method == crow::HTTPMethod::Options)
+    {
+      res.set_header("Access-Control-Allow-Origin", "*");
+      allowRequest(res);
+      return;
+    }
+    const auto origin = req.get_header_value("Origin");
+    if (origin.empty() || !origins)
+    {
+      return;
+    }
+    // A server without auth takes no credentials, so `*` — any page, with
+    // one — allows nobody there.
+    const auto allowed = origins->allowed();
+    const bool noAuth = !authenticator || authenticator->isNoAuth();
+    if (noAuth ? !allowed.allowsWithoutCredential(origin) : !allowed.allows(origin))
+    {
+      return;
+    }
+    res.set_header("Access-Control-Allow-Origin", origin);
+    res.add_header("Vary", "Origin");
+    allowRequest(res);
+  }
+
+  static void allowRequest(crow::response& res)
+  {
+    res.set_header("Access-Control-Allow-Methods", "*");
+    res.set_header("Access-Control-Allow-Headers",
+                   "Content-Type, Authorization, Content-Disposition, "
+                   "X-Upload-Id, X-Chunk-Index, X-Total-Chunks");
+  }
+};
+
+using CrowApp = crow::Crow<CorsMiddleware, AuthMiddleware>;
 
 struct JsonResponse : crow::response
 {
-  JsonResponse(const json &_body, const std::string allowedOrigins)
+  explicit JsonResponse(const json &_body)
       : crow::response{_body.dump()}
   {
-    add_header("Access-Control-Allow-Origin", allowedOrigins);
     add_header("Access-Control-Allow-Headers",
                "Content-Type, Authorization, Content-Disposition, "
                "X-Upload-Id, X-Chunk-Index, X-Total-Chunks");
@@ -177,7 +294,8 @@ struct Server::impl
     , displayName(dn)
     , authenticator(std::make_unique<Authenticator>(std::move(ac)))
   {
-    setupRoutes(allowedOrigins);
+    originGate.setAllowed(AllowedOrigins::parse(allowedOrigins));
+    setupRoutes();
   }
 
   // Friendly name shown to peers during discovery. Platforms that have a better
@@ -188,17 +306,16 @@ struct Server::impl
     return displayName.empty() ? discoveryDeviceName() : displayName;
   }
 
-  void setupRoutes(const std::string& allowedOrigins)
+  void setupRoutes()
   {
-    auto& cors = crow.get_middleware<crow::CORSHandler>();
-    cors.global().origin(allowedOrigins).headers(
-        "Content-Type", "Authorization", "Content-Disposition",
-        "X-Upload-Id", "X-Chunk-Index", "X-Total-Chunks");
+    auto& cors = crow.get_middleware<CorsMiddleware>();
+    cors.origins = &originGate;
+    cors.authenticator = authenticator.get();
 
     auto& authMiddleware = crow.get_middleware<AuthMiddleware>();
     authMiddleware.authenticator = authenticator.get();
     authMiddleware.capabilities = &capabilities;
-    authMiddleware.allowedOrigins = allowedOrigins;
+    authMiddleware.origins = &originGate;
 
     CROW_ROUTE(crow, "/runtimes")
         .methods("GET"_method)([this]() { return getRuntimes(); }); 
@@ -370,7 +487,7 @@ struct Server::impl
 
   JsonResponse makeJsonResponse(const json &_body)
   {
-    return JsonResponse(_body, allowedOrigins);
+    return JsonResponse(_body);
   }
 
   // ── LAN discovery ──────────────────────────────────────────────────────────
@@ -442,6 +559,7 @@ struct Server::impl
   std::shared_ptr<App> app;
   std::string name;
   std::string allowedOrigins;
+  OriginGate originGate;
   std::string displayName;
   std::string bindAddress;
   std::string instanceId = generateUUID();
@@ -486,6 +604,9 @@ void Server::handleRequest(crow::request& req, crow::response& res)
 void Server::start(const std::string& externalIP, unsigned int port, const std::string& bindAddress)
 {
   m_impl->externalIP = externalIP;
+  // A name this server is reached by, when it was given one rather than an
+  // address; see isKnownHost.
+  m_impl->originGate.addOwnName(externalIP);
   m_impl->bindAddress = bindAddress;
   if (!m_impl->frontDoor)
   {
@@ -526,6 +647,7 @@ void Server::enableMounts(MountOptions options)
     options.secret = generateUUID() + generateUUID();
   }
   m_impl->mountOptions = std::move(options);
+  m_impl->originGate.addOwnName(m_impl->mountOptions.externalHost);
   m_impl->publicPort = m_impl->mountOptions.port;
   if (m_impl->externalIP.empty())
   {
@@ -590,6 +712,11 @@ const std::string& Server::name() const
 const std::string& Server::allowedOrigins() const
 {
   return m_impl->allowedOrigins;
+}
+
+void Server::allowOrigins(const std::vector<std::string>& origins)
+{
+  m_impl->originGate.add(origins);
 }
 
 crow::response Server::impl::getRuntimes()
@@ -999,6 +1126,13 @@ static std::optional<Data> buildInputData(const crow::request& req,
 
 Caller Server::impl::callerOfRequest(const crow::request& req)
 {
+  // A request a host hands over in-process (Server::handleRequest) never
+  // passed the middleware, so there is no context to read — and nobody to
+  // name: it comes from the host's own page, not from a token.
+  if (!req.middleware_context)
+  {
+    return {};
+  }
   return callerOf(crow.get_context<AuthMiddleware>(req).principal);
 }
 
@@ -1039,7 +1173,6 @@ crow::response Server::impl::processRuntime(const crow::request &req, const std:
       crow::response res(200);
       res.body = std::string(b->begin(), b->end());
       res.set_header("Content-Type", "application/octet-stream");
-      res.set_header("Access-Control-Allow-Origin", allowedOrigins);
       return res;
     }
 
@@ -1048,7 +1181,6 @@ crow::response Server::impl::processRuntime(const crow::request &req, const std:
       crow::response res(200);
       res.body = *s;
       res.set_header("Content-Type", "text/plain");
-      res.set_header("Access-Control-Allow-Origin", allowedOrigins);
       return res;
     }
 
@@ -1109,7 +1241,6 @@ crow::response Server::impl::processService(const crow::request &req, const std:
       crow::response res(200);
       res.body = std::string(b->begin(), b->end());
       res.set_header("Content-Type", "application/octet-stream");
-      res.set_header("Access-Control-Allow-Origin", allowedOrigins);
       return res;
     }
 
@@ -1118,7 +1249,6 @@ crow::response Server::impl::processService(const crow::request &req, const std:
       crow::response res(200);
       res.body = *s;
       res.set_header("Content-Type", "text/plain");
-      res.set_header("Access-Control-Allow-Origin", allowedOrigins);
       return res;
     }
 
@@ -1169,10 +1299,13 @@ crow::response Server::impl::getRuntimeInput(const crow::request &req, const std
 bool Server::impl::wsOnAccept(const crow::request& req, void** userdata)
 {
   // Same policy as the REST AuthMiddleware: no-auth mode and loopback clients
-  // are always allowed; otherwise the token (carried in ?access_token= because
-  // a browser can't set headers on a handshake) must verify and be allow-listed.
-  bool allowed = authenticator->isNoAuth() ||
+  // are allowed unless a foreign page is asking (a browser always states the
+  // page's origin on a handshake); otherwise the token (carried in
+  // ?access_token= because a browser can't set headers on a handshake) must
+  // verify and be allow-listed.
+  const bool local = authenticator->isNoAuth() ||
     isLoopbackHost(callerAddress(req, frontDoor ? frontDoor->frontSecret() : std::string()));
+  bool allowed = local && originGate.admits(req);
   // Whoever a token names; nobody for a socket let in without one.
   Caller caller;
   if (!allowed)

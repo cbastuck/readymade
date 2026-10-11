@@ -1,5 +1,6 @@
 import { test, expect, service } from "../../support/test";
 import { NODE_URL } from "../../playwright.cloud.config";
+import { cleanupCloud } from "../../support/cloudCleanup";
 
 /**
  * Deploying a board, end to end: a real playground, a real runtime server and
@@ -59,6 +60,7 @@ test.beforeEach(async ({ context }) => {
   // desktop shell reads as it boots.
   await context.addInitScript(
     ([token, coordinators]) => {
+      if (!/^https?:$/.test(location.protocol) || window !== window.top) return;
       window.localStorage.setItem("readymade-id-token", token);
       window.localStorage.setItem("hkp-coordinators", coordinators);
     },
@@ -66,17 +68,9 @@ test.beforeEach(async ({ context }) => {
   );
 });
 
-test.afterEach(async ({ request }) => {
+test.afterEach(async ({ request }, testInfo) => {
   // The runtime server outlives the spec, and so would anything left on it.
-  const boards = await request.get(
-    `${COORDINATOR.url}/users/${USER_ID}/boards`,
-  );
-  for (const board of (await boards.json()).boards ?? []) {
-    await request.delete(
-      `${COORDINATOR.url}/users/${USER_ID}/boards/${encodeURIComponent(board.boardName)}`,
-    );
-  }
-  await request.delete(`${NODE_URL}/runtimes`);
+  await cleanupCloud(request, testInfo, COORDINATOR.url, USER_ID, [NODE_URL]);
 });
 
 async function openDeployDialog(page: import("@playwright/test").Page) {
@@ -290,7 +284,51 @@ test.describe("a deployed board whose runtime server goes away", () => {
 });
 
 test.describe("opening a board that names a remote", () => {
-  test("says which remote it wanted when this client does not know it", async ({
+  test("asks which server an unknown name means, and opens the board there", async ({
+    page,
+    seedBoard,
+    openBoard,
+  }) => {
+    // What a shipped board says: the kind of server, and no address.
+    const runtimeId = "e2e-shared-name-node";
+    const board = boardNamed("e2e-cloud-shared-name", runtimeId, {
+      remote: "node",
+    });
+    await seedBoard(board.boardName, board);
+
+    await openBoard(board.boardName);
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Which runtime server is “node”?");
+    await expect(dialog).toContainText("an hkp-node");
+    await dialog
+      .getByRole("button", { name: `Use ${REMOTE.name} as node` })
+      .click();
+
+    // The board opens on the server the person said, with nothing reloaded.
+    await expect(service(page, `${runtimeId}-monitor`)).toBeVisible();
+
+    // And the answer is kept: the server answers to the name as well as its
+    // own, so the next board that says `node` asks nothing.
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          (
+            window as unknown as {
+              __HKP_FAKE_HOST__: {
+                remotes: Array<{ name: string; aliases?: string[] }>;
+              };
+            }
+          ).__HKP_FAKE_HOST__.remotes.map((remote) => ({
+            name: remote.name,
+            aliases: [...(remote.aliases ?? [])],
+          })),
+        ),
+      )
+      .toEqual([{ name: REMOTE.name, aliases: ["node"] }]);
+  });
+
+  test("says which remote it wanted when the person names no server for it", async ({
     page,
     seedBoard,
     openBoard,
@@ -302,8 +340,16 @@ test.describe("opening a board that names a remote", () => {
 
     await openBoard(board.boardName);
 
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Do not open the board" })
+      .click();
+
     await expect(
-      page.getByText("Somebody else's server", { exact: false }).first(),
+      page.getByText(
+        'wants the remote "Somebody else\'s server", which this client does not know',
+        { exact: false },
+      ),
     ).toBeVisible();
   });
 });
