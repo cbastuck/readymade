@@ -43,6 +43,29 @@ const SCHEMA =
   "CREATE TABLE IF NOT EXISTS mail (id TEXT PRIMARY KEY, thread TEXT NOT NULL, body TEXT);";
 
 describe("the browser SQL service", () => {
+  it("does not return downstream before its persisted write finishes", async () => {
+    let finish!: () => void;
+    const save = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const store = createDatabaseStore({ persistence: {
+      load: async () => undefined, list: async () => [], save,
+    }});
+    const databases = vi.spyOn(sqlDatabase, "sqlDatabases").mockReturnValue(store);
+    try {
+      const { svc } = create({ database: uniqueName(), mode: "run",
+        schema: "CREATE TABLE t (n INTEGER)", statement: "INSERT INTO t VALUES (1)" });
+      let returned = false;
+      const pending = svc.process({}).then((result: unknown) => { returned = true; return result; });
+      await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+      expect(returned).toBe(false);
+      finish();
+      expect(await pending).toMatchObject({ changes: 1 });
+    } finally {
+      finish?.();
+      await store.closeAll();
+      databases.mockRestore();
+    }
+  });
+
   it("runs, queries and reports what it did", async () => {
     const database = uniqueName();
     const { svc: insert, app } = create({
