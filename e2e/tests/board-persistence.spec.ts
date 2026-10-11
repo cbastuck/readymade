@@ -12,6 +12,8 @@ test.beforeEach(async ({ seedBoard }) => {
 test("a saved edit survives reload and reopening from the library", async ({
   page, profile, openBoard, hostState,
 }) => {
+  // Loads the app up to three times, each one a cold load of every module.
+  test.slow();
   await openBoard(name);
   const frame = service(page, "e2e-timer");
   const press = async (target: Locator) =>
@@ -42,15 +44,18 @@ test("a saved edit survives reload and reopening from the library", async ({
     return saved[name]?.services.ui[0].state.oneShotDelayUnit;
   };
   await expect.poll(savedUnit).toBe("s");
-  await page.reload();
-  // Native shells reload to their start page; reopen there using their normal
-  // library path. The web shell restores the open board directly.
-  if (profile !== "web") await openBoard(name);
-  await expect(delayUnit).toHaveText("s");
-  await expect.poll(savedUnit).toBe("s");
+  // The web shell restores the open board when its document is reloaded. The
+  // native shells boot to their start page instead, so for them the reload is
+  // the one reopening from the library begins with.
+  if (profile === "web") {
+    await page.reload();
+    await expect(delayUnit).toHaveText("s");
+    await expect.poll(savedUnit).toBe("s");
+  }
 
   await openBoard(name);
   await expect(delayUnit).toHaveText("s");
+  await expect.poll(savedUnit).toBe("s");
 });
 
 test("native host writes survive document replacement", async ({ page, profile, openBoard, hostState }) => {

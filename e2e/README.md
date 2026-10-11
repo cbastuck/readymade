@@ -233,6 +233,9 @@ asserted away: each journey must check its intended visible/API result.
 Application console exceptions require a reviewed, per-spec message pattern via
 `expectedConsoleErrors` or an `expected-console-error` annotation. Keep any
 exception scoped to the affected journey and record its reason in the plan.
+The one thing known to every spec is what a bundled library writes to stderr
+that is no error (`LIBRARY_STDERR` in `support/test.ts`): a Wasm module's stderr
+arrives as `console.error`, at a moment no spec chooses. Exact lines only.
 The send-ntfy input warnings and C++ handover close error are now fixed; their
 exceptions have been removed. The reduce demo remains an existing expected
 failure.

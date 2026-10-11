@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <functional>
 #include <list>
 #include <map>
@@ -153,8 +154,11 @@ public:
   // of its own on it.
   boost::asio::io_context& ioContext() { return m_io; }
 
-  void setServer(Server* server) { m_server = server; }
-  Server* getServer() const { return m_server; }
+  // Replacing or clearing a server returns only once the event loop is past
+  // any callback that could still hold the one that left, so its owner may
+  // destroy it right after.
+  void setServer(Server* server);
+  Server* getServer() const { return m_server.load(); }
   
   template<typename T>
   void registerService() { m_registry->registerService<T>(); }
@@ -189,7 +193,7 @@ private:
   boost::asio::io_context m_io;
   boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
   std::thread m_eventThread;
-  Server* m_server = nullptr;
+  std::atomic<Server*> m_server{nullptr};
   mutable std::mutex m_sinksMutex;
   std::map<std::string, RuntimeOutputSink> m_sinks;
 };

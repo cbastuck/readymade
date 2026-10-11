@@ -1,5 +1,8 @@
 #include <app.h>
 
+#include <future>
+#include <thread>
+
 #include "./registry.h"
 #include "./runtime.h"
 #include "./uuid.h"
@@ -50,6 +53,26 @@ void App::postCallback(std::function<void()> callback)
   {
     boost::asio::post(m_io, callback);
   }
+}
+
+void App::setServer(Server* server)
+{
+  const auto previous = m_server.exchange(server);
+  if (!previous || previous == server)
+  {
+    return;
+  }
+  // A callback already running may have read the server that is leaving. The
+  // loop runs them one at a time, so once it reaches one posted now, none
+  // before it is still running. Not from the loop itself, which would wait
+  // for its own return.
+  if (!m_eventThread.joinable() || std::this_thread::get_id() == m_eventThread.get_id())
+  {
+    return;
+  }
+  std::promise<void> passed;
+  boost::asio::post(m_io, [&passed]() { passed.set_value(); });
+  passed.get_future().wait();
 }
 
 RuntimeConfiguration App::createRuntime(json config)

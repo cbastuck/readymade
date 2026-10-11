@@ -2,6 +2,8 @@
 
 #include <chrono>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <thread>
@@ -36,11 +38,21 @@ public:
     : Service(instanceId, serviceId())
     , io_context_()
     , timer_(io_context_)
+    , shot_work_(boost::asio::make_work_guard(shot_context_))
   {}
 
   ~Timer()
   {
     silentStop();
+    stopShots();
+  }
+
+  // Both of this service's threads drive the pipeline, so they end while the
+  // host is still whole.
+  void shutdown() override
+  {
+    silentStop();
+    stopShots();
   }
 
   json configure(Data data) override
@@ -125,11 +137,7 @@ public:
     // One-shot triggered via process(): schedule a delayed fire and return immediately.
     if (!m_periodic)
     {
-      const auto delayUs = durationMicroseconds(m_oneShotDelay, m_oneShotDelayUnit);
-      std::thread([this, delayUs]() {
-        std::this_thread::sleep_for(std::chrono::microseconds(delayUs));
-        onTick();
-      }).detach();
+      scheduleShot(durationMicroseconds(m_oneShotDelay, m_oneShotDelayUnit));
     }
     return data;
   }
@@ -204,7 +212,35 @@ private:
     });
   }
 
-  // ── Tick logic (runs on io_service_thread_) ──────────────────────────────
+  // ── One-shots started by process() ───────────────────────────────────────
+
+  // Each call waits on a timer of its own, so a later call or a reconfigure
+  // leaves the earlier ones alone. They wait on a context this service owns:
+  // destroying the service drops the ones still waiting and joins the one
+  // that is firing, so none outlives it.
+  void scheduleShot(uint64_t delayUs)
+  {
+    std::call_once(shot_thread_started_, [this]() {
+      shot_thread_ = std::thread([this]() { shot_context_.run(); });
+    });
+
+    auto shot = std::make_shared<boost::asio::deadline_timer>(shot_context_);
+    shot->expires_from_now(boost::posix_time::microseconds(static_cast<long>(delayUs)));
+    shot->async_wait([this, shot](const boost::system::error_code& ec) {
+      if (!ec) onTick();
+    });
+  }
+
+  void stopShots()
+  {
+    shot_context_.stop();
+    if (shot_thread_.joinable())
+    {
+      shot_thread_.join();
+    }
+  }
+
+  // ── Tick logic (runs on io_service_thread_ or shot_thread_) ──────────────
 
   void onTick()
   {
@@ -245,6 +281,11 @@ private:
   boost::asio::io_context    io_context_;
   boost::asio::deadline_timer timer_;
   std::thread                io_service_thread_;
+
+  boost::asio::io_context    shot_context_;
+  boost::asio::executor_work_guard<boost::asio::io_context::executor_type> shot_work_;
+  std::once_flag             shot_thread_started_;
+  std::thread                shot_thread_;
 
   bool        m_periodic         = false;
   int         m_periodicValue    = 1;
