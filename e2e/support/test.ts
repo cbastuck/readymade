@@ -41,6 +41,17 @@ type HostFixtures = {
   _diagnostics: void;
 };
 
+/**
+ * What a bundled library says on stderr that is not an error. A Wasm module's
+ * stderr arrives as `console.error` whatever the line reports, and when it
+ * arrives is the library's business — so these are known to every spec rather
+ * than expected by one. Exact lines only.
+ */
+const LIBRARY_STDERR = [
+  // MediaPipe, each time a Detect service has loaded its model.
+  /^INFO: Created TensorFlow Lite XNNPACK delegate for CPU\.$/,
+];
+
 export const test = base.extend<HostOptions & HostFixtures>({
   profile: ["web", { option: true }],
   hostConfig: [{}, { option: true }],
@@ -51,7 +62,7 @@ export const test = base.extend<HostOptions & HostFixtures>({
     const events: Array<{ kind: string; message: string }> = [];
     const crashes: string[] = [];
     const consoleFailures: string[] = [];
-    const expected = expectedConsoleErrors.map((pattern) => new RegExp(pattern));
+    const expected = [...LIBRARY_STDERR, ...expectedConsoleErrors.map((pattern) => new RegExp(pattern))];
     let omitted = 0;
     const record = (kind: string, message: string) => {
       if (events.length < 200) events.push({ kind, message: redact(message) });
@@ -121,8 +132,11 @@ export const test = base.extend<HostOptions & HostFixtures>({
     // Per-page fixture routes (e.g. ntfy) take precedence over this guard.
     // Browser traffic can reach only this suite's local servers; an unmocked
     // dependency gets an immediate deterministic response instead of a hang.
-    await context.route(/^https?:\/\//, async (route) => {
-      if (permitted(route.request().url())) return route.continue();
+    // The pattern itself leaves the allowed origins out: a regular expression
+    // is matched inside the browser's driver, so the hundreds of module
+    // requests a page load makes never wait on a round trip to this handler.
+    const local = [...allowed].map((origin) => origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+    await context.route(new RegExp(`^(?!(?:${local})(?:[/?#]|$))https?://`), async (route) => {
       await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"External dependency is not mocked in this E2E test"}' });
     });
     // Leave allowed sockets untouched to preserve their transport behavior.
