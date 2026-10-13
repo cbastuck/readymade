@@ -6,7 +6,7 @@
 	url = ../hkp-python.git
 [submodule "hkp-website"]
 	path = hkp-website
-	url = ssh://git@codeberg.org/cbastuck/hkp-website.git
+	url = ../hkp-website.git
 [submodule "meander-ios"]
 	path = meander-ios
 	url = ../meander-ios.git
