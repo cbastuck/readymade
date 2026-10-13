@@ -1,6 +1,11 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import SoundUI from "./SoundUI";
+import {
+  FloatRingBuffer,
+  FloatRingBufferSymbol,
+  convertToUint8Array,
+} from "../../rest/Data";
 type NoteEvent =
   | { frequency: number; velocity: number; duration: number }
   | { note: string };
@@ -11,8 +16,8 @@ type NoteFrame = { notes: NoteEvent[]; tempo?: number };
  * Service ID: hookup.to/service/sound
  * Service Name: Sound
  * Input:  { note: string } | Array<{ note: string }> | { notes, tempo? }
- * Output: pass-through
- * Config: generator.type ("synth" | "drums"), volume, waveType, noteDuration, noteDurationUnit, attack, release, tempoSlot, trigger
+ * Output: pass-through (routing "direct") | FloatRingBuffer (routing "output" | "both")
+ * Config: generator.type ("synth" | "drums"), volume, waveType, noteDuration, noteDurationUnit, attack, release, tempoSlot, trigger, routing
  *
  * Two generator modes:
  *
@@ -34,6 +39,16 @@ type NoteFrame = { notes: NoteEvent[]; tempo?: number };
  * trigger — what to play for an input that names no note of its own (e.g. a
  *           Timer tick): a note name, or in drums mode also a drum name.
  *           Unset, such an input plays nothing.
+ *
+ * routing — where the generated audio goes:
+ *
+ *   direct  (default) — to the soundcard; process() passes its input through.
+ *
+ *   output  — captured as float32 PCM instead of played: process() returns a
+ *             FloatRingBuffer of what was generated since the last call, or
+ *             null while nothing has been captured yet.
+ *
+ *   both    — played and returned as a FloatRingBuffer.
  */
 
 const serviceId = "hookup.to/service/sound";
@@ -43,6 +58,8 @@ export type GeneratorType = "synth" | "drums";
 export type WaveType =
   | "sine" | "triangle" | "square" | "sawtooth"
   | "organ" | "soft" | "fifth";
+export type Routing = "direct" | "output" | "both";
+const ROUTINGS: Routing[] = ["direct", "output", "both"];
 
 const CUSTOM_WAVES: Record<string, { real: number[]; imag: number[] }> = {
   organ: {
@@ -75,9 +92,11 @@ type State = {
   tempoSlot: string;
   drumMap: Record<string, DrumType>; // note name → drum type
   trigger: string | null; // played for input that names no note
+  routing: Routing;
 };
 
 const DEFAULT_TEMPO_BPM = 120;
+const CAPTURE_BUFFER_SIZE = 4096; // ScriptProcessorNode frame size (power of 2)
 
 const DEFAULT_DRUM_MAP: Record<string, DrumType> = {
   C4: "kick",
@@ -116,6 +135,8 @@ function noteNameToFrequency(note: string): number {
 }
 
 // ── Drum synthesis ───────────────────────────────────────────────────────────
+// The destination is passed in: a Sound plays into a bus of its own rather
+// than straight into the context's output, so that its audio can be routed.
 
 function makeNoiseBuffer(ctx: AudioContext, durationSec: number): AudioBuffer {
   const len = Math.ceil(ctx.sampleRate * durationSec);
@@ -127,7 +148,11 @@ function makeNoiseBuffer(ctx: AudioContext, durationSec: number): AudioBuffer {
   return buf;
 }
 
-function synthesizeKick(ctx: AudioContext, volume: number) {
+function synthesizeKick(
+  ctx: AudioContext,
+  volume: number,
+  destination: AudioNode,
+) {
   const now = ctx.currentTime;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -137,12 +162,16 @@ function synthesizeKick(ctx: AudioContext, volume: number) {
   gain.gain.setValueAtTime(volume, now);
   gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(destination);
   osc.start(now);
   osc.stop(now + 0.5);
 }
 
-function synthesizeSnare(ctx: AudioContext, volume: number) {
+function synthesizeSnare(
+  ctx: AudioContext,
+  volume: number,
+  destination: AudioNode,
+) {
   const now = ctx.currentTime;
 
   // Noise burst through a bandpass filter
@@ -157,7 +186,7 @@ function synthesizeSnare(ctx: AudioContext, volume: number) {
   noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
   noiseSource.connect(noiseFilter);
   noiseFilter.connect(noiseGain);
-  noiseGain.connect(ctx.destination);
+  noiseGain.connect(destination);
 
   // Short tonal snap for body
   const osc = ctx.createOscillator();
@@ -167,7 +196,7 @@ function synthesizeSnare(ctx: AudioContext, volume: number) {
   oscGain.gain.setValueAtTime(volume * 0.3, now);
   oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
   osc.connect(oscGain);
-  oscGain.connect(ctx.destination);
+  oscGain.connect(destination);
 
   noiseSource.start(now);
   noiseSource.stop(now + 0.2);
@@ -175,7 +204,11 @@ function synthesizeSnare(ctx: AudioContext, volume: number) {
   osc.stop(now + 0.08);
 }
 
-function synthesizeHihat(ctx: AudioContext, volume: number) {
+function synthesizeHihat(
+  ctx: AudioContext,
+  volume: number,
+  destination: AudioNode,
+) {
   const now = ctx.currentTime;
   const duration = 0.08;
   const noiseSource = ctx.createBufferSource();
@@ -188,7 +221,7 @@ function synthesizeHihat(ctx: AudioContext, volume: number) {
   gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
   noiseSource.connect(filter);
   filter.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(destination);
   noiseSource.start(now);
   noiseSource.stop(now + duration);
 }
@@ -270,6 +303,11 @@ function releaseAudioContext(owner: object) {
 
 class Sound extends ServiceBase<State> {
   private reportedLatencyMs: number | null = null;
+  private bus: GainNode | null = null;
+  private captureNode: ScriptProcessorNode | null = null;
+  private silencer: GainNode | null = null;
+  private captured: Float32Array[] = [];
+  private capturedLength = 0;
 
   constructor(
     app: AppInstance,
@@ -288,6 +326,7 @@ class Sound extends ServiceBase<State> {
       tempoSlot: "tempo",
       drumMap: { ...DEFAULT_DRUM_MAP },
       trigger: null,
+      routing: "direct",
     });
     liveInstances.add(this);
     warmAudioContext();
@@ -343,9 +382,17 @@ class Sound extends ServiceBase<State> {
       this.state.trigger = config.trigger || null;
       this.app.notify(this, { trigger: this.state.trigger });
     }
+    if (ROUTINGS.includes(config.routing)) {
+      this.state.routing = config.routing;
+      this.app.notify(this, { routing: this.state.routing });
+      this.applyRouting();
+    }
   }
 
   destroy() {
+    this.teardownCapture();
+    this.bus?.disconnect();
+    this.bus = null;
     releaseAudioContext(this);
   }
 
@@ -372,7 +419,7 @@ class Sound extends ServiceBase<State> {
           );
         }
       }
-      return params;
+      return this.routeOutput(params);
     }
 
     // Array of note objects — either { note: string } or { frequency, velocity, duration }
@@ -384,7 +431,7 @@ class Sound extends ServiceBase<State> {
           this.playSynthNote(ctx, item.frequency, item.velocity ?? 1, (item.duration ?? 300) / 1000);
         }
       }
-      return params;
+      return this.routeOutput(params);
     }
 
     // Single { note: string } object
@@ -395,7 +442,99 @@ class Sound extends ServiceBase<State> {
     }
 
     this.reportLatency(ctx);
-    return params;
+    return this.routeOutput(params);
+  }
+
+  // ── Routing ──────────────────────────────────────────────────────────────
+
+  /**
+   * What process() hands on. Captured audio replaces the input rather than
+   * joining it: what follows a Sound that outputs audio is there for samples,
+   * and a note event passed on to it would be taken for something to play or
+   * send. Null while the capture node has not delivered anything yet.
+   */
+  private routeOutput(params: any): any {
+    if (this.state.routing === "direct") {
+      return params;
+    }
+    return this.drainCaptured();
+  }
+
+  private drainCaptured(): FloatRingBuffer | null {
+    if (this.capturedLength === 0) {
+      return null;
+    }
+    const merged = new Float32Array(this.capturedLength);
+    let offset = 0;
+    for (const chunk of this.captured) {
+      merged.set(chunk, offset);
+      offset += chunk.length;
+    }
+    this.captured = [];
+    this.capturedLength = 0;
+    return {
+      type: FloatRingBufferSymbol,
+      array: convertToUint8Array(merged),
+      id: 0,
+      ts: Date.now(),
+    };
+  }
+
+  /**
+   * Where this Sound's notes go: a bus of its own on the shared context, so
+   * that routing one Sound leaves the others playing as they were. Rebuilt
+   * when the shared context was closed and reopened underneath it.
+   */
+  private outputBus(ctx: AudioContext): GainNode {
+    if (!this.bus || this.bus.context !== ctx) {
+      this.teardownCapture();
+      this.bus = ctx.createGain();
+      this.applyRouting();
+    }
+    return this.bus;
+  }
+
+  private applyRouting() {
+    const bus = this.bus;
+    if (!bus) {
+      return;
+    }
+    const ctx = bus.context;
+    const { routing } = this.state;
+
+    this.teardownCapture();
+    bus.disconnect();
+
+    if (routing === "direct" || routing === "both") {
+      bus.connect(ctx.destination);
+    }
+    if (routing === "output" || routing === "both") {
+      this.captureNode = ctx.createScriptProcessor(CAPTURE_BUFFER_SIZE, 1, 1);
+      this.captureNode.onaudioprocess = (event) => {
+        const chunk = new Float32Array(event.inputBuffer.getChannelData(0));
+        this.captured.push(chunk);
+        this.capturedLength += chunk.length;
+      };
+      bus.connect(this.captureNode);
+      // A ScriptProcessorNode only runs while it leads to the output, so it is
+      // connected there through a gain of zero: nothing it passes on is heard.
+      this.silencer = ctx.createGain();
+      this.silencer.gain.value = 0;
+      this.captureNode.connect(this.silencer);
+      this.silencer.connect(ctx.destination);
+    }
+  }
+
+  private teardownCapture() {
+    if (this.captureNode) {
+      this.captureNode.onaudioprocess = null;
+      this.captureNode.disconnect();
+      this.captureNode = null;
+    }
+    this.silencer?.disconnect();
+    this.silencer = null;
+    this.captured = [];
+    this.capturedLength = 0;
   }
 
   // ── Private ──────────────────────────────────────────────────────────────
@@ -444,13 +583,13 @@ class Sound extends ServiceBase<State> {
   private playDrum(ctx: AudioContext, drumType: DrumType) {
     switch (drumType) {
       case "kick":
-        synthesizeKick(ctx, this.state.volume);
+        synthesizeKick(ctx, this.state.volume, this.outputBus(ctx));
         break;
       case "snare":
-        synthesizeSnare(ctx, this.state.volume);
+        synthesizeSnare(ctx, this.state.volume, this.outputBus(ctx));
         break;
       case "hihat":
-        synthesizeHihat(ctx, this.state.volume);
+        synthesizeHihat(ctx, this.state.volume, this.outputBus(ctx));
         break;
     }
   }
@@ -520,7 +659,7 @@ class Sound extends ServiceBase<State> {
     gain.gain.linearRampToValueAtTime(0, letGo + release);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this.outputBus(ctx));
     osc.start(now);
     osc.stop(letGo + release);
   }

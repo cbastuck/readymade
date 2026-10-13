@@ -8,6 +8,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SoundDescriptor from "../Sound";
+import {
+  convertToFloat32Array,
+  isFloatRingBuffer,
+} from "../../../rest/Data";
 
 class StubParam {
   value = 0;
@@ -31,7 +35,17 @@ class StubNode {
   type = "";
   buffer: unknown = null;
   stoppedAt: number | null = null;
-  connect() {}
+  /** The context that made the node, where the test needs to know. */
+  context: unknown = null;
+  /** What the node currently leads to. */
+  connections: unknown[] = [];
+  onaudioprocess: ((event: any) => void) | null = null;
+  connect(target: unknown) {
+    this.connections.push(target);
+  }
+  disconnect() {
+    this.connections = [];
+  }
   start() {}
   stop(time: number) {
     this.stoppedAt = time;
@@ -49,6 +63,7 @@ class StubAudioContext {
   created: string[] = [];
   gains: StubNode[] = [];
   oscillators: StubNode[] = [];
+  processors: StubNode[] = [];
   constructor() {
     contexts.push(this);
   }
@@ -67,7 +82,13 @@ class StubAudioContext {
   }
   createGain() {
     const node = new StubNode();
+    node.context = this;
     this.gains.push(node);
+    return node;
+  }
+  createScriptProcessor() {
+    const node = new StubNode();
+    this.processors.push(node);
     return node;
   }
   createBuffer(_channels: number, length: number) {
@@ -288,6 +309,91 @@ describe("Sound – envelope", () => {
     sound.configure({ generator: "synth", noteDuration: 1, release: 0.5 });
     sound.process([{ note: "A3" }, { note: "C4" }, { note: "E4" }]);
     expect(contexts[0].oscillators.map((o) => o.stoppedAt)).toEqual([1.5, 1.5, 1.5]);
+    sound.destroy();
+  });
+});
+
+describe("Sound – routing", () => {
+  /** The buses Sounds play into, oldest first: the gains other gains lead to. */
+  const buses = (ctx: StubAudioContext) =>
+    ctx.gains.filter((bus) =>
+      ctx.gains.some((node) => node.connections.includes(bus)),
+    );
+  const busOf = (ctx: StubAudioContext) => buses(ctx)[0];
+  const capture = (ctx: StubAudioContext, samples: number[]) =>
+    ctx.processors[0].onaudioprocess?.({
+      inputBuffer: { getChannelData: () => new Float32Array(samples) },
+    });
+
+  it("plays to the output and passes its input through by default", () => {
+    const { sound } = createSound();
+    sound.configure({ generator: "synth" });
+    const input = { note: "A3" };
+    expect(sound.process(input)).toBe(input);
+    const [ctx] = contexts;
+    expect(busOf(ctx).connections).toEqual([ctx.destination]);
+    expect(ctx.processors).toHaveLength(0);
+    sound.destroy();
+  });
+
+  it("captures what it generates instead of playing it when routed to its output", () => {
+    const { sound, app } = createSound();
+    sound.configure({ generator: "synth", routing: "output" });
+    expect(app.notify).toHaveBeenCalledWith(sound, { routing: "output" });
+
+    // Nothing captured yet: the note is not handed on in its place.
+    expect(sound.process({ note: "A3" })).toBeNull();
+    const [ctx] = contexts;
+    expect(busOf(ctx).connections).toEqual([ctx.processors[0]]);
+
+    capture(ctx, [0.5, -0.5]);
+    capture(ctx, [0.25]);
+    const out = sound.process({ note: "A3" });
+    expect(isFloatRingBuffer(out)).toBe(true);
+    expect(Array.from(convertToFloat32Array(out.array))).toEqual([0.5, -0.5, 0.25]);
+
+    // Handed on once.
+    expect(sound.process({ note: "A3" })).toBeNull();
+    sound.destroy();
+  });
+
+  it("plays and captures when routed to both", () => {
+    const { sound } = createSound();
+    sound.configure({ generator: "drums", routing: "both" });
+    sound.process({ note: "C4" });
+    const [ctx] = contexts;
+    expect(busOf(ctx).connections).toEqual([ctx.destination, ctx.processors[0]]);
+    capture(ctx, [1]);
+    expect(isFloatRingBuffer(sound.process({ note: "C4" }))).toBe(true);
+    sound.destroy();
+  });
+
+  it("reroutes a Sound that is already playing, leaving another as it was", () => {
+    const { sound } = createSound();
+    const other = createSound().sound;
+    sound.configure({ generator: "synth" });
+    other.configure({ generator: "synth" });
+    sound.process({ note: "A3" });
+    other.process({ note: "A3" });
+    const [ctx] = contexts;
+    const [bus, otherBus] = buses(ctx);
+    expect(otherBus).toBeDefined();
+
+    sound.configure({ routing: "output" });
+    expect(bus.connections).toEqual([ctx.processors[0]]);
+    expect(otherBus.connections).toEqual([ctx.destination]);
+
+    sound.configure({ routing: "direct" });
+    expect(bus.connections).toEqual([ctx.destination]);
+    expect(ctx.processors[0].onaudioprocess).toBeNull();
+    sound.destroy();
+    other.destroy();
+  });
+
+  it("ignores a routing it does not know", () => {
+    const { sound, app } = createSound();
+    sound.configure({ routing: "elsewhere" });
+    expect(app.notify).not.toHaveBeenCalledWith(sound, { routing: "elsewhere" });
     sound.destroy();
   });
 });

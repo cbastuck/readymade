@@ -93,6 +93,7 @@ import ConfiguratorDescriptor from "../services/Configurator";
 import AudioInputDescriptor from "../services/AudioInput";
 import AudioOutputDescriptor from "../services/AudioOutput";
 import SoundDescriptor from "../services/Sound";
+import StepSequencerDescriptor from "../services/StepSequencer";
 import GifEncoderDescriptor from "../services/GifEncoder";
 
 // Runtime control
@@ -214,6 +215,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   AudioInputDescriptor,
   AudioOutputDescriptor,
   SoundDescriptor,
+  StepSequencerDescriptor,
 
   // Crypto
   EncryptDescriptor,

@@ -1,0 +1,129 @@
+{
+  "boardName": "Step Sequencer → CoreAudio",
+  "runtimes": [
+    {
+      "id": "browser",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "rt",
+      "name": "HKP Runtime",
+      "type": "rest",
+      "remote": "embedded"
+    }
+  ],
+  "services": {
+    "browser": [
+      {
+        "uuid": "step-seq-svc",
+        "serviceId": "hookup.to/service/step-sequencer",
+        "serviceName": "Step Sequencer",
+        "state": {
+          "bpm": 120,
+          "steps": [
+            [
+              true,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              true,
+              false
+            ]
+          ],
+          "playing": false,
+          "currentStep": 0
+        }
+      },
+      {
+        "uuid": "sound-svc",
+        "serviceId": "hookup.to/service/sound",
+        "serviceName": "Sound",
+        "state": {
+          "generator": "drums",
+          "routing": "output",
+          "volume": 0.8
+        }
+      },
+      {
+        "uuid": "ws-client-svc",
+        "serviceId": "hookup.to/service/websocket-client",
+        "serviceName": "WebSocket → C++",
+        "state": {
+          "url": "ws://localhost:9002",
+          "protocol": { "id": "hkp-browser-audio", "type": "writer" }
+        }
+      }
+    ],
+    "rt": [
+      {
+        "uuid": "core-output-1",
+        "serviceId": "core-output",
+        "serviceName": "Core Audio Output",
+        "state": {
+          "bypass": false,
+          "pipeline": [
+            {
+              "serviceId": "websocket-socket",
+              "instanceId": "ws-audio-in-1",
+              "state": {
+                "port": "9002",
+                "host": "127.0.0.1",
+                "path": "/",
+                "mode": "readAndAccumulate",
+                "bypass": false
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

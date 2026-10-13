@@ -219,7 +219,7 @@ function deserializeYasRingBuffer(
   };
 }
 
-function serializeYasRingBuffer(data: FloatRingBuffer): ArrayBuffer {
+export function serializeYasRingBuffer(data: FloatRingBuffer): ArrayBuffer {
   const buffer = new ArrayBuffer(
     7 + // YAS header
       4 + // Type length
