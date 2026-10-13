@@ -97,3 +97,15 @@ Needs a signed-in account and an hkp-node kept under the name `node` in
 *Manage runtime servers*. The schema is created on
 first run, in a table of its own (`court_booking`) — the board's earlier
 `booking` table is left as it was.
+
+## Building something of your own on it
+
+This board is a starting point, not a finished product: there are no payments,
+no reminders, and one club. What it does have is the part that is expensive to
+add later — the rules held by the database rather than the board, and a caller
+the server vouches for.
+
+If you take it further and sell what you build, a commercial licence is the paid
+alternative to the AGPL: your product under your own name, with your own source
+closed. The **Open-source licences** page on the website says what it covers and
+who needs none of it.
