@@ -98,15 +98,38 @@ if [[ -z "${VCPKG_FEATURE_FLAGS:-}" ]]; then
     export VCPKG_FEATURE_FLAGS="manifests,binarycaching"
 fi
 
-if [[ ! -f "${TOOLCHAIN}" ]]; then
-    echo "ERROR: Missing vcpkg toolchain file: ${TOOLCHAIN}"
-    echo "Ensure vcpkg is initialized at 3rdparty/vcpkg before running build.sh"
-    exit 2
-fi
-
 if [[ ! -f "${VCPKG_MANIFEST_DIR}/vcpkg.json" ]]; then
     echo "ERROR: Missing vcpkg manifest: ${VCPKG_MANIFEST_DIR}/vcpkg.json"
     exit 2
+fi
+
+if [[ ! -f "${TOOLCHAIN}" ]]; then
+    echo "==> vcpkg not found, bootstrapping..."
+
+    retry() {
+        local attempts="$1"
+        shift
+        local n=1
+        until "$@"; do
+            if [[ "${n}" -ge "${attempts}" ]]; then
+                return 1
+            fi
+            n=$((n + 1))
+            sleep $((n * 2))
+        done
+    }
+
+    # vcpkg is checked out at the commit the manifest pins.
+    vcpkg_baseline="$(sed -n 's/.*"builtin-baseline"[[:space:]]*:[[:space:]]*"\([0-9a-f]\{40\}\)".*/\1/p' "${VCPKG_MANIFEST_DIR}/vcpkg.json")"
+    if [[ -z "${vcpkg_baseline}" ]]; then
+        echo "ERROR: No builtin-baseline in ${VCPKG_MANIFEST_DIR}/vcpkg.json"
+        exit 2
+    fi
+
+    retry 5 git clone https://github.com/microsoft/vcpkg.git "${REPO_ROOT}/3rdparty/vcpkg"
+    retry 5 git -C "${REPO_ROOT}/3rdparty/vcpkg" fetch origin "${vcpkg_baseline}"
+    git -C "${REPO_ROOT}/3rdparty/vcpkg" checkout --force "${vcpkg_baseline}"
+    retry 3 "${REPO_ROOT}/3rdparty/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
 fi
 
 if [[ "${IS_DEBUG_CONFIG}" != "ON" && -n "${VCPKG_TARGET_TRIPLET}" && ! -f "${VCPKG_OVERLAY_TRIPLETS_DIR}/${VCPKG_TARGET_TRIPLET}.cmake" ]]; then

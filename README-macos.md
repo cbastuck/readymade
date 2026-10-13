@@ -11,6 +11,8 @@ For the iOS app, see [README-ios.md](./README-ios.md) — it is built on MacOS, 
 - CMake 3.21+
 - Node.js + npm
 - Xcode Command Line Tools
+- `git` on `PATH` (if `3rdparty/vcpkg` is missing, the build script clones the pinned `vcpkg`
+  baseline and bootstraps it automatically)
 
 ## Build (recommended)
 
