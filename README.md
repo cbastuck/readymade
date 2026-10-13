@@ -119,6 +119,14 @@ npm test
 Build artifacts are generated under `build/` (`build-linux/` on Linux). See your platform
 guide for the exact artifact path.
 
+## History
+
+Readymade started in November 2018 under the name Hookup and was developed in private
+repositories until March 2026. Commits before 27 March 2026 were
+imported from those repositories, keeping original dates.
+The history was filtered on import, so it is not a complete record. Older commits are
+not expected to build.
+
 ## License and copyright
 
 - License: GNU AGPL v3.0 (see `LICENSE`)
