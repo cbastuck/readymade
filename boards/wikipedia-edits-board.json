@@ -1,0 +1,136 @@
+{
+  "boardName": "Wikipedia Live Edits",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "stream-svc",
+        "serviceId": "hookup.to/service/input",
+        "serviceName": "Wikipedia Stream",
+        "state": {
+          "url": "https://stream.wikimedia.org/v2/stream/recentchange",
+          "parseEventsAsJSON": true
+        }
+      },
+      {
+        "uuid": "edit-filter-svc",
+        "serviceId": "hookup.to/service/filter",
+        "serviceName": "English Edits",
+        "state": {
+          "conditions": [
+            "params.wiki == 'enwiki'",
+            "params.type == 'edit'",
+            "params.bot == false"
+          ]
+        }
+      },
+      {
+        "uuid": "format-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Format",
+        "state": {
+          "template": {
+            "title=": "params.title",
+            "user=": "params.user",
+            "comment=": "params.comment",
+            "text=": "concat(params.title, '  ·  ', params.user)"
+          }
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Edit Feed",
+        "state": { "maxEntries": 50 }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "main",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 16,
+          "grow": true,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 8,
+              "items": [
+                {
+                  "type": "text-input",
+                  "label": "Keyword filter",
+                  "placeholder": "e.g. climate, music, 2024…",
+                  "submitLabel": "Apply",
+                  "action": {
+                    "serviceUuid": "edit-filter-svc",
+                    "configure": {
+                      "conditions": [
+                        "params.wiki == 'enwiki'",
+                        "params.type == 'edit'",
+                        "params.bot == false",
+                        "contains(lower(params.title), lower('$$input'))"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "justify": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Connect",
+                  "action": { "serviceUuid": "stream-svc", "configure": { "bypass": false } }
+                },
+                {
+                  "type": "button",
+                  "label": "Disconnect",
+                  "action": { "serviceUuid": "stream-svc", "configure": { "bypass": true } }
+                },
+                {
+                  "type": "button",
+                  "label": "All edits",
+                  "action": {
+                    "serviceUuid": "edit-filter-svc",
+                    "configure": {
+                      "conditions": [
+                        "params.wiki == 'enwiki'",
+                        "params.type == 'edit'",
+                        "params.bot == false"
+                      ],
+                      "reset_input": true
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "Clear",
+                  "action": { "serviceUuid": "monitor-svc", "configure": { "clear": true } }
+                }
+              ]
+            },
+            {
+              "type": "message-list",
+              "grow": true,
+              "source": { "serviceUuid": "monitor-svc" }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

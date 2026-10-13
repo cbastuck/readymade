@@ -53,7 +53,10 @@ class Filter {
   }
 
   configure(config: any): void {
-    const { conditions, aggregator } = config;
+    const { conditions, aggregator, reset_input } = config;
+    if (reset_input) {
+      this.app.notify(this, { __reset_input: true });
+    }
 
     if (conditions !== undefined) {
       this.conditions = conditions;
@@ -88,7 +91,7 @@ class Filter {
       // otherwise aggregate results from multiple conditions
       switch (this.aggregator) {
         case "and":
-          return results.some((r) => !r);
+          return results.every((r) => !!r);
         case "or":
           return results.some((r) => !!r);
         default:

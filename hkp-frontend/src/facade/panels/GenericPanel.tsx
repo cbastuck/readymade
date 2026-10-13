@@ -51,7 +51,7 @@ export function GenericPanel({ panel, boardContext, showTitle }: PanelProps) {
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          overflowY: "auto",
+          overflow: "auto",
         }}
       >
         <LayoutNode

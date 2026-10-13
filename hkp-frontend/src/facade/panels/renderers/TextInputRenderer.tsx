@@ -5,6 +5,10 @@ import { useVault } from "hkp-frontend/src/VaultContext";
 import { vaultSet } from "hkp-frontend/src/vault";
 import { useWidgetActions } from "../../useWidgetActions";
 import { usePressFeedback } from "../../pressFeedback";
+import {
+  useResolvedService,
+  useServiceNotifications,
+} from "../../serviceNotifications";
 
 export function TextInputRenderer({
   widget,
@@ -37,6 +41,18 @@ export function TextInputRenderer({
     autoSubmitted.current = true;
     void run({ action: widget.action, actions: widget.actions, value: vaultResolved });
   }, [vaultResolved]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The service this field configures may ask it to empty itself, when
+  // something else on the board drops what the field had set.
+  const actionService = useResolvedService(
+    boardContext,
+    widget.action?.serviceUuid,
+  );
+  useServiceNotifications(actionService, (notification) => {
+    if (notification?.__reset_input) {
+      setValue("");
+    }
+  });
 
   const submit = useCallback(() => {
     const text = value.trim();
