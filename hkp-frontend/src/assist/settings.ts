@@ -2,6 +2,9 @@ import { useSyncExternalStore } from "react";
 
 export type Effort = "default" | "low" | "medium" | "high" | "xhigh" | "max";
 export type AssistSettings = {
+  provider: "anthropic" | "openai-compatible";
+  openAIContextTokens: number;
+  openAIThinking: "default" | "off" | "on";
   anthropicToken: string;
   openAICompatibleToken: string;
   openAICompatibleUrl: string;
@@ -11,6 +14,9 @@ export type AssistSettings = {
 const KEY = "readymade.ai-assist.v1";
 const EVENT = "readymade-ai-settings";
 const defaults: AssistSettings = {
+  provider: "anthropic",
+  openAIContextTokens: 8192,
+  openAIThinking: "default",
   anthropicToken: "",
   openAICompatibleToken: "",
   openAICompatibleUrl: "https://api.openai.com/v1",

@@ -59,130 +59,135 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
       <SelectionProvider runtimeIds={boardContext.runtimes.map((rt) => rt.id)}>
         <OverviewProvider>
           <AssetViewProvider>
-          {/* Both places the board can be run from are inside this, so an
+            {/* Both places the board can be run from are inside this, so an
               input written in one is a press away in the other. */}
-          <PlayProvider>
-            <FacadeViewProvider
-              boardName={
-                boardContext.boardName || props.requestedBoardName || ""
-              }
-            >
-              <RuntimeZoomProvider>
-              <div
-                className="w-full h-full flex flex-col"
-                style={{
-                  width: "100%",
-                  background: "var(--bg-app, #fafafa)",
-                  // What the retracted bar and its logo are placed against: while
-                  // the facade is the app they are painted over it rather than
-                  // taking a row of their own.
-                  position: "relative",
-                }}
+            <PlayProvider>
+              <FacadeViewProvider
+                boardName={
+                  boardContext.boardName || props.requestedBoardName || ""
+                }
               >
-                <FacadeChrome>
-                  <Toolbar
-                    isCompact={props.compact}
-                    menuItemFactory={props.menuItemFactory}
-                    hideNavigation={props.hideNavigation}
-                    menuSlot={props.menuSlot}
-                    logoSlot={props.logoSlot}
-                    centreSlot={<PlayBoardControls />}
-                    actionsSlot={
-                      <>
-                        <RuntimeZoomToolbarButton />
-                        <button
-                          type="button"
-                          title="Board AI assistant"
-                          aria-label="Toggle board assistant"
-                          aria-controls="board-ai-assist"
-                          aria-pressed={assistVisible}
-                          onClick={() => {
-                            setAssistOpened(true);
-                            setAssistVisible((value) => !value);
-                          }}
-                          style={{
-                            ...TOOLBAR_GROUP_BUTTON,
-                            background: "none",
-                            cursor: "pointer",
-                            color: assistVisible
-                              ? "var(--hkp-accent, #0abcfb)"
-                              : "var(--text, #1a1a1a)",
-                          }}
-                        >
-                          <Sparkles size={TOOLBAR_GROUP_ICON_SIZE} />
-                        </button>
-                        <FacadeViewControls />
-                        <ToolbarGroup label="Board tools">
-                          <FacadeEditorButton />
-                          <OverviewToolbarButton />
-                          <AssetViewToolbarButton />
-                        </ToolbarGroup>
-                        <DeployMenu />
-                      </>
-                    }
-                    includeNavigationLinks={!props.hideNavigation}
-                  />
-                </FacadeChrome>
+                <RuntimeZoomProvider>
+                  <div
+                    className="w-full h-full flex flex-col"
+                    style={{
+                      width: "100%",
+                      background: "var(--bg-app, #fafafa)",
+                      // What the retracted bar and its logo are placed against: while
+                      // the facade is the app they are painted over it rather than
+                      // taking a row of their own.
+                      position: "relative",
+                    }}
+                  >
+                    <FacadeChrome>
+                      <Toolbar
+                        isCompact={props.compact}
+                        menuItemFactory={props.menuItemFactory}
+                        hideNavigation={props.hideNavigation}
+                        menuSlot={props.menuSlot}
+                        logoSlot={props.logoSlot}
+                        centreSlot={<PlayBoardControls />}
+                        actionsSlot={
+                          <>
+                            <button
+                              type="button"
+                              title="Board AI assistant"
+                              aria-label="Toggle board assistant"
+                              aria-controls="board-ai-assist"
+                              aria-pressed={assistVisible}
+                              onClick={() => {
+                                setAssistOpened(true);
+                                setAssistVisible((value) => !value);
+                              }}
+                              style={{
+                                ...TOOLBAR_GROUP_BUTTON,
+                                background: "none",
+                                cursor: "pointer",
+                                color: assistVisible
+                                  ? "var(--hkp-accent, #0abcfb)"
+                                  : "var(--text, #1a1a1a)",
+                              }}
+                            >
+                              <Sparkles size={TOOLBAR_GROUP_ICON_SIZE} />
+                            </button>
+                            <RuntimeZoomToolbarButton />
+                            <FacadeViewControls />
+                            <ToolbarGroup label="Board tools">
+                              <FacadeEditorButton />
+                              <OverviewToolbarButton />
+                              <AssetViewToolbarButton />
+                            </ToolbarGroup>
+                            <DeployMenu />
+                          </>
+                        }
+                        includeNavigationLinks={!props.hideNavigation}
+                      />
+                    </FacadeChrome>
 
-                <RuntimeUnreachableDialog />
-                <UnknownRemoteDialog />
-                <ShareQRCodeDialog
-                  isOpen={props.showShareBoardQRCodeURL !== null}
-                  url={props.showShareBoardQRCodeURL}
-                  onClose={() => props.setShowShareBoardQRCodeURL(null)}
-                />
-                <SaveBoardDialog
-                  isOpen={props.isSaveDialogVisible}
-                  suggestedName={boardContext.boardName || props.suggestedName}
-                  suggestedDescription={props.description}
-                  onSave={props.onSaveDialog}
-                  onCancel={() => props.setIsSaveDialogVisible(false)}
-                />
+                    <RuntimeUnreachableDialog />
+                    <UnknownRemoteDialog />
+                    <ShareQRCodeDialog
+                      isOpen={props.showShareBoardQRCodeURL !== null}
+                      url={props.showShareBoardQRCodeURL}
+                      onClose={() => props.setShowShareBoardQRCodeURL(null)}
+                    />
+                    <SaveBoardDialog
+                      isOpen={props.isSaveDialogVisible}
+                      suggestedName={
+                        boardContext.boardName || props.suggestedName
+                      }
+                      suggestedDescription={props.description}
+                      onSave={props.onSaveDialog}
+                      onCancel={() => props.setIsSaveDialogVisible(false)}
+                    />
 
-                {/* Main area: sidebar + board canvas */}
-                <div
-                  style={{
-                    display: "flex",
-                    flex: 1,
-                    minHeight: 0,
-                    overflow: "hidden",
-                    position: "relative",
-                  }}
-                >
-                  {isPlayground && <Sidebar />}
-                  {/* Levels drilled into nested pipelines cover the canvas and nothing
+                    {/* Main area: sidebar + board canvas */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flex: 1,
+                        minHeight: 0,
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      {isPlayground && <Sidebar />}
+                      {/* Levels drilled into nested pipelines cover the canvas and nothing
               else, so the trail out of them sits above the board rather than
               above the whole window. */}
-                  <NestedNavProvider
-                    rootLabel={boardContext.boardName || "Board"}
-                  >
-                    <BoardCanvas
-                      boardContext={boardContext}
-                      isPlayground={isPlayground}
-                      requestedBoardName={props.requestedBoardName}
-                      description={props.description}
-                      onChangeBoardname={props.onChangeBoardname}
-                      emptySlot={props.emptySlot}
-                    />
-                    {assistOpened && (
-                      <Suspense fallback={null}>
-                        <BoardAssistPanel
-                          visible={assistVisible}
-                          onClose={() => setAssistVisible(false)}
-                          host={assistHost}
+                      <NestedNavProvider
+                        rootLabel={boardContext.boardName || "Board"}
+                      >
+                        <BoardCanvas
+                          boardContext={boardContext}
+                          isPlayground={isPlayground}
+                          requestedBoardName={props.requestedBoardName}
+                          description={props.description}
+                          onChangeBoardname={props.onChangeBoardname}
+                          emptySlot={props.emptySlot}
                         />
-                      </Suspense>
-                    )}
-                  </NestedNavProvider>
-                  <div ref={setAssistHost} style={{ display: "contents" }} />
-                </div>
+                        {assistOpened && (
+                          <Suspense fallback={null}>
+                            <BoardAssistPanel
+                              visible={assistVisible}
+                              onClose={() => setAssistVisible(false)}
+                              host={assistHost}
+                            />
+                          </Suspense>
+                        )}
+                      </NestedNavProvider>
+                      <div
+                        ref={setAssistHost}
+                        style={{ display: "contents" }}
+                      />
+                    </div>
 
-                <ChromeFooter />
-                {props.children || null}
-              </div>
-              </RuntimeZoomProvider>
-            </FacadeViewProvider>
-          </PlayProvider>
+                    <ChromeFooter />
+                    {props.children || null}
+                  </div>
+                </RuntimeZoomProvider>
+              </FacadeViewProvider>
+            </PlayProvider>
           </AssetViewProvider>
         </OverviewProvider>
       </SelectionProvider>

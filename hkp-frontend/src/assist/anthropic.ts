@@ -15,7 +15,8 @@ import { Effort } from "./settings";
 import { validateAssistBoard } from "./validation";
 import { BoardDescriptor } from "../types";
 
-export type AssistModel = ModelInfo;
+export type AssistModel = Pick<ModelInfo, "id" | "display_name"> &
+  Partial<Pick<ModelInfo, "capabilities" | "max_tokens">>;
 export type Conversation = MessageParam[];
 export function createAssistClient(token: string) {
   return new Anthropic({
@@ -73,12 +74,14 @@ const tools: Tool[] = [
   {
     name: "propose_board",
     description:
-      "Propose the complete resulting board and a plain-language explanation for review. This does not apply or run it.",
+      "Propose the complete resulting board and a plain-language explanation for review. Pass board as a JSON object, not a string or a wrapper containing another board. Every runtime id must have a matching array in services, including empty arrays. This does not apply or run it.",
     input_schema: {
       type: "object",
       properties: {
         board: {
           type: "object",
+          description:
+            "The complete board itself: {boardName, runtimes, services, ...}. Never stringify this object.",
           properties: {
             runtimes: { type: "array" },
             services: { type: "object" },
@@ -106,6 +109,7 @@ export async function runAssistTurn(options: {
   signal: AbortSignal;
   onText: (text: string) => void;
   onStatus: (status: string) => void;
+  onRawResponse?: (text: string) => void;
 }): Promise<{
   conversation: Conversation;
   text: string;
@@ -155,7 +159,11 @@ export async function runAssistTurn(options: {
     for (const call of calls) {
       options.signal.throwIfAborted();
       try {
-        const input = call.input as Record<string, unknown>;
+        const decoded =
+          typeof call.input === "string" ? JSON.parse(call.input) : call.input;
+        if (!decoded || typeof decoded !== "object" || Array.isArray(decoded))
+          throw new Error("Tool arguments must be a JSON object.");
+        const input = decoded as Record<string, unknown>;
         let result: unknown;
         if (call.name === "search_documentation") {
           if (typeof input.query !== "string")
@@ -167,7 +175,19 @@ export async function runAssistTurn(options: {
           result = await readDocumentation(input.paths as string[]);
         } else if (call.name === "propose_board") {
           if (proposal) throw new Error("Propose only one board per turn.");
-          proposal = validateAssistBoard(input.board);
+          // Some models serialize this nested tool argument despite its object
+          // schema. Decode once, then apply the same structural validation.
+          let candidate = input.board;
+          if (typeof candidate === "string") {
+            try {
+              candidate = JSON.parse(candidate);
+            } catch {
+              throw new Error(
+                "The board argument is a string containing invalid JSON. Pass board as an object with runtimes and services.",
+              );
+            }
+          }
+          proposal = validateAssistBoard(candidate);
           if (
             typeof input.explanation !== "string" ||
             !input.explanation.trim()
@@ -183,6 +203,8 @@ export async function runAssistTurn(options: {
           content: JSON.stringify(result),
         });
       } catch (error) {
+        if (call.name === "propose_board")
+          options.onRawResponse?.(JSON.stringify(call.input, null, 2));
         proposal = undefined;
         results.push({
           type: "tool_result",

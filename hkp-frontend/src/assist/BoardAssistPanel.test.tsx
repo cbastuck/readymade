@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   models: vi.fn(),
   link: vi.fn(),
+  localModels: vi.fn(),
+  localRun: vi.fn(),
 }));
 vi.mock("../BoardContext", () => ({ useBoardContext: () => mocks.board }));
 vi.mock("../selection/SelectionContext", () => ({
@@ -47,8 +49,12 @@ vi.mock("./anthropic", () => ({
   runAssistTurn: mocks.run,
   modelEfforts: () => ["default", "medium"],
 }));
+vi.mock("./openAICompatible", () => ({
+  listOpenAIModels: mocks.localModels,
+  runOpenAICompatibleTurn: mocks.localRun,
+}));
 import BoardAssistPanel from "./BoardAssistPanel";
-import { saveAssistSettings } from "./settings";
+import { readAssistSettings, saveAssistSettings } from "./settings";
 const original = {
   boardName: "Before",
   runtimes: [{ id: "ui", name: "Browser", type: "browser" }],
@@ -108,6 +114,75 @@ async function requestProposal() {
   await screen.findByRole("button", { name: "Apply board" });
 }
 describe("board assistant panel", () => {
+  it("shows rejected local model output without offering it as a board", async () => {
+    saveAssistSettings({
+      provider: "openai-compatible",
+      openAICompatibleUrl: "http://127.0.0.1:8081/v1",
+    });
+    mocks.localModels.mockResolvedValue([
+      { id: "bonsai", display_name: "Bonsai" },
+    ]);
+    mocks.localRun.mockImplementationOnce(async (request) => {
+      request.onRawResponse("Here is your board: {broken JSON}");
+      throw new Error("The model did not return valid JSON.");
+    });
+    const view = mount();
+    await screen.findByRole("option", { name: "Bonsai" });
+    fireEvent.change(screen.getByLabelText("Message to board assistant"), {
+      target: { value: "Create a board" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByText("Show raw model response");
+    expect(screen.getByText("Here is your board: {broken JSON}")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Apply board" })).toBeNull();
+    view.unmount();
+    view.host.remove();
+  });
+  it("uses a local compatible provider without an Anthropic or OpenAI token", async () => {
+    saveAssistSettings({
+      provider: "openai-compatible",
+      openAICompatibleUrl: "http://127.0.0.1:8081/v1",
+      anthropicToken: "",
+      openAICompatibleToken: "",
+    });
+    mocks.localModels.mockResolvedValue([
+      { id: "Bonsai-27B-Q1_0.gguf", display_name: "Bonsai" },
+    ]);
+    mocks.localRun.mockResolvedValue({
+      conversation: [],
+      text: "Local proposal",
+      board: proposed,
+    });
+    const view = mount();
+    await screen.findByRole("option", { name: "Bonsai" });
+    const effort = screen.getByLabelText("Effort");
+    expect((effort as HTMLSelectElement).disabled).toBe(false);
+    fireEvent.change(effort, { target: { value: "on" } });
+    expect(readAssistSettings().openAIThinking).toBe("on");
+    fireEvent.change(effort, { target: { value: "off" } });
+    expect(readAssistSettings().openAIThinking).toBe("off");
+    fireEvent.change(screen.getByLabelText("Message to board assistant"), {
+      target: { value: "Build locally" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByRole("button", { name: "Apply board" });
+    expect(mocks.localModels).toHaveBeenCalledWith(
+      "http://127.0.0.1:8081/v1",
+      "",
+      expect.any(AbortSignal),
+    );
+    expect(mocks.localRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: "http://127.0.0.1:8081/v1",
+        token: "",
+        contextTokens: 8192,
+        thinking: "off",
+      }),
+    );
+    expect(screen.queryByRole("button", { name: "API settings" })).toBeNull();
+    view.unmount();
+    view.host.remove();
+  });
   it("sends fresh configuration and selection, applies only on click, and reverts the exact previous board", async () => {
     const view = mount();
     expect(
@@ -182,7 +257,13 @@ describe("board assistant panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Apply edited board" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(mocks.board.setBoardState).toHaveBeenCalledWith(edited);
-    expect((screen.getByRole("button", { name: "Preview changes" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Preview changes",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Revert last change" }));
     await waitFor(() =>
       expect(mocks.board.setBoardState).toHaveBeenLastCalledWith(original),

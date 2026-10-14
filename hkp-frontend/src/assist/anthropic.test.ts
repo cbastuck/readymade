@@ -146,6 +146,34 @@ describe("Anthropic assistant", () => {
       expect.objectContaining({ is_error: true }),
     ]);
   });
+  it("decodes serialized board tool arguments before validating", async () => {
+    response([
+      {
+        type: "tool_use",
+        id: "propose",
+        name: "propose_board",
+        input: { board: JSON.stringify(board), explanation: "Built a board." },
+      },
+    ]);
+    expect((await run()).board).toEqual(board);
+  });
+  it("retains rejected proposal arguments when the model falls back to text", async () => {
+    const input = {
+      board: { runtimes: [], services: [] },
+      explanation: "Invalid",
+    };
+    response([
+      { type: "tool_use", id: "propose", name: "propose_board", input },
+    ]);
+    response([{ type: "text", text: "Could not propose it." }], "end_turn");
+    const onRawResponse = vi.fn();
+    const result = await run({ onRawResponse });
+    expect(result.board).toBeUndefined();
+    expect(onRawResponse).toHaveBeenCalledWith(JSON.stringify(input, null, 2));
+    expect(result.conversation[2].content).toEqual([
+      expect.objectContaining({ is_error: true }),
+    ]);
+  });
   it("rejects truncated output and cancels before issuing a request", async () => {
     response([], "max_tokens");
     await expect(run()).rejects.toThrow("output limit");

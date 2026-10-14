@@ -7,24 +7,62 @@ stays available while the panel is hidden; it is not saved in the board file.
 ## Setup
 
 Open **Settings → AI assistant**, in either the website or the native Readymade
-app. Enter an Anthropic API token and save it. When no Anthropic token is configured, **API settings** replaces **Send**
-at the bottom of the panel and opens this settings tab. Tokens are kept in the browser or app webview's local storage
-on this device. They are not included in board files, exports, or share links.
-This storage is not the native operating system's encrypted credential store.
+app. Choose **Anthropic** or **OpenAI compatible**, enter the provider's settings,
+and save. The assistant panel also has a **Provider** selector. Switching providers
+or API servers clears the conversation so a previous provider's history is not
+sent to a different server. The board and revert checkpoint are kept.
 
-The assistant currently uses Anthropic. The settings can also keep an OpenAI
-compatible token and API base URL for a future provider integration; those
-credentials are not used for generation yet.
+For Anthropic, enter an API token. For OpenAI-compatible servers, enter an **API
+base URL** including `/v1`, and an optional API token. An unauthenticated local
+llama.cpp server does not need a token. For example:
 
-The panel queries Anthropic's Models API with the saved token, following all
-pages, and lists the returned models. **Refresh models** repeats that query.
-Effort offers the levels the selected model reports it supports; **Model default**
-omits the effort parameter. Models without effort support use their default.
-The selected model and effort are saved on this device.
+- Provider: **OpenAI compatible**
+- API base URL: `http://127.0.0.1:8081/v1`
+- API token: empty unless the server was launched with authentication
+- Server context size: **8192** when using `llama-server -c 8192`
 
-Requests use the official Anthropic TypeScript SDK with browser access enabled,
-including its browser CORS headers. They go directly from the browser or native
-webview to Anthropic. API usage is billed to the token's account.
+Save, then select **OpenAI compatible** in the panel. It queries `/v1/models`
+and lists the returned model IDs, such as `Bonsai-27B-Q1_0.gguf`. **Refresh models**
+repeats that query. Requests use `/v1/chat/completions` with JSON output mode;
+the model and its chat template must support following instructions and producing
+JSON. Responses are streamed so slow generation can show progress without
+waiting for the entire response. A server that ignores streaming is accepted
+with a normal JSON response. Hosted endpoints work with the same fields. Browser clients need the server
+to allow their origin through CORS.
+
+For llama.cpp, **Thinking mode** can be **Server default**, **Off**, or **On**.
+The assistant panel's **Effort** selector offers **Server default**, **Thinking off**,
+and **Thinking on** for OpenAI-compatible servers. It shares the saved thinking
+setting with Settings, so it can be changed directly before the next request.
+Off sends `chat_template_kwargs: { enable_thinking: false }`; On sends true.
+Leave Server default for endpoints without llama.cpp's template options. This
+controls thinking in the template and is separate from the context-size setting.
+Thinking can use the output budget before the final board appears.
+
+A connection failure during generation can mean a timeout or disconnect, even
+when the server is still working. It does not establish a CORS problem. The
+panel distinguishes initial connection errors from interrupted response streams;
+**Stop** cancels the request and an incomplete stream is never offered as a board.
+
+The compatible provider retrieves relevant repository pages before generating,
+using a conservative budget for the configured context size. It preserves the
+full current board and rejects a request that cannot fit rather than truncating
+its configuration. Older conversation may be omitted to fit the latest board.
+Larger boards may require increasing both the server's context size and this
+setting. This does not change the server's context limit itself.
+
+Anthropic uses its official browser-capable TypeScript SDK and Models API,
+following all model-list pages. Effort offers the levels the selected Anthropic
+model reports it supports; **Model default** omits effort. Compatible servers use
+their model default, since the standard model-list API does not report supported
+effort levels. The provider, model, effort and server settings are saved on this
+device. **API settings** replaces **Send** if the active provider lacks its required
+settings; local servers can send with no API token.
+
+Tokens are stored in the browser or app webview's local storage, outside board
+files and share links. This is not the native operating system's encrypted
+credential store. Requests go directly to the selected provider or API server;
+hosted API usage is billed to that account.
 
 ## Building and editing
 
@@ -48,7 +86,7 @@ surroundings. Ambiguous requests can receive a clarification instead of a change
 Imported unit documents cannot be edited through their containing board here.
 
 Your prompts, board configuration, conversation history and the documentation
-retrieved by the assistant are sent to Anthropic. Board configuration can include
+retrieved by the assistant are sent to the selected provider or API server. Board configuration can include
 credentials entered directly into service state; use secret references where
 possible. Credentials from **AI assistant** settings are used for authentication
 and are not added to the model's conversation.

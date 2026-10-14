@@ -14,6 +14,7 @@ import {
   modelEfforts,
   runAssistTurn,
 } from "./anthropic";
+import { listOpenAIModels, runOpenAICompatibleTurn } from "./openAICompatible";
 import { Effort, saveAssistSettings, useAssistSettings } from "./settings";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
@@ -30,6 +31,7 @@ type Entry = {
   board?: BoardDescriptor;
   base?: string;
   applied?: boolean;
+  rawResponse?: string;
 };
 export default function BoardAssistPanel({
   visible,
@@ -46,6 +48,10 @@ export default function BoardAssistPanel({
   const selection = useSelection();
   const navigation = useNestedNavigation();
   const settings = useAssistSettings();
+  const compatible = settings.provider === "openai-compatible";
+  const providerReady = compatible
+    ? !!settings.openAICompatibleUrl.trim()
+    : !!settings.anthropicToken.trim();
   const [models, setModels] = useState<AssistModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [reload, setReload] = useState(0);
@@ -74,16 +80,23 @@ export default function BoardAssistPanel({
     if (!visible) return;
     setModels([]);
     setModelsLoading(false);
-    if (!settings.anthropicToken.trim()) return;
+    if (!providerReady) return;
     const controller = new AbortController();
     setModelsLoading(true);
     setError("");
-    listAssistModels(settings.anthropicToken, controller.signal)
+    (compatible
+      ? listOpenAIModels(
+          settings.openAICompatibleUrl,
+          settings.openAICompatibleToken,
+          controller.signal,
+        )
+      : listAssistModels(settings.anthropicToken, controller.signal)
+    )
       .then((list) => {
         if (controller.signal.aborted) return;
         setModels(list);
         if (!list.length)
-          setError("No available models were returned for this token.");
+          setError("No available models were returned by this provider.");
       })
       .catch((err) => {
         if (!controller.signal.aborted)
@@ -95,7 +108,20 @@ export default function BoardAssistPanel({
         if (!controller.signal.aborted) setModelsLoading(false);
       });
     return () => controller.abort();
-  }, [visible, settings.anthropicToken, reload]);
+  }, [
+    visible,
+    settings.anthropicToken,
+    settings.openAICompatibleUrl,
+    settings.openAICompatibleToken,
+    compatible,
+    providerReady,
+    reload,
+  ]);
+  useEffect(() => {
+    abort.current?.abort();
+    conversation.current = [];
+    setEntries([]);
+  }, [settings.provider, settings.openAICompatibleUrl]);
   useEffect(() => {
     if (visible) threadEnd.current?.scrollIntoView?.({ block: "end" });
   }, [entries, status, visible]);
@@ -155,6 +181,7 @@ export default function BoardAssistPanel({
     const text = prompt.trim();
     setPrompt("");
     const index = entries.length + 1;
+    let rawResponse: string | undefined;
     setEntries((list) => [
       ...list,
       { role: "user", text },
@@ -164,8 +191,10 @@ export default function BoardAssistPanel({
       const captured = await snapshot();
       const config = captured.config;
       const ctx = currentBoard.current!;
-      const result = await runAssistTurn({
-        token: settings.anthropicToken,
+      const request = {
+        token: compatible
+          ? settings.openAICompatibleToken
+          : settings.anthropicToken,
         model,
         effort,
         prompt: text,
@@ -192,13 +221,24 @@ export default function BoardAssistPanel({
         },
         signal: controller.signal,
         onStatus: setStatus,
-        onText: (generated) =>
+        onRawResponse: (output: string) => {
+          rawResponse = output;
+        },
+        onText: (generated: string) =>
           setEntries((list) =>
             list.map((entry, i) =>
               i === index ? { ...entry, text: generated } : entry,
             ),
           ),
-      });
+      };
+      const result = compatible
+        ? await runOpenAICompatibleTurn({
+            ...request,
+            baseURL: settings.openAICompatibleUrl,
+            contextTokens: settings.openAIContextTokens,
+            thinking: settings.openAIThinking,
+          })
+        : await runAssistTurn(request);
       controller.signal.throwIfAborted();
       conversation.current = result.conversation;
       setEntries((list) =>
@@ -208,6 +248,7 @@ export default function BoardAssistPanel({
                 role: "assistant",
                 text: result.text,
                 board: result.board,
+                rawResponse: result.board ? undefined : rawResponse,
                 base: JSON.stringify(captured),
               }
             : entry,
@@ -222,7 +263,9 @@ export default function BoardAssistPanel({
       setError(message);
       setEntries((list) =>
         list.map((entry, i) =>
-          i === index ? { role: "assistant", text: message } : entry,
+          i === index
+            ? { role: "assistant", text: message, rawResponse }
+            : entry,
         ),
       );
     } finally {
@@ -357,6 +400,22 @@ export default function BoardAssistPanel({
         </header>
         <div className="hkp-assist-controls">
           <label>
+            Provider{" "}
+            <select
+              disabled={busy}
+              value={settings.provider}
+              onChange={(event) =>
+                updateSettings({
+                  provider: event.target.value as typeof settings.provider,
+                  model: "",
+                })
+              }
+            >
+              <option value="anthropic">Anthropic</option>
+              <option value="openai-compatible">OpenAI compatible</option>
+            </select>
+          </label>
+          <label>
             Model{" "}
             <select
               disabled={busy || modelsLoading || !models.length}
@@ -369,7 +428,9 @@ export default function BoardAssistPanel({
                 <option value="">
                   {modelsLoading
                     ? "Querying models…"
-                    : "Enter an Anthropic token"}
+                    : compatible
+                      ? "Configure an API server"
+                      : "Enter an Anthropic token"}
                 </option>
               )}
               {models.map((item) => (
@@ -383,22 +444,37 @@ export default function BoardAssistPanel({
             <label>
               Effort{" "}
               <select
-                disabled={busy || efforts.length === 1}
-                value={effort}
+                disabled={busy || (!compatible && efforts.length === 1)}
+                value={compatible ? settings.openAIThinking : effort}
                 onChange={(event) =>
-                  updateSettings({ effort: event.target.value as Effort })
+                  updateSettings(
+                    compatible
+                      ? {
+                          openAIThinking: event.target
+                            .value as typeof settings.openAIThinking,
+                        }
+                      : { effort: event.target.value as Effort },
+                  )
                 }
               >
-                {efforts.map((level) => (
-                  <option key={level} value={level}>
-                    {level === "default" ? "Model default" : level}
-                  </option>
-                ))}
+                {compatible ? (
+                  <>
+                    <option value="default">Server default</option>
+                    <option value="off">Thinking off</option>
+                    <option value="on">Thinking on</option>
+                  </>
+                ) : (
+                  efforts.map((level) => (
+                    <option key={level} value={level}>
+                      {level === "default" ? "Model default" : level}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
             <button
               type="button"
-              disabled={busy || modelsLoading || !settings.anthropicToken}
+              disabled={busy || modelsLoading || !providerReady}
               onClick={() => setReload((value) => value + 1)}
             >
               Refresh models
@@ -442,6 +518,12 @@ export default function BoardAssistPanel({
             >
               <strong>{entry.role === "user" ? "You" : "Assistant"}</strong>
               <p>{entry.text}</p>
+              {entry.rawResponse !== undefined && (
+                <details>
+                  <summary>Show raw model response</summary>
+                  <pre>{entry.rawResponse || "(Empty response)"}</pre>
+                </details>
+              )}
               {entry.board && (
                 <div className="hkp-assist-row">
                   <button
@@ -530,21 +612,23 @@ export default function BoardAssistPanel({
               >
                 Stop
               </button>
-            ) : !settings.anthropicToken.trim() ? (
+            ) : !providerReady ? (
               <button type="button" onClick={() => setSettingsTab("ai-assist")}>
                 API settings
               </button>
             ) : (
               <button
                 type="submit"
-                disabled={!prompt.trim() || !model || !settings.anthropicToken}
+                disabled={!prompt.trim() || !model || !providerReady}
               >
                 Send
               </button>
             )}
           </div>
           <p className="hkp-assist-hint">
-            Prompts and board configuration are sent to Anthropic.
+            {compatible
+              ? `Requests go to ${settings.openAICompatibleUrl}.`
+              : "Prompts and board configuration are sent to Anthropic."}
           </p>
         </form>
       </aside>
