@@ -15,6 +15,9 @@ import {
   runAssistTurn,
 } from "./anthropic";
 import { Effort, saveAssistSettings, useAssistSettings } from "./settings";
+import { matchesAssistSnapshot } from "./snapshotComparison";
+import { validateAssistBoard } from "./validation";
+import BoardAssistPreview from "./BoardAssistPreview";
 import "./assist.css";
 
 type SavedSnapshot = {
@@ -54,6 +57,13 @@ export default function BoardAssistPanel({
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [settingsTab, setSettingsTab] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{
+    current: BoardDescriptor;
+    proposed: BoardDescriptor;
+    entry: Entry;
+    index: number;
+    base: string;
+  } | null>(null);
   const [previous, setPrevious] = useState<SavedSnapshot | null>(null);
   const conversation = useRef<Conversation>([]);
   const abort = useRef<AbortController | null>(null);
@@ -222,39 +232,69 @@ export default function BoardAssistPanel({
       abort.current = null;
     }
   };
-  const apply = async (entry: Entry, index: number) => {
+  const previewChanges = async (entry: Entry, index: number) => {
     if (!entry.board || busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
+    setStatus("Reading the current board for preview…");
+    try {
+      const current = await snapshot();
+      setPreview({
+        current: current.config,
+        proposed: entry.board,
+        entry,
+        index,
+        base: JSON.stringify(current),
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not preview the board.",
+      );
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+      setStatus("");
+    }
+  };
+  const apply = async (entry: Entry, index: number) => {
+    if (!entry.board || busyRef.current) return false;
     busyRef.current = true;
     setBusy(true);
     setError("");
     setStatus("Checking and applying the proposed board…");
     try {
+      const candidate = validateAssistBoard(entry.board);
       const before = await snapshot();
-      if (JSON.stringify(before) !== entry.base)
+      if (!matchesAssistSnapshot(before, entry.base))
         throw new Error(
           "The board changed since this proposal. Ask the assistant to update its proposal using the current board.",
         );
       // The same linker used by the loader checks block and facade references
       // before any running runtime is removed.
-      await linkBoardDocument(entry.board, originFor(before));
-      if (JSON.stringify(await snapshot()) !== entry.base)
+      await linkBoardDocument(candidate, originFor(before));
+      if (!matchesAssistSnapshot(await snapshot(), entry.base))
         throw new Error(
           "The board changed while checking this proposal. Ask for an updated proposal.",
         );
       setPrevious(before);
-      await loadConfiguration(entry.board, before);
+      await loadConfiguration(candidate, before);
       currentBoard.current!.markBoardChanged();
       setEntries((list) =>
         list.map((item, i) =>
-          i === index ? { ...item, applied: true } : item,
+          i === index
+            ? { ...item, board: candidate, base: entry.base, applied: true }
+            : item,
         ),
       );
+      return true;
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
           : "Could not apply the board. You can revert if loading failed.",
       );
+      return false;
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -316,11 +356,6 @@ export default function BoardAssistPanel({
           </button>
         </header>
         <div className="hkp-assist-controls">
-          <div className="hkp-assist-row">
-            <button type="button" onClick={() => setSettingsTab("ai-assist")}>
-              API settings
-            </button>
-          </div>
           <label>
             Model{" "}
             <select
@@ -408,11 +443,14 @@ export default function BoardAssistPanel({
               <strong>{entry.role === "user" ? "You" : "Assistant"}</strong>
               <p>{entry.text}</p>
               {entry.board && (
-                <>
-                  <details>
-                    <summary>Review board configuration</summary>
-                    <pre>{JSON.stringify(entry.board, null, 2)}</pre>
-                  </details>
+                <div className="hkp-assist-row">
+                  <button
+                    type="button"
+                    disabled={busy || entry.applied}
+                    onClick={() => void previewChanges(entry, index)}
+                  >
+                    Preview changes
+                  </button>
                   <button
                     type="button"
                     disabled={busy || entry.applied}
@@ -420,7 +458,7 @@ export default function BoardAssistPanel({
                   >
                     {entry.applied ? "Applied" : "Apply board"}
                   </button>
-                </>
+                </div>
               )}
             </article>
           ))}
@@ -436,7 +474,11 @@ export default function BoardAssistPanel({
             <button
               type="button"
               disabled={busy || !previous}
-              title={previous ? "Restore the configuration before the last assistant change" : "Apply a proposal to enable revert"}
+              title={
+                previous
+                  ? "Restore the configuration before the last assistant change"
+                  : "Apply a proposal to enable revert"
+              }
               onClick={() => void revert()}
             >
               Revert last change
@@ -488,6 +530,10 @@ export default function BoardAssistPanel({
               >
                 Stop
               </button>
+            ) : !settings.anthropicToken.trim() ? (
+              <button type="button" onClick={() => setSettingsTab("ai-assist")}>
+                API settings
+              </button>
             ) : (
               <button
                 type="submit"
@@ -502,6 +548,21 @@ export default function BoardAssistPanel({
           </p>
         </form>
       </aside>
+      {preview && (
+        <BoardAssistPreview
+          current={preview.current}
+          proposed={preview.proposed}
+          onClose={() => setPreview(null)}
+          onApply={(board) =>
+            apply(
+              { ...preview.entry, board, base: preview.base },
+              preview.index,
+            )
+          }
+          busy={busy}
+          error={error}
+        />
+      )}
       <SettingsDialog tab={settingsTab} onChangeTab={setSettingsTab} />
     </>,
     host,

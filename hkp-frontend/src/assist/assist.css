@@ -89,6 +89,7 @@
   justify-content: space-between;
   gap: 8px;
   align-items: center;
+  padding-bottom: 8px;
 }
 .hkp-assist-thread {
   flex: 1;
@@ -155,4 +156,35 @@
     z-index: 40;
     box-shadow: -8px 0 20px #0002;
   }
+}
+
+.hkp-assist-diff-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-right: 16px;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .hkp-assist-diff-labels {
+    flex-wrap: wrap;
+  }
+}
+
+.hkp-assist-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.hkp-assist-preview-actions button {
+  padding: 6px 12px;
+  border: 1px solid var(--border-mid, #d1d5db);
+  border-radius: 6px;
+  background: var(--bg-app, #fafafa);
+  color: inherit;
+  cursor: pointer;
+}
+.hkp-assist-preview-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

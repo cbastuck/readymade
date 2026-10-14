@@ -2,6 +2,7 @@ import {
   CSSProperties,
   forwardRef,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -26,7 +27,7 @@ if (!navigator.clipboard) {
   const _write = async (items: any[]): Promise<void> => {
     for (const item of items ?? []) {
       for (const val of Object.values(item?._data ?? {})) {
-        try { await (val as Promise<any>); } catch (_) {}
+        try { await (val as Promise<any>); } catch (_) { /* Clipboard payloads can reject when unavailable. */ }
       }
     }
   };
@@ -36,7 +37,7 @@ if (!navigator.clipboard) {
       get: () => _polyfill,
       configurable: true,
     });
-  } catch (_) {}
+  } catch (_) { /* The browser may disallow replacing the clipboard getter. */ }
 }
 
 if (typeof ClipboardItem === "undefined") {
@@ -190,5 +191,78 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     </div>
   );
 });
+
+/** Own the diff widget and its models together. The React Monaco wrapper
+ * disposes its models before resetting the widget, which recent Monaco builds
+ * reject. Detach first, then dispose the widget and both models on close.
+ */
+export function DiffEditor({ original, modified, language = "json", readOnly = true, onChange }: {
+  original: string;
+  modified: string;
+  language?: string;
+  readOnly?: boolean;
+  onChange?: (value: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const diffRef = useRef<monaco.editor.IStandaloneDiffEditor | null>(null);
+  const optionsRef = useRef({ readOnly, onChange });
+  optionsRef.current = { readOnly, onChange };
+  const syncingRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+    const originalModel = monaco.editor.createModel("");
+    const modifiedModel = monaco.editor.createModel("");
+    const diff = monaco.editor.createDiffEditor(containerRef.current, {
+      readOnly: optionsRef.current.readOnly,
+      originalEditable: false,
+      automaticLayout: true,
+      renderSideBySide: true,
+      // Monaco's gutter action menu can retain stale line ranges while the
+      // edited JSON shrinks. The normal change highlights remain available.
+      renderGutterMenu: false,
+      useInlineViewWhenSpaceIsLimited: true,
+      scrollBeyondLastLine: false,
+      minimap: { enabled: false },
+      // A board diff needs change highlighting, not asynchronous symbol
+      // occurrence searches that Monaco can report as canceled on teardown.
+      occurrencesHighlight: "off",
+      diffWordWrap: "on",
+    }, safeClipboardOverride);
+    diff.setModel({ original: originalModel, modified: modifiedModel });
+    diffRef.current = diff;
+    const changes = modifiedModel.onDidChangeContent(() => {
+      if (!syncingRef.current) optionsRef.current.onChange?.(modifiedModel.getValue());
+    });
+    return () => {
+      changes.dispose();
+      diffRef.current = null;
+      diff.setModel(null);
+      diff.dispose();
+      originalModel.dispose();
+      modifiedModel.dispose();
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const models = diffRef.current?.getModel();
+    if (!models) return;
+    syncingRef.current = true;
+    try {
+      if (models.original.getValue() !== original) models.original.setValue(original);
+      if (models.modified.getValue() !== modified) models.modified.setValue(modified);
+      monaco.editor.setModelLanguage(models.original, language);
+      monaco.editor.setModelLanguage(models.modified, language);
+    } finally {
+      syncingRef.current = false;
+    }
+  }, [original, modified, language]);
+
+  useLayoutEffect(() => {
+    diffRef.current?.updateOptions({ readOnly, originalEditable: false });
+  }, [readOnly]);
+
+  return <div ref={containerRef} style={{ width: "100%", height: "100%", minWidth: 0 }} />;
+}
 
 export default Editor;

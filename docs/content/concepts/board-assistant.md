@@ -7,8 +7,8 @@ stays available while the panel is hidden; it is not saved in the board file.
 ## Setup
 
 Open **Settings → AI assistant**, in either the website or the native Readymade
-app. Enter an Anthropic API token and save it. The panel also has an **API
-settings** button. Tokens are kept in the browser or app webview's local storage
+app. Enter an Anthropic API token and save it. When no Anthropic token is configured, **API settings** replaces **Send**
+at the bottom of the panel and opens this settings tab. Tokens are kept in the browser or app webview's local storage
 on this device. They are not included in board files, exports, or share links.
 This storage is not the native operating system's encrypted credential store.
 
@@ -55,15 +55,25 @@ and are not added to the model's conversation.
 
 ## Review, apply and revert
 
-The assistant explains its proposal and offers **Review board configuration**
-and **Apply board**. A proposal does not change the running board. It first passes
+The assistant explains its proposal and offers **Preview changes** beside
+**Apply board**. Preview opens a Monaco JSON diff: the current board
+on the left and the proposal on the right, with removed lines in red and added
+lines in green. Narrow windows use an inline diff. The current board is read
+afresh when opening the preview; viewing it does not apply the proposal. The current side is read-only; the
+proposed side can be edited. **Apply edited board** validates and applies your
+JSON, including manual changes, and supports the same revert action. Invalid
+JSON or a board-load error keeps the editor open with your draft intact.
+**Cancel** discards the draft. Applying from the diff checks for configuration
+changes since the diff was opened, so the current side you reviewed is the
+configuration being replaced. A proposal does not change the running board. It first passes
 structural validation; applying it also uses the normal board linker to check
 blocks and references. Service-specific behavior still needs testing with the
 actual devices and runtime servers.
 
 **Apply board** loads the proposed configuration through BoardContext. This
 rebuilds the runtimes and can start services, connect to remote servers, or request
-camera and microphone permissions. If the board changed after the request,
+camera and microphone permissions. Timer ticks and JSON object key ordering do not count as edits for this check.
+If the board configuration changed after the request,
 applying is refused: ask for a new proposal using the current board.
 
 **Revert last change** appears below the conversation when a board proposal

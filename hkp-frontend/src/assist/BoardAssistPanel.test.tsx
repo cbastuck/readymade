@@ -18,6 +18,30 @@ vi.mock("../runtime/ui/NestedNavigation", () => ({
 }));
 vi.mock("../core/boardPersistence", () => ({ linkBoardDocument: mocks.link }));
 vi.mock("../ui-components/SettingsDialog", () => ({ default: () => null }));
+vi.mock("../components/shared/Editor", () => ({
+  DiffEditor: ({
+    original,
+    modified,
+    onChange,
+    readOnly,
+  }: {
+    original: string;
+    modified: string;
+    onChange?: (value: string) => void;
+    readOnly?: boolean;
+  }) => (
+    <div>
+      <pre data-testid="diff-original">{original}</pre>
+      <pre data-testid="diff-modified">{modified}</pre>
+      <textarea
+        aria-label="Proposed configuration"
+        value={modified}
+        readOnly={readOnly}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
+    </div>
+  ),
+}));
 vi.mock("./anthropic", () => ({
   listAssistModels: mocks.models,
   runAssistTurn: mocks.run,
@@ -86,9 +110,17 @@ async function requestProposal() {
 describe("board assistant panel", () => {
   it("sends fresh configuration and selection, applies only on click, and reverts the exact previous board", async () => {
     const view = mount();
-    expect(screen.queryByRole("button", { name: "Revert last change" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Revert last change" }),
+    ).toBeNull();
     await requestProposal();
-    expect((screen.getByRole("button", { name: "Revert last change" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Revert last change",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
     expect(mocks.board.setBoardState).not.toHaveBeenCalled();
     expect(mocks.run.mock.calls[0][0].context).toMatchObject({
       board: original,
@@ -106,6 +138,96 @@ describe("board assistant panel", () => {
         facade: undefined,
       }),
     );
+    view.unmount();
+    view.host.remove();
+  });
+  it("previews the fresh board against the proposal without applying either", async () => {
+    const view = mount();
+    await requestProposal();
+    const current = {
+      ...original,
+      services: {
+        ui: [{ ...original.services.ui[0], state: { interval: 999 } }],
+      },
+    };
+    mocks.board.serializeBoardDocuments.mockResolvedValue({
+      composition: current,
+      units: [],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Preview changes" }));
+    await screen.findByRole("dialog", { name: "Preview board changes" });
+    expect(
+      JSON.parse(screen.getByTestId("diff-original").textContent!),
+    ).toEqual(current);
+    expect(
+      JSON.parse(screen.getByTestId("diff-modified").textContent!),
+    ).toEqual(proposed);
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "close-dialog-button" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+    view.unmount();
+    view.host.remove();
+  });
+  it("applies manually edited JSON from the diff and can revert it", async () => {
+    const view = mount();
+    await requestProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Preview changes" }));
+    const editor = await screen.findByLabelText("Proposed configuration");
+    const edited = { ...proposed, boardName: "Manual version" };
+    fireEvent.change(editor, { target: { value: JSON.stringify(edited) } });
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Apply edited board" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(mocks.board.setBoardState).toHaveBeenCalledWith(edited);
+    expect((screen.getByRole("button", { name: "Preview changes" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Revert last change" }));
+    await waitFor(() =>
+      expect(mocks.board.setBoardState).toHaveBeenLastCalledWith(original),
+    );
+    view.unmount();
+    view.host.remove();
+  });
+  it("keeps invalid JSON in the diff and refuses to load it", async () => {
+    const view = mount();
+    await requestProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Preview changes" }));
+    const editor = await screen.findByLabelText("Proposed configuration");
+    fireEvent.change(editor, { target: { value: "{" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply edited board" }));
+    await screen.findByRole("alert");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+    fireEvent.change(editor, { target: { value: "{}" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply edited board" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "runtimes",
+    );
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+    view.unmount();
+    view.host.remove();
+  });
+  it("protects edits to the live board made while the diff is open", async () => {
+    const view = mount();
+    await requestProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Preview changes" }));
+    await screen.findByLabelText("Proposed configuration");
+    mocks.board.serializeBoardDocuments.mockResolvedValue({
+      composition: { ...original, services: { ui: [] } },
+      units: [],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply edited board" }));
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole("alert")
+          .some((alert) => alert.textContent?.includes("board changed")),
+      ).toBe(true),
+    );
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
     view.unmount();
     view.host.remove();
   });
@@ -140,6 +262,46 @@ describe("board assistant panel", () => {
         value: "helper",
       }),
     ).toEqual(unit.board);
+    view.unmount();
+    view.host.remove();
+  });
+  it("applies a follow-up proposal while the existing Timer keeps ticking", async () => {
+    const before = {
+      ...original,
+      services: {
+        ui: [
+          {
+            ...original.services.ui[0],
+            state: { periodicValue: 1, counter: 1 },
+          },
+        ],
+      },
+    };
+    mocks.board.serializeBoardDocuments.mockResolvedValue({
+      composition: before,
+      units: [],
+    });
+    const view = mount();
+    await requestProposal();
+    const ticking = {
+      ...before,
+      services: {
+        ui: [
+          { ...before.services.ui[0], state: { periodicValue: 1, counter: 4 } },
+        ],
+      },
+    };
+    mocks.board.serializeBoardDocuments.mockResolvedValue({
+      composition: ticking,
+      units: [],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
+    await screen.findByRole("button", { name: "Applied" });
+    expect(mocks.board.setBoardState).toHaveBeenCalledWith(proposed);
+    fireEvent.click(screen.getByRole("button", { name: "Revert last change" }));
+    await waitFor(() =>
+      expect(mocks.board.setBoardState).toHaveBeenLastCalledWith(ticking),
+    );
     view.unmount();
     view.host.remove();
   });
