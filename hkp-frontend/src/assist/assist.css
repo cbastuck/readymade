@@ -1,0 +1,158 @@
+.hkp-assist {
+  width: min(390px, 88vw);
+  flex-shrink: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-mid, #d1d5db);
+  background: var(--bg-app, #fafafa);
+  color: var(--text, #1a1a1a);
+  font-size: 13px;
+}
+.hkp-assist[hidden] {
+  display: none;
+}
+.hkp-assist header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-mid, #d1d5db);
+}
+.hkp-assist header span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+}
+.hkp-assist button {
+  border: 1px solid var(--border-mid, #d1d5db);
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: var(--bg-app, #fafafa);
+  color: inherit;
+  cursor: pointer;
+}
+.hkp-assist button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.hkp-assist-controls {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-mid, #d1d5db);
+}
+.hkp-assist label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.hkp-assist select {
+  /* WKWebView otherwise paints the macOS select surface, including its
+     system color scheme, over the panel's own colors. */
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: light;
+  font: inherit;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border-mid, #d1d5db);
+  border-radius: 6px;
+  background: var(--bg-app, #fafafa);
+  color: var(--text, #1a1a1a);
+  -webkit-text-fill-color: var(--text, #1a1a1a);
+  padding: 5px 28px 5px 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='m3 4.5 3 3 3-3' fill='none' stroke='%23808080' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+.hkp-assist select:disabled {
+  opacity: 0.55;
+}
+.hkp-assist select:focus-visible {
+  outline: 2px solid var(--hkp-accent, #0abcfb);
+  outline-offset: 2px;
+}
+.hkp-assist option {
+  background: var(--bg-app, #fafafa);
+  color: var(--text, #1a1a1a);
+}
+.hkp-assist-change-actions {
+  padding: 0 12px 12px;
+}
+.hkp-assist-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+.hkp-assist-thread {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  overscroll-behavior: contain;
+}
+.hkp-assist-message {
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px solid var(--border-mid, #d1d5db);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.hkp-assist-user {
+  background: var(--bg-panel, rgba(128, 128, 128, 0.08));
+}
+.hkp-assist-message p {
+  white-space: pre-wrap;
+  margin: 6px 0;
+}
+.hkp-assist-message pre {
+  white-space: pre-wrap;
+  font-size: 11px;
+  max-height: 260px;
+  overflow: auto;
+}
+.hkp-assist-message summary {
+  cursor: pointer;
+  margin: 8px 0;
+}
+.hkp-assist form {
+  padding: 12px;
+  border-top: 1px solid var(--border-mid, #d1d5db);
+}
+.hkp-assist textarea {
+  width: 100%;
+  resize: vertical;
+  max-height: 160px;
+  border: 1px solid var(--border-mid, #d1d5db);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  background: var(--bg-app, #fafafa);
+  color: inherit;
+}
+.hkp-assist-hint {
+  font-size: 11px;
+  opacity: 0.7;
+  margin: 8px 0 0;
+}
+.hkp-assist-error {
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--error, #b42318);
+}
+@media (max-width: 700px) {
+  .hkp-assist {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 40;
+    box-shadow: -8px 0 20px #0002;
+  }
+}

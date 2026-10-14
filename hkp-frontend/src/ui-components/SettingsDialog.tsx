@@ -1,10 +1,11 @@
 import { ReactNode } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { Palette } from "lucide-react";
+import { Palette, Sparkles } from "lucide-react";
 
 import { Dialog, DialogContent } from "./primitives/dialog";
 import AppearanceSettings from "./AppearanceSettings";
+import AssistSettings from "../assist/AssistSettings";
 import "./settings/settings.css";
 
 /** A tab a host adds beyond Appearance, which every host has. */
@@ -68,7 +69,7 @@ export default function SettingsDialog({
   extraTabs = [],
   leadingTabs = [],
 }: Props) {
-  const tabs = [...leadingTabs, appearanceTab, ...extraTabs];
+  const tabs = [...leadingTabs, appearanceTab, { id: "ai-assist", label: "AI assistant", icon: <Sparkles size={15} />, content: <AssistSettings /> }, ...extraTabs];
   const single = tabs.length === 1;
 
   return (

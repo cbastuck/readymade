@@ -1,4 +1,9 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
+import { Sparkles } from "lucide-react";
+import {
+  TOOLBAR_GROUP_BUTTON,
+  TOOLBAR_GROUP_ICON_SIZE,
+} from "../../components/Toolbar/ToolbarGroup";
 import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import { useBoardContext } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
@@ -35,8 +40,13 @@ import { RuntimeZoomProvider, RuntimeZoomToolbarButton } from "./RuntimeZoom";
 import RuntimeUnreachableDialog from "../../ui-components/RuntimeUnreachableDialog";
 import UnknownRemoteDialog from "../../ui-components/UnknownRemoteDialog";
 
+const BoardAssistPanel = lazy(() => import("../../assist/BoardAssistPanel"));
+
 export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
+  const [assistVisible, setAssistVisible] = useState(false);
+  const [assistOpened, setAssistOpened] = useState(false);
+  const [assistHost, setAssistHost] = useState<HTMLDivElement | null>(null);
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
 
@@ -80,6 +90,27 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                     actionsSlot={
                       <>
                         <RuntimeZoomToolbarButton />
+                        <button
+                          type="button"
+                          title="Board AI assistant"
+                          aria-label="Toggle board assistant"
+                          aria-controls="board-ai-assist"
+                          aria-pressed={assistVisible}
+                          onClick={() => {
+                            setAssistOpened(true);
+                            setAssistVisible((value) => !value);
+                          }}
+                          style={{
+                            ...TOOLBAR_GROUP_BUTTON,
+                            background: "none",
+                            cursor: "pointer",
+                            color: assistVisible
+                              ? "var(--hkp-accent, #0abcfb)"
+                              : "var(--text, #1a1a1a)",
+                          }}
+                        >
+                          <Sparkles size={TOOLBAR_GROUP_ICON_SIZE} />
+                        </button>
                         <FacadeViewControls />
                         <ToolbarGroup label="Board tools">
                           <FacadeEditorButton />
@@ -115,6 +146,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                     flex: 1,
                     minHeight: 0,
                     overflow: "hidden",
+                    position: "relative",
                   }}
                 >
                   {isPlayground && <Sidebar />}
@@ -132,7 +164,17 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                       onChangeBoardname={props.onChangeBoardname}
                       emptySlot={props.emptySlot}
                     />
+                    {assistOpened && (
+                      <Suspense fallback={null}>
+                        <BoardAssistPanel
+                          visible={assistVisible}
+                          onClose={() => setAssistVisible(false)}
+                          host={assistHost}
+                        />
+                      </Suspense>
+                    )}
                   </NestedNavProvider>
+                  <div ref={setAssistHost} style={{ display: "contents" }} />
                 </div>
 
                 <ChromeFooter />

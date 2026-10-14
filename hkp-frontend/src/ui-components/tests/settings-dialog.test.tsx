@@ -26,12 +26,12 @@ function renderDialog(props: Partial<Parameters<typeof SettingsDialog>[0]> = {})
 }
 
 describe("SettingsDialog", () => {
-  it("shows the appearance controls with no tab strip when a host adds nothing", () => {
+  it("offers appearance and AI assistant settings to every host", () => {
     renderDialog();
 
     expect(screen.getByText("Accent colors")).toBeTruthy();
-    // A lone tab is a label for something with no alternative, so there is none.
-    expect(screen.queryByRole("tab")).toBeNull();
+    // Both device-local settings are shared across browser and native hosts.
+    expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(["Appearance", "AI assistant"]);
   });
 
   it("puts a host's own tabs alongside appearance", () => {
@@ -41,7 +41,7 @@ describe("SettingsDialog", () => {
 
     expect(
       screen.getAllByRole("tab").map((tab) => tab.textContent),
-    ).toEqual(["Appearance", "Remotes"]);
+    ).toEqual(["Appearance", "AI assistant", "Remotes"]);
   });
 
   it("stays closed while no tab is asked for", () => {
