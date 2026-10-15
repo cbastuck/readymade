@@ -1,5 +1,6 @@
 .hkp-assist {
-  width: min(390px, 88vw);
+  position: relative;
+  width: min(var(--hkp-assist-width, 390px), 88vw);
   flex-shrink: 0;
   min-height: 0;
   display: flex;
@@ -8,6 +9,30 @@
   background: var(--bg-app, #fafafa);
   color: var(--text, #1a1a1a);
   font-size: 13px;
+}
+.hkp-assist-resizer {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  width: 8px;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+.hkp-assist-resizer[data-active="true"] {
+  background: linear-gradient(
+    90deg,
+    transparent 3px,
+    var(--hkp-accent, #0abcfb) 3px,
+    var(--hkp-accent, #0abcfb) 5px,
+    transparent 5px
+  );
+}
+.hkp-assist-resizer:focus-visible {
+  outline: 2px solid var(--hkp-accent, #0abcfb);
+  outline-offset: -2px;
 }
 .hkp-assist[hidden] {
   display: none;
@@ -138,9 +163,6 @@
   background: var(--bg-app, #fafafa);
   color: var(--text, #1a1a1a);
 }
-.hkp-assist-change-actions {
-  padding: 0 12px 12px;
-}
 .hkp-assist-row {
   display: flex;
   justify-content: space-between;
@@ -154,6 +176,33 @@
   overflow: auto;
   padding: 12px;
   overscroll-behavior: contain;
+}
+.hkp-assist-prompt-resizer {
+  height: 7px;
+  flex-shrink: 0;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  background: linear-gradient(
+    180deg,
+    transparent 3px,
+    var(--border-mid, #d1d5db) 3px,
+    var(--border-mid, #d1d5db) 4px,
+    transparent 4px
+  );
+}
+.hkp-assist-prompt-resizer[data-active="true"] {
+  background: linear-gradient(
+    180deg,
+    transparent 3px,
+    var(--hkp-accent, #0abcfb) 3px,
+    var(--hkp-accent, #0abcfb) 4px,
+    transparent 4px
+  );
+}
+.hkp-assist-prompt-resizer:focus-visible {
+  outline: 2px solid var(--hkp-accent, #0abcfb);
+  outline-offset: -2px;
 }
 .hkp-assist-empty {
   display: flex;
@@ -194,7 +243,6 @@
 }
 .hkp-assist form {
   padding: 12px;
-  border-top: 1px solid var(--border-mid, #d1d5db);
 }
 .hkp-assist-prompt-editor:focus-within > div {
   outline: 2px solid var(--hkp-accent, #0abcfb);
@@ -218,6 +266,9 @@
     bottom: 0;
     z-index: 40;
     box-shadow: -8px 0 20px #0002;
+  }
+  .hkp-assist-resizer {
+    display: none;
   }
 }
 

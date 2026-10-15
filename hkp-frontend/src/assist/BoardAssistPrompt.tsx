@@ -1,7 +1,5 @@
 import { useRef } from "react";
-import Editor, {
-  EditorMountHandler,
-} from "../components/shared/Editor";
+import Editor, { EditorMountHandler } from "../components/shared/Editor";
 import {
   AssistPromptContext,
   buildAssistPromptCompletions,
@@ -12,6 +10,7 @@ type Props = {
   board: AssistPromptContext | null;
   value: string;
   disabled: boolean;
+  height?: number;
   onChange: (value: string) => void;
   onSubmit: () => void;
 };
@@ -20,6 +19,7 @@ export default function BoardAssistPrompt({
   board,
   value,
   disabled,
+  height = 112,
   onChange,
   onSubmit,
 }: Props) {
@@ -90,26 +90,27 @@ export default function BoardAssistPrompt({
       <Editor
         value={value}
         language="plaintext"
-        height={88}
+        height={height}
         initialWidth={0}
         readOnly={disabled}
         style={{
           border: "1px solid var(--border-mid, #d1d5db)",
           borderRadius: 6,
           marginBottom: 8,
+          overflow: "hidden",
         }}
         onChange={(updated) => onChange(updated ?? "")}
         onMount={mount}
         options={{
           ariaLabel: "Message to Board Assist",
           placeholder:
-            "What would you like to build or change? Type @ to reference the board.",
+            "What would you like to build or change? \n \nType @ to reference the board.",
           automaticLayout: true,
           contextmenu: false,
           fixedOverflowWidgets: true,
           folding: false,
           glyphMargin: false,
-          lineDecorationsWidth: 0,
+          lineDecorationsWidth: 8,
           lineNumbers: "off",
           lineNumbersMinChars: 0,
           minimap: { enabled: false },

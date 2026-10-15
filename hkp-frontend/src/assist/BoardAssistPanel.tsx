@@ -20,7 +20,18 @@ import { Effort, saveAssistSettings, useAssistSettings } from "./settings";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
 import BoardAssistPrompt from "./BoardAssistPrompt";
+import BoardAssistPromptResizer, {
+  BOARD_ASSIST_DEFAULT_PROMPT_HEIGHT,
+  BOARD_ASSIST_MAX_PROMPT_HEIGHT,
+  BOARD_ASSIST_PROMPT_HEIGHT_KEY,
+  clampBoardAssistPromptHeight,
+} from "./BoardAssistPromptResizer";
 import BoardAssistPreview from "./BoardAssistPreview";
+import BoardAssistResizer, {
+  BOARD_ASSIST_DEFAULT_WIDTH,
+  BOARD_ASSIST_WIDTH_KEY,
+  clampBoardAssistWidth,
+} from "./BoardAssistResizer";
 import "./assist.css";
 
 type SavedSnapshot = {
@@ -59,6 +70,18 @@ export default function BoardAssistPanel({
   const [reload, setReload] = useState(0);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [prompt, setPrompt] = useState("");
+  const [promptHeight, setPromptHeight] = useState(() => {
+    const stored = Number(localStorage.getItem(BOARD_ASSIST_PROMPT_HEIGHT_KEY));
+    return clampBoardAssistPromptHeight(
+      stored > 0 ? stored : BOARD_ASSIST_DEFAULT_PROMPT_HEIGHT,
+    );
+  });
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const stored = Number(localStorage.getItem(BOARD_ASSIST_WIDTH_KEY));
+    return clampBoardAssistWidth(
+      stored > 0 ? stored : BOARD_ASSIST_DEFAULT_WIDTH,
+    );
+  });
   const [scope, setScope] = useState("selection");
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -71,11 +94,14 @@ export default function BoardAssistPanel({
     entry: Entry;
     index: number;
     base: string;
+    readOnly: boolean;
   } | null>(null);
   const [previous, setPrevious] = useState<SavedSnapshot | null>(null);
+  const [revertEntryIndex, setRevertEntryIndex] = useState<number | null>(null);
   const conversation = useRef<Conversation>([]);
   const abort = useRef<AbortController | null>(null);
   const threadEnd = useRef<HTMLDivElement>(null);
+  const thread = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => abort.current?.abort(), []);
   useEffect(() => {
@@ -243,19 +269,22 @@ export default function BoardAssistPanel({
         : await runAssistTurn(request);
       controller.signal.throwIfAborted();
       conversation.current = result.conversation;
+      const completedEntry: Entry = {
+        role: "assistant",
+        text: result.text,
+        board: result.board ?? undefined,
+        rawResponse: result.board ? undefined : rawResponse,
+        base: JSON.stringify(captured),
+      };
       setEntries((list) =>
         list.map((entry, i) =>
-          i === index
-            ? {
-                role: "assistant",
-                text: result.text,
-                board: result.board,
-                rawResponse: result.board ? undefined : rawResponse,
-                base: JSON.stringify(captured),
-              }
-            : entry,
+          i === index ? completedEntry : entry,
         ),
       );
+      if (completedEntry.board) {
+        setStatus("Checking and applying the proposed board…");
+        await applyCandidate(completedEntry, index);
+      }
     } catch (err) {
       const message = controller.signal.aborted
         ? "Request stopped. No proposal was applied."
@@ -282,8 +311,20 @@ export default function BoardAssistPanel({
     busyRef.current = true;
     setBusy(true);
     setError("");
-    setStatus("Reading the current board for preview…");
+    setStatus("Preparing the board changes…");
     try {
+      if (entry.applied && entry.base) {
+        const base = JSON.parse(entry.base) as SavedSnapshot;
+        setPreview({
+          current: base.config,
+          proposed: entry.board,
+          entry,
+          index,
+          base: entry.base,
+          readOnly: true,
+        });
+        return;
+      }
       const current = await snapshot();
       setPreview({
         current: current.config,
@@ -291,6 +332,7 @@ export default function BoardAssistPanel({
         entry,
         index,
         base: JSON.stringify(current),
+        readOnly: false,
       });
     } catch (err) {
       setError(
@@ -302,12 +344,8 @@ export default function BoardAssistPanel({
       setStatus("");
     }
   };
-  const apply = async (entry: Entry, index: number) => {
-    if (!entry.board || busyRef.current) return false;
-    busyRef.current = true;
-    setBusy(true);
-    setError("");
-    setStatus("Checking and applying the proposed board…");
+  const applyCandidate = async (entry: Entry, index: number) => {
+    if (!entry.board) return false;
     try {
       const candidate = validateAssistBoard(entry.board);
       const before = await snapshot();
@@ -323,6 +361,7 @@ export default function BoardAssistPanel({
           "The board changed while checking this proposal. Ask for an updated proposal.",
         );
       setPrevious(before);
+      setRevertEntryIndex(index);
       await loadConfiguration(candidate, before);
       currentBoard.current!.markBoardChanged();
       setEntries((list) =>
@@ -340,14 +379,24 @@ export default function BoardAssistPanel({
           : "Could not apply the board. You can revert if loading failed.",
       );
       return false;
+    }
+  };
+  const apply = async (entry: Entry, index: number) => {
+    if (!entry.board || busyRef.current) return false;
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
+    setStatus("Checking and applying the proposed board…");
+    try {
+      return await applyCandidate(entry, index);
     } finally {
       busyRef.current = false;
       setBusy(false);
       setStatus("");
     }
   };
-  const revert = async () => {
-    if (!previous || busyRef.current) return;
+  const revert = async (index: number) => {
+    if (!previous || revertEntryIndex !== index || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -356,13 +405,12 @@ export default function BoardAssistPanel({
       await loadConfiguration(previous.config, previous);
       currentBoard.current!.markBoardChanged();
       setPrevious(null);
-      setEntries((list) => [
-        ...list,
-        {
-          role: "assistant",
-          text: "Restored the board configuration from before the last assistant change.",
-        },
-      ]);
+      setRevertEntryIndex(null);
+      setEntries((list) =>
+        list.map((entry, i) =>
+          i === index ? { ...entry, applied: false } : entry,
+        ),
+      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -387,7 +435,23 @@ export default function BoardAssistPanel({
         className="hkp-assist"
         aria-label="Board Assist"
         hidden={!visible}
+        style={
+          {
+            "--hkp-assist-width": `${panelWidth}px`,
+          } as React.CSSProperties
+        }
       >
+        <BoardAssistResizer
+          width={panelWidth}
+          onResize={setPanelWidth}
+          onCommit={(width) =>
+            localStorage.setItem(BOARD_ASSIST_WIDTH_KEY, String(width))
+          }
+          onReset={() => {
+            setPanelWidth(BOARD_ASSIST_DEFAULT_WIDTH);
+            localStorage.removeItem(BOARD_ASSIST_WIDTH_KEY);
+          }}
+        />
         <header>
           <span>Board Assist</span>
           <button
@@ -522,6 +586,7 @@ export default function BoardAssistPanel({
           </label>
         </div>
         <div
+          ref={thread}
           className="hkp-assist-thread"
           role="log"
           aria-label="Board Assist conversation"
@@ -549,18 +614,30 @@ export default function BoardAssistPanel({
                 <div className="hkp-assist-row">
                   <button
                     type="button"
-                    disabled={busy || entry.applied}
+                    disabled={busy}
                     onClick={() => void previewChanges(entry, index)}
                   >
-                    Preview changes
+                    Show changes
                   </button>
-                  <button
-                    type="button"
-                    disabled={busy || entry.applied}
-                    onClick={() => void apply(entry, index)}
-                  >
-                    {entry.applied ? "Applied" : "Apply board"}
-                  </button>
+                  {revertEntryIndex === index ? (
+                    <button
+                      type="button"
+                      disabled={busy || !previous}
+                      onClick={() => void revert(index)}
+                    >
+                      Revert
+                    </button>
+                  ) : (
+                    !entry.applied && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void apply(entry, index)}
+                      >
+                        Apply board
+                      </button>
+                    )
+                  )}
                 </div>
               )}
             </article>
@@ -572,22 +649,29 @@ export default function BoardAssistPanel({
           )}
           <div ref={threadEnd} />
         </div>
-        {(previous || entries.some((entry) => entry.board)) && (
-          <div className="hkp-assist-change-actions">
-            <button
-              type="button"
-              disabled={busy || !previous}
-              title={
-                previous
-                  ? "Restore the configuration before the last assistant change"
-                  : "Apply a proposal to enable revert"
-              }
-              onClick={() => void revert()}
-            >
-              Revert last change
-            </button>
-          </div>
-        )}
+        <BoardAssistPromptResizer
+          height={promptHeight}
+          maximumHeightOf={() => {
+            const conversationHeight =
+              thread.current?.getBoundingClientRect().height ?? 0;
+            // Keep a useful conversation viewport above the prompt. JSDOM and
+            // a not-yet-laid-out panel report zero, where the hard cap is best.
+            return conversationHeight > 0
+              ? promptHeight + conversationHeight - 120
+              : BOARD_ASSIST_MAX_PROMPT_HEIGHT;
+          }}
+          onResize={setPromptHeight}
+          onCommit={(height) =>
+            localStorage.setItem(
+              BOARD_ASSIST_PROMPT_HEIGHT_KEY,
+              String(height),
+            )
+          }
+          onReset={() => {
+            setPromptHeight(BOARD_ASSIST_DEFAULT_PROMPT_HEIGHT);
+            localStorage.removeItem(BOARD_ASSIST_PROMPT_HEIGHT_KEY);
+          }}
+        />
         {error && (
           <p role="alert" className="hkp-assist-error">
             {error}
@@ -603,6 +687,7 @@ export default function BoardAssistPanel({
             board={board}
             value={prompt}
             disabled={busy}
+            height={promptHeight}
             onChange={setPrompt}
             onSubmit={() => void send()}
           />
@@ -659,6 +744,7 @@ export default function BoardAssistPanel({
           }
           busy={busy}
           error={error}
+          readOnly={preview.readOnly}
         />
       )}
       <SettingsDialog tab={settingsTab} onChangeTab={setSettingsTab} />
