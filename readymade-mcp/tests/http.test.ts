@@ -40,6 +40,28 @@ describe("HTTP server", () => {
     expect(rejected.status).toBe(403);
   });
 
+  it("can explicitly allow a non-loopback browser origin", async () => {
+    const repository = await KnowledgeRepository.create(
+      path.resolve(import.meta.dirname, "../.."),
+      "test-build",
+    );
+    const extra = await startHttpServer(repository, {
+      port: 0,
+      allowedOriginHostnames: ["readymadeit.com"],
+    });
+    try {
+      const response = await fetch(extra.url.replace(/\/mcp$/, "/health"), {
+        headers: { origin: "https://readymadeit.com" },
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("access-control-allow-origin")).toBe(
+        "https://readymadeit.com",
+      );
+    } finally {
+      await new Promise<void>((resolve) => extra.server.close(() => resolve()));
+    }
+  });
+
   it("serves the MCP initialize exchange", async () => {
     const response = await fetch(`${baseUrl}/mcp`, {
       method: "POST",

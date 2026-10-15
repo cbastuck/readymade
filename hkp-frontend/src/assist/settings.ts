@@ -8,6 +8,7 @@ export type AssistSettings = {
   anthropicToken: string;
   openAICompatibleToken: string;
   openAICompatibleUrl: string;
+  mcpKnowledgeUrl: string;
   model: string;
   effort: Effort;
 };
@@ -20,6 +21,7 @@ const defaults: AssistSettings = {
   anthropicToken: "",
   openAICompatibleToken: "",
   openAICompatibleUrl: "https://api.openai.com/v1",
+  mcpKnowledgeUrl: "",
   model: "",
   effort: "default",
 };

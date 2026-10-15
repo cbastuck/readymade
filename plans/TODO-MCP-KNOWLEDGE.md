@@ -100,14 +100,13 @@ Every remote contract, document, example and source result should identify:
 
 ### 4. Board Assist MCP adapter
 
-- [ ] Add an MCP-backed `ReadymadeKnowledgeProvider` with bounded timeouts and
+- [x] Add an MCP-backed `ReadymadeKnowledgeProvider` with bounded timeouts and
   cancellation.
-- [ ] Configure optional server connection and trust information outside board
-  files.
-- [ ] Fall back to bundled retrieval when MCP is absent or unavailable; surface
-  clearly when a requested richer operation needs the server.
-- [ ] Generalize the Anthropic tool loop so operations are registered rather
-  than hardcoded.
+- [x] Configure the optional server URL outside board files.
+- [x] Fall back to bundled search/read retrieval when MCP is absent or
+  unavailable and show a persistent notice for that turn.
+- [x] Generalize the Anthropic tool loop so allowlisted MCP operations are
+  registered from server capabilities rather than hardcoded.
 - [ ] Feature-detect tool calling for OpenAI-compatible servers; retain bounded
   pre-retrieval for servers without it.
 - [ ] Show provenance/version mismatch information in Board Assist responses.

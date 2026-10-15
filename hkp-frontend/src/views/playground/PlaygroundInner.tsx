@@ -169,6 +169,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                         {assistOpened && (
                           <Suspense fallback={null}>
                             <BoardAssistPanel
+                              key={boardContext.boardSessionGeneration}
                               visible={assistVisible}
                               onClose={() => setAssistVisible(false)}
                               host={assistHost}

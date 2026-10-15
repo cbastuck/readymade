@@ -28,6 +28,7 @@ import BoardAssistPromptResizer, {
   clampBoardAssistPromptHeight,
 } from "./BoardAssistPromptResizer";
 import BoardAssistPreview from "./BoardAssistPreview";
+import { boardAssistKnowledgeProvider } from "./mcpKnowledge";
 import BoardAssistResizer, {
   BOARD_ASSIST_DEFAULT_WIDTH,
   BOARD_ASSIST_WIDTH_KEY,
@@ -89,6 +90,7 @@ export default function BoardAssistPanel({
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [status, setStatus] = useState("");
+  const [knowledgeNotice, setKnowledgeNotice] = useState("");
   const [error, setError] = useState("");
   const [settingsTab, setSettingsTab] = useState<string | null>(null);
   const [preview, setPreview] = useState<{
@@ -152,7 +154,11 @@ export default function BoardAssistPanel({
     abort.current?.abort();
     conversation.current = [];
     setEntries([]);
-  }, [settings.provider, settings.openAICompatibleUrl]);
+  }, [
+    settings.provider,
+    settings.openAICompatibleUrl,
+    settings.mcpKnowledgeUrl,
+  ]);
   useEffect(() => {
     if (visible) threadEnd.current?.scrollIntoView?.({ block: "end" });
   }, [entries, status, visible]);
@@ -206,9 +212,18 @@ export default function BoardAssistPanel({
     busyRef.current = true;
     setBusy(true);
     setError("");
+    setKnowledgeNotice("");
     setStatus("Reading the current board…");
     const controller = new AbortController();
     abort.current = controller;
+    const knowledgeProvider = boardAssistKnowledgeProvider(
+      settings.mcpKnowledgeUrl,
+      controller.signal,
+      (reason) =>
+        setKnowledgeNotice(
+          `MCP knowledge server unavailable; used bundled documentation. ${reason.message}`,
+        ),
+    );
     const text = prompt.trim();
     setPrompt("");
     const index = entries.length + 1;
@@ -261,6 +276,7 @@ export default function BoardAssistPanel({
               i === index ? { ...entry, text: generated } : entry,
             ),
           ),
+        knowledgeProvider,
       };
       const result = compatible
         ? await runOpenAICompatibleTurn({
@@ -315,6 +331,7 @@ export default function BoardAssistPanel({
         ),
       );
     } finally {
+      await knowledgeProvider.close?.();
       busyRef.current = false;
       setBusy(false);
       setStatus("");
@@ -704,6 +721,11 @@ export default function BoardAssistPanel({
           {status && (
             <p role="status" className="hkp-assist-hint">
               {status}
+            </p>
+          )}
+          {knowledgeNotice && (
+            <p role="status" className="hkp-assist-hint">
+              {knowledgeNotice}
             </p>
           )}
           <div ref={threadEnd} />

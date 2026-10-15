@@ -9,18 +9,30 @@ interface CliOptions {
   host?: string;
   port?: number;
   root?: string;
+  allowedHostnames: string[];
+  allowedOriginHostnames: string[];
 }
 
 function parseArguments(argv: string[]): CliOptions {
-  const result: CliOptions = { stdio: false };
+  const result: CliOptions = {
+    stdio: false,
+    allowedHostnames: [],
+    allowedOriginHostnames: [],
+  };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--stdio") result.stdio = true;
     else if (argument === "--host") result.host = argv[++index];
     else if (argument === "--port") result.port = Number(argv[++index]);
     else if (argument === "--root") result.root = argv[++index];
+    else if (argument === "--allowed-host")
+      result.allowedHostnames.push(argv[++index]);
+    else if (argument === "--allowed-origin")
+      result.allowedOriginHostnames.push(argv[++index]);
     else if (argument === "--help") {
-      process.stdout.write("Usage: readymade-mcp [--stdio] [--root PATH] [--host 127.0.0.1] [--port 8787]\n");
+      process.stdout.write(
+        "Usage: readymade-mcp [--stdio] [--root PATH] [--host 127.0.0.1] [--port 8787] [--allowed-host HOSTNAME] [--allowed-origin HOSTNAME]\n",
+      );
       process.exit(0);
     } else throw new Error(`Unknown argument: ${argument}`);
   }
@@ -36,7 +48,12 @@ async function main(): Promise<void> {
     serveStdio(() => createReadymadeMcpServer(repository), { onerror: (error) => console.error(error) });
     return;
   }
-  const { server, url } = await startHttpServer(repository, { host: options.host, port: options.port });
+  const { server, url } = await startHttpServer(repository, {
+    host: options.host,
+    port: options.port,
+    allowedHostnames: options.allowedHostnames,
+    allowedOriginHostnames: options.allowedOriginHostnames,
+  });
   console.log(`Readymade MCP knowledge server listening at ${url}`);
   console.log(`Indexed ${repository.stats().documents} documents, ${repository.stats().boards} boards, and ${repository.stats().contracts} runtime-specific contracts.`);
   const close = () => server.close(() => process.exit(0));

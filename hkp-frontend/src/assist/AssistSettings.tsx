@@ -8,6 +8,7 @@ import {
   SettingsStack,
 } from "../ui-components/settings/kit";
 import { saveAssistSettings, useAssistSettings } from "./settings";
+import { normalizeMcpKnowledgeUrl } from "./mcpKnowledge";
 
 export default function AssistSettings() {
   const settings = useAssistSettings();
@@ -19,6 +20,7 @@ export default function AssistSettings() {
     settings.openAIContextTokens,
   );
   const [url, setUrl] = useState(settings.openAICompatibleUrl);
+  const [mcpUrl, setMcpUrl] = useState(settings.mcpKnowledgeUrl);
   const [feedback, setFeedback] = useState("");
   const save = () => {
     try {
@@ -29,6 +31,7 @@ export default function AssistSettings() {
         if (!Number.isInteger(contextTokens) || contextTokens < 4096)
           throw new Error("Set a context size of at least 4096 tokens.");
       }
+      if (mcpUrl.trim()) normalizeMcpKnowledgeUrl(mcpUrl);
       saveAssistSettings({
         provider,
         openAIContextTokens: contextTokens,
@@ -36,6 +39,7 @@ export default function AssistSettings() {
         anthropicToken: anthropic.trim(),
         openAICompatibleToken: openAI.trim(),
         openAICompatibleUrl: url.trim(),
+        mcpKnowledgeUrl: mcpUrl.trim(),
         ...(anthropic.trim() !== settings.anthropicToken ||
         provider !== settings.provider ||
         url.trim() !== settings.openAICompatibleUrl
@@ -146,12 +150,34 @@ export default function AssistSettings() {
           8192. Larger boards may need a larger context on both sides.
         </p>
       </SettingsSection>
+      <SettingsSection
+        label="Knowledge server"
+        hint="Optional MCP endpoint for richer, version-labelled Readymade knowledge. Board Assist falls back to its bundled documentation whenever this server is absent or unavailable."
+      >
+        <SettingsField label="MCP server URL">
+          <SettingsInput
+            type="url"
+            placeholder="http://127.0.0.1:8787/mcp"
+            value={mcpUrl}
+            onChange={(event) => {
+              setMcpUrl(event.target.value);
+              setFeedback("");
+            }}
+          />
+        </SettingsField>
+        <p className="hkp-set-hint">
+          Leave empty to use only the documentation bundled with this app.
+          The URL is stored on this device, never in a board.
+        </p>
+      </SettingsSection>
       <SettingsNote>
         Tokens are stored in this browser or app's local storage on this device,
         outside board files. Requests go directly to the selected provider or
         server. Your prompts, board configuration and relevant documentation are
-        sent to the provider. Applying a board can start services and request
-        device permissions.
+        sent to the provider. When MCP knowledge is configured, search terms,
+        requested paths and richer tool arguments—including a board passed for
+        validation—are sent to that endpoint, but provider API tokens are not.
+        Applying a board can start services and request device permissions.
       </SettingsNote>
       <div className="hkp-set-inline">
         <SettingsButton onClick={save}>Save</SettingsButton>

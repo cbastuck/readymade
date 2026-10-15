@@ -36,6 +36,11 @@ The server exposes:
 - `inspect_service_source`
 - `validate_board`
 
+Board Assist always uses `search_knowledge` and `read_document` when this MCP
+endpoint is configured. Its Anthropic provider also advertises the other five
+allowlisted operations directly to the model. OpenAI-compatible providers use
+bounded search/read pre-retrieval for now.
+
 All file access is restricted to the index built at startup. Source inspection
 can only return bounded excerpts from the Browser, Node, Python, and C++ runtime
 source roots. Each result identifies its repository commit and build version.
@@ -45,5 +50,14 @@ verifiable when the server is intentionally run from a dirty development tree.
 The HTTP server binds to loopback and validates Host and Origin by default.
 It answers CORS preflight requests for loopback browser origins, allowing a
 local playground to connect without weakening the origin guard.
+To connect from a named browser host while keeping the server on loopback, add
+that hostname explicitly:
+
+```sh
+npm run dev -- --root .. --allowed-origin readymadeit.com
+```
+
+`--allowed-origin` and `--allowed-host` are repeatable and accept hostnames,
+not complete URLs. Non-loopback binding requires at least one of each.
 Treat non-loopback deployment as a separate production task: configure strict
 allowlists and add authentication before exposing the endpoint.

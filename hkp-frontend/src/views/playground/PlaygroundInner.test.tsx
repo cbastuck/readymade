@@ -1,12 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { Children, isValidElement } from "react";
 
 import { BoardCtx, BoardContextState } from "../../BoardContext";
 import PlaygroundInner from "./PlaygroundInner";
 import { PlaygroundInnerProps } from "./Playground.types";
 
 vi.mock("../../components/Toolbar", () => ({
-  default: () => <div data-testid="toolbar" />,
+  default: ({ actionsSlot }: { actionsSlot?: React.ReactNode }) => {
+    const actions = isValidElement<{ children?: React.ReactNode }>(actionsSlot)
+      ? Children.toArray(actionsSlot.props.children)
+      : [];
+    return <div data-testid="toolbar">{actions[0]}</div>;
+  },
+}));
+
+vi.mock("../../assist/BoardAssistPanel", () => ({
+  default: () => <input aria-label="Mock Board Assist prompt" />,
 }));
 
 vi.mock("hkp-frontend/src/components/Footer", () => ({
@@ -59,6 +69,8 @@ function createBoardContext(
   return {
     user: null,
     boardName: "demo-board",
+    boardGeneration: 0,
+    boardSessionGeneration: 0,
     facade: undefined,
     runtimes: [],
     services: {},
@@ -201,5 +213,32 @@ describe("PlaygroundInner", () => {
         .getByTestId("save-board-dialog")
         .getAttribute("data-suggested-name"),
     ).toBe("Idea");
+  });
+
+  it("starts a fresh Board Assist session when a new board is opened", async () => {
+    const context = createBoardContext();
+    const props = createProps({ requestedBoardName: "first-board" });
+    const view = render(
+      <BoardCtx.Provider value={context}>
+        <PlaygroundInner {...props} />
+      </BoardCtx.Provider>,
+    );
+    fireEvent.click(screen.getByLabelText("Toggle Board Assist"));
+    const prompt = await screen.findByLabelText("Mock Board Assist prompt");
+    fireEvent.change(prompt, { target: { value: "Old board question" } });
+    expect((prompt as HTMLInputElement).value).toBe("Old board question");
+
+    view.rerender(
+      <BoardCtx.Provider
+        value={createBoardContext({ boardSessionGeneration: 1 })}
+      >
+        <PlaygroundInner {...props} requestedBoardName="second-board" />
+      </BoardCtx.Provider>,
+    );
+
+    const freshPrompt = await screen.findByLabelText(
+      "Mock Board Assist prompt",
+    );
+    expect((freshPrompt as HTMLInputElement).value).toBe("");
   });
 });

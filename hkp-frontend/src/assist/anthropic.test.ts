@@ -137,6 +137,57 @@ describe("Anthropic assistant", () => {
       }),
     ]);
   });
+  it("advertises and executes richer operations from an agentic provider", async () => {
+    const callAgentTool = vi.fn(async () => ({
+      contract: { serviceId: "timer", runtime: "node" },
+    }));
+    response([
+      {
+        type: "tool_use",
+        id: "contract",
+        name: "get_service_contract",
+        input: { serviceId: "timer", runtime: "node" },
+      },
+    ]);
+    response([
+      {
+        type: "tool_use",
+        id: "propose",
+        name: "propose_board",
+        input: { board, explanation: "Used the contract." },
+      },
+    ]);
+    const result = await run({
+      knowledgeProvider: {
+        id: "agentic-test",
+        availableOffline: true,
+        searchKnowledge: vi.fn(async () => []),
+        readDocuments: vi.fn(async () => []),
+        listAgentTools: vi.fn(async () => [
+          {
+            name: "get_service_contract",
+            description: "Get a runtime-specific service contract.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                serviceId: { type: "string" },
+                runtime: { type: "string" },
+              },
+            },
+          },
+        ]),
+        callAgentTool,
+      },
+    });
+    expect(result.board).toEqual(board);
+    expect(callAgentTool).toHaveBeenCalledWith("get_service_contract", {
+      serviceId: "timer",
+      runtime: "node",
+    });
+    expect(sdk.stream.mock.calls[0][0].tools).toContainEqual(
+      expect.objectContaining({ name: "get_service_contract" }),
+    );
+  });
   it("returns validation errors to the model so it can repair its output", async () => {
     response([
       {

@@ -82,9 +82,34 @@ The repository also contains an optional read-only MCP knowledge server in
 allowlisted runtime source from a pinned checkout. Its tools can search, read
 contracts, find compatible services and examples, inspect bounded source
 excerpts, and statically validate a board. Each result carries build and commit
-provenance. Board Assist does not connect to this server yet; its bundled
-provider remains the offline default and will remain the fallback after the MCP
-adapter is added.
+provenance.
+
+To use it with Board Assist, run the server and set **Settings → AI assistant →
+Knowledge server → MCP server URL**, for example
+`http://127.0.0.1:8787/mcp`. The URL is device-local configuration and is not
+written into boards. Both providers can consume the server's search and
+document-reading tools. Anthropic also receives the allowlisted contract,
+compatibility, example, source-inspection and board-validation operations as
+model-controlled tools. OpenAI-compatible providers retain bounded
+pre-retrieval until their tool-calling support can be detected reliably.
+
+The MCP connection has bounded connect and tool-call timeouts. If it is absent,
+unreachable, malformed, or missing the required tools, the current turn
+continues with documentation bundled into the app and shows a fallback notice.
+Cancellation still stops the request. Leaving the MCP URL empty keeps the fully
+offline path and does not load the MCP client.
+
+The MCP server receives knowledge search terms, requested document paths and
+arguments to richer operations. Those arguments can include the current or
+proposed board when the model calls `validate_board`. Provider API tokens are
+not sent to MCP. Treat a configured MCP endpoint as a trusted recipient of this
+context even though retrieved content is still treated as untrusted model data.
+
+The local server accepts browser origins on loopback by default. When Board
+Assist is served from a named host, explicitly allow that hostname when starting
+the server, for example `--allowed-origin readymadeit.com`. A non-loopback MCP
+deployment additionally needs strict Host and Origin allowlists and
+authentication before it should be exposed publicly.
 
 Every request includes a fresh serialized board configuration, the available
 runtime engines and service catalog, the selected runtime and services, and

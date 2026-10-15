@@ -309,6 +309,23 @@ describe("Board Assist panel", () => {
     view.unmount();
     view.host.remove();
   });
+  it("passes an optional MCP knowledge provider to the model turn", async () => {
+    saveAssistSettings({
+      mcpKnowledgeUrl: "http://127.0.0.1:8787/mcp",
+    });
+    const view = mount();
+    await requestUnappliedProposal();
+    expect(mocks.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        knowledgeProvider: expect.objectContaining({
+          id: "mcp+bundled",
+          availableOffline: true,
+        }),
+      }),
+    );
+    view.unmount();
+    view.host.remove();
+  });
   it("sends fresh context, applies on request, and offers revert inside its message", async () => {
     const view = mount();
     expect(screen.queryByRole("button", { name: "Revert" })).toBeNull();

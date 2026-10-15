@@ -21,6 +21,12 @@ export type KnowledgeDocument = {
   content: string;
 };
 
+export type AgentKnowledgeTool = {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+};
+
 /**
  * The deliberately small boundary Board Assist needs today. The bundled
  * implementation keeps native and browser hosts useful offline; a future MCP
@@ -34,4 +40,22 @@ export interface ReadymadeKnowledgeProvider {
     request: KnowledgeSearchRequest,
   ): Promise<KnowledgeSearchResult[]>;
   readDocuments(paths: string[]): Promise<KnowledgeDocument[]>;
+  close?(): Promise<void>;
+}
+
+/** Explicit capability implemented only by providers with richer operations. */
+export interface AgenticKnowledgeProvider extends ReadymadeKnowledgeProvider {
+  listAgentTools(): Promise<AgentKnowledgeTool[]>;
+  callAgentTool(name: string, args: Record<string, unknown>): Promise<unknown>;
+}
+
+export function isAgenticKnowledgeProvider(
+  provider: ReadymadeKnowledgeProvider,
+): provider is AgenticKnowledgeProvider {
+  return (
+    "listAgentTools" in provider &&
+    typeof provider.listAgentTools === "function" &&
+    "callAgentTool" in provider &&
+    typeof provider.callAgentTool === "function"
+  );
 }

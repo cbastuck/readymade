@@ -15,14 +15,24 @@ function isLoopback(host: string): boolean {
   return host === "127.0.0.1" || host === "localhost" || host === "::1";
 }
 
+const loopbackNames = ["localhost", "127.0.0.1", "[::1]"];
+
 export async function startHttpServer(repository: KnowledgeRepository, options: HttpServerOptions = {}): Promise<{ server: Server; url: string }> {
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 8787;
   if (!isLoopback(host) && (!options.allowedHostnames?.length || !options.allowedOriginHostnames?.length)) {
     throw new Error("Non-loopback binding requires explicit allowedHostnames and allowedOriginHostnames. Authentication should be added before exposing this server publicly.");
   }
-  const validateHost = isLoopback(host) ? localhostHostValidation() : hostHeaderValidation(options.allowedHostnames!);
-  const validateOrigin = isLoopback(host) ? localhostOriginValidation() : originValidation(options.allowedOriginHostnames!);
+  const validateHost = isLoopback(host)
+    ? options.allowedHostnames?.length
+      ? hostHeaderValidation([...new Set([...loopbackNames, ...options.allowedHostnames])])
+      : localhostHostValidation()
+    : hostHeaderValidation(options.allowedHostnames!);
+  const validateOrigin = isLoopback(host)
+    ? options.allowedOriginHostnames?.length
+      ? originValidation([...new Set([...loopbackNames, ...options.allowedOriginHostnames])])
+      : localhostOriginValidation()
+    : originValidation(options.allowedOriginHostnames!);
   const handler = createMcpHandler(() => createReadymadeMcpServer(repository), {
     responseMode: "auto",
     legacy: "stateless",
