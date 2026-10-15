@@ -6,11 +6,11 @@ import type {
   ToolResultBlockParam,
 } from "@anthropic-ai/sdk/resources/messages";
 import {
+  bundledKnowledgeProvider,
   documentationIndex,
   foundation,
-  readDocumentation,
-  searchDocumentation,
 } from "./documentation";
+import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import { Effort } from "./settings";
 import { validateAssistBoard } from "./validation";
 import { BoardDescriptor } from "../types";
@@ -110,12 +110,14 @@ export async function runAssistTurn(options: {
   onText: (text: string) => void;
   onStatus: (status: string) => void;
   onRawResponse?: (text: string) => void;
+  knowledgeProvider?: ReadymadeKnowledgeProvider;
 }): Promise<{
   conversation: Conversation;
   text: string;
   board?: BoardDescriptor;
 }> {
   const client = createAssistClient(options.token);
+  const knowledge = options.knowledgeProvider ?? bundledKnowledgeProvider;
   const messages: Conversation = [
     ...options.conversation,
     {
@@ -169,10 +171,10 @@ export async function runAssistTurn(options: {
           if (typeof input.query !== "string")
             throw new Error("Search needs a query.");
           options.onStatus("Searching board documentation…");
-          result = await searchDocumentation(input.query);
+          result = await knowledge.searchKnowledge({ query: input.query });
         } else if (call.name === "read_documentation") {
           options.onStatus("Reading service documentation…");
-          result = await readDocumentation(input.paths as string[]);
+          result = await knowledge.readDocuments(input.paths as string[]);
         } else if (call.name === "propose_board") {
           if (proposal) throw new Error("Propose only one board per turn.");
           // Some models serialize this nested tool argument despite its object

@@ -1,13 +1,19 @@
 import { afterEach, expect, it, vi } from "vitest";
 vi.mock("./documentation", () => ({
-  searchDocumentation: vi.fn(async () => [{ path: "docs/services/timer.md" }]),
-  readDocumentation: vi.fn(async () => [
-    {
-      path: "docs/services/timer.md",
-      content:
-        "Timer service id: hookup.to/service/timer. periodicValue is a number.",
-    },
-  ]),
+  bundledKnowledgeProvider: {
+    id: "bundled",
+    availableOffline: true,
+    searchKnowledge: vi.fn(async () => [
+      { path: "docs/services/timer.md" },
+    ]),
+    readDocuments: vi.fn(async () => [
+      {
+        path: "docs/services/timer.md",
+        content:
+          "Timer service id: hookup.to/service/timer. periodicValue is a number.",
+      },
+    ]),
+  },
 }));
 import {
   listOpenAIModels,
@@ -51,6 +57,19 @@ it("queries local models without requiring a token and normalizes server URLs", 
   ]);
 });
 it("generates validated board JSON with bounded documentation and the queried model", async () => {
+  const searchKnowledge = vi.fn(async () => [
+    {
+      path: "docs/services/timer.md",
+      score: 10,
+      excerpt: "Timer",
+    },
+  ]);
+  const readDocuments = vi.fn(async () => [
+    {
+      path: "docs/services/timer.md",
+      content: "Injected timer contract",
+    },
+  ]);
   const fetch = vi.fn(
     async () =>
       new Response(
@@ -71,7 +90,15 @@ it("generates validated board JSON with bounded documentation and the queried mo
       ),
   );
   vi.stubGlobal("fetch", fetch);
-  const result = await runOpenAICompatibleTurn(options());
+  const result = await runOpenAICompatibleTurn({
+    ...options(),
+    knowledgeProvider: {
+      id: "test",
+      availableOffline: false,
+      searchKnowledge,
+      readDocuments,
+    },
+  });
   expect(result.board).toEqual(board);
   expect(result.text).toBe("Ready for review");
   const body = JSON.parse(
@@ -83,7 +110,11 @@ it("generates validated board JSON with bounded documentation and the queried mo
     response_format: { type: "json_object" },
   });
   expect(body.reasoning_effort).toBeUndefined();
-  expect(body.messages[0].content).toContain("Timer service id");
+  expect(body.messages[0].content).toContain("Injected timer contract");
+  expect(searchKnowledge).toHaveBeenCalledWith(
+    expect.objectContaining({ query: expect.stringContaining("timer") }),
+  );
+  expect(readDocuments).toHaveBeenCalledWith(["docs/services/timer.md"]);
 });
 it("blocks oversized boards before sending instead of truncating configuration", async () => {
   const fetch = vi.fn();

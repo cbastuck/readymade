@@ -19,6 +19,7 @@ import { listOpenAIModels, runOpenAICompatibleTurn } from "./openAICompatible";
 import { Effort, saveAssistSettings, useAssistSettings } from "./settings";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
+import { captureBoardRenderFailures } from "../core/renderFailures";
 import BoardAssistPrompt from "./BoardAssistPrompt";
 import BoardAssistPromptResizer, {
   BOARD_ASSIST_DEFAULT_PROMPT_HEIGHT,
@@ -45,6 +46,8 @@ type Entry = {
   base?: string;
   applied?: boolean;
   rawResponse?: string;
+  preflightError?: string;
+  preflightPassed?: boolean;
 };
 export default function BoardAssistPanel({
   visible,
@@ -269,22 +272,34 @@ export default function BoardAssistPanel({
         : await runAssistTurn(request);
       controller.signal.throwIfAborted();
       conversation.current = result.conversation;
+      let preflightError: string | undefined;
+      if (result.board) {
+        setStatus("Preflighting the proposed board…");
+        try {
+          const candidate = validateAssistBoard(result.board);
+          await linkBoardDocument(candidate, originFor(captured));
+        } catch (err) {
+          preflightError =
+            err instanceof Error
+              ? err.message
+              : "The proposed board did not pass preflight.";
+        }
+      }
       const completedEntry: Entry = {
         role: "assistant",
         text: result.text,
         board: result.board ?? undefined,
         rawResponse: result.board ? undefined : rawResponse,
         base: JSON.stringify(captured),
+        preflightError,
+        preflightPassed: !!result.board && !preflightError,
       };
       setEntries((list) =>
         list.map((entry, i) =>
           i === index ? completedEntry : entry,
         ),
       );
-      if (completedEntry.board) {
-        setStatus("Checking and applying the proposed board…");
-        await applyCandidate(completedEntry, index);
-      }
+      if (completedEntry.board) setStatus("Proposal ready for review.");
     } catch (err) {
       const message = controller.signal.aborted
         ? "Request stopped. No proposal was applied."
@@ -360,9 +375,37 @@ export default function BoardAssistPanel({
         throw new Error(
           "The board changed while checking this proposal. Ask for an updated proposal.",
         );
+      try {
+        await captureBoardRenderFailures(() =>
+          loadConfiguration(candidate, before),
+        );
+      } catch (candidateError) {
+        setStatus("The proposal failed. Restoring the previous board…");
+        try {
+          await loadConfiguration(before.config, before);
+        } catch (restoreError) {
+          setPrevious(before);
+          setRevertEntryIndex(index);
+          const proposedMessage =
+            candidateError instanceof Error
+              ? candidateError.message
+              : "The proposed board failed to load.";
+          const restoreMessage =
+            restoreError instanceof Error
+              ? restoreError.message
+              : "The previous board could not be restored.";
+          throw new Error(`${proposedMessage} ${restoreMessage}`);
+        }
+        throw new Error(
+          `${
+            candidateError instanceof Error
+              ? candidateError.message
+              : "The proposed board failed to load."
+          } The previous board was restored.`,
+        );
+      }
       setPrevious(before);
       setRevertEntryIndex(index);
-      await loadConfiguration(candidate, before);
       currentBoard.current!.markBoardChanged();
       setEntries((list) =>
         list.map((item, i) =>
@@ -386,7 +429,7 @@ export default function BoardAssistPanel({
     busyRef.current = true;
     setBusy(true);
     setError("");
-    setStatus("Checking and applying the proposed board…");
+    setStatus("Preflighting and applying the proposed board…");
     try {
       return await applyCandidate(entry, index);
     } finally {
@@ -611,34 +654,50 @@ export default function BoardAssistPanel({
                 </details>
               )}
               {entry.board && (
-                <div className="hkp-assist-row">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void previewChanges(entry, index)}
+                <>
+                  <p
+                    className={
+                      entry.preflightError
+                        ? "hkp-assist-error"
+                        : "hkp-assist-hint"
+                    }
+                    role={entry.preflightError ? "alert" : undefined}
                   >
-                    Show changes
-                  </button>
-                  {revertEntryIndex === index ? (
+                    {entry.preflightError
+                      ? `Preflight failed: ${entry.preflightError}`
+                      : entry.preflightPassed
+                        ? "Preflight passed. Review before applying."
+                        : "Review before applying."}
+                  </p>
+                  <div className="hkp-assist-row">
                     <button
                       type="button"
-                      disabled={busy || !previous}
-                      onClick={() => void revert(index)}
+                      disabled={busy}
+                      onClick={() => void previewChanges(entry, index)}
                     >
-                      Revert
+                      Show changes
                     </button>
-                  ) : (
-                    !entry.applied && (
+                    {revertEntryIndex === index ? (
                       <button
                         type="button"
-                        disabled={busy}
-                        onClick={() => void apply(entry, index)}
+                        disabled={busy || !previous}
+                        onClick={() => void revert(index)}
                       >
-                        Apply board
+                        Revert
                       </button>
-                    )
-                  )}
-                </div>
+                    ) : (
+                      !entry.applied && (
+                        <button
+                          type="button"
+                          disabled={busy || !!entry.preflightError}
+                          onClick={() => void apply(entry, index)}
+                        >
+                          Apply board
+                        </button>
+                      )
+                    )}
+                  </div>
+                </>
               )}
             </article>
           ))}

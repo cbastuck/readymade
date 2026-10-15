@@ -16,8 +16,12 @@ vi.mock("@anthropic-ai/sdk", () => ({
 vi.mock("./documentation", () => ({
   foundation: "board format",
   documentationIndex: "docs/services/camera.md",
-  readDocumentation: vi.fn(async () => [{ content: "camera config" }]),
-  searchDocumentation: vi.fn(async () => []),
+  bundledKnowledgeProvider: {
+    id: "bundled",
+    availableOffline: true,
+    readDocuments: vi.fn(async () => [{ content: "camera config" }]),
+    searchKnowledge: vi.fn(async () => []),
+  },
 }));
 import {
   AssistModel,
@@ -90,6 +94,9 @@ describe("Anthropic assistant", () => {
     expect(modelEfforts()).toEqual(["default"]);
   });
   it("reads documentation then produces a validated proposal with fresh context", async () => {
+    const readDocuments = vi.fn(async () => [
+      { path: "docs/services/camera.md", content: "camera config" },
+    ]);
     response([
       {
         type: "tool_use",
@@ -106,9 +113,17 @@ describe("Anthropic assistant", () => {
         input: { board, explanation: "Built a board." },
       },
     ]);
-    const result = await run();
+    const result = await run({
+      knowledgeProvider: {
+        id: "test",
+        availableOffline: false,
+        searchKnowledge: vi.fn(async () => []),
+        readDocuments,
+      },
+    });
     expect(result.board).toEqual(board);
     expect(result.text).toBe("Built a board.");
+    expect(readDocuments).toHaveBeenCalledWith(["docs/services/camera.md"]);
     expect(sdk.stream.mock.calls[0][0]).toMatchObject({
       model: "queried-model",
       output_config: { effort: "medium" },

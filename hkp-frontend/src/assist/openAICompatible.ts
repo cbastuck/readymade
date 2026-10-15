@@ -1,5 +1,6 @@
 import type { AssistModel, Conversation } from "./anthropic";
-import { readDocumentation, searchDocumentation } from "./documentation";
+import { bundledKnowledgeProvider } from "./documentation";
+import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import { toCanonicalServiceId } from "../types";
 import { validateAssistBoard } from "./validation";
 
@@ -208,6 +209,7 @@ export async function runOpenAICompatibleTurn(options: {
   onText: (text: string) => void;
   onStatus: (status: string) => void;
   onRawResponse?: (text: string) => void;
+  knowledgeProvider?: ReadymadeKnowledgeProvider;
 }) {
   options.signal.throwIfAborted();
   const limit = Math.max(4096, options.contextTokens || 8192);
@@ -230,10 +232,11 @@ export async function runOpenAICompatibleTurn(options: {
       "This board is too large for the configured server context size. Increase the context limit in the server and AI settings, or edit a smaller board.",
     );
   options.onStatus("Finding relevant board documentation…");
-  const hits = await searchDocumentation(
-    `${options.prompt} ${serviceNames(promptContext).join(" ")}`,
-  );
-  const pages = await readDocumentation(
+  const knowledge = options.knowledgeProvider ?? bundledKnowledgeProvider;
+  const hits = await knowledge.searchKnowledge({
+    query: `${options.prompt} ${serviceNames(promptContext).join(" ")}`,
+  });
+  const pages = await knowledge.readDocuments(
     hits.slice(0, 8).map((hit) => hit.path),
   );
   let room = budget - system.length - user.length;

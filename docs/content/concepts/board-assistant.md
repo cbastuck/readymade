@@ -104,9 +104,11 @@ JSON or a board-load error keeps the editor open with your draft intact.
 **Cancel** discards the draft. Applying from the diff checks for configuration
 changes since the diff was opened, so the current side you reviewed is the
 configuration being replaced. A proposal does not change the running board. It first passes
-structural validation; applying it also uses the normal board linker to check
-blocks and references. Service-specific behavior still needs testing with the
-actual devices and runtime servers.
+structural validation and the normal board linker checks its blocks and
+references without loading runtimes. A failed preflight leaves the proposal and
+diff available, but disables direct application; edit it in the diff to repair
+and revalidate it. Service-specific behavior still needs testing with the actual
+devices and runtime servers.
 
 **Apply board** loads the proposed configuration through BoardContext. This
 rebuilds the runtimes and can start services, connect to remote servers, or request
@@ -114,10 +116,19 @@ camera and microphone permissions. Timer ticks and JSON object key ordering do n
 If the board configuration changed after the request,
 applying is refused: ask for a new proposal using the current board.
 
-**Revert last change** appears below the conversation when a board proposal
-arrives, and becomes enabled after applying a change. It restores the complete configuration from immediately
+Service panels and facade panels have independent render boundaries, so one
+broken panel reports its error in place instead of taking down the playground.
+Board Assist watches those boundaries while applying. A load or render failure
+automatically reloads the checkpoint from before the attempt and keeps the
+proposal available for inspection or editing. This is transactional failure
+containment, not a security sandbox: services may begin initialization during
+the attempted load, so external effects that already occurred cannot be undone.
+
+**Revert** replaces **Apply board** in the proposal after a successful
+application. It restores the complete configuration from immediately
 before the last assistant application, including its assets, blocks and facade.
-It remains available if loading a proposed board fails. Revert replaces the
+If automatic restoration itself fails, the manual revert remains available.
+Revert replaces the
 current configuration, including edits made after applying; it does not undo
 notifications, HTTP requests or other effects services have already produced.
 There is one previous configuration, kept for this panel's lifetime.

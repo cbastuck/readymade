@@ -1,5 +1,6 @@
 import boardFormat from "../../../docs/content/board-json.md?raw";
 import introduction from "../../../docs/content/introduction.md?raw";
+import type { ReadymadeKnowledgeProvider } from "./knowledge";
 
 // Vite packages the repository documentation for every host, including offline
 // native builds. Individual documents are loaded only when requested.
@@ -81,3 +82,11 @@ export async function searchDocumentation(query: string) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 12);
 }
+
+/** The always-available provider shipped with every Readymade host. */
+export const bundledKnowledgeProvider: ReadymadeKnowledgeProvider = {
+  id: "bundled",
+  availableOffline: true,
+  searchKnowledge: ({ query }) => searchDocumentation(query),
+  readDocuments: readDocumentation,
+};

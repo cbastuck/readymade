@@ -74,6 +74,7 @@ vi.mock("./openAICompatible", () => ({
 }));
 import BoardAssistPanel from "./BoardAssistPanel";
 import { readAssistSettings, saveAssistSettings } from "./settings";
+import { BOARD_RENDER_FAILURE_EVENT } from "../core/renderFailures";
 const original = {
   boardName: "Before",
   runtimes: [{ id: "ui", name: "Browser", type: "browser" }],
@@ -125,11 +126,8 @@ function mount() {
   return { ...result, host };
 }
 async function requestProposal() {
-  await screen.findByRole("option", { name: "Queried model" });
-  fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
-    target: { value: "Change this timer" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Send" }));
+  await requestUnappliedProposal();
+  fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
   await screen.findByRole("button", { name: "Revert" });
 }
 async function requestUnappliedProposal() {
@@ -292,6 +290,7 @@ describe("Board Assist panel", () => {
       target: { value: "Build locally" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply board" }));
     await screen.findByRole("button", { name: "Revert" });
     expect(mocks.localModels).toHaveBeenCalledWith(
       "http://127.0.0.1:8081/v1",
@@ -310,7 +309,7 @@ describe("Board Assist panel", () => {
     view.unmount();
     view.host.remove();
   });
-  it("sends fresh context, applies the proposal immediately, and offers revert inside its message", async () => {
+  it("sends fresh context, applies on request, and offers revert inside its message", async () => {
     const view = mount();
     expect(screen.queryByRole("button", { name: "Revert" })).toBeNull();
     await requestProposal();
@@ -350,6 +349,31 @@ describe("Board Assist panel", () => {
     view.unmount();
     view.host.remove();
   });
+  it("keeps a generated board as a proposal until the person applies it", async () => {
+    const view = mount();
+    await requestUnappliedProposal();
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Apply board" })).toBeTruthy();
+    view.unmount();
+    view.host.remove();
+  });
+  it("keeps a failed preflight proposal available without loading it", async () => {
+    mocks.link.mockRejectedValueOnce(new Error("Unknown facade service"));
+    const view = mount();
+    await requestUnappliedProposal();
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Preflight failed: Unknown facade service",
+    );
+    expect(
+      (screen.getByRole("button", {
+        name: "Apply board",
+      }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(screen.getByRole("button", { name: "Show changes" })).toBeTruthy();
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+    view.unmount();
+    view.host.remove();
+  });
   it("reviews the automatically applied change against the previous board", async () => {
     const view = mount();
     await requestProposal();
@@ -377,7 +401,6 @@ describe("Board Assist panel", () => {
     view.host.remove();
   });
   it("applies manually edited JSON from the diff and can revert it", async () => {
-    mocks.link.mockRejectedValueOnce(new Error("Review before applying"));
     const view = mount();
     await requestUnappliedProposal();
     fireEvent.click(screen.getByRole("button", { name: "Show changes" }));
@@ -396,7 +419,6 @@ describe("Board Assist panel", () => {
     view.host.remove();
   });
   it("keeps invalid JSON in the diff and refuses to load it", async () => {
-    mocks.link.mockRejectedValueOnce(new Error("Review before applying"));
     const view = mount();
     await requestUnappliedProposal();
     fireEvent.click(screen.getByRole("button", { name: "Show changes" }));
@@ -416,7 +438,6 @@ describe("Board Assist panel", () => {
     view.host.remove();
   });
   it("protects edits to the live board made while the diff is open", async () => {
-    mocks.link.mockRejectedValueOnce(new Error("Review before applying"));
     const view = mount();
     await requestUnappliedProposal();
     fireEvent.click(screen.getByRole("button", { name: "Show changes" }));
@@ -534,6 +555,7 @@ describe("Board Assist panel", () => {
     });
     const view = mount();
     await requestUnappliedProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
     expect((await screen.findByRole("alert")).textContent).toContain(
       "board changed",
     );
@@ -541,26 +563,48 @@ describe("Board Assist panel", () => {
     view.unmount();
     view.host.remove();
   });
-  it("keeps a revert available when loading the proposed board fails", async () => {
+  it("automatically restores the previous board when loading the proposal fails", async () => {
     mocks.board.setBoardState.mockRejectedValueOnce(
       new Error("Runtime unavailable"),
     );
     const view = mount();
-    await requestProposal();
+    await requestUnappliedProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
     expect((await screen.findByRole("alert")).textContent).toContain(
       "Runtime unavailable",
     );
-    expect(
-      (
-        screen.getByRole("button", {
-          name: "Revert",
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(false);
-    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
     await waitFor(() =>
       expect(mocks.board.setBoardState).toHaveBeenCalledTimes(2),
     );
+    expect(mocks.board.setBoardState).toHaveBeenLastCalledWith(original);
+    expect(screen.queryByRole("button", { name: "Revert" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Apply board" })).toBeTruthy();
+    view.unmount();
+    view.host.remove();
+  });
+  it("automatically restores when a proposed service panel fails to render", async () => {
+    mocks.board.setBoardState.mockImplementationOnce(async () => {
+      window.dispatchEvent(
+        new CustomEvent(BOARD_RENDER_FAILURE_EVENT, {
+          detail: {
+            scope: "Service Filter",
+            message: "conditions.map is not a function",
+          },
+        }),
+      );
+    });
+    const view = mount();
+    await requestUnappliedProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "could not render",
+    );
+    await waitFor(() =>
+      expect(mocks.board.setBoardState).toHaveBeenCalledTimes(2),
+    );
+    expect(mocks.board.setBoardState).toHaveBeenLastCalledWith(original);
+    expect(screen.getByRole("button", { name: "Apply board" })).toBeTruthy();
     view.unmount();
     view.host.remove();
   });
