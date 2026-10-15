@@ -26,12 +26,12 @@ function renderDialog(props: Partial<Parameters<typeof SettingsDialog>[0]> = {})
 }
 
 describe("SettingsDialog", () => {
-  it("offers appearance and AI assistant settings to every host", () => {
+  it("offers appearance and Board Assist settings to every host", () => {
     renderDialog();
 
     expect(screen.getByText("Accent colors")).toBeTruthy();
     // Both device-local settings are shared across browser and native hosts.
-    expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(["Appearance", "AI assistant"]);
+    expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(["Appearance", "Board Assist"]);
   });
 
   it("puts a host's own tabs alongside appearance", () => {
@@ -41,7 +41,7 @@ describe("SettingsDialog", () => {
 
     expect(
       screen.getAllByRole("tab").map((tab) => tab.textContent),
-    ).toEqual(["Appearance", "AI assistant", "Remotes"]);
+    ).toEqual(["Appearance", "Board Assist", "Remotes"]);
   });
 
   it("stays closed while no tab is asked for", () => {

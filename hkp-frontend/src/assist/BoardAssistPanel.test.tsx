@@ -107,13 +107,36 @@ function mount() {
 }
 async function requestProposal() {
   await screen.findByRole("option", { name: "Queried model" });
-  fireEvent.change(screen.getByLabelText("Message to board assistant"), {
+  fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
     target: { value: "Change this timer" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Send" }));
   await screen.findByRole("button", { name: "Apply board" });
 }
-describe("board assistant panel", () => {
+describe("Board Assist panel", () => {
+  it("keeps model settings collapsed until requested", async () => {
+    const view = mount();
+    const heading = screen.getByText("Model settings");
+    const disclosure = heading.closest("details");
+    expect(disclosure?.open).toBe(false);
+    expect(screen.getByLabelText("Context")).toBeTruthy();
+    fireEvent.click(heading.closest("summary")!);
+    expect(disclosure?.open).toBe(true);
+    expect(screen.getByLabelText("Provider")).toBeTruthy();
+    expect(screen.getByLabelText("Model")).toBeTruthy();
+    expect(screen.getByLabelText("Effort")).toBeTruthy();
+    view.unmount();
+    view.host.remove();
+  });
+  it("shows the product mark while the conversation is empty", () => {
+    const view = mount();
+    expect(screen.getByLabelText("Readymade")).toBeTruthy();
+    expect(
+      screen.queryByText(/Describe a new board/),
+    ).toBeNull();
+    view.unmount();
+    view.host.remove();
+  });
   it("shows rejected local model output without offering it as a board", async () => {
     saveAssistSettings({
       provider: "openai-compatible",
@@ -128,7 +151,7 @@ describe("board assistant panel", () => {
     });
     const view = mount();
     await screen.findByRole("option", { name: "Bonsai" });
-    fireEvent.change(screen.getByLabelText("Message to board assistant"), {
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
       target: { value: "Create a board" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
@@ -161,7 +184,7 @@ describe("board assistant panel", () => {
     expect(readAssistSettings().openAIThinking).toBe("on");
     fireEvent.change(effort, { target: { value: "off" } });
     expect(readAssistSettings().openAIThinking).toBe("off");
-    fireEvent.change(screen.getByLabelText("Message to board assistant"), {
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
       target: { value: "Build locally" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));

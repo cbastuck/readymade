@@ -91,8 +91,8 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                           <>
                             <button
                               type="button"
-                              title="Board AI assistant"
-                              aria-label="Toggle board assistant"
+                              title="Board Assist"
+                              aria-label="Toggle Board Assist"
                               aria-controls="board-ai-assist"
                               aria-pressed={assistVisible}
                               onClick={() => {

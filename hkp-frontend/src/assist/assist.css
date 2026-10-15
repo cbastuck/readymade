@@ -16,13 +16,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  border-bottom: 1px solid var(--border-mid, #d1d5db);
+  padding: 12px 12px 0;
 }
 .hkp-assist header span {
   display: flex;
   gap: 8px;
   align-items: center;
+  font-size: 15px;
   font-weight: 600;
 }
 .hkp-assist button {
@@ -44,12 +44,69 @@
   gap: 8px;
   border-bottom: 1px solid var(--border-mid, #d1d5db);
 }
+.hkp-assist-model-settings {
+  min-width: 0;
+  border: 1px solid var(--border-mid, #d1d5db);
+  border-radius: 6px;
+}
+.hkp-assist-model-settings summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.hkp-assist-model-settings summary::-webkit-details-marker {
+  display: none;
+}
+.hkp-assist-model-settings summary:focus-visible {
+  outline: 2px solid var(--hkp-accent, #0abcfb);
+  outline-offset: 2px;
+}
+.hkp-assist-model-settings summary > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.hkp-assist-model-settings summary small {
+  overflow: hidden;
+  opacity: 0.65;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hkp-assist-model-settings summary > svg {
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+.hkp-assist-model-settings[open] summary > svg {
+  transform: rotate(180deg);
+}
+.hkp-assist-model-settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 8px 0;
+  border-top: 1px solid var(--border-mid, #d1d5db);
+}
+.hkp-assist-model-settings:not([open]) > .hkp-assist-model-settings-content {
+  display: none;
+}
+.hkp-assist-model-settings-content > label:first-child {
+  margin-top: 8px;
+}
 .hkp-assist label {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
   flex: 1;
+}
+.hkp-assist-context {
+  padding-left: 2px;
 }
 .hkp-assist select {
   /* WKWebView otherwise paints the macOS select surface, including its
@@ -97,6 +154,19 @@
   overflow: auto;
   padding: 12px;
   overscroll-behavior: contain;
+}
+.hkp-assist-empty {
+  display: flex;
+  min-height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: var(--text, #1a1a1a);
+}
+.hkp-assist-empty svg {
+  width: 64px;
+  height: 64px;
+  opacity: 0.12;
+  stroke: currentColor;
 }
 .hkp-assist-message {
   margin-bottom: 14px;

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Sparkles, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useBoardContext } from "../BoardContext";
 import { useSelection } from "../selection/SelectionContext";
 import { useNestedNavigation } from "../runtime/ui/NestedNavigation";
 import { BoardDescriptor } from "../types";
 import SettingsDialog from "../ui-components/SettingsDialog";
+import ReadymadeMark from "../components/Toolbar/assets/hkp-single-dot-h.svg?react";
 import { BoardDocuments, linkBoardDocument } from "../core/boardPersistence";
 import {
   AssistModel,
@@ -383,104 +384,125 @@ export default function BoardAssistPanel({
       <aside
         id="board-ai-assist"
         className="hkp-assist"
-        aria-label="Board AI assistant"
+        aria-label="Board Assist"
         hidden={!visible}
       >
         <header>
-          <span>
-            <Sparkles size={16} /> Board assistant
-          </span>
+          <span>Board Assist</span>
           <button
             type="button"
-            aria-label="Close board assistant"
+            aria-label="Close Board Assist"
             onClick={onClose}
           >
             <X size={16} />
           </button>
         </header>
         <div className="hkp-assist-controls">
-          <label>
-            Provider{" "}
-            <select
-              disabled={busy}
-              value={settings.provider}
-              onChange={(event) =>
-                updateSettings({
-                  provider: event.target.value as typeof settings.provider,
-                  model: "",
-                })
-              }
-            >
-              <option value="anthropic">Anthropic</option>
-              <option value="openai-compatible">OpenAI compatible</option>
-            </select>
-          </label>
-          <label>
-            Model{" "}
-            <select
-              disabled={busy || modelsLoading || !models.length}
-              value={model?.id ?? ""}
-              onChange={(event) =>
-                updateSettings({ model: event.target.value })
-              }
-            >
-              {!models.length && (
-                <option value="">
-                  {modelsLoading
-                    ? "Querying models…"
-                    : compatible
-                      ? "Configure an API server"
-                      : "Enter an Anthropic token"}
-                </option>
-              )}
-              {models.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.display_name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="hkp-assist-row">
-            <label>
-              Effort{" "}
-              <select
-                disabled={busy || (!compatible && efforts.length === 1)}
-                value={compatible ? settings.openAIThinking : effort}
-                onChange={(event) =>
-                  updateSettings(
+          <details className="hkp-assist-model-settings">
+            <summary>
+              <span>
+                <strong>Model settings</strong>
+                <small>
+                  {compatible ? "OpenAI compatible" : "Anthropic"}
+                  {model ? ` · ${model.display_name}` : ""}
+                  {` · ${
                     compatible
-                      ? {
-                          openAIThinking: event.target
-                            .value as typeof settings.openAIThinking,
-                        }
-                      : { effort: event.target.value as Effort },
-                  )
-                }
-              >
-                {compatible ? (
-                  <>
-                    <option value="default">Server default</option>
-                    <option value="off">Thinking off</option>
-                    <option value="on">Thinking on</option>
-                  </>
-                ) : (
-                  efforts.map((level) => (
-                    <option key={level} value={level}>
-                      {level === "default" ? "Model default" : level}
+                      ? settings.openAIThinking === "default"
+                        ? "Server default"
+                        : `Thinking ${settings.openAIThinking}`
+                      : effort === "default"
+                        ? "Model default"
+                        : `${effort} effort`
+                  }`}
+                </small>
+              </span>
+              <ChevronDown size={16} aria-hidden="true" />
+            </summary>
+            <div className="hkp-assist-model-settings-content">
+              <label>
+                Provider{" "}
+                <select
+                  disabled={busy}
+                  value={settings.provider}
+                  onChange={(event) =>
+                    updateSettings({
+                      provider: event.target.value as typeof settings.provider,
+                      model: "",
+                    })
+                  }
+                >
+                  <option value="anthropic">Anthropic</option>
+                  <option value="openai-compatible">OpenAI compatible</option>
+                </select>
+              </label>
+              <label>
+                Model{" "}
+                <select
+                  disabled={busy || modelsLoading || !models.length}
+                  value={model?.id ?? ""}
+                  onChange={(event) =>
+                    updateSettings({ model: event.target.value })
+                  }
+                >
+                  {!models.length && (
+                    <option value="">
+                      {modelsLoading
+                        ? "Querying models…"
+                        : compatible
+                          ? "Configure an API server"
+                          : "Enter an Anthropic token"}
                     </option>
-                  ))
-                )}
-              </select>
-            </label>
-            <button
-              type="button"
-              disabled={busy || modelsLoading || !providerReady}
-              onClick={() => setReload((value) => value + 1)}
-            >
-              Refresh models
-            </button>
-          </div>
-          <label>
+                  )}
+                  {models.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="hkp-assist-row">
+                <label>
+                  Effort{" "}
+                  <select
+                    disabled={busy || (!compatible && efforts.length === 1)}
+                    value={compatible ? settings.openAIThinking : effort}
+                    onChange={(event) =>
+                      updateSettings(
+                        compatible
+                          ? {
+                              openAIThinking: event.target
+                                .value as typeof settings.openAIThinking,
+                            }
+                          : { effort: event.target.value as Effort },
+                      )
+                    }
+                  >
+                    {compatible ? (
+                      <>
+                        <option value="default">Server default</option>
+                        <option value="off">Thinking off</option>
+                        <option value="on">Thinking on</option>
+                      </>
+                    ) : (
+                      efforts.map((level) => (
+                        <option key={level} value={level}>
+                          {level === "default" ? "Model default" : level}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  disabled={busy || modelsLoading || !providerReady}
+                  onClick={() => setReload((value) => value + 1)}
+                >
+                  Refresh models
+                </button>
+              </div>
+            </div>
+          </details>
+          <label className="hkp-assist-context">
             Context{" "}
             <select
               disabled={busy}
@@ -501,15 +523,13 @@ export default function BoardAssistPanel({
         <div
           className="hkp-assist-thread"
           role="log"
-          aria-label="Assistant conversation"
+          aria-label="Board Assist conversation"
           aria-live="polite"
         >
           {!entries.length && (
-            <p className="hkp-assist-hint">
-              Describe a new board, ask to change this board, or select a
-              service and ask to configure it. Review the proposal before
-              applying it.
-            </p>
+            <div className="hkp-assist-empty" aria-label="Readymade">
+              <ReadymadeMark aria-hidden="true" />
+            </div>
           )}
           {entries.map((entry, index) => (
             <article
@@ -579,7 +599,7 @@ export default function BoardAssistPanel({
           }}
         >
           <textarea
-            aria-label="Message to board assistant"
+            aria-label="Message to Board Assist"
             placeholder="What would you like to build or change?"
             value={prompt}
             disabled={busy}

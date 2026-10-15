@@ -69,7 +69,7 @@ export default function SettingsDialog({
   extraTabs = [],
   leadingTabs = [],
 }: Props) {
-  const tabs = [...leadingTabs, appearanceTab, { id: "ai-assist", label: "AI assistant", icon: <Sparkles size={15} />, content: <AssistSettings /> }, ...extraTabs];
+  const tabs = [...leadingTabs, appearanceTab, { id: "ai-assist", label: "Board Assist", icon: <Sparkles size={15} />, content: <AssistSettings /> }, ...extraTabs];
   const single = tabs.length === 1;
 
   return (

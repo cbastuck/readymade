@@ -52,7 +52,7 @@ export default function AssistSettings() {
   return (
     <SettingsStack>
       <SettingsSection label="Provider">
-        <SettingsField label="Assistant provider">
+        <SettingsField label="Board Assist provider">
           <select
             className="hkp-set-input"
             value={provider}
@@ -68,7 +68,7 @@ export default function AssistSettings() {
       </SettingsSection>
       <SettingsSection
         label="Anthropic"
-        hint="Used by the board assistant. Models are queried from Anthropic with your API token."
+        hint="Used by Board Assist. Models are queried from Anthropic with your API token."
       >
         <SettingsField label="API token">
           <SettingsInput
