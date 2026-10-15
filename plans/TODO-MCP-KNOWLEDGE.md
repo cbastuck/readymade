@@ -60,7 +60,7 @@ Every remote contract, document, example and source result should identify:
 
 ## Milestones
 
-### 1. Provider seam — in progress
+### 1. Provider seam — built
 
 - [x] Define the minimal `ReadymadeKnowledgeProvider` boundary.
 - [x] Wrap the existing bundled documentation as the offline provider.
@@ -69,30 +69,34 @@ Every remote contract, document, example and source result should identify:
 - [ ] Keep foundation documents and the documentation index stable while the
   richer discovery contract is designed.
 
-### 2. Structured local knowledge
+### 2. Structured local knowledge — first pass built
 
-- [ ] Define versioned result/reference and provenance schemas.
-- [ ] Build a generated index instead of loading every document for each
+- [x] Define versioned result/reference and provenance schemas.
+- [x] Build a startup index instead of loading every document for each
   substring search.
 - [ ] Index headings, service IDs and aliases, runtime, input/output types,
   configuration, permissions, examples and implementation references.
 - [ ] Generate or validate structured service contracts from service metadata,
   documentation, registries and tests.
-- [ ] Add deterministic compatibility lookup before considering semantic
+- [x] Add deterministic compatibility lookup before considering semantic
   retrieval.
-- [ ] Make validation return actionable, service-specific diagnostics rather
+- [x] Make validation return actionable, service-specific diagnostics rather
   than only structural board errors.
 
-### 3. MCP server
+### 3. MCP server — local read-only server built
 
-- [ ] Choose the server package/runtime and supported MCP specification version.
-- [ ] Expose the knowledge operations as model-controlled MCP tools; optionally
-  expose individual immutable documents as URI-addressed MCP resources.
-- [ ] Implement Streamable HTTP transport, authentication where needed,
-  capability discovery, caching hints, request limits and tracing.
-- [ ] Publish the same operation schemas for direct in-process use and MCP use.
+- [x] Use a separate Node.js 22 package with the official MCP TypeScript SDK v2
+  and its current stateless HTTP transport.
+- [x] Expose all seven knowledge operations as model-controlled MCP tools.
+- [ ] Optionally expose individual immutable documents as URI-addressed MCP
+  resources.
+- [ ] Implement production authentication, capability caching hints,
+  request tracing and immutable document resources. Local Streamable HTTP,
+  DNS-rebinding/origin guards, request limits and stdio are built.
+- [x] Publish the same operation schemas for direct in-process use and MCP use.
 - [ ] Add contract tests that run identical queries against bundled and MCP
-  providers where their capabilities overlap.
+  providers where their capabilities overlap. The server currently has direct
+  repository tests and an HTTP MCP handshake test.
 
 ### 4. Board Assist MCP adapter
 
@@ -112,8 +116,8 @@ Every remote contract, document, example and source result should identify:
 
 - [ ] Map each service/runtime/version to its implementation paths and symbols.
 - [ ] Fetch only from an allowlist at an immutable commit and cache excerpts.
-- [ ] Bound file size, excerpt size, line ranges, redirects and call count.
-- [ ] Treat retrieved source as untrusted data and preserve the assistant's
+- [x] Bound local source roots, excerpt size, line ranges and result count.
+- [x] Treat retrieved source as untrusted data and preserve the assistant's
   prompt-injection boundary.
 - [ ] Support private repositories without exposing provider tokens to clients.
 

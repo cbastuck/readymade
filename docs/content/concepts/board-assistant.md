@@ -77,6 +77,15 @@ JSON examples in `boards/`. Both are packaged into builds, so the documentation
 matches that build and requires no documentation server. It reads the relevant
 service contracts, configuration and data shapes before proposing a board.
 
+The repository also contains an optional read-only MCP knowledge server in
+`readymade-mcp/`. It indexes the same documentation plus example boards and
+allowlisted runtime source from a pinned checkout. Its tools can search, read
+contracts, find compatible services and examples, inspect bounded source
+excerpts, and statically validate a board. Each result carries build and commit
+provenance. Board Assist does not connect to this server yet; its bundled
+provider remains the offline default and will remain the fallback after the MCP
+adapter is added.
+
 Every request includes a fresh serialized board configuration, the available
 runtime engines and service catalog, the selected runtime and services, and
 the open nested pipeline. **Context** can use the current selection or the whole
