@@ -44,6 +44,8 @@ struct WsConnState
 
 // Who a verified token speaks for, to a run they begin. The token's `sub` is
 // the identity; hkp-rt only ever authorizes a verified, allow-listed email.
+// A client holding a token is somebody this runtime is run for, so its
+// owner; a member arrives through a coordinator, which says so.
 inline Caller callerOf(const std::optional<Principal>& principal)
 {
   Caller caller;
@@ -51,6 +53,7 @@ inline Caller callerOf(const std::optional<Principal>& principal)
   {
     caller.sub = principal->sub;
     caller.email = principal->email;
+    caller.role = "owner";
   }
   return caller;
 }

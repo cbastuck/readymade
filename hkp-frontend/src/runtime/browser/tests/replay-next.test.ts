@@ -281,6 +281,7 @@ describe("app.next", () => {
           email: "owner@example.com",
           name: "Owner",
           expiresAt: expect.any(Number),
+          role: "owner",
         },
       },
     ]);
@@ -315,6 +316,7 @@ describe("app.next", () => {
           sub: "auth0|member",
           email: "member@example.com",
           expiresAt: expect.any(Number),
+          role: "owner",
         },
       },
     ]);
@@ -341,6 +343,7 @@ describe("app.next", () => {
           kind: "person",
           sub: "auth0|member",
           expiresAt: expect.any(Number),
+          role: "owner",
         },
       },
       undefined,

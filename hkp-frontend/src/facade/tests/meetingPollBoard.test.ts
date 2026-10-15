@@ -19,9 +19,10 @@ import board from "../../../../boards/meeting-poll-demo-board.json";
  * parameters out of the same request; without that the second would be handed
  * the first one's row count and bind every name it asked for to NULL.
  *
- * The third is that **the poll exists before a date can hang off it**. The
- * trigger guarding a proposal reads the poll's organiser, so a board that
- * seeded its example dates first would refuse them on a fresh database.
+ * The third is that **who is acting is never the request's to say**. Shared,
+ * the board's entry point is callable by any member with any payload, so the
+ * statements read the caller and their role off the run, and what only the
+ * owner may do is drawn from rows only the owner is sent.
  */
 
 type Service = { uuid: string; serviceId: string; state: Record<string, unknown> };
@@ -65,6 +66,30 @@ function collectProcessTargets(node: unknown, found: string[] = []): string[] {
   return found;
 }
 
+/** The repeat drawing one row per row a service answers with. */
+function repeatOver(
+  node: unknown,
+  serviceUuid: string,
+): { template: unknown } | undefined {
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = repeatOver(child, serviceUuid);
+      if (found) {
+        return found;
+      }
+    }
+    return undefined;
+  }
+  if (node && typeof node === "object") {
+    const record = node as Record<string, any>;
+    if (record.type === "repeat" && record.source?.serviceUuid === serviceUuid) {
+      return record as { template: unknown };
+    }
+    return repeatOver(Object.values(record), serviceUuid);
+  }
+  return undefined;
+}
+
 describe("the meeting poll board", () => {
   it("references only services it declares", () => {
     const referenced = [...referencedUuids(board.facade)].sort();
@@ -91,14 +116,36 @@ describe("the meeting poll board", () => {
     expect(firstRead).toBeGreaterThan(lastWrite);
   });
 
-  it("calls the meeting before it puts up the example dates", () => {
-    expect(order.indexOf("open-poll")).toBeLessThan(order.indexOf("first-run"));
+  it("knows who is here before anything acts on them", () => {
+    expect(order[0]).toBe("who-is-here");
+    expect(order.indexOf("open-poll")).toBeLessThan(order.indexOf("put-up-date"));
   });
 
   it("keeps its tables to itself rather than deriving a name from the title", () => {
-    expect(
-      services.every((svc) => svc.state.database === "meeting-poll"),
-    ).toBe(true);
+    expect(services.every((svc) => svc.state.database === "meetings")).toBe(true);
+  });
+
+  it("takes who is acting from the run, never from the payload", () => {
+    const statements = services.map((svc) => svc.state.statement as string);
+    expect(statements.some((sql) => /\$(actor|you|voter|organiser)\b/.test(sql))).toBe(
+      false,
+    );
+    expect(JSON.stringify(board.facade)).not.toMatch(/"(actor|you)"/);
+    // Calling a meeting asks the role the server stated, not the person.
+    const call = services.find((svc) => svc.uuid === "open-poll")!.state.statement;
+    expect(call).toContain("$caller_role = 'owner'");
+  });
+
+  it("draws what only the owner may do from rows only the owner is sent", () => {
+    const organising = JSON.stringify(repeatOver(board.facade, "organising")?.template);
+    expect(organising).toContain('"intent":"create"');
+    expect(organising).toContain('"intent":"propose"');
+    const withdrawing = JSON.stringify(repeatOver(board.facade, "withdrawable")?.template);
+    expect(withdrawing).toContain('"intent":"withdraw"');
+    for (const uuid of ["organising", "withdrawable"]) {
+      const sql = services.find((svc) => svc.uuid === uuid)!.state.statement;
+      expect(sql).toContain("WHERE $caller_role = 'owner'");
+    }
   });
 
   it("holds the rules a tap must not break in the schema", () => {
@@ -108,6 +155,8 @@ describe("the meeting poll board", () => {
     expect(schema).toContain("CREATE UNIQUE INDEX IF NOT EXISTS one_option_per_time");
     // The rules a unique index cannot state, said where they are refused with
     // a reason the facade can show.
+    expect(schema).toContain("the_owner_calls_the_meetings");
+    expect(schema).toContain("a_date_is_for_a_meeting");
     expect(schema).toContain("the_organiser_puts_up_the_dates");
     expect(schema).toContain("a_closed_poll_takes_no_dates");
     expect(schema).toContain("a_closed_poll_takes_no_answers");

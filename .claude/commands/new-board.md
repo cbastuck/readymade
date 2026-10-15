@@ -770,9 +770,14 @@ board's member list calls the person:
 `$user` is for *showing* somebody who they are, and also resolves in a payload. It is never
 what a service should act on — anybody can put a name in a payload. A board several people use
 decides who is acting from the run's caller, which the server states: in `sql`, the reserved
-parameters `$caller_email`, `$caller_name` and `$caller_sub`. A facade's `process` action is
+parameters `$caller_email`, `$caller_name` and `$caller_sub`, and `$caller_role` — `owner` or
+`member` — for what only the board's owner may do. A facade's `process` action is
 callable by a member with any payload, so every rule that matters is checked in the service
 behind it, not in the widget.
+
+A facade has no per-viewer visibility, so a control only the owner may use is drawn from rows
+only the owner is sent: a `repeat` over a query ending `WHERE $caller_role = 'owner'` holds it,
+and a member's copy of that query is empty (see the Meeting Poll board's `organising`).
 
 Nothing is linked where there is nothing to click, so a widget whose source has not answered yet
 shows its placeholder as plain text rather than as a link that goes nowhere.

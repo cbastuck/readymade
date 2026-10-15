@@ -143,7 +143,7 @@ subject line — not a syntax error, and not an injection.
 
 ### Who is calling
 
-Four names are **reserved**, and bound from the run rather than from the
+Five names are **reserved**, and bound from the run rather than from the
 input:
 
 | Parameter | What it is |
@@ -151,6 +151,7 @@ input:
 | `$caller_email` | the caller's verified email, lowercased |
 | `$caller_name` | what the board's member list calls them — set on a [shared, deployed board](../concepts/cloud-boards.md#sharing-a-board-members) |
 | `$caller_sub` | the id their sign-in gives them |
+| `$caller_role` | `owner` or `member` — what they are to the board |
 | `$actor_kind` | `person`, `board`, `mount`, or `local` |
 
 The caller is whoever began the run, **stated by the server that verified their
@@ -164,6 +165,20 @@ answered from the request. Reserved in the service rather than stamped onto
 the input by a service placed in front, because a stamp can be walked around —
 a process call that enters the pipeline *at* this service never passes the one
 before it.
+
+`$caller_role` is stated by whoever admitted the person. A client acting on a
+runtime server with its own token is the **owner** — a token reaches only its
+own tenant's runtimes. On a [deployed board](../concepts/cloud-boards.md#sharing-a-board-members)
+the coordinator says which its bridge was admitted as: the owner, or a
+**member** its list let in. It is what lets a board several people use keep
+setting up to one of them — the
+[Meeting Poll](../boards/meeting-poll-demo-board.md) lets only its owner call
+a meeting:
+
+```sql
+INSERT INTO poll (name, organiser)
+SELECT trim($poll), CASE WHEN $caller_role = 'owner' THEN $caller_email END
+```
 
 For identity-sensitive work, act only when the required caller value is
 present. Do not fall back to an identity supplied in the input: an

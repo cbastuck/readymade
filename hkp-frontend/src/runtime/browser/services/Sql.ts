@@ -33,9 +33,10 @@
  * board writes no parameter list at all. Values are always bound, never
  * interpolated.
  *
- * **Who is calling is bound by the service, never by the input.** Four
+ * **Who is calling is bound by the service, never by the input.** Five
  * names are reserved, as in hkp-node — `$caller_email`, `$caller_name`,
- * `$caller_sub`, `$actor_kind` — and an input field of the same name is ignored.
+ * `$caller_sub`, `$caller_role`, `$actor_kind` — and an input field of the
+ * same name is ignored.
  * They come from the run context just as they do remotely. A local gesture
  * captures the app's signed-in person when its run begins; board and mount
  * runs do not acquire whoever happens to be signed in when SQL executes.
@@ -85,6 +86,7 @@ const CALLER_PARAMETERS = [
   "caller_email",
   "caller_name",
   "caller_sub",
+  "caller_role",
   "actor_kind",
 ] as const;
 type CallerParameter = (typeof CALLER_PARAMETERS)[number];
@@ -352,6 +354,7 @@ class Sql extends ServiceBase<State> {
       caller_email: stated?.email,
       caller_name: stated?.name,
       caller_sub: stated?.sub,
+      caller_role: stated?.role,
       // A missing run is a programming error. Treat it as board work rather
       // than inventing a person from whoever happens to be signed in.
       actor_kind: context?.actor.kind ?? "board",
