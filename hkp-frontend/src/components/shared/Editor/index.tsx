@@ -1,6 +1,7 @@
 import {
   CSSProperties,
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
@@ -96,7 +97,14 @@ type Props = {
   autofocus?: boolean;
   readOnly?: boolean;
   onChange?: (updated: string | undefined) => void;
+  options?: monaco.editor.IStandaloneEditorConstructionOptions;
+  onMount?: EditorMountHandler;
 };
+
+export type EditorMountHandler = (
+  editor: monaco.editor.IStandaloneCodeEditor,
+  monacoApi: typeof monaco,
+) => void | monaco.IDisposable | (() => void);
 
 export type EditorHandle = {
   getValue: () => any;
@@ -118,11 +126,24 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     autofocus = false,
     readOnly = false,
     onChange,
+    options,
+    onMount,
   }: Props,
   ref,
 ) {
   const editorRef = useRef<any>(null);
+  const mountCleanupRef = useRef<(() => void) | null>(null);
+  const onMountRef = useRef(onMount);
+  onMountRef.current = onMount;
   const [editorHeight, setEditorHeight] = useState("150px");
+
+  useEffect(
+    () => () => {
+      mountCleanupRef.current?.();
+      mountCleanupRef.current = null;
+    },
+    [],
+  );
 
   useImperativeHandle(ref, () => ({
     getValue: () => editorRef.current && editorRef.current.getValue(),
@@ -175,6 +196,14 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
             }); // TODO: provide an option
           }
           editorRef.current = editor;
+          mountCleanupRef.current?.();
+          const cleanup = onMountRef.current?.(editor, monaco);
+          mountCleanupRef.current =
+            typeof cleanup === "function"
+              ? cleanup
+              : cleanup
+                ? () => cleanup.dispose()
+                : null;
           setTimeout(() => {
             if (autofocus) {
               editorRef.current.focus();
@@ -186,7 +215,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
         onChange={onChange}
         language={language}
         value={value}
-        options={{ readOnly }}
+        options={{ readOnly, ...options }}
       />
     </div>
   );

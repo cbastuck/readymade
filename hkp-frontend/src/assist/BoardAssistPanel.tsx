@@ -19,6 +19,7 @@ import { listOpenAIModels, runOpenAICompatibleTurn } from "./openAICompatible";
 import { Effort, saveAssistSettings, useAssistSettings } from "./settings";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
+import BoardAssistPrompt from "./BoardAssistPrompt";
 import BoardAssistPreview from "./BoardAssistPreview";
 import "./assist.css";
 
@@ -598,19 +599,12 @@ export default function BoardAssistPanel({
             void send();
           }}
         >
-          <textarea
-            aria-label="Message to Board Assist"
-            placeholder="What would you like to build or change?"
+          <BoardAssistPrompt
+            board={board}
             value={prompt}
             disabled={busy}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                event.preventDefault();
-                void send();
-              }
-            }}
-            rows={3}
+            onChange={setPrompt}
+            onSubmit={() => void send()}
           />
           <div className="hkp-assist-row">
             <button

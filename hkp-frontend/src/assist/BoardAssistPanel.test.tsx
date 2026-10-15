@@ -21,6 +21,25 @@ vi.mock("../runtime/ui/NestedNavigation", () => ({
 vi.mock("../core/boardPersistence", () => ({ linkBoardDocument: mocks.link }));
 vi.mock("../ui-components/SettingsDialog", () => ({ default: () => null }));
 vi.mock("../components/shared/Editor", () => ({
+  default: ({
+    value,
+    onChange,
+    readOnly,
+    options,
+  }: {
+    value: string;
+    onChange?: (value: string) => void;
+    readOnly?: boolean;
+    options?: { ariaLabel?: string; placeholder?: string };
+  }) => (
+    <textarea
+      aria-label={options?.ariaLabel}
+      placeholder={options?.placeholder}
+      value={value}
+      readOnly={readOnly}
+      onChange={(event) => onChange?.(event.target.value)}
+    />
+  ),
   DiffEditor: ({
     original,
     modified,

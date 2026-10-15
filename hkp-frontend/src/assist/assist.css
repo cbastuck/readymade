@@ -196,16 +196,9 @@
   padding: 12px;
   border-top: 1px solid var(--border-mid, #d1d5db);
 }
-.hkp-assist textarea {
-  width: 100%;
-  resize: vertical;
-  max-height: 160px;
-  border: 1px solid var(--border-mid, #d1d5db);
-  border-radius: 6px;
-  padding: 8px;
-  margin-bottom: 8px;
-  background: var(--bg-app, #fafafa);
-  color: inherit;
+.hkp-assist-prompt-editor:focus-within > div {
+  outline: 2px solid var(--hkp-accent, #0abcfb);
+  outline-offset: 2px;
 }
 .hkp-assist-hint {
   font-size: 11px;
