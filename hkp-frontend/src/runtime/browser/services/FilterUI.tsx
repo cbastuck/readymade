@@ -7,25 +7,26 @@ import { ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import Button from "hkp-frontend/src/ui-components/Button";
 import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
+import { normalizeFilterConditions } from "./base/Filter";
 
 export default function FilterUI(props: ServiceUIProps) {
-  const [conditions, setConditions] = useState<any>(undefined);
-  const [aggregator, setAggregator] = useState<any>(undefined);
+  const [conditions, setConditions] = useState<string[]>([]);
+  const [aggregator, setAggregator] = useState("and");
 
   const onInit = (initialState: any) => {
     const { conditions: c, aggregator: a } = initialState;
-    setConditions(c);
-    setAggregator(a);
+    setConditions(normalizeFilterConditions(c));
+    setAggregator(typeof a === "string" ? a : "and");
   };
 
   const onNotification = (notification: any) => {
     const { conditions: c, aggregator: a } = notification;
 
     if (c !== undefined) {
-      setConditions(c);
+      setConditions(normalizeFilterConditions(c));
     }
 
-    if (a !== undefined) {
+    if (typeof a === "string") {
       setAggregator(a);
     }
   };
@@ -35,24 +36,23 @@ export default function FilterUI(props: ServiceUIProps) {
     return (
       <div className="filter-service" style={{ textAlign: "left" }}>
         <GroupLabel>Conditions</GroupLabel>
-        {conditions &&
-          conditions.map((condition: any, cidx: number) => (
-            <InputField
-              key={`filter-condition-${service.uuuid}-${cidx}`}
-              className="font-menu"
-              type="text"
-              label={`${cidx + 1}`}
-              value={condition || ""}
-              onChange={(condition) => {
-                const updated = condition
-                  ? conditions.map((c: any, cci: number) =>
-                      cci === cidx ? condition : c
-                    )
-                  : conditions.filter((_: any, cci: number) => cci !== cidx);
-                service.configure({ conditions: updated });
-              }}
-            />
-          ))}
+        {conditions.map((condition, cidx) => (
+          <InputField
+            key={`filter-condition-${service.uuuid}-${cidx}`}
+            className="font-menu"
+            type="text"
+            label={`${cidx + 1}`}
+            value={condition || ""}
+            onChange={(condition) => {
+              const updated = condition
+                ? conditions.map((c, cci) =>
+                    cci === cidx ? condition : c,
+                  )
+                : conditions.filter((_, cci) => cci !== cidx);
+              service.configure({ conditions: updated });
+            }}
+          />
+        ))}
         <Button
           className="hkp-svc-btn my-2 w-full"
           onClick={() => {
@@ -61,7 +61,7 @@ export default function FilterUI(props: ServiceUIProps) {
         >
           Add Condition
         </Button>
-        {conditions && conditions.length > 1 && (
+        {conditions.length > 1 && (
           <SelectorField
             className="my-2 mx-0"
             label="Operation"

@@ -28,6 +28,7 @@ import {
   useSelection,
 } from "../selection/SelectionContext";
 import { runBetween } from "./board/wrap";
+import RenderErrorBoundary from "../components/RenderErrorBoundary";
 
 type Props = {
   userId: string | undefined;
@@ -233,7 +234,12 @@ export default function ServiceUiContainer(props: Props) {
                   }
                   onRemove={() => boardContext?.removeService(services[pos], runtime)}
                 >
-                  {serviceElement}
+                  <RenderErrorBoundary
+                    scope={`Service ${services[pos].serviceName || services[pos].serviceId || services[pos].uuid}`}
+                    resetKey={services[pos]}
+                  >
+                    {serviceElement}
+                  </RenderErrorBoundary>
                 </BlockUseFrame>
               </ServiceWithDropBars>
             </ServicePickedContext.Provider>

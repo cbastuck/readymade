@@ -1,11 +1,12 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, waitFor, screen } from "@testing-library/react";
+import { fireEvent, render, waitFor, screen } from "@testing-library/react";
 
 import { ServiceUIProps, ServiceInstance } from "hkp-frontend/src/types";
 
 import AggregatorUI from "../AggregatorUI";
 import BrowserSubServiceUI from "../BrowserSubServiceUI";
+import FilterUI from "../FilterUI";
 import InputUI from "../InputUI";
 import OutputUI from "../OutputUI";
 import TimerUI from "../TimerUI";
@@ -205,6 +206,36 @@ describe("Service UI Behavioral Tests", () => {
 
       // Should have controls for both modes
       expect(container).toBeTruthy();
+    });
+  });
+
+  describe("FilterUI - condition shapes", () => {
+    it("renders a valid single-string condition and keeps edits as arrays", async () => {
+      const service = createMockServiceWithSpies({
+        conditions: "params.enabled === true",
+        aggregator: "and",
+      });
+
+      await renderServiceUIAndWait(FilterUI, createStandardProps(service));
+
+      expect(
+        await screen.findByDisplayValue("params.enabled === true"),
+      ).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Add Condition" }));
+      expect(service.configure).toHaveBeenCalledWith({
+        conditions: ["params.enabled === true", ""],
+      });
+    });
+
+    it("falls back to an empty list for malformed persisted conditions", async () => {
+      const service = createMockServiceWithSpies({
+        conditions: { expression: "params.enabled" },
+      });
+
+      await renderServiceUIAndWait(FilterUI, createStandardProps(service));
+
+      fireEvent.click(screen.getByRole("button", { name: "Add Condition" }));
+      expect(service.configure).toHaveBeenCalledWith({ conditions: [""] });
     });
   });
 

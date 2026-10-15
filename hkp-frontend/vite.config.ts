@@ -12,6 +12,13 @@ export default defineConfig({
   plugins: [svgr(), react(), serveBoards(path.resolve(__dirname, "../boards"))],
   server: {
     port: 5555,
+    fs: {
+      allow: [
+        ".",
+        path.resolve(__dirname, "../docs"),
+        path.resolve(__dirname, "../boards"),
+      ],
+    },
   },
   optimizeDeps: {
     // Locates its .wasm relative to its own module; prebundling moves the
