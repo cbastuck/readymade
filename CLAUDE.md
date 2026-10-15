@@ -54,7 +54,8 @@ a projection (the facade and what it reads), may ask only for what the facade as
 hosts no runtime. Every run carries its **caller** (`ProcessContext.caller`), stated by the
 server that verified the token and never read from a request; it survives the hop between
 a board's runtimes, and a service that needs to know who is acting asks the run — `sql`
-binds it as `$caller_email`, `$caller_name`, `$caller_sub`. The server's `ALLOWED_EMAILS`
+binds it as `$caller_email`, `$caller_name`, `$caller_sub`, and whether they are the
+board's owner or a member as `$caller_role`. The server's `ALLOWED_EMAILS`
 gates who may *own*; a board's list gates who may attach to that board.
 
 - `hkp-frontend/src/core/coordinator.ts` — the interface and the browser implementation
