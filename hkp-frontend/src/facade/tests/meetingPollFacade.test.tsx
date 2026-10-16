@@ -174,15 +174,25 @@ describe("the poll panel", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 
-  it("lists the meetings to switch to, folded away until asked for", () => {
+  it("lists the meetings to switch to above the dates, where a member answers", () => {
+    renderPanel("vote");
+    // Picking a meeting is part of answering, so it is not left to Organise —
+    // which a member has no other reason to open.
+    expect(folded(screen.getByText("Roadmap review"))).toBe(false);
+    expect(screen.getByText("• Sprint review")).toBeTruthy();
+    expect(
+      screen.getByText("Roadmap review").compareDocumentPosition(
+        screen.getByText("Works for me"),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("still folds the meetings away for whoever does not need them", () => {
     renderPanel("vote");
     // Folded but there: a list mounted only on opening would have missed the
     // rows its service sent while it was folded, and open empty.
+    fireEvent.click(screen.getByText("Meetings"));
     expect(folded(screen.getByText("Roadmap review"))).toBe(true);
-    fireEvent.click(screen.getByText("Other meetings"));
-    expect(folded(screen.getByText("Roadmap review"))).toBe(false);
-    expect(screen.getByText("• Sprint review")).toBeTruthy();
-    expect(screen.getByText("Roadmap review")).toBeTruthy();
   });
 });
 

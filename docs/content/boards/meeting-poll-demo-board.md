@@ -29,8 +29,9 @@ database now says — including any change somebody else made in the meantime.
 Which meeting is shown is the one a person last picked, and until they pick
 one, the meeting called last — so somebody opening the board for the first time
 lands on the poll they were sent it for. Answering a date keeps them on its
-meeting, even after a newer one is called; the others are under **Other
-meetings**.
+meeting, even after a newer one is called. Switching to another is done on
+**Vote** itself, from **Meetings** above the dates — a member has nothing else
+to open **Organise** for.
 
 ## The rules live in the schema
 
@@ -75,8 +76,8 @@ not name, is *the organiser*.
 ## The facade
 
 Two tabs. **Vote** — *Which dates work?* — is what most people ever see: who is
-answering (`{ "$user": "name" }`), the meeting and whose it is, one row per
-date, and the other meetings folded away underneath. **Organise** — *The
+answering (`{ "$user": "name" }`), the meetings to switch between, the one
+picked and whose it is, and one row per date. **Organise** — *The
 meeting* — is the owner's: the meetings to pick from, then for the one picked,
 putting up a date, closing the poll and withdrawing dates, and calling a new
 meeting. `defaultTab` is Vote, because answering is the

@@ -191,6 +191,56 @@
               "placeholder": "nobody — sign in to answer"
             },
             {
+              "direction": "column",
+              "collapsible": true,
+              "title": "Meetings",
+              "summary": {
+                "serviceUuid": "the-meetings",
+                "path": "count"
+              },
+              "open": true,
+              "gap": 8,
+              "items": [
+                {
+                  "direction": "row",
+                  "wrap": true,
+                  "gap": 6,
+                  "align": "center",
+                  "items": [
+                    {
+                      "type": "repeat",
+                      "source": {
+                        "serviceUuid": "the-meetings",
+                        "path": "rows"
+                      },
+                      "direction": "row",
+                      "wrap": true,
+                      "gap": 6,
+                      "template": {
+                        "type": "button",
+                        "label": "{{item.label}}",
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "poll",
+                            "value": "{{item.name}}"
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "who-is-here",
+                            "payload": {
+                              "intent": "none",
+                              "poll": "{{item.name}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "type": "repeat",
               "source": {
                 "serviceUuid": "the-poll",
@@ -291,56 +341,6 @@
                   }
                 ]
               }
-            },
-            {
-              "direction": "column",
-              "collapsible": true,
-              "title": "Other meetings",
-              "summary": {
-                "serviceUuid": "the-meetings",
-                "path": "count"
-              },
-              "open": false,
-              "gap": 8,
-              "items": [
-                {
-                  "direction": "row",
-                  "wrap": true,
-                  "gap": 6,
-                  "align": "center",
-                  "items": [
-                    {
-                      "type": "repeat",
-                      "source": {
-                        "serviceUuid": "the-meetings",
-                        "path": "rows"
-                      },
-                      "direction": "row",
-                      "wrap": true,
-                      "gap": 6,
-                      "template": {
-                        "type": "button",
-                        "label": "{{item.label}}",
-                        "actions": [
-                          {
-                            "type": "set-state",
-                            "key": "poll",
-                            "value": "{{item.name}}"
-                          },
-                          {
-                            "type": "process",
-                            "serviceUuid": "who-is-here",
-                            "payload": {
-                              "intent": "none",
-                              "poll": "{{item.name}}"
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
-              ]
             }
           ]
         }
