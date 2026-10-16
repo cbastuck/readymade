@@ -425,15 +425,20 @@ function CloudBoardsLanding({
 
 type InnerProps = {
   board: CoordinatorBoardInfo;
+  /** Which board this is: its coordinator and its name, since a name is only
+   *  unique on one coordinator. */
+  boardKey: string;
   bridgeWsUrl: string | null;
   userId: string | null;
   idToken: string | null;
   bridgeAccess: CoordinatorBridgeAccess;
-  onHydrate: (config: BoardDescriptor) => void;
+  /** Settles once the board is the one the coordinator described. */
+  onHydrate: (config: BoardDescriptor) => Promise<void>;
 };
 
 function CloudBoardInner({
   board,
+  boardKey,
   bridgeWsUrl,
   userId,
   idToken,
@@ -463,20 +468,32 @@ function CloudBoardInner({
   // arrives once it has said it. Hydrating from the saved config first would
   // render services with no live state and, worse, with no addresses for the
   // mounts they point at.
+  //
+  // Which board was hydrated is remembered by coordinator and name, not name
+  // alone: two coordinators may each hold a board called the same, and opening
+  // the second must not be taken for the first. State as well as a ref because
+  // the facade waits on it.
   const hydratedRef = useRef<string | null>(null);
+  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
   useEffect(() => {
     const hydrate = () => {
       const config =
         bridgeAccess.snapshot.getConfig() as BoardDescriptor | null;
-      if (!config || hydratedRef.current === board.boardName) {
+      if (!config || hydratedRef.current === boardKey) {
         return;
       }
-      hydratedRef.current = board.boardName;
-      onHydrate(config);
+      hydratedRef.current = boardKey;
+      // Marked once the board has been replaced, not when asked to be: until
+      // then the context still holds the board before it.
+      void onHydrate(config).finally(() => {
+        if (hydratedRef.current === boardKey) {
+          setHydratedFor(boardKey);
+        }
+      });
     };
     hydrate();
     return bridgeAccess.snapshot.subscribe(hydrate);
-  }, [bridgeAccess, board.boardName, onHydrate]);
+  }, [bridgeAccess, boardKey, onHydrate]);
   // Who the coordinator admitted this person as, which is what a facade shows
   // them as: on a shared board, the name its member list gives the owner.
   const you = useSyncExternalStore(
@@ -501,6 +518,13 @@ function CloudBoardInner({
   if (!boardContext.facade) {
     return <div className="flex-1 overflow-auto">{runtimes}</div>;
   }
+  // Until this board is hydrated the context may still hold the one open
+  // before it — its facade, its services — and what the facade's `init` sent
+  // would go to a board that is no longer attached. So the facade mounts once
+  // this board is hydrated, and afresh for each board.
+  if (hydratedFor !== boardKey) {
+    return null;
+  }
   return (
     <FacadeIdentityProvider identity={you}>
       <div
@@ -514,6 +538,7 @@ function CloudBoardInner({
         }}
       >
         <FacadeRenderer
+          key={boardKey}
           facade={boardContext.facade}
           boardContext={boardContext}
           boardName={board.boardName}
@@ -903,8 +928,10 @@ export default function CloudBoards({
     }
     pendingOpenBoard.current = null;
     onSelectBoardFromLanding(coordinator, board);
+    // The nonce as well: a signal arriving while the view is up finds the
+    // boards already loaded, and nothing else would run this again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coordinators, allCoordinatorBoards]);
+  }, [coordinators, allCoordinatorBoards, openBoardSignal?.at]);
 
   // ── New board ───────────────────────────────────────────────────────────────
 
@@ -1114,6 +1141,12 @@ export default function CloudBoards({
   const isFailed = boardStatus === "error";
   const coordinatorName = selectedCoordinator?.name ?? "a coordinator";
   const boardIsOpen = !!(mountedBoard && selectedCoordinator && selectedBoard);
+  // A board's name is unique only on its coordinator, so what identifies the
+  // open board names both.
+  const mountedBoardKey =
+    mountedBoard && selectedCoordinator
+      ? `cloud:${selectedCoordinator.url}:${mountedBoard.boardName}`
+      : "";
   const statusSlot = boardIsOpen ? (
     <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
       <span
@@ -1349,13 +1382,7 @@ export default function CloudBoards({
     >
       {/* Remembered apart from a playground board of the same name: the view a
           board is being built in says nothing about the one it is used in. */}
-      <FacadeViewProvider
-        boardName={
-          boardIsOpen
-            ? `cloud:${selectedCoordinator!.url}:${mountedBoard!.boardName}`
-            : ""
-        }
-      >
+      <FacadeViewProvider boardName={boardIsOpen ? mountedBoardKey : ""}>
         <div
           className="w-full h-full flex flex-col"
           style={{ background: "var(--bg-app, #fafafa)" }}
@@ -1435,6 +1462,7 @@ export default function CloudBoards({
                     )}
                     <CloudBoardInner
                       board={mountedBoard}
+                      boardKey={mountedBoardKey}
                       bridgeWsUrl={
                         selectedCoordinator
                           ? selectedCoordinator.url
@@ -1446,7 +1474,7 @@ export default function CloudBoards({
                       userId={user?.userId ?? null}
                       idToken={user?.idToken ?? null}
                       bridgeAccess={bridgeAccess}
-                      onHydrate={(config) =>
+                      onHydrate={async (config) =>
                         boardProviderRef.current?.setBoardState(config)
                       }
                     />

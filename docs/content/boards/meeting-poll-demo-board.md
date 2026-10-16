@@ -111,4 +111,8 @@ Needs a signed-in account and an hkp-node kept under the name `node` in
 *Manage runtime servers*. Opened in the playground you are the board's owner:
 call a meeting on **Organise** to start. The schema is created on first run, in
 a database of its own (`meetings`) — the board's earlier `meeting-poll`
-database is left as it was.
+database is left as it was, and its polls are not carried over. They named
+people by whatever was typed rather than by a verified address, so not one of
+them would match a caller; and since the schema only creates what is missing,
+opened on the old database it would have kept the old tables and rules beside
+the new ones.

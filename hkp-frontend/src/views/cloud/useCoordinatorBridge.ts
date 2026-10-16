@@ -323,6 +323,7 @@ export function useCoordinatorBridge(
 
     ws.onclose = (event) => {
       console.log("[bridge] Coordinator bridge disconnected");
+      const tornDown = intentionallyClosed;
       const refusal = refusalOf(event.code, asMember);
       if (refusal) {
         // Said, not retried: the answer would be the same, and a client that
@@ -331,8 +332,12 @@ export function useCoordinatorBridge(
         setRefused(refusal);
       }
       // Whatever was cached describes a session that is gone; the coordinator
-      // sends a fresh snapshot when the browser attaches again.
-      snapshot.clear();
+      // sends a fresh snapshot when the browser attaches again. Not for a
+      // socket that was torn down: that forgot it then, and by now the store
+      // may hold what the next connection was told.
+      if (!tornDown) {
+        snapshot.clear();
+      }
       for (const [requestId, pending] of pendingRef.current) {
         pendingRef.current.delete(requestId);
         pending.reject(new Error("Coordinator bridge disconnected"));
@@ -355,6 +360,11 @@ export function useCoordinatorBridge(
     return () => {
       intentionallyClosed = true;
       wsRef.current = null;
+      // Forgotten now rather than when the close arrives: the next connection
+      // — to a board of the same name on another coordinator, say — opens in
+      // this same commit, and whoever reads the store before the close would
+      // take the last board for the new one.
+      snapshot.clear();
       // Aborting a still-connecting socket makes the browser log a (harmless)
       // error; instead let onopen close it once the handshake completes.
       if (ws.readyState !== WebSocket.CONNECTING) {
