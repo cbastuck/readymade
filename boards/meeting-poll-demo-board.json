@@ -144,7 +144,7 @@
           "mode": "query",
           "emit": "result",
           "database": "meetings",
-          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\nSELECT\n  p.name AS name,\n  CASE WHEN p.name = shown.name THEN '• ' ELSE '' END\n    || p.name\n    || CASE WHEN p.closed = 1 THEN ' (closed)' ELSE '' END AS label\nFROM poll p\nCROSS JOIN shown\nORDER BY p.created DESC, p.rowid DESC"
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\nSELECT\n  p.name AS name,\n  p.name || CASE WHEN p.closed = 1 THEN ' (closed)' ELSE '' END AS label,\n  -- Which one is shown, for the picker to mark it as chosen.\n  CASE WHEN p.name = shown.name THEN 1 ELSE 0 END AS current\nFROM poll p\nCROSS JOIN shown\nORDER BY p.created DESC, p.rowid DESC"
         }
       }
     ]
@@ -219,6 +219,7 @@
                       "template": {
                         "type": "button",
                         "label": "{{item.label}}",
+                        "selected": "{{item.current}}",
                         "actions": [
                           {
                             "type": "set-state",
@@ -389,6 +390,7 @@
                       "template": {
                         "type": "button",
                         "label": "{{item.label}}",
+                        "selected": "{{item.current}}",
                         "actions": [
                           {
                             "type": "set-state",

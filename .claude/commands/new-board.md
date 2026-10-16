@@ -506,6 +506,19 @@ choice to the actions beside it as the item reference, not as `{ "$state": … }
 lands after the pass they run in, so a reference there would still send the *previous*
 choice.
 
+A row of buttons that pick should show which one is picked. Give each a `selected` value —
+from the item, so the query that lists the choices also says which is current
+(`CASE WHEN p.name = shown.name THEN 1 ELSE 0 END AS current`):
+
+```json
+{ "type": "button", "label": "{{item.label}}", "selected": "{{item.current}}", "actions": [ … ] }
+```
+
+The chosen one is drawn in the accent colour and announced as pressed. Leave `selected` off
+buttons that act rather than pick: a button that has the field is a choice, and one set to
+false is announced as a choice not made. Don't mark the current one in its label instead
+(a `•`, a `✓`) — that is easy to miss, and a screen reader reads it as text.
+
 A **board action** names no service
 at all — its subject is the board, and what it does is decided by the host showing
 the facade, not by the board:

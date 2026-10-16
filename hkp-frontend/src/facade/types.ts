@@ -269,6 +269,11 @@ export type ButtonWidget = {
   // on the page instead of being left out: the gap would say less than the
   // disabled control does.
   disabled?: boolean;
+  // The one chosen among buttons that pick — the meeting being shown, the
+  // filter in force. Left out, a button is an action and says nothing either
+  // way; given, it is a choice and says whether it is the one made. Inside a
+  // `repeat` it comes from the item, so what is chosen is the data's to say.
+  selected?: boolean;
   // Optional live dot rendered left of the label, driven by a service
   // notification (e.g. a microphone's isRecording flag).
   indicator?: {

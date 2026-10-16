@@ -82,8 +82,8 @@ const said: Record<string, unknown> = {
   "the-meetings": {
     count: 2,
     rows: [
-      { name: "Sprint review", label: "• Sprint review" },
-      { name: "Roadmap review", label: "Roadmap review" },
+      { name: "Sprint review", label: "Sprint review", current: 1 },
+      { name: "Roadmap review", label: "Roadmap review", current: 0 },
     ],
   },
   "say-yes": { changes: 1 },
@@ -179,12 +179,20 @@ describe("the poll panel", () => {
     // Picking a meeting is part of answering, so it is not left to Organise —
     // which a member has no other reason to open.
     expect(folded(screen.getByText("Roadmap review"))).toBe(false);
-    expect(screen.getByText("• Sprint review")).toBeTruthy();
     expect(
       screen.getByText("Roadmap review").compareDocumentPosition(
         screen.getByText("Works for me"),
       ) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("marks the meeting being answered as the one chosen", () => {
+    renderPanel("vote");
+    const shown = screen.getByRole("button", { name: "Sprint review" });
+    const other = screen.getByRole("button", { name: "Roadmap review" });
+    expect(shown.getAttribute("aria-pressed")).toBe("true");
+    expect(other.getAttribute("aria-pressed")).toBe("false");
+    expect(shown.style.borderColor).not.toBe(other.style.borderColor);
   });
 
   it("still folds the meetings away for whoever does not need them", () => {
@@ -208,6 +216,17 @@ describe("the meeting panel", () => {
     renderPanel("meeting");
     expect(screen.getByText("Organising Sprint review")).toBeTruthy();
     expect(folded(screen.getByText("Roadmap review"))).toBe(false);
+    expect(
+      screen
+        .getByRole("button", { name: "Sprint review" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    // An action is not a choice, and is not announced as one left unmade.
+    expect(
+      screen
+        .getByRole("button", { name: "Close the poll" })
+        .hasAttribute("aria-pressed"),
+    ).toBe(false);
   });
 
   it("reads top to bottom: pick or call a meeting, then its dates, then closing it", () => {

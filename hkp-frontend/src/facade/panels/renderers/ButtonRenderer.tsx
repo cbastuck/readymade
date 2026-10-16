@@ -18,12 +18,17 @@ export function ButtonRenderer({
   );
   const press = usePressFeedback(undefined, widget.disabled);
   const { run, prompt } = useWidgetActions(boardContext);
+  // A choice only where the board says so: an action button announced as
+  // "not pressed" would read as a toggle that is off.
+  const isChoice = widget.selected !== undefined;
+  const selected = !!widget.selected;
 
   return (
     <>
       <button
         {...press.handlers}
         disabled={widget.disabled}
+        aria-pressed={isChoice ? selected : undefined}
         onClick={() => {
           void run({
             action: widget.action,
@@ -50,6 +55,16 @@ export function ButtonRenderer({
           fontWeight: 500,
           fontFamily: "monospace",
           ...press.style,
+          // After the press feedback, so hovering the chosen one does not
+          // make it look like any other for as long as the pointer is on it.
+          ...(selected
+            ? {
+                borderColor: "var(--hkp-accent, #3b5bff)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--hkp-accent, #3b5bff) 12%, hsl(var(--card)))",
+                fontWeight: 600,
+              }
+            : {}),
         }}
       >
         {widget.indicator && (
