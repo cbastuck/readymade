@@ -510,6 +510,24 @@ export type RepeatWidget = {
   // and `radius` rounds its corners. Bands are meant to touch, so a striped
   // repeat usually sets `gap` to 0 and spaces its items with this padding.
   stripe?: RepeatStripe;
+  // A border around the items, so they read as one group rather than as rows
+  // that each span the panel: a date and the button that withdraws it stay
+  // side by side instead of at the panel's two edges.
+  //
+  // On the repeat rather than on a container around it, because it is drawn
+  // only while there are items: a container would leave an empty box behind
+  // for whoever the source sends no rows — a member, or a meeting with no dates
+  // yet.
+  frame?: RepeatFrame;
+};
+
+// `padding` is room between the border and the items, `radius` rounds the
+// border, and `maxWidth` stops the group widening with the panel — a cap
+// rather than a share, so on a narrow screen it still uses all there is.
+export type RepeatFrame = {
+  padding?: number;
+  radius?: number;
+  maxWidth?: number | string;
 };
 
 // The two colours of a zebra: `even` is the first row and every second one

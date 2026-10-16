@@ -938,6 +938,18 @@ whatever the panel is drawn on and so hold up in a light and a dark theme alike,
 fixed colour can only suit one of them. The bands are meant to touch, so set `gap` to 0 and
 let `padding` do the spacing. A `calendar` takes the same `even`/`odd` pair for its hours.
 
+`frame` draws a border round the items and caps their width, for rows that would otherwise
+each span a wide panel — a label at one edge, its button at the other:
+
+```json
+"frame": { "padding": 6, "radius": 8, "maxWidth": 440 }
+```
+
+It is drawn only while there are items, which is why it belongs on the repeat and not on a
+container around it: a source that sends somebody no rows — what only the owner may do — leaves
+them nothing, not an empty box. `maxWidth` is a cap rather than a share, so on a phone the group
+still uses the whole width.
+
 **Have the service return the items already decided.** One query that emits them carrying their
 own labels, their own payloads and whether they are on offer beats a facade trying to work any of
 that out — there are no conditionals in a layout, and the service is where the rules already live.

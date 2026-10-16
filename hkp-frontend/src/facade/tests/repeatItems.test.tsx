@@ -252,3 +252,44 @@ describe("striped items", () => {
     expect(first.style.background).toBe("");
   });
 });
+
+/**
+ * Rows that each span a wide panel do not read as one list: what a row says
+ * sits at one edge, what can be done to it at the other. A frame holds them
+ * together — and is drawn only while there is something in it, since a source
+ * may send nobody a row (what only the owner may do), and an empty box would
+ * be all such a person saw.
+ */
+describe("framed items", () => {
+  const framed = (items: unknown[]) =>
+    ({
+      type: "repeat",
+      items,
+      frame: { padding: 6, radius: 10, maxWidth: 440 },
+      template: { type: "text", placeholder: "{{item.label}}" },
+    }) as unknown as LayoutItem;
+
+  it("puts a border round the items, no wider than it is told", () => {
+    const { container } = renderNode(framed([{ label: "one" }, { label: "two" }]));
+    const frame = container.firstElementChild as HTMLElement;
+    expect(frame.style.border).toContain("1px solid");
+    expect(frame.style.borderRadius).toBe("10px");
+    expect(frame.style.padding).toBe("6px");
+    expect(frame.style.maxWidth).toBe("440px");
+    expect(frame.textContent).toBe("onetwo");
+  });
+
+  it("draws nothing at all while there is nothing to frame", () => {
+    const { container } = renderNode(framed([]));
+    expect(container.firstElementChild).toBeNull();
+  });
+
+  it("leaves an unframed repeat without a border", () => {
+    const { container } = renderNode({
+      type: "repeat",
+      items: [{ label: "one" }],
+      template: { type: "text", placeholder: "{{item.label}}" },
+    } as unknown as LayoutItem);
+    expect((container.firstElementChild as HTMLElement).style.border).toBe("");
+  });
+});
