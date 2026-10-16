@@ -608,6 +608,13 @@ sends). Reach for it whenever a board would otherwise come up inert waiting to b
 it could have assumed: seed the same value in the facade's `state` so widgets reading
 `{ "$state": … }` agree with what the field shows.
 
+`inputType` — `"date"`, `"time"` or `"datetime"` — swaps the field for a picker, so nobody has to
+know the format: a month to pick a day from (and an hour and minute, for `"datetime"`), drawn the
+same in every webview, or the browser's own field for a time. What is sent is what the browser's
+own inputs send: `2026-09-24`, `14:00`, or `2026-09-24T14:00` for a date with a time, in local
+time. A statement storing it with a space
+says so itself (`replace($starts, 'T', ' ')`); SQLite's date functions read both.
+
 **knob** — rotary control with optional markers and live readout:
 
 ```json

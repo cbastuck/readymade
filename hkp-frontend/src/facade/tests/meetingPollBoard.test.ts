@@ -25,15 +25,22 @@ import board from "../../../../boards/meeting-poll-demo-board.json";
  * owner may do is drawn from rows only the owner is sent.
  */
 
-type Service = { uuid: string; serviceId: string; state: Record<string, unknown> };
+type Service = {
+  uuid: string;
+  serviceId: string;
+  state: Record<string, unknown>;
+};
 
 const services = board.services.office as Service[];
 const order = services.map((svc) => svc.uuid);
-const schema = services.find((svc) => typeof svc.state.schema === "string")!.state
-  .schema as string;
+const schema = services.find((svc) => typeof svc.state.schema === "string")!
+  .state.schema as string;
 
 /** Every serviceUuid a facade layout mentions, however deeply nested. */
-function referencedUuids(node: unknown, found = new Set<string>()): Set<string> {
+function referencedUuids(
+  node: unknown,
+  found = new Set<string>(),
+): Set<string> {
   if (Array.isArray(node)) {
     node.forEach((child) => referencedUuids(child, found));
     return found;
@@ -61,33 +68,34 @@ function collectProcessTargets(node: unknown, found: string[] = []): string[] {
     if (record.type === "process" && typeof record.serviceUuid === "string") {
       found.push(record.serviceUuid);
     }
-    Object.values(record).forEach((value) => collectProcessTargets(value, found));
+    Object.values(record).forEach((value) =>
+      collectProcessTargets(value, found),
+    );
   }
   return found;
 }
 
-/** The repeat drawing one row per row a service answers with. */
-function repeatOver(
+/** Every repeat drawing one row per row a service answers with. */
+function repeatsOver(
   node: unknown,
   serviceUuid: string,
-): { template: unknown } | undefined {
+  found: Array<{ template: unknown }> = [],
+): Array<{ template: unknown }> {
   if (Array.isArray(node)) {
-    for (const child of node) {
-      const found = repeatOver(child, serviceUuid);
-      if (found) {
-        return found;
-      }
-    }
-    return undefined;
+    node.forEach((child) => repeatsOver(child, serviceUuid, found));
+    return found;
   }
   if (node && typeof node === "object") {
     const record = node as Record<string, any>;
-    if (record.type === "repeat" && record.source?.serviceUuid === serviceUuid) {
-      return record as { template: unknown };
+    if (
+      record.type === "repeat" &&
+      record.source?.serviceUuid === serviceUuid
+    ) {
+      found.push(record as { template: unknown });
     }
-    return repeatOver(Object.values(record), serviceUuid);
+    repeatsOver(Object.values(record), serviceUuid, found);
   }
-  return undefined;
+  return found;
 }
 
 describe("the meeting poll board", () => {
@@ -118,30 +126,45 @@ describe("the meeting poll board", () => {
 
   it("knows who is here before anything acts on them", () => {
     expect(order[0]).toBe("who-is-here");
-    expect(order.indexOf("open-poll")).toBeLessThan(order.indexOf("put-up-date"));
+    expect(order.indexOf("open-poll")).toBeLessThan(
+      order.indexOf("put-up-date"),
+    );
   });
 
   it("keeps its tables to itself rather than deriving a name from the title", () => {
-    expect(services.every((svc) => svc.state.database === "meetings")).toBe(true);
+    expect(services.every((svc) => svc.state.database === "meetings")).toBe(
+      true,
+    );
   });
 
   it("takes who is acting from the run, never from the payload", () => {
     const statements = services.map((svc) => svc.state.statement as string);
-    expect(statements.some((sql) => /\$(actor|you|voter|organiser)\b/.test(sql))).toBe(
-      false,
-    );
+    expect(
+      statements.some((sql) => /\$(actor|you|voter|organiser)\b/.test(sql)),
+    ).toBe(false);
     expect(JSON.stringify(board.facade)).not.toMatch(/"(actor|you)"/);
     // Calling a meeting asks the role the server stated, not the person.
-    const call = services.find((svc) => svc.uuid === "open-poll")!.state.statement;
+    const call = services.find((svc) => svc.uuid === "open-poll")!.state
+      .statement;
     expect(call).toContain("$caller_role = 'owner'");
   });
 
   it("draws what only the owner may do from rows only the owner is sent", () => {
-    const organising = JSON.stringify(repeatOver(board.facade, "organising")?.template);
+    const organising = JSON.stringify(repeatsOver(board.facade, "organising"));
     expect(organising).toContain('"intent":"create"');
     expect(organising).toContain('"intent":"propose"');
-    const withdrawing = JSON.stringify(repeatOver(board.facade, "withdrawable")?.template);
+    expect(organising).toContain('"intent":"{{item.closeIntent}}"');
+    const withdrawing = JSON.stringify(
+      repeatsOver(board.facade, "withdrawable"),
+    );
     expect(withdrawing).toContain('"intent":"withdraw"');
+    // Nothing the owner alone may do is drawn from anything else.
+    for (const uuid of ["the-dates", "the-poll", "the-meetings"]) {
+      const drawn = JSON.stringify(repeatsOver(board.facade, uuid));
+      for (const intent of ["create", "propose", "withdraw"]) {
+        expect(drawn).not.toContain(`"intent":"${intent}"`);
+      }
+    }
     for (const uuid of ["organising", "withdrawable"]) {
       const sql = services.find((svc) => svc.uuid === uuid)!.state.statement;
       expect(sql).toContain("WHERE $caller_role = 'owner'");
@@ -151,8 +174,12 @@ describe("the meeting poll board", () => {
   it("holds the rules a tap must not break in the schema", () => {
     // One answer per person per date, and one date on the poll however often
     // it is put up: a second tap and a stale page both land on these.
-    expect(schema).toContain("CREATE UNIQUE INDEX IF NOT EXISTS one_vote_per_option");
-    expect(schema).toContain("CREATE UNIQUE INDEX IF NOT EXISTS one_option_per_time");
+    expect(schema).toContain(
+      "CREATE UNIQUE INDEX IF NOT EXISTS one_vote_per_option",
+    );
+    expect(schema).toContain(
+      "CREATE UNIQUE INDEX IF NOT EXISTS one_option_per_time",
+    );
     // The rules a unique index cannot state, said where they are refused with
     // a reason the facade can show.
     expect(schema).toContain("the_owner_calls_the_meetings");

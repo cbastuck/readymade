@@ -25,6 +25,7 @@ const said: Record<string, unknown> = {
     rows: [
       {
         id: 1,
+        poll: "Sprint review",
         starts: "2026-09-18 10:00",
         yes: 2,
         mine: 1,
@@ -37,6 +38,7 @@ const said: Record<string, unknown> = {
       },
       {
         id: 2,
+        poll: "Sprint review",
         starts: "2026-09-19 09:30",
         yes: 0,
         mine: 0,
@@ -62,6 +64,7 @@ const said: Record<string, unknown> = {
     rows: [
       {
         name: "Sprint review",
+        heading: "Organising Sprint review",
         nothingToClose: 0,
         closeLabel: "Close the poll",
         closeIntent: "close",
@@ -127,6 +130,16 @@ function renderPanel(id: string) {
   );
 }
 
+/** Whether an element sits inside something put out of sight. */
+function folded(element: HTMLElement): boolean {
+  for (let el: HTMLElement | null = element; el; el = el.parentElement) {
+    if (el.style.display === "none") {
+      return true;
+    }
+  }
+  return false;
+}
+
 describe("the poll panel", () => {
   it("draws one row per date, with its tally and who gave it", () => {
     renderPanel("vote");
@@ -163,8 +176,11 @@ describe("the poll panel", () => {
 
   it("lists the meetings to switch to, folded away until asked for", () => {
     renderPanel("vote");
-    expect(screen.queryByText("Roadmap review")).toBeNull();
+    // Folded but there: a list mounted only on opening would have missed the
+    // rows its service sent while it was folded, and open empty.
+    expect(folded(screen.getByText("Roadmap review"))).toBe(true);
     fireEvent.click(screen.getByText("Other meetings"));
+    expect(folded(screen.getByText("Roadmap review"))).toBe(false);
     expect(screen.getByText("• Sprint review")).toBeTruthy();
     expect(screen.getByText("Roadmap review")).toBeTruthy();
   });
@@ -175,7 +191,31 @@ describe("the meeting panel", () => {
     renderPanel("meeting");
     expect(screen.getByText("Put up a date for Sprint review")).toBeTruthy();
     expect(screen.getByText("Close the poll")).toBeTruthy();
-    expect(screen.getByText("Call a meeting")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Call a new meeting…")).toBeTruthy();
+  });
+
+  it("says which meeting is being organised, and lists the others to pick from", () => {
+    renderPanel("meeting");
+    expect(screen.getByText("Organising Sprint review")).toBeTruthy();
+    expect(folded(screen.getByText("Roadmap review"))).toBe(false);
+  });
+
+  it("reads top to bottom: pick or call a meeting, then its dates, then closing it", () => {
+    renderPanel("meeting");
+    const order = [
+      screen.getByText("Roadmap review"),
+      screen.getByPlaceholderText("Call a new meeting…"),
+      screen.getByText("Organising Sprint review"),
+      screen.getByText("Put up a date for Sprint review"),
+      ...screen.getAllByText("Withdraw"),
+      screen.getByText("Close the poll"),
+    ];
+    for (let i = 1; i < order.length; i++) {
+      expect(
+        order[i - 1].compareDocumentPosition(order[i]) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
   });
 
   it("lists the dates to withdraw", () => {
@@ -197,15 +237,18 @@ describe("the meeting panel", () => {
 });
 
 describe("the meeting panel, shown to a member", () => {
-  it("offers nothing but saying whose it is", () => {
+  it("offers nothing of the owner's, only which meeting to look at", () => {
     const owners = { organising: said.organising, withdrawable: said.withdrawable };
     said.organising = { rows: [] };
     said.withdrawable = { rows: [] };
     try {
       renderPanel("meeting");
       expect(screen.queryByRole("textbox")).toBeNull();
-      expect(screen.queryByRole("button")).toBeNull();
+      expect(screen.queryByText("Close the poll")).toBeNull();
+      expect(screen.queryByText("Withdraw")).toBeNull();
+      expect(screen.queryByText("Organising Sprint review")).toBeNull();
       expect(screen.getByText(/are the board owner's/)).toBeTruthy();
+      expect(screen.getByText("Roadmap review")).toBeTruthy();
     } finally {
       Object.assign(said, owners);
     }

@@ -123,7 +123,10 @@ export function CollapsibleSection({
           </span>
         ) : null}
       </button>
-      {open ? children : null}
+      {/* Folded, not removed: a widget hears a service only while it is
+          mounted, and a list whose rows went by while it was folded away would
+          open empty beside a summary that heard them. */}
+      <div style={{ display: open ? "contents" : "none" }}>{children}</div>
     </div>
   );
 }

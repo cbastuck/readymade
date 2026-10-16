@@ -169,6 +169,12 @@ export type TextInputWidget = {
   // the same value in the facade's initial state where other widgets read it.
   defaultValue?: string;
   submitLabel?: string;
+  // What is asked for, where it is not free text: a date or a date and a time
+  // picked from a month, or a time, so nobody has to know the format. What is
+  // sent is what the browser's own inputs send — "2026-09-24", "14:00", or
+  // "2026-09-24T14:00" for a date and a time, in local time. Ignored by
+  // `multiline` and `secret`.
+  inputType?: "text" | "date" | "time" | "datetime";
   secret?: boolean;
   vaultKey?: string;
   // Overrides the default 360px cap so the field fills its layout slot. Set by

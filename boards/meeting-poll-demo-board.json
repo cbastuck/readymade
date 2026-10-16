@@ -45,7 +45,7 @@
           "mode": "run",
           "emit": "input",
           "database": "meetings",
-          "statement": "INSERT INTO option (poll, proposedBy, starts)\nSELECT trim($poll), $caller_email, trim($starts)\n WHERE $intent = 'propose'"
+          "statement": "INSERT INTO option (poll, proposedBy, starts)\n-- A date picker says '2026-09-24T14:00'; the poll keeps it with a space.\nSELECT trim($poll), $caller_email, replace(trim($starts), 'T', ' ')\n WHERE $intent = 'propose'"
         }
       },
       {
@@ -100,7 +100,7 @@
           "mode": "query",
           "emit": "input",
           "database": "meetings",
-          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  ),\n  me(email) AS (SELECT coalesce($caller_email, '')),\n  meeting AS (\n    SELECT p.organiser AS organiser, p.closed AS closed\n      FROM poll p JOIN shown ON p.name = shown.name\n  ),\n  answers AS (\n    SELECT o.id     AS id,\n           o.starts AS starts,\n           count(v.id) AS yes,\n           max(CASE WHEN v.voter = me.email THEN 1 ELSE 0 END) AS mine,\n           group_concat(\n             CASE\n               WHEN v.voter IS NULL THEN NULL\n               WHEN v.voter = me.email THEN 'you'\n               -- Everybody else by the name the member list gave them, never\n               -- by their address.\n               ELSE coalesce(\n                 nullif(who.name, ''),\n                 CASE WHEN v.voter = m.organiser THEN 'the organiser' ELSE 'a member' END\n               )\n             END, ', ') AS voters\n      FROM shown\n      JOIN option o ON o.poll = shown.name\n      CROSS JOIN me\n      LEFT JOIN meeting m ON 1 = 1\n      LEFT JOIN vote v ON v.option = o.id\n      LEFT JOIN person who ON who.email = v.voter\n     GROUP BY o.id, o.starts\n  ),\n  best(n) AS (SELECT coalesce(max(yes), 0) FROM answers)\nSELECT\n  a.id     AS id,\n  a.starts AS starts,\n  a.yes    AS yes,\n  a.mine   AS mine,\n  CASE strftime('%w', substr(a.starts, 1, 10))\n    WHEN '0' THEN 'Sun' WHEN '1' THEN 'Mon' WHEN '2' THEN 'Tue'\n    WHEN '3' THEN 'Wed' WHEN '4' THEN 'Thu' WHEN '5' THEN 'Fri'\n    ELSE 'Sat'\n  END || ' ' || substr(a.starts, 1, 10) || ' at ' || substr(a.starts, 12, 5) AS label,\n  CASE WHEN a.yes = 0 THEN 'Nobody yet' ELSE a.voters END AS who,\n  CASE\n    WHEN a.yes = best.n AND best.n > 0 THEN a.yes || ' yes - best so far'\n    ELSE a.yes || ' yes'\n  END AS score,\n  CASE WHEN a.mine = 1 THEN 'unvote' ELSE 'vote' END AS intent,\n  CASE WHEN a.mine = 1 THEN 'Take it back' ELSE 'Works for me' END AS answerLabel,\n  CASE WHEN m.closed = 1 OR me.email = '' THEN 1 ELSE 0 END AS locked\nFROM answers a\nCROSS JOIN best\nCROSS JOIN me\nLEFT JOIN meeting m ON 1 = 1\nORDER BY a.starts"
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  ),\n  me(email) AS (SELECT coalesce($caller_email, '')),\n  meeting AS (\n    SELECT p.organiser AS organiser, p.closed AS closed\n      FROM poll p JOIN shown ON p.name = shown.name\n  ),\n  answers AS (\n    SELECT o.id     AS id,\n           o.starts AS starts,\n           count(v.id) AS yes,\n           max(CASE WHEN v.voter = me.email THEN 1 ELSE 0 END) AS mine,\n           group_concat(\n             CASE\n               WHEN v.voter IS NULL THEN NULL\n               WHEN v.voter = me.email THEN 'you'\n               -- Everybody else by the name the member list gave them, never\n               -- by their address.\n               ELSE coalesce(\n                 nullif(who.name, ''),\n                 CASE WHEN v.voter = m.organiser THEN 'the organiser' ELSE 'a member' END\n               )\n             END, ', ') AS voters\n      FROM shown\n      JOIN option o ON o.poll = shown.name\n      CROSS JOIN me\n      LEFT JOIN meeting m ON 1 = 1\n      LEFT JOIN vote v ON v.option = o.id\n      LEFT JOIN person who ON who.email = v.voter\n     GROUP BY o.id, o.starts\n  ),\n  best(n) AS (SELECT coalesce(max(yes), 0) FROM answers)\nSELECT\n  a.id     AS id,\n  -- The meeting each date belongs to, so that answering it keeps whoever\n  -- answers on that meeting even after a newer one is called.\n  shown.name AS poll,\n  a.starts AS starts,\n  a.yes    AS yes,\n  a.mine   AS mine,\n  CASE strftime('%w', substr(a.starts, 1, 10))\n    WHEN '0' THEN 'Sun' WHEN '1' THEN 'Mon' WHEN '2' THEN 'Tue'\n    WHEN '3' THEN 'Wed' WHEN '4' THEN 'Thu' WHEN '5' THEN 'Fri'\n    ELSE 'Sat'\n  END || ' ' || substr(a.starts, 1, 10) || ' at ' || substr(a.starts, 12, 5) AS label,\n  CASE WHEN a.yes = 0 THEN 'Nobody yet' ELSE a.voters END AS who,\n  CASE\n    WHEN a.yes = best.n AND best.n > 0 THEN a.yes || ' yes - best so far'\n    ELSE a.yes || ' yes'\n  END AS score,\n  CASE WHEN a.mine = 1 THEN 'unvote' ELSE 'vote' END AS intent,\n  CASE WHEN a.mine = 1 THEN 'Take it back' ELSE 'Works for me' END AS answerLabel,\n  CASE WHEN m.closed = 1 OR me.email = '' THEN 1 ELSE 0 END AS locked\nFROM answers a\nCROSS JOIN shown\nCROSS JOIN best\nCROSS JOIN me\nLEFT JOIN meeting m ON 1 = 1\nORDER BY a.starts"
         }
       },
       {
@@ -122,7 +122,7 @@
           "mode": "query",
           "emit": "input",
           "database": "meetings",
-          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\n-- One row for the board's owner and none for anybody else, so what the\n-- facade draws from it is there only for the one who may use it.\nSELECT\n  coalesce(p.name, '') AS name,\n  CASE WHEN p.name IS NULL THEN 1 ELSE 0 END AS nothingToClose,\n  CASE WHEN p.closed = 1 THEN 'Reopen the poll' ELSE 'Close the poll' END AS closeLabel,\n  CASE WHEN p.closed = 1 THEN 'reopen' ELSE 'close' END AS closeIntent,\n  CASE\n    WHEN p.closed = 1 THEN 'Let people answer ' || p.name || ' again?'\n    ELSE 'Close voting on ' || coalesce(p.name, '') || '?'\n  END AS closePrompt,\n  CASE WHEN p.name IS NULL THEN 'Put up a date' ELSE 'Put up a date for ' || p.name END AS proposeLabel\nFROM shown\nLEFT JOIN poll p ON p.name = shown.name AND p.organiser = $caller_email\nWHERE $caller_role = 'owner'"
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\n-- One row for the board's owner and none for anybody else, so what the\n-- facade draws from it is there only for the one who may use it.\nSELECT\n  coalesce(p.name, '') AS name,\n  CASE\n    WHEN p.name IS NULL THEN 'No meeting yet: call one below.'\n    ELSE 'Organising ' || p.name || CASE WHEN p.closed = 1 THEN ' (closed)' ELSE '' END\n  END AS heading,\n  CASE WHEN p.name IS NULL THEN 1 ELSE 0 END AS nothingToClose,\n  CASE WHEN p.closed = 1 THEN 'Reopen the poll' ELSE 'Close the poll' END AS closeLabel,\n  CASE WHEN p.closed = 1 THEN 'reopen' ELSE 'close' END AS closeIntent,\n  CASE\n    WHEN p.closed = 1 THEN 'Let people answer ' || p.name || ' again?'\n    ELSE 'Close voting on ' || coalesce(p.name, '') || '?'\n  END AS closePrompt,\n  CASE WHEN p.name IS NULL THEN 'Put up a date' ELSE 'Put up a date for ' || p.name END AS proposeLabel\nFROM shown\nLEFT JOIN poll p ON p.name = shown.name AND p.organiser = $caller_email\nWHERE $caller_role = 'owner'"
         }
       },
       {
@@ -133,7 +133,7 @@
           "mode": "query",
           "emit": "input",
           "database": "meetings",
-          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\nSELECT\n  o.id     AS id,\n  CASE strftime('%w', substr(o.starts, 1, 10))\n    WHEN '0' THEN 'Sun' WHEN '1' THEN 'Mon' WHEN '2' THEN 'Tue'\n    WHEN '3' THEN 'Wed' WHEN '4' THEN 'Thu' WHEN '5' THEN 'Fri'\n    ELSE 'Sat'\n  END || ' ' || substr(o.starts, 1, 10) || ' at ' || substr(o.starts, 12, 5) AS label,\n  p.closed AS locked,\n  'Take ' || o.starts || ' off the poll, along with every answer given to it?' AS dropPrompt\nFROM shown\nJOIN poll p   ON p.name = shown.name AND p.organiser = $caller_email\nJOIN option o ON o.poll = p.name\nWHERE $caller_role = 'owner'\nORDER BY o.starts"
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\nSELECT\n  o.id     AS id,\n  p.name   AS poll,\n  CASE strftime('%w', substr(o.starts, 1, 10))\n    WHEN '0' THEN 'Sun' WHEN '1' THEN 'Mon' WHEN '2' THEN 'Tue'\n    WHEN '3' THEN 'Wed' WHEN '4' THEN 'Thu' WHEN '5' THEN 'Fri'\n    ELSE 'Sat'\n  END || ' ' || substr(o.starts, 1, 10) || ' at ' || substr(o.starts, 12, 5) AS label,\n  p.closed AS locked,\n  'Take ' || o.starts || ' off the poll, along with every answer given to it?' AS dropPrompt\nFROM shown\nJOIN poll p   ON p.name = shown.name AND p.organiser = $caller_email\nJOIN option o ON o.poll = p.name\nWHERE $caller_role = 'owner'\nORDER BY o.starts"
         }
       },
       {
@@ -273,9 +273,7 @@
                         "serviceUuid": "who-is-here",
                         "payload": {
                           "intent": "{{item.intent}}",
-                          "poll": {
-                            "$state": "poll"
-                          },
+                          "poll": "{{item.poll}}",
                           "option": "{{item.id}}"
                         }
                       }
@@ -296,33 +294,41 @@
               "gap": 8,
               "items": [
                 {
-                  "type": "repeat",
-                  "source": {
-                    "serviceUuid": "the-meetings",
-                    "path": "rows"
-                  },
                   "direction": "row",
                   "wrap": true,
                   "gap": 6,
-                  "template": {
-                    "type": "button",
-                    "label": "{{item.label}}",
-                    "actions": [
-                      {
-                        "type": "set-state",
-                        "key": "poll",
-                        "value": "{{item.name}}"
+                  "align": "center",
+                  "items": [
+                    {
+                      "type": "repeat",
+                      "source": {
+                        "serviceUuid": "the-meetings",
+                        "path": "rows"
                       },
-                      {
-                        "type": "process",
-                        "serviceUuid": "who-is-here",
-                        "payload": {
-                          "intent": "none",
-                          "poll": "{{item.name}}"
-                        }
+                      "direction": "row",
+                      "wrap": true,
+                      "gap": 6,
+                      "template": {
+                        "type": "button",
+                        "label": "{{item.label}}",
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "poll",
+                            "value": "{{item.name}}"
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "who-is-here",
+                            "payload": {
+                              "intent": "none",
+                              "poll": "{{item.name}}"
+                            }
+                          }
+                        ]
                       }
-                    ]
-                  }
+                    }
+                  ]
                 }
               ]
             }
@@ -340,9 +346,85 @@
           "items": [
             {
               "type": "text",
-              "placeholder": "Calling a meeting, putting up its dates and closing it are the board owner's. Everybody else answers on Vote.",
+              "placeholder": "Calling a meeting, putting up its dates and closing it are the board owner's. Everybody else answers on Vote. Pick the meeting to work on, or call a new one.",
               "tone": "muted",
               "fontSize": 12
+            },
+            {
+              "direction": "column",
+              "collapsible": true,
+              "title": "Meetings",
+              "summary": {
+                "serviceUuid": "the-meetings",
+                "path": "count"
+              },
+              "open": true,
+              "gap": 8,
+              "items": [
+                {
+                  "direction": "row",
+                  "wrap": true,
+                  "gap": 6,
+                  "align": "center",
+                  "items": [
+                    {
+                      "type": "repeat",
+                      "source": {
+                        "serviceUuid": "the-meetings",
+                        "path": "rows"
+                      },
+                      "direction": "row",
+                      "wrap": true,
+                      "gap": 6,
+                      "template": {
+                        "type": "button",
+                        "label": "{{item.label}}",
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "poll",
+                            "value": "{{item.name}}"
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "who-is-here",
+                            "payload": {
+                              "intent": "none",
+                              "poll": "{{item.name}}"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "repeat",
+                      "source": {
+                        "serviceUuid": "organising",
+                        "path": "rows"
+                      },
+                      "template": {
+                        "type": "text-input",
+                        "placeholder": "Call a new meeting…",
+                        "submitLabel": "Call it",
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "poll"
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "who-is-here",
+                            "payload": {
+                              "intent": "create",
+                              "poll": "$$input"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "repeat",
@@ -356,9 +438,14 @@
                 "align": "stretch",
                 "items": [
                   {
+                    "type": "text",
+                    "placeholder": "{{item.heading}}",
+                    "fontSize": 15
+                  },
+                  {
                     "type": "text-input",
                     "label": "{{item.proposeLabel}}",
-                    "placeholder": "2026-09-24 14:00",
+                    "inputType": "datetime",
                     "submitLabel": "Propose it",
                     "actions": [
                       {
@@ -368,42 +455,6 @@
                           "intent": "propose",
                           "poll": "{{item.name}}",
                           "starts": "$$input"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "button",
-                    "label": "{{item.closeLabel}}",
-                    "disabled": "{{item.nothingToClose}}",
-                    "confirm": "{{item.closePrompt}}",
-                    "actions": [
-                      {
-                        "type": "process",
-                        "serviceUuid": "who-is-here",
-                        "payload": {
-                          "intent": "{{item.closeIntent}}",
-                          "poll": "{{item.name}}"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "text-input",
-                    "label": "Call a meeting",
-                    "placeholder": "Roadmap review",
-                    "submitLabel": "Call it",
-                    "actions": [
-                      {
-                        "type": "set-state",
-                        "key": "poll"
-                      },
-                      {
-                        "type": "process",
-                        "serviceUuid": "who-is-here",
-                        "payload": {
-                          "intent": "create",
-                          "poll": "$$input"
                         }
                       }
                     ]
@@ -440,10 +491,36 @@
                         "serviceUuid": "who-is-here",
                         "payload": {
                           "intent": "withdraw",
-                          "poll": {
-                            "$state": "poll"
-                          },
+                          "poll": "{{item.poll}}",
                           "option": "{{item.id}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "organising",
+                "path": "rows"
+              },
+              "template": {
+                "direction": "row",
+                "items": [
+                  {
+                    "type": "button",
+                    "label": "{{item.closeLabel}}",
+                    "disabled": "{{item.nothingToClose}}",
+                    "confirm": "{{item.closePrompt}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "who-is-here",
+                        "payload": {
+                          "intent": "{{item.closeIntent}}",
+                          "poll": "{{item.name}}"
                         }
                       }
                     ]
