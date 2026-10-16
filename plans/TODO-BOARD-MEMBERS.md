@@ -19,7 +19,10 @@ as the other, a removed member is dropped) and the open questions below.
   no `app`, so a facade widget on an attached board found its service and
   never heard it; and the desktop cloud view renders no facade at all. The
   first is fixed (`bridgeRuntimeApi.ts`); the second is why members get a view
-  of their own (`views/cloud/SharedBoard.tsx`) instead of the owner's.
+  of their own (`views/cloud/SharedBoard.tsx`) instead of the owner's. Since
+  2026-10-16 the owner's desktop cloud view renders the facade too, with the
+  playground's facade / split / runtimes toggles, as the mobile Cloud tab
+  already did through its App / Board toggle.
 - **A process result continues the chain.** `processService` over a link
   answers "accepted" and the pipeline's result follows as the runtime's
   ordinary `result`, so the coordinator carries it to the next runtime.

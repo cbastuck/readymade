@@ -642,7 +642,11 @@ Stopping the original and deploying the fork stays the user's call.
   folder per configured coordinator, its boards inside, labelled *Running in
   cloud* / *Stopped* / *Failed to start* (`views/start/useCloudBoardsFolder.ts`).
 - **Open one**: the Cloud Boards view on desktop (`views/cloud/index.tsx`), the
-  Cloud tab on mobile (`views/cloud/mobile/MobileCloudBoards.tsx`).
+  Cloud tab on mobile (`views/cloud/mobile/MobileCloudBoards.tsx`). On desktop
+  a board with a facade opens on it, with the playground's facade / split /
+  runtimes toggles in the toolbar: deployed, a board is used rather than
+  built, and what its facade does goes over the bridge as the owner's action.
+  The mobile tab has had the same through its App / Board toggle.
 - **Share one**: **Members** on an open board — an address and a name per
   entry, and *Copy link* (`views/cloud/MembersDialog.tsx`).
 - **Find what is shared with you**: *Shared with me* under each coordinator,

@@ -92,7 +92,8 @@ the statements behind it that refuse.
 2. Open it in Cloud Boards and choose **Members**: one entry per person, the
    address they sign in with and the name the others should see. Add yourself
    too if you want to be called something other than *the organiser*.
-3. Call a meeting and put up its dates on **Organise**.
+3. Open it from Cloud Boards — it opens on its facade — and call a meeting and
+   put up its dates on **Organise**.
 4. Send everybody the link from *Copy link*. It opens only for somebody on the
    list.
 

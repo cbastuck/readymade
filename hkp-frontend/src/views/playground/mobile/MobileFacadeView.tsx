@@ -5,7 +5,7 @@ import { FacadeStateContext } from "../../../facade/FacadeStateContext";
 import { FacadeBoardActionsProvider } from "../../../facade/FacadeBoardActions";
 import { FacadeNotices } from "../../../facade/FacadeNotices";
 import { FacadeTabBar } from "../../../facade/FacadeTabBar";
-import { executeActions } from "../../../facade/executeActions";
+import { useFacadeInit } from "../../../facade/useFacadeInit";
 import { useFacadeIdentity } from "../../../facade/FacadeIdentity";
 import { PanelRenderer } from "../../../facade/panels/PanelRenderer";
 import { currentFace, defaultFaceId, resolveFaces } from "../../../facade/tabs";
@@ -48,19 +48,14 @@ export default function MobileFacadeView({
   facadeStateRef.current = facadeState;
   const identity = useFacadeIdentity(boardContext);
 
-  useEffect(() => {
-    if (!facade.init?.length) {
-      return;
-    }
-    void executeActions({
-      actions: facade.init,
-      value: undefined,
-      boardContext,
-      setState: setFacadeStateEntry,
-      state: facadeStateRef.current,
-      identity,
-    });
-  }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
+  useFacadeInit({
+    facade,
+    boardContext,
+    boardName,
+    setState: setFacadeStateEntry,
+    stateRef: facadeStateRef,
+    identity,
+  });
 
   // The board says which tab opens; switching is not remembered, and a facade
   // with no tabs is one face holding every panel.

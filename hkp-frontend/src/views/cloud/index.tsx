@@ -66,6 +66,10 @@ import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { toast } from "sonner";
 import CoordinatorsMenu from "./CoordinatorsMenu";
 import CloudBoard from "./Board";
+import FacadeRenderer from "../../facade/FacadeRenderer";
+import { FacadeIdentityProvider } from "../../facade/FacadeIdentity";
+import { FacadeViewProvider } from "../../facade/FacadeViewContext";
+import FacadeViewControls from "../../facade/FacadeViewControls";
 import NestedNavProvider from "../../runtime/ui/NestedNavigation";
 import Sidebar from "../playground/Sidebar";
 import { useCoordinatorBridge } from "./useCoordinatorBridge";
@@ -473,17 +477,50 @@ function CloudBoardInner({
     hydrate();
     return bridgeAccess.snapshot.subscribe(hydrate);
   }, [bridgeAccess, board.boardName, onHydrate]);
+  // Who the coordinator admitted this person as, which is what a facade shows
+  // them as: on a shared board, the name its member list gives the owner.
+  const you = useSyncExternalStore(
+    (onChange) => bridgeAccess.snapshot.subscribe(onChange),
+    () => bridgeAccess.snapshot.getYou(),
+  );
+
   if (!boardContext) {
     return null;
   }
+  const runtimes = (
+    <CloudBoard
+      boardContext={boardContext}
+      boardName={board.boardName}
+      bridgeWs={bridgeWs}
+    />
+  );
+  // A deployed board is used rather than built, so where it has a facade that
+  // is what it opens on — the same facade, runtimes and split the playground
+  // offers, the runtimes drawn as this view draws them. Structural edits stay
+  // refused either way; the facade's actions travel over the bridge.
+  if (!boardContext.facade) {
+    return <div className="flex-1 overflow-auto">{runtimes}</div>;
+  }
   return (
-    <div className="flex-1 overflow-auto">
-      <CloudBoard
-        boardContext={boardContext}
-        boardName={board.boardName}
-        bridgeWs={bridgeWs}
-      />
-    </div>
+    <FacadeIdentityProvider identity={you}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        <FacadeRenderer
+          facade={boardContext.facade}
+          boardContext={boardContext}
+          boardName={board.boardName}
+          runtimeContent={runtimes}
+        />
+      </div>
+    </FacadeIdentityProvider>
   );
 }
 
@@ -1310,143 +1347,161 @@ export default function CloudBoards({
         }
       }}
     >
-      <div
-        className="w-full h-full flex flex-col"
-        style={{ background: "var(--bg-app, #fafafa)" }}
+      {/* Remembered apart from a playground board of the same name: the view a
+          board is being built in says nothing about the one it is used in. */}
+      <FacadeViewProvider
+        boardName={
+          boardIsOpen
+            ? `cloud:${selectedCoordinator!.url}:${mountedBoard!.boardName}`
+            : ""
+        }
       >
-        <Toolbar
-          logoSlot={logoSlot}
-          menuSlot={menuSlot}
-          statusSlot={statusSlot}
-        >
-          {showCoordinatorInToolbar && (
-            <CoordinatorsMenu
-              coordinators={coordinators}
-              selectedCoordinator={selectedCoordinator}
-              boards={boards}
-              selectedBoard={selectedBoard}
-              onSelectCoordinator={onSelectCoordinator}
-              onSelectBoard={onSelectBoard}
-              onAddCoordinator={onAddCoordinator}
-              onRemoveCoordinator={onRemoveCoordinator}
-              onNewBoard={() => onNewBoard()}
-            />
-          )}
-        </Toolbar>
-
         <div
-          style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}
+          className="w-full h-full flex flex-col"
+          style={{ background: "var(--bg-app, #fafafa)" }}
         >
-          <Sidebar />
-          {/* A cloud board nests exactly as a playground board does, so a
+          <Toolbar
+            logoSlot={logoSlot}
+            menuSlot={menuSlot}
+            statusSlot={statusSlot}
+            actionsSlot={boardIsOpen ? <FacadeViewControls /> : undefined}
+          >
+            {showCoordinatorInToolbar && (
+              <CoordinatorsMenu
+                coordinators={coordinators}
+                selectedCoordinator={selectedCoordinator}
+                boards={boards}
+                selectedBoard={selectedBoard}
+                onSelectCoordinator={onSelectCoordinator}
+                onSelectBoard={onSelectBoard}
+                onAddCoordinator={onAddCoordinator}
+                onRemoveCoordinator={onRemoveCoordinator}
+                onNewBoard={() => onNewBoard()}
+              />
+            )}
+          </Toolbar>
+
+          <div
+            style={{
+              display: "flex",
+              flex: 1,
+              minHeight: 0,
+              overflow: "hidden",
+            }}
+          >
+            <Sidebar />
+            {/* A cloud board nests exactly as a playground board does, so a
               pipeline on one is opened the same way. Outside the canvas rather
               than inside it: the levels cover the canvas, and a layer within a
               scroll container would be sized to the content and scroll away
               with it. */}
-          <NestedNavProvider rootLabel={mountedBoard?.boardName || "Board"}>
-            <div
-              ref={boardCanvasRef}
-              style={{
-                flex: 1,
-                overflow: "auto",
-                overscrollBehaviorX: "none",
-                display: "flex",
-                flexDirection: "column",
-                background:
-                  "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
-              }}
-            >
-              {/* Keep the board mounted in background so WebSocket notification
+            <NestedNavProvider rootLabel={mountedBoard?.boardName || "Board"}>
+              <div
+                ref={boardCanvasRef}
+                style={{
+                  flex: 1,
+                  overflow: "auto",
+                  overscrollBehaviorX: "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  background:
+                    "oklch(0.966 0.007 62) radial-gradient(circle, oklch(0.76 0.012 62) 1px, transparent 1px) 0 0 / 22px 22px",
+                }}
+              >
+                {/* Keep the board mounted in background so WebSocket notification
                 targets stay registered while the user browses the landing. */}
-              {mountedBoard && (
-                <div
-                  style={{
-                    display:
-                      selectedCoordinator && selectedBoard
-                        ? "contents"
-                        : "none",
-                  }}
-                >
-                  {openBoardErrors.length > 0 && (
-                    <div className="m-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
-                      <div className="font-semibold">
-                        {boardStatus === "stopped"
-                          ? "This board stopped, but not everything let go."
-                          : "This board didn’t fully start — runtime output won’t flow."}
+                {mountedBoard && (
+                  <div
+                    style={{
+                      display:
+                        selectedCoordinator && selectedBoard
+                          ? "contents"
+                          : "none",
+                    }}
+                  >
+                    {openBoardErrors.length > 0 && (
+                      <div className="m-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        <div className="font-semibold">
+                          {boardStatus === "stopped"
+                            ? "This board stopped, but not everything let go."
+                            : "This board didn’t fully start — runtime output won’t flow."}
+                        </div>
+                        <ul className="mt-1 list-disc pl-5 break-words">
+                          {openBoardErrors.map((e, i) => (
+                            <li key={i}>{e}</li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="mt-1 list-disc pl-5 break-words">
-                        {openBoardErrors.map((e, i) => (
-                          <li key={i}>{e}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <CloudBoardInner
-                    board={mountedBoard}
-                    bridgeWsUrl={
-                      selectedCoordinator
-                        ? selectedCoordinator.url
-                            .replace(/^http(s?):\/\//, "ws$1://")
-                            .replace(/\/coordinator\/?$/, "") +
-                          "/coordinator/bridge"
-                        : null
-                    }
-                    userId={user?.userId ?? null}
-                    idToken={user?.idToken ?? null}
-                    bridgeAccess={bridgeAccess}
-                    onHydrate={(config) =>
-                      boardProviderRef.current?.setBoardState(config)
+                    )}
+                    <CloudBoardInner
+                      board={mountedBoard}
+                      bridgeWsUrl={
+                        selectedCoordinator
+                          ? selectedCoordinator.url
+                              .replace(/^http(s?):\/\//, "ws$1://")
+                              .replace(/\/coordinator\/?$/, "") +
+                            "/coordinator/bridge"
+                          : null
+                      }
+                      userId={user?.userId ?? null}
+                      idToken={user?.idToken ?? null}
+                      bridgeAccess={bridgeAccess}
+                      onHydrate={(config) =>
+                        boardProviderRef.current?.setBoardState(config)
+                      }
+                    />
+                  </div>
+                )}
+                {!(selectedCoordinator && selectedBoard) && (
+                  <CloudBoardsLanding
+                    user={user}
+                    coordinators={coordinators}
+                    allCoordinatorBoards={allCoordinatorBoards}
+                    isLoading={isLoadingAllBoards}
+                    onSelectBoard={onSelectBoardFromLanding}
+                    onSelectShared={onSelectShared}
+                    onNewBoard={onNewBoard}
+                    onManageCoordinators={() =>
+                      setIsManageCoordinatorsOpen(true)
                     }
                   />
-                </div>
-              )}
-              {!(selectedCoordinator && selectedBoard) && (
-                <CloudBoardsLanding
-                  user={user}
-                  coordinators={coordinators}
-                  allCoordinatorBoards={allCoordinatorBoards}
-                  isLoading={isLoadingAllBoards}
-                  onSelectBoard={onSelectBoardFromLanding}
-                  onSelectShared={onSelectShared}
-                  onNewBoard={onNewBoard}
-                  onManageCoordinators={() => setIsManageCoordinatorsOpen(true)}
-                />
-              )}
-            </div>
-          </NestedNavProvider>
+                )}
+              </div>
+            </NestedNavProvider>
+          </div>
         </div>
-      </div>
 
-      <ManageCoordinatorsDialog
-        isOpen={isManageCoordinatorsOpen}
-        coordinators={coordinators}
-        onAdd={onAddCoordinator}
-        onRemove={onRemoveCoordinator}
-        onClose={() => setIsManageCoordinatorsOpen(false)}
-      />
+        <ManageCoordinatorsDialog
+          isOpen={isManageCoordinatorsOpen}
+          coordinators={coordinators}
+          onAdd={onAddCoordinator}
+          onRemove={onRemoveCoordinator}
+          onClose={() => setIsManageCoordinatorsOpen(false)}
+        />
 
-      {inviteDialog}
+        {inviteDialog}
 
-      <MembersDialog
-        isOpen={isMembersOpen && !!selectedCoordinator && !!selectedBoard}
-        coordinatorUrl={selectedCoordinator?.url ?? ""}
-        userId={user.userId}
-        idToken={user.idToken}
-        boardName={selectedBoard?.boardName ?? ""}
-        onClose={() => setIsMembersOpen(false)}
-      />
+        <MembersDialog
+          isOpen={isMembersOpen && !!selectedCoordinator && !!selectedBoard}
+          coordinatorUrl={selectedCoordinator?.url ?? ""}
+          userId={user.userId}
+          idToken={user.idToken}
+          boardName={selectedBoard?.boardName ?? ""}
+          onClose={() => setIsMembersOpen(false)}
+        />
 
-      <NewBoardDialog
-        isOpen={!!newBoardCoordinator}
-        coordinatorName={newBoardCoordinator?.name}
-        existingBoardNames={
-          allCoordinatorBoards
-            .find((g) => g.coordinator.url === newBoardCoordinator?.url)
-            ?.boards.map((b) => b.boardName) ?? []
-        }
-        onCreate={createBoard}
-        onClose={() => setNewBoardCoordinator(undefined)}
-      />
+        <NewBoardDialog
+          isOpen={!!newBoardCoordinator}
+          coordinatorName={newBoardCoordinator?.name}
+          existingBoardNames={
+            allCoordinatorBoards
+              .find((g) => g.coordinator.url === newBoardCoordinator?.url)
+              ?.boards.map((b) => b.boardName) ?? []
+          }
+          onCreate={createBoard}
+          onClose={() => setNewBoardCoordinator(undefined)}
+        />
+      </FacadeViewProvider>
     </BoardProvider>
   );
 }
