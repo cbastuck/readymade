@@ -17,6 +17,12 @@ const env = { ...process.env };
 env.HKP_COORDINATOR_LINKS_FILE = path.join(directory, "links.json");
 if (kind === "node") {
   Object.assign(env, {
+    // An hkp-node is a named instance that keeps its folder, and the lock on
+    // it, under the home directory: this one's is the disposable directory,
+    // so a run never touches the real one, nor waits on a server there.
+    HKP_INSTANCE: "e2e",
+    HOME: directory,
+    USERPROFILE: directory,
     HKP_COORDINATOR_DATA_DIR: path.join(directory, "boards"),
     HKP_COORDINATOR_LOG_DIR: path.join(directory, "logs"),
     HKP_COORDINATOR_LINKS_FILE: path.join(directory, "links.json"),

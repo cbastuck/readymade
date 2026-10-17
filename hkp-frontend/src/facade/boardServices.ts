@@ -37,7 +37,10 @@ import {
  * Whether a remote runtime's services can be reached at all: it has an address
  * to dial, or its scope goes through the board's coordinator and needs none.
  */
-function isReachable(runtime: { url?: string } | undefined, scope: unknown): boolean {
+function isReachable(
+  runtime: { url?: string } | undefined,
+  scope: unknown,
+): boolean {
   return (
     !!runtime?.url ||
     (scope as { viaCoordinator?: boolean } | undefined)?.viaCoordinator === true
@@ -100,7 +103,11 @@ function isInsideUse(
   address: string,
   runtimeId?: string,
 ): boolean {
-  const use = blockUseContaining(boardContext.linkage?.blocks, address, runtimeId);
+  const use = blockUseContaining(
+    boardContext.linkage?.blocks,
+    address,
+    runtimeId,
+  );
   if (!use) {
     return false;
   }
@@ -224,6 +231,46 @@ export function findService(
  * service onward — rather than from the one after it, which is what a service
  * handing work onward means.
  */
+/**
+ * Whether a service can be reached yet, the way `processService` reaches it.
+ *
+ * A board's runtimes are restored after its facade is known, and on an
+ * attached board after the coordinator has said what the board is. Asking
+ * before then finds nothing and does nothing — which for what a facade does by
+ * itself on opening is the difference between a board that shows its data and
+ * one that shows nothing until somebody taps. A service a use holds is never
+ * reached, so it counts as settled rather than as pending.
+ */
+export function canReachService(
+  boardContext: BoardContextState,
+  uuid: string,
+): boolean {
+  if (isInsideUse(boardContext, uuid)) {
+    return true;
+  }
+  for (const scope of Object.values(boardContext.scopes)) {
+    if (
+      (scope as any).findServiceInstance?.(uuid)?.[0] ||
+      ownerOfNested(scope, uuid)
+    ) {
+      return true;
+    }
+  }
+  const root = addressRoot(uuid);
+  return Object.entries(boardContext.services).some(([runtimeId, svcs]) => {
+    if (!svcs.find((s) => s.uuid === root)) {
+      return false;
+    }
+    const runtime = boardContext.runtimes.find((rt) => rt.id === runtimeId);
+    const scope = boardContext.scopes[runtimeId];
+    return (
+      isReachable(runtime, scope) &&
+      !!scope &&
+      !!runtimeApiFor(boardContext, runtime?.type)
+    );
+  });
+}
+
 export function processService(
   boardContext: BoardContextState,
   uuid: string,
@@ -311,7 +358,7 @@ export function narrowBoardContext(
     return boardContext;
   }
   const wanted = new Set(runtimeIds);
-  const pick = <T,>(map: { [runtimeId: string]: T }): { [id: string]: T } =>
+  const pick = <T>(map: { [runtimeId: string]: T }): { [id: string]: T } =>
     Object.fromEntries(
       Object.entries(map).filter(([runtimeId]) => wanted.has(runtimeId)),
     );

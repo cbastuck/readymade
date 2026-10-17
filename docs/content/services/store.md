@@ -207,7 +207,7 @@ carried on here would be acting on a record that was never written.
 Records are one JSON file each, under a directory the runtime owns:
 
 ```
-~/.hkp/node/store/<sha256(owner)>/<sha256(board)>/[<sha256(namespace)>/]<sha256(key)>.json
+~/.hkp/node-<instance>/store/<sha256(owner)>/<sha256(board)>/[<sha256(namespace)>/]<sha256(key)>.json
 ```
 
 A namespace is a directory *inside* the board's own, so the board's default

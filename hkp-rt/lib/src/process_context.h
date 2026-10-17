@@ -65,6 +65,10 @@ struct Caller
   /// What the board's member list calls that email. Set by a coordinator that
   /// keeps such a list, and empty everywhere else.
   std::string name;
+  /// What they are to the board: its "owner", in whose tenant it runs, or a
+  /// "member" its list admitted. Stated by whoever admitted them; empty when
+  /// nobody said.
+  std::string role;
 
   bool empty() const { return sub.empty(); }
 
@@ -82,6 +86,12 @@ struct Caller
       caller.email = it->get<std::string>();
     if (const auto it = value.find("name"); it != value.end() && it->is_string())
       caller.name = it->get<std::string>();
+    if (const auto it = value.find("role"); it != value.end() && it->is_string())
+    {
+      const auto role = it->get<std::string>();
+      if (role == "owner" || role == "member")
+        caller.role = role;
+    }
     return caller;
   }
 
@@ -92,6 +102,8 @@ struct Caller
       value["email"] = email;
     if (!name.empty())
       value["name"] = name;
+    if (!role.empty())
+      value["role"] = role;
     return value;
   }
 };

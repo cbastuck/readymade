@@ -678,7 +678,7 @@ TEST_CASE("it takes the run and its caller from the coordinator, and hands them 
     {"runId", "run-1"},
     {"actor", {{"kind", "person"}, {"sub", alice["sub"]},
                {"email", alice["email"]}, {"name", alice["name"]},
-               {"expiresAt", 9999999999999LL}}}
+               {"role", "member"}, {"expiresAt", 9999999999999LL}}}
   };
 
   coordinator.send(json{{"type", "processRuntime"}, {"params", {{"n", 1}}}, {"context", run}});

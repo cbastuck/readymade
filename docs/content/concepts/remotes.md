@@ -272,7 +272,7 @@ introduced it, and nothing else.
 
 | | |
 |---|---|
-| Who keeps it | the runtime server, beside its mount secret (`~/.hkp/<node\|python>/coordinator-links.json`, `0600`). The coordinator keeps only a **hash** |
+| Who keeps it | the runtime server, beside its mount secret (`~/.hkp/node-<instance>/` or `~/.hkp/python/`, `coordinator-links.json`, `0600`). The coordinator keeps only a **hash** |
 | How long it lasts | until replaced or revoked. It is what a runtime server reconnects with after a restart or a dropped connection, with nobody present |
 | Replaced | by deploying again — and only once that deploy went through. A ticket asked for while the runtime has one is **pending** beside it: its holder is welcomed and waits, and the server holding the first stays the board's and can still reconnect. Registering the board settles it: a pending ticket a server is waiting with becomes the one that counts, the one before it is forgotten and its holder gives way; a pending ticket nobody connected with is dropped |
 | Taken back | when a deploy fails. The client gives up the tickets it asked for; a server waiting with one is let go, and nothing about the running board changed |

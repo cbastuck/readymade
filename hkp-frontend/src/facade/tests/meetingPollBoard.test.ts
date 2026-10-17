@@ -19,20 +19,28 @@ import board from "../../../../boards/meeting-poll-demo-board.json";
  * parameters out of the same request; without that the second would be handed
  * the first one's row count and bind every name it asked for to NULL.
  *
- * The third is that **the poll exists before a date can hang off it**. The
- * trigger guarding a proposal reads the poll's organiser, so a board that
- * seeded its example dates first would refuse them on a fresh database.
+ * The third is that **who is acting is never the request's to say**. Shared,
+ * the board's entry point is callable by any member with any payload, so the
+ * statements read the caller and their role off the run, and what only the
+ * owner may do is drawn from rows only the owner is sent.
  */
 
-type Service = { uuid: string; serviceId: string; state: Record<string, unknown> };
+type Service = {
+  uuid: string;
+  serviceId: string;
+  state: Record<string, unknown>;
+};
 
 const services = board.services.office as Service[];
 const order = services.map((svc) => svc.uuid);
-const schema = services.find((svc) => typeof svc.state.schema === "string")!.state
-  .schema as string;
+const schema = services.find((svc) => typeof svc.state.schema === "string")!
+  .state.schema as string;
 
 /** Every serviceUuid a facade layout mentions, however deeply nested. */
-function referencedUuids(node: unknown, found = new Set<string>()): Set<string> {
+function referencedUuids(
+  node: unknown,
+  found = new Set<string>(),
+): Set<string> {
   if (Array.isArray(node)) {
     node.forEach((child) => referencedUuids(child, found));
     return found;
@@ -60,7 +68,32 @@ function collectProcessTargets(node: unknown, found: string[] = []): string[] {
     if (record.type === "process" && typeof record.serviceUuid === "string") {
       found.push(record.serviceUuid);
     }
-    Object.values(record).forEach((value) => collectProcessTargets(value, found));
+    Object.values(record).forEach((value) =>
+      collectProcessTargets(value, found),
+    );
+  }
+  return found;
+}
+
+/** Every repeat drawing one row per row a service answers with. */
+function repeatsOver(
+  node: unknown,
+  serviceUuid: string,
+  found: Array<{ template: unknown }> = [],
+): Array<{ template: unknown }> {
+  if (Array.isArray(node)) {
+    node.forEach((child) => repeatsOver(child, serviceUuid, found));
+    return found;
+  }
+  if (node && typeof node === "object") {
+    const record = node as Record<string, any>;
+    if (
+      record.type === "repeat" &&
+      record.source?.serviceUuid === serviceUuid
+    ) {
+      found.push(record as { template: unknown });
+    }
+    repeatsOver(Object.values(record), serviceUuid, found);
   }
   return found;
 }
@@ -91,23 +124,66 @@ describe("the meeting poll board", () => {
     expect(firstRead).toBeGreaterThan(lastWrite);
   });
 
-  it("calls the meeting before it puts up the example dates", () => {
-    expect(order.indexOf("open-poll")).toBeLessThan(order.indexOf("first-run"));
+  it("knows who is here before anything acts on them", () => {
+    expect(order[0]).toBe("who-is-here");
+    expect(order.indexOf("open-poll")).toBeLessThan(
+      order.indexOf("put-up-date"),
+    );
   });
 
   it("keeps its tables to itself rather than deriving a name from the title", () => {
+    expect(services.every((svc) => svc.state.database === "meetings")).toBe(
+      true,
+    );
+  });
+
+  it("takes who is acting from the run, never from the payload", () => {
+    const statements = services.map((svc) => svc.state.statement as string);
     expect(
-      services.every((svc) => svc.state.database === "meeting-poll"),
-    ).toBe(true);
+      statements.some((sql) => /\$(actor|you|voter|organiser)\b/.test(sql)),
+    ).toBe(false);
+    expect(JSON.stringify(board.facade)).not.toMatch(/"(actor|you)"/);
+    // Calling a meeting asks the role the server stated, not the person.
+    const call = services.find((svc) => svc.uuid === "open-poll")!.state
+      .statement;
+    expect(call).toContain("$caller_role = 'owner'");
+  });
+
+  it("draws what only the owner may do from rows only the owner is sent", () => {
+    const organising = JSON.stringify(repeatsOver(board.facade, "organising"));
+    expect(organising).toContain('"intent":"create"');
+    expect(organising).toContain('"intent":"propose"');
+    expect(organising).toContain('"intent":"{{item.closeIntent}}"');
+    const withdrawing = JSON.stringify(
+      repeatsOver(board.facade, "withdrawable"),
+    );
+    expect(withdrawing).toContain('"intent":"withdraw"');
+    // Nothing the owner alone may do is drawn from anything else.
+    for (const uuid of ["the-dates", "the-poll", "the-meetings"]) {
+      const drawn = JSON.stringify(repeatsOver(board.facade, uuid));
+      for (const intent of ["create", "propose", "withdraw"]) {
+        expect(drawn).not.toContain(`"intent":"${intent}"`);
+      }
+    }
+    for (const uuid of ["organising", "withdrawable"]) {
+      const sql = services.find((svc) => svc.uuid === uuid)!.state.statement;
+      expect(sql).toContain("WHERE $caller_role = 'owner'");
+    }
   });
 
   it("holds the rules a tap must not break in the schema", () => {
     // One answer per person per date, and one date on the poll however often
     // it is put up: a second tap and a stale page both land on these.
-    expect(schema).toContain("CREATE UNIQUE INDEX IF NOT EXISTS one_vote_per_option");
-    expect(schema).toContain("CREATE UNIQUE INDEX IF NOT EXISTS one_option_per_time");
+    expect(schema).toContain(
+      "CREATE UNIQUE INDEX IF NOT EXISTS one_vote_per_option",
+    );
+    expect(schema).toContain(
+      "CREATE UNIQUE INDEX IF NOT EXISTS one_option_per_time",
+    );
     // The rules a unique index cannot state, said where they are refused with
     // a reason the facade can show.
+    expect(schema).toContain("the_owner_calls_the_meetings");
+    expect(schema).toContain("a_date_is_for_a_meeting");
     expect(schema).toContain("the_organiser_puts_up_the_dates");
     expect(schema).toContain("a_closed_poll_takes_no_dates");
     expect(schema).toContain("a_closed_poll_takes_no_answers");

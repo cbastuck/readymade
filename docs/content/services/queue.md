@@ -143,7 +143,7 @@ Anything that goes wrong is reported as `{ error }` and **passes nothing on**.
 One file per owner, beside the per-board databases:
 
 ```
-~/.hkp/node/db/<sha256(owner)>/shared.db
+~/.hkp/node-<instance>/db/<sha256(owner)>/shared.db
 ```
 
 `HKP_DB_DIR` moves the root; `HKP_DB_DIR=""` keeps everything in memory, which

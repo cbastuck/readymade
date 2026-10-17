@@ -195,7 +195,7 @@ nothing on**.
 The same file per board as [SQL](./sql.md):
 
 ```
-~/.hkp/node/db/<sha256(owner)>/<sha256(board)>.db
+~/.hkp/node-<instance>/db/<sha256(owner)>/<sha256(board)>.db
 ```
 
 The tables are created on first use. Deleting the file starts the board over;

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FacadeStateContext } from "./FacadeStateContext";
-import { executeActions } from "./executeActions";
+import { useFacadeInit } from "./useFacadeInit";
 import { useFacadeIdentity } from "./FacadeIdentity";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeDescriptor } from "./types";
@@ -52,19 +52,14 @@ export default function FacadeRenderer({
   facadeStateRef.current = facadeState;
   const identity = useFacadeIdentity(boardContext);
 
-  useEffect(() => {
-    if (!facade.init?.length) {
-      return;
-    }
-    void executeActions({
-      actions: facade.init,
-      value: undefined,
-      boardContext,
-      setState: setFacadeStateEntry,
-      state: facadeStateRef.current,
-      identity,
-    });
-  }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
+  useFacadeInit({
+    facade,
+    boardContext,
+    boardName,
+    setState: setFacadeStateEntry,
+    stateRef: facadeStateRef,
+    identity,
+  });
 
   // Which halves are on screen is chosen from the toolbar, above this view.
   // Without a provider the facade is all there is, which is what a host that

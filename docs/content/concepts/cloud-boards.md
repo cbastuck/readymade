@@ -307,7 +307,8 @@ proves nothing about them. A run therefore carries one actor:
 
 ```ts
 type RunActor =
-  | { kind: "person"; sub: string; email?: string; name?: string; expiresAt: number }
+  | { kind: "person"; sub: string; email?: string; name?: string;
+      role?: "owner" | "member"; expiresAt: number }
   | { kind: "board" }
   | { kind: "mount" }
   | { kind: "local" };
@@ -315,7 +316,10 @@ type RunActor =
 
 `email` is there only when the token carried a **verified** one. `name` is what
 the board's member list calls that address, set by the coordinator and absent
-everywhere else. A run begins in one of these ways, and each has its own code
+everywhere else. `role` is what the person is to the board — its `owner`, or a
+`member` its list admitted — and is stated by whoever admitted them: the
+coordinator when it admits a bridge, a runtime server for a client acting with
+its own token, which reaches only its own tenant's runtimes and so owns them. A run begins in one of these ways, and each has its own code
 path — not one parser with a flag:
 
 | Entered by | Actor |
@@ -370,7 +374,8 @@ emit under the actor without either service deciding who that actor is.
 Person authority is bounded twice. Every runtime checks the actor's `expiresAt`
 before each service, including after an awaited service returns. At every
 coordinator hop the coordinator checks the deadline again and checks that the
-person is still the owner or a current member. Removing a member therefore also
+person is still the owner or a current member — and that a run claiming the
+owner's role is the owner's (`mayActOn`). Removing a member therefore also
 revokes work that finishes late.
 
 That holds at any depth. A service that holds a pipeline — a sub-service, an
@@ -381,7 +386,8 @@ around it for who is signed in (`delegateIdentity`). A service inside one is
 told what a service at the top of the runtime is told.
 
 A service asks the run, never its input. [`sql`](../services/sql.md) binds
-`$caller_email`, `$caller_name`, `$caller_sub` and `$actor_kind` from it; a log
+`$caller_email`, `$caller_name`, `$caller_sub`, `$caller_role` and `$actor_kind`
+from it; a log
 entry carries the person actor's `sub`, so the owner's run log answers "who did
 this" without collecting addresses.
 
@@ -456,7 +462,9 @@ statement, no registry, no log.
 is not bound to what the widget would send. So everything that matters has to
 be checked behind the entry point, from the run's person actor. The
 [court-booking board](../boards/court-booking-demo-board.md) is the worked
-example.
+example; the [meeting poll](../boards/meeting-poll-demo-board.md) adds the
+actor's role, keeping what only the owner may do — calling a meeting,
+putting up its dates — to the owner.
 
 **Who hears what.** A notification raised with a person actor goes to **that
 person's bridges only** — not to other members, and not to the owner. One from
@@ -529,7 +537,8 @@ calls per minute — `HKP_COORDINATOR_MAX_MEMBERS` (200),
 ## Persistence, and what deliberately is not persisted
 
 Enabled with `COORDINATOR_ENABLED=true`. Boards are one JSON file each under
-`HKP_COORDINATOR_DATA_DIR` (default `~/.hkp/coordinator/boards`); setting that
+`HKP_COORDINATOR_DATA_DIR` (default `~/.hkp/node-<instance>/coordinator/boards`,
+inside the folder of the hkp-node playing coordinator); setting that
 to the empty string keeps them in memory instead.
 
 It persists `userId`, `boardName`, `createdAt`, `config`, whether the board was
@@ -634,7 +643,11 @@ Stopping the original and deploying the fork stays the user's call.
   folder per configured coordinator, its boards inside, labelled *Running in
   cloud* / *Stopped* / *Failed to start* (`views/start/useCloudBoardsFolder.ts`).
 - **Open one**: the Cloud Boards view on desktop (`views/cloud/index.tsx`), the
-  Cloud tab on mobile (`views/cloud/mobile/MobileCloudBoards.tsx`).
+  Cloud tab on mobile (`views/cloud/mobile/MobileCloudBoards.tsx`). On desktop
+  a board with a facade opens on it, with the playground's facade / split /
+  runtimes toggles in the toolbar: deployed, a board is used rather than
+  built, and what its facade does goes over the bridge as the owner's action.
+  The mobile tab has had the same through its App / Board toggle.
 - **Share one**: **Members** on an open board — an address and a name per
   entry, and *Copy link* (`views/cloud/MembersDialog.tsx`).
 - **Find what is shared with you**: *Shared with me* under each coordinator,

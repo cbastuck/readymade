@@ -625,6 +625,12 @@ export type Caller = {
   email?: string;
   /** What the board's member list calls them. */
   name?: string;
+  /**
+   * What they are to the board: its `owner`, or a `member` its list admitted.
+   * Stated by whoever admitted them — a coordinator for a deployed board, this
+   * app for the person signed in to it.
+   */
+  role?: "owner" | "member";
 };
 
 export type RuntimeApi = {

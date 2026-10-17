@@ -506,6 +506,19 @@ choice to the actions beside it as the item reference, not as `{ "$state": … }
 lands after the pass they run in, so a reference there would still send the *previous*
 choice.
 
+A row of buttons that pick should show which one is picked. Give each a `selected` value —
+from the item, so the query that lists the choices also says which is current
+(`CASE WHEN p.name = shown.name THEN 1 ELSE 0 END AS current`):
+
+```json
+{ "type": "button", "label": "{{item.label}}", "selected": "{{item.current}}", "actions": [ … ] }
+```
+
+The chosen one is drawn in the accent colour and announced as pressed. Leave `selected` off
+buttons that act rather than pick: a button that has the field is a choice, and one set to
+false is announced as a choice not made. Don't mark the current one in its label instead
+(a `•`, a `✓`) — that is easy to miss, and a screen reader reads it as text.
+
 A **board action** names no service
 at all — its subject is the board, and what it does is decided by the host showing
 the facade, not by the board:
@@ -607,6 +620,13 @@ array replaces the table, columns and all (a query result):
 sends). Reach for it whenever a board would otherwise come up inert waiting to be told something
 it could have assumed: seed the same value in the facade's `state` so widgets reading
 `{ "$state": … }` agree with what the field shows.
+
+`inputType` — `"date"`, `"time"` or `"datetime"` — swaps the field for a picker, so nobody has to
+know the format: a month to pick a day from (and an hour and minute, for `"datetime"`), drawn the
+same in every webview, or the browser's own field for a time. What is sent is what the browser's
+own inputs send: `2026-09-24`, `14:00`, or `2026-09-24T14:00` for a date with a time, in local
+time. A statement storing it with a space
+says so itself (`replace($starts, 'T', ' ')`); SQLite's date functions read both.
 
 **knob** — rotary control with optional markers and live readout:
 
@@ -770,9 +790,14 @@ board's member list calls the person:
 `$user` is for *showing* somebody who they are, and also resolves in a payload. It is never
 what a service should act on — anybody can put a name in a payload. A board several people use
 decides who is acting from the run's caller, which the server states: in `sql`, the reserved
-parameters `$caller_email`, `$caller_name` and `$caller_sub`. A facade's `process` action is
+parameters `$caller_email`, `$caller_name` and `$caller_sub`, and `$caller_role` — `owner` or
+`member` — for what only the board's owner may do. A facade's `process` action is
 callable by a member with any payload, so every rule that matters is checked in the service
 behind it, not in the widget.
+
+A facade has no per-viewer visibility, so a control only the owner may use is drawn from rows
+only the owner is sent: a `repeat` over a query ending `WHERE $caller_role = 'owner'` holds it,
+and a member's copy of that query is empty (see the Meeting Poll board's `organising`).
 
 Nothing is linked where there is nothing to click, so a widget whose source has not answered yet
 shows its placeholder as plain text rather than as a link that goes nowhere.
@@ -925,6 +950,18 @@ is not something a gap can say when the item has gaps of its own:
 whatever the panel is drawn on and so hold up in a light and a dark theme alike, where a
 fixed colour can only suit one of them. The bands are meant to touch, so set `gap` to 0 and
 let `padding` do the spacing. A `calendar` takes the same `even`/`odd` pair for its hours.
+
+`frame` draws a border round the items and caps their width, for rows that would otherwise
+each span a wide panel — a label at one edge, its button at the other:
+
+```json
+"frame": { "padding": 6, "radius": 8, "maxWidth": 440 }
+```
+
+It is drawn only while there are items, which is why it belongs on the repeat and not on a
+container around it: a source that sends somebody no rows — what only the owner may do — leaves
+them nothing, not an empty box. `maxWidth` is a cap rather than a share, so on a phone the group
+still uses the whole width.
 
 **Have the service return the items already decided.** One query that emits them carrying their
 own labels, their own payloads and whether they are on offer beats a facade trying to work any of

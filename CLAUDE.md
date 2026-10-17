@@ -54,7 +54,8 @@ a projection (the facade and what it reads), may ask only for what the facade as
 hosts no runtime. Every run carries its **caller** (`ProcessContext.caller`), stated by the
 server that verified the token and never read from a request; it survives the hop between
 a board's runtimes, and a service that needs to know who is acting asks the run — `sql`
-binds it as `$caller_email`, `$caller_name`, `$caller_sub`. The server's `ALLOWED_EMAILS`
+binds it as `$caller_email`, `$caller_name`, `$caller_sub`, and whether they are the
+board's owner or a member as `$caller_role`. The server's `ALLOWED_EMAILS`
 gates who may *own*; a board's list gates who may attach to that board.
 
 - `hkp-frontend/src/core/coordinator.ts` — the interface and the browser implementation
@@ -236,8 +237,8 @@ http://<host>:<port>/hosted/<mountId>
 These endpoints are unauthenticated by design — they exist for outside callers holding no
 token — so the unguessable id is what gates access. The id is **derived, not drawn**: an
 HMAC of the tenant, board, runtime and the mount's name (`mountName`, defaulting to the
-service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted per runtime at
-`~/.hkp/<node|python|cpp>/mount-secret`). A standalone hkp-rt mounts the same way;
+service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted per server at
+`~/.hkp/node-<instance>/mount-secret` or `~/.hkp/<python|cpp>/mount-secret`). A standalone hkp-rt mounts the same way;
 embedded in an app it still binds the port a board names (`docs/content/concepts/mounts.md`). The address therefore survives reloads, restarts and
 redeploys — an outside party configured with it by hand keeps working — while staying
 uncomputable without the key. Renaming a mount rotates that one address; rotating the

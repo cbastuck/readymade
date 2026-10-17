@@ -632,6 +632,33 @@ describe("the caller parameters", () => {
     ]);
   });
 
+  it("say what the run's person is to the board, never what the input says", async () => {
+    const roleIn = async (role: string | undefined) => {
+      const { svc, app } = create({
+        database: uniqueName(),
+        mode: "query",
+        statement: "SELECT $caller_role AS role",
+      });
+      (app as any).getAuthenticatedUser = () => OWNER;
+      (app as any).currentContext = () => ({
+        requestId: "r",
+        runId: "run-1",
+        actor: {
+          kind: "person",
+          sub: "auth0|anna",
+          ...(role ? { role } : {}),
+          expiresAt: Date.now() + 60_000,
+        },
+      });
+      const { rows } = await svc.process({ caller_role: "owner" });
+      return rows[0].role;
+    };
+
+    expect(await roleIn("member")).toBe("member");
+    expect(await roleIn("owner")).toBe("owner");
+    expect(await roleIn(undefined)).toBeNull();
+  });
+
   it("are NULL in a run that arrived naming nobody, though somebody is signed in here", async () => {
     // A timer on another runtime, a request at a mount: nobody began it, and
     // the owner whose browser runs the statement did not either.
