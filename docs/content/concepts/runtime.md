@@ -108,12 +108,23 @@ application bundle and granted once by the operating system.
 
 | Runtime | Started by | Listens on |
 |---|---|---|
-| hkp-node | `npx hkp-node`, a global install, or `docker run -p 8080:8080 cbastuck/hkp-node` | `PORT`, default 8080 |
+| hkp-node | `HKP_INSTANCE=<name> npx hkp-node`, a global install, or `docker run -p 8080:8080 -e HKP_INSTANCE=<name> cbastuck/hkp-node` | `PORT`, default 8080 |
 | hkp-python | `hkp-python` from its virtualenv | `PORT`, default 8080 |
 | hkp-rt | embedded in the Readymade app — it is already running when the app is | the app's `runtimePort`, off unless external access is enabled |
 
 hkp-node and hkp-python take the same environment, because they answer the same
 API: `PORT`, `HOST` (default `0.0.0.0`), `ALLOWED_ORIGINS`, and `EXTERNAL_HOST`.
+
+An hkp-node is also a named **instance**, and will not start without one:
+`HKP_INSTANCE` names the folder everything it keeps between runs lives in,
+`~/.hkp/node-<instance>/` — its boards' data, the tickets it reconnects to
+coordinators with, the boards it coordinates, its mount secret. A server's state
+is otherwise invisible to whoever starts the next one, and two servers on one
+machine would restore each other's tickets and deployed boards without a word.
+Restarting under the same name is the same server; a second server is refused
+while one is running as that instance. `hkp-node reset --yes` moves that folder
+aside — to `~/.hkp/node-<instance>.reset-<date>T<hh-mm>/` — so the next start
+begins with nothing restored.
 
 `EXTERNAL_HOST` is the one worth understanding, because it is not the address the
 server binds — it is the address the server *writes into what it hands back*: the

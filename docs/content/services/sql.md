@@ -262,7 +262,7 @@ pipeline rather than letting it act on rows that were never read.
 One file per board, under a directory the runtime owns:
 
 ```
-~/.hkp/node/db/<sha256(owner)>/<sha256(board)>.db
+~/.hkp/node-<instance>/db/<sha256(owner)>/<sha256(board)>.db
 ```
 
 `HKP_DB_DIR` moves the root; `HKP_DB_DIR=""` keeps

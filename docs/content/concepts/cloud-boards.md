@@ -537,7 +537,8 @@ calls per minute — `HKP_COORDINATOR_MAX_MEMBERS` (200),
 ## Persistence, and what deliberately is not persisted
 
 Enabled with `COORDINATOR_ENABLED=true`. Boards are one JSON file each under
-`HKP_COORDINATOR_DATA_DIR` (default `~/.hkp/coordinator/boards`); setting that
+`HKP_COORDINATOR_DATA_DIR` (default `~/.hkp/node-<instance>/coordinator/boards`,
+inside the folder of the hkp-node playing coordinator); setting that
 to the empty string keeps them in memory instead.
 
 It persists `userId`, `boardName`, `createdAt`, `config`, whether the board was
