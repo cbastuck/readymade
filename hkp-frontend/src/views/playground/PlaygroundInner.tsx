@@ -108,7 +108,10 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                                   : "var(--text, #1a1a1a)",
                               }}
                             >
-                              <Sparkles size={TOOLBAR_GROUP_ICON_SIZE} />
+                              <Sparkles
+                                size={TOOLBAR_GROUP_ICON_SIZE}
+                                strokeWidth={1.75}
+                              />
                             </button>
                             <RuntimeZoomToolbarButton />
                             <FacadeViewControls />

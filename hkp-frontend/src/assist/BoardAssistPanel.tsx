@@ -592,10 +592,12 @@ export default function BoardAssistPanel({
           <span>Board Assist</span>
           <button
             type="button"
+            className="hkp-assist-icon-btn"
             aria-label="Close Board Assist"
+            title="Close Board Assist"
             onClick={onClose}
           >
-            <X size={16} />
+            <X size={14} strokeWidth={1.75} />
           </button>
         </header>
         <div className="hkp-assist-controls">
@@ -617,7 +619,7 @@ export default function BoardAssistPanel({
                   }`}
                 </small>
               </span>
-              <ChevronDown size={16} aria-hidden="true" />
+              <ChevronDown size={14} strokeWidth={1.75} aria-hidden="true" />
             </summary>
             <div className="hkp-assist-model-settings-content">
               <label>
@@ -922,6 +924,7 @@ export default function BoardAssistPanel({
             ) : (
               <button
                 type="submit"
+                className="hkp-assist-primary"
                 disabled={!prompt.trim() || !model || !providerReady}
               >
                 Send

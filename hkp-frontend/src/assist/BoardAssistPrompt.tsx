@@ -93,16 +93,16 @@ export default function BoardAssistPrompt({
         height={height}
         initialWidth={0}
         readOnly={disabled}
-        style={{
-          border: "1px solid var(--border-mid, #d1d5db)",
-          borderRadius: 6,
-          marginBottom: 8,
-          overflow: "hidden",
-        }}
+        // The frame is the wrapper's (assist.css), so focus can recolour it.
+        style={{ border: "none" }}
         onChange={(updated) => onChange(updated ?? "")}
         onMount={mount}
         options={{
           ariaLabel: "Message to Board Assist",
+          // Prose, not code: the playground's typeface rather than Monaco's.
+          fontFamily: '"DM Sans", system-ui, sans-serif',
+          fontSize: 13,
+          lineHeight: 19,
           placeholder:
             "What would you like to build or change? \n \nType @ to reference the board.",
           automaticLayout: true,

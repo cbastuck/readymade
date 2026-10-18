@@ -128,6 +128,7 @@ export default function BoardAssistPreview({
           {!readOnly && (
             <button
               type="button"
+              className="hkp-assist-primary"
               disabled={busy}
               onClick={() => void applyDraft()}
             >
