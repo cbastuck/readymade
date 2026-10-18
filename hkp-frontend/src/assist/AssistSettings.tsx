@@ -1,226 +1,309 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  SettingsButton,
+  RemoveButton,
+  SettingsCard,
+  SettingsChoices,
   SettingsField,
   SettingsInput,
   SettingsNote,
   SettingsSection,
   SettingsStack,
 } from "../ui-components/settings/kit";
-import { saveAssistSettings, useAssistSettings } from "./settings";
+import {
+  AssistSettings as Settings,
+  readAssistSettings,
+  saveAssistSettings,
+  useAssistSettings,
+} from "./settings";
 import { normalizeMcpKnowledgeUrl } from "./mcpKnowledge";
 import { unencryptedRemote } from "./addresses";
 
+type TextField =
+  | "anthropicToken"
+  | "openAICompatibleToken"
+  | "openAICompatibleUrl"
+  | "openAIContextTokens"
+  | "mcpKnowledgeUrl";
+
+/** What a text field's draft becomes when it is saved, or why it cannot be. */
+function parse(field: TextField, draft: string): Partial<Settings> {
+  const value = draft.trim();
+  switch (field) {
+    case "openAICompatibleUrl": {
+      const url = new URL(value);
+      if (!["http:", "https:"].includes(url.protocol))
+        throw new Error("Use an HTTP or HTTPS API base URL.");
+      return { openAICompatibleUrl: value };
+    }
+    case "openAIContextTokens": {
+      const tokens = Number(value);
+      if (!Number.isInteger(tokens) || tokens < 4096)
+        throw new Error("Set a context size of at least 4096 tokens.");
+      return { openAIContextTokens: tokens };
+    }
+    case "mcpKnowledgeUrl":
+      if (value) normalizeMcpKnowledgeUrl(value);
+      return { mcpKnowledgeUrl: value };
+    default:
+      return { [field]: value };
+  }
+}
+
+/** Changing where requests go or who makes them invalidates the chosen model. */
+const resetsModel = new Set<TextField>([
+  "anthropicToken",
+  "openAICompatibleToken",
+  "openAICompatibleUrl",
+]);
+
+/**
+ * Board Assist's provider settings. Like Appearance, a change takes effect as
+ * it is made: a choice at once, a text field when it is left (or the dialog is
+ * closed) — not on every keystroke, since the panel re-queries models and
+ * clears its conversation when the provider or server changes.
+ */
 export default function AssistSettings() {
   const settings = useAssistSettings();
-  const [anthropic, setAnthropic] = useState(settings.anthropicToken);
-  const [openAI, setOpenAI] = useState(settings.openAICompatibleToken);
-  const [thinking, setThinking] = useState(settings.openAIThinking);
-  const [provider, setProvider] = useState(settings.provider);
-  const [contextTokens, setContextTokens] = useState(
-    settings.openAIContextTokens,
-  );
-  const [url, setUrl] = useState(settings.openAICompatibleUrl);
-  const [mcpUrl, setMcpUrl] = useState(settings.mcpKnowledgeUrl);
-  const [feedback, setFeedback] = useState("");
-  const save = () => {
+  const draftFrom = (from: Settings): Record<TextField, string> => ({
+    anthropicToken: from.anthropicToken,
+    openAICompatibleToken: from.openAICompatibleToken,
+    openAICompatibleUrl: from.openAICompatibleUrl,
+    openAIContextTokens: String(from.openAIContextTokens),
+    mcpKnowledgeUrl: from.mcpKnowledgeUrl,
+  });
+  const [drafts, setDrafts] = useState(() => draftFrom(settings));
+  const [errors, setErrors] = useState<Partial<Record<TextField, string>>>({});
+  const draftsRef = useRef(drafts);
+  draftsRef.current = drafts;
+
+  const persist = (patch: Partial<Settings>) => {
     try {
-      if (provider === "openai-compatible") {
-        const endpoint = new URL(url.trim());
-        if (!["http:", "https:"].includes(endpoint.protocol))
-          throw new Error("Use an HTTP or HTTPS API base URL.");
-        if (!Number.isInteger(contextTokens) || contextTokens < 4096)
-          throw new Error("Set a context size of at least 4096 tokens.");
-      }
-      if (mcpUrl.trim()) normalizeMcpKnowledgeUrl(mcpUrl);
-      saveAssistSettings({
-        provider,
-        openAIContextTokens: contextTokens,
-        openAIThinking: thinking,
-        anthropicToken: anthropic.trim(),
-        openAICompatibleToken: openAI.trim(),
-        openAICompatibleUrl: url.trim(),
-        mcpKnowledgeUrl: mcpUrl.trim(),
-        ...(anthropic.trim() !== settings.anthropicToken ||
-        provider !== settings.provider ||
-        url.trim() !== settings.openAICompatibleUrl
-          ? { model: "" }
-          : {}),
-      });
-      setFeedback("Saved on this device.");
-    } catch (error) {
-      setFeedback(
-        error instanceof Error ? error.message : "Could not save settings.",
-      );
+      saveAssistSettings(patch);
+      return true;
+    } catch {
+      return false;
     }
   };
+
+  /** Saves a field's draft if it differs from what is saved. */
+  const commit = (field: TextField, draft = draftsRef.current[field]) => {
+    let patch: Partial<Settings>;
+    try {
+      patch = parse(field, draft);
+    } catch (error) {
+      setErrors((current) => ({
+        ...current,
+        [field]: error instanceof Error ? error.message : "Invalid value.",
+      }));
+      return;
+    }
+    setErrors((current) => ({ ...current, [field]: undefined }));
+    const saved = readAssistSettings();
+    const changed = Object.entries(patch).some(
+      ([key, value]) => saved[key as keyof Settings] !== value,
+    );
+    if (!changed) return;
+    if (
+      !persist({ ...patch, ...(resetsModel.has(field) ? { model: "" } : {}) })
+    )
+      setErrors((current) => ({
+        ...current,
+        [field]: "Could not save on this device.",
+      }));
+  };
+
+  // Escape closes the dialog without blurring the focused field; keep what was
+  // typed. Invalid drafts are dropped, as they would be on blur.
+  useEffect(
+    () => () => {
+      for (const field of Object.keys(draftsRef.current) as TextField[]) {
+        try {
+          const patch = parse(field, draftsRef.current[field]);
+          const saved = readAssistSettings();
+          if (
+            Object.entries(patch).some(
+              ([key, value]) => saved[key as keyof Settings] !== value,
+            )
+          )
+            persist({
+              ...patch,
+              ...(resetsModel.has(field) ? { model: "" } : {}),
+            });
+        } catch {
+          /* Not valid: nothing to keep. */
+        }
+      }
+    },
+    [],
+  );
+
+  const text = (field: TextField) => ({
+    value: drafts[field],
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setDrafts((current) => ({ ...current, [field]: value }));
+      setErrors((current) => ({ ...current, [field]: undefined }));
+    },
+    onBlur: () => commit(field),
+    onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter") commit(field);
+    },
+    "aria-invalid": !!errors[field] || undefined,
+  });
+  const error = (field: TextField) =>
+    errors[field] && (
+      <p className="hkp-set-error" role="alert">
+        {errors[field]}
+      </p>
+    );
+  const removeToken = (field: "anthropicToken" | "openAICompatibleToken") => {
+    setDrafts((current) => ({ ...current, [field]: "" }));
+    persist({ [field]: "", model: "" });
+  };
+
   return (
     <SettingsStack>
-      <SettingsSection label="Provider">
-        <SettingsField label="Board Assist provider">
-          <select
-            className="hkp-set-input"
-            value={provider}
-            onChange={(event) => {
-              setProvider(event.target.value as typeof provider);
-              setFeedback("");
-            }}
-          >
-            <option value="anthropic">Anthropic</option>
-            <option value="openai-compatible">OpenAI compatible</option>
-          </select>
-        </SettingsField>
-      </SettingsSection>
-      <SettingsSection
-        label="Anthropic"
-        hint="Used by Board Assist. Models are queried from Anthropic with your API token."
-      >
-        <SettingsField label="API token">
-          <SettingsInput
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            value={anthropic}
-            onChange={(event) => {
-              setAnthropic(event.target.value);
-              setFeedback("");
-            }}
-            placeholder="sk-ant-…"
-          />
-        </SettingsField>
-      </SettingsSection>
-      <SettingsSection
-        label="OpenAI compatible"
-        hint="Connect to a local server such as llama.cpp, or a hosted OpenAI-compatible endpoint. The token is optional for servers without authentication."
-      >
-        <SettingsField label="API token">
-          <SettingsInput
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            value={openAI}
-            onChange={(event) => {
-              setOpenAI(event.target.value);
-              setFeedback("");
-            }}
-          />
-        </SettingsField>
-        <SettingsField label="API base URL">
-          <SettingsInput
-            type="url"
-            placeholder="http://127.0.0.1:8081/v1"
-            value={url}
-            onChange={(event) => {
-              setUrl(event.target.value);
-              setFeedback("");
-            }}
-          />
-        </SettingsField>
-        {unencryptedRemote(url) && (
-          <SettingsNote tone="warn">
-            This is plain HTTP to another machine. The API token, your prompts
-            and your board cross the network unencrypted. Use HTTPS unless the
-            network between you and the server is trusted.
-          </SettingsNote>
-        )}
-        <SettingsField label="Thinking mode (llama.cpp)">
-          <select
-            className="hkp-set-input"
-            value={thinking}
-            onChange={(event) => {
-              setThinking(event.target.value as typeof thinking);
-              setFeedback("");
-            }}
-          >
-            <option value="default">Server default</option>
-            <option value="off">Off</option>
-            <option value="on">On</option>
-          </select>
-        </SettingsField>
-        <p className="hkp-set-hint">
-          Off sends enable_thinking: false to llama.cpp. Leave Server default
-          for endpoints that do not support llama.cpp chat-template options.
-        </p>
-        <SettingsField label="Server context size (tokens)">
-          <SettingsInput
-            type="number"
-            min={4096}
-            step={1024}
-            value={contextTokens}
-            onChange={(event) => {
-              setContextTokens(Number(event.target.value));
-              setFeedback("");
-            }}
-          />
-        </SettingsField>
-        <p className="hkp-set-hint">
-          Match the server's context limit, for example 8192 for llama-server -c
-          8192. Larger boards may need a larger context on both sides.
-        </p>
-      </SettingsSection>
+      {/* One frame for the choice and what it switches between, so what follows
+          it — the knowledge server — reads as shared by both providers. */}
+      <SettingsCard>
+        <SettingsStack>
+          <SettingsSection label="Provider">
+            <SettingsChoices
+              options={[
+                { id: "anthropic", label: "Anthropic", sub: "Hosted API" },
+                {
+                  id: "openai-compatible",
+                  label: "OpenAI compatible",
+                  sub: "llama.cpp or any compatible server",
+                },
+              ]}
+              value={settings.provider}
+              onChange={(provider) => persist({ provider, model: "" })}
+            />
+          </SettingsSection>
+
+          {settings.provider === "anthropic" ? (
+            <SettingsSection
+              label="Anthropic"
+              hint="Models are queried from Anthropic with your API token."
+              action={
+                settings.anthropicToken && (
+                  <RemoveButton
+                    label="Remove Anthropic token"
+                    onClick={() => removeToken("anthropicToken")}
+                  />
+                )
+              }
+            >
+              <SettingsField label="API token">
+                <SettingsInput
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="sk-ant-…"
+                  {...text("anthropicToken")}
+                />
+              </SettingsField>
+            </SettingsSection>
+          ) : (
+            <>
+              <SettingsSection
+                label="Server"
+                hint="A local server such as llama.cpp, or a hosted OpenAI-compatible endpoint. The token is optional for servers without authentication."
+                action={
+                  settings.openAICompatibleToken && (
+                    <RemoveButton
+                      label="Remove server token"
+                      onClick={() => removeToken("openAICompatibleToken")}
+                    />
+                  )
+                }
+              >
+                <SettingsField label="API base URL">
+                  <SettingsInput
+                    type="url"
+                    spellCheck={false}
+                    placeholder="http://127.0.0.1:8081/v1"
+                    {...text("openAICompatibleUrl")}
+                  />
+                </SettingsField>
+                {error("openAICompatibleUrl")}
+                {unencryptedRemote(drafts.openAICompatibleUrl) && (
+                  <SettingsNote tone="warn">
+                    This is plain HTTP to another machine. The API token, your
+                    prompts and your board cross the network unencrypted. Use
+                    HTTPS unless the network between you and the server is
+                    trusted.
+                  </SettingsNote>
+                )}
+                <SettingsField label="API token">
+                  <SettingsInput
+                    type="password"
+                    autoComplete="off"
+                    spellCheck={false}
+                    {...text("openAICompatibleToken")}
+                  />
+                </SettingsField>
+              </SettingsSection>
+              <SettingsSection
+                label="Thinking mode (llama.cpp)"
+                hint="Off sends enable_thinking: false to llama.cpp, On sends true. Leave Server default for endpoints without llama.cpp's chat-template options."
+              >
+                <SettingsChoices
+                  options={[
+                    { id: "default", label: "Server default" },
+                    { id: "off", label: "Off" },
+                    { id: "on", label: "On" },
+                  ]}
+                  value={settings.openAIThinking}
+                  onChange={(openAIThinking) => persist({ openAIThinking })}
+                />
+              </SettingsSection>
+              <SettingsSection
+                label="Server context size"
+                hint="Match the server's context limit, for example 8192 for llama-server -c 8192. Larger boards may need a larger context on both sides."
+              >
+                <SettingsField label="Tokens">
+                  <SettingsInput
+                    type="number"
+                    min={4096}
+                    step={1024}
+                    {...text("openAIContextTokens")}
+                  />
+                </SettingsField>
+                {error("openAIContextTokens")}
+              </SettingsSection>
+            </>
+          )}
+        </SettingsStack>
+      </SettingsCard>
+
       <SettingsSection
         label="Knowledge server"
-        hint="Optional MCP endpoint for richer, version-labelled Readymade knowledge. Board Assist falls back to its bundled documentation whenever this server is absent or unavailable."
+        hint="Optional MCP endpoint for richer, version-labelled Readymade knowledge, used with either provider. Leave it empty to use only the documentation bundled with this app; Board Assist also falls back to that whenever the server is unavailable."
       >
         <SettingsField label="MCP server URL">
           <SettingsInput
             type="url"
+            spellCheck={false}
             placeholder="http://127.0.0.1:8787/mcp"
-            value={mcpUrl}
-            onChange={(event) => {
-              setMcpUrl(event.target.value);
-              setFeedback("");
-            }}
+            {...text("mcpKnowledgeUrl")}
           />
         </SettingsField>
-        {unencryptedRemote(mcpUrl) && (
+        {error("mcpKnowledgeUrl")}
+        {unencryptedRemote(drafts.mcpKnowledgeUrl) && (
           <SettingsNote tone="warn">
             This is plain HTTP to another machine. Search terms and boards sent
             for validation cross the network unencrypted.
           </SettingsNote>
         )}
-        <p className="hkp-set-hint">
-          Leave empty to use only the documentation bundled with this app.
-          The URL is stored on this device, never in a board.
-        </p>
       </SettingsSection>
+
       <SettingsNote>
-        Tokens are stored in this browser or app's local storage on this device,
-        outside board files. Requests go directly to the selected provider or
-        server. Your prompts, board configuration and relevant documentation are
-        sent to the provider: the whole board, or the selected runtime with an
-        outline of the rest, and asset contents only when you include them.
-        When MCP knowledge is configured, search terms,
-        requested paths and richer tool arguments—including a board passed for
-        validation—are sent to that endpoint, but provider API tokens are not.
-        Applying a board can start services and request device permissions.
+        Tokens and URLs stay in this device's local storage, never in a board.
+        Your prompt and board context go to the selected provider — see the
+        Board assistant documentation for exactly what is sent where.
       </SettingsNote>
-      <div className="hkp-set-inline">
-        <SettingsButton onClick={save}>Save</SettingsButton>
-        <SettingsButton
-          onClick={() => {
-            setAnthropic("");
-            setOpenAI("");
-            try {
-              saveAssistSettings({
-                anthropicToken: "",
-                openAICompatibleToken: "",
-                model: "",
-              });
-              setFeedback("Tokens removed.");
-            } catch {
-              setFeedback("Could not remove tokens.");
-            }
-          }}
-        >
-          Remove tokens
-        </SettingsButton>
-      </div>
-      {feedback && (
-        <p role="status" className="hkp-set-hint">
-          {feedback}
-        </p>
-      )}
     </SettingsStack>
   );
 }

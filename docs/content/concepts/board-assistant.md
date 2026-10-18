@@ -6,9 +6,12 @@ stays available while the panel is hidden; it is not saved in the board file.
 
 ## Setup
 
-Open **Settings → AI assistant**, in either the website or the native Readymade
-app. Choose **Anthropic** or **OpenAI compatible**, enter the provider's settings,
-and save. The assistant panel also has a **Provider** selector. Switching providers
+Open **Settings → Board Assist**, in either the website or the native Readymade
+app. Choose **Anthropic** or **OpenAI compatible**; only the chosen provider's
+settings are shown. As in Appearance, changes take effect as you make them — a
+choice at once, a text field when you leave it — and an invalid value is
+explained under its field instead of being saved. Each saved token can be
+removed with the × beside its section. The assistant panel also has a **Provider** selector. Switching providers
 or API servers clears the conversation so a previous provider's history is not
 sent to a different server. The board is kept; the conversation's revert
 checkpoint goes with it.
@@ -22,7 +25,7 @@ llama.cpp server does not need a token. For example:
 - API token: empty unless the server was launched with authentication
 - Server context size: **8192** when using `llama-server -c 8192`
 
-Save, then select **OpenAI compatible** in the panel. It queries `/v1/models`
+Then select **OpenAI compatible** in the panel. It queries `/v1/models`
 and lists the returned model IDs, such as `Bonsai-27B-Q1_0.gguf`. **Refresh models**
 repeats that query. Requests use `/v1/chat/completions` with JSON output mode;
 the model and its chat template must support following instructions and producing
@@ -88,7 +91,7 @@ contracts, find compatible services and examples, inspect bounded source
 excerpts, and statically validate a board. Each result carries build and commit
 provenance.
 
-To use it with Board Assist, run the server and set **Settings → AI assistant →
+To use it with Board Assist, run the server and set **Settings → Board Assist →
 Knowledge server → MCP server URL**, for example
 `http://127.0.0.1:8787/mcp`. The URL is device-local configuration and is not
 written into boards. Both providers can consume the server's search and
@@ -161,7 +164,7 @@ documentation retrieved by the assistant are sent to the selected provider or
 API server; the line under the prompt says what the next request carries and
 where it goes. Service state can include credentials entered directly; use
 secret references where possible — a `{{secret.…}}` reference is sent, never
-its value. Credentials from **AI assistant** settings are used for
+its value. Credentials from **Board Assist** settings are used for
 authentication and are not added to the model's conversation.
 
 ## Review, apply and revert

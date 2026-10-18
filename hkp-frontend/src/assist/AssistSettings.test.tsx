@@ -3,66 +3,81 @@ import { beforeEach, expect, it } from "vitest";
 import AssistSettings from "./AssistSettings";
 import { readAssistSettings, saveAssistSettings } from "./settings";
 beforeEach(() => localStorage.clear());
-it("saves provider tokens outside boards and preserves unrelated preferences", () => {
+
+function type(label: string, value: string) {
+  const field = screen.getByLabelText(label);
+  fireEvent.change(field, { target: { value } });
+  return field;
+}
+
+it("saves a token when its field is left, outside boards, keeping other preferences", () => {
   saveAssistSettings({ model: "model-before", effort: "high" });
   render(<AssistSettings />);
-  const fields = screen.getAllByLabelText("API token");
-  fireEvent.change(fields[0], { target: { value: " test-anthropic " } });
-  fireEvent.change(fields[1], { target: { value: " test-compatible " } });
-  fireEvent.change(screen.getByLabelText("MCP server URL"), {
-    target: { value: " http://127.0.0.1:8787/mcp " },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  const token = type("API token", " test-anthropic ");
+  expect(readAssistSettings().anthropicToken).toBe("");
+  fireEvent.blur(token);
   expect(readAssistSettings()).toMatchObject({
     anthropicToken: "test-anthropic",
-    openAICompatibleToken: "test-compatible",
-    mcpKnowledgeUrl: "http://127.0.0.1:8787/mcp",
     effort: "high",
     model: "",
   });
-  expect(screen.getByRole("status").textContent).toContain("Saved");
-  expect((fields[0] as HTMLInputElement).type).toBe("password");
+  expect((token as HTMLInputElement).type).toBe("password");
 });
-it("rejects unsafe MCP endpoint forms", () => {
+
+it("shows only the chosen provider's settings and saves the choice at once", () => {
   render(<AssistSettings />);
-  fireEvent.change(screen.getByLabelText("MCP server URL"), {
-    target: { value: "http://user:secret@127.0.0.1:8787/mcp" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Save" }));
-  expect(screen.getByRole("status").textContent).toContain(
-    "without credentials",
-  );
-  expect(readAssistSettings().mcpKnowledgeUrl).toBe("");
-});
-it("removes both saved tokens", () => {
-  saveAssistSettings({
-    anthropicToken: "one",
-    openAICompatibleToken: "two",
-    model: "some-model",
-  });
-  render(<AssistSettings />);
-  fireEvent.click(screen.getByRole("button", { name: "Remove tokens" }));
+  expect(screen.queryByLabelText("API base URL")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: /OpenAI compatible/ }));
+  expect(readAssistSettings().provider).toBe("openai-compatible");
+  expect(screen.getByLabelText("API base URL")).toBeTruthy();
+  expect(screen.getAllByLabelText("API token")).toHaveLength(1);
+
+  fireEvent.blur(type("API base URL", "http://127.0.0.1:8081/v1"));
+  fireEvent.click(screen.getByRole("button", { name: "Off" }));
+  fireEvent.keyDown(type("Tokens", "16384"), { key: "Enter" });
   expect(readAssistSettings()).toMatchObject({
-    anthropicToken: "",
-    openAICompatibleToken: "",
-    model: "",
+    openAICompatibleUrl: "http://127.0.0.1:8081/v1",
+    openAIThinking: "off",
+    openAIContextTokens: 16384,
   });
 });
-it("warns about plain HTTP endpoints on another machine without refusing them", () => {
+
+it("rejects invalid values in place without saving them", () => {
+  saveAssistSettings({ provider: "openai-compatible" });
   render(<AssistSettings />);
-  fireEvent.change(screen.getByLabelText("API base URL"), {
-    target: { value: "http://192.168.1.20:8081/v1" },
-  });
+  fireEvent.blur(type("MCP server URL", "http://user:secret@127.0.0.1:8787/mcp"));
+  expect(screen.getByRole("alert").textContent).toContain("without credentials");
+  expect(readAssistSettings().mcpKnowledgeUrl).toBe("");
+  fireEvent.blur(type("Tokens", "1024"));
+  expect(screen.getByText(/at least 4096 tokens/)).toBeTruthy();
+  expect(readAssistSettings().openAIContextTokens).toBe(8192);
+});
+
+it("keeps what was typed when the dialog closes without leaving the field", () => {
+  const view = render(<AssistSettings />);
+  type("MCP server URL", " http://127.0.0.1:8787/mcp ");
+  view.unmount();
+  expect(readAssistSettings().mcpKnowledgeUrl).toBe("http://127.0.0.1:8787/mcp");
+});
+
+it("removes a saved token from its section", () => {
+  saveAssistSettings({ anthropicToken: "one", model: "some-model" });
+  render(<AssistSettings />);
+  fireEvent.click(screen.getByRole("button", { name: "Remove Anthropic token" }));
+  expect(readAssistSettings()).toMatchObject({ anthropicToken: "", model: "" });
+  expect((screen.getByLabelText("API token") as HTMLInputElement).value).toBe("");
+  expect(screen.queryByRole("button", { name: "Remove Anthropic token" })).toBeNull();
+});
+
+it("warns about plain HTTP endpoints on another machine without refusing them", () => {
+  saveAssistSettings({ provider: "openai-compatible" });
+  render(<AssistSettings />);
+  type("API base URL", "http://192.168.1.20:8081/v1");
   expect(screen.getByText(/API token, your prompts/)).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("MCP server URL"), {
-    target: { value: "http://knowledge.lan:8787/mcp" },
-  });
+  fireEvent.blur(type("MCP server URL", "http://knowledge.lan:8787/mcp"));
   expect(screen.getByText(/Search terms and boards/)).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("API base URL"), {
-    target: { value: "http://127.0.0.1:8081/v1" },
-  });
+  type("API base URL", "http://127.0.0.1:8081/v1");
   expect(screen.queryByText(/API token, your prompts/)).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Save" }));
   expect(readAssistSettings().mcpKnowledgeUrl).toBe(
     "http://knowledge.lan:8787/mcp",
   );
