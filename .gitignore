@@ -23,3 +23,8 @@ cmake-output.log
 # which is the committed record.
 /licenses/*
 !/licenses/index.json
+
+# Build output of readymade-mcp, left behind by checkouts of branches that
+# carry it; the package itself ignores these once it is on the branch.
+/readymade-mcp/dist/
+/readymade-mcp/node_modules/

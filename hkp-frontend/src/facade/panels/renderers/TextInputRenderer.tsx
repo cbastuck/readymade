@@ -5,6 +5,24 @@ import { useVault } from "hkp-frontend/src/VaultContext";
 import { vaultSet } from "hkp-frontend/src/vault";
 import { useWidgetActions } from "../../useWidgetActions";
 import { usePressFeedback } from "../../pressFeedback";
+import { DateTimePicker } from "./DateTimePicker";
+
+/** The HTML input a widget asks for, where it is one the browser draws. */
+function htmlInputType(widget: TextInputWidget): string {
+  if (widget.secret) {
+    return "password";
+  }
+  return widget.inputType === "time" ? "time" : "text";
+}
+
+/** Whether a widget asks for a day, which is picked from a month. */
+function picksDay(widget: TextInputWidget): boolean {
+  return (
+    !widget.secret &&
+    !widget.multiline &&
+    (widget.inputType === "date" || widget.inputType === "datetime")
+  );
+}
 
 export function TextInputRenderer({
   widget,
@@ -73,7 +91,14 @@ export function TextInputRenderer({
         </label>
       )}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-        {widget.multiline ? (
+        {picksDay(widget) ? (
+          <DateTimePicker
+            value={value}
+            onChange={setValue}
+            withTime={widget.inputType === "datetime"}
+            placeholder={widget.placeholder}
+          />
+        ) : widget.multiline ? (
           <textarea
             value={value}
             rows={widget.rows ?? 4}
@@ -103,7 +128,7 @@ export function TextInputRenderer({
           />
         ) : (
           <input
-            type={widget.secret ? "password" : "text"}
+            type={htmlInputType(widget)}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => {

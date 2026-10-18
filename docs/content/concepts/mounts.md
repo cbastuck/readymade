@@ -53,7 +53,7 @@ carries no user identifier that a public URL would otherwise leak.
 The id is an HMAC of everything that identifies the mount — the owner, the
 board, the runtime, and what the mount is called (`mountName`, defaulting to the
 service's uuid) — keyed by a secret only the server holds (`HKP_MOUNT_SECRET`,
-otherwise persisted per runtime at `~/.hkp/node/mount-secret` or
+otherwise persisted per server at `~/.hkp/node-<instance>/mount-secret` or
 `~/.hkp/python/mount-secret`).
 
 Random ids were the first implementation. They were just as unguessable, but the

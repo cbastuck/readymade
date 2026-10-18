@@ -213,6 +213,13 @@ know who is calling asks the run, which the server states — see
 [SQL: who is calling](../services/sql.md#who-is-calling). Nothing a facade puts
 in a payload proves it.
 
+And it can keep a part of itself **for the board's owner**: a widget, a
+container, a panel, a tab or a notice carrying `"visibleTo": "owner"`. On a
+deployed, shared board the coordinator leaves it out of the facade a member is
+sent, so a member is not shown it, cannot act through it, and is not sent what
+it reads; anywhere else whoever has the board open is its owner and sees it
+all ([Cloud boards](./cloud-boards.md#sharing-a-board-members)).
+
 ---
 
 ## Who owns a board

@@ -159,6 +159,46 @@ describe("opening a shared board", () => {
     expect(screen.queryByText("anna-account")).toBeNull();
   });
 
+  it("does what the facade does on opening, once the board is there to do it on", async () => {
+    // What a board reads on opening — a poll's meetings, a day's bookings —
+    // is the member's first view. Asked before the board was hydrated, it
+    // found no service and went nowhere, and there was nothing on screen to
+    // tap that would ask again.
+    const bridge = await open();
+    const withInit = {
+      ...snapshot(),
+      config: {
+        ...PROJECTION,
+        facade: {
+          ...PROJECTION.facade,
+          init: [
+            {
+              type: "process",
+              serviceUuid: "book",
+              payload: { intent: "none" },
+            },
+          ],
+        },
+      },
+    };
+
+    bridge.deliver(withInit);
+
+    await waitFor(() =>
+      expect(bridge.last("processService")).toMatchObject({
+        runtimeId: "node",
+        serviceUuid: "book",
+        payload: { intent: "none" },
+      }),
+    );
+    // Once, not again with every snapshot.
+    bridge.deliver({ ...withInit, seq: 2 });
+    await waitFor(() => expect(screen.getByText("Book")).toBeTruthy());
+    expect(bridge.sent.filter((m) => m.type === "processService")).toHaveLength(
+      1,
+    );
+  });
+
   it("sends what the facade does over the bridge, and draws what comes back", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -197,7 +237,9 @@ describe("opening a shared board", () => {
     bridge.end(4404);
 
     await waitFor(() =>
-      expect(screen.getByText("This board is not shared with you")).toBeTruthy(),
+      expect(
+        screen.getByText("This board is not shared with you"),
+      ).toBeTruthy(),
     );
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect(sockets.length).toBe(1);

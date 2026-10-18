@@ -50,6 +50,9 @@ export function personRun(user: User | null | undefined): ProcessContext {
             ? { email: user.email.trim().toLowerCase() }
             : {}),
           ...(user.username ? { name: user.username } : {}),
+          // The runtimes this app hosts are its signed-in person's own; a
+          // member's run arrives from a coordinator, saying so.
+          role: "owner",
         }
       : { kind: "local" },
   };
@@ -105,6 +108,9 @@ function statedCaller(wire: unknown): Caller | undefined {
       ? { email: wire.email }
       : {}),
     ...(typeof wire.name === "string" && wire.name ? { name: wire.name } : {}),
+    ...(wire.role === "owner" || wire.role === "member"
+      ? { role: wire.role }
+      : {}),
   };
 }
 

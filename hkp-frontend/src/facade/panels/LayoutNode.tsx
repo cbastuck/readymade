@@ -120,9 +120,26 @@ export function LayoutNode({
         };
 
     const stripe = repeat.stripe;
+    const frame = repeat.frame;
+    if (frame && items.length === 0) {
+      return null;
+    }
 
     return (
-      <div style={containerStyle}>
+      <div
+        style={
+          frame
+            ? {
+                ...containerStyle,
+                border: "1px solid hsl(var(--border))",
+                borderRadius: frame.radius ?? 8,
+                padding: frame.padding ?? 8,
+                maxWidth: frame.maxWidth,
+                boxSizing: "border-box",
+              }
+            : containerStyle
+        }
+      >
         {items.map((it, i) => {
           const resolved = interpolateTemplate(repeat.template, it) as LayoutItem;
           const node = (

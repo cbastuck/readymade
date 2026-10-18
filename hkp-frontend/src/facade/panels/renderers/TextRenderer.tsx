@@ -41,6 +41,25 @@ const TONES: Record<NonNullable<TextWidget["tone"]>, string> = {
   error: "#ef4444",
 };
 
+const VALUE_REF = "{{value}}";
+
+/**
+ * Where the link goes: `href` as written, or with `{{value}}` standing for the
+ * value shown — the whole address when it is the whole of `href`, a part of
+ * one (encoded) otherwise. An address that came from a value is only a link if
+ * it is a web address: what a service says is not the board's to vouch for.
+ */
+function linkTarget(href: string | undefined, text: string): string | undefined {
+  if (!href || !href.includes(VALUE_REF)) {
+    return href;
+  }
+  const target =
+    href === VALUE_REF
+      ? text.trim()
+      : href.split(VALUE_REF).join(encodeURIComponent(text.trim()));
+  return /^https?:\/\//i.test(target) ? target : undefined;
+}
+
 function CopyButton({ value }: { value: string }) {
   const press = usePressFeedback("neutral", !value);
   const [copied, setCopied] = useState(false);
@@ -111,7 +130,8 @@ export function TextRenderer({
   // A link only where there is both somewhere to go and something to click.
   // Offering a stood-in placeholder as a link is worse than plain text: it
   // dresses up an absent value as something to open.
-  const links = !!widget.href && !!shown.trim() && !standingIn;
+  const href = linkTarget(widget.href, isPlaceholder ? "" : (text ?? ""));
+  const links = !!href && !!shown.trim() && !standingIn;
 
   const body = (
     <div
@@ -150,7 +170,7 @@ export function TextRenderer({
 
   const linked = links ? (
     <a
-      href={widget.href}
+      href={href}
       target="_blank"
       rel="noreferrer noopener"
       // The colour is the body's, so that a tone the board set still applies;
