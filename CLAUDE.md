@@ -93,6 +93,10 @@ data on its output. Services:
 - Expose an optional **UI panel** (ServiceUI) for interactive configuration; a generic panel
   is shown for services that don't provide one
 - Can **emit data autonomously** without receiving input (e.g. Timer)
+- **Opens a file a board names only inside the folders its runtime gives boards** — on
+  hkp-rt through `files.h` (`files::resolve`, `files::resolveIn`), with a relative path
+  landing in the default folder; a test fails on a file opened any other way
+  (`docs/content/concepts/runtime.md`, "Where a board may read and write files")
 
 For browser services, the service and its UI share the same JS process — state sync is a
 direct method call. For remote runtimes (Node, Python, C++), the UI communicates via REST;

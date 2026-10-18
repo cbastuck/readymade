@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Folder,
   Globe,
   Info,
   KeyRound,
@@ -323,6 +324,22 @@ function AccessTab() {
     });
   };
 
+  // Chosen with the folder picker rather than typed. The backend drops a
+  // folder holding the app's own data, so what is shown is what is in force.
+  const fileFolders = settings.fileFolders ?? [];
+
+  const addFolder = async () => {
+    const backend = await getBackend();
+    const picked = await backend.pickFolder();
+    if (picked) {
+      await persist({ fileFolders: [...fileFolders, picked] });
+    }
+  };
+
+  const removeFolder = (folder: string) => {
+    void persist({ fileFolders: fileFolders.filter((f) => f !== folder) });
+  };
+
   return (
     <SettingsStack>
       <SettingsSection label="Local network">
@@ -420,6 +437,42 @@ function AccessTab() {
             <SettingsButton onClick={addOrigin} disabled={!newOrigin.trim()}>
               <Plus size={14} />
               Add
+            </SettingsButton>
+          </div>
+        </SettingsSection>
+      )}
+
+      {settings.defaultFileFolder !== undefined && (
+        <SettingsSection
+          label="Folders boards may use"
+          hint="The only places a board on this computer's runtime may read or write files. A board that names a relative path uses the first one. The folder holding Readymade's own data, and any folder around it such as your home folder, cannot be added. Takes effect immediately."
+        >
+          <SettingsList>
+            <SettingsRow
+              icon={<Folder size={14} />}
+              title={settings.defaultFileFolder}
+              subtitle="Default"
+              mono
+            />
+            {fileFolders.map((folder) => (
+              <SettingsRow
+                key={folder}
+                icon={<Folder size={14} />}
+                title={folder}
+                mono
+                trailing={
+                  <RemoveButton
+                    label={`Remove ${folder}`}
+                    onClick={() => removeFolder(folder)}
+                  />
+                }
+              />
+            ))}
+          </SettingsList>
+          <div className="hkp-set-inline">
+            <SettingsButton onClick={() => void addFolder()}>
+              <Plus size={14} />
+              Add folder…
             </SettingsButton>
           </div>
         </SettingsSection>

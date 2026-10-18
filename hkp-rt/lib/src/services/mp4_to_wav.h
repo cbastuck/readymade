@@ -17,6 +17,9 @@
 //   When outputDir is empty (default) the WAV is written next to the source
 //   MP4 file, replacing its extension.
 //
+//   The input path and outputDir lie inside a folder this server gives boards
+//   (files.h); a relative one is taken from the default folder.
+//
 // DEPENDENCIES
 //   • fdk-aac   — AAC decoder (vcpkg, proper static library)
 //   • minimp4   — MP4/ISOBMFF demuxer (single-header, CPM)
@@ -30,12 +33,12 @@
 #pragma once
 
 #include <cstdint>
-#include <cstdio>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
 
+#include <files.h>
 #include <types/types.h>
 #include <service.h>
 #include <types/data.h>
@@ -130,20 +133,26 @@ public:
       return Null();
     }
 
-    const std::string inputPath  = (*j)["path"].get<std::string>();
-    const std::string outputPath = deriveOutputPath(inputPath);
+    std::string problem;
+    const auto inputPath = files::resolve((*j)["path"].get<std::string>(), problem);
+    const auto outputPath = inputPath ? deriveOutputPath(*inputPath, problem) : std::nullopt;
+    if (!outputPath)
+    {
+      std::cerr << "[mp4-to-wav] " << problem << "\n";
+      return json{{"error", problem}};
+    }
 
     try
     {
       unsigned int sampleRate = 44100;
       unsigned int channels   = 2;
 
-      auto pcm = decodeMp4ToPcm(inputPath.c_str(), sampleRate, channels);
+      auto pcm = decodeMp4ToPcm(inputPath->string().c_str(), sampleRate, channels);
       if (pcm.empty())
-        throw std::runtime_error("no PCM samples decoded from: " + inputPath);
+        throw std::runtime_error("no PCM samples decoded from: " + inputPath->string());
 
-      writeWav(outputPath, pcm, sampleRate, channels);
-      return json{{"path", outputPath}};
+      writeWav(*outputPath, pcm, sampleRate, channels);
+      return json{{"path", outputPath->string()}};
     }
     catch (const std::exception& e)
     {
@@ -222,53 +231,29 @@ private:
     return buf;
   }
 
-  std::string deriveOutputPath(const std::string& inputPath) const
+  std::optional<files::Path> deriveOutputPath(const files::Path& inputPath, std::string& problem) const
   {
-    const std::filesystem::path p(inputPath);
-    const std::filesystem::path dir = m_outputDir.empty()
-        ? p.parent_path()
-        : std::filesystem::path(m_outputDir);
-    return (dir / p.stem()).string() + ".wav";
+    const auto dir = files::resolve(m_outputDir.empty() ? inputPath.path().parent_path().string() : m_outputDir,
+                                    problem);
+    if (!dir)
+    {
+      return std::nullopt;
+    }
+    return files::resolveIn(*dir, inputPath.path().stem().string() + ".wav", problem);
   }
 
   // Writes a minimal RIFF/WAV file for int16_t interleaved PCM.
   // Throws std::runtime_error if the file cannot be opened.
-  static void writeWav(const std::string&        path,
+  static void writeWav(const files::Path&          path,
                        const std::vector<int16_t>& pcm,
-                       unsigned int              sampleRate,
-                       unsigned int              channels)
+                       unsigned int                sampleRate,
+                       unsigned int                channels)
   {
-    const auto     dataBytes  = static_cast<uint32_t>(pcm.size() * sizeof(int16_t));
-    const uint16_t blockAlign = static_cast<uint16_t>(channels * sizeof(int16_t));
-    const uint32_t byteRate   = sampleRate * blockAlign;
-
-    FILE* fp = std::fopen(path.c_str(), "wb");
-    if (!fp)
-      throw std::runtime_error("failed to open WAV output: " + path);
-
-    // Lambdas write little-endian values (x86/ARM are natively LE).
-    const auto w32 = [fp](uint32_t v) { std::fwrite(&v, 4, 1, fp); };
-    const auto w16 = [fp](uint16_t v) { std::fwrite(&v, 2, 1, fp); };
-    const auto wcc = [fp](const char* s) { std::fwrite(s, 1, 4, fp); };
-
-    // ── RIFF chunk ──────────────────────────────────────────────────────────
-    wcc("RIFF");  w32(36 + dataBytes);   // overall file size − 8 bytes
-    wcc("WAVE");
-
-    // ── fmt  sub-chunk (16 bytes, PCM) ──────────────────────────────────────
-    wcc("fmt ");  w32(16);               // sub-chunk size
-    w16(1);                              // PCM (uncompressed)
-    w16(static_cast<uint16_t>(channels));
-    w32(sampleRate);
-    w32(byteRate);
-    w16(blockAlign);
-    w16(16);                             // bits per sample
-
-    // ── data sub-chunk ──────────────────────────────────────────────────────
-    wcc("data");  w32(dataBytes);
-    std::fwrite(pcm.data(), sizeof(int16_t), pcm.size(), fp);
-
-    std::fclose(fp);
+    const auto wav = writeWavToMemory(pcm, sampleRate, channels);
+    auto file = files::output(path, std::ios::binary | std::ios::trunc);
+    if (!file)
+      throw std::runtime_error("failed to open WAV output: " + path.string());
+    file.write(reinterpret_cast<const char*>(wav.data()), static_cast<std::streamsize>(wav.size()));
   }
 
   // ── State ─────────────────────────────────────────────────────────────────

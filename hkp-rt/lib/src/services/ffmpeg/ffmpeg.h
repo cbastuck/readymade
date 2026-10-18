@@ -14,6 +14,9 @@
  * Arrays: service-dependent
  * Binary: supported (service-dependent)
  * MixedData: native in runtime (service-dependent usage)
+ *
+ * `outputFolder`, and the `input` and `output` a request names, lie inside a
+ * folder this server gives boards (files.h); `input` is a file, never a URL.
  */
 namespace hkp {
 

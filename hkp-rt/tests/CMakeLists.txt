@@ -70,6 +70,7 @@ add_executable(hkp-rt-service-tests
   link_socket.test.cpp
   coordinator_links.test.cpp
   mounts.test.cpp
+  service_files.test.cpp
 )
 target_include_directories(hkp-rt-service-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lib/src)
 target_link_libraries(hkp-rt-service-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2::Catch2WithMain)
@@ -82,8 +83,12 @@ add_executable(hkp-rt-auth-tests
   standalone_config.test.cpp
   origins.test.cpp
   server_origins.test.cpp
+  files.test.cpp
+  files_sources.test.cpp
 )
 target_link_libraries(hkp-rt-auth-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2::Catch2WithMain)
+# The source scan in files_sources.test.cpp reads the library's own files.
+target_compile_definitions(hkp-rt-auth-tests PRIVATE HKP_RT_LIB_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../lib")
 target_compile_features(hkp-rt-auth-tests PRIVATE cxx_std_20)
 hkp_ad_hoc_sign_target(hkp-rt-auth-tests)
 catch_discover_tests(hkp-rt-auth-tests)

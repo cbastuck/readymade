@@ -50,9 +50,9 @@ The hkp-rt Cache caches the result of downstream pipeline processing (i.e. the r
 |---|---|---|---|
 | `key` | `string` | `""` | Inja template evaluated against the input to produce the cache key |
 | `outputKey` | `string` | `"path"` | Key under which the cached file path is returned |
-| `persistRoot` | `string` | `""` | Directory path for on-disk persistence; empty = memory only |
+| `persistRoot` | `string` | `""` | Folder for on-disk persistence, inside the folders boards are given ([Filesystem](./filesystem.md#where-the-files-are)); a relative path is taken from the default one. Empty, or outside them, = memory only |
 | `persistMode` | `string` | `""` | `"sha"` (default) or `"filename"` — controls how the on-disk filename is derived |
-| `filenameTemplate` | `string` | `""` | Inja template for the filename when `persistMode` is `"filename"` |
+| `filenameTemplate` | `string` | `""` | Inja template for the filename when `persistMode` is `"filename"`. What it renders stays inside `persistRoot`, whatever the input puts in it |
 | `cacheDuration` | `string` | `""` | Max age before a cached entry is considered stale (e.g. `"24h"`, `"7d"`) |
 | `excluded` | `string[]` | `[]` | List of regex patterns; keys matching any pattern bypass the cache |
 
@@ -83,7 +83,7 @@ The hkp-rt Cache caches the result of downstream pipeline processing (i.e. the r
   "serviceId": "cache",
   "config": {
     "key": "{{ params.url }}",
-    "persistRoot": "/tmp/hkp-cache",
+    "persistRoot": "http-cache",
     "cacheDuration": "24h"
   }
 }

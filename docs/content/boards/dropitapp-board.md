@@ -6,7 +6,9 @@ runtime on your own machine, and hand the phone its interface as a QR code.
 ## What it does
 
 It shows a QR code. Scan it with a phone and you get a picker; choose an image
-and it lands in `/tmp/dropitapp` on the machine running the server runtime.
+and it lands in a `dropitapp` folder on the machine running the server runtime —
+inside the folder that runtime gives boards, `~/.hkp/cpp/files` in the desktop
+app.
 
 ## How it works
 
@@ -32,7 +34,8 @@ REST one that receives the file.
 ### Upload Server — a REST runtime
 
 A single [Filesystem](../services/filesystem.md) service in `write` mode,
-writing to `/tmp/dropitapp`.
+writing to `dropitapp`: a relative path, so it lands in the runtime's default
+folder for boards, whichever machine that is.
 
 ## Why the phone's board is cargo
 
@@ -49,5 +52,6 @@ one request that may not survive a phone's connection.
 ## Try it
 
 Open it in the Readymade desktop app: the upload runtime names the app's own
-runtime (`"remote": "embedded"`), which needs write access to `/tmp/dropitapp`,
-and the phone must be able to reach that runtime's URL.
+runtime (`"remote": "embedded"`), and the phone must be able to reach that
+runtime's URL. To save somewhere else, add the folder under *Folders boards may
+use* in the app's settings and type its path into *Save folder*.
