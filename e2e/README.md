@@ -266,12 +266,14 @@ once on web; these process contracts are independent of desktop/mobile shells.
 
 ## PR and cloud CI
 
-`.github/workflows/run-all-tests.yml` runs two E2E checks on pull requests,
-main pushes and normal manual runs: **E2E browser** and **E2E Node cloud**.
-Use those exact job names as required checks in the target branch's protection
-settings after their first run. This change documents the checks; it does not
-change repository protection rules. The existing C++/unit job stays on main
-pushes and normal manual runs.
+`.github/workflows/run-all-tests.yml` runs two E2E jobs. **E2E Node cloud**
+runs on every pull request push, main push and normal manual run; use that exact
+job name as a required check in the target branch's protection settings.
+**E2E browser** takes about nine minutes, so it runs only on main pushes and
+manual runs — to check a PR branch, start the workflow on it from Actions → Run
+workflow. Do not make it a required check: a job skipped by its condition counts
+as passing, so it would gate nothing. The existing C++/unit job also stays on
+main pushes and normal manual runs.
 
 The workflow has read-only repository permissions, does not persist checkout
 credentials, and cancels obsolete runs for the same PR/ref. The browser job
