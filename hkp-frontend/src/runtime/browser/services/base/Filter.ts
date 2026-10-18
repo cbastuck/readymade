@@ -22,6 +22,16 @@ import {
 const serviceId = "hookup.to/service/filter";
 const serviceName = "Filter";
 
+/** Filter accepts one condition or a list on input, but stores one shape. */
+export function normalizeFilterConditions(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value))
+    return value.filter((condition): condition is string =>
+      typeof condition === "string",
+    );
+  return [];
+}
+
 class Filter {
   uuid: string;
   board: string;
@@ -29,7 +39,7 @@ class Filter {
 
   aggregator: string;
   _parsedConditions: Array<Expression | SyntaxError>;
-  conditions: string | string[];
+  conditions: string[];
 
   constructor(
     app: AppInstance,
@@ -46,8 +56,8 @@ class Filter {
     this.conditions = [];
   }
 
-  parseConditions(conditions: string | string[]): string[] {
-    const arr = Array.isArray(conditions) ? conditions : [conditions];
+  parseConditions(conditions: unknown): string[] {
+    const arr = normalizeFilterConditions(conditions);
     this._parsedConditions = arr.map((cond) => parseExpression(cond));
     return arr;
   }
@@ -56,8 +66,8 @@ class Filter {
     const { conditions, aggregator } = config;
 
     if (conditions !== undefined) {
-      this.conditions = conditions;
       const arr = this.parseConditions(conditions);
+      this.conditions = arr;
       this.app.notify(this, { conditions: arr });
     }
 

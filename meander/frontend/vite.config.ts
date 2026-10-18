@@ -19,7 +19,7 @@ export default defineConfig({
   server: {
     host: "0.0.0.0", // added only for using the frontend in Readymade iOS app - remove if not needed
     fs: {
-      allow: [".", hkpFrontendRoot, licensesRoot],
+      allow: [".", hkpFrontendRoot, licensesRoot, path.resolve(import.meta.dirname, "../../docs"), path.resolve(import.meta.dirname, "../../boards")],
     },
   },
   plugins: [svgr(), react()],

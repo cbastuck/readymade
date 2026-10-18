@@ -23,7 +23,7 @@ board opening, a shell mounting, a pipeline actually running.
 
 ## The per-area suites
 
-`run-all-tests.sh` at the root runs all six, in order:
+`run-all-tests.sh` at the root runs all seven, in order:
 
 | Area | Framework | Its own command | What it holds |
 |---|---|---|---|
@@ -33,6 +33,7 @@ board opening, a shell mounting, a pipeline actually running.
 | Readymade app backend | Catch2 | `./run-tests.sh` | the desktop shell's rules — routing, settings, grants, the share inbox |
 | hkp-frontend demo boards | vitest | `npm run test -- src/runtime/browser/tests/demo-boards.regression.test.tsx` | every board in `boards/`, checked against the registry |
 | hkp-frontend | vitest | `npm run test -- --exclude …` | everything else in the frontend |
+| readymade-mcp | tsc + vitest | `npm run typecheck && npm test` | the MCP knowledge server: its index of `docs/content` and `boards/`, path confinement, contracts — including that every service page is readable as one |
 
 Two things about the runner are deliberate. It **does not stop at the first
 failure** — it records a pass or fail per suite and prints the table at the end,
@@ -191,7 +192,9 @@ first. `e2e/README.md` covers the ways of watching a run live.
 ## What CI runs
 
 `.github/workflows/run-all-tests.yml` checks out with `submodules: false` and
-runs **hkp-rt and hkp-frontend only** — the in-tree parts. That is the repository
+runs **hkp-rt, hkp-frontend and readymade-mcp only** — the in-tree parts. The
+MCP suite's assertions about runtime source need the submodules it indexes and
+are skipped there. That is the repository
 split showing through: the submodules answer for themselves, and a superproject
 workflow that cloned them would be testing whatever commit they happened to be
 on. See [Repository](./repository.md).

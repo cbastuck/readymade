@@ -183,6 +183,27 @@ describe("board persistence integration", () => {
   });
 
   describe("clearBoard", () => {
+    it("starts a new board session while in-place replacement preserves it", async () => {
+      const api = makeApi();
+      const { getCtx } = renderBoard(api);
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+      const initialSession = getCtx()!.boardSessionGeneration;
+
+      await act(async () => {
+        await getCtx()!.setBoardState({
+          boardName: "Edited board",
+          runtimes: [],
+          services: {},
+        });
+      });
+      expect(getCtx()!.boardSessionGeneration).toBe(initialSession);
+
+      await act(async () => {
+        await getCtx()!.clearBoard();
+      });
+      expect(getCtx()!.boardSessionGeneration).toBe(initialSession + 1);
+    });
+
     it("removes all runtimes and clears services", async () => {
       const services: ServiceDescriptor[] = [
         {

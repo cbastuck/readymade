@@ -283,6 +283,11 @@ export type BoardContextState = BoardContextAPI &
      * another, so a view holding something of the board before can let it go.
      */
     boardGeneration: number;
+    /**
+     * Changes when the host opens or clears a board, but not when the current
+     * board is replaced in place by an editor such as Board Assist.
+     */
+    boardSessionGeneration: number;
     facade?: FacadeDescriptor;
     /** The board's own asset descriptors. See `runtime/board/assets`. */
     assets?: AssetDescriptor[];
@@ -650,6 +655,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const replacingBoardsRef = useRef(0);
     // The same count where a render can see it, for what is on screen.
     const [boardGeneration, setBoardGeneration] = useState(0);
+    const [boardSessionGeneration, setBoardSessionGeneration] = useState(0);
     const replacingBoard = async <T,>(replace: () => Promise<T>): Promise<T> => {
       setBoardGeneration(++boardGenerationRef.current);
       replacingBoardsRef.current++;
@@ -668,8 +674,9 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         boardGenerationRef.current === generation;
     };
 
-    const fetchBoard = () =>
-      replacingBoard(async () => {
+    const fetchBoard = () => {
+      setBoardSessionGeneration((generation) => generation + 1);
+      return replacingBoard(async () => {
         const cancellation = { cancelled: false };
         inFlightFetchesRef.current.add(cancellation);
         try {
@@ -684,16 +691,19 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
           inFlightFetchesRef.current.delete(cancellation);
         }
       });
+    };
     const removeRuntime = (runtime: RuntimeDescriptor) =>
       removeRuntimeOp(runtime, getRefs());
-    const clearBoard = (newBoardNameArg?: string) =>
-      replacingBoard(async () => {
+    const clearBoard = (newBoardNameArg?: string) => {
+      setBoardSessionGeneration((generation) => generation + 1);
+      return replacingBoard(async () => {
         cancelUserLoginWait();
         // What the board it is leaving was changed to is read now or never: once
         // its runtimes are gone there is nothing left to serialise.
         await snapshots.flush();
         return clearBoardOp(newBoardNameArg, getRefs(), removeRuntime);
       });
+    };
 
     const addRuntime = (rtClass: RuntimeClass) =>
       addRuntimeOp(rtClass, getRefs(), waitForUserLogin, (err) => {
@@ -1184,6 +1194,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       coordinator,
       boardName,
       boardGeneration,
+      boardSessionGeneration,
       facade,
       linkage,
       assets,

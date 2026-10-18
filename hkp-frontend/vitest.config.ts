@@ -11,6 +11,15 @@ export default defineConfig({
       "hkp-frontend/src": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    fs: {
+      allow: [
+        ".",
+        path.resolve(__dirname, "../docs"),
+        path.resolve(__dirname, "../boards"),
+      ],
+    },
+  },
   test: {
     globals: true,
     environment: "jsdom",
