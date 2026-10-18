@@ -118,9 +118,12 @@ public:
   ~Peer()
   {
     m_stopping = true;
+    // Unblocks an accept that is already waiting, which then sees it is
+    // stopping. The acceptor stays open until the thread is gone: closing it
+    // under a blocked accept is not safe, and the descriptor it frees is
+    // reused by the next socket opened — this one — so the accept can end up
+    // waiting on a socket that never becomes ready.
     beast::error_code ignored;
-    m_acceptor.close(ignored);
-    // Unblocks an accept that is already waiting.
     try
     {
       tcp::socket poke(m_ioc);
@@ -131,6 +134,7 @@ public:
     {
       m_thread.join();
     }
+    m_acceptor.close(ignored);
   }
 
   std::string url(const std::string& path = "/coordinator/join") const
