@@ -25,6 +25,7 @@
 #include "../common/inja.h"
 #include "../common/string_util.h"  
 #include <secrets.h>
+#include "egress.h"
 #include "../runtime_host.h"
 
 namespace beast = boost::beast; // from <boost/beast.hpp>
@@ -267,7 +268,7 @@ Data HttpClient::process(Data data)
           throw beast::system_error{ec};
       }
       
-      auto const results = resolver.resolve(host, port); // Look up the domain name
+      auto const results = ::hkp::egress::resolve(resolver, host, port); // Look up the name, refusing what a hosted server may not reach
       beast::get_lowest_layer(stream).connect(results); // Make the connection on the IP address we get from a lookup
       stream.handshake(ssl::stream_base::client); // Perform the SSL handshake
 
@@ -282,7 +283,7 @@ Data HttpClient::process(Data data)
       net::io_context ioc;
       tcp::resolver resolver(ioc);
       beast::tcp_stream stream(ioc);
-      auto const results = resolver.resolve(host, port);
+      auto const results = ::hkp::egress::resolve(resolver, host, port);
       stream.connect(results);
       auto req = buildRequest(method, path, query, host, version, j);
 

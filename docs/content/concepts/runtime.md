@@ -178,6 +178,48 @@ browser, states no origin and is let in: a loopback bind is a boundary against
 other machines and, with this, against web pages, not against the machine's own
 software.
 
+### Where a hosted server may connect
+
+The other direction. A board names destinations — an HTTP Client's URL, a feed,
+an asset, a mail server, a model's base URL — and the server dials them. On a
+person's own machine that is the point: a board talks to the printer, the NAS,
+a model on the LAN. On a server other people's boards run on it is not: that
+server's loopback, its private network and a cloud provider's metadata endpoint
+(`169.254.169.254`, which hands out the machine's credentials) are reachable
+from where it runs and are not a board's to reach.
+
+So a server is told it is hosted with **`HKP_EGRESS=public`**, the same in
+hkp-node, hkp-python and a standalone hkp-rt. A destination is then reached only
+when every address its name resolves to is a public internet address — never
+`127.0.0.0/8`, the private ranges (`10/8`, `172.16/12`, `192.168/16`), shared
+address space (`100.64/10`), link-local (`169.254/16`), the IPv6 equivalents, or
+an IPv6 address carrying one of those. Unset, nothing is refused; the desktop
+app's embedded runtime is never told otherwise.
+
+- **Judged on the address connected to**, not on the name a board wrote: a name
+  can be pointed anywhere, and repointed between being checked and being
+  dialled. Every redirect hop is judged the same way, and so is every spelling
+  of an address (`2130706433` is `127.0.0.1`).
+- **`HKP_EGRESS_ALLOW`** lists addresses or ranges reached anyway, an internal
+  model server for instance. Addresses, not names, for the same reason.
+- **A refusal says so** — "This server does not reach private addresses
+  (10.0.0.5)" — where it would otherwise be a timeout or a misleading hint.
+- **What the operator configured is not judged:** the link to a coordinator,
+  the token issuer's keys, a model downloaded from a fixed release address.
+
+The rule lives in one place per runtime (`hkp-node/src/egress.ts`,
+`hkp-python/src/hkp/egress.py`, `hkp-rt/lib/include/egress.h`), and each
+runtime's tests read its sources and fail on any other way of opening a
+connection, so a service added later cannot quietly go around it.
+
+On a machine you run, add the same rule in its **firewall** as a backstop: drop
+the hosted process's traffic to those ranges (by its user, with
+`iptables`/`nftables` owner matching, or as a container's egress policy). It
+covers what code cannot — a library opening a socket nobody listed. Mind what
+the server itself needs on the private network: another runtime's mount on the
+same host, the coordinator, a database. The code-level rule exempts those by
+where they come from; a firewall rule sees one process and has to be told.
+
 ### Adding one to a board
 
 In the app: the runtimes menu, **add an external runtime**, a name and a host URL
