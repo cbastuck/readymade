@@ -326,9 +326,15 @@ export function processService(
     // dialled — the browser may have no route to the runtime at all, and a
     // request of its own would bypass the party that says who is calling.
     // Onward where the api offers it: a run begun here goes on into the
-    // board's next runtime, as it would from a browser runtime.
+    // board's next runtime, as it would from a browser runtime — and as the
+    // same person's run there too. Over REST the server states the caller of
+    // the first runtime from the token; the runtimes after it hear of the run
+    // only from here, and a run that names nobody goes on as the board's.
+    const run = personRun(
+      (scope as any).signedInUser?.() ?? scope.authenticatedUser ?? null,
+    );
     const begin = api.processServiceOnward ?? api.processService;
-    void begin(scope, { uuid }, payload ?? {}).catch((err) => {
+    void begin(scope, { uuid }, payload ?? {}, run).catch((err) => {
       console.error(
         `Could not ask "${uuid}" to process:`,
         err instanceof Error ? err.message : err,

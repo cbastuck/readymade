@@ -18,7 +18,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function playground(answer: string) {
+const ANNA = {
+  username: "anna",
+  userId: "auth0|anna",
+  email: "anna@example.com",
+  features: {},
+  idToken: "token",
+};
+
+function playground(answer: string, user: typeof ANNA | null = ANNA) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(answer, { status: 200 })),
@@ -26,7 +34,7 @@ function playground(answer: string) {
   const onResult = vi.fn(async () => {});
   const scope = {
     descriptor: { id: "forget", url: "http://127.0.0.1:8080" },
-    authenticatedUser: null,
+    authenticatedUser: user,
     onResult,
   };
   const context = {
@@ -47,11 +55,39 @@ describe("a process action on a REST runtime", () => {
     processService(context, "forget-which", { slug: "a" });
 
     await vi.waitFor(() => expect(onResult).toHaveBeenCalledOnce());
-    expect(onResult).toHaveBeenCalledWith(null, { deleted: true }, null);
+    expect(onResult).toHaveBeenCalledWith(null, { deleted: true }, expect.anything());
     expect(fetch).toHaveBeenCalledWith(
       "http://127.0.0.1:8080/runtimes/forget/services/forget-which/process",
       expect.objectContaining({ method: "POST", body: JSON.stringify({ slug: "a" }) }),
     );
+  });
+
+  it("goes on as the run of whoever pressed the button", async () => {
+    // Not as the board's: a board reads a result that names no run as
+    // something the runtime did by itself, and the services after it would
+    // see a board action where a person acted.
+    const { context, onResult } = playground(JSON.stringify({ deleted: true }));
+
+    processService(context, "forget-which", { slug: "a" });
+
+    await vi.waitFor(() => expect(onResult).toHaveBeenCalledOnce());
+    const [, , run] = onResult.mock.calls[0] as unknown as [unknown, unknown, any];
+    expect(run.actor).toMatchObject({
+      kind: "person",
+      sub: "auth0|anna",
+      email: "anna@example.com",
+      name: "anna",
+    });
+  });
+
+  it("goes on as a local run when nobody is signed in", async () => {
+    const { context, onResult } = playground(JSON.stringify({ deleted: true }), null);
+
+    processService(context, "forget-which", { slug: "a" });
+
+    await vi.waitFor(() => expect(onResult).toHaveBeenCalledOnce());
+    const [, , run] = onResult.mock.calls[0] as unknown as [unknown, unknown, any];
+    expect(run.actor).toEqual({ kind: "local" });
   });
 
   it("passes nothing on when the pipeline stopped", async () => {

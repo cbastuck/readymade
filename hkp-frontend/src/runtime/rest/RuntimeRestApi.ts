@@ -850,7 +850,10 @@ export async function processServiceOnward(
   if (passesNothing(result)) {
     return;
   }
-  await scope.onResult(null, result, null);
+  // The run goes on with it. Without one the board reads the result as
+  // something the runtime did by itself, and the next runtime runs it as the
+  // board's rather than as whoever began it.
+  await scope.onResult(null, result, context ?? null);
 }
 
 export async function rearrangeServices(
