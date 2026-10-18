@@ -102,14 +102,19 @@ function extractTypes(value: string): string[] {
 
 function parseAvailability(content: string): ServiceAvailability[] {
   const found = new Map<string, ServiceAvailability>();
-  const tablePattern = /^\|\s*([^|]+?)\s*\|\s*`([^`]+)`\s*\|/gm;
-  const bulletPattern = /^[-*]\s+(.+?)\s+[—-]+\s+service ID\s+`([^`]+)`/gim;
+  // `| Runtime | `id` |`, or several ids in one cell when a page documents
+  // services that belong together: `| Browser | `a`, `b` |`. The cell must hold
+  // nothing but ids, which keeps configuration tables out.
+  const tablePattern = /^\|\s*([^|]+?)\s*\|\s*(`[^`]+`(?:\s*,\s*`[^`]+`)*)\s*\|/gm;
+  const bulletPattern = /^[-*]\s+(.+?)\s+[—-]+\s+service ID\s+(`[^`]+`)/gim;
   for (const pattern of [tablePattern, bulletPattern]) {
     for (const match of content.matchAll(pattern)) {
       const runtime = normalizeRuntime(match[1]);
       if (!runtime) continue;
-      const serviceId = match[2].trim();
-      found.set(`${runtime}:${serviceId}`, { runtime, serviceId });
+      for (const id of match[2].matchAll(/`([^`]+)`/g)) {
+        const serviceId = id[1].trim();
+        found.set(`${runtime}:${serviceId}`, { runtime, serviceId });
+      }
     }
   }
   return [...found.values()];
@@ -314,6 +319,11 @@ export class KnowledgeRepository implements ValidationCatalog {
         });
       }
     }
+  }
+
+  /** Every indexed service contract, one per runtime and service ID. */
+  listContracts(): readonly ServiceContract[] {
+    return this.contracts;
   }
 
   hasService(serviceId: string, runtime?: RuntimeName): boolean {

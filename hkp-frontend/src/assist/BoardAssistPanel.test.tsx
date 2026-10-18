@@ -350,12 +350,19 @@ describe("Board Assist panel", () => {
         ?.classList.contains("hkp-assist-assistant"),
     ).toBe(true);
     expect(mocks.board.setBoardState).toHaveBeenCalledWith(proposed);
+    expect(mocks.run.mock.calls[0][0].scope).toEqual({
+      kind: "runtime",
+      runtimeId: "ui",
+      runtimeName: "Browser",
+    });
     expect(mocks.run.mock.calls[0][0].context).toMatchObject({
-      board: original,
-      selectedRuntimeId: "ui",
+      scope: "runtime",
+      editableRuntime: original.runtimes[0],
+      editableServices: original.services.ui,
       selectedServiceUuids: ["timer"],
       openNestedPipeline: [{ id: "nested" }],
     });
+    expect(mocks.run.mock.calls[0][0].context.board).toBeUndefined();
     fireEvent.click(screen.getByRole("button", { name: "Revert" }));
     await waitFor(() =>
       expect(mocks.board.setBoardState).toHaveBeenLastCalledWith({
@@ -487,9 +494,18 @@ describe("Board Assist panel", () => {
       units: [unit],
     });
     const view = mount();
+    fireEvent.change(screen.getByLabelText("Context"), {
+      target: { value: "board" },
+    });
     await requestProposal();
     expect(mocks.run.mock.calls[0][0].context.importedUnitDocuments).toEqual([
-      unit,
+      {
+        ...unit,
+        board: {
+          ...unit.board,
+          assets: [{ id: "text", contentOmitted: true }],
+        },
+      },
     ]);
     const origin = mocks.board.setBoardState.mock.calls[0][1];
     expect(await origin.load({ kind: "relative", value: "helper" })).toEqual(
@@ -622,6 +638,185 @@ describe("Board Assist panel", () => {
     );
     expect(mocks.board.setBoardState).toHaveBeenLastCalledWith(original);
     expect(screen.getByRole("button", { name: "Apply board" })).toBeTruthy();
+    view.unmount();
+    view.host.remove();
+  });
+  it("asks before applying a proposal that contacts a new server", async () => {
+    const remote = {
+      ...proposed,
+      runtimes: [
+        ...original.runtimes,
+        { id: "node", name: "Node", type: "rest", url: "https://new.example" },
+      ],
+      services: { ...proposed.services, node: [] },
+    };
+    mocks.run.mockResolvedValue({ conversation: [], text: "Added", board: remote });
+    const view = mount();
+    await requestUnappliedProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
+    expect(
+      (await screen.findByText("https://new.example")).closest("div")
+        ?.textContent,
+    ).toBeTruthy();
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Don't apply" }));
+    expect(screen.queryByText("https://new.example")).toBeNull();
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Trust and apply" }),
+    );
+    await screen.findByRole("button", { name: "Revert" });
+    expect(mocks.board.setBoardState).toHaveBeenCalledWith(remote);
+    view.unmount();
+    view.host.remove();
+  });
+  it("asks about new servers in the review dialog too", async () => {
+    const view = mount();
+    await requestUnappliedProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Show changes" }));
+    const editor = await screen.findByLabelText("Proposed configuration");
+    const edited = {
+      ...proposed,
+      services: {
+        ui: [
+          {
+            uuid: "timer",
+            serviceId: "timer",
+            state: { interval: 1, target: "wss://collect.example/in" },
+          },
+        ],
+      },
+    };
+    fireEvent.change(editor, { target: { value: JSON.stringify(edited) } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply edited board" }));
+    await screen.findByText("wss://collect.example");
+    expect(mocks.board.setBoardState).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Trust and apply" }));
+    await waitFor(() =>
+      expect(mocks.board.setBoardState).toHaveBeenCalledWith(edited),
+    );
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Proposed configuration")).toBeNull(),
+    );
+    view.unmount();
+    view.host.remove();
+  });
+  it("forgets what to revert when a new conversation starts", async () => {
+    const view = mount();
+    await requestProposal();
+    fireEvent.click(screen.getByRole("button", { name: "New conversation" }));
+    await requestUnappliedProposal();
+    expect(screen.queryByRole("button", { name: "Revert" })).toBeNull();
+    view.unmount();
+    view.host.remove();
+  });
+  it("asks before a revert discards changes made after applying", async () => {
+    const view = mount();
+    await requestProposal();
+    mocks.board.serializeBoardDocuments.mockResolvedValue({
+      composition: {
+        ...original,
+        services: {
+          ui: [{ uuid: "timer", serviceId: "timer", state: { interval: 7 } }],
+        },
+      },
+      units: [],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    await screen.findByText(/discards those later changes/);
+    expect(mocks.board.setBoardState).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep current board" }));
+    expect(screen.queryByText(/discards those later changes/)).toBeNull();
+    expect(mocks.board.setBoardState).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Revert anyway" }),
+    );
+    await waitFor(() =>
+      expect(mocks.board.setBoardState).toHaveBeenCalledTimes(2),
+    );
+    view.unmount();
+    view.host.remove();
+  });
+  it("sends asset contents only when asked to", async () => {
+    const view = mount();
+    fireEvent.change(screen.getByLabelText("Context"), {
+      target: { value: "board" },
+    });
+    await requestUnappliedProposal();
+    expect(mocks.run.mock.calls[0][0].context.board.assets).toEqual([
+      { id: "text", contentOmitted: true },
+    ]);
+    fireEvent.click(screen.getByLabelText("Include asset contents"));
+    expect(readAssistSettings().includeAssetContents).toBe(true);
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Again" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(mocks.run).toHaveBeenCalledTimes(2));
+    expect(mocks.run.mock.calls[1][0].context.board.assets).toEqual(
+      original.assets,
+    );
+    view.unmount();
+    view.host.remove();
+  });
+  it("warns when a model server is reached over plain HTTP on another machine", async () => {
+    mocks.localModels.mockResolvedValue([{ id: "local", display_name: "Local" }]);
+    saveAssistSettings({
+      provider: "openai-compatible",
+      openAICompatibleUrl: "http://192.168.1.20:8081/v1",
+    });
+    const view = mount();
+    expect(
+      (await screen.findByText(/unencrypted HTTP on another machine/)).getAttribute(
+        "role",
+      ),
+    ).toBe("alert");
+    view.unmount();
+    view.host.remove();
+    saveAssistSettings({ openAICompatibleUrl: "http://127.0.0.1:8081/v1" });
+    const local = mount();
+    await screen.findByRole("option", { name: "Local" });
+    expect(screen.queryByText(/unencrypted HTTP on another machine/)).toBeNull();
+    local.unmount();
+    local.host.remove();
+  });
+  it("names a kept server instead of the address a proposal wrote", async () => {
+    mocks.board.availableRuntimeEngines = [
+      { type: "rest", name: "Laptop", url: "http://127.0.0.1:8080", aliases: ["node"] },
+    ];
+    const addressed = {
+      ...proposed,
+      runtimes: [
+        ...original.runtimes,
+        { id: "node", name: "Node", type: "rest", url: "http://127.0.0.1:8080" },
+      ],
+      services: { ...proposed.services, node: [] },
+    };
+    mocks.run.mockResolvedValue({ conversation: [], text: "Added", board: addressed });
+    const view = mount();
+    await requestUnappliedProposal();
+    expect(
+      await screen.findByText(/node now names your server "node"/),
+    ).toBeTruthy();
+    expect(JSON.stringify(mocks.run.mock.calls[0][0].context)).not.toContain(
+      "127.0.0.1:8080",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
+    await screen.findByRole("button", { name: "Revert" });
+    expect(screen.queryByRole("button", { name: "Trust and apply" })).toBeNull();
+    expect(mocks.board.setBoardState).toHaveBeenCalledWith({
+      ...addressed,
+      runtimes: [
+        ...original.runtimes,
+        { id: "node", name: "Node", type: "rest", remote: "node" },
+      ],
+    });
     view.unmount();
     view.host.remove();
   });

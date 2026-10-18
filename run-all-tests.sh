@@ -39,12 +39,17 @@ echo
 echo "Preparing frontend dependencies"
 (cd "${REPO_ROOT}/hkp-frontend" && npm install)
 
+echo
+echo "Preparing MCP knowledge server dependencies"
+(cd "${REPO_ROOT}/readymade-mcp" && npm install)
+
 run_step "hkp-python" "hkp-python" ./run_tests.sh
 run_step "hkp-node" "hkp-node" npm test
 run_step "hkp-rt" "hkp-rt" ./run-tests.sh
 run_step "Readymade app backend" "meander" ./run-tests.sh
 run_step "hkp-frontend demo boards" "hkp-frontend" npm run test -- src/runtime/browser/tests/demo-boards.regression.test.tsx
 run_step "hkp-frontend" "hkp-frontend" npm run test -- --exclude src/runtime/browser/tests/demo-boards.regression.test.tsx
+run_step "readymade-mcp" "readymade-mcp" sh -c "npm run typecheck && npm test"
 
 echo
 echo "========================================"

@@ -23,7 +23,12 @@ vi.mock("@modelcontextprotocol/client", () => ({
   },
 }));
 
-import { McpKnowledgeProvider, normalizeMcpKnowledgeUrl } from "./mcpKnowledge";
+import {
+  McpKnowledgeProvider,
+  mcpFailureKind,
+  normalizeMcpKnowledgeUrl,
+  resetMcpKnowledgeCooldowns,
+} from "./mcpKnowledge";
 
 function fallback(overrides: Partial<ReadymadeKnowledgeProvider> = {}) {
   return {
@@ -39,8 +44,35 @@ function fallback(overrides: Partial<ReadymadeKnowledgeProvider> = {}) {
   } satisfies ReadymadeKnowledgeProvider;
 }
 
+const searchResult = {
+  content: [],
+  structuredContent: {
+    results: [
+      {
+        score: 10,
+        excerpt: "Timer",
+        provenance: { path: "docs/content/services/timer.md" },
+      },
+    ],
+  },
+};
+
+function provider(
+  bundled = fallback(),
+  onFallback?: (error: Error) => void,
+) {
+  return new McpKnowledgeProvider(
+    "http://127.0.0.1:8787/mcp",
+    new AbortController().signal,
+    bundled,
+    onFallback,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useRealTimers();
+  resetMcpKnowledgeCooldowns();
   sdk.connect.mockResolvedValue(undefined);
   sdk.listTools.mockResolvedValue({
     tools: [
@@ -275,5 +307,95 @@ describe("MCP knowledge provider", () => {
     await expect(provider.searchKnowledge({ query: "timer" })).rejects.toThrow();
     expect(bundled.searchKnowledge).not.toHaveBeenCalled();
     expect(onFallback).not.toHaveBeenCalled();
+  });
+  it("tells a refused call from an unavailable server", () => {
+    expect(mcpFailureKind({ code: -32602, message: "Invalid params" })).toBe(
+      "call",
+    );
+    expect(mcpFailureKind(new TypeError("Failed to fetch"))).toBe("server");
+    expect(mcpFailureKind({ code: "REQUEST_TIMEOUT" })).toBe("server");
+    expect(mcpFailureKind({ code: "CLIENT_HTTP_NOT_IMPLEMENTED" })).toBe(
+      "server",
+    );
+  });
+
+  it("answers a refused read from bundled docs and keeps using MCP", async () => {
+    sdk.callTool
+      .mockResolvedValueOnce({
+        content: [{ type: "text", text: "Path is not an indexed document" }],
+        isError: true,
+      })
+      .mockResolvedValueOnce(searchResult);
+    const bundled = fallback();
+    const onFallback = vi.fn();
+    const knowledge = provider(bundled, onFallback);
+
+    expect(await knowledge.readDocuments(["docs/services/timer.md"])).toEqual([
+      { path: "docs/services/timer.md", content: "bundled" },
+    ]);
+    await knowledge.searchKnowledge({ query: "timer" });
+    expect(sdk.callTool).toHaveBeenCalledTimes(2);
+    expect(bundled.searchKnowledge).not.toHaveBeenCalled();
+    expect(onFallback).not.toHaveBeenCalled();
+    expect(sdk.close).not.toHaveBeenCalled();
+  });
+
+  it("keeps richer tools after a JSON-RPC error from a reachable server", async () => {
+    sdk.callTool
+      .mockRejectedValueOnce(
+        Object.assign(new Error("Tool inspect_service_source disabled"), {
+          code: -32602,
+        }),
+      )
+      .mockResolvedValueOnce({
+        content: [],
+        structuredContent: { contract: { serviceId: "timer" } },
+      });
+    const onFallback = vi.fn();
+    const knowledge = provider(fallback(), onFallback);
+    await expect(
+      knowledge.callAgentTool("inspect_service_source", {}),
+    ).rejects.toThrow("disabled");
+    await expect(
+      knowledge.callAgentTool("get_service_contract", {}),
+    ).resolves.toEqual({ contract: { serviceId: "timer" } });
+    expect(onFallback).not.toHaveBeenCalled();
+  });
+
+  it("tries a server that failed fast again on the next turn", async () => {
+    sdk.connect.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await provider().searchKnowledge({ query: "timer" });
+    sdk.callTool.mockResolvedValueOnce(searchResult);
+    const bundled = fallback();
+    await provider(bundled).searchKnowledge({ query: "timer" });
+    expect(sdk.connect).toHaveBeenCalledTimes(2);
+    expect(bundled.searchKnowledge).not.toHaveBeenCalled();
+  });
+
+  it("skips a server that timed out for later turns, then tries it again", async () => {
+    vi.useFakeTimers();
+    sdk.callTool.mockRejectedValueOnce(
+      Object.assign(new Error("Request timed out"), { code: "REQUEST_TIMEOUT" }),
+    );
+    await provider().searchKnowledge({ query: "timer" });
+    expect(sdk.connect).toHaveBeenCalledTimes(1);
+
+    const onFallback = vi.fn();
+    const bundled = fallback();
+    const skipped = provider(bundled, onFallback);
+    await skipped.searchKnowledge({ query: "timer" });
+    expect(sdk.connect).toHaveBeenCalledTimes(1);
+    expect(bundled.searchKnowledge).toHaveBeenCalled();
+    expect(onFallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("Request timed out"),
+      }),
+    );
+    expect(await skipped.listAgentTools()).toEqual([]);
+
+    vi.advanceTimersByTime(60_001);
+    sdk.callTool.mockResolvedValueOnce(searchResult);
+    await provider().searchKnowledge({ query: "timer" });
+    expect(sdk.connect).toHaveBeenCalledTimes(2);
   });
 });

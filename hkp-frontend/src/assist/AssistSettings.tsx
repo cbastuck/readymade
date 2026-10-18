@@ -9,6 +9,7 @@ import {
 } from "../ui-components/settings/kit";
 import { saveAssistSettings, useAssistSettings } from "./settings";
 import { normalizeMcpKnowledgeUrl } from "./mcpKnowledge";
+import { unencryptedRemote } from "./addresses";
 
 export default function AssistSettings() {
   const settings = useAssistSettings();
@@ -115,6 +116,13 @@ export default function AssistSettings() {
             }}
           />
         </SettingsField>
+        {unencryptedRemote(url) && (
+          <SettingsNote tone="warn">
+            This is plain HTTP to another machine. The API token, your prompts
+            and your board cross the network unencrypted. Use HTTPS unless the
+            network between you and the server is trusted.
+          </SettingsNote>
+        )}
         <SettingsField label="Thinking mode (llama.cpp)">
           <select
             className="hkp-set-input"
@@ -165,6 +173,12 @@ export default function AssistSettings() {
             }}
           />
         </SettingsField>
+        {unencryptedRemote(mcpUrl) && (
+          <SettingsNote tone="warn">
+            This is plain HTTP to another machine. Search terms and boards sent
+            for validation cross the network unencrypted.
+          </SettingsNote>
+        )}
         <p className="hkp-set-hint">
           Leave empty to use only the documentation bundled with this app.
           The URL is stored on this device, never in a board.
@@ -174,7 +188,9 @@ export default function AssistSettings() {
         Tokens are stored in this browser or app's local storage on this device,
         outside board files. Requests go directly to the selected provider or
         server. Your prompts, board configuration and relevant documentation are
-        sent to the provider. When MCP knowledge is configured, search terms,
+        sent to the provider: the whole board, or the selected runtime with an
+        outline of the rest, and asset contents only when you include them.
+        When MCP knowledge is configured, search terms,
         requested paths and richer tool arguments—including a board passed for
         validation—are sent to that endpoint, but provider API tokens are not.
         Applying a board can start services and request device permissions.

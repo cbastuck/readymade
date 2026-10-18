@@ -14,6 +14,10 @@ type JsonObject = Record<string, unknown>;
 
 const CONNECT_TIMEOUT_MS = 5_000;
 const TOOL_TIMEOUT_MS = 8_000;
+/** A failure that took at least this long cost the person a visible wait. */
+const SLOW_FAILURE_MS = 2_000;
+/** How long a server that failed slowly is skipped by later turns. */
+const SLOW_FAILURE_COOLDOWN_MS = 60_000;
 const requiredTools = new Set(["search_knowledge", "read_document"]);
 const agentToolNames = new Set([
   "get_service_contract",
@@ -27,6 +31,48 @@ function object(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * The server answered and refused this one call — invalid arguments, an
+ * unknown path or service. It says nothing about the next call.
+ */
+class McpCallRejected extends Error {}
+
+/**
+ * Whether a failure is about one call or about the server.
+ *
+ * Only a reply from the server proves it is reachable: a tool result marked
+ * `isError` (the server SDK reports argument validation and handler errors
+ * this way) or a JSON-RPC error, whose code is numeric. Everything else —
+ * a network error, a CORS refusal, an HTTP status, an SDK timeout or closed
+ * connection, a reply in a shape this client does not understand — means
+ * the server cannot serve this turn, and asking it again seconds later is
+ * unlikely to go differently.
+ */
+export function mcpFailureKind(error: unknown): "call" | "server" {
+  if (error instanceof McpCallRejected) return "call";
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === "number" ? "call" : "server";
+}
+
+function timedOut(error: unknown): boolean {
+  return (error as { code?: unknown } | null)?.code === "REQUEST_TIMEOUT";
+}
+
+/**
+ * Endpoints that failed slowly, and until when later turns skip them.
+ *
+ * A server that refuses connections fails in milliseconds, so trying it again
+ * on the next turn is free and notices a restart at once. One that times out
+ * or hangs makes every attempt cost seconds before the bundled documentation
+ * is used anyway; those are skipped for a while instead.
+ */
+const cooldowns = new Map<string, { until: number; reason: string }>();
+
+/** Forgets every remembered slow failure. */
+export function resetMcpKnowledgeCooldowns() {
+  cooldowns.clear();
+}
+
 function textError(result: CallToolResult): string {
   return result.content
     .filter((item) => item.type === "text")
@@ -35,7 +81,7 @@ function textError(result: CallToolResult): string {
 }
 
 function structured(result: CallToolResult): JsonObject {
-  if (result.isError) throw new Error(textError(result));
+  if (result.isError) throw new McpCallRejected(textError(result));
   if (object(result.structuredContent)) return result.structuredContent;
   const text = result.content.find((item) => item.type === "text")?.text;
   if (text) {
@@ -111,6 +157,12 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
   ) {
     this.endpoint = normalizeMcpKnowledgeUrl(endpoint);
     this.id = `mcp+${fallback.id}`;
+    const cooldown = cooldowns.get(this.endpoint);
+    if (cooldown && cooldown.until > Date.now())
+      this.fallbackReason = new Error(
+        `Skipped for ${Math.ceil((cooldown.until - Date.now()) / 1000)} s after it failed slowly: ${cooldown.reason}`,
+      );
+    else cooldowns.delete(this.endpoint);
   }
 
   async searchKnowledge(
@@ -192,24 +244,25 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     if (!agentToolNames.has(name))
       throw new Error(`The MCP knowledge operation '${name}' is not allowed.`);
     this.signal.throwIfAborted();
-    if (this.fallbackReason)
+    if (this.fallbackReason) {
+      this.reportFallback();
       throw new Error(
         `The richer knowledge operation '${name}' needs the configured MCP server, which is unavailable for this turn.`,
       );
-    let result: CallToolResult;
+    }
+    const started = Date.now();
     try {
-      result = await this.call(name, args);
+      return structured(await this.call(name, args));
     } catch (error) {
       this.signal.throwIfAborted();
-      await this.tripFallback(error);
+      // A refused call, such as an unknown service ID, goes back to the model
+      // and leaves otherwise healthy MCP tools enabled for the rest of the turn.
+      if (mcpFailureKind(error) === "call") throw error;
+      await this.tripFallback(error, Date.now() - started);
       throw new Error(
         `The richer knowledge operation '${name}' failed and has no bundled equivalent: ${this.fallbackReason!.message}`,
       );
     }
-    // A successful MCP exchange may still contain a domain-level tool error,
-    // such as an unknown service ID. Return that error to the model without
-    // disabling otherwise healthy MCP tools for the remainder of the turn.
-    return structured(result);
   }
 
   async close(): Promise<void> {
@@ -224,12 +277,22 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     offline: () => Promise<T>,
   ): Promise<T> {
     this.signal.throwIfAborted();
-    if (this.fallbackReason) return offline();
+    if (this.fallbackReason) {
+      this.reportFallback();
+      return offline();
+    }
+    const started = Date.now();
     try {
-      return await remote();
+      const result = await remote();
+      cooldowns.delete(this.endpoint);
+      return result;
     } catch (error) {
       this.signal.throwIfAborted();
-      await this.tripFallback(error);
+      // The server refused this request only. Answer it from the bundled
+      // documentation, whose own error reaches the model if it refuses too,
+      // and keep asking the server for the rest of the turn.
+      if (mcpFailureKind(error) === "call") return offline();
+      await this.tripFallback(error, Date.now() - started);
       return offline();
     }
   }
@@ -307,16 +370,29 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     );
   }
 
-  private async tripFallback(error: unknown): Promise<void> {
+  /**
+   * Stops asking the server for the rest of this turn. No retry within the
+   * turn: the next turn builds a new provider and tries again, unless this
+   * failure was slow, in which case later turns skip the server for a while.
+   */
+  private async tripFallback(error: unknown, elapsed: number): Promise<void> {
     this.fallbackReason =
       error instanceof Error
         ? error
         : new Error("The MCP knowledge server failed.");
-    if (!this.fallbackReported) {
-      this.fallbackReported = true;
-      this.onFallback?.(this.fallbackReason);
-    }
+    if (timedOut(error) || elapsed >= SLOW_FAILURE_MS)
+      cooldowns.set(this.endpoint, {
+        until: Date.now() + SLOW_FAILURE_COOLDOWN_MS,
+        reason: this.fallbackReason.message,
+      });
+    this.reportFallback();
     await this.close();
+  }
+
+  private reportFallback(): void {
+    if (this.fallbackReported || !this.fallbackReason) return;
+    this.fallbackReported = true;
+    this.onFallback?.(this.fallbackReason);
   }
 }
 

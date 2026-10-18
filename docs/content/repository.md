@@ -20,6 +20,7 @@ committed, so it is worth knowing before the first commit rather than after.
 | `hkp-frontend/` | superproject | React app: playground UI, board engine, every browser service |
 | `hkp-rt/` | superproject | C++ runtime — audio, high performance, embedded in the apps |
 | `meander/` | superproject | The Readymade desktop app: a saucer webview shell (`backend/`) around the frontend (`frontend/`) |
+| `readymade-mcp/` | superproject | Read-only MCP knowledge server over `docs/content`, `boards/` and the runtimes' service source — Board Assist's optional richer knowledge |
 | `docs/` | superproject | These pages, and the small site that serves them |
 | `boards/` | superproject | Every board the repo ships — the demo board behind each service page, the worked examples, and `runtime-configs/` for hkp-rt |
 | `plans/` | superproject | Working documents for changes that span sessions: what was decided, why, and what is still open — deleted once a plan lands and its conclusions move into these pages |

@@ -60,6 +60,8 @@ function run(extra = {}) {
     conversation: [],
     prompt: "Build a board",
     context: { board },
+    scope: { kind: "board" as const },
+    base: board,
     signal: new AbortController().signal,
     onText: vi.fn(),
     onStatus: vi.fn(),
@@ -211,6 +213,64 @@ describe("Anthropic assistant", () => {
     expect(result.conversation[2].content).toEqual([
       expect.objectContaining({ is_error: true }),
     ]);
+  });
+  it("offers only a runtime proposal in runtime scope and merges it", async () => {
+    const base = {
+      runtimes: [
+        { id: "ui", name: "Browser", type: "browser" },
+        { id: "node", name: "Node", type: "rest", remote: "node" },
+      ],
+      services: { ui: [], node: [{ uuid: "keep", serviceId: "monitor" }] },
+    };
+    const scope = {
+      kind: "runtime" as const,
+      runtimeId: "ui",
+      runtimeName: "Browser",
+    };
+    const services = [{ uuid: "t", serviceId: "timer" }];
+    response([
+      {
+        type: "tool_use",
+        id: "wrong",
+        name: "propose_runtime",
+        input: {
+          runtime: { id: "node", name: "Node", type: "rest", remote: "node" },
+          services: [],
+          explanation: "Changed the other runtime",
+        },
+      },
+    ]);
+    response([
+      {
+        type: "tool_use",
+        id: "right",
+        name: "propose_runtime",
+        input: {
+          runtime: JSON.stringify(base.runtimes[0]),
+          services,
+          explanation: "Added a timer",
+        },
+      },
+    ]);
+    const result = await run({ scope, base });
+    const names = sdk.stream.mock.calls[0][0].tools.map(
+      (tool: { name: string }) => tool.name,
+    );
+    expect(names).toContain("propose_runtime");
+    expect(names).not.toContain("propose_board");
+    expect(sdk.stream.mock.calls[0][0].messages[0].content).toContain(
+      "only runtime 'ui'",
+    );
+    expect(result.conversation[2].content).toEqual([
+      expect.objectContaining({
+        is_error: true,
+        content: expect.stringContaining("keep its id"),
+      }),
+    ]);
+    expect(result.board).toEqual({
+      ...base,
+      services: { ...base.services, ui: services },
+    });
   });
   it("decodes serialized board tool arguments before validating", async () => {
     response([

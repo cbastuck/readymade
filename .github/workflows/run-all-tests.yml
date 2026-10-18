@@ -27,6 +27,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             hkp-frontend/package-lock.json
+            readymade-mcp/package-lock.json
 
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
@@ -117,6 +118,19 @@ jobs:
         env:
           CI: true
         run: npm run test -- --exclude src/runtime/browser/tests/demo-boards.regression.test.tsx
+
+      # Indexes docs/content and boards/ of this checkout: a service page it
+      # cannot read fails here. Runtime-source assertions need the submodules
+      # and are skipped without them.
+      - name: Prepare MCP knowledge server dependencies
+        working-directory: readymade-mcp
+        run: npm ci
+
+      - name: Run readymade-mcp tests
+        working-directory: readymade-mcp
+        run: |
+          npm run typecheck
+          npm test
 
   e2e:
     runs-on: macos-latest

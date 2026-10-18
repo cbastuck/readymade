@@ -988,7 +988,7 @@ import myBoard from "../../../boards/my-board.json";
 - [ ] Every `serviceUuid` referenced in the facade exists as a `uuid` in the services list
 - [ ] Runtime IDs in `services` map match the IDs declared in `runtimes` array
 - [ ] Service IDs are looked up from docs, not guessed
-- [ ] Remote runtimes have a `url` field
+- [ ] Remote runtimes name their server with `remote` (`embedded`, `node`, `python`, …), not a `url`, and the board's `description` says which remotes it needs
 - [ ] UUIDs are descriptive and end in `-svc`
 - [ ] The board does something useful with a fresh load (no manual steps required to see it work, or clear first-run instructions in the facade)
 - [ ] Controls for setting the board up are behind their own tab, and `defaultTab` names the one people use

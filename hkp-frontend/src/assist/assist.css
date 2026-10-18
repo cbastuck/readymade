@@ -258,6 +258,32 @@
   padding: 8px 12px;
   color: var(--error, #b42318);
 }
+.hkp-assist label.hkp-assist-check {
+  flex: none;
+  padding-left: 2px;
+  font-size: 12px;
+}
+/* Shown in the panel and in the review dialog, which is not inside it. */
+.hkp-assist-confirm {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--error, #b42318);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.hkp-assist-confirm p,
+.hkp-assist-confirm ul {
+  margin: 6px 0;
+}
+.hkp-assist-confirm ul {
+  padding-left: 18px;
+}
+.hkp-assist-confirm code {
+  overflow-wrap: anywhere;
+}
+.hkp-assist-confirm .hkp-assist-row {
+  padding-bottom: 0;
+}
 @media (max-width: 700px) {
   .hkp-assist {
     position: absolute;

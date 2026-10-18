@@ -48,3 +48,22 @@ it("removes both saved tokens", () => {
     model: "",
   });
 });
+it("warns about plain HTTP endpoints on another machine without refusing them", () => {
+  render(<AssistSettings />);
+  fireEvent.change(screen.getByLabelText("API base URL"), {
+    target: { value: "http://192.168.1.20:8081/v1" },
+  });
+  expect(screen.getByText(/API token, your prompts/)).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("MCP server URL"), {
+    target: { value: "http://knowledge.lan:8787/mcp" },
+  });
+  expect(screen.getByText(/Search terms and boards/)).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("API base URL"), {
+    target: { value: "http://127.0.0.1:8081/v1" },
+  });
+  expect(screen.queryByText(/API token, your prompts/)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(readAssistSettings().mcpKnowledgeUrl).toBe(
+    "http://knowledge.lan:8787/mcp",
+  );
+});

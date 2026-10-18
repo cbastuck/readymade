@@ -29,6 +29,15 @@ import BoardAssistPromptResizer, {
 } from "./BoardAssistPromptResizer";
 import BoardAssistPreview from "./BoardAssistPreview";
 import { boardAssistKnowledgeProvider } from "./mcpKnowledge";
+import { assistContext, resolveAssistScope } from "./scope";
+import {
+  hasNewAddresses,
+  nameKeptServers,
+  newAddresses,
+  NewAddresses,
+  unencryptedRemote,
+} from "./addresses";
+import AssistConnectionNotice from "./AssistConnectionNotice";
 import BoardAssistResizer, {
   BOARD_ASSIST_DEFAULT_WIDTH,
   BOARD_ASSIST_WIDTH_KEY,
@@ -103,6 +112,17 @@ export default function BoardAssistPanel({
   } | null>(null);
   const [previous, setPrevious] = useState<SavedSnapshot | null>(null);
   const [revertEntryIndex, setRevertEntryIndex] = useState<number | null>(null);
+  // The board right after the proposal was applied. Reverting when the board
+  // has moved on since would discard those later changes, so it asks first.
+  // Absent when applying failed half-way: then reverting is the recovery.
+  const [appliedSnapshot, setAppliedSnapshot] = useState<string | null>(null);
+  const [confirmRevert, setConfirmRevert] = useState<number | null>(null);
+  // A proposal waiting for the person to accept addresses it would contact.
+  const [pendingConnection, setPendingConnection] = useState<{
+    entry: Entry;
+    index: number;
+    addresses: NewAddresses;
+  } | null>(null);
   const conversation = useRef<Conversation>([]);
   const abort = useRef<AbortController | null>(null);
   const threadEnd = useRef<HTMLDivElement>(null);
@@ -150,10 +170,20 @@ export default function BoardAssistPanel({
     providerReady,
     reload,
   ]);
-  useEffect(() => {
-    abort.current?.abort();
+  // What revert and pending confirmations point at are entries of the
+  // conversation; a new conversation reuses those positions for other entries.
+  const forgetConversation = () => {
     conversation.current = [];
     setEntries([]);
+    setPrevious(null);
+    setRevertEntryIndex(null);
+    setAppliedSnapshot(null);
+    setConfirmRevert(null);
+    setPendingConnection(null);
+  };
+  useEffect(() => {
+    abort.current?.abort();
+    forgetConversation();
   }, [
     settings.provider,
     settings.openAICompatibleUrl,
@@ -213,6 +243,7 @@ export default function BoardAssistPanel({
     setBusy(true);
     setError("");
     setKnowledgeNotice("");
+    setPendingConnection(null);
     setStatus("Reading the current board…");
     const controller = new AbortController();
     abort.current = controller;
@@ -237,6 +268,11 @@ export default function BoardAssistPanel({
       const captured = await snapshot();
       const config = captured.config;
       const ctx = currentBoard.current!;
+      const editScope = resolveAssistScope(
+        config,
+        scope,
+        selection?.selectedRuntimeId,
+      );
       const request = {
         token: compatible
           ? settings.openAICompatibleToken
@@ -245,12 +281,11 @@ export default function BoardAssistPanel({
         effort,
         prompt: text,
         conversation: conversation.current,
-        context: {
-          board: config,
-          importedUnitDocuments: captured.units,
-          scope,
-          selectedRuntimeId:
-            scope === "board" ? null : selection?.selectedRuntimeId,
+        scope: editScope,
+        base: config,
+        context: assistContext(config, editScope, {
+          includeAssetContents: settings.includeAssetContents,
+          units: captured.units,
           selectedServiceUuids:
             scope === "board" ? [] : (selection?.selectedServices?.uuids ?? []),
           openNestedPipeline: navigation?.stack ?? [],
@@ -264,7 +299,7 @@ export default function BoardAssistPanel({
               })),
             ]),
           ),
-        },
+        }),
         signal: controller.signal,
         onStatus: setStatus,
         onRawResponse: (output: string) => {
@@ -288,11 +323,22 @@ export default function BoardAssistPanel({
         : await runAssistTurn(request);
       controller.signal.throwIfAborted();
       conversation.current = result.conversation;
+      // A server the person keeps is named, not addressed, whatever the model
+      // wrote — and said so, since the proposal then differs from its text.
+      const named = result.board
+        ? nameKeptServers(config, result.board, ctx.availableRuntimeEngines)
+        : undefined;
+      const proposal = named?.board;
+      const renamedNote = named?.renamed.length
+        ? `Runtime ${named.renamed
+            .map(({ runtimeId, remote }) => `${runtimeId} now names your server "${remote}"`)
+            .join(", ")} instead of its address.`
+        : "";
       let preflightError: string | undefined;
-      if (result.board) {
+      if (proposal) {
         setStatus("Preflighting the proposed board…");
         try {
-          const candidate = validateAssistBoard(result.board);
+          const candidate = validateAssistBoard(proposal);
           await linkBoardDocument(candidate, originFor(captured));
         } catch (err) {
           preflightError =
@@ -303,12 +349,12 @@ export default function BoardAssistPanel({
       }
       const completedEntry: Entry = {
         role: "assistant",
-        text: result.text,
-        board: result.board ?? undefined,
-        rawResponse: result.board ? undefined : rawResponse,
+        text: [result.text, renamedNote].filter(Boolean).join("\n\n"),
+        board: proposal,
+        rawResponse: proposal ? undefined : rawResponse,
         base: JSON.stringify(captured),
         preflightError,
-        preflightPassed: !!result.board && !preflightError,
+        preflightPassed: !!proposal && !preflightError,
       };
       setEntries((list) =>
         list.map((entry, i) =>
@@ -376,7 +422,11 @@ export default function BoardAssistPanel({
       setStatus("");
     }
   };
-  const applyCandidate = async (entry: Entry, index: number) => {
+  const applyCandidate = async (
+    entry: Entry,
+    index: number,
+    connectionAccepted: boolean,
+  ) => {
     if (!entry.board) return false;
     try {
       const candidate = validateAssistBoard(entry.board);
@@ -385,6 +435,14 @@ export default function BoardAssistPanel({
         throw new Error(
           "The board changed since this proposal. Ask the assistant to update its proposal using the current board.",
         );
+      if (!connectionAccepted) {
+        const addresses = newAddresses(before, candidate);
+        if (hasNewAddresses(addresses)) {
+          setPendingConnection({ entry, index, addresses });
+          return false;
+        }
+      }
+      setPendingConnection(null);
       // The same linker used by the loader checks block and facade references
       // before any running runtime is removed.
       await linkBoardDocument(candidate, originFor(before));
@@ -403,6 +461,8 @@ export default function BoardAssistPanel({
         } catch (restoreError) {
           setPrevious(before);
           setRevertEntryIndex(index);
+          setAppliedSnapshot(null);
+          setConfirmRevert(null);
           const proposedMessage =
             candidateError instanceof Error
               ? candidateError.message
@@ -423,6 +483,8 @@ export default function BoardAssistPanel({
       }
       setPrevious(before);
       setRevertEntryIndex(index);
+      setAppliedSnapshot(JSON.stringify(await snapshot()));
+      setConfirmRevert(null);
       currentBoard.current!.markBoardChanged();
       setEntries((list) =>
         list.map((item, i) =>
@@ -441,31 +503,45 @@ export default function BoardAssistPanel({
       return false;
     }
   };
-  const apply = async (entry: Entry, index: number) => {
+  const apply = async (
+    entry: Entry,
+    index: number,
+    connectionAccepted = false,
+  ) => {
     if (!entry.board || busyRef.current) return false;
     busyRef.current = true;
     setBusy(true);
     setError("");
     setStatus("Preflighting and applying the proposed board…");
     try {
-      return await applyCandidate(entry, index);
+      return await applyCandidate(entry, index, connectionAccepted);
     } finally {
       busyRef.current = false;
       setBusy(false);
       setStatus("");
     }
   };
-  const revert = async (index: number) => {
+  const revert = async (index: number, discardLaterChanges = false) => {
     if (!previous || revertEntryIndex !== index || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
     setStatus("Restoring the previous board…");
     try {
+      if (
+        !discardLaterChanges &&
+        appliedSnapshot &&
+        !matchesAssistSnapshot(await snapshot(), appliedSnapshot)
+      ) {
+        setConfirmRevert(index);
+        return;
+      }
+      setConfirmRevert(null);
       await loadConfiguration(previous.config, previous);
       currentBoard.current!.markBoardChanged();
       setPrevious(null);
       setRevertEntryIndex(null);
+      setAppliedSnapshot(null);
       setEntries((list) =>
         list.map((entry, i) =>
           i === index ? { ...entry, applied: false } : entry,
@@ -636,13 +712,26 @@ export default function BoardAssistPanel({
             >
               <option value="board">Whole board</option>
               <option value="selection">
-                {selectedCount
-                  ? `${selectedCount} selected service${selectedCount === 1 ? "" : "s"} · ${selectedRuntime?.name ?? "runtime"}`
-                  : selectedRuntime
-                    ? `Selected runtime · ${selectedRuntime.name}`
-                    : "Whole board (nothing selected)"}
+                {selectedRuntime
+                  ? `Only runtime ${selectedRuntime.name}${
+                      selectedCount
+                        ? ` · ${selectedCount} selected service${selectedCount === 1 ? "" : "s"}`
+                        : ""
+                    }`
+                  : "Whole board (nothing selected)"}
               </option>
             </select>
+          </label>
+          <label className="hkp-assist-check">
+            <input
+              type="checkbox"
+              disabled={busy}
+              checked={settings.includeAssetContents}
+              onChange={(event) =>
+                updateSettings({ includeAssetContents: event.target.checked })
+              }
+            />
+            Include asset contents
           </label>
         </div>
         <div
@@ -686,6 +775,41 @@ export default function BoardAssistPanel({
                         ? "Preflight passed. Review before applying."
                         : "Review before applying."}
                   </p>
+                  {pendingConnection?.index === index && !preview && (
+                    <AssistConnectionNotice
+                      addresses={pendingConnection.addresses}
+                      busy={busy}
+                      onAccept={() =>
+                        void apply(pendingConnection.entry, index, true)
+                      }
+                      onCancel={() => setPendingConnection(null)}
+                    />
+                  )}
+                  {confirmRevert === index && (
+                    <div className="hkp-assist-confirm" role="alert">
+                      <p>
+                        The board changed after this proposal was applied.
+                        Reverting restores the board from before the proposal
+                        and discards those later changes.
+                      </p>
+                      <div className="hkp-assist-row">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setConfirmRevert(null)}
+                        >
+                          Keep current board
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void revert(index, true)}
+                        >
+                          Revert anyway
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="hkp-assist-row">
                     <button
                       type="button"
@@ -777,8 +901,7 @@ export default function BoardAssistPanel({
               type="button"
               disabled={busy || !entries.length}
               onClick={() => {
-                setEntries([]);
-                conversation.current = [];
+                forgetConversation();
                 setError("");
               }}
             >
@@ -806,22 +929,58 @@ export default function BoardAssistPanel({
             )}
           </div>
           <p className="hkp-assist-hint">
-            {compatible
-              ? `Requests go to ${settings.openAICompatibleUrl}.`
-              : "Prompts and board configuration are sent to Anthropic."}
+            {`Your prompt and ${
+              scope === "selection" && selectedRuntime
+                ? `runtime ${selectedRuntime.name} with an outline of the rest of the board`
+                : "the whole board"
+            }, ${
+              settings.includeAssetContents
+                ? "including asset contents"
+                : "without asset contents"
+            }, are sent to ${
+              compatible ? settings.openAICompatibleUrl : "Anthropic"
+            }.`}
           </p>
+          {compatible && unencryptedRemote(settings.openAICompatibleUrl) && (
+            <p className="hkp-assist-error" role="alert">
+              This server is reached over unencrypted HTTP on another machine.
+              Your token, prompts and board can be read on the way.
+            </p>
+          )}
         </form>
       </aside>
       {preview && (
         <BoardAssistPreview
           current={preview.current}
           proposed={preview.proposed}
-          onClose={() => setPreview(null)}
+          onClose={() => {
+            setPreview(null);
+            setPendingConnection(null);
+          }}
           onApply={(board) =>
             apply(
               { ...preview.entry, board, base: preview.base },
               preview.index,
             )
+          }
+          connection={
+            pendingConnection?.index === preview.index ? (
+              <AssistConnectionNotice
+                addresses={pendingConnection.addresses}
+                busy={busy}
+                onAccept={async () => {
+                  if (
+                    await apply(
+                      pendingConnection.entry,
+                      pendingConnection.index,
+                      true,
+                    )
+                  )
+                    setPreview(null);
+                }}
+                onCancel={() => setPendingConnection(null)}
+              />
+            ) : null
           }
           busy={busy}
           error={error}

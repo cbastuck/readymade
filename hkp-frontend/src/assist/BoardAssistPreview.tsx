@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { validateAssistBoard } from "./validation";
 import { BoardDescriptor } from "../types";
 import { DiffEditor } from "../components/shared/Editor";
@@ -31,6 +31,7 @@ export default function BoardAssistPreview({
   busy,
   error,
   readOnly = false,
+  connection,
 }: {
   current: BoardDescriptor;
   proposed: BoardDescriptor;
@@ -39,6 +40,8 @@ export default function BoardAssistPreview({
   busy: boolean;
   error: string;
   readOnly?: boolean;
+  /** Asks about addresses the edited board would contact, when it does. */
+  connection?: ReactNode;
 }) {
   const [draft, setDraft] = useState(() =>
     JSON.stringify(sortedJSON(proposed), null, 2),
@@ -112,6 +115,7 @@ export default function BoardAssistPreview({
             }
           />
         </div>
+        {connection}
         {(validationError || error) && (
           <p role="alert" className="hkp-assist-error">
             {validationError || error}

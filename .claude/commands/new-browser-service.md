@@ -20,6 +20,7 @@ Ask the user focused questions only where the design is genuinely ambiguous.
 4. Add filename to **`SERVICE_DESCRIPTOR_FILES`** in `hkp-frontend/src/runtime/browser/services/tests/service-modules.contract.test.ts`
 5. **`boards/<slug>-demo-board.json`** — demo board
 6. **`docs/content/services/<slug>.md`** — documentation
+7. Check the page still indexes in **`readymade-mcp`** — see *Board Assist knowledge* below
 
 The demo board is automatically linked in the docs UI via naming convention — no code changes needed in `DocumentationServices.tsx`.
 
@@ -279,6 +280,38 @@ One-line description (shown in the service index).
 ```
 
 The first line after `# <Name>` becomes the description shown in the services index. Keep it concise.
+
+---
+
+## Board Assist knowledge (`readymade-mcp`)
+
+The service page is also the source of the **service contract** the
+`readymade-mcp` knowledge server gives Board Assist (`get_service_contract`,
+`find_compatible_services`, `validate_board`). It reads the page, not the code,
+so keep these shapes exactly:
+
+- `## Available in` — a table row ``| Browser | `<service-id>` |`` (several
+  ids in one cell as `` `a`, `b` ``), or a bullet ``- Browser — service ID `<id>` ``.
+  The runtime cell must name the runtime (Browser, hkp-node, hkp-python, hkp-rt).
+- `## Configuration` — a `| Property | Type | Default | Description |` table.
+- `## Input / Output` — name the data types (`JSON`, `String`, `BinaryData`,
+  `FloatRingBuffer`, `MixedData`, `Null`, …) in the input and output lines; that
+  is what compatible-service lookups match on.
+
+Name the service file after its slug (`GameOfLife.ts` for `hookup.to/service/game-of-life`): `inspect_service_source` finds browser source by the slug in the file path, since the quoted id there carries the `hookup.to/service/` prefix.
+
+Then run `cd readymade-mcp && npm test`: *indexes every documented service page*
+fails when a page yields no contract. Update the server itself only when the new
+service brings something it does not know yet:
+
+| New functionality | Update in `readymade-mcp/` |
+|---|---|
+| A data type | `knownTypes` in `src/repository.ts` |
+| A runtime, or service source outside `hkp-frontend/src/runtime/browser` | `sourceRoots` in `src/repository.ts`; `runtimeNames` / `normalizeRuntime` in `src/types.ts` |
+| A board-level field or rule worth checking before a board loads | `src/validation.ts`, with a case in `tests/repository.test.ts` |
+| A new kind of knowledge Board Assist should be able to ask for | a tool in `src/server.ts` + `src/schemas.ts`, and the allowlist in `hkp-frontend/src/assist/mcpKnowledge.ts` |
+
+Board Assist's bundled offline documentation picks the page up on its own.
 
 ---
 

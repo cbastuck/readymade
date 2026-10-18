@@ -9,6 +9,8 @@ export type AssistSettings = {
   openAICompatibleToken: string;
   openAICompatibleUrl: string;
   mcpKnowledgeUrl: string;
+  /** Whether requests carry asset contents, or only their ids and types. */
+  includeAssetContents: boolean;
   model: string;
   effort: Effort;
 };
@@ -22,6 +24,7 @@ const defaults: AssistSettings = {
   openAICompatibleToken: "",
   openAICompatibleUrl: "https://api.openai.com/v1",
   mcpKnowledgeUrl: "",
+  includeAssetContents: false,
   model: "",
   effort: "default",
 };

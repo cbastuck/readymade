@@ -33,6 +33,8 @@ const options = () => ({
   conversation: [],
   prompt: "Create a timer board",
   context: { board },
+  scope: { kind: "board" as const },
+  base: board,
   signal: new AbortController().signal,
   onText: vi.fn(),
   onStatus: vi.fn(),
@@ -272,6 +274,39 @@ it("retains JSON when runtime and service keys fail board validation", async () 
     runOpenAICompatibleTurn({ ...options(), onRawResponse }),
   ).rejects.toThrow("Missing service list for ui");
   expect(onRawResponse).toHaveBeenCalledWith(content);
+});
+it("merges a runtime-scoped reply into the current board", async () => {
+  const base = {
+    runtimes: [
+      { id: "ui", name: "Browser", type: "browser" },
+      { id: "node", name: "Node", type: "rest", remote: "node" },
+    ],
+    services: { ui: [], node: [{ uuid: "keep", serviceId: "monitor" }] },
+  };
+  const services = [{ uuid: "t", serviceId: "timer" }];
+  const fetch = vi.fn(async () =>
+    streamResponse([
+      JSON.stringify({
+        explanation: "Added a timer",
+        runtime: base.runtimes[0],
+        services,
+      }),
+    ]),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const result = await runOpenAICompatibleTurn({
+    ...options(),
+    scope: { kind: "runtime", runtimeId: "ui", runtimeName: "Browser" },
+    base,
+  });
+  expect(result.board).toEqual({
+    ...base,
+    services: { ...base.services, ui: services },
+  });
+  const body = JSON.parse(
+    (fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string,
+  );
+  expect(body.messages.at(-1).content).toContain("only runtime 'ui'");
 });
 it("keeps server-default thinking unspecified and respects Stop", async () => {
   const controller = new AbortController();
