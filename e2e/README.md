@@ -275,9 +275,10 @@ pushes and normal manual runs.
 
 The workflow has read-only repository permissions, does not persist checkout
 credentials, and cancels obsolete runs for the same PR/ref. The browser job
-installs Chromium/WebKit; the cloud job installs Chromium and initializes only
-`hkp-node` at the gitlink revision, without following a remote branch or pulling
-the unrelated SSH submodules. Both use Node 22 and lockfile installs.
+installs Chromium/WebKit on macOS; the cloud job runs on Ubuntu, installs
+Chromium with its system dependencies and initializes only `hkp-node` at the
+gitlink revision, without following a remote branch or pulling the unrelated
+SSH submodules. Both use Node 22 and lockfile installs.
 
 Cloud CI explicitly sets `HKP_E2E_CLOUD_TARGET=node`: six real Node/coordinator
 journeys, with no C++ cases counted as skips. C++ and Python are not covered by

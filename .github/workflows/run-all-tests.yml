@@ -208,7 +208,8 @@ jobs:
 
   e2e-cloud:
     name: E2E Node cloud
-    runs-on: macos-latest
+    # Node and Chromium only: nothing here needs macOS.
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       HKP_E2E_CLOUD_TARGET: node
@@ -255,7 +256,7 @@ jobs:
 
       - name: Install Playwright Chromium
         working-directory: e2e
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run Node cloud E2E tests
         working-directory: e2e

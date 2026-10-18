@@ -41,13 +41,7 @@ test.describe("shipped boards", () => {
   });
 
   for (const board of boards) {
-    test(board.slug, async ({ page, seedBoard, openBoard }, testInfo) => {
-      if (["face-alert-board", "detect-demo-board"].includes(board.slug)) {
-        // MediaPipe writes this CPU delegate startup notice to stderr.
-        // Retain diagnostics; expect only this exact informational line.
-        testInfo.annotations.push({ type: "expected-console-error",
-          description: "^INFO: Created TensorFlow Lite XNNPACK delegate for CPU\\.$" });
-      }
+    test(board.slug, async ({ page, seedBoard, openBoard }) => {
       const known = KNOWN_BROKEN[board.slug];
       if (known) {
         test.fail(true, known);
