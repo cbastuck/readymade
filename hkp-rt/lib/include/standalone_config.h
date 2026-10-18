@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <exception>
 #include <functional>
@@ -7,6 +9,7 @@
 #include <vector>
 
 #include "auth.h"
+#include "egress.h"
 
 namespace hkp
 {
@@ -47,6 +50,9 @@ struct StandaloneConfig
   std::string mountSecretFile;
   /** A runtime config to load at start; the third argument. */
   std::string runtimeConfigFile;
+  /** Where a board may make this server connect to; open unless it is hosted.
+   *  `HKP_EGRESS`, `HKP_EGRESS_ALLOW` (see egress.h). */
+  egress::Policy egress;
   /** Set when the configuration must not be served; says what is missing. */
   std::string error;
 };
@@ -110,6 +116,20 @@ inline StandaloneConfig readStandaloneConfig(
     config.externalHost = external;
   }
   config.externalUrl = read("HKP_EXTERNAL_URL");
+  {
+    std::string mode = read("HKP_EGRESS");
+    const auto first = mode.find_first_not_of(" \t");
+    const auto last = mode.find_last_not_of(" \t");
+    mode = first == std::string::npos ? "" : mode.substr(first, last - first + 1);
+    std::transform(mode.begin(), mode.end(), mode.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    std::string problem;
+    config.egress = egress::readPolicy(mode, read("HKP_EGRESS_ALLOW"), problem);
+    if (!problem.empty())
+    {
+      config.error = problem;
+    }
+  }
   while (!config.externalUrl.empty() && config.externalUrl.back() == '/')
   {
     config.externalUrl.pop_back();

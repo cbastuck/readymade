@@ -93,6 +93,11 @@ data on its output. Services:
 - Expose an optional **UI panel** (ServiceUI) for interactive configuration; a generic panel
   is shown for services that don't provide one
 - Can **emit data autonomously** without receiving input (e.g. Timer)
+- **Connects to what a board names only through its runtime's egress guard** —
+  `fetch` (hkp-node), `client_session`/`urlopen` from `egress.py` (hkp-python),
+  `egress::resolve` (hkp-rt). A hosted server (`HKP_EGRESS=public`) refuses
+  private destinations there; each runtime's tests fail on any other way out
+  (`docs/content/concepts/runtime.md`, "Where a hosted server may connect")
 
 For browser services, the service and its UI share the same JS process — state sync is a
 direct method call. For remote runtimes (Node, Python, C++), the UI communicates via REST;

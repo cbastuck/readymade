@@ -13,7 +13,7 @@ The security findings are worked through one at a time, in the order of the tabl
 | 1 | Local runtimes trust every loopback caller | in progress | 2026-10-09 | Built in all three runtime servers, the desktop host and the playground, with tests and docs. Remaining: the pass by hand listed under the finding |
 | 2 | Prototype pollution in facade projection | done | 2026-10-18 | Machinery path segments are refused at deploy and ignored in projection, projection reads own properties only, and identity reads own claims only; `docs/content/concepts/cloud-boards.md` |
 | 3 | Native page trust and navigation policy | in progress | 2026-10-18 | Built in the desktop host with tests and docs. Remaining: the pass by hand listed under the finding |
-| 4 | Hosted boards can reach private networks | open | | |
+| 4 | Hosted boards can reach private networks | in progress | 2026-10-18 | Built in hkp-node, hkp-python and hkp-rt, each with tests and a source scan; docs, READMEs and skills updated. Remaining: the pass by hand on a hosted server |
 | 5 | Unbounded coordinator WebSocket payloads | open | | |
 | 6 | The board document as untrusted input | open | | Also carries confining hkp-rt's `filesystem`, moved here from finding 1 (D4) and required. A board's unit references reaching any file through the desktop `readFile` are closed by finding 3 (P3) |
 | 7 | Same-host reverse proxy and address-based trust | open | | |
@@ -205,6 +205,78 @@ Evidence: HTTP clients and asset downloads intentionally access user-selected UR
 Proposal: decide explicitly whether hosted boards may access private networks, loopback and cloud metadata. If not, enforce policy at every redirect and resolved destination and preferably at the network layer. Local boards may legitimately need LAN access, so apply deployment-specific policy.
 
 Required tests: literal private addresses, names resolving to them, redirects into them and rebinding between resolution and connection are refused on a hosted configuration and allowed on a local one.
+
+#### Decided 2026-10-18, in progress
+
+**Why in the code and not only in a firewall.** A firewall rule on the hosted process's user would cover every service and library, and is the backstop on hosts the operator controls. But this code runs on servers its authors do not control, some on platforms with no firewall to write a rule in. And a firewall sees one process: it cannot tell a board's HTTP Client from the server's own connections (the coordinator link, the token issuer's keys, one runtime calling another's mount on the same host, as the RSS radio's voice does).
+
+**The rule (E1).** With `HKP_EGRESS=public`, a destination a board chose is reached only when every address its name resolves to is a public internet address. Unset, nothing changes: desktop, embedded and self-hosted servers keep their LAN.
+
+- **Refused ranges:** `0.0.0.0/8`, `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`, `169.254.0.0/16`, `192.0.0.0/24`, `198.18.0.0/15`, `224.0.0.0/4`, `240.0.0.0/4`, `::`, `::1`, `fe80::/10`, `fc00::/7` and `ff00::/8`.
+- **Addresses inside addresses:** `::ffff:0:0/96`, `64:ff9b::/96` and `2002::/16` carry an IPv4 address, and are judged by it.
+- **Where it is checked:** on the resolved address, where the socket opens, so every redirect hop and a name rebinding between lookup and connect are covered too. A refusal says which address and why.
+
+**The exceptions (E2).** `HKP_EGRESS_ALLOW` lists addresses or ranges that are reached anyway: an internal model server, for example. They are addresses, not names, so an allowed name cannot be repointed. There is no port: the check runs where a name is resolved, which knows no port.
+
+**What is exempt (E3).** Connections the operator configured, not a board: the coordinator link, and fetching the token issuer's keys.
+
+**Kept from being forgotten (E4).**
+- A new service is covered without doing anything: in hkp-node every `fetch` goes through a dispatcher that checks, and in hkp-rt and hkp-python services resolve through the guard.
+- Each runtime's tests scan its sources and fail on a raw network API used outside the guard, naming what to use instead. The exemptions are listed in that test, with their reasons.
+- The scaffolding skills and `CLAUDE.md` say so.
+
+**Order.**
+1. hkp-node: `egress.ts`; the `undici` dispatcher, `undici@6` to match Node 22's built-in `fetch`; IMAP and SMTP connect to the checked address, with the name kept for TLS.
+2. hkp-python: `egress.py` and a guarded `aiohttp` resolver.
+3. hkp-rt: `egress.h`, replacing the plain `resolve` at each site a board can point somewhere.
+4. Docs: a "Hosted servers" section in `docs/content/concepts/runtime.md` covering what to set and the firewall backstop.
+
+**Built 2026-10-18: hkp-node.**
+
+- `src/egress.ts` holds the ranges, `readEgressPolicy`, `isPublicAddress` and `mayReach`, and `setEgressPolicy`.
+  - **Hosted:** `setEgressPolicy` installs an `undici` (6.x) dispatcher as the process's. Its connector refuses an address literal itself, since a socket opened to one is never looked up, and resolves names through `egressLookup`, which refuses a name when any of its addresses is private. `index.ts` applies `HKP_EGRESS` before the server starts.
+  - **Open:** undici is not even loaded, so nothing changes.
+- **IMAP and SMTP** connect to `reachableAddress(host)`, the checked address, with the name passed as `servername` for TLS.
+- **Error reports:** `http-client`, `rss`, `text-generation`, IMAP and SMTP say "This server does not reach private addresses (…)". Before, it was "fetch failed", or, for text generation, advice to start a model server.
+- **Tests:**
+  - `tests/egress.test.ts`: the ranges and their edges; IPv6 forms carrying an IPv4 address; literal, named and re-spelled private addresses refused through `fetch`; the allowlist; a redirect refused at its second hop, through `fetch` and through `fetchWithCredentials`; an open server unchanged.
+  - Hosted cases in `tests/imap-email.test.ts` and `tests/smtp-email.test.ts`.
+  - `tests/egress-sources.test.ts`, the source scan, with the coordinator link as its one exemption. Checked by adding a service calling `https.get`, which it reported.
+- **Docs:** `HKP_EGRESS` and `HKP_EGRESS_ALLOW` rows in `hkp-node/README.md`; the rule in `/new-node-service`.
+
+**Built 2026-10-18: hkp-python.**
+
+- `src/hkp/egress.py` holds the same ranges and policy, applied by `__main__.py`. It offers two ways to make a request:
+  - **`client_session()`** for aiohttp. Hosted, its connector checks every address `TCPConnector._resolve_host` returns. aiohttp sends both names and literals through that method, for every connection and redirect hop, and itself refuses legacy IPv4 spellings. The method is private, so `tests/test_egress.py` pins it: renaming the override fails three tests.
+  - **`urlopen()`** for urllib. Hosted, each connection resolves through the check and opens to the address that was checked, via `http.client`'s `_create_connection` hook. TLS is still verified against the name.
+- **Where they are used:** `http_client` uses `client_session()`; `assets` and `text_generation` use `urlopen()`. A refusal is reported as one, including where `text_generation` would otherwise say to start a model server.
+- **Tests:**
+  - `tests/test_egress.py`: the same address table as hkp-node; the policy; refusal, the allowlist and a redirect refused at its second hop, through aiohttp and through urllib; an open server unchanged; the HTTP Client's error message.
+  - `tests/test_egress_sources.py`, the source scan. Its exemptions are the coordinator link and the text-to-speech model download, which comes from a fixed release address. Checked by adding a service opening its own `ClientSession`, which it reported.
+- **Docs:** README rows.
+
+**Built 2026-10-18: hkp-rt.**
+
+- `lib/include/egress.h` holds the same ranges and policy, plus `egress::resolve` and `egress::asyncResolve`. They refuse when any endpoint the resolver answers may not be reached, and the caller connects to exactly those endpoints. An address literal resolves to itself and is judged the same way.
+  - **The eight sites using them:** `http_client.cpp` (twice), `assets.cpp`, `text_generation.cpp`, `speech_http.h` (text-to-speech and speech-to-text servers), `websocket_client_session.cpp`, `receiver_session.h` (websocket-reader) and `websocket_writer.cpp`.
+  - **How a refusal reaches the person:** `egress::Refused` carries the message, and text generation reports it instead of its "start a server" hint. The async path answers with an `hkp.egress` error code, which the WebSocket writer shows as its status.
+- **Configuration:** `standalone_config.h` reads `HKP_EGRESS` and `HKP_EGRESS_ALLOW`, refusing to start on a setting it does not understand. `exe/main.cpp` applies the policy. The desktop app's embedded runtime never sets it, so it stays open.
+- **Tests:**
+  - `tests/egress.test.cpp`: the address table, the policy and its environment variables, sync and async refusal, the allowlist, and an open server unchanged.
+  - `tests/egress_sources.test.cpp`, the source scan, matching resolver calls and `getaddrinfo`. Its exemptions are the coordinator link and the token issuer's keys. Checked by adding a file with its own `resolver.resolve`, which it reported.
+  - All 368 hkp-rt tests pass, and the desktop app still builds.
+- **Docs:**
+  - "Where a hosted server may connect" in `docs/content/concepts/runtime.md`: the rule, the allowlist, what is exempt, and the firewall backstop, with what a firewall rule has to leave open.
+  - Rows in `hkp-rt/README-docker.md`.
+  - The rule in `/new-cpp-service`, and a line in `CLAUDE.md`'s service section.
+
+**Remaining.**
+
+1. A pass by hand on a hosted server, for each runtime that serves others:
+   - an HTTP Client pointed at `http://169.254.169.254/` and at the server's own private address is refused, with the message;
+   - a public URL still works;
+   - a board using an allowed internal address still works.
+2. Then cut this section down as the Progress rules say.
 
 ### 5. Medium: unbounded coordinator WebSocket payloads
 

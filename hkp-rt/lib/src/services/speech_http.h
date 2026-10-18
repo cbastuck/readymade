@@ -28,6 +28,7 @@
 #include <boost/url/scheme.hpp>
 
 #include "./root_certificates.h"
+#include "egress.h"
 
 namespace hkp::speech {
 
@@ -122,7 +123,7 @@ inline HttpResponse httpPost(const std::string& serverUrl,
 
   net::io_context ioc;
   tcp::resolver resolver(ioc);
-  const auto endpoints = resolver.resolve(host, port);
+  const auto endpoints = ::hkp::egress::resolve(resolver, host, port);
 
   if (isHttps)
   {

@@ -405,3 +405,12 @@ async process(input: unknown, notify: (p: unknown) => void): Promise<unknown> {
   return result;
 }
 ```
+
+**Connecting somewhere a board names** — use `fetch`. On a hosted server
+(`HKP_EGRESS=public`) every `fetch` is checked against private addresses by the
+process's dispatcher (`src/egress.ts`), so a service gets that for nothing. A
+library that opens its own socket (IMAP, SMTP) must be handed
+`await reachableAddress(host)` — connect to the address it returns, with
+`servername` for TLS — and report a refusal with `failureReason(err)`. Never
+`net`/`tls.connect`, `http(s).request`, a `ws` client or an `undici` dispatcher
+of your own: `tests/egress-sources.test.ts` fails on them.

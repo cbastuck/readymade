@@ -177,6 +177,12 @@ Include `"../sub_runtime.h"` and `"../uuid.h"`.
 
 ## Source service pattern (service drives the pipeline itself)
 
+**Connecting somewhere a board names** — resolve with `::hkp::egress::resolve(resolver, host, port)`
+(or `asyncResolve`) from `egress.h` and connect to the endpoints it returns, never `resolver.resolve`
+directly. On a hosted server (`HKP_EGRESS=public`) it refuses private destinations with
+`egress::Refused`, whose `what()` is the message to report. `tests/egress_sources.test.cpp` fails on a
+resolve anywhere else.
+
 For services that push data autonomously (network listeners, timers), use `emit()` for multi-output
 and `next()` / `nextAsync()` for single-output from a background thread:
 
