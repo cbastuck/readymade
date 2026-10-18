@@ -90,6 +90,30 @@ The scheme carries the app itself on iOS: the webview loads
 door. The desktop serves the built frontend from its own local server instead,
 and in development points at Vite (`MEANDER_USE_EMBEDDED_FRONTEND=OFF`).
 
+### Only the app's own pages, on the desktop
+
+What the desktop webview holds is handed everything `saucer.exposed` offers —
+the vault, the person's files, their camera and microphone — and the bridge
+cannot tell one caller from another: WebKit offers its message handler to every
+frame, and saucer does not say which one called. So the boundary is what
+loads, not who calls (`meander/backend/pageTrust.h`):
+
+- **A document loads only from the app's own origin**, in the main frame or any
+  other: `saucer://embedded` packaged; the Vite server and the frontend
+  server's LAN address in development; and the `about:blank`/`about:srcdoc` a
+  page makes for itself. A web address the person clicked, or a new window,
+  opens in their browser; one a page asked for on its own is only refused.
+- **A permission goes only to an own page**, and only for the microphone, the
+  camera and location.
+- **Files are what the person picked.** `readFile` reads a file a picker
+  returned in this session, or one beside or below it — where a composition's
+  units are — and `writeFile` writes only a path the save dialog returned.
+  `hkp://local-image/` reads under the same rule. A board naming
+  `../../..` or `file:///…` is refused; a unit in a sibling folder stops
+  resolving until that folder is picked.
+- **The vault and the grants** are injected for the app's own pages only, and
+  an `hkp://` answer names the page that asked, when it is one, rather than `*`.
+
 ---
 
 ## The runtime is addressed the same way, near or far

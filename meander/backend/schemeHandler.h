@@ -7,6 +7,7 @@
 
 #include "./router.h"
 #include "./settings.h"
+#include "./pageTrust.h"
 
 #include <saucer/scheme.hpp>
 
@@ -27,6 +28,11 @@ public:
   // address its frontend server gives a phone on the LAN. Allowed at the
   // runtime beside whatever the person added in the settings.
   void setOwnOrigins(std::vector<std::string> origins);
+
+  // The pages this webview loads (pageTrust.h), which are the only ones an
+  // answer names as allowed to read it, and the files the person picked,
+  // which are the only ones a route reads from disk. Both outlive the handler.
+  void trustPages(std::vector<std::string> ownPages, const readymade::FileGrants& files);
 
 private:
   saucer::scheme::response handleGetRemotes(const Router::Params &p, const saucer::scheme::request &req) const;
@@ -62,6 +68,10 @@ private:
   nlohmann::json currentRuntimeSettings() const;
   // Hands the runtime the origins it should answer besides its defaults.
   void applyAllowedOrigins() const;
+  // Names the asking page as allowed to read the answer when it is an own
+  // page, and nobody otherwise.
+  void answerOrigin(const saucer::scheme::request &req, saucer::scheme::response &res) const;
+  saucer::scheme::response route(const saucer::scheme::request &req);
 
 private:
   std::shared_ptr<hkp::Server> m_server;
@@ -69,4 +79,6 @@ private:
   Router m_router;
   Settings m_settings;
   std::vector<std::string> m_ownOrigins;
+  std::vector<std::string> m_ownPages;
+  const readymade::FileGrants* m_files = nullptr;
 };

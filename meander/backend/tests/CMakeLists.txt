@@ -42,6 +42,7 @@ add_executable(readymade-backend-tests
   redirectParams.test.cpp
   boardName.test.cpp
   allowedOrigins.test.cpp
+  pageTrust.test.cpp
 )
 target_include_directories(readymade-backend-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(readymade-backend-tests PRIVATE Catch2::Catch2WithMain nlohmann_json::nlohmann_json)
