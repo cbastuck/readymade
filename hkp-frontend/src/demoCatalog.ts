@@ -16,6 +16,14 @@ export type DemoCatalogEntry = {
 
 export const DEMO_CATALOG: DemoCatalogEntry[] = [
   {
+    slug: "wikipedia-live-edits",
+    label: "Wikipedia Live Edits",
+    description:
+      "Stream every English Wikipedia edit in real time — filter by keyword to watch a topic evolve.",
+    icon: "🌍",
+    tags: ["Live data"],
+  },
+  {
     slug: "alpaca-markets",
     label: "Alpaca Markets",
     description:

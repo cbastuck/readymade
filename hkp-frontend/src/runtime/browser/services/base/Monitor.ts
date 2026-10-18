@@ -43,7 +43,10 @@ class Monitor {
   }
 
   configure(config: any): void {
-    const { logToConsole, mode, width, height } = config;
+    const { logToConsole, mode, width, height, clear } = config;
+    if (clear) {
+      this.app.notify(this, { __clear: true });
+    }
     if (logToConsole !== undefined) {
       this.logToConsole = logToConsole;
     }

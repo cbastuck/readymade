@@ -25,7 +25,7 @@ export function MessageListRenderer({
 }: WidgetRendererProps<MessageListWidget>) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const pendingEchoes = useRef<Map<string, number>>(new Map());
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const [composerValue, setComposerValue] = useState("");
 
   const sourceService = useMemo(
@@ -49,6 +49,10 @@ export function MessageListRenderer({
     }
     const handler = (notification: any) => {
       if (notification?.__internal) {
+        return;
+      }
+      if (notification?.__clear) {
+        setMessages([]);
         return;
       }
       const text = extractText(notification, widget.source.path);
@@ -75,7 +79,10 @@ export function MessageListRenderer({
   }, [sourceService, widget.source.path]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = listRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
 
   const { markBoardChanged } = boardContext;
@@ -118,6 +125,7 @@ export function MessageListRenderer({
       }}
     >
       <div
+        ref={listRef}
         style={{
           flex: 1,
           overflowY: "auto",
@@ -174,7 +182,6 @@ export function MessageListRenderer({
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
       {widget.composer && (

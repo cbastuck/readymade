@@ -1,5 +1,6 @@
 import { BoardDescriptor } from "./types";
 
+import wikipediaEditsBoard from "../../boards/wikipedia-edits-board.json";
 import alpacaBoard from "../../boards/alpaca-board.json";
 import smoothDemoBoard from "../../boards/smooth-demo-board.json";
 import helloworldBoard from "../../boards/helloworld-board.json";
@@ -39,6 +40,7 @@ import meetingPollBoard from "../../boards/meeting-poll-demo-board.json";
 import nestedRhythmBoard from "../../boards/nested-rhythm-demo-board.json";
 
 const REGISTRY: Record<string, BoardDescriptor> = {
+  "wikipedia-live-edits": wikipediaEditsBoard as BoardDescriptor,
   "alpaca-markets": alpacaBoard as BoardDescriptor,
   smooth: smoothDemoBoard as BoardDescriptor,
   "hello-world": helloworldBoard as BoardDescriptor,
