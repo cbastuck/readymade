@@ -5,7 +5,6 @@
 #include <cstring>
 
 #include "./http_server_impl.h" 
-#include "./request_handler.h"
 #include "./http_listener.h"
 
 namespace beast = boost::beast;
@@ -107,8 +106,6 @@ void Session::on_read(beast::error_code ec, std::size_t bytes_transferred)
     return fail(ec, "read");
   }
 
-  // Send the response
-  // handle_request(std::move(req_), lambda_);
   server_.onSessionOpened(shared_from_this());
 }
 

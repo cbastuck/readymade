@@ -271,6 +271,39 @@ no assignment, a name is only one of the scope's own properties, and
 however they are reached, which closes the way from a value to the code behind
 it.
 
+### Where a board may read and write files
+
+A board is a document somebody wrote, and opening one builds its runtimes. A
+service on hkp-rt that opens a path the board names — a
+[Filesystem](../services/filesystem.md)'s file, a Monitor's log, a Cache's
+folder, a WAV to read — would otherwise open it wherever it is: beside the
+desktop app that is `~/.hkp`, which holds the vault, the remembered grants and
+the settings that say which websites may call the runtime; on a server it is the
+mount secret, the coordinator tickets and the process's environment.
+
+So hkp-rt opens such a path only inside a **folder it was given**:
+
+| hkp-rt runs as | Default folder | Others |
+|---|---|---|
+| the desktop app's runtime | `~/.hkp/cpp/files` | **Settings → Access → Folders boards may use**, applied at once. A folder holding `~/.hkp`, or inside it, is refused — the home folder among them |
+| a standalone server | `HKP_FILES_DIR`, else `~/.hkp/cpp/files`; empty for none | `HKP_FILES_ALLOW`, absolute paths separated as `PATH` is |
+| the iOS and Android apps' runtime | none | — |
+
+A relative path is taken from the default folder, which is what makes a board
+that writes `"recordings"` portable. A path is judged on what it is rather than
+how it is spelled: `..` and symlinks are followed before it is compared, and a
+name that arrives with the data — a file inside a configured folder, a cache
+entry's name — is taken inside that folder whatever it says. The rule lives in
+one place (`hkp-rt/lib/include/files.h`); every service resolves through it, and
+a test fails on a file opened any other way.
+
+What it does not cover: hkp-rt has one tenant, so everyone a hosted server lets
+in shares its folders; paths the operator names — a runtime config, plugins —
+are the operator's; and a folder should hold nothing but what boards may have,
+because a board that may write there may write all of it. The models the speech
+and text-generation services load are named by path too and are not confined:
+they are read by the model library, never handed back to the board.
+
 ### Adding one to a board
 
 In the app: the runtimes menu, **add an external runtime**, a name and a host URL
@@ -600,6 +633,7 @@ Implementations: `runtime/browser/services/BrowserSubService.tsx`,
 | Node runtime + tenancy | `hkp-node/src/runtime.ts` |
 | Python runtime | `hkp-python/src/hkp/runtime.py` |
 | C++ runtime + sub-runtime | `hkp-rt/lib/src/runtime.cpp`, `sub_runtime.cpp` |
+| Folders an hkp-rt board may use | `hkp-rt/lib/include/files.h`; the desktop's in `meander/backend/fileFolders.h` |
 | Chain for deployed boards | `hkp-node/src/coordinator/session.ts` (`routeResult`, `nextRuntime`) |
 
 ---

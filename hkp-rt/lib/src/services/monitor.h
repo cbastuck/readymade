@@ -1,8 +1,8 @@
 #pragma once
 
 #include <iostream>
-#include <fstream>
 
+#include <files.h>
 #include <types/types.h>
 #include <service.h>
 #include <types/data.h>
@@ -19,6 +19,8 @@
  * Arrays: pass-through
  * Binary: inspect/log support depends on runtime UI/logging
  * MixedData: native in runtime (service-dependent usage)
+ *
+ * `fileLogPath` lies inside a folder this server gives boards (files.h).
  */
 namespace hkp {
 
@@ -100,34 +102,45 @@ public:
     {
       return;
     }
+    std::string problem;
+    auto path = files::resolve(m_fileLogPath, problem);
+    if (!path)
+    {
+      std::cerr << "[MONITOR]: " << problem << std::endl;
+      return;
+    }
     if (auto json = getJSONFromData(data); json)
     {
-      std::ofstream out(m_fileLogPath, std::ios::app);
+      auto out = files::output(*path, std::ios::app);
       out << json->dump() << std::endl;
     }
     else if (auto binary = getBinaryFromData(data); binary)
     {
-      std::ofstream out(m_fileLogPath, std::ios::binary | std::ios::app);
+      auto out = files::output(*path, std::ios::binary | std::ios::app);
       out.write(reinterpret_cast<const char*>(binary->data()), binary->size());
     }
     else if (auto text = getStringFromData(data); text)
     {
-      std::ofstream out(m_fileLogPath, std::ios::app);
+      auto out = files::output(*path, std::ios::app);
       out << *text << std::endl;
     }
     else if (auto rb = getRingBufferFromData(data); rb)
     {
-      std::ofstream out(m_fileLogPath, std::ios::app | std::ios::binary);
+      auto out = files::output(*path, std::ios::app | std::ios::binary);
       std::vector<float> target;
       rb->consumeAvailable(target, false);
       out.write(reinterpret_cast<const char*>(target.data()), target.size() * sizeof(float));
     }
     else if (auto mixed = getMixedDataFromData(data); mixed)
     {
-      std::ofstream out(m_fileLogPath, std::ios::app);
+      auto out = files::output(*path, std::ios::app);
       out << mixed->meta.dump() << std::endl;
-      std::ofstream binOut(m_fileLogPath + ".bin", std::ios::binary | std::ios::app);
-      binOut.write(reinterpret_cast<const char*>(mixed->binary.data()), mixed->binary.size());
+      auto binPath = files::resolve(m_fileLogPath + ".bin", problem);
+      if (binPath)
+      {
+        auto binOut = files::output(*binPath, std::ios::binary | std::ios::app);
+        binOut.write(reinterpret_cast<const char*>(mixed->binary.data()), mixed->binary.size());
+      }
     }
     else
     {

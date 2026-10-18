@@ -1,6 +1,7 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -9,6 +10,7 @@
 #include <thread>
 
 #include "app.h"
+#include "files.h"
 #include "server.h"
 #include "standalone_config.h"
 
@@ -51,6 +53,28 @@ int main(int argc, char **argv)
     if (!config.egress.allow.empty())
     {
       std::cout << ", and " << config.egress.allow.size() << " allowed address(es) or range(s)";
+    }
+    std::cout << std::endl;
+  }
+
+  // Before any board runs: the folders a board's paths may lie in (files.h).
+  // The default one is created, so that a board can write there at once.
+  if (!config.fileFolders.empty())
+  {
+    std::error_code ec;
+    std::filesystem::create_directories(config.fileFolders.front(), ec);
+  }
+  hkp::files::setFolders(config.fileFolders);
+  if (config.fileFolders.empty())
+  {
+    std::cout << "[hkp-rt] boards are given no folder to read or write" << std::endl;
+  }
+  else
+  {
+    std::cout << "[hkp-rt] boards read and write inside " << config.fileFolders.front().string();
+    if (config.fileFolders.size() > 1)
+    {
+      std::cout << " and " << config.fileFolders.size() - 1 << " more folder(s)";
     }
     std::cout << std::endl;
   }

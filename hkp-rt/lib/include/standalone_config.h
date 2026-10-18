@@ -10,6 +10,7 @@
 
 #include "auth.h"
 #include "egress.h"
+#include "files.h"
 
 namespace hkp
 {
@@ -53,6 +54,10 @@ struct StandaloneConfig
   /** Where a board may make this server connect to; open unless it is hosted.
    *  `HKP_EGRESS`, `HKP_EGRESS_ALLOW` (see egress.h). */
   egress::Policy egress;
+  /** The folders boards may read and write, the default first (files.h):
+   *  `HKP_FILES_DIR` — `~/.hkp/cpp/files` when unset, none when empty — then
+   *  `HKP_FILES_ALLOW`. */
+  std::vector<std::filesystem::path> fileFolders;
   /** Set when the configuration must not be served; says what is missing. */
   std::string error;
 };
@@ -159,6 +164,36 @@ inline StandaloneConfig readStandaloneConfig(
   else if (const auto home = read("HOME"); !home.empty())
   {
     config.linksFile = home + "/.hkp/cpp/coordinator-links.json";
+  }
+
+  // Unset means a folder beside this server's other data; set to the empty
+  // string means none, leaving HKP_FILES_ALLOW to name every folder.
+  const char* filesDir = env("HKP_FILES_DIR");
+  if (filesDir)
+  {
+    if (*filesDir && !std::filesystem::path(filesDir).is_absolute())
+    {
+      config.error = std::string("HKP_FILES_DIR: \"") + filesDir + "\" is not an absolute path";
+    }
+    else if (*filesDir)
+    {
+      config.fileFolders.emplace_back(filesDir);
+    }
+  }
+  else if (const auto home = read("HOME"); !home.empty())
+  {
+    config.fileFolders.emplace_back(home + "/.hkp/cpp/files");
+  }
+  {
+    std::string problem;
+    for (auto& folder : files::readFolderList(read("HKP_FILES_ALLOW"), "HKP_FILES_ALLOW", problem))
+    {
+      config.fileFolders.push_back(std::move(folder));
+    }
+    if (!problem.empty())
+    {
+      config.error = problem;
+    }
   }
 
   config.mountSecret = read("HKP_MOUNT_SECRET");

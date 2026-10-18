@@ -37,7 +37,7 @@ each incoming value as formatted JSON in a scrolling list.
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `logToConsole` | `boolean` | `true` | Print each value to the server's stdout |
-| `fileLogPath` | `string` | `""` | Append each value to a file at this path |
+| `fileLogPath` | `string` | `""` | Append each value to this file, inside the folders boards are given ([Filesystem](./filesystem.md#where-the-files-are)); a relative path is taken from the default one |
 
 ---
 

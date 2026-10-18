@@ -21,7 +21,7 @@
             {
               "type": "text-input",
               "label": "Save folder",
-              "placeholder": "/tmp/dropitapp",
+              "placeholder": "dropitapp",
               "submitLabel": "Set",
               "action": {
                 "serviceUuid": "filesystem-svc",
@@ -129,7 +129,7 @@
         "serviceId": "filesystem",
         "serviceName": "Filesystem",
         "state": {
-          "path": "/tmp/dropitapp",
+          "path": "dropitapp",
           "operation": "write"
         }
       }

@@ -98,6 +98,10 @@ data on its output. Services:
   `egress::resolve` (hkp-rt). A hosted server (`HKP_EGRESS=public`) refuses
   private destinations there; each runtime's tests fail on any other way out
   (`docs/content/concepts/runtime.md`, "Where a hosted server may connect")
+- **Opens a file a board names only inside the folders its runtime gives boards** — on
+  hkp-rt through `files.h` (`files::resolve`, `files::resolveIn`), with a relative path
+  landing in the default folder; a test fails on a file opened any other way
+  (`docs/content/concepts/runtime.md`, "Where a board may read and write files")
 
 For browser services, the service and its UI share the same JS process — state sync is a
 direct method call. For remote runtimes (Node, Python, C++), the UI communicates via REST;

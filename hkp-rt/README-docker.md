@@ -81,18 +81,22 @@ docker run --rm \
 | `HKP_MOUNT_SECRET` | — | Keys the addresses of its endpoints. Unset, one is drawn and kept in the volume |
 | `HKP_COORDINATOR_LINKS_FILE` | `~/.hkp/cpp/coordinator-links.json` | Where coordinator tickets are kept. Empty keeps them in memory only |
 | `HKP_COORDINATOR_MAX_FRAME_BYTES` | 64 MiB | The largest value a coordinator passes on, which this server's links to coordinators accept with room to spare. Set it as the coordinator's operator did |
+| `HKP_FILES_DIR` | `~/.hkp/cpp/files` | The folder boards read and write in — a Filesystem's path, a Monitor's log, a Cache's root — and where a relative path lands. Nothing outside it, or outside `HKP_FILES_ALLOW`, is opened for a board: not this volume's secrets, not `/proc`. Empty gives boards no default folder |
+| `HKP_FILES_ALLOW` | — | Further folders boards may use, as absolute paths separated by `:`. Each is shared by everyone `ALLOWED_EMAILS` lets in: this server has one tenant |
 
 ### The volume
 
-`/home/hkp/.hkp` holds the two things that must survive a restart:
+`/home/hkp/.hkp` holds the three things that must survive a restart:
 
 - `cpp/coordinator-links.json` — the tickets this server reconnects to coordinators
   with. Without it, a deployed board's runtime here is gone after a restart until
   the board is deployed again.
 - `cpp/mount-secret` — what its endpoints' addresses are derived from. Without it,
   every endpoint gets a new address on each start.
+- `cpp/files/` — what boards wrote. The only part of the volume a board can
+  reach; the two above are outside it.
 
-Both are written readable by their owner only.
+The first two are written readable by their owner only.
 
 ### One port
 

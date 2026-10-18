@@ -6,7 +6,8 @@
 #include <memory>
 #include <functional>
 #include <filesystem>
-#include <fstream>
+
+#include <files.h>
 
 #include "av.h"
 #include "ffmpeg.h"
@@ -101,10 +102,17 @@ Data Ffmpeg::process(Data data)
       std::string filename = m_outputFolder.empty() ? "" : "output_" + std::to_string(counter++ % 2) + ".mp3";
       if (!filename.empty())
       {
-        auto outPath = (std::filesystem::path(m_outputFolder) / filename.c_str()).string();
-        auto success = detail::convertFloatBufferToMp3(data, m_targetSampleRate, outPath);
+        std::string problem;
+        auto folder = files::resolve(m_outputFolder, problem);
+        auto outPath = folder ? files::resolveIn(*folder, filename, problem) : std::nullopt;
+        if (!outPath)
+        {
+          std::cerr << "Ffmpeg service: " << problem << std::endl;
+          return json{{ "error", problem }};
+        }
+        auto success = detail::convertFloatBufferToMp3(data, m_targetSampleRate, outPath->string());
         return success ?
-          json{{ "output", outPath }} :
+          json{{ "output", outPath->string() }} :
           json{{ "error", "Failed to process audio" }};
       }
       else // render to memory buffer instead of file
@@ -158,16 +166,27 @@ Data Ffmpeg::process(Data data)
   std::string input = (*j)["input"];
   std::string output = (*j)["output"];
   unsigned int sampleRate = j->contains("sampleRate") ? (*j)["sampleRate"].get<unsigned int>() : 48000;
-  auto outPath = (std::filesystem::path(m_outputFolder) / output).string(); 
-  // check if output already exists;
-  if (std::filesystem::exists(outPath))
+  // A file inside a folder this server gives boards, never a URL: ffmpeg
+  // would open any protocol it knows. An empty outputFolder is the default
+  // folder.
+  std::string problem;
+  auto inPath = files::resolve(input, problem);
+  auto folder = inPath ? files::resolve(m_outputFolder.empty() ? "." : m_outputFolder, problem) : std::nullopt;
+  auto outPath = folder ? files::resolveIn(*folder, output, problem) : std::nullopt;
+  if (!outPath)
   {
-    std::cout << "Ffmpeg service: output file already exists: " << outPath << std::endl;
-    return json{{ "output", outPath }};
+    std::cerr << "Ffmpeg service: " << problem << std::endl;
+    return json{{ "error", problem }};
+  }
+  // check if output already exists;
+  if (files::exists(*outPath))
+  {
+    std::cout << "Ffmpeg service: output file already exists: " << outPath->string() << std::endl;
+    return json{{ "output", outPath->string() }};
   }
   
-  return detail::processAudioDecodeEncode(input, outPath, sampleRate) ?
-    json{{ "output", outPath }} :
+  return detail::processAudioDecodeEncode("file:" + inPath->string(), outPath->string(), sampleRate) ?
+    json{{ "output", outPath->string() }} :
     json{{ "error", "Failed to process audio" }};
 }
 

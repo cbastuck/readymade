@@ -15,7 +15,7 @@ The security findings are worked through one at a time, in the order of the tabl
 | 3 | Native page trust and navigation policy | in progress | 2026-10-18 | Built in the desktop host with tests and docs. Remaining: the pass by hand listed under the finding |
 | 4 | Hosted boards can reach private networks | in progress | 2026-10-18 | Built in hkp-node, hkp-python and hkp-rt, each with tests and a source scan; docs, READMEs and skills updated. Remaining: the pass by hand on a hosted server |
 | 5 | Unbounded coordinator WebSocket payloads | done | 2026-10-19 | A 64 MiB frame limit that is never off, and a WebSocket ceiling above it on every coordinator connection in all three runtimes; `docs/content/concepts/cloud-boards.md` |
-| 6 | The board document as untrusted input | open | | Also carries confining hkp-rt's `filesystem`, moved here from finding 1 (D4) and required. A board's unit references reaching any file through the desktop `readFile` are closed by finding 3 (P3) |
+| 6 | The board document as untrusted input | in progress | 2026-10-18 | hkp-rt opens a path a board names only inside the folders it was given (`files.h`), in every service that opens one; desktop settings, docs and tests done. Remaining: consent before an opened board builds anything, ffmpeg built where avcpp is, and the pass by hand. A board's unit references reaching any file through the desktop `readFile` are closed by finding 3 (P3) |
 | 7 | Same-host reverse proxy and address-based trust | done | 2026-10-19 | A request carrying `Forwarded`, `X-Forwarded-For` or `X-Real-IP` is never let in for where it comes from, in all three runtimes; `docs/content/concepts/runtime.md` |
 | 8 | JWT checks differ across runtimes | done | 2026-10-19 | RS256, issuer, audience, and a required expiry and subject in every runtime, as the website already checked; `docs/content/concepts/runtime.md` |
 | 9 | Secret and session exposure at rest | in progress | 2026-10-19 | Canary-secret sweeps in all three runtimes, a deployed board and the browser services. Remaining: platform secure stores, decided to follow v1. Two token leaks closed outside the review (see the finding) |
@@ -304,6 +304,53 @@ Proposal: state the trust model for an opened board, then test it. Inventory wha
 Moved here from finding 1 (2026-10-09), and required rather than optional: hkp-rt's `filesystem` reads and writes whatever path it is configured with (`hkp-rt/lib/src/services/filesystem.h`). Confine it to roots the person chose, as hkp-node's is confined to tenant volumes.
 
 Required tests: a hostile board opened in the playground, the desktop app and on mobile creates nothing on a local or remote runtime and sends nothing until consent is given.
+
+**Evidence, files (2026-10-18).** Not only `filesystem`, and not only on the desktop:
+
+- Services that opened a path a board names, as given: `filesystem`, `monitor` (`fileLogPath`, appends), `cache` and `cache-subservices` (`persistRoot`, and a file name rendered from the input), `wav-reader` (`filePath`), `mp4-to-wav` (input path from the data, `outputDir`), `ffmpeg` (input from the data — any file, and any protocol ffmpeg knows, past the egress rule — and `outputFolder`).
+- The path came from the data as well as the board: `filesystem` read `m_path / path.substr(1)`, so `/../../x` walked out and `//etc/passwd` replaced the folder outright; the input may also switch the operation to `write`. With a mount upstream, an outside caller chose both.
+- On the desktop a board could write `~/.hkp/settings.json`, whose `allowedOrigins` is applied without a restart — undoing finding 1 — and read `vault.json` (finding 9).
+- On the hosted image, `filesystem` is in the registry: anyone `ALLOWED_EMAILS` admits could read `cpp/mount-secret` (every mount address), read or overwrite `cpp/coordinator-links.json`, and read `/proc/self/environ`.
+- `http_server/request_handler.h` held an uncalled `handle_request` that served any absolute path a request named.
+
+**Decided (2026-10-18, while building — to confirm).**
+
+- **F1:** a path a board names is reached only inside a folder the runtime was given. The first is the default, and a relative path is taken from it, so boards stay portable.
+- **F2:** a host that gives no folder gives nothing; that is the iOS and Android apps today.
+- **F3:** the default is `~/.hkp/cpp/files` for the desktop and a standalone server alike. Standalone: `HKP_FILES_DIR` (empty for none) and `HKP_FILES_ALLOW`, after hkp-node's `HKP_FILES_DIR`.
+- **F4:** on the desktop the person adds folders with the folder picker under Settings → Access, applied at once. A folder holding `~/.hkp` or inside it is refused, the home folder among them.
+- **F5:** a name from the data is taken inside the configured folder, whatever it says. The operation may still come from the data, as on hkp-node; it can no longer leave the folder.
+- **F6:** model paths (`text-generation`, `speech-to-text`, `text-to-speech`) are not confined. The model library reads them; nothing is handed back to the board, and the in-process backends are not in the hosted image.
+
+**Built 2026-10-18: hkp-rt files.**
+
+- `hkp-rt/lib/include/files.h`: `setFolders`, `resolve`, `resolveIn` — comparing after `weakly_canonical`, so `..` and symlinks are followed — and `input`, `output`, `list` over the `files::Path` only those make.
+- Every service listed above resolves through it; `request_handler.h` is deleted. `standalone_config.h` and `exe/main.cpp` read and apply the folders, creating the default.
+- Desktop: `meander/backend/fileFolders.h` (also now home to `fileUriToPath`), `settings.h`, `main.cpp` (folders set before the runtime server starts), `schemeHandler.cpp` (`fileFolders` in the settings answer and on save), and the *Folders boards may use* section in `MeanderSettingsDialog.tsx`.
+- `boards/dropitapp-board.json` writes to `dropitapp` instead of `/tmp/dropitapp`.
+- Tests:
+  - `hkp-rt/tests/files.test.cpp`: no folders, relative, absolute, `..`, symlinks out, data names, folder lists;
+  - `service_files.test.cpp`: each service, with something beside the folder that must stay unread and unwritten;
+  - `files_sources.test.cpp`: fails on a file opened anywhere but the guard and eight exemptions, each with its reason;
+  - `standalone_config.test.cpp`: the two variables;
+  - `meander/backend/tests/fileFolders.test.cpp`.
+- Results: all 382 hkp-rt tests and 69 backend tests pass, and the Debug desktop app builds.
+- Docs: `docs/content/concepts/runtime.md` ("Where a board may read and write files"), the Filesystem, Monitor, Cache and WAV Reader pages, the DropApp board page, `hkp-rt/README-docker.md`, `CLAUDE.md` and `/new-cpp-service`.
+
+**Left as it is.**
+
+- hkp-rt has one tenant, so everyone a hosted server admits shares its folders.
+- `file://` assets keep their own root, `HKP_ASSET_ROOT`, which was already confined the same way.
+- A symlink planted between the check and the open is not caught. Nothing a board can drive creates one.
+
+**Remaining.**
+
+1. The rest of this finding: the trust model and consent before an opened board builds runtimes.
+2. `ffmpeg` is not built on the machine this was done on (no avcpp), so its edit and its `[files]` case are unbuilt. Build where `AVCPP_FOUND` is set and run `hkp-rt-service-tests "[files]"`.
+3. A pass by hand:
+   - Desktop: the settings section lists the default folder; adding and removing a folder works and applies without a restart; the home folder and `~/.hkp` are refused. DropApp saves into `~/.hkp/cpp/files/dropitapp`. A board whose `filesystem` names `~/.hkp/settings.json` is refused and logs `file-refused`.
+   - Docker image: reading `/home/hkp/.hkp/cpp/mount-secret` and `/proc/self/environ` through `filesystem` is refused.
+4. iOS and Android (submodules): give the runtime the app's documents folder if boards there should use files.
 
 ### 7. Done 2026-10-19: a same-host reverse proxy defeats address-based trust
 

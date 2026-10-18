@@ -10,7 +10,8 @@ Reads a WAV audio file from disk and emits its samples as a float array.
 |---|---|
 | hkp-rt | `wav-reader` |
 
-Requires an hkp-rt instance with file system access. Not available in the
+Runs on hkp-rt, and reads only inside the folders that runtime gives boards
+(see [Filesystem](./filesystem.md#where-the-files-are)). Not available in the
 browser runtime.
 
 ---
@@ -31,7 +32,7 @@ services such as FFT).
 
 | Property | Type | Description |
 |---|---|---|
-| `path` | `string` | Absolute or relative path to the `.wav` file on the server |
+| `filePath` | `string` | The `.wav` file, inside the folders boards are given; a relative path is taken from the default one |
 
 ---
 
