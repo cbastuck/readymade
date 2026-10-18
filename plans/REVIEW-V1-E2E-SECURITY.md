@@ -18,7 +18,7 @@ The security findings are worked through one at a time, in the order of the tabl
 | 6 | The board document as untrusted input | open | | Also carries confining hkp-rt's `filesystem`, moved here from finding 1 (D4) and required. A board's unit references reaching any file through the desktop `readFile` are closed by finding 3 (P3) |
 | 7 | Same-host reverse proxy and address-based trust | open | | |
 | 8 | JWT checks differ across runtimes | open | | |
-| 9 | Secret and session exposure at rest | open | | |
+| 9 | Secret and session exposure at rest | open | | One leak found and closed 2026-10-18, outside the review: the sign-in token on runtime descriptors (see the finding). The proposal itself is untouched |
 | 10 | Facade capabilities and remaining shared-host items | open | | |
 
 States, in order: `open` — nothing beyond the finding; `proposed` — a fix is written under the finding and waits for a decision; `decided` — the decisions are recorded there and nothing is built; `in progress` — partly built, with what remains listed under the finding; `done`.
@@ -255,6 +255,17 @@ Why lower than first ranked: a plaintext file readable only by its owner is the 
 Proposal: move native refresh tokens and vault values into platform secure stores, minimize JS access, and define revocation/rotation for long-lived machine credentials. Add canary-secret assertions covering export, saved boards, member snapshots, logs, errors, notifications and Playwright artifacts. Test credential audience behavior across HTTPS downgrade, redirect chains, custom headers and body payloads; header protection alone is not a complete egress policy.
 
 Reference: [OWASP HTML5 security guidance](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html).
+
+**Closed 2026-10-18, found while testing, not by the review: the sign-in token on runtime descriptors.**
+
+- **The leak.** Creating a runtime put the signed-in user onto its descriptor, ID token included (`core/runtimeOperations.ts`). A descriptor is spread into whatever exports a runtime, so the token travelled into three places:
+  - a saved runtime file (`components/Runtime.tsx`, `onSaveRuntime`);
+  - the runtime's Configure dialog;
+  - what a custom runtime action sends to another runtime, possibly on another server (`RuntimeHeader.tsx`).
+- **Not affected:** saved boards, Share as QR and deploying, which list each runtime's fields one by one.
+- **The fix.** The descriptor no longer carries `user`. The REST runtime never read it; its scope is given the user separately (`authenticatedUser`). The only reader was the deprecated GraphQL runtime, which is now unauthenticated. The three outputs, and JSON applied in the runtime editor, drop a `user` read back from a file saved earlier (`withoutSession` in `types.ts`).
+- **Tests:** `hkp-frontend/src/core/tests/runtimeSession.test.ts`.
+- **Left:** a runtime file saved before the fix still holds a token, expired by now since an ID token lives for ten hours. The canary assertions this finding proposes would have caught the leak, and remain to be written.
 
 ### 10. Investigate: facade capabilities and remaining shared-host items
 

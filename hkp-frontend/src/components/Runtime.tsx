@@ -20,6 +20,7 @@ import {
   ProcessRuntimeByName,
   ServiceInstance,
   InitialServiceFrameState,
+  withoutSession,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 import { useSelection } from "../selection/SelectionContext";
@@ -283,7 +284,7 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
 
   const onSaveRuntime = async () => {
     const payload = {
-      ...runtime,
+      ...withoutSession(runtime),
       services: services?.map(({ serviceId, serviceName, state, uuid }) => ({
         uuid,
         serviceId,

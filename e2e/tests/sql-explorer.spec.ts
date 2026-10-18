@@ -68,6 +68,9 @@ test("shows a database another board made, exports it, and changes it", async ({
   await page.getByRole("row").filter({ hasText: "anna@club.example" }).getByRole("checkbox").check();
   await page.getByRole("button", { name: "Delete picked rows" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Yes, do it" }).click();
+  // The dialog first: while it is open the table behind it is outside the
+  // accessibility tree, so the row would count as gone before it is.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "anna@club.example" })).toHaveCount(0);
 
   // And the booking board sees the table as the explorer left it.
