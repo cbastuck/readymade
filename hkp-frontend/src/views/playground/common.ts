@@ -206,7 +206,7 @@ export function createAuthorizedURL(url: string, user: User | null) {
   }
 
   const parsedURL = new URL(url);
-  const allowed = !allowList.find(
+  const allowed = allowList.some(
     (x) =>
       x.host === parsedURL.host &&
       x.protocol === parsedURL.protocol &&
@@ -222,7 +222,8 @@ export function createAuthorizedURL(url: string, user: User | null) {
       `Authenticated request to an allowed but non-secure destination: ${parsedURL.protocol}`,
     );
   }
-  return url + `?token=${user.idToken}`;
+  parsedURL.searchParams.set("token", user.idToken);
+  return parsedURL.toString();
 }
 
 function isSecureProtocol(protocol: string) {
