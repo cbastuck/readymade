@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <files.h>
 #include <types/types.h>
 #include <service.h>
 
@@ -14,6 +15,8 @@
  * Arrays: service-dependent
  * Binary: supported (service-dependent)
  * MixedData: native in runtime (service-dependent usage)
+ *
+ * `filePath` lies inside a folder this server gives boards (files.h).
  */
 namespace hkp {
 
@@ -70,7 +73,14 @@ public:
       return Null();
     }
 
-    std::ifstream file(m_filePath, std::ios::binary);
+    std::string problem;
+    auto path = files::resolve(m_filePath, problem);
+    if (!path)
+    {
+      std::cerr << "WavReader service: " << problem << std::endl;
+      return Null();
+    }
+    auto file = files::input(*path);
     if (!file.is_open())
     {
       std::cerr << "WavReader service: failed to open file: " << m_filePath << std::endl;

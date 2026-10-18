@@ -158,3 +158,25 @@ TEST_CASE("the mount secret comes from the environment, else from beside its dat
   REQUIRE(fromFile.mountSecret.empty());
   REQUIRE(fromFile.mountSecretFile == "/home/hkp/.hkp/cpp/mount-secret");
 }
+
+TEST_CASE("boards get a folder beside this server's data unless told otherwise",
+          "[standalone][files]") {
+  using Folders = std::vector<std::filesystem::path>;
+  REQUIRE(readStandaloneConfig({}, environment({{"HOME", "/home/hkp"}})).fileFolders ==
+          Folders{"/home/hkp/.hkp/cpp/files"});
+  REQUIRE(readStandaloneConfig({}, environment({
+    {"HOME", "/home/hkp"}, {"HKP_FILES_DIR", "/data/files"}, {"HKP_FILES_ALLOW", "/media/a:/media/b"},
+  })).fileFolders == Folders{"/data/files", "/media/a", "/media/b"});
+  // Set to nothing: no default, only what is allowed — or nothing at all.
+  REQUIRE(readStandaloneConfig({}, environment({
+    {"HOME", "/home/hkp"}, {"HKP_FILES_DIR", ""},
+  })).fileFolders.empty());
+}
+
+TEST_CASE("a folder that is not an absolute path is refused at start",
+          "[standalone][files]") {
+  REQUIRE(readStandaloneConfig({}, environment({{"HKP_FILES_DIR", "files"}})).error ==
+          "HKP_FILES_DIR: \"files\" is not an absolute path");
+  REQUIRE(readStandaloneConfig({}, environment({{"HKP_FILES_ALLOW", "/a:media"}})).error ==
+          "HKP_FILES_ALLOW: \"media\" is not an absolute path");
+}

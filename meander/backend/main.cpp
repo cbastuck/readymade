@@ -8,6 +8,7 @@
 
 // hkp-rt
 #include "app.h"
+#include "files.h"
 #include "server.h"
 #include "types/data.h"
 #include "./schemeHandler.h"
@@ -178,39 +179,6 @@ static std::string getLanIP()
   ::inet_ntop(AF_INET, &local.sin_addr, buf, sizeof(buf));
   return buf;
 #endif
-}
-
-// Converts a file:// URI to a native filesystem path.
-// Handles the optional "localhost" authority and percent-decodes the path.
-static std::string fileUriToPath(const std::string &uri)
-{
-  if (!uri.starts_with("file://"))
-  {
-    return uri;
-  }
-  std::string path = uri.substr(7); // strip "file://"
-  if (path.starts_with("localhost"))
-  {
-    path = path.substr(9);
-  }
-  std::string decoded;
-  decoded.reserve(path.size());
-  for (std::size_t i = 0; i < path.size(); ++i)
-  {
-    if (path[i] == '%' && i + 2 < path.size())
-    {
-      int val = 0;
-      std::istringstream ss(path.substr(i + 1, 2));
-      ss >> std::hex >> val;
-      decoded += static_cast<char>(val);
-      i += 2;
-    }
-    else
-    {
-      decoded += path[i];
-    }
-  }
-  return decoded;
 }
 
 static constexpr uint16_t FRONTEND_HTTP_PORT = 9090;
@@ -387,6 +355,11 @@ int real_main(int argc, char *argv[])
     }
   }
 
+  // Before any board runs, deployed ones included: the folders a board's
+  // paths may lie in (hkp-rt's files.h, fileFolders.h). Handed over again
+  // whenever the setting changes.
+  hkp::files::setFolders(settings.getRuntimeFileFolders());
+
   auto hkpApp = std::make_shared<hkp::App>();
   auto server = std::make_shared<hkp::Server>(hkpApp, "meander-cpp", allowedOrigins, "", std::move(authConfig));
   // A desktop is a machine a deployed board's runtimes can live on: the app is
@@ -501,7 +474,7 @@ int real_main(int argc, char *argv[])
     auto picked = desktop.pick<saucer::modules::picker::type::file>(std::move(opts));
     if (picked.has_value())
     {
-      fileGrants.grantFile(fileUriToPath(picked.value().string()));
+      fileGrants.grantFile(readymade::fileUriToPath(picked.value().string()));
     }
     return picked.transform_error(&saucer::error::message);
   });
@@ -511,14 +484,14 @@ int real_main(int argc, char *argv[])
     auto picked = desktop.pick<saucer::modules::picker::type::folder>(std::move(opts));
     if (picked.has_value())
     {
-      fileGrants.grantFolder(fileUriToPath(picked.value().string()));
+      fileGrants.grantFolder(readymade::fileUriToPath(picked.value().string()));
     }
     return picked.transform_error(&saucer::error::message);
   });
 
   webview->expose("readFile", [&fileGrants](const std::string &uri) -> std::expected<std::string, std::string>
   {
-    const auto path = fileUriToPath(uri);
+    const auto path = readymade::fileUriToPath(uri);
     if (!fileGrants.mayRead(path))
     {
       return std::unexpected("Not a file that was picked, or beside one: " + path);
@@ -534,7 +507,7 @@ int real_main(int argc, char *argv[])
 
   webview->expose("writeFile", [&fileGrants](const std::string &uri, const std::string &content) -> std::expected<bool, std::string>
   {
-    const auto path = fileUriToPath(uri);
+    const auto path = readymade::fileUriToPath(uri);
     if (!fileGrants.mayWrite(path))
     {
       return std::unexpected("Not a path that was picked to save to: " + path);
@@ -557,7 +530,7 @@ int real_main(int argc, char *argv[])
     auto picked = desktop.pick<saucer::modules::picker::type::save>(std::move(opts));
     if (picked.has_value())
     {
-      fileGrants.grantSave(fileUriToPath(picked.value().string()));
+      fileGrants.grantSave(readymade::fileUriToPath(picked.value().string()));
     }
     return picked.transform_error(&saucer::error::message);
   });
@@ -571,7 +544,7 @@ int real_main(int argc, char *argv[])
     {
       return std::unexpected(picked.error().message());
     }
-    std::filesystem::path path{fileUriToPath(picked.value().string())};
+    std::filesystem::path path{readymade::fileUriToPath(picked.value().string())};
     if (path.extension() != ".json")
     {
       path += ".json";
