@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AudioPlayerWidget } from "../../types";
+import { AudioPlayerTrackAction, AudioPlayerWidget } from "../../types";
 import { interpolateTemplate } from "../../itemTemplate";
+import { useWidgetActions } from "../../useWidgetActions";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { usePressFeedback } from "../../pressFeedback";
 import { useNotificationValue } from "./StatusIndicatorRenderer";
@@ -26,6 +27,8 @@ type Track = {
   url: string;
   title: string;
   subtitle: string;
+  // What the source said about it, for a track action to name.
+  item: unknown;
 };
 
 /** The last path segment without its extension — a track's name where the
@@ -85,6 +88,7 @@ export function AudioPlayerRenderer({
   boardContext,
 }: WidgetRendererProps<AudioPlayerWidget>) {
   const value = useNotificationValue(boardContext, widget.source);
+  const { run, prompt } = useWidgetActions(boardContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   // Whether the *next* src change should start playing. Set when a person
   // picks a track and when one ends, so advancing continues the sitting while
@@ -108,6 +112,7 @@ export function AudioPlayerRenderer({
         url: templated(widget.url, item),
         title: templated(widget.title, item),
         subtitle: templated(widget.subtitle, item),
+        item,
       }))
       .filter((track) => !!track.url)
       .map((track) => ({
@@ -260,6 +265,19 @@ export function AudioPlayerRenderer({
   }, [current, index, tracks.length]);
 
   const muted = "hsl(var(--muted-foreground))";
+  const trackActions = widget.trackActions ?? [];
+
+  /** Runs a track action with the track as the item. */
+  const act = (action: AudioPlayerTrackAction, track: Track) =>
+    void run({
+      actions: interpolateTemplate(
+        action.actions,
+        track.item,
+      ) as typeof action.actions,
+      confirm: action.confirm
+        ? String(interpolateTemplate(action.confirm, track.item) ?? "")
+        : undefined,
+    });
 
   if (tracks.length === 0) {
     return (
@@ -342,51 +360,79 @@ export function AudioPlayerRenderer({
         >
           {tracks.map((track, i) => {
             const isCurrent = track.url === currentUrl;
+            // A row holds the track and whatever can be done to it. The track
+            // itself is a button, so its actions sit beside it rather than
+            // inside it: a button within a button is neither valid nor
+            // something a screen reader can tell apart.
             return (
-              <button
+              <div
                 key={track.url}
-                onClick={() => go(i)}
                 style={{
-                  textAlign: "left",
-                  padding: "6px 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                   borderRadius: 6,
-                  border: "none",
-                  cursor: "pointer",
                   backgroundColor: isCurrent
                     ? "hsl(var(--accent) / 0.14)"
                     : i % 2 === 0
                       ? "rgba(127,127,127,0.06)"
                       : "transparent",
-                  color: isCurrent
-                    ? "var(--hkp-accent)"
-                    : "hsl(var(--foreground))",
-                  fontSize: 12,
+                  paddingRight: trackActions.length ? 6 : 0,
                   minWidth: 0,
                 }}
               >
-                <span
+                <button
+                  onClick={() => go(i)}
                   style={{
-                    display: "block",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
+                    flex: 1,
+                    textAlign: "left",
+                    padding: "6px 8px",
+                    borderRadius: 6,
+                    border: "none",
+                    cursor: "pointer",
+                    backgroundColor: "transparent",
+                    color: isCurrent
+                      ? "var(--hkp-accent)"
+                      : "hsl(var(--foreground))",
+                    fontSize: 12,
+                    minWidth: 0,
                   }}
                 >
-                  {/* The playing track is marked in text as well as colour:
+                  <span
+                    style={{
+                      display: "block",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {/* The playing track is marked in text as well as colour:
                       colour alone is not a mark everyone can read. */}
-                  {isCurrent && playing ? "▶ " : ""}
-                  {track.title}
-                </span>
-                {track.subtitle ? (
-                  <span style={{ display: "block", fontSize: 11, color: muted }}>
-                    {track.subtitle}
+                    {isCurrent && playing ? "▶ " : ""}
+                    {track.title}
                   </span>
-                ) : null}
-              </button>
+                  {track.subtitle ? (
+                    <span
+                      style={{ display: "block", fontSize: 11, color: muted }}
+                    >
+                      {track.subtitle}
+                    </span>
+                  ) : null}
+                </button>
+                {trackActions.map((action) => (
+                  <SmallButton
+                    key={action.label}
+                    label={action.label}
+                    onClick={() => act(action, track)}
+                    disabled={false}
+                  />
+                ))}
+              </div>
             );
           })}
         </div>
       ) : null}
+      {prompt}
     </div>
   );
 }

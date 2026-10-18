@@ -716,6 +716,24 @@ export type RuntimeApi = {
     context?: ProcessContext | null,
   ) => Promise<any>;
 
+  /**
+   * `processService`, and what the pipeline produces then leaves the runtime
+   * the way any of its output does: on to the next runtime in the board.
+   * That is what a facade's `process` action means — a button beginning at a
+   * service is a run, and a run does not stop at the runtime it began in.
+   *
+   * Only for an api whose answer comes back to the caller rather than going
+   * on by itself: over REST a runtime hands the answer to whoever asked and
+   * to nobody else. Unset where the results already travel on — a coordinator
+   * carries a run to the next runtime itself — and `processService` is used.
+   */
+  processServiceOnward?: (
+    scope: RuntimeScope,
+    service: InstanceId,
+    params: any,
+    context?: ProcessContext | null,
+  ) => Promise<void>;
+
   rearrangeServices: (
     scope: RuntimeScope,
     newOrder: Array<ServiceDescriptor>,

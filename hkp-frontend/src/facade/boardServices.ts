@@ -325,7 +325,10 @@ export function processService(
     // board attached through a coordinator that is the bridge, and nothing is
     // dialled — the browser may have no route to the runtime at all, and a
     // request of its own would bypass the party that says who is calling.
-    void api.processService(scope, { uuid }, payload ?? {}).catch((err) => {
+    // Onward where the api offers it: a run begun here goes on into the
+    // board's next runtime, as it would from a browser runtime.
+    const begin = api.processServiceOnward ?? api.processService;
+    void begin(scope, { uuid }, payload ?? {}).catch((err) => {
       console.error(
         `Could not ask "${uuid}" to process:`,
         err instanceof Error ? err.message : err,

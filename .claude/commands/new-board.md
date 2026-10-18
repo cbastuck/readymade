@@ -858,6 +858,20 @@ somebody has played something here: a browser refuses audio nobody asked for, an
 restored in a background tab should not start talking. Reaching the end of the list is still an
 end.
 
+`trackActions` puts buttons beside each track in that list, each running its actions with the
+track's item — the list that is played is also the one that is managed, rather than a `repeat`
+drawn beside it repeating every title:
+
+```json
+"trackActions": [
+  {
+    "label": "Remove",
+    "confirm": "Remove “{{item.title}}”?",
+    "actions": [{ "type": "process", "serviceUuid": "forget", "payload": { "slug": "{{item.slug}}" } }]
+  }
+]
+```
+
 **file-pick** — file chooser that sends the file to a service:
 
 ```json

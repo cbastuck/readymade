@@ -1,6 +1,6 @@
 {
   "boardName": "Radio",
-  "description": "A feed, read aloud. Every minute it reads the feed it was given, and anything it has not spoken before is sent to a voice and the audio kept in the library.\n\nThe feed is the only thing it knows about its source, which is what makes it general: a reading list, a blog, a newsroom \u2014 anything that publishes RSS or Atom becomes a podcast without this board learning where it came from.\n\nTwo things are worth reading in the pipeline. The **claim** is one SQL statement doing the work of a lease: it takes the item, hands back nothing at all when the item is already spoken or is being spoken right now \u2014 and returning nothing stops that pass, which is how work is skipped \u2014 and gives back the path the episode is to be kept at, built from its identity rather than from a counter that would drift. An item claimed but never finished is offered again once its claim goes stale, so a voice that was down for an hour costs a delay rather than a silence nobody notices. And the **path comes back with the audio**, in a header the voice sets, because an answer arriving later than the pass that asked for it has to say what it is an answer to.\n\nA round asks the feed for its ten newest and lets the claim decide which of those are work; nothing limits the iteration itself, because an Iterator cuts the list before the claim sees it and an article below the cut would never get another turn. The calls of one round are in flight together and a voice renders them in order, so the first full round on an empty library takes as long as everything in it put together.\n\nNeeds hkp-node on 8080 and a voice to call. Alone it points at the public Hacker News feed; in the composition the reading list is the feed instead.\n\nWhat it has read aloud is published as a feed of its own, by the second runtime here. It has a clock rather than a trigger, for a structural reason worth knowing: an endpoint serving the last value it was handed answers with whatever its chain returns, so it has to be the last service in one \u2014 and the rendering chain above stops on the rounds where there is nothing new. A minute's staleness buys a feed that is rebuilt whatever happened.\n\nThe enclosure URLs point into the library, named rather than written down: the address is assigned when the board loads, and a Map is handed it the same way a client dialling it would be.",
+  "description": "A feed, read aloud. Every minute it reads the feed it was given, and anything it has not spoken before is sent to a voice and the audio kept in the library.\n\nThe feed is the only thing it knows about its source, which is what makes it general: a reading list, a blog, a newsroom \u2014 anything that publishes RSS or Atom becomes a podcast without this board learning where it came from.\n\nTwo things are worth reading in the pipeline. The **claim** is one SQL statement doing the work of a lease: it takes the item, hands back nothing at all when the item is already spoken or is being spoken right now \u2014 and returning nothing stops that pass, which is how work is skipped \u2014 and gives back the path the episode is to be kept at, built from its identity rather than from a counter that would drift. An item claimed but never finished is offered again once its claim goes stale, so a voice that was down for an hour costs a delay rather than a silence nobody notices. A voice that answers without audio counts as down: only a 200 carrying bytes is kept, so a failed rendering is left claimed and offered again rather than stored as an episode. And the **path comes back with the audio**, in a header the voice sets, because an answer arriving later than the pass that asked for it has to say what it is an answer to.\n\nA round asks the feed for its ten newest and lets the claim decide which of those are work; nothing limits the iteration itself, because an Iterator cuts the list before the claim sees it and an article below the cut would never get another turn. The calls of one round are in flight together and a voice renders them in order, so the first full round on an empty library takes as long as everything in it put together.\n\nNeeds hkp-node on 8080 and a voice to call. Alone it points at the public Hacker News feed; in the composition the reading list is the feed instead.\n\nWhat it has read aloud is published as a feed of its own, by the second runtime here. It has a clock rather than a trigger, for a structural reason worth knowing: an endpoint serving the last value it was handed answers with whatever its chain returns, so it has to be the last service in one \u2014 and the rendering chain above stops on the rounds where there is nothing new. A minute's staleness buys a feed that is rebuilt whatever happened.\n\nAn episode can be forgotten from the Listen panel: Remove deletes its row and its audio, in a runtime of its own whose output runs on into the playlist. The claim being the only memory of what was spoken, an article still on the reading list is read again on the next round.\n\nThe enclosure URLs point into the library, named rather than written down: the address is assigned when the board loads, and a Map is handed it the same way a client dialling it would be.",
   "unit": {
     "name": "radio",
     "params": {
@@ -29,6 +29,15 @@
     {
       "id": "publish",
       "name": "Published",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "forget",
+      "name": "Forget an episode",
       "type": "rest",
       "remote": "node",
       "state": {
@@ -134,6 +143,17 @@
                 "url": "{{param.voiceMount}}",
                 "method": "post",
                 "timeoutMs": 600000
+              }
+            },
+            {
+              "instanceId": "spoken",
+              "serviceId": "map",
+              "serviceName": "Only audio is kept",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "=": "params.meta.status === 200 && params.binary ? params : null"
+                }
               }
             },
             {
@@ -279,6 +299,67 @@
         }
       }
     ],
+    "forget": [
+      {
+        "uuid": "forget-which",
+        "serviceId": "map",
+        "serviceName": "Only a request naming an episode",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "=": "params.slug ? params : null"
+          }
+        }
+      },
+      {
+        "uuid": "forget-row",
+        "serviceId": "sql",
+        "serviceName": "Out of the ledger",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "DELETE FROM episode\n WHERE slug = $slug\nRETURNING 'episodes/' || slug || '.mp3' AS path"
+        }
+      },
+      {
+        "uuid": "forget-one",
+        "serviceId": "map",
+        "serviceName": "The episode it was",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "=": "params.count ? params.rows[0] : null"
+          }
+        }
+      },
+      {
+        "uuid": "forget-op",
+        "serviceId": "map",
+        "serviceName": "Its audio",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "op": "delete",
+            "path=": "params.path"
+          }
+        }
+      },
+      {
+        "uuid": "forget-file",
+        "serviceId": "storage",
+        "serviceName": "Out of the library",
+        "state": {
+          "pipeline": [
+            {
+              "serviceId": "filesystem",
+              "state": {
+                "volume": "{{param.volume}}"
+              }
+            }
+          ]
+        }
+      }
+    ],
     "playlist": [
       {
         "uuid": "pl-tick",
@@ -309,7 +390,7 @@
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
-          "statement": "SELECT title,\n       IFNULL($base, '') || '/' || slug || '.mp3' AS url,\n       IFNULL(published, '') AS published\n  FROM episode\n WHERE rendered IS NOT NULL\n ORDER BY rendered DESC\n LIMIT 100"
+          "statement": "SELECT slug,\n       title,\n       IFNULL($base, '') || '/' || slug || '.mp3' AS url,\n       IFNULL(published, '') AS published\n  FROM episode\n WHERE rendered IS NOT NULL\n ORDER BY rendered DESC\n LIMIT 100"
         }
       },
       {
@@ -482,6 +563,21 @@
               "title": "{{item.title}}",
               "subtitle": "{{item.published}}",
               "autoplay": true,
+              "trackActions": [
+                {
+                  "label": "Remove",
+                  "confirm": "Remove \u201c{{item.title}}\u201d? Its audio is deleted. While the article is still on the reading list, the radio reads it again on its next round.",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "forget-which",
+                      "payload": {
+                        "slug": "{{item.slug}}"
+                      }
+                    }
+                  ]
+                }
+              ],
               "placeholder": "Nothing has been read aloud yet."
             },
             {
