@@ -60,6 +60,8 @@ const draftNames = (page: Page) =>
 test("an unsaved sketch survives a reload, and saving drops its draft", async ({
   page,
 }) => {
+  // Three cold loads of every module, plus autosave settling.
+  test.slow();
   // Loaded without saving, the way a sketch starts: nothing in the library.
   await page.goto(`/playground/${NAME}`);
   await page.waitForFunction(() => !!(window as any).hkp);

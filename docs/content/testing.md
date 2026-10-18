@@ -199,15 +199,23 @@ split showing through: the submodules answer for themselves, and a superproject
 workflow that cloned them would be testing whatever commit they happened to be
 on. See [Repository](./repository.md).
 
-So two things are *not* behind the green tick, and both are worth knowing before
-trusting it:
+The end-to-end suite runs in the same workflow as two jobs, and *when* differs:
+
+- **E2E Node cloud** — the cloud specs against the hkp-node the superproject
+  pins (its one submodule checkout), C++ left out — on every pull request push,
+  main push and manual run;
+- **E2E browser** — the default suite on all three profiles, about nine
+  minutes — on main pushes and manual runs only. A pull request is not checked
+  by it unless someone starts the workflow on its branch.
+
+In CI a test that passes only on retry fails the run.
+
+So two things are *not* behind a pull request's green tick, and both are worth
+knowing before trusting it:
 
 - **hkp-node and hkp-python**, whose suites run in their own repositories and in
   `run-all-tests.sh` locally;
-- **the end-to-end suite**, which is not wired into a workflow yet — it is run
-  locally today. The config already reads `process.env.CI` (retries, workers,
-  `forbidOnly`, the GitHub reporter), so the suite is ready for a workflow that
-  does not exist yet.
+- **the browser end-to-end suite**, which first runs once the change is on main.
 
 ---
 

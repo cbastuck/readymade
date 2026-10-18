@@ -11,7 +11,7 @@ Prioritize boundaries between components. Keep detailed service semantics, parse
 ## Current baseline
 
 - `e2e/playwright.config.ts` drives web Chromium, simulated desktop Chromium and simulated iOS WebKit against development servers.
-- Main-branch/manual CI now runs the default E2E configuration, installs from lockfiles and uploads failure artifacts. PR execution and cloud execution still need adding.
+- CI runs the Node cloud lane (`E2E Node cloud`) on pull requests, main pushes and manual runs, and the default E2E configuration (`E2E browser`) on main pushes and manual runs only; both install from lockfiles and upload failure artifacts.
 - `playwright.cloud.config.ts` runs real Node/coordinator deployment tests with authentication disabled; C++ coverage depends on a locally available binary. Python is not included in this configuration.
 - Native behavior comes from `support/fakeNativeHost.ts`, not the actual packaged apps.
 - Milestone 1 now keeps seeds/native storage across reloads and polls positive persistence conditions. Bounded negative observation windows remain intentional.
@@ -27,7 +27,7 @@ Update this table in place. Mark a milestone done only after its checks pass in 
 | Milestone | State | Depends on | Completion evidence |
 | --- | --- | --- | --- |
 | 1. Reliable fixtures and baseline | done | — | Three complete default runs without retries: 124 passed / 36 documented skips each; cloud 7 passed including C++; diagnostics and failure-safe cleanup verified |
-| 2. PR and cloud CI | open | 1 | Required PR jobs and failure artifacts demonstrated |
+| 2. PR and cloud CI | done | 1 | PR #41: browser 124 passed / 36 documented skips, Node cloud 6 passed; hosted failure-artifact upload and seven-day retention verified |
 | 3. Core board journeys | open | 1 | UI lifecycle/composition/mobile journeys passing |
 | 4. Authenticated sharing and secrets | open | 1, 2; relevant security fixes | Real verifier and multi-context journeys passing |
 | 5. Distributed persistence and recovery | open | 2, 4 | Restart/failure journeys against Node, Python and C++ |
@@ -80,20 +80,31 @@ Done when existing enabled journeys pass in three consecutive clean runs without
 - Full Node/C++ cloud suite against the rebuilt runtime: **7 passed, 22.2 seconds**, no retries and no handover console exception.
 - Fetcher panel regression: **1 passed**; a temporary restoration of the original setters made this same test fail, after which the fix was restored and verified again. Frontend TypeScript validation passes.
 - C++ close regressions: **2 passed, 10 assertions**. Broader C++ server/auth validation passed **58 cases, 245 assertions** on its second execution.
-- **Separate reliability observation:** the first broader C++ execution crashed with SIGSEGV in the existing `a request handed over in-process is served, and names nobody` case (55 preceding cases passed). That case then passed in isolation and the full suite passed on rerun. Its cause is not established; it is not counted as an unconditionally clean first run and remains a runtime/test-lifecycle follow-up before v1. The two repaired product journeys passed without retries.
+- **Separate reliability observation:** the first broader C++ execution crashed with SIGSEGV in the existing `a request handed over in-process is served, and names nobody` case (55 preceding cases passed). That case then passed in isolation and the full suite passed on rerun. Its cause was not established at the time. #43 later fixed a race in the same file — a server destroyed while its app's event loop was still inside it — with its own regression; that is the likely cause, but the crash was never reproduced on demand, so watch for a recurrence. The two repaired product journeys passed without retries.
 
 ## 2. PR and cloud CI
 
 Extend the existing workflow rather than duplicating its default E2E job.
 
-- [ ] Enable PR execution with appropriate permissions, cancellation of obsolete runs and required check names documented for repository settings.
-- [ ] Keep a fast default-suite job and add a separate Node cloud job. Check out the required submodules at pinned revisions and install required application dependencies from lockfiles.
-- [ ] Add an explicit trusted-origin configuration matching the test servers, compatible with the local security changes.
-- [ ] Include E2E in the documented aggregate test entry point, or provide an explicit aggregate option if running browsers by default is too costly. Document that distinction.
-- [ ] Publish executed/skipped/retried counts and upload traces, screenshots, browser errors and server logs on failure, with bounded retention. Use synthetic data; prevent credential disclosure in artifacts.
-- [ ] Make required runtime/media fixtures fail configuration checks when missing; keep genuinely optional capability lanes explicitly optional.
+- [x] Enable PR execution with appropriate permissions, cancellation of obsolete runs and required check names documented for repository settings.
+- [x] Keep a fast default-suite job and add a separate Node cloud job. Check out the required submodules at pinned revisions and install required application dependencies from lockfiles.
+- [x] Add an explicit trusted-origin configuration matching the test servers, compatible with the local security changes.
+- [x] Include E2E in the documented aggregate test entry point, or provide an explicit aggregate option if running browsers by default is too costly. Document that distinction.
+- [x] Publish executed/skipped/retried counts and upload traces, screenshots, browser errors and server logs on failure, with bounded retention. Use synthetic data; prevent credential disclosure in artifacts.
+- [x] Make required runtime/media fixtures fail configuration checks when missing; keep genuinely optional capability lanes explicitly optional.
 
 Done when a PR runs both jobs, a deliberately failing test produces useful artifacts, and required missing dependencies cannot silently turn a job green. Record actual runtimes before deciding budgets or sharding.
+
+### Implementation evidence
+
+- Extended the existing workflow with PR events, read-only permissions, non-persisted checkout credentials and obsolete-run cancellation. Stable job names: `E2E browser`, `E2E Node cloud`; repository protection selection is documented rather than changed.
+- Node cloud CI checks out only the public Node submodule at its gitlink revision, uses lockfile installs and explicitly selects the Node lane. C++/Python are outside this required check; the local all-runtime lane preserves optional C++ discovery and adds a required-binary switch.
+- After clean `npm ci` installs in all four application/test folders, the CI-style browser run passed **124 tests (120 normal + 4 expected failures), 36 profile/media skips, 3.4 minutes**, with no retries or flakes. Node-only cloud passed **6 tests, no skips/retries, 17.4 seconds** against pinned `c911bd08`.
+- Local intentional failure verified the HTML report's embedded Node log/browser error plus trace, screenshot, video, browser JSON and server log files. The flaky probe failed once, passed its retry and still returned failure with one flaky/one retried test in the summary. It is excluded from ordinary discovery.
+- Missing Node dependencies, mandatory C++ binary and mandatory face media, plus an explicitly invalid C++ binary path, all rejected configuration. Reporter count-contract tests, TypeScript, workflow lint and aggregate shell syntax checks pass.
+- Hosted PR [#41](https://github.com/cbastuck/readymade/pull/41): Node cloud passed. The first browser run completed 123 passing outcomes and 36 skips in 9.5 minutes, but mobile persistence exceeded its 30s total budget on both attempts. Traces showed successful 6–12s document loads. The cause was the browser guard routing every module request through the test process; #43 matched local origins inside the driver instead and marked the journey `test.slow()`.
+- Hosted [passing PR run](https://github.com/cbastuck/readymade/actions/runs/37954358315): **browser 124 passed / 36 documented skips in 3.2 minutes**, **Node cloud 6 passed / no skips in 37.2 seconds**. Both named checks are green under the policy that rejects flakes. The Node job log confirms checkout of pinned `c911bd08`.
+- Hosted [intentional failure probe](https://github.com/cbastuck/readymade/actions/runs/37952298004) successfully uploaded `e2e-node-cloud-failure-report`. The downloaded artifact contains its HTML report/embedded runtime log, trace, screenshot, video, browser diagnostics and failed/retried counts. GitHub confirms expiry on 2026-10-16 (seven-day retention).
 
 ## 3. Core board journeys
 
@@ -160,3 +171,5 @@ After each change, run the affected journey/profile first, then the suite whose 
 For v1 require core lifecycle, authenticated access/revocation, secret boundaries, persisted distributed recovery, and supported-host smoke evidence. Required cases cannot be skipped. Record optional hardware/provider coverage separately. CI workflow execution alone does not establish branch protection; configure required checks in repository settings when job names are stable.
 
 First implementation slice: milestone 1's reload-safe fixtures and persistence regression, followed by PR/default and Node-cloud CI. This makes later tests trustworthy and gives every subsequent change feedback.
+
+Follow-up verification: the final documentation run exposed the exact informational MediaPipe CPU startup line and SQL writes that had not finished before downstream UI completion/navigation. The MediaPipe line is now accepted for every spec as exact library stderr (`LIBRARY_STDERR` in `support/test.ts`, from #43); SQL processing awaits persistence before returning downstream (#44, with its unit regression and the SQL Explorer budget). Affected browser journeys repeated three times without retries: 6 passed / 6 profile exclusions, 23 seconds. Hosted follow-up fixed both failures but exposed a draft-journey timeout that passed its retry (CI correctly stayed red). Its three document loads took 5.0s, 4.8s and 9.9s, plus autosave checks; it is now marked `test.slow()` like the persistence journey. Full local suite after the SQL fix: 124 passed / 36 skips, 3.2 minutes, no retries. The next hosted run passed the draft journey but detected the same MediaPipe INFO line in detect-demo-board, which the suite-wide allowance now covers. Final hosted [run 37960636667](https://github.com/cbastuck/readymade/actions/runs/37960636667) passed both checks on 467a0ff1: browser 124 passed / 36 documented skips in 9.3 minutes; Node cloud 6 passed / no skips in 28 seconds. No flaky outcomes; CI rejects flakes. Milestone 2 complete. After rebasing onto main the `E2E Node cloud` job moved to `ubuntu-latest` — it needs only Node and Chromium. `E2E browser` was then taken off pull requests: about nine minutes per push was too much for iteration, so it runs on main pushes and manual runs (Actions → Run workflow on a PR branch) and is not a required check. Regressions it catches surface on main rather than before merge.
