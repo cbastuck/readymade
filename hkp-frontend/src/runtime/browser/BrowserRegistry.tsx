@@ -14,6 +14,7 @@ export const allowedServices = [
   "hookup.to/service/injector",
   "hookup.to/service/trigger-pad",
   "hookup.to/service/sound",
+  "hookup.to/service/step-sequencer",
   "hookup.to/service/audio-output",
   "hookup.to/service/audio-input",
   "hookup.to/service/audio-recorder",

@@ -18,7 +18,9 @@ struct WebsocketProtocol
     WebsocketProtocol protocol;
     if (!buf.contains("id") || !buf.contains("type"))
     {
-      throw std::runtime_error("WebsocketProtocol::parse: invalid protocol");
+      auto errorMessage = "WebsocketProtocol::parse: invalid protocol";
+      std::cout << errorMessage << std::endl;
+      throw std::runtime_error(errorMessage);
     }
     protocol.id = buf["id"];
     protocol.type = buf["type"];
