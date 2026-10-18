@@ -6,6 +6,7 @@ import {
   isRuntimeBrowserClassType,
   isRuntimeConfiguration,
   RuntimeConfiguration,
+  withoutSession,
   RuntimeDescriptor,
   toCanonicalRuntimeClassType,
 } from "hkp-frontend/src/types";
@@ -215,7 +216,7 @@ export default function RuntimeHeader({
         // Handed to another runtime as a concrete thing, so the address a
         // remote's name resolved to here travels in place of the name.
         runtimeSource = {
-          runtime: bakeAddressing(runtime),
+          runtime: bakeAddressing(withoutSession(runtime)),
           services: servicesWithState,
         };
       }
@@ -256,7 +257,7 @@ export default function RuntimeHeader({
         };
       }),
     );
-    setEnrichedConfig({ runtime, services: enrichedServices });
+    setEnrichedConfig({ runtime: withoutSession(runtime), services: enrichedServices });
     setIsRuntimeConfigOpen(true);
   };
 
@@ -277,7 +278,7 @@ export default function RuntimeHeader({
   };
 
   const runtimeConfig: RuntimeConfiguration = {
-    runtime,
+    runtime: withoutSession(runtime),
     services: boardContext?.services[runtime.id] || [],
   };
 

@@ -47,6 +47,9 @@ describe("a process action on an attached board", () => {
       context.scopes.node,
       { uuid: "book" },
       { hour: 10 },
+      // The run as this client began it. A coordinator states the caller
+      // itself, so the bridge has no use for it.
+      expect.objectContaining({ runId: expect.any(String) }),
     );
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
@@ -89,6 +92,7 @@ describe("a process action on an attached board", () => {
       context.scopes.node,
       { uuid: "book" },
       { hour: 11 },
+      expect.objectContaining({ runId: expect.any(String) }),
     );
   });
 });

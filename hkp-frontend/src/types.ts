@@ -91,7 +91,6 @@ export type RuntimeDescriptor = RuntimeClass & {
    */
   remote?: string;
   state?: any; // TODO: should this be here? Only for persisted Runtime states?
-  user?: User | null;
   boardName?: string;
   customActions?: Array<RuntimeCustomAction>;
   /**
@@ -103,6 +102,20 @@ export type RuntimeDescriptor = RuntimeClass & {
   unit?: string;
   unitRuntimeId?: string;
 };
+
+/**
+ * A runtime descriptor as it may leave this client: in a saved file, in the
+ * configuration dialog, in a message to another runtime.
+ *
+ * Descriptors used to carry the signed-in user, sign-in token included. None
+ * is given one any more — the token is the scope's (`authenticatedUser`) — but
+ * a runtime read back from a file saved then still has it, and it is never
+ * written out again from here.
+ */
+export function withoutSession<T extends object>(runtime: T): Omit<T, "user"> {
+  const { user: _user, ...rest } = runtime as T & { user?: unknown };
+  return rest;
+}
 
 export type OnResult = (
   uuid: string | null,
@@ -715,6 +728,24 @@ export type RuntimeApi = {
     params: any,
     context?: ProcessContext | null,
   ) => Promise<any>;
+
+  /**
+   * `processService`, and what the pipeline produces then leaves the runtime
+   * the way any of its output does: on to the next runtime in the board.
+   * That is what a facade's `process` action means — a button beginning at a
+   * service is a run, and a run does not stop at the runtime it began in.
+   *
+   * Only for an api whose answer comes back to the caller rather than going
+   * on by itself: over REST a runtime hands the answer to whoever asked and
+   * to nobody else. Unset where the results already travel on — a coordinator
+   * carries a run to the next runtime itself — and `processService` is used.
+   */
+  processServiceOnward?: (
+    scope: RuntimeScope,
+    service: InstanceId,
+    params: any,
+    context?: ProcessContext | null,
+  ) => Promise<void>;
 
   rearrangeServices: (
     scope: RuntimeScope,

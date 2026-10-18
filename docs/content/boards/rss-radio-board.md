@@ -53,11 +53,23 @@ skipped without a conditional. It also gives back the path the episode is to be
 kept at, built from the item's identity rather than from a counter that would
 drift. An item claimed but never finished is offered again once its claim goes
 stale, so a voice that was down for an hour costs a delay rather than a silence
-nobody notices.
+nobody notices. A voice that answers without audio counts as down: only a `200`
+carrying bytes goes on to be kept, so a failed rendering is not stored as an
+episode — it is left claimed, and offered again.
 
 **The path comes back with the audio**, in a header the voice sets, because an
 answer arriving later than the pass that asked for it has to say what it is an
 answer to.
+
+**Forgetting an episode** is the claim run backwards, in a runtime of its own:
+*Remove* beside an episode in the Listen panel's player deletes its row from the ledger
+and its audio from the library, and what that leaves behind runs on into the
+playlist, so the list redraws without being asked. Because the claim is the
+only memory of what was spoken, an article still on the reading list is simply
+work again on the next round — removing a broken episode is how it gets read
+again. The runtime sits in the chain between the published feed and the
+playlist, so its first step lets through only a request naming an episode;
+the feed's answer, which arrives there every minute, stops at it.
 
 A round asks the feed for its ten newest and lets the claim decide which are
 work. Nothing limits the iteration itself, because an
@@ -79,6 +91,11 @@ because a caller holding many items needs to know which one came back. Inside, a
 [text-to-speech](../services/text-to-speech.md) answers with audio rather than
 with the request *and* the audio, so the request is kept beside the detour
 rather than replaced by it.
+
+When it cannot speak — the model is missing, the encoder is not installed — it
+answers `502` with the reason as JSON, never `200` with something that is not
+audio, so a caller can tell a rendering from a failure without opening the
+bytes.
 
 ## Library
 

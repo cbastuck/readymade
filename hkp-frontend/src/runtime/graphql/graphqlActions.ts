@@ -152,7 +152,7 @@ export async function createRuntimeService(
       }
     }
   }`;
-  const data = await processQuery(url, payload, runtime.user);
+  const data = await processQuery(url, payload, null);
   const createServiceResult = data?.runtimeById?.createService;
   if (!createServiceResult) {
     return null;
@@ -178,7 +178,7 @@ export async function removeRuntimeService(
       }
     }
   }`;
-  const data = await processQuery(url, payload, runtime.user);
+  const data = await processQuery(url, payload, null);
   return data?.runtimeById?.removeService;
 }
 
@@ -194,7 +194,7 @@ export async function getRuntimeServiceConfig(
       }
     }
   }`;
-  const data = await processQuery(url, payload, runtime.user);
+  const data = await processQuery(url, payload, null);
 
   const config = data?.runtimeById?.serviceById?.config;
   return config ? JSON.parse(config) : null;
@@ -214,7 +214,7 @@ export async function configureService(
       }
     }
   }`;
-  const data = await processQuery(url, payload, runtime.user);
+  const data = await processQuery(url, payload, null);
   const resultConfig = data?.runtimeById?.serviceById?.configure;
   return resultConfig ? JSON.parse(resultConfig) : null;
 }
@@ -248,7 +248,7 @@ export async function processRuntime(
       ) { id }
     }
   }`;
-  const data = await processQuery(url, payload, runtime.user);
+  const data = await processQuery(url, payload, null);
   return data?.runtimeById?.process;
 }
 
@@ -267,7 +267,7 @@ export async function rearrangeServices(
       ) { instanceId }
     }
   }`;
-  const data = await processQuery(url, payload, runtime.user);
+  const data = await processQuery(url, payload, null);
   return data?.runtimeById?.rearrangeServices?.map((x: any) => ({
     uuid: x.instanceId,
   }));
@@ -280,7 +280,7 @@ export async function getRuntimeOutputUrl(runtime: RuntimeDescriptor) {
       outputUrl
     }
   }`;
-  const data = await processQuery(url, payload, runtime.user);
+  const data = await processQuery(url, payload, null);
   return data?.runtimeById?.outputUrl;
 }
 

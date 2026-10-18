@@ -30,7 +30,7 @@ export default class RuntimeGraphQLScope implements RuntimeScope {
     this.pendingReconnectPromise = null;
 
     if (this.outputUrl) {
-      this.connect(this.outputUrl, runtime.user || null);
+      this.connect(this.outputUrl, null);
     }
   }
 

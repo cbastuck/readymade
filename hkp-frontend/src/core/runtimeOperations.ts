@@ -3,6 +3,7 @@ import {
   RuntimeDescriptor,
   RuntimeConfiguration,
   isRuntimeRestClassType,
+  withoutSession,
 } from "../types";
 import { reorderRuntime } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
@@ -83,10 +84,9 @@ export async function addRuntime(
             rtClass.url,
           )
         : undefined;
-      const runtimeWithUser: RuntimeDescriptor = {
+      const runtimeOnBoard: RuntimeDescriptor = {
         ...runtime,
         ...(remote ? { remote } : {}),
-        user: currentUser,
         state: { ...runtime.state, color: rtClass.color },
         boardName: currentBoardName,
       };
@@ -95,7 +95,7 @@ export async function addRuntime(
       // source and sent them now, ahead of being put on the board: once it is
       // there a service can be added to it, and nothing later would send them
       // short of an edit or a reload.
-      scope.assets = refs.assetsFor?.(runtimeWithUser);
+      scope.assets = refs.assetsFor?.(runtimeOnBoard);
       const refused = await api.pushAssets?.(scope, assetsById(scope.assets?.()));
       if (refused) {
         // Not added without them: it would look like any other runtime and
@@ -104,7 +104,7 @@ export async function addRuntime(
         // Reported here rather than thrown, because what follows a throw asks
         // the person to log in again, and this is not about who they are.
         const removed = await api
-          .removeRuntime(scope, runtimeWithUser, currentUser)
+          .removeRuntime(scope, runtimeOnBoard, currentUser)
           .then(() => true)
           .catch(() => false);
         onError?.(
@@ -115,7 +115,7 @@ export async function addRuntime(
         );
         return null;
       }
-      refs.setRuntimes((prev) => [...prev, runtimeWithUser]);
+      refs.setRuntimes((prev) => [...prev, runtimeOnBoard]);
       refs.setServices((prev) => ({
         ...prev,
         [runtime.id]: newServices,
@@ -128,7 +128,7 @@ export async function addRuntime(
         ...prev,
         [runtime.id]: scope,
       }));
-      return runtimeWithUser;
+      return runtimeOnBoard;
     }
   } catch (err: any) {
     console.error("BoardContext.addRuntime", err, err.stack);
@@ -193,6 +193,9 @@ export async function updateRuntime(
       `BoardContext.updateRuntime() runtime not found: ${runtimeId}`,
     );
   }
+  // Applied JSON may be a runtime saved when descriptors still carried the
+  // signed-in user; it does not come back onto the board with it.
+  updated = { ...updated, runtime: withoutSession(updated.runtime) };
   if (runtimeId !== updated.runtime.id) {
     await api.removeRuntime(scope, runtime, refs.userRef.current);
     const result = await api.restoreRuntime(

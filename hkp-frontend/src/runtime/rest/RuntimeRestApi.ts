@@ -24,7 +24,7 @@ import {
   AssetsSource,
   assetsById,
 } from "hkp-frontend/src/runtime/board/assets";
-import { isBinaryData } from "./Data";
+import { isBinaryData, passesNothing } from "./Data";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 import { startedRun } from "../processContext";
 
@@ -832,6 +832,30 @@ export async function processService(
   }
 }
 
+/**
+ * Runs the pipeline from `service` onward and passes what it produced on to
+ * the next runtime, as the runtime's socket would have for a run it began.
+ *
+ * Over REST the runtime answers the request and sends nothing over its
+ * socket, so without this a run begun at a service ends where its runtime
+ * does. A pipeline that stopped passes nothing on.
+ */
+export async function processServiceOnward(
+  scope: RuntimeScope,
+  service: InstanceId,
+  params: any,
+  context?: ProcessContext | null,
+): Promise<void> {
+  const result = await processService(scope, service, params, context);
+  if (passesNothing(result)) {
+    return;
+  }
+  // The run goes on with it. Without one the board reads the result as
+  // something the runtime did by itself, and the next runtime runs it as the
+  // board's rather than as whoever began it.
+  await scope.onResult(null, result, context ?? null);
+}
+
 export async function rearrangeServices(
   scope: RuntimeScope,
   newOrder: Array<ServiceDescriptor>,
@@ -955,6 +979,7 @@ const api: RuntimeApi = {
   configureService,
   getServiceConfig,
   processService,
+  processServiceOnward,
   rearrangeServices,
   pushAssets,
 };

@@ -23,10 +23,10 @@ using json = nlohmann::json;
 SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings& settings)
     : m_server(server), m_defaultHeaders(
                             {
-                                // Any origin, because only one can ask: this
-                                // scheme exists inside the app's own webview and
-                                // nowhere else. Which pages may call the runtime
-                                // over the network is the server's to say.
+                                // Replaced on the way out by the page that
+                                // asked, when it is one of the app's own
+                                // (answerOrigin). Which pages may call the
+                                // runtime over the network is the server's to say.
                                 {"Access-Control-Allow-Origin", "*"},
                                 {"Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE"},
                                 {"Access-Control-Allow-Headers", "Content-Type"},
@@ -160,6 +160,50 @@ void SchemeHandler::addRoute(const Router::Method &method, const std::string &pa
 }
 
 saucer::scheme::response SchemeHandler::handleRequest(const saucer::scheme::request &req)
+{
+  auto res = route(req);
+  answerOrigin(req, res);
+  return res;
+}
+
+void SchemeHandler::trustPages(std::vector<std::string> ownPages, const readymade::FileGrants& files)
+{
+  m_ownPages = std::move(ownPages);
+  m_files = &files;
+}
+
+// This scheme exists only inside the app's webview, and only the app's own
+// pages load there, so the page asking is one of them. Should anything else
+// ever be loaded, it is not told it may read what it gets. A request that
+// names no origin is answered as before: an engine need not hand the scheme
+// one, and there is then nobody to tell apart.
+void SchemeHandler::answerOrigin(const saucer::scheme::request &req, saucer::scheme::response &res) const
+{
+  std::string origin;
+  for (const auto &[key, value] : req.headers())
+  {
+    if (key.size() == 6 && std::equal(key.begin(), key.end(), "origin",
+          [](char a, char b) { return std::tolower(static_cast<unsigned char>(a)) == b; }))
+    {
+      origin = value;
+    }
+  }
+  if (origin.empty())
+  {
+    return;
+  }
+  if (readymade::isOwnPage(m_ownPages, origin))
+  {
+    res.headers["Access-Control-Allow-Origin"] = origin;
+  }
+  else
+  {
+    res.headers.erase("Access-Control-Allow-Origin");
+  }
+  res.headers["Vary"] = "Origin";
+}
+
+saucer::scheme::response SchemeHandler::route(const saucer::scheme::request &req)
 {
   // Answer CORS preflight for every route. On Windows (WebView2) the embedded
   // frontend runs from `saucer://embedded`, so non-simple requests (e.g. a POST
@@ -1208,12 +1252,21 @@ saucer::scheme::response SchemeHandler::handleGetBoardArt(const Router::Params &
 // The saucer webview does not open a panel for <input type="file">, so the
 // frontend picks images via the native picker (saucer.exposed.pickFile) and
 // fetches the bytes through this route to downscale them in-canvas. Reading
-// is limited to image extensions; the webview already has arbitrary text
-// reads via the exposed readFile, so this adds no new exposure.
+// is limited to image extensions, and to the files readFile may read: what
+// the person picked, and what lies beside it.
 saucer::scheme::response SchemeHandler::handleGetLocalImage(const Router::Params &p, const saucer::scheme::request &req) const
 {
   namespace fs = std::filesystem;
   const auto path = p.at("path");
+  if (!m_files || !m_files->mayRead(path))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Not a file that was picked"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 403,
+    };
+  }
 
   std::string extension = fs::path(path).extension().string();
   std::transform(extension.begin(), extension.end(), extension.begin(),

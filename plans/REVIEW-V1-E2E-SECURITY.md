@@ -11,14 +11,14 @@ The security findings are worked through one at a time, in the order of the tabl
 | # | Finding | State | Since | Outcome, or what is pending |
 | --- | --- | --- | --- | --- |
 | 1 | Local runtimes trust every loopback caller | in progress | 2026-10-09 | Built in all three runtime servers, the desktop host and the playground, with tests and docs. Remaining: the pass by hand listed under the finding |
-| 2 | Prototype pollution in facade projection | open | | |
-| 3 | Native page trust and navigation policy | open | | |
+| 2 | Prototype pollution in facade projection | done | 2026-10-18 | Machinery path segments are refused at deploy and ignored in projection, projection reads own properties only, and identity reads own claims only; `docs/content/concepts/cloud-boards.md` |
+| 3 | Native page trust and navigation policy | in progress | 2026-10-18 | Built in the desktop host with tests and docs. Remaining: the pass by hand listed under the finding |
 | 4 | Hosted boards can reach private networks | open | | |
 | 5 | Unbounded coordinator WebSocket payloads | open | | |
-| 6 | The board document as untrusted input | open | | Also carries confining hkp-rt's `filesystem`, moved here from finding 1 (D4) and required |
+| 6 | The board document as untrusted input | open | | Also carries confining hkp-rt's `filesystem`, moved here from finding 1 (D4) and required. A board's unit references reaching any file through the desktop `readFile` are closed by finding 3 (P3) |
 | 7 | Same-host reverse proxy and address-based trust | open | | |
 | 8 | JWT checks differ across runtimes | open | | |
-| 9 | Secret and session exposure at rest | open | | |
+| 9 | Secret and session exposure at rest | open | | One leak found and closed 2026-10-18, outside the review: the sign-in token on runtime descriptors (see the finding). The proposal itself is untouched |
 | 10 | Facade capabilities and remaining shared-host items | open | | |
 
 States, in order: `open` — nothing beyond the finding; `proposed` — a fix is written under the finding and waits for a decision; `decided` — the decisions are recorded there and nothing is built; `in progress` — partly built, with what remains listed under the finding; `done`.
@@ -117,19 +117,29 @@ A preflight is not where a page is refused. hkp-rt cannot answer one per origin 
    - an iOS build at all, once `build-ios.sh` gets past its frontend step, and then a development build on a device.
 2. Move what is settled here into the docs' own words where it is not yet, then cut this section down as the Progress rules say.
 
-### 2. High: prototype pollution in facade projection, reaching identity
+### 2. Done 2026-10-18: prototype pollution in facade projection, reaching identity
 
-Evidence: `hkp-node/src/coordinator/facadeAccess.ts`, `readPath`, `writePath`, and `pick`. `writePath` traverses ordinary objects without rejecting special path segments or requiring own properties. A path beginning `__proto__` reaches `Object.prototype`. Only that segment works: a `constructor.prototype` path does not, because `isRecord` rejects the function and an own property is written instead.
+A facade source path through `__proto__` wrote into `Object.prototype` when it was projected for a member. From there `identityFromClaims` read a polluted email for any token that carried none. The reasoning is now in `docs/content/concepts/cloud-boards.md` ("A path names data").
 
-Confirmed twice in isolation, through the real exported functions and with the probes removed afterwards. The first pass called `projectState` with source path `__proto__.readymadeReviewProbe`. The second pass used `readFacadeAccess` on a facade whose sources read `__proto__.email` and `__proto__.email_verified`, then `projectNotification` on a notification parsed from JSON carrying those keys. Afterwards `identityFromClaims` (`hkp-node/src/auth.ts`) returned `{ sub, email: "victim@example.com" }` for claims holding only a `sub`. The projection itself returned nothing, so the member is sent no frame and the write leaves no trace on the wire.
+**Changed.**
 
-Reachability: projection runs only for member bridges (`deliverNotification`, `broadcastServiceState` and the member snapshot in `coordinator/session.ts`). The paths come from the facade an owner deploys, and the values from that board's service state or notifications. The actor is therefore somebody who passes `ALLOWED_EMAILS` and shares a board with a second account of their own — no other person is needed.
+- `hkp-node/src/coordinator/facadeAccess.ts`: `isPlainPath` refuses the segments `__proto__`, `constructor` and `prototype`. `readFacadeAccess` grants nothing for such a path and lists it in `refused`. `readPath` reads own properties only. `writePath` writes no such path, and `pick` builds its objects without a prototype.
+- `hkp-node/src/coordinator/router.ts`: deploying a board answers `400` naming the path when its facade has one anywhere, including in items kept for the owner (`refusedFacadePaths`). A board restored from the store does not pass through here; the projection's own checks cover it.
+- `hkp-node/src/auth.ts`: `identityFromClaims` and `isEmailAllowed` read `sub`, `email` and `email_verified` as own claims only (`ownClaim`).
+- `hkp-node/src/services/map.ts`: `mergeAtPath` was the same writer, reached from a template key a board names (`"__proto__.x"`). It now sets nothing for such a key.
 
-Consequence: every object in the coordinator process inherits the written value, for every tenant. `identityFromClaims` reads `email` and `email_verified` from parsed claims without requiring own properties, so a token from the same Auth0 tenant that carries no email claim would be identified as the polluted address: on the server's allowlist if that address is, and a member of every board shared with it. That last step was confirmed against the function, not against a running server with a real token. Separately, overwriting something like `Object.prototype.toString` breaks the process for everyone, and the `uncaughtException` handler in `index.ts` keeps it running in that state.
+**Tests.**
 
-Proposal: reject `__proto__`, `constructor`, and `prototype` path segments; traverse own properties only; construct output maps without prototypes. Validate facade paths at ingestion and retain defensive checks at projection. Read identity claims as own properties only, so that a pollution elsewhere cannot become an identity. Add regression tests asserting Object.prototype is unchanged, including nested paths, arrays, and inherited state. Assess other path setters and merges using the same rule.
+- `tests/board-members.test.ts`, "a facade path into what every object inherits", covers four things: the review's probe, after which `Object.prototype` and the identity of an email-less token are unchanged; own-property-only projection; the deploy refusal; and owner-only items.
+- `tests/auth.test.ts`: claims that are only inherited are not read.
+- `tests/map.test.ts`: such template keys set nothing.
+- All six fail against the code before the fix.
 
-Reference: [OWASP prototype pollution prevention](https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html).
+**Left.**
+
+- The read-only `valueAt` helpers in `conversations.ts`, `iterator.ts`, `queue.ts`, `store.ts` and `communication-dispatcher.ts` still follow inherited properties. They write nothing, so they cannot pollute; at worst a path such as `constructor` reads a function.
+- A key `__proto__` with no dot, assigned directly (as in `map`), sets that one object's prototype, not the global one.
+- The frontend's facade code was not reviewed for the same pattern. It runs in one person's browser, not in a shared process.
 
 ### 3. High impact, conditional: native page trust is not enforced by navigation policy
 
@@ -142,6 +152,51 @@ Why conditional: it needs a way to get foreign content into the webview first. A
 Proposal: allowlist exact app origins and routes; open external URLs in the system browser; enforce bridge caller/frame origin; deny privileges in remote documents and frames. Replace blanket permissions with origin- and capability-specific decisions. Gate file access through approved file handles/paths rather than unrestricted caller-supplied paths. Keep secrets behind native operations where practical, instead of injecting the entire vault.
 
 Required tests: external same-window links, redirects, iframes, custom schemes and deep links cannot read vault data, call file operations, change grants, or acquire camera/microphone permission. Run these on actual native hosts.
+
+#### Decided 2026-10-18, in progress
+
+Checked while deciding:
+
+- **The bridge does not know who calls it.** saucer registers one WebKit message handler, and WebKit offers it to every frame. `didReceiveScriptMessage` (`saucer-src/src/wk.webview.impl.mm`) does not read `frameInfo`. So any document in the webview, at any depth, can call every exposed function. Without patching saucer, what loads is the boundary. The navigate handler sees iframe loads on WebKit. WebView2 hooks main-frame navigations only, but there a frame cannot post to the host unless the host subscribes to it, and saucer does not.
+- **What already held.** The injected globals go to the main frame only (`script::no_frames`). A login comes back as a `postMessage` from the redirect relay, not as a navigation. The frontend's only iframe loads `/sandbox` on the app's own origin.
+- **A board could read any file (finding 6).** Unit references resolve with `new URL(ref, base)`, so `../../..` or `file:///…` in a board read that file through `readFile`. So did `hkp://local-image/`, whose comment counted on `readFile` being open anyway.
+
+**Decided.**
+
+- **P1:** only the app's own pages load, at any depth.
+- **P2:** permissions are granted for the microphone, the camera and location.
+- **P3:** files: what was picked, plus what lies beside or below a picked file. A sibling folder is where it stops.
+- **P4:** a dev build trusts the Vite server and the frontend server's LAN address.
+
+**Built 2026-10-18.**
+
+- `meander/backend/pageTrust.h`: `decideNavigation`, `mayGrantPermission` and `FileGrants`, which compares paths after `weakly_canonical`.
+- `main.cpp` applies them:
+  - the navigate handler loads own pages only. A web address the person clicked, or a new window, opens in their browser; anything else is refused and logged.
+  - the permission handler applies `mayGrantPermission`;
+  - the pickers grant what they return, through `fileUriToPath`, since the macOS picker answers with a `file://` URL;
+  - `readFile` and `writeFile` check the grants;
+  - the vault and grants injections run only when `location.protocol + '//' + location.host` is an own page.
+- `schemeHandler.cpp`: `handleRequest` names the asking origin in `Access-Control-Allow-Origin` when it is an own page, and drops the header for any other origin. A request that names no origin is answered as before, because an engine need not hand a scheme handler one. `hkp://local-image/` checks the grants.
+- Tests: `backend/tests/pageTrust.test.cpp`. It covers origins and lookalikes, every kind of navigation, permissions by origin and type, and file grants beside, below, `..`, sibling, symlinked out, and writes without a save pick. It passes with `meander/run-tests.sh` (66 of 66).
+- The Debug app (embedded frontend) builds, and launched with nothing refused in its log. Only its log was read: another instance held both ports, and nothing was clicked.
+- Docs: `docs/content/targets.md`, "Only the app's own pages, on the desktop".
+
+**Left as it is.**
+
+- Secret values are still injected rather than kept behind native calls. Moving them changes how every service resolves `{{secret.…}}`.
+- `saveJSON` writes to its own save pick, as before.
+- The iOS and Android hosts were not reviewed under this finding. Their webviews load `hkp://app` and `appassets.androidplatform.net`, and their navigation and bridge policies are unchecked.
+
+**Remaining.**
+
+1. A pass by hand in the packaged app, on macOS and on Windows and Linux where built:
+   - the app's own page loads, boards run, and secrets resolve. This also confirms each engine states `saucer://embedded` as the scheme answer's origin, or names none;
+   - a same-window link to another site opens in the browser. A page-driven `location` change, a redirect and an `<iframe>` to another site load nothing, and the log names each;
+   - the camera, the microphone and location work for a board; a clipboard or notification request is refused;
+   - opening a board and its units from disk, picking an image for the start page and saving through the save dialog still work. A board whose unit names `../elsewhere/x.hkpp` reports that unit missing;
+   - a dev build (`MEANDER_USE_EMBEDDED_FRONTEND=OFF`) against Vite. This also compiles the dev branch of `ownPages`, which the Debug build did not.
+2. Then cut this section down as the Progress rules say.
 
 ### 4. Medium–High: hosted boards can reach private networks
 
@@ -200,6 +255,17 @@ Why lower than first ranked: a plaintext file readable only by its owner is the 
 Proposal: move native refresh tokens and vault values into platform secure stores, minimize JS access, and define revocation/rotation for long-lived machine credentials. Add canary-secret assertions covering export, saved boards, member snapshots, logs, errors, notifications and Playwright artifacts. Test credential audience behavior across HTTPS downgrade, redirect chains, custom headers and body payloads; header protection alone is not a complete egress policy.
 
 Reference: [OWASP HTML5 security guidance](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html).
+
+**Closed 2026-10-18, found while testing, not by the review: the sign-in token on runtime descriptors.**
+
+- **The leak.** Creating a runtime put the signed-in user onto its descriptor, ID token included (`core/runtimeOperations.ts`). A descriptor is spread into whatever exports a runtime, so the token travelled into three places:
+  - a saved runtime file (`components/Runtime.tsx`, `onSaveRuntime`);
+  - the runtime's Configure dialog;
+  - what a custom runtime action sends to another runtime, possibly on another server (`RuntimeHeader.tsx`).
+- **Not affected:** saved boards, Share as QR and deploying, which list each runtime's fields one by one.
+- **The fix.** The descriptor no longer carries `user`. The REST runtime never read it; its scope is given the user separately (`authenticatedUser`). The only reader was the deprecated GraphQL runtime, which is now unauthenticated. The three outputs, and JSON applied in the runtime editor, drop a `user` read back from a file saved earlier (`withoutSession` in `types.ts`).
+- **Tests:** `hkp-frontend/src/core/tests/runtimeSession.test.ts`.
+- **Left:** a runtime file saved before the fix still holds a token, expired by now since an ID token lives for ten hours. The canary assertions this finding proposes would have caught the leak, and remain to be written.
 
 ### 10. Investigate: facade capabilities and remaining shared-host items
 

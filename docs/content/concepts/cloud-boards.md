@@ -495,6 +495,16 @@ service spoke without changing or clearing the widget. Clearing is explicit —
 for example, a table sends `rows: []` — and that value is projected normally.
 The owner is sent what was said.
 
+**A path names data, never what every object inherits.** A source path is the
+owner's to write and projecting it writes along it, so a segment `__proto__`,
+`constructor` or `prototype` would reach `Object.prototype` — every object in
+the coordinator, every tenant's, and from there the identity of a token that
+carries no email. A board whose facade has such a path is refused when it is
+deployed (`400`, naming it), wherever in the facade it is, kept for the owner
+or not. Behind that, projection reads own properties only and builds what it
+sends without a prototype, and identity is read only from the claims a token
+itself carries (`identityFromClaims`).
+
 **A member's bridge never hosts a runtime.** It is never sent `processRuntime`
 and is not a target when the chain reaches a browser runtime. A board with a
 browser runtime still works for members; that runtime runs only while its

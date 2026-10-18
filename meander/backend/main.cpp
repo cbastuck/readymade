@@ -14,6 +14,7 @@
 #include "./frontendServer.h"
 #include "./vault.h"
 #include "./grants.h"
+#include "./pageTrust.h"
 
 #if USE_SAUCER_EMBEDDED
 #include "../embedded/saucer/embedded/all.hpp"
@@ -242,15 +243,6 @@ int real_main(int argc, char *argv[])
   meanderSetShareNudgeWebview(&webview.value());
 #endif
 
-  // Grant media permissions so getUserMedia() works inside the webview.
-  // The webview only loads trusted local content (localhost / hkp://) so
-  // blanket acceptance is safe here.
-  webview->on<saucer::webview::event::permission>([](const std::shared_ptr<saucer::permission::request> &req) -> saucer::status
-  {
-    req->accept(true);
-    return saucer::status::handled;
-  });
-
   window->set_title("Readymade");
   webview->set_dev_tools(isDebugBuild);
   window->set_size({1024, 800});
@@ -261,6 +253,41 @@ int real_main(int argc, char *argv[])
   auto bindAddress = settings.getAllowExternalAccess() ? std::string("0.0.0.0") : std::string("127.0.0.1");
 
   auto lanIP = getLanIP();
+
+  // The pages this webview loads, and nothing else (see pageTrust.h): what it
+  // holds is handed the vault, the person's files and their devices, and the
+  // bridge cannot tell one caller from another.
+#if USE_SAUCER_EMBEDDED
+  const std::vector<std::string> ownPages{"saucer://embedded"};
+#else
+  // The dev server, and the frontend server's own address on the LAN.
+  const std::vector<std::string> ownPages{
+    "http://localhost:8555",
+    "http://" + lanIP + ":" + std::to_string(FRONTEND_HTTP_PORT),
+  };
+#endif
+  readymade::FileGrants fileGrants;
+
+  // So that getUserMedia() and geolocation work for the app's own boards —
+  // only for those, and only for what boards use.
+  webview->on<saucer::webview::event::permission>(
+    [&ownPages](const std::shared_ptr<saucer::permission::request> &req) -> saucer::status
+  {
+    using saucer::permission::type;
+    const auto asked = static_cast<std::uint8_t>(req->type());
+    const auto has = [asked](type t) { return (asked & static_cast<std::uint8_t>(t)) != 0; };
+    const auto known = static_cast<std::uint8_t>(type::audio_media) |
+                       static_cast<std::uint8_t>(type::video_media) |
+                       static_cast<std::uint8_t>(type::location);
+    const readymade::DeviceRequest request{
+      .microphone = has(type::audio_media),
+      .camera     = has(type::video_media),
+      .location   = has(type::location),
+      .other      = asked == 0 || (asked & ~known) != 0,
+    };
+    req->accept(readymade::mayGrantPermission(ownPages, req->url().string(), request));
+    return saucer::status::handled;
+  });
 
   // The app's ports are fixed, so a second instance finds them taken. Probed up
   // front rather than left to the servers, because a bound port is not merely a
@@ -313,15 +340,24 @@ int real_main(int argc, char *argv[])
     .code   = "window.__MEANDER_CONFIG__ = " + configJson.dump() + ";",
     .run_at = saucer::script::time::creation,
   });
+  // Given only to the app's own pages. Nothing else should load (the navigate
+  // handler below), so this is for the day something does. Read from protocol
+  // and host rather than `location.origin`, which a custom scheme may state as
+  // "null".
+  const auto forOwnPages = [&ownPages](const std::string &code)
+  {
+    return "if (" + nlohmann::json(ownPages).dump() +
+           ".includes(location.protocol + '//' + location.host)) { " + code + " }";
+  };
   webview->inject(saucer::script{
-    .code   = "window.__HKP_VAULT__ = " + vault.getAll().dump() + ";",
+    .code   = forOwnPages("window.__HKP_VAULT__ = " + vault.getAll().dump() + ";"),
     .run_at = saucer::script::time::creation,
   });
   // At creation, like the vault: a board can be provisioned as soon as one
   // loads, and a grant that arrived later would be a question asked again for
   // something already answered.
   webview->inject(saucer::script{
-    .code   = "window.__HKP_GRANTS__ = " + grants.getAll().dump() + ";",
+    .code   = forOwnPages("window.__HKP_GRANTS__ = " + grants.getAll().dump() + ";"),
     .run_at = saucer::script::time::creation,
   });
   // Nothing said: the runtime answers the Readymade apps and pages served from
@@ -411,6 +447,7 @@ int real_main(int argc, char *argv[])
   std::cout << "Loaded " << numLoadedPlugins << " plugins from bundles path: " << settings.getBundlesPath() << std::endl;
 
   SchemeHandler handler(server, settings);
+  handler.trustPages(ownPages, fileGrants);
   // A phone on the LAN loads the app from the frontend server and calls the
   // runtime from there.
   handler.setOwnOrigins({"http://" + lanIP + ":" + std::to_string(FRONTEND_HTTP_PORT)});
@@ -456,21 +493,36 @@ int real_main(int argc, char *argv[])
 
   auto desktop = saucer::modules::desktop{loop.application()};
 
-  webview->expose("pickFile", [&desktop](saucer::modules::picker::options opts)
+  // What the person picks is what a page may then read or write, and nothing
+  // else (FileGrants). A picker answers with a file:// URL on some platforms,
+  // so the grant is of the path the URL names — the one readFile will read.
+  webview->expose("pickFile", [&desktop, &fileGrants](saucer::modules::picker::options opts)
   {
-    return desktop.pick<saucer::modules::picker::type::file>(std::move(opts))
-        .transform_error(&saucer::error::message);
+    auto picked = desktop.pick<saucer::modules::picker::type::file>(std::move(opts));
+    if (picked.has_value())
+    {
+      fileGrants.grantFile(fileUriToPath(picked.value().string()));
+    }
+    return picked.transform_error(&saucer::error::message);
   });
 
-  webview->expose("pickFolder", [&desktop](saucer::modules::picker::options opts)
+  webview->expose("pickFolder", [&desktop, &fileGrants](saucer::modules::picker::options opts)
   {
-    return desktop.pick<saucer::modules::picker::type::folder>(std::move(opts))
-        .transform_error(&saucer::error::message);
+    auto picked = desktop.pick<saucer::modules::picker::type::folder>(std::move(opts));
+    if (picked.has_value())
+    {
+      fileGrants.grantFolder(fileUriToPath(picked.value().string()));
+    }
+    return picked.transform_error(&saucer::error::message);
   });
 
-  webview->expose("readFile", [](const std::string &uri) -> std::expected<std::string, std::string>
+  webview->expose("readFile", [&fileGrants](const std::string &uri) -> std::expected<std::string, std::string>
   {
     const auto path = fileUriToPath(uri);
+    if (!fileGrants.mayRead(path))
+    {
+      return std::unexpected("Not a file that was picked, or beside one: " + path);
+    }
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open())
     {
@@ -480,9 +532,13 @@ int real_main(int argc, char *argv[])
     return content;
   });
 
-  webview->expose("writeFile", [](const std::string &uri, const std::string &content) -> std::expected<bool, std::string>
+  webview->expose("writeFile", [&fileGrants](const std::string &uri, const std::string &content) -> std::expected<bool, std::string>
   {
     const auto path = fileUriToPath(uri);
+    if (!fileGrants.mayWrite(path))
+    {
+      return std::unexpected("Not a path that was picked to save to: " + path);
+    }
     std::ofstream file(path, std::ios::binary);
     if (!file.is_open())
     {
@@ -496,10 +552,14 @@ int real_main(int argc, char *argv[])
     return true;
   });
 
-  webview->expose("pickSavePath", [&desktop](saucer::modules::picker::options opts)
+  webview->expose("pickSavePath", [&desktop, &fileGrants](saucer::modules::picker::options opts)
   {
-    return desktop.pick<saucer::modules::picker::type::save>(std::move(opts))
-        .transform_error(&saucer::error::message);
+    auto picked = desktop.pick<saucer::modules::picker::type::save>(std::move(opts));
+    if (picked.has_value())
+    {
+      fileGrants.grantSave(fileUriToPath(picked.value().string()));
+    }
+    return picked.transform_error(&saucer::error::message);
   });
 
   webview->expose("saveJSON", [&desktop](const std::string &content) -> std::expected<bool, std::string>
@@ -574,14 +634,25 @@ int real_main(int argc, char *argv[])
     return grants.revoke(key);
   });
 
-  // Fallback: open target="_blank" link clicks in the OS default browser.
+  // Only the app's own pages load, in the main frame or any other; a web
+  // address the person asked for — a link, target="_blank" — opens in their
+  // browser instead. See decideNavigation.
   webview->on<saucer::webview::event::navigate>(
-    [](const saucer::navigation &nav) -> saucer::policy
+    [&ownPages](const saucer::navigation &nav) -> saucer::policy
     {
-      if (!nav.new_window()) {
+      const auto url = nav.url().string();
+      switch (readymade::decideNavigation(
+          ownPages, url, nav.new_window(), nav.user_initiated(), nav.redirection()))
+      {
+      case readymade::Navigation::load:
         return saucer::policy::allow;
+      case readymade::Navigation::openInBrowser:
+        openUrlInSystemBrowser(url);
+        return saucer::policy::block;
+      case readymade::Navigation::block:
+        std::cerr << "[navigate] Not one of the app's pages, not loaded: " << url << std::endl;
+        return saucer::policy::block;
       }
-      openUrlInSystemBrowser(nav.url().string());
       return saucer::policy::block;
     });
 

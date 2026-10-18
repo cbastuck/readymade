@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { LayoutNode } from "../panels/LayoutNode";
 import type { BoardContextState } from "hkp-frontend/src/BoardContext";
@@ -24,6 +24,15 @@ vi.mock("../panels/renderers/StatusIndicatorRenderer", async (importOriginal) =>
   >()),
   useNotificationValue: (_ctx: unknown, source: unknown) =>
     source ? notified[0] : undefined,
+}));
+
+const processed: unknown[] = [];
+
+vi.mock("../boardServices", () => ({
+  findService: () => null,
+  processService: (_ctx: unknown, uuid: string, payload: unknown) => {
+    processed.push({ uuid, payload });
+  },
 }));
 
 const boardContext = { scopes: {}, services: {}, runtimes: [] } as unknown as BoardContextState;
@@ -63,6 +72,7 @@ function src(container: HTMLElement): string | null {
 beforeEach(() => {
   play.mockClear();
   notified.length = 0;
+  processed.length = 0;
 });
 
 describe("audio-player", () => {
@@ -259,3 +269,72 @@ describe("audio-player with a file that will not play", () => {
     expect(src(container)).toBe("http://host/hosted/abc/c.mp3");
   });
 })
+
+/**
+ * The list that is played is also the list that is managed: an episode is
+ * removed from where it is listened to, not from a second list beside it.
+ */
+describe("audio-player track actions", () => {
+  const managed = {
+    ...player,
+    title: "{{item.title}}",
+    trackActions: [
+      {
+        label: "Remove",
+        confirm: "Remove {{item.title}}?",
+        actions: [
+          { type: "process", serviceUuid: "forget", payload: { slug: "{{item.slug}}" } },
+        ],
+      },
+    ],
+  } as LayoutItem;
+
+  const shows = () => [
+    { base: "http://host/hosted/abc", path: "a.mp3", slug: "a", title: "First" },
+    { base: "http://host/hosted/abc", path: "b.mp3", slug: "b", title: "Second" },
+  ];
+
+  it("puts each action beside its track, and runs it with that track", async () => {
+    notified[0] = shows();
+    renderPlayer(managed);
+
+    const removes = screen.getAllByRole("button", { name: "Remove" });
+    expect(removes).toHaveLength(2);
+
+    fireEvent.click(removes[1]);
+    expect(screen.getByText("Remove Second?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Yes, do it" }));
+
+    await waitFor(() =>
+      expect(processed).toEqual([{ uuid: "forget", payload: { slug: "b" } }]),
+    );
+    // Acting on a track is not playing it.
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the question is declined", async () => {
+    notified[0] = shows();
+    renderPlayer(managed);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Keep as it is" }));
+
+    await Promise.resolve();
+    expect(processed).toEqual([]);
+  });
+
+  it("still plays the track a person picks", () => {
+    notified[0] = shows();
+    const { container } = renderPlayer(managed);
+
+    fireEvent.click(screen.getAllByText("Second").at(-1)!);
+    expect(src(container)).toBe("http://host/hosted/abc/b.mp3");
+    expect(play).toHaveBeenCalled();
+  });
+
+  it("draws no action buttons for a player without any", () => {
+    notified[0] = shows();
+    renderPlayer({ ...player, title: "{{item.title}}" } as LayoutItem);
+    expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
+  });
+});

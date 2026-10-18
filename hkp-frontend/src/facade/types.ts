@@ -722,8 +722,21 @@ export type AudioPlayerWidget = {
   showList?: boolean;
   // How tall that list may grow before it scrolls, in pixels. Default 220.
   listMaxHeight?: number;
+  // Buttons beside each track in that list — removing an episode, rendering
+  // it again. Each runs its actions with the track's item, substituted as a
+  // repeat's template is ("{{item.slug}}"), so the list that is played is also
+  // the list that is managed rather than a second one drawn beside it.
+  trackActions?: AudioPlayerTrackAction[];
   // What to say when the source has given nothing yet.
   placeholder?: string;
+};
+
+export type AudioPlayerTrackAction = {
+  label: string;
+  // Asks before doing it, interpolated with the item: shorthand for a
+  // `confirm` step at the head of `actions`.
+  confirm?: string;
+  actions: WidgetAction[];
 };
 
 export type FacadeWidget =
