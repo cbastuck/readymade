@@ -254,6 +254,12 @@ export type TextWidget = {
   // have an address to open drops one field instead of changing widgets. It
   // takes an item reference like any other value, which is what lets a repeat
   // over a list of things give each one its own destination.
+  //
+  // "{{value}}" stands for the value shown, for a service whose answer *is*
+  // the address — a link to an endpoint it publishes. Written as the whole of
+  // `href` it is the whole address; inside a longer one it is encoded as a part
+  // of it. Either way an address taken from a value is a link only if it is a
+  // web address (http or https).
   href?: string;
 };
 
@@ -792,13 +798,27 @@ export type LayoutContainer = {
   // parent's align:"center" to centre a width-constrained row/column.
   width?: number | string;
   items: LayoutItem[];
-};
+} & FacadeAudience;
+
+// Who a part of a facade is for. Absent, everybody the board is shown to.
+//
+// "owner" keeps it for the board's owner: on a deployed board shared with
+// members, the coordinator leaves it out of the facade it sends a member, so a
+// member is never shown it, cannot act through it, and is not sent what it
+// reads. A tab left with no panels goes with them. On a board that is not
+// shared — the playground, the app — whoever has it open is its owner and
+// sees everything.
+//
+// Carried by a container, a widget, a panel, a tab or a notice. It is a matter
+// of what a member is *shown*: what they may do is still decided behind every
+// entry point they do have, by the caller the server states.
+export type FacadeAudience = { visibleTo?: "owner" };
 
 // Widgets may carry an optional grow flag to fill remaining space in their
 // parent. To size a widget to a proportion of its parent, wrap it in a
 // container that carries `width` (widget-internal `width`, e.g. on knob or
 // text-input, controls the widget's own drawing, not its layout slot).
-export type LayoutLeaf = FacadeWidget & { grow?: boolean };
+export type LayoutLeaf = FacadeWidget & { grow?: boolean } & FacadeAudience;
 
 export type LayoutItem = LayoutContainer | LayoutLeaf;
 
@@ -818,7 +838,7 @@ export type FacadePanel = {
   // opens as next time. Ignored where the panels do not share a row at all —
   // the mobile view stacks them.
   width?: number | string;
-};
+} & FacadeAudience;
 
 // One face of a facade: the panels a person sees while it is chosen.
 //
@@ -840,7 +860,7 @@ export type FacadeTab = {
   // is not hidden: it sits above the tab bar, on screen whichever tab is
   // chosen, which is what a board means by a status strip it always wants read.
   panels: string[];
-};
+} & FacadeAudience;
 
 // Something worth interrupting somebody about, raised as a toast rather than
 // drawn into the panel.
@@ -867,7 +887,7 @@ export type FacadeNotice = {
   // What it says, with "{{value}}" standing for the value that raised it.
   // Absent, the value itself is the message.
   message?: string;
-};
+} & FacadeAudience;
 
 export type FacadeDescriptor = {
   // "single" renders one panel full-size; "columns" renders panels side-by-side.

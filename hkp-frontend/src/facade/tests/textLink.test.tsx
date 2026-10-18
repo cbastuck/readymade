@@ -84,6 +84,50 @@ describe("a text widget with an href", () => {
     expect(container.textContent).toContain("Just a line of prose");
   });
 
+  it("links to the value shown, where that is what the service publishes", () => {
+    // A mount's address: the value is the place, so the link is the value.
+    notified[0] = "https://relay.example/hosted/abc";
+
+    const { container } = renderNode({
+      type: "text",
+      source: { serviceUuid: "radio", path: "__hkpMount" },
+      href: "{{value}}",
+    } as unknown as LayoutItem);
+
+    const links = Array.from(container.querySelectorAll("a"));
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "https://relay.example/hosted/abc",
+    ]);
+  });
+
+  it("puts the value into a longer address as a part of it", () => {
+    notified[0] = "two words & more";
+
+    const { container } = renderNode({
+      type: "text",
+      source: { serviceUuid: "search", path: "query" },
+      href: "https://example.com/search?q={{value}}",
+    } as unknown as LayoutItem);
+
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "https://example.com/search?q=two%20words%20%26%20more",
+    );
+  });
+
+  it("does not link a value that is not a web address", () => {
+    // What a service says is not the board's to vouch for.
+    notified[0] = "javascript:alert(1)";
+
+    const { container } = renderNode({
+      type: "text",
+      source: { serviceUuid: "radio", path: "__hkpMount" },
+      href: "{{value}}",
+    } as unknown as LayoutItem);
+
+    expect(container.querySelectorAll("a")).toHaveLength(0);
+    expect(container.textContent).toContain("javascript:alert(1)");
+  });
+
   it("does not link a value the source has not filled in yet", () => {
     // An underlined placeholder that goes nowhere is worse than plain text:
     // it offers something the board cannot yet do.

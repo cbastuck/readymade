@@ -457,6 +457,17 @@ projection is the facade; for each service the facade names its `uuid`,
 sources read; and whether the board is running. No runtime address, no
 statement, no registry, no log.
 
+**What the facade keeps for its owner is not part of it.** A widget,
+container, panel, tab or notice marked `"visibleTo": "owner"` is left out of
+the facade before anything is read from it (`facadeForMembers`), along with a
+tab left with none of its panels and a `defaultTab` naming one. So it is not
+drawn for a member, a `process` action inside it is not a member's to call,
+and a path only it reads is not projected to them. That is what a member is
+*shown*; a service that is a member's to call still decides for itself what
+they may do through it. The
+[members' live radio](../boards/live-radio-members-demo-board.md) keeps its
+station controls this way.
+
 **The entry point is the capability, not the payload.** Naming a service in a
 `process` action makes it member-callable with *any* payload — a custom client
 is not bound to what the widget would send. So everything that matters has to

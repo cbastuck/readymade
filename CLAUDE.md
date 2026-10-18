@@ -357,6 +357,11 @@ reports something, instead of a row kept free for a problem that is usually not 
 notice reads a service the way a widget's `source` does, fires when that value arrives with
 something in it, and never seeds from the state a service was already in.
 
+A widget, container, panel, tab or notice marked **`"visibleTo": "owner"`** is kept for the
+board's owner: a deployed board's coordinator leaves it out of the facade a member is sent,
+so it is neither drawn, nor callable, nor projected (`facadeForMembers` in
+`hkp-node/src/coordinator/facadeAccess.ts`).
+
 Use `/new-board` for the full widget schema and board design workflow.
 
 ---

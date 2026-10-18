@@ -83,8 +83,8 @@ putting up a date, closing the poll and withdrawing dates, and calling a new
 meeting. `defaultTab` is Vote, because answering is the
 common case and setting up happens once.
 
-A facade cannot hide a widget from one person and not another, so the
-Organise controls are drawn from rows only the owner is sent. **What the owner
+The Organise controls are drawn from rows only the owner is sent, because
+who organises a meeting is the database's to decide. **What the owner
 runs** and **Dates to withdraw** end in `WHERE $caller_role = 'owner'`; for a
 member they answer with nothing, and the controls are not there. That is how
 it looks, not what keeps it safe — the entry point takes any payload, and it is

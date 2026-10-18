@@ -368,6 +368,21 @@ panels stack.
 - Switching tabs hides a panel rather than discarding it: a half-typed field and a table's
   rows are still there when it comes back.
 
+### Kept for the owner — `visibleTo`
+
+A board meant to be deployed and shared has controls only its owner should have — going on
+air, calling a meeting. Mark them, and a member is never sent them:
+
+```json
+{ "id": "station", "title": "Station", "visibleTo": "owner", "layout": { ...LayoutItem } }
+```
+
+`"visibleTo": "owner"` goes on a widget, a container, a panel, a tab or a notice. The
+coordinator leaves it out of the facade a member is sent — not drawn, not callable, and what
+only it reads is not projected — and drops a tab left with none of its panels. On a board that
+is not shared, whoever has it open is its owner and sees everything. It decides what a member
+is *shown*: a `process` target a member can still reach must check the caller itself.
+
 ### Notices — say it, do not reserve room for it
 
 A row kept free for a problem the board usually does not have spends layout on nothing, and
@@ -776,6 +791,15 @@ any other value, which is what gives each row of a `repeat` its own destination:
 
 ```json
 { "type": "text", "placeholder": "{{item.title}}", "href": "{{item.link}}", "grow": true }
+```
+
+`"{{value}}"` in `href` stands for the value shown, for a service whose answer *is* the
+address — a mount it publishes. As the whole of `href` it is the whole address; inside a longer
+one it is encoded as a part of it. An address taken from a value is a link only when it is
+http(s):
+
+```json
+{ "type": "text", "source": { "serviceUuid": "radio", "path": "__hkpMount" }, "href": "{{value}}", "copyable": true }
 ```
 
 `value` shows something that is not a service's to say, in place of the source's value: facade
