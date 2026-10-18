@@ -567,7 +567,8 @@
         "title": "Organise",
         "panels": [
           "meeting"
-        ]
+        ],
+        "visibleTo": "owner"
       }
     ],
     "defaultTab": "answer",

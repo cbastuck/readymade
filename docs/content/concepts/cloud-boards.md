@@ -460,7 +460,9 @@ statement, no registry, no log.
 **What the facade keeps for its owner is not part of it.** A widget,
 container, panel, tab or notice marked `"visibleTo": "owner"` is left out of
 the facade before anything is read from it (`facadeForMembers`), along with a
-tab left with none of its panels and a `defaultTab` naming one. So it is not
+tab left with none of its panels, the panels only an owner's tab names — which
+would otherwise sit above the tabs for everybody — and a `defaultTab` naming
+a tab that went. So it is not
 drawn for a member, a `process` action inside it is not a member's to call,
 and a path only it reads is not projected to them. That is what a member is
 *shown*; a service that is a member's to call still decides for itself what

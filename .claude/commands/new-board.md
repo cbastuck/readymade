@@ -380,7 +380,8 @@ air, calling a meeting. Mark them, and a member is never sent them:
 `"visibleTo": "owner"` goes on a widget, a container, a panel, a tab or a notice. The
 coordinator leaves it out of the facade a member is sent — not drawn, not callable, and what
 only it reads is not projected — and drops a tab left with none of its panels. On a board that
-is not shared, whoever has it open is its owner and sees everything. It decides what a member
+is not shared, whoever has it open is its owner and sees everything. Marking a tab takes the
+panels only it names along with it — they do not fall back to the shared strip above the tabs. It decides what a member
 is *shown*: a `process` target a member can still reach must check the caller itself.
 
 ### Notices — say it, do not reserve room for it

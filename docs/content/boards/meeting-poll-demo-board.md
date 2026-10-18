@@ -30,8 +30,8 @@ Which meeting is shown is the one a person last picked, and until they pick
 one, the meeting called last — so somebody opening the board for the first time
 lands on the poll they were sent it for. Answering a date keeps them on its
 meeting, even after a newer one is called. Switching to another is done on
-**Vote** itself, from **Meetings** above the dates — a member has nothing else
-to open **Organise** for.
+**Vote** itself, from **Meetings** above the dates — a member is not shown
+**Organise** at all.
 
 ## The rules live in the schema
 
@@ -83,12 +83,14 @@ putting up a date, closing the poll and withdrawing dates, and calling a new
 meeting. `defaultTab` is Vote, because answering is the
 common case and setting up happens once.
 
-The Organise controls are drawn from rows only the owner is sent, because
-who organises a meeting is the database's to decide. **What the owner
-runs** and **Dates to withdraw** end in `WHERE $caller_role = 'owner'`; for a
-member they answer with nothing, and the controls are not there. That is how
-it looks, not what keeps it safe — the entry point takes any payload, and it is
-the statements behind it that refuse.
+Organise is kept for the owner (`"visibleTo": "owner"` on its tab): deployed
+and shared, the coordinator leaves the tab and its panel out of the facade a
+member is sent, so a member sees Vote alone. Its controls are also drawn from
+rows only the owner is given, because who organises a meeting is the
+database's to decide — **What the owner runs** and **Dates to withdraw** end
+in `WHERE $caller_role = 'owner'`. Neither is what keeps the poll safe: Vote
+reaches the same entry point, which takes any payload, and it is the
+statements behind it that refuse.
 
 ## Sharing it with a team
 
