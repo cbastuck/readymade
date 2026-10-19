@@ -46,7 +46,7 @@ TEST_CASE("the public internet is everything that is not this host, private or r
          "0.0.0.0", "127.0.0.1", "127.255.255.254", "10.0.0.1", "172.16.0.0", "172.31.255.255",
          "192.168.1.1", "100.64.0.1", "100.100.100.200", "169.254.169.254", "169.254.170.2",
          "192.0.0.192", "198.18.0.1", "224.0.0.1", "255.255.255.255", "::", "::1", "fe80::1",
-         "fc00::1", "fd00:ec2::254", "ff02::1",
+         "fc00::1", "fd00:ec2::254", "ff02::1", "::127.0.0.1", "64:ff9b:1::a9fe:a9fe",
          // IPv6 forms carrying an IPv4 address are judged by the IPv4 inside.
          "::ffff:127.0.0.1", "::ffff:7f00:1", "64:ff9b::a9fe:a9fe", "2002:7f00:1::",
          // Not an address at all.
