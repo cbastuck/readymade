@@ -80,6 +80,7 @@ docker run --rm \
 | `EXTERNAL_HOST` | `127.0.0.1` | The host it says it is reached at, when `HKP_EXTERNAL_URL` is not set |
 | `HKP_MOUNT_SECRET` | — | Keys the addresses of its endpoints. Unset, one is drawn and kept in the volume |
 | `HKP_COORDINATOR_LINKS_FILE` | `~/.hkp/cpp/coordinator-links.json` | Where coordinator tickets are kept. Empty keeps them in memory only |
+| `HKP_COORDINATOR_MAX_FRAME_BYTES` | 64 MiB | The largest value a coordinator passes on, which this server's links to coordinators accept with room to spare. Set it as the coordinator's operator did |
 
 ### The volume
 
@@ -97,7 +98,9 @@ Both are written readable by their owner only.
 
 Everything is on the one published port: the REST api, a runtime's notification
 socket, and any endpoint a service exposes (`/hosted/<id>`). Behind a reverse proxy,
-forward that port and set `HKP_EXTERNAL_URL` to the public address:
+forward that port and set `HKP_EXTERNAL_URL` to the public address. A request the
+proxy says it forwarded (`Forwarded`, `X-Forwarded-For`, `X-Real-IP`) is never taken
+for one from this machine, so every caller through it needs a token:
 
 ```sh
   -e HKP_EXTERNAL_URL=https://rt.example.com

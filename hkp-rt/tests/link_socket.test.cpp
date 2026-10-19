@@ -394,6 +394,21 @@ TEST_CASE("a large message is not refused for its size", "[link-socket]") {
   REQUIRE(client.messages[0].first.size() == large.size());
 }
 
+TEST_CASE("a message past the ceiling closes the connection", "[link-socket]") {
+  Peer peer;
+  Client client;
+  auto options = to(peer);
+  options.maxMessageBytes = 1024 * 1024;
+  client.connect(options);
+  REQUIRE(eventually([&] { return client.isOpen(); }));
+
+  // Echoed back by the peer, and too large to be read here.
+  client.socket->sendBinary(std::string(2 * 1024 * 1024, 'x'));
+
+  REQUIRE(eventually([&] { return client.isClosed(); }, 15000));
+  REQUIRE(client.count() == 0);
+}
+
 TEST_CASE("a close says which code it was closed with", "[link-socket]") {
   // 4403 and 4409 are final for a link; anything else it reconnects through.
   Peer peer;

@@ -14,12 +14,12 @@ The security findings are worked through one at a time, in the order of the tabl
 | 2 | Prototype pollution in facade projection | done | 2026-10-18 | Machinery path segments are refused at deploy and ignored in projection, projection reads own properties only, and identity reads own claims only; `docs/content/concepts/cloud-boards.md` |
 | 3 | Native page trust and navigation policy | in progress | 2026-10-18 | Built in the desktop host with tests and docs. Remaining: the pass by hand listed under the finding |
 | 4 | Hosted boards can reach private networks | in progress | 2026-10-18 | Built in hkp-node, hkp-python and hkp-rt, each with tests and a source scan; docs, READMEs and skills updated. Remaining: the pass by hand on a hosted server |
-| 5 | Unbounded coordinator WebSocket payloads | open | | |
+| 5 | Unbounded coordinator WebSocket payloads | done | 2026-10-19 | A 64 MiB frame limit that is never off, and a WebSocket ceiling above it on every coordinator connection in all three runtimes; `docs/content/concepts/cloud-boards.md` |
 | 6 | The board document as untrusted input | open | | Also carries confining hkp-rt's `filesystem`, moved here from finding 1 (D4) and required. A board's unit references reaching any file through the desktop `readFile` are closed by finding 3 (P3) |
-| 7 | Same-host reverse proxy and address-based trust | open | | |
-| 8 | JWT checks differ across runtimes | open | | |
-| 9 | Secret and session exposure at rest | open | | One leak found and closed 2026-10-18, outside the review: the sign-in token on runtime descriptors (see the finding). The proposal itself is untouched |
-| 10 | Facade capabilities and remaining shared-host items | open | | |
+| 7 | Same-host reverse proxy and address-based trust | done | 2026-10-19 | A request carrying `Forwarded`, `X-Forwarded-For` or `X-Real-IP` is never let in for where it comes from, in all three runtimes; `docs/content/concepts/runtime.md` |
+| 8 | JWT checks differ across runtimes | done | 2026-10-19 | RS256, issuer, audience, and a required expiry and subject in every runtime, as the website already checked; `docs/content/concepts/runtime.md` |
+| 9 | Secret and session exposure at rest | in progress | 2026-10-19 | Canary-secret sweeps in all three runtimes, a deployed board and the browser services. Remaining: platform secure stores, decided to follow v1. Two token leaks closed outside the review (see the finding) |
+| 10 | Facade capabilities and remaining shared-host items | in progress | 2026-10-19 | WebSocket tickets instead of `?access_token=`, `expression-eval` vendored, member reach pinned by tests; `/serviceRedirect` and member removal confirmed. Remaining: the mount and asset URL inventory, and the investigation areas |
 
 States, in order: `open` — nothing beyond the finding; `proposed` — a fix is written under the finding and waits for a decision; `decided` — the decisions are recorded there and nothing is built; `in progress` — partly built, with what remains listed under the finding; `done`.
 
@@ -278,15 +278,22 @@ Required tests: literal private addresses, names resolving to them, redirects in
    - a board using an allowed internal address still works.
 2. Then cut this section down as the Progress rules say.
 
-### 5. Medium: unbounded coordinator WebSocket payloads
+### 5. Done 2026-10-19: unbounded coordinator WebSocket payloads
 
-Evidence: `maxPayload: 0` in `hkp-node/src/server.ts` (bridge), `coordinator/join.ts`, and `coordinatorLinks.ts` disables the ws payload limit. `HKP_COORDINATOR_MAX_FRAME_BYTES` exists but is unset by default, and where set it is checked in the message handler (`coordinator/participants.ts`, `coordinator/session.ts`) — after `ws` has buffered the whole message — so it bounds what is processed, not what is allocated. Node runtime/service/timer quotas default to unlimited or unrestricted in `index.ts`.
+**Changed.**
 
-Why lower than first ranked: every one of these sockets is authenticated before the upgrade, by token or ticket. It stays above low because a member — admitted by a board's list, not the server's allowlist — can open a bridge, and an authenticated tenant is still capable of exhausting a shared process.
+- `hkp-node/src/coordinator/frameLimits.ts`: the frame limit, 64 MiB unless `HKP_COORDINATOR_MAX_FRAME_BYTES` says otherwise, and never off. A frame over it is still dropped and logged, the connection kept.
+- The WebSocket library's own ceiling, the frame limit plus 16 MiB for an introduction, replaces `maxPayload: 0` on the coordinator's join and bridge sockets and this server's links out (`join.ts`, `server.ts`, `coordinatorLinks.ts`).
+- The same ceiling, read from the same setting, on hkp-python's link (`coordinator_links.py`) and hkp-rt's (`LinkSocket::Options::maxMessageBytes`, set in `coordinator_links.cpp`).
+- Bridge and runtime sockets got an `error` listener in their upgrade callback. Without one, the library's report of an oversized frame would have ended the process.
 
-Proposal: give `maxPayload` a finite ceiling at or above the frame limit, so the library refuses what the application would drop. Establish finite hosted defaults for frame size, in-flight requests, buffered outbound bytes, execution concurrency, connections, timers, storage and logs. Bound nested services too. Large binary/audio data should have a defined chunking/streaming contract. Bound parsing and reject malformed YAS/bridge frames before expensive allocation.
+**Tests.**
 
-Required tests: oversize/truncated frames, notification floods, slow readers, disconnect during transfer, low quota enforcement, and another tenant remaining responsive. Run destructive load tests only in isolated disposable environments.
+- `hkp-node/tests/coordinator-frame-limits.test.ts`: the limit is never off; an admitted bridge sending past the ceiling is closed with 1009; a link refuses such a frame from a coordinator.
+- `hkp-python/tests/test_coordinator_links.py`: the link's ceiling.
+- `hkp-rt/tests/link_socket.test.cpp`: a message past the ceiling closes the link.
+
+**Left.** Runtime, service and timer quotas stay opt-in (decided 2026-10-19); `hkp-node/README.md` lists them. A chunking contract for large binary values, and bounds on nested services, were not taken up.
 
 ### 6. Medium, unverified: the board document as untrusted input
 
@@ -298,25 +305,36 @@ Moved here from finding 1 (2026-10-09), and required rather than optional: hkp-r
 
 Required tests: a hostile board opened in the playground, the desktop app and on mobile creates nothing on a local or remote runtime and sends nothing until consent is given.
 
-### 7. Medium: a same-host reverse proxy defeats address-based trust
+### 7. Done 2026-10-19: a same-host reverse proxy defeats address-based trust
 
-Evidence: hkp-rt decides that a caller is local from its source address (`callerAddress` in `hkp-rt/lib/src/http/server.cpp`). The front door carries the real address beside a secret, but any other proxy on the same host — nginx or Caddy in front of a standalone hkp-rt — makes every request a loopback one, and so trusted. hkp-node decides by bind address instead: `HOST=127.0.0.1` without Auth0 configured runs without authentication, which is equally open once a proxy forwards to it.
+**Changed.** A request carrying `Forwarded`, `X-Forwarded-For` or `X-Real-IP` is never admitted without a credential: `admitsWithoutCredential` refuses it in hkp-node (`origins.ts`), hkp-python (`origins.py`) and hkp-rt (`origins.h`). In hkp-rt, `callerAddress` also treats it as from nowhere, so the loopback pass in JWT mode does not apply. Mounts are unaffected.
 
-Status: read from code; no proxied deployment was run.
+**Tests.** The rule in `tests/origins.test.ts`, `tests/test_origins.py` and `tests/origins.test.cpp`; against real servers in `tests/server-origins.test.ts`, `tests/test_origins.py` and `tests/server_origins.test.cpp`, over HTTP and the WebSocket upgrade, and for hkp-rt in JWT mode.
 
-Proposal: treat a request carrying `X-Forwarded-For` or `Forwarded` as non-local unless the front door's secret accompanies it, and have a no-auth server refuse such requests. Say in the deployment docs that a loopback bind is a boundary only while nothing forwards to it.
+**Left.** A proxy that adds none of these headers cannot be told apart. `docs/content/concepts/runtime.md` and `hkp-rt/README-docker.md` say a loopback bind is a boundary only while nothing forwards to it.
 
-### 8. Low–Medium: JWT checks differ across runtimes
+### 8. Done 2026-10-19: JWT checks differ across runtimes
 
-Evidence: Node's `createJwtVerifier` passes `audience` to `jwt.verify`, but no expected `issuer` or explicit algorithm list. Python's `_verify_jwt` restricts RS256 and audience, but passes no issuer and requires no expiry claim. Node also does not explicitly require expiry. The Python signed-token tests intentionally accept tokens without `iss` or `exp`. PHP checks issuer/RS256/expiry; C++ explicitly checks issuer and RS256. The Node and Python calls were re-read in the second pass; PHP and C++ were not.
+**Changed.** Every runtime now checks what the website's `auth.php` already did:
+- RS256 only;
+- the issuer `https://<AUTH0_DOMAIN>/`;
+- an accepted audience;
+- `exp` and a non-empty `sub` that must be present;
+- `nbf` honoured, with 60 s of skew.
 
-Why lower than first ranked: trusted JWKS keys still constrain signatures, and this is not evidence that arbitrary unsigned or attacker-signed tokens work. On Node, jsonwebtoken 9 derives the accepted algorithms from the key's type, so an RSA key is not usable for an HMAC token; expiry is enforced whenever the claim is present, and Auth0 always sets it; and the keys are one Auth0 tenant's, so a token they verify was issued by that tenant. What remains is consistency and defence in depth: fetching keys from a configured issuer does not validate the token's issuer claim, and an optional expiry check does not reject missing expiry.
+Per runtime:
+- hkp-node (`auth.ts`) gained the issuer, the algorithm list and a required `exp`, plus `jwksUri` so keys can come from elsewhere.
+- hkp-python (`auth.py`) gained the issuer and required claims.
+- hkp-rt (`http/auth.cpp`) gained the required `exp` and `sub`. An issuer with no audiences now accepts nothing, where it used to skip the check.
 
-Proposal: align issuer, audience, accepted algorithms, mandatory claims and token type across runtimes. Require nonempty subject and expiry; define clock skew and acceptance of multiple client audiences. Document the deliberate use of ID tokens as API credentials, or adopt API access tokens with explicit scopes.
+**Tests.**
+- hkp-node `tests/auth-jwt.test.ts`: tokens signed against a key set served from a local endpoint, through the real fetch path and an HTTP route.
+- hkp-python `tests/test_auth.py`: its helper now mints realistic tokens.
+- hkp-rt `tests/auth.test.cpp`.
 
-Required tests: locally signed tokens against a controlled JWKS endpoint, covering valid tokens, wrong/missing issuer, wrong audience, absent/expired expiry, future not-before, invalid signatures, disallowed algorithms, key rotation and unverified email. Exercise real HTTP and WS entry points rather than replacing authentication with a principal resolver.
+Each covers a missing or past expiry, a future `nbf`, a wrong or missing issuer, a wrong audience, a missing subject, another key and HS256.
 
-Reference: [JWT best current practices, RFC 8725](https://www.rfc-editor.org/info/rfc8725/).
+**Left.** ID tokens are still the API credential; Auth0 access tokens with scopes were not adopted. The website's PHP is unchanged and allows no clock skew.
 
 ### 9. Low–Medium: secret and session exposure at rest
 
@@ -328,6 +346,15 @@ Proposal: move native refresh tokens and vault values into platform secure store
 
 Reference: [OWASP HTML5 security guidance](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html).
 
+**Built 2026-10-19: canary sweeps.** A secret with a recognisable value is used, the use is made to fail, and every surface is read for the value. Each sweep also asserts the value really was sent upstream.
+- hkp-node `tests/secret-canary.test.ts`:
+  - the runtime server: the run's answer, the runtime routes, the notification socket and the console;
+  - a deployed board: what the owner's browser is told, the board's log, what the coordinator saves and holds, and the console.
+- hkp-python `tests/test_secret_canary.py` and hkp-rt `tests/secret_canary.test.cpp`: the runtime server, its log and its console.
+- hkp-frontend `runtime/browser/services/tests/secret-canary.test.ts`: HTTP Client, OpenAI Prompt and Workflow Board Builder — what each reports, says, answers and logs. Encrypt, Decrypt, Sign and the GitHub service already had such tests.
+
+No leak was found.
+
 **Closed 2026-10-18, found while testing, not by the review: the sign-in token on runtime descriptors.**
 
 - **The leak.** Creating a runtime put the signed-in user onto its descriptor, ID token included (`core/runtimeOperations.ts`). A descriptor is spread into whatever exports a runtime, so the token travelled into three places:
@@ -337,19 +364,45 @@ Reference: [OWASP HTML5 security guidance](https://cheatsheetseries.owasp.org/ch
 - **Not affected:** saved boards, Share as QR and deploying, which list each runtime's fields one by one.
 - **The fix.** The descriptor no longer carries `user`. The REST runtime never read it; its scope is given the user separately (`authenticatedUser`). The only reader was the deprecated GraphQL runtime, which is now unauthenticated. The three outputs, and JSON applied in the runtime editor, drop a `user` read back from a file saved earlier (`withoutSession` in `types.ts`).
 - **Tests:** `hkp-frontend/src/core/tests/runtimeSession.test.ts`.
-- **Left:** a runtime file saved before the fix still holds a token, expired by now since an ID token lives for ten hours. The canary assertions this finding proposes would have caught the leak, and remain to be written.
+- **Left:** a runtime file saved before the fix still holds a token, expired by now since an ID token lives for ten hours.
+
+Also closed on `main` (commit `72c7a55c`, 2026-10-18), outside the review: the ID token is no longer sent to third-party URLs (`views/playground/common.ts`).
+
+**Remaining.**
+
+1. Platform secure stores for the native refresh token and the vault. Decided 2026-10-19 to follow v1; there is no keychain code on any platform yet.
+2. Canaries in Playwright artifacts, and the credential-audience cases (HTTPS downgrade, redirect chains, body payloads).
 
 ### 10. Investigate: facade capabilities and remaining shared-host items
 
-`coordinator/facadeAccess.ts` explicitly grants any payload to a facade-exposed process target. Hiding fields in the UI cannot enforce business rules. Test forged caller identity, arbitrary actions, nested addresses, unauthorized configuration, duplicate/replayed submissions, and projection of whole notifications. Member removal must invalidate existing sockets as well as new connections. Include public mount URLs and asset URLs in the capability/revocation inventory.
+`coordinator/facadeAccess.ts` explicitly grants any payload to a facade-exposed process target. Hiding fields in the UI cannot enforce business rules.
 
-Smaller items from the second pass, none of them confirmed as exploitable:
+**Settled 2026-10-19.**
 
-- The desktop's frontend server binds `0.0.0.0:9090` whether or not external access is switched on (`meander/backend/main.cpp`). It serves static files, and `/serviceRedirect` is refused to callers off the machine — but a page in the user's browser is on it, so that route rests on the `state` value alone. Confirm `state` is checked, and decide whether "external access off" should mean nothing listens on the LAN.
-- A browser's WebSocket carries its ID token as `?access_token=`, where proxies and access logs record it. Prefer a short-lived, single-use ticket for the handshake.
-- `expression-eval` is the boundary between a board's expressions and the runtime's process (`hkp-node/src/services/expression.ts`, and the same library in the browser). Check that it is still maintained and has no open advisories; pin and review it like security code.
+- **What a member may send is pinned** in `hkp-node/tests/board-members.test.ts`:
+  - their own identity, whatever the payload claims;
+  - process calls only at the facade's targets, named exactly — a nested address or a near miss is refused;
+  - the runtime is the board's to choose, not the message's;
+  - never a configure;
+  - a rate bound;
+  - projection of state and notifications;
+  - their bridges close the moment they are removed (`evictMember`).
+  
+  Replayed submissions are ordinary calls and count against the rate bound.
+- **`/serviceRedirect`:** a relayed redirect reaches only the login waiting on the same `state`, and the PKCE verifier never leaves the webview. The frontend server keeps binding `0.0.0.0` (decided 2026-10-19).
+- **WebSocket tickets.** `POST /ws-tickets` mints a single-use ticket, good for 30 s, bound to who the token named and whether they may own. It exists in hkp-node (`wsTickets.ts`, coordinator bridge included), hkp-python (`ws_tickets.py`) and hkp-rt (`http/ws_tickets.h`).
+  - The browser opens its runtime sockets and the bridge with `?ticket=` (`runtime/rest/wsTicket.ts`).
+  - `?access_token=` is still accepted from older clients, and the browser falls back to it only on a 404 or 405.
+  - Tests: hkp-node `tests/auth-jwt.test.ts` (and every bridge in the cloud tests now opens with one), hkp-python `tests/test_auth.py`, hkp-rt `tests/server_origins.test.cpp`, hkp-frontend `runtime/rest/tests/ws-ticket.test.ts`.
+- **`expression-eval`.** No advisories, but deprecated and unmaintained. It is vendored as `hkp-node/src/expressionEval.ts`, with an identical twin in `hkp-frontend/.../base/expressionEval.ts`, on `jsep` pinned at 0.3.5.
+  - `constructor`, `prototype` and every `__` member are refused by name, and identifiers resolve to the scope's own properties only.
+  - Tests: `tests/expression-eval.test.ts` in both. The old regex looked anchored but wasn't.
 
-Also review filesystem/symlink boundaries, runtime plugin/model execution, public endpoint abuse, upload content types, TLS deployment and dependency vulnerabilities before declaring a shared-host product ready. These are investigation areas, not confirmed vulnerabilities from this review.
+**Remaining.**
+
+1. Inventory public mount and asset URLs as capabilities: who holds them, and how one is revoked (renaming a mount, rotating `HKP_MOUNT_SECRET`).
+2. `hkp-frontend/src/runtime/browser/services/base/bundle.js` is an old browserify bundle nothing imports. Delete it or say why it stays.
+3. The investigation areas, before declaring a shared-host product ready: runtime plugin and model execution, public endpoint abuse, upload content types, TLS deployment and a dependency audit. hkp-rt's file boundaries are under finding 6; hkp-node's volumes and hkp-python were not re-checked.
 
 ## E2E coverage proposals
 

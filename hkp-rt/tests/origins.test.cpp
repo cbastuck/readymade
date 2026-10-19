@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <map>
+#include <string>
+
 #include <origins.h>
 
 using namespace hkp;
@@ -123,6 +126,27 @@ TEST_CASE("a request without an origin is refused when the browser says it is cr
   REQUIRE(admits(allowed, "", "same-origin"));
   // An allowed page is allowed however the browser classifies the request.
   REQUIRE(admits(allowed, "http://localhost:5173", "cross-site"));
+}
+
+TEST_CASE("a request a proxy passed on is not let in for where it comes from",
+          "[origins]") {
+  const auto allowed = AllowedOrigins::parse("");
+  RequestSource proxied{"", "", "127.0.0.1:8887", true};
+  REQUIRE_FALSE(admitsWithoutCredential(proxied, allowed, kNoNames));
+  proxied.origin = "saucer://embedded";
+  REQUIRE_FALSE(admitsWithoutCredential(proxied, allowed, kNoNames));
+
+  const auto header = [](std::map<std::string, std::string> values) {
+    return [values](const char* name) {
+      const auto it = values.find(name);
+      return it == values.end() ? std::string() : it->second;
+    };
+  };
+  REQUIRE(isForwarded(header({{"X-Forwarded-For", "203.0.113.9"}})));
+  REQUIRE(isForwarded(header({{"Forwarded", "for=203.0.113.9"}})));
+  REQUIRE(isForwarded(header({{"X-Real-IP", "203.0.113.9"}})));
+  REQUIRE_FALSE(isForwarded(header({{"X-Forwarded-For", "  "}})));
+  REQUIRE_FALSE(isForwarded(header({})));
 }
 
 TEST_CASE("a server is addressed by an address, localhost, or a name it was given",
