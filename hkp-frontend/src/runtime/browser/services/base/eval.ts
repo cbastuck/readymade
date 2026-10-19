@@ -1,4 +1,4 @@
-import { parse, eval as expEval } from "expression-eval";
+import { parse, evaluate as expEval } from "./expressionEval";
 import moment from "moment";
 import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import jsep from "jsep";

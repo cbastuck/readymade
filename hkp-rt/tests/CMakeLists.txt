@@ -70,6 +70,7 @@ add_executable(hkp-rt-service-tests
   link_socket.test.cpp
   coordinator_links.test.cpp
   mounts.test.cpp
+  secret_canary.test.cpp
 )
 target_include_directories(hkp-rt-service-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../lib/src)
 target_link_libraries(hkp-rt-service-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2::Catch2WithMain)

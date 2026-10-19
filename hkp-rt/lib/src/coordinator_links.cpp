@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <vector>
@@ -35,6 +36,31 @@ namespace hkp
 namespace net = boost::asio;
 
 namespace {
+
+// How large one message from a coordinator may be. A coordinator drops a value
+// over its frame limit (`HKP_COORDINATOR_MAX_FRAME_BYTES`, 64 MiB unless set)
+// and keeps the connection; the ceiling sits above that by the room an
+// introduction needs, so it refuses only what a coordinator would never send.
+// The same numbers are in hkp-node (`src/coordinator/frameLimits.ts`) and
+// hkp-python (`coordinator_links.py`).
+std::size_t socketCeiling()
+{
+  constexpr std::size_t defaultFrameLimit = 64 * 1024 * 1024;
+  constexpr std::size_t headroom = 16 * 1024 * 1024;
+  std::size_t limit = 0;
+  if (const char* value = std::getenv("HKP_COORDINATOR_MAX_FRAME_BYTES"))
+  {
+    try
+    {
+      limit = static_cast<std::size_t>(std::stoull(value));
+    }
+    catch (const std::exception&)
+    {
+      limit = 0;
+    }
+  }
+  return (limit > 0 ? limit : defaultFrameLimit) + headroom;
+}
 
 // A runtime id is unique within a board, so a link is known by both. NUL
 // occurs in neither.
@@ -453,6 +479,7 @@ struct CoordinatorLinks::impl : public std::enable_shared_from_this<CoordinatorL
       return;
     }
     socketOptions.bearer = link->record.ticket;
+    socketOptions.maxMessageBytes = socketCeiling();
     socketOptions.idleTimeout = options.idleTimeout;
     socketOptions.handshakeTimeout = options.introduceTimeout;
     socketOptions.trustedRootPem = options.trustedRootPem;

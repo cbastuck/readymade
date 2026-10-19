@@ -90,7 +90,11 @@ describe("a link to a shared board", () => {
       "fetch",
       vi.fn(async (url: string | URL) => {
         fetched.push(String(url));
-        return new Response(JSON.stringify({ boards: [] }), {
+        // A bridge's ticket (wsTicket.ts), or a coordinator's list of boards.
+        const body = String(url).endsWith("/ws-tickets")
+          ? { ticket: "anna-ticket", expiresInMs: 30000 }
+          : { boards: [] };
+        return new Response(JSON.stringify(body), {
           status: 200,
           headers: { "content-type": "application/json" },
         });
@@ -108,7 +112,7 @@ describe("a link to a shared board", () => {
 
     await waitFor(() =>
       expect(sockets).toContain(
-        "wss://kept.example/coordinator/bridge?access_token=anna-token",
+        "wss://kept.example/coordinator/bridge?ticket=anna-ticket",
       ),
     );
     expect(screen.queryByText("Open a shared board?")).toBeNull();
@@ -152,7 +156,7 @@ describe("a link to a shared board", () => {
 
     await waitFor(() =>
       expect(sockets).toContain(
-        "wss://collector.example/coordinator/bridge?access_token=anna-token",
+        "wss://collector.example/coordinator/bridge?ticket=anna-ticket",
       ),
     );
     expect(localStorage.getItem("hkp-coordinators")).toContain(

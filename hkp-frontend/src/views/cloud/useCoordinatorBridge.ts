@@ -5,6 +5,7 @@ import {
   SnapshotMessage,
 } from "./coordinatorSnapshot";
 import { continuedRun } from "../../runtime/processContext";
+import { authenticatedSocketUrl, ticketUrlFor } from "../../runtime/rest/wsTicket";
 import { BoardContextState } from "../../BoardContext";
 import {
   decodeBinaryFrame,
@@ -107,14 +108,9 @@ type BridgeInboundMessage =
     }
   | { type: "response"; requestId: string; data?: unknown; error?: string };
 
-/** Append the bearer token to a WebSocket URL as ?access_token= for auth. */
-function withAccessToken(wsUrl: string, token: string | null): string {
-  if (!token) {
-    return wsUrl;
-  }
-  const url = new URL(wsUrl);
-  url.searchParams.set("access_token", token);
-  return url.toString();
+/** The server a bridge address is on: where it hands out tickets. */
+function bridgeServerOf(wsUrl: string): string {
+  return wsUrl.replace(/^ws/, "http").replace(/\/coordinator\/bridge\/?(\?.*)?$/, "");
 }
 
 export function useCoordinatorBridge(
@@ -197,165 +193,179 @@ export function useCoordinatorBridge(
     let intentionallyClosed = false;
     setRefused(null);
 
-    const ws = new WebSocket(withAccessToken(wsUrl, idToken));
-    // Input that holds bytes arrives as a binary frame; see bridgeBinary.
-    ws.binaryType = "arraybuffer";
-    wsRef.current = ws;
+    // The token buys a ticket first, so it never appears in the socket's
+    // address (wsTicket.ts); the socket is opened once it has one, unless this
+    // effect was torn down in the meantime.
+    const opened: { ws: WebSocket | null } = { ws: null };
+    const start = (socketUrl: string) => {
+      const ws = new WebSocket(socketUrl);
+      opened.ws = ws;
+      // Input that holds bytes arrives as a binary frame; see bridgeBinary.
+      ws.binaryType = "arraybuffer";
+      wsRef.current = ws;
 
-    ws.onopen = () => {
-      // If we were torn down while still connecting (e.g. StrictMode's
-      // mount→unmount→mount in dev), close cleanly now instead of registering —
-      // closing an already-open socket avoids the browser's noisy
-      // "closed before the connection is established" error.
-      if (intentionallyClosed) {
-        ws.close();
-        return;
-      }
-      console.log("[bridge] Connected to coordinator bridge");
-      sendRegistration(ws);
-    };
-
-    ws.onmessage = (event) => {
-      const ctx = boardContextRef.current;
-      if (!ctx) {
-        return;
-      }
-      let msg: BridgeInboundMessage;
-      if (event.data instanceof ArrayBuffer) {
-        const frame = decodeBinaryFrame(event.data);
-        if (!frame || frame.header.type !== "processRuntime") {
+      ws.onopen = () => {
+        // If we were torn down while still connecting (e.g. StrictMode's
+        // mount→unmount→mount in dev), close cleanly now instead of registering —
+        // closing an already-open socket avoids the browser's noisy
+        // "closed before the connection is established" error.
+        if (intentionallyClosed) {
+          ws.close();
           return;
         }
-        msg = {
-          ...frame.header,
-          params: fromBinaryValue(frame.value),
-        } as BridgeInboundMessage;
-      } else {
-        try {
-          msg = JSON.parse(event.data as string);
-        } catch {
+        console.log("[bridge] Connected to coordinator bridge");
+        sendRegistration(ws);
+      };
+
+      ws.onmessage = (event) => {
+        const ctx = boardContextRef.current;
+        if (!ctx) {
           return;
         }
-      }
-
-      // A service on a runtime we reach through the coordinator said something.
-      // Hand it to that runtime's scope, which delivers it to the panels
-      // registered for it — the same path a runtime's own socket would take.
-      if (msg.type === "notification") {
-        const scope = ctx.scopes[msg.runtimeId] as
-          | { notify?: (serviceUuid: string, payload: unknown) => void }
-          | undefined;
-        scope?.notify?.(msg.serviceUuid, msg.payload);
-        return;
-      }
-
-      if (msg.type === "snapshot" || msg.type === "serviceState") {
-        const { needsResync } = snapshot.apply(msg);
-        if (needsResync && ws.readyState === WebSocket.OPEN) {
-          // A gap: better to be told the board again than to render a view
-          // patched from increments that did not all arrive.
-          ws.send(JSON.stringify({ type: "resync" }));
-        }
-        return;
-      }
-
-      if (msg.type === "response") {
-        const pending = pendingRef.current.get(msg.requestId);
-        if (pending) {
-          pendingRef.current.delete(msg.requestId);
-          if (msg.error) {
-            pending.reject(new Error(msg.error));
-          } else {
-            pending.resolve(msg.data);
-          }
-        }
-        return;
-      }
-
-      if (msg.type !== "processRuntime") {
-        return;
-      }
-
-      const { runtimeId, params, requestId } = msg;
-      const scope = ctx.scopes[runtimeId];
-      const api =
-        ctx.runtimeApis["browser"] ??
-        (() => {
-          const rt = ctx.runtimes.find((r) => r.id === runtimeId);
-          return rt
-            ? ctx.runtimeApis[toCanonicalRuntimeClassType(rt.type)]
-            : undefined;
-        })();
-
-      if (!scope || !api) {
-        console.warn(
-          `[bridge] No scope or API for browser runtime "${runtimeId}"`,
-        );
-        return;
-      }
-
-      // Run as the run the coordinator says it is, begun by whoever the
-      // coordinator says began it — never as a new one of this browser's own,
-      // which would make whatever it does the doing of the person signed in
-      // here.
-      const run = continuedRun(msg.context, {
-        requestId,
-        onResolve: (result: unknown) => {
-          if (ws.readyState !== WebSocket.OPEN) {
+        let msg: BridgeInboundMessage;
+        if (event.data instanceof ArrayBuffer) {
+          const frame = decodeBinaryFrame(event.data);
+          if (!frame || frame.header.type !== "processRuntime") {
             return;
           }
-          // Bytes go as a binary frame: as text they would arrive at the
-          // next runtime as an object of numbered keys.
-          const binary = toBinaryValue(result);
-          ws.send(
-            binary
-              ? encodeBinaryFrame({ type: "result", requestId }, binary)
-              : JSON.stringify({ type: "result", requestId, data: result }),
-          );
-        },
-      });
-      api.processRuntime(scope, params, null, run);
-    };
-
-    ws.onerror = () => {
-      console.warn("[bridge] Coordinator bridge WebSocket error");
-    };
-
-    ws.onclose = (event) => {
-      console.log("[bridge] Coordinator bridge disconnected");
-      const tornDown = intentionallyClosed;
-      const refusal = refusalOf(event.code, asMember);
-      if (refusal) {
-        // Said, not retried: the answer would be the same, and a client that
-        // kept asking would be knocking on a door it was shown out of.
-        intentionallyClosed = true;
-        setRefused(refusal);
-      }
-      // Whatever was cached describes a session that is gone; the coordinator
-      // sends a fresh snapshot when the browser attaches again. Not for a
-      // socket that was torn down: that forgot it then, and by now the store
-      // may hold what the next connection was told.
-      if (!tornDown) {
-        snapshot.clear();
-      }
-      for (const [requestId, pending] of pendingRef.current) {
-        pendingRef.current.delete(requestId);
-        pending.reject(new Error("Coordinator bridge disconnected"));
-      }
-      if (wsRef.current === ws) {
-        wsRef.current = null;
-      }
-      if (!intentionallyClosed) {
-        // The server closed the connection (e.g. session was replaced after a
-        // board infrastructure change). Wait long enough for the coordinator to
-        // finish registering the new session, then reconnect.
-        setTimeout(() => {
-          if (!intentionallyClosed) {
-            setReconnectAttempt((n) => n + 1);
+          msg = {
+            ...frame.header,
+            params: fromBinaryValue(frame.value),
+          } as BridgeInboundMessage;
+        } else {
+          try {
+            msg = JSON.parse(event.data as string);
+          } catch {
+            return;
           }
-        }, 600);
-      }
+        }
+
+        // A service on a runtime we reach through the coordinator said something.
+        // Hand it to that runtime's scope, which delivers it to the panels
+        // registered for it — the same path a runtime's own socket would take.
+        if (msg.type === "notification") {
+          const scope = ctx.scopes[msg.runtimeId] as
+            | { notify?: (serviceUuid: string, payload: unknown) => void }
+            | undefined;
+          scope?.notify?.(msg.serviceUuid, msg.payload);
+          return;
+        }
+
+        if (msg.type === "snapshot" || msg.type === "serviceState") {
+          const { needsResync } = snapshot.apply(msg);
+          if (needsResync && ws.readyState === WebSocket.OPEN) {
+            // A gap: better to be told the board again than to render a view
+            // patched from increments that did not all arrive.
+            ws.send(JSON.stringify({ type: "resync" }));
+          }
+          return;
+        }
+
+        if (msg.type === "response") {
+          const pending = pendingRef.current.get(msg.requestId);
+          if (pending) {
+            pendingRef.current.delete(msg.requestId);
+            if (msg.error) {
+              pending.reject(new Error(msg.error));
+            } else {
+              pending.resolve(msg.data);
+            }
+          }
+          return;
+        }
+
+        if (msg.type !== "processRuntime") {
+          return;
+        }
+
+        const { runtimeId, params, requestId } = msg;
+        const scope = ctx.scopes[runtimeId];
+        const api =
+          ctx.runtimeApis["browser"] ??
+          (() => {
+            const rt = ctx.runtimes.find((r) => r.id === runtimeId);
+            return rt
+              ? ctx.runtimeApis[toCanonicalRuntimeClassType(rt.type)]
+              : undefined;
+          })();
+
+        if (!scope || !api) {
+          console.warn(
+            `[bridge] No scope or API for browser runtime "${runtimeId}"`,
+          );
+          return;
+        }
+
+        // Run as the run the coordinator says it is, begun by whoever the
+        // coordinator says began it — never as a new one of this browser's own,
+        // which would make whatever it does the doing of the person signed in
+        // here.
+        const run = continuedRun(msg.context, {
+          requestId,
+          onResolve: (result: unknown) => {
+            if (ws.readyState !== WebSocket.OPEN) {
+              return;
+            }
+            // Bytes go as a binary frame: as text they would arrive at the
+            // next runtime as an object of numbered keys.
+            const binary = toBinaryValue(result);
+            ws.send(
+              binary
+                ? encodeBinaryFrame({ type: "result", requestId }, binary)
+                : JSON.stringify({ type: "result", requestId, data: result }),
+            );
+          },
+        });
+        api.processRuntime(scope, params, null, run);
+      };
+
+      ws.onerror = () => {
+        console.warn("[bridge] Coordinator bridge WebSocket error");
+      };
+
+      ws.onclose = (event) => {
+        console.log("[bridge] Coordinator bridge disconnected");
+        const tornDown = intentionallyClosed;
+        const refusal = refusalOf(event.code, asMember);
+        if (refusal) {
+          // Said, not retried: the answer would be the same, and a client that
+          // kept asking would be knocking on a door it was shown out of.
+          intentionallyClosed = true;
+          setRefused(refusal);
+        }
+        // Whatever was cached describes a session that is gone; the coordinator
+        // sends a fresh snapshot when the browser attaches again. Not for a
+        // socket that was torn down: that forgot it then, and by now the store
+        // may hold what the next connection was told.
+        if (!tornDown) {
+          snapshot.clear();
+        }
+        for (const [requestId, pending] of pendingRef.current) {
+          pendingRef.current.delete(requestId);
+          pending.reject(new Error("Coordinator bridge disconnected"));
+        }
+        if (wsRef.current === ws) {
+          wsRef.current = null;
+        }
+        if (!intentionallyClosed) {
+          // The server closed the connection (e.g. session was replaced after a
+          // board infrastructure change). Wait long enough for the coordinator to
+          // finish registering the new session, then reconnect.
+          setTimeout(() => {
+            if (!intentionallyClosed) {
+              setReconnectAttempt((n) => n + 1);
+            }
+          }, 600);
+        }
+      };
     };
+    void authenticatedSocketUrl(wsUrl, ticketUrlFor(bridgeServerOf(wsUrl)), idToken).then(
+      (socketUrl) => {
+        if (!intentionallyClosed) {
+          start(socketUrl);
+        }
+      },
+    );
 
     return () => {
       intentionallyClosed = true;
@@ -366,8 +376,10 @@ export function useCoordinatorBridge(
       // take the last board for the new one.
       snapshot.clear();
       // Aborting a still-connecting socket makes the browser log a (harmless)
-      // error; instead let onopen close it once the handshake completes.
-      if (ws.readyState !== WebSocket.CONNECTING) {
+      // error; instead let onopen close it once the handshake completes. One
+      // still waiting for its ticket is never opened at all.
+      const ws = opened.ws;
+      if (ws && ws.readyState !== WebSocket.CONNECTING) {
         ws.close();
       }
     };

@@ -255,11 +255,17 @@ Only a runtime's output and the next runtime's input travel this way. A
 notification or a log entry that mentions bytes describes them — a size, a
 type — because those are for a person to read.
 
-**No ceiling is built in.** What a board passes between runtimes in the
-playground it may pass when deployed. A coordinator's operator may set one —
-`HKP_COORDINATOR_MAX_FRAME_BYTES` — because a coordinator is shared and holds a
-frame once per attached viewer. A frame over it is dropped and recorded in the
-board's log as `frame-dropped`; the connection, and the board, stay up.
+**A value has a ceiling, and passing it drops the value, not the board.** A
+coordinator is shared and holds a frame once per attached viewer, so it passes
+on values up to 64 MiB — `HKP_COORDINATOR_MAX_FRAME_BYTES` raises or lowers
+that, and it is never off. A frame over it is dropped and recorded in the
+board's log as `frame-dropped`; the connection, and the board, stay up. Every
+coordinator connection — a runtime server joining, a browser attaching, a
+runtime server's own link out — also has a ceiling of the WebSocket library's,
+16 MiB above that limit, so nothing is buffered without bound before anyone
+looks at it; past it the connection is closed (`coordinator/frameLimits.ts`).
+Runtime servers read the same setting for their links, so one value describes
+the deployment.
 
 This is not YAS, which is what a runtime server and a browser speak when the
 browser drives the runtime itself. The link already has

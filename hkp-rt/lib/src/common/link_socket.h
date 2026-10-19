@@ -45,6 +45,12 @@ public:
      * behind a private certificate authority.
      */
     std::string trustedRootPem;
+    /**
+     * The largest message read; past it the connection is closed as "message
+     * too big". Never unbounded: a message is buffered whole before anyone
+     * looks at it.
+     */
+    std::size_t maxMessageBytes = 80 * 1024 * 1024;
   };
 
   /** How a connection ended. */
