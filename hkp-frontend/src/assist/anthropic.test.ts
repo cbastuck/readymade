@@ -46,10 +46,14 @@ const board = {
   runtimes: [{ id: "ui", name: "Browser", type: "browser" }],
   services: { ui: [] },
 };
-function response(content: unknown[], stop_reason = "tool_use") {
+function response(
+  content: unknown[],
+  stop_reason = "tool_use",
+  usage?: Record<string, number>,
+) {
   sdk.stream.mockReturnValueOnce({
     on: vi.fn(),
-    finalMessage: async () => ({ content, stop_reason }),
+    finalMessage: async () => ({ content, stop_reason, usage }),
   });
 }
 function run(extra = {}) {
@@ -72,6 +76,45 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 describe("Anthropic assistant", () => {
+  it("counts every request of a turn, the documentation lookups too", async () => {
+    response(
+      [
+        {
+          type: "tool_use",
+          id: "read",
+          name: "read_documentation",
+          input: { paths: ["docs/services/camera.md"] },
+        },
+      ],
+      "tool_use",
+      { input_tokens: 9000, output_tokens: 40, cache_read_input_tokens: 1000 },
+    );
+    response(
+      [
+        {
+          type: "tool_use",
+          id: "propose",
+          name: "propose_board",
+          input: { board, explanation: "Built a board." },
+        },
+      ],
+      "tool_use",
+      { input_tokens: 12000, output_tokens: 900, cache_creation_input_tokens: 500 },
+    );
+    const onUsage = vi.fn();
+    const result = await run({ onUsage });
+    expect(result.usage).toEqual({
+      requests: 2,
+      inputTokens: 21000,
+      outputTokens: 940,
+      cacheWriteTokens: 500,
+      cacheReadTokens: 1000,
+    });
+    // Reported after each request, so a turn that fails later still shows
+    // what it spent.
+    expect(onUsage).toHaveBeenCalledTimes(2);
+    expect(onUsage.mock.calls[0][0]).toMatchObject({ requests: 1, outputTokens: 40 });
+  });
   it("queries all models and uses the official browser SDK option", async () => {
     sdk.list.mockReturnValue(
       (async function* () {

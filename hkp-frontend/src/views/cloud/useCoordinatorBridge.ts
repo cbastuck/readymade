@@ -15,11 +15,15 @@ import {
 } from "./bridgeBinary";
 import {
   isRuntimeBrowserClassType,
+  LogEntry,
   toCanonicalRuntimeClassType,
 } from "../../types";
+import { RunCaller, ServiceRunsStore } from "../../runtime/ui/ServiceRuns";
 
 export type CoordinatorBridge = {
   ws: WebSocket | null;
+  /** What each service did lately, from the board's log — the owner's only. */
+  runs: ServiceRunsStore;
   /** The board as the coordinator reports it; empty until a snapshot arrives. */
   snapshot: CoordinatorSnapshotStore;
   /**
@@ -106,7 +110,10 @@ type BridgeInboundMessage =
       serviceUuid: string;
       payload: unknown;
     }
-  | { type: "response"; requestId: string; data?: unknown; error?: string };
+  | { type: "response"; requestId: string; data?: unknown; error?: string }
+  /** An entry of the board's log, sent to its owner as it is written; see
+   *  `ServiceRunsStore`. */
+  | { type: "log"; entry: LogEntry; caller?: RunCaller };
 
 /** The server a bridge address is on: where it hands out tickets. */
 function bridgeServerOf(wsUrl: string): string {
@@ -147,6 +154,7 @@ export function useCoordinatorBridge(
   const pendingRef = useRef(
     new Map<string, { resolve: (data: unknown) => void; reject: (err: Error) => void }>(),
   );
+  const runsRef = useRef(new ServiceRunsStore());
 
   const runtimeIds = asMember
     ? []
@@ -258,6 +266,11 @@ export function useCoordinatorBridge(
             // patched from increments that did not all arrive.
             ws.send(JSON.stringify({ type: "resync" }));
           }
+          return;
+        }
+
+        if (msg.type === "log") {
+          if (msg.entry) runsRef.current.add(msg.entry, msg.caller);
           return;
         }
 
@@ -480,6 +493,8 @@ export function useCoordinatorBridge(
 
   return {
     ws: wsRef.current,
+    /** The runs each service's panel shows, from the board's live log. */
+    runs: runsRef.current,
     snapshot,
     configureRemoteService,
     processRemoteService,

@@ -471,3 +471,44 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* What a turn and the conversation cost: figures that change while a turn
+   runs, so their digits keep their width. */
+.hkp-assist-usage,
+.hkp-assist-usage-total {
+  font-variant-numeric: tabular-nums;
+}
+.hkp-assist-usage-total {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border, rgba(148, 163, 184, 0.25));
+}
+
+/* The review's first read: what was written, and what it is built from. */
+.hkp-assist-review {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.35));
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.hkp-assist-review h3 {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim, #6b7280);
+}
+.hkp-assist-review ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hkp-assist-review-lead {
+  margin: 0 0 2px;
+  font-weight: 600;
+}

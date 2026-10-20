@@ -6,6 +6,12 @@ import type {
   ToolResultBlockParam,
 } from "@anthropic-ai/sdk/resources/messages";
 import {
+  addUsage,
+  AssistUsage,
+  fromAnthropicUsage,
+  noUsage,
+} from "./usage";
+import {
   bundledKnowledgeProvider,
   documentationIndex,
   foundation,
@@ -156,11 +162,14 @@ export async function runAssistTurn(options: {
   onText: (text: string) => void;
   onStatus: (status: string) => void;
   onRawResponse?: (text: string) => void;
+  /** The turn's usage so far, after every request it makes. */
+  onUsage?: (usage: AssistUsage) => void;
   knowledgeProvider?: ReadymadeKnowledgeProvider;
 }): Promise<{
   conversation: Conversation;
   text: string;
   board?: BoardDescriptor;
+  usage: AssistUsage;
 }> {
   const client = createAssistClient(options.token);
   const knowledge = options.knowledgeProvider ?? bundledKnowledgeProvider;
@@ -191,6 +200,8 @@ export async function runAssistTurn(options: {
     },
   ];
   let text = "";
+  // Every request counts, the documentation lookups as much as the proposal.
+  let usage = noUsage;
   for (let step = 0; step < 12; step++) {
     options.signal.throwIfAborted();
     const effort = modelEfforts(options.model).includes(options.effort)
@@ -212,6 +223,8 @@ export async function runAssistTurn(options: {
       options.onText(text);
     });
     const response = await stream.finalMessage();
+    usage = addUsage(usage, fromAnthropicUsage(response.usage));
+    options.onUsage?.(usage);
     if (response.stop_reason === "max_tokens")
       throw new Error(
         "The response reached its output limit. Try a smaller change or lower effort.",
@@ -219,7 +232,11 @@ export async function runAssistTurn(options: {
     messages.push({ role: "assistant", content: response.content });
     const calls = response.content.filter((block) => block.type === "tool_use");
     if (!calls.length)
-      return { conversation: messages, text: text || "No changes proposed." };
+      return {
+        conversation: messages,
+        text: text || "No changes proposed.",
+        usage,
+      };
     const results: ToolResultBlockParam[] = [];
     let proposal: BoardDescriptor | undefined;
     let explanation = "";
@@ -300,6 +317,7 @@ export async function runAssistTurn(options: {
         conversation: messages,
         text: [text, explanation].filter(Boolean).join("\n\n"),
         board: proposal,
+        usage,
       };
     options.onStatus("Preparing a response…");
   }
