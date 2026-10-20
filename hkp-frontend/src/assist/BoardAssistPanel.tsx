@@ -6,6 +6,13 @@ import { useSelection } from "../selection/SelectionContext";
 import SettingsDialog from "../ui-components/SettingsDialog";
 import ReadymadeMark from "../components/Toolbar/assets/hkp-single-dot-h.svg?react";
 import { Effort } from "./settings";
+import {
+  describeUsage,
+  formatPrice,
+  formatTokens,
+  PRICES_AS_OF,
+  tokenTotal,
+} from "./usage";
 import BoardAssistPrompt from "./BoardAssistPrompt";
 import BoardAssistPromptResizer, {
   BOARD_ASSIST_DEFAULT_PROMPT_HEIGHT,
@@ -64,6 +71,7 @@ export default function BoardAssistPanel({
     confirmRevert,
     selectedRuntime,
     selectedCount,
+    total,
   } = assist;
   const [promptHeight, setPromptHeight] = useState(() => {
     const stored = Number(localStorage.getItem(BOARD_ASSIST_PROMPT_HEIGHT_KEY));
@@ -285,6 +293,11 @@ export default function BoardAssistPanel({
             >
               <strong>{entry.role === "user" ? "You" : "Assistant"}</strong>
               <p>{entry.text}</p>
+              {entry.usage && (
+                <p className="hkp-assist-hint hkp-assist-usage">
+                  {describeUsage(entry.usage, entry.modelId ?? "")}
+                </p>
+              )}
               {entry.rawResponse !== undefined && (
                 <details>
                   <summary>Show raw model response</summary>
@@ -374,6 +387,22 @@ export default function BoardAssistPanel({
               )}
             </article>
           ))}
+          {total.usage.requests > 0 && (
+            <p
+              className="hkp-assist-hint hkp-assist-usage-total"
+              aria-label="Conversation usage"
+              title={
+                total.price === undefined
+                  ? "No price: a model in this conversation has no list price here."
+                  : `Anthropic API list prices as of ${PRICES_AS_OF}; every request counted, documentation lookups included.`
+              }
+            >
+              This conversation: {formatTokens(tokenTotal(total.usage))} tokens
+              in {total.usage.requests} request
+              {total.usage.requests === 1 ? "" : "s"}
+              {total.price !== undefined && <> · ≈ {formatPrice(total.price)}</>}
+            </p>
+          )}
           {status && (
             <p role="status" className="hkp-assist-hint">
               {status}
