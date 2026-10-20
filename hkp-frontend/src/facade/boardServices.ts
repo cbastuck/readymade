@@ -271,6 +271,25 @@ export function canReachService(
   });
 }
 
+/**
+ * Waits until the runtime holding `uuid` can report back, where it says it
+ * cannot yet — a REST runtime whose output socket is still connecting. Any
+ * other runtime, or a service nobody holds, is ready as it is.
+ */
+export async function whenServiceConnected(
+  boardContext: BoardContextState,
+  uuid: string,
+): Promise<void> {
+  const root = addressRoot(uuid);
+  for (const [runtimeId, svcs] of Object.entries(boardContext.services)) {
+    if (!svcs.find((s) => s.uuid === root)) continue;
+    const scope = boardContext.scopes[runtimeId] as
+      | { whenConnected?: () => Promise<void> }
+      | undefined;
+    await scope?.whenConnected?.();
+  }
+}
+
 export function processService(
   boardContext: BoardContextState,
   uuid: string,

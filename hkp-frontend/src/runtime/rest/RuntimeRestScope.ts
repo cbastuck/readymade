@@ -75,11 +75,35 @@ export default class RuntimeRestScope implements RuntimeScope {
    */
   assets?: AssetsSource;
 
+  /**
+   * Settles once the runtime knows where to send what its services report:
+   * the output socket is open and has said which runtime it reads. A call
+   * answered before that reports into nothing — its notification is the
+   * runtime's to send and nobody's to receive — so something that only
+   * happens once, like a facade's `init`, waits for this first.
+   */
+  private readonly connected: Promise<void>;
+  private markConnected: () => void = () => {};
+
+  /**
+   * `connected`, or `timeoutMs` — whichever comes first, so a runtime whose
+   * socket never opens delays a caller rather than stopping it.
+   */
+  whenConnected(timeoutMs = 5000): Promise<void> {
+    return Promise.race([
+      this.connected,
+      new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+    ]);
+  }
+
   constructor(
     runtime: RuntimeDescriptor,
     runtimeOutputUrl: string,
     user: User | null = null,
   ) {
+    this.connected = new Promise<void>((resolve) => {
+      this.markConnected = resolve;
+    });
     this.descriptor = runtime;
     this.authenticatedUser = user;
     this.app = createRuntimeRestApp(this);
@@ -187,7 +211,11 @@ export default class RuntimeRestScope implements RuntimeScope {
         // the first message is the protocol
         const protocol = JSON.stringify({ type: "readwrite", id: runtime.id });
         this.runtimeOutput?.send(protocol);
+        this.markConnected();
       };
+    } else {
+      // Nothing to wait for: this runtime reports over no socket.
+      this.markConnected();
     }
   }
 
