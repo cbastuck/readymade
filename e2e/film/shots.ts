@@ -15,12 +15,11 @@ import type { Locator, Page } from "@playwright/test";
  */
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const VIDEO_DIR = path.resolve(
-  HERE,
-  "../../hkp-website/media/readymade-explainer/remotion/videos/golden-path",
-);
-const FOOTAGE = path.join(VIDEO_DIR, "footage");
-const SHOTS = path.join(VIDEO_DIR, "shots.json");
+/** Where a story's video lives: one folder per story, named by its slug. */
+export const videoDir = (slug: string) =>
+  path.resolve(HERE, "../../hkp-website/media/readymade-explainer/remotion/videos", slug);
+const footage = (slug: string) => path.join(videoDir(slug), "footage");
+const shotsFile = (slug: string) => path.join(videoDir(slug), "shots.json");
 
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -40,15 +39,17 @@ export type Shot = {
 };
 
 export type Take = {
+  /** The story, and so the video folder, this take is for. */
+  slug: string;
   takenAt: string;
   shots: Shot[];
   /** Figures the narration states, measured on this take. */
   figures: Record<string, unknown>;
 };
 
-export function startTake(): Take {
-  mkdirSync(FOOTAGE, { recursive: true });
-  return { takenAt: new Date().toISOString(), shots: [], figures: {} };
+export function startTake(slug: string): Take {
+  mkdirSync(footage(slug), { recursive: true });
+  return { slug, takenAt: new Date().toISOString(), shots: [], figures: {} };
 }
 
 /**
@@ -64,6 +65,13 @@ export async function shot(
     beat: string;
     screen: Shot["screen"];
     named?: Record<string, Locator>;
+    /**
+     * Boxes of the text itself rather than of the element holding it — for a
+     * line drawn across the whole width, whose words take a corner of it.
+     */
+    text?: Record<string, Locator>;
+    /** Boxes of an element's first sentence: the gist of a long answer. */
+    firstSentence?: Record<string, Locator>;
   },
 ): Promise<Shot> {
   // Let a transition or a toast finish arriving before the still.
@@ -75,8 +83,43 @@ export async function shot(
     const box = await first.boundingBox();
     if (box) boxes[name] = box;
   }
+  for (const [name, locator] of Object.entries(options.text ?? {})) {
+    const first = locator.first();
+    if (!(await first.isVisible().catch(() => false))) continue;
+    boxes[name] = await first.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const r = range.getBoundingClientRect();
+      // Viewport coordinates, as Playwright's element boxes and the still are.
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+  }
+  for (const [name, locator] of Object.entries(options.firstSentence ?? {})) {
+    const first = locator.first();
+    if (!(await first.isVisible().catch(() => false))) continue;
+    boxes[name] = await first.evaluate((el) => {
+      // From the start of the text to the end of its first sentence, across
+      // whatever inline elements it runs through.
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const range = document.createRange();
+      let started = false;
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const text = node.textContent ?? "";
+        if (!started && text.trim()) {
+          range.setStart(node, text.length - text.trimStart().length);
+          started = true;
+        }
+        if (!started) continue;
+        const stop = text.search(/[.!?](\s|$)/);
+        range.setEnd(node, stop >= 0 ? stop + 1 : text.length);
+        if (stop >= 0) break;
+      }
+      const r = range.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+  }
   const file = `${options.id}.png`;
-  await page.screenshot({ path: path.join(FOOTAGE, file) });
+  await page.screenshot({ path: path.join(footage(take.slug), file) });
   const viewport = page.viewportSize() ?? { width: 0, height: 0 };
   const scale = await page.evaluate(() => window.devicePixelRatio);
   const entry: Shot = {
@@ -96,12 +139,12 @@ export async function shot(
 export function saveTake(take: Take): void {
   let previous: Partial<Take> = {};
   try {
-    previous = JSON.parse(readFileSync(SHOTS, "utf8"));
+    previous = JSON.parse(readFileSync(shotsFile(take.slug), "utf8"));
   } catch {
     // A first take.
   }
   writeFileSync(
-    SHOTS,
+    shotsFile(take.slug),
     `${JSON.stringify(
       { ...take, figures: { ...(previous.figures ?? {}), ...take.figures } },
       null,
