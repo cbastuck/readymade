@@ -7,8 +7,9 @@ import type { Page } from "@playwright/test";
 /**
  * A real assistant run, recorded once and played back for every later take.
  *
- * Recording (`FILM_ASSIST=record`, with `ANTHROPIC_API_KEY` set) lets the
- * board assistant talk to the Anthropic API for real and writes down every
+ * Recording (`FILM_ASSIST=record FILM_STORY=<slug>`, with `ANTHROPIC_API_KEY`
+ * set) lets the board assistant talk to the Anthropic API for real and writes
+ * down every
  * answer it got, in order. Replaying serves those answers again, so a re-shoot
  * costs nothing and shows the same board, the same explanation and the same
  * usage — the figures the video states are the recorded run's, not a guess.
@@ -17,8 +18,9 @@ import type { Page } from "@playwright/test";
  */
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-/** The recorded run. `FILM_TAPE` points a rehearsal at another one. */
-export const TAPE = process.env.FILM_TAPE ?? path.join(HERE, "tapes", "golden-path.json");
+/** A story's recorded run. `FILM_TAPE` points a rehearsal at another one. */
+export const tapeFor = (slug: string) =>
+  process.env.FILM_TAPE ?? path.join(HERE, "tapes", `${slug}.json`);
 const API = "https://api.anthropic.com";
 
 type Answer = { method: string; path: string; status: number; contentType: string; body: string };
@@ -34,25 +36,35 @@ type Tape = {
 };
 
 /** Whether the tape a replay would use was written by hand. */
-export function syntheticTape(): boolean {
-  return existsSync(TAPE) && !!(JSON.parse(readFileSync(TAPE, "utf8")) as Tape).synthetic;
+export function syntheticTape(slug: string): boolean {
+  const tape = tapeFor(slug);
+  return existsSync(tape) && !!(JSON.parse(readFileSync(tape, "utf8")) as Tape).synthetic;
 }
 
 export type AssistMode = "record" | "replay" | "off";
 
-export function assistMode(): AssistMode {
+export function assistMode(slug: string): AssistMode {
   if (process.env.FILM_ASSIST === "record") {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("FILM_ASSIST=record needs ANTHROPIC_API_KEY for the one real run");
+    // A recording replaces a story's tape, and with it the figures its video
+    // states — so it is only ever of the story named, never of every story a
+    // run happens to include.
+    const story = process.env.FILM_STORY;
+    if (!story) {
+      throw new Error("FILM_ASSIST=record needs FILM_STORY=<story> — the one whose run to record");
     }
-    return "record";
+    if (story === slug) {
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error("FILM_ASSIST=record needs ANTHROPIC_API_KEY for the one real run");
+      }
+      return "record";
+    }
   }
-  return existsSync(TAPE) ? "replay" : "off";
+  return existsSync(tapeFor(slug)) ? "replay" : "off";
 }
 
 /** The model the run uses; a recorded tape says which it was. */
-export function assistModel(mode: AssistMode): string {
-  if (mode === "replay") return (JSON.parse(readFileSync(TAPE, "utf8")) as Tape).model;
+export function assistModel(slug: string, mode: AssistMode): string {
+  if (mode === "replay") return (JSON.parse(readFileSync(tapeFor(slug), "utf8")) as Tape).model;
   return process.env.FILM_MODEL ?? "claude-opus-5-5";
 }
 
@@ -60,7 +72,8 @@ export function assistModel(mode: AssistMode): string {
  * Routes the page's calls to the API through the tape. Returns what to call
  * once the take is over, which writes a recording down.
  */
-export async function useAssistTape(page: Page, mode: AssistMode, model: string) {
+export async function useAssistTape(page: Page, slug: string, mode: AssistMode, model: string) {
+  const tape = tapeFor(slug);
   // Signed in to the API the way a person would be: through the assistant's
   // own settings. A replay needs no key at all.
   await page.context().addInitScript(
@@ -75,7 +88,7 @@ export async function useAssistTape(page: Page, mode: AssistMode, model: string)
   );
 
   const answers: Answer[] =
-    mode === "replay" ? (JSON.parse(readFileSync(TAPE, "utf8")) as Tape).answers : [];
+    mode === "replay" ? (JSON.parse(readFileSync(tape, "utf8")) as Tape).answers : [];
   let next = 0;
 
   await page.route(`${API}/**`, async (route) => {
@@ -114,8 +127,8 @@ export async function useAssistTape(page: Page, mode: AssistMode, model: string)
 
   return () => {
     if (mode !== "record") return;
-    mkdirSync(path.dirname(TAPE), { recursive: true });
-    const tape: Tape = { recordedAt: new Date().toISOString(), model, answers };
-    writeFileSync(TAPE, `${JSON.stringify(tape, null, 2)}\n`);
+    mkdirSync(path.dirname(tape), { recursive: true });
+    const recorded: Tape = { recordedAt: new Date().toISOString(), model, answers };
+    writeFileSync(tape, `${JSON.stringify(recorded, null, 2)}\n`);
   };
 }

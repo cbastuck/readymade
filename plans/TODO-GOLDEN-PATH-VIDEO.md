@@ -121,6 +121,7 @@ What the rehearsal found that the unit suites had not.
 | 1, 4 | An undeployed board with a remote runtime opened on an empty calendar until something was tapped | Facade `init` ran before the REST runtime's output socket was open; its notification went nowhere | Init waits for the runtimes it calls (`RuntimeRestScope.whenConnected`, 5 s ceiling) | fixed, tested |
 | 5b | The race's loser saw the hour turn taken, and nothing else | The insert's guard makes nothing, silently | The board's `notice` | fixed, tested |
 | 5b | Sam's hour showed to Ana as *Member* | By design: the owner is named only if their own list names them (`bridge.ts`) | Sam lists himself, off camera | open question below |
+| 4 | On the shared costs board, the revealed toolbar retracted again by itself within a second — no pointer, focus or key event, and the chrome was not remounted | Not found yet: `useChromeRetracted` resets the reveal when `boardHasFacade` or the view mode flickers, which is the likely path | The take reveals and opens the deploy menu in one retried step | open — product bug to investigate |
 | — | `npm ci` had never run in hkp-node or hkp-frontend checkouts: `expression-eval` missing, so `auth.test.ts` and `tsc` failed | environment | `npm ci` | done |
 
 ## What the real run did
@@ -150,6 +151,110 @@ changed, because `propose_board` takes the complete board. A proposal that
 starts from a shipped board by reference and states only its changes would
 cut that by an order of magnitude — argument 2, made stronger by the product
 rather than the narration.
+
+## A second story: shared costs
+
+The golden path's real run *adapted* a board the repository ships. This one
+films the other case: an app nobody shipped — a Splitwise for a flat — so the
+assistant has to compose a board from blocks. Nothing in `boards/` or
+`docs/content/` is about expenses (checked 2026-10-20); everything it needs
+exists — `sql`, members and the verified caller, `text-input` (27 boards),
+`data-table` (23), `button`, `text`.
+
+That changes what the video may claim. The statements are new, so they are
+what you review — the review bottleneck argument at its plainest: *what is new
+is these N lines, and only these; the form, the table, the sign-in, the sharing
+and the server are blocks.*
+
+**The prompt** (`e2e/film/shared-costs.film.ts`):
+
+> An app for our flat to share costs, like Splitwise: whoever paid adds what it
+> was for and how much, it is split evenly between everyone in the flat, and
+> each of us sees what we owe or are owed. Everyone who opens the board joins
+> the flat. Record each expense in the name of whoever is signed in. Run it on
+> the node server so we can share it.
+
+"Everyone who opens the board joins the flat" is there because the board
+cannot read its own member list: an even split needs the flat defined in its
+tables.
+
+**What the take asserts**, i.e. what the narration may say: the board deploys
+and is shared; Ana, on her phone, adds Groceries €30 and is shown as owed 15;
+Sam, opening it, sees 15 against Ana; Sam's *Runs* show Ana's write. The take
+knows nothing of the model's services or widgets — fields are found by what
+they ask for, buttons by what they say — so it films whatever board the model
+makes, and fails rather than films one that does not do what was asked.
+
+**Narration v0** (finalised against the real run, as the golden path's was):
+
+| # | Narration | Shots |
+| --- | --- | --- |
+| 0 | "Shared costs for a flat. No board for it ships with Readymade." | `5-added` |
+| 1 | "Describe it: whoever paid adds it, it's split evenly, everyone sees what they owe." | `1-describe` |
+| 2 | "There is nothing to adapt, so the assistant composes one from blocks — [N] tokens, about [$X]." | `2-proposal` |
+| 3 | "What is new is [M] lines of SQL. That is what you review. The form, the table, the sign-in, the sharing and the server are blocks." | `3-review` |
+| 4 | "Deploy it, and add a flatmate by her email address." | `4-deploy`, `4-member` |
+| 5 | "Ana paid for the groceries: thirty euros. She is owed fifteen." | `5-form`, `5-added` |
+| 6 | "On the board, her expense arrives in the service that stored it, under her name." | `6-runs` |
+| 5b | "Sam opens it and sees what he owes. Nobody did the sums." | `5b-owes` |
+| 7 | "Built from blocks you don't have to review. Small enough to change with a sentence." | `5b-owes` + `5-added` |
+
+**Recording.** `FILM_ASSIST=record FILM_STORY=shared-costs ANTHROPIC_API_KEY=…
+npm run film -- shared-costs` — a recording is only ever of the story named, so
+the golden path's committed tape cannot be overwritten by accident. If the
+model's board fails the take, what to change is the prompt or the assistant's
+knowledge, never the board; and the video says nothing about how many runs it
+took.
+
+**Rehearsed** on a hand-written board (synthetic tape, no figures recorded):
+the take runs clean end to end. The shared beats (`e2e/film/beats.ts`) now
+carry both stories; the golden path re-ran clean on them.
+
+**Recorded 2026-10-20** (`e2e/film/tapes/shared-costs.json`, Claude Opus 5.5)
+and the take passes on it. Five requests: three documentation searches, reads
+of the meeting poll and court booking boards and the SQL page (for patterns),
+then the proposal. **201,393 tokens (189,889 read, 11,504 written), about
+$0.99.** The board is the model's own — all six statements are new, none a
+shipped one: *Join the flat* (on opening), *Add an expense* (one line,
+"Groceries 30"), *Remove an expense* (the payer only), *My balance*,
+*Everyone's balance*, *The expenses*; a Balances tab and an Expenses tab. The
+review says **7 texts, 138 lines**; it is built from `button`, `text`,
+`process`, `text-input`, `repeat` and `sql`. On it, Ana's €30 is "split 2
+ways", her share 15.00; Sam's screen reads "You owe 15.00 in total." and "Ana
+is owed 15.00".
+
+The first take on the recording failed in the harness, not the board: the take
+expected a two-field form and the model made one field; and a board with tabs
+keeps its hidden tab in the page, so text is now matched only where visible.
+
+Adapting the court board cost 21 cents; composing this one cost a dollar —
+nearly all of it reading. A pair worth putting side by side somewhere.
+
+**Narration v1** (figures from the recording):
+
+| # | Narration |
+| --- | --- |
+| 0 | "Shared costs for a flat. No board for it ships with Readymade." |
+| 1 | "Describe it: whoever paid adds it, it's split evenly, everyone sees what they owe." |
+| 2 | "There is no board like it to start from, so the assistant composes one from blocks. The whole conversation took just over 200,000 tokens — about a dollar." |
+| 3 | "What is new is 138 lines of SQL. That is what you review. The form, the lists, the sign-in, the sharing and the server are blocks that already run in other boards." |
+| 4 | "Deploy it, and add a flatmate by her email address." |
+| 5 | "Ana paid for the groceries: thirty euros. Split two ways, she is owed fifteen." |
+| 6 | "On the board, her expense arrives in the service that stored it, under her name." |
+| 5b | "Sam opens it and sees what he owes. Nobody did the sums." |
+| 7 | "Built from blocks you don't have to review. Small enough to change with a sentence." |
+
+*"No board like it to start from"*, not *"nothing to adapt"*: the model's own
+answer says its setup "follows the Meeting Poll and Court Booking examples" —
+it took their structure (enter at one service, read back at the end), while
+every statement is its own.
+
+**Cut built 2026-10-20**: `remotion/videos/shared-costs/` (69 s), on the
+framing both videos now share — `remotion/src/footage.tsx`, moved out of the
+golden path's composition unchanged (its storyboard re-rendered identical).
+Additions there: `a+b` frames two boxes together, and the shoot records the
+boxes of text itself (`text`, `firstSentence` in `e2e/film/shots.ts`) where an
+element is far wider or taller than what it says.
 
 ## Running it
 
