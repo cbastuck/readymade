@@ -1,5 +1,7 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { validateAssistBoard } from "./validation";
+import { shippedBoards } from "./documentation";
+import { blockUse, reviewSummary, ReviewSummary } from "./reviewSummary";
 import { BoardDescriptor } from "../types";
 import { DiffEditor } from "../components/shared/Editor";
 import {
@@ -47,6 +49,18 @@ export default function BoardAssistPreview({
     JSON.stringify(sortedJSON(proposed), null, 2),
   );
   const [validationError, setValidationError] = useState("");
+  const [summary, setSummary] = useState<ReviewSummary>(() =>
+    reviewSummary(current, proposed),
+  );
+  useEffect(() => {
+    let live = true;
+    void shippedBoards().then((boards) => {
+      if (live) setSummary(reviewSummary(current, proposed, blockUse(boards)));
+    });
+    return () => {
+      live = false;
+    };
+  }, [current, proposed]);
   const applyDraft = async () => {
     setValidationError("");
     let board: BoardDescriptor;
@@ -90,6 +104,7 @@ export default function BoardAssistPreview({
             ? "These changes have already been applied. Compare the previous board with the applied board."
             : "Edit the proposed configuration on the right, then apply it. The current board on the left stays read-only."}
         </DialogDescription>
+        <ReviewSummaryStrip summary={summary} />
         <div className="hkp-assist-diff-labels">
           <span>
             {readOnly ? "Previous board" : "Current board"} · removed lines in
@@ -138,5 +153,55 @@ export default function BoardAssistPreview({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * What to read first: the text written for this board, and what it is built
+ * from — so the diff below is the detail, not the first thing to make sense of.
+ */
+function ReviewSummaryStrip({ summary }: { summary: ReviewSummary }) {
+  const plural = (n: number, one: string, many = `${one}s`) =>
+    `${n} ${n === 1 ? one : many}`;
+  const changes = [
+    summary.added.length && `${plural(summary.added.length, "service")} added`,
+    summary.changed.length && `${plural(summary.changed.length, "service")} changed`,
+    summary.removed.length && `${plural(summary.removed.length, "service")} removed`,
+  ].filter(Boolean);
+  return (
+    <section className="hkp-assist-review" aria-label="What to review">
+      <div>
+        <h3>Written for this board</h3>
+        <p className="hkp-assist-review-lead" data-testid="review-authored">
+          {summary.authored.length
+            ? `${plural(summary.authored.length, "text")}, ${plural(summary.authoredLines, "line")} — read these`
+            : "Nothing written; only blocks and their settings"}
+        </p>
+        <ul>
+          {summary.authored.map((text, i) => (
+            <li key={i}>
+              {text.service} · {text.field} · {plural(text.lines, "line")}
+            </li>
+          ))}
+        </ul>
+        {changes.length > 0 && <p className="hkp-assist-hint">{changes.join(" · ")}</p>}
+      </div>
+      <div>
+        <h3>Built from</h3>
+        <ul data-testid="review-blocks">
+          {summary.blocks.map((block) => (
+            <li key={`${block.kind}:${block.id}`}>
+              <strong>{block.id}</strong> {block.kind}
+              {block.boards > 0 && (
+                <span className="hkp-assist-hint">
+                  {" "}
+                  · in {plural(block.boards, "shipped board")}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }

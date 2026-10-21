@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import { canReachService } from "./boardServices";
+import { canReachService, whenServiceConnected } from "./boardServices";
 import { executeActions } from "./executeActions";
 import { FacadeIdentity } from "./FacadeIdentity";
 import { FacadeDescriptor } from "./types";
@@ -43,13 +43,26 @@ export function useFacadeInit({
       return;
     }
     ranFor.current = boardName;
-    void executeActions({
-      actions: init,
-      value: undefined,
-      boardContext,
-      setState,
-      state: stateRef.current,
-      identity,
-    });
+    // Reachable is not yet listening: a remote runtime answers a call before
+    // its socket has opened, and the notification that would draw the first
+    // view goes nowhere. Init runs once, so it waits for the runtimes it calls.
+    void (async () => {
+      await Promise.all(
+        init.map((action) => {
+          const uuid = (action as { serviceUuid?: unknown }).serviceUuid;
+          return typeof uuid === "string"
+            ? whenServiceConnected(boardContext, uuid)
+            : undefined;
+        }),
+      );
+      await executeActions({
+        actions: init,
+        value: undefined,
+        boardContext,
+        setState,
+        state: stateRef.current,
+        identity,
+      });
+    })();
   }, [boardName, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 }

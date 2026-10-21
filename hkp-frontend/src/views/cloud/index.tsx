@@ -91,6 +91,7 @@ import NewBoardDialog from "./NewBoardDialog";
 import CloudLoginGate from "./CloudLoginGate";
 import { useCloudLogin } from "../../auth/useCloudLogin";
 import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
+import { ServiceRunsContext } from "hkp-frontend/src/runtime/ui/ServiceRuns";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -448,6 +449,7 @@ function CloudBoardInner({
   const boardContext = useBoardContext();
   const {
     ws: bridgeWs,
+    runs,
     configureRemoteService,
     processRemoteService,
   } = useCoordinatorBridge(
@@ -527,24 +529,26 @@ function CloudBoardInner({
   }
   return (
     <FacadeIdentityProvider identity={you}>
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        <FacadeRenderer
-          key={boardKey}
-          facade={boardContext.facade}
-          boardContext={boardContext}
-          boardName={board.boardName}
-          runtimeContent={runtimes}
-        />
-      </div>
+      <ServiceRunsContext.Provider value={runs}>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <FacadeRenderer
+            key={boardKey}
+            facade={boardContext.facade}
+            boardContext={boardContext}
+            boardName={board.boardName}
+            runtimeContent={runtimes}
+          />
+        </div>
+      </ServiceRunsContext.Provider>
     </FacadeIdentityProvider>
   );
 }

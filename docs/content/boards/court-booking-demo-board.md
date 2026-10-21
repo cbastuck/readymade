@@ -36,6 +36,15 @@ second insert fails, and the failure is the answer.
 It also means the rules cannot be bypassed by another board, a direct query, or
 a future version of this one that forgets them.
 
+Whoever loses is told. A tap that asked for a free hour and did not get it —
+because somebody else took it first, because the member already holds an hour
+that day, or because it was never theirs to take — comes back with a `notice`
+on the day **The day** returns (*Court 2 at 18:00 was just taken by someone
+else.*), and the facade raises it as a toast. It is the same value on every
+cell, so the notice reads it from the first, and empty on every other tap.
+Because a member's notifications go to that member alone, only the person who
+tapped sees it.
+
 ## One query draws the screen
 
 **The day** returns cells already carrying their own state, so the widget
@@ -97,3 +106,15 @@ Needs a signed-in account and an hkp-node kept under the name `node` in
 *Manage runtime servers*. The schema is created on
 first run, in a table of its own (`court_booking`) — the board's earlier
 `booking` table is left as it was.
+
+## Building something of your own on it
+
+This board is a starting point, not a finished product: there are no payments,
+no reminders, and one club. What it does have is the part that is expensive to
+add later — the rules held by the database rather than the board, and a caller
+the server vouches for.
+
+If you take it further and sell what you build, a commercial licence is the paid
+alternative to the AGPL: your product under your own name, with your own source
+closed. The **Open-source licences** page on the website says what it covers and
+who needs none of it.
