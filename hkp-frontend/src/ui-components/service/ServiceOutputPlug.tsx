@@ -53,10 +53,29 @@ type Props = {
 // own classes whatever order the stylesheets load in.
 const frameStyle: React.CSSProperties = {
   width: "min(460px, 94vw)",
+  // No taller than the room the popover was placed in: the body scrolls, and
+  // the header — Close among it — and the footer stay on screen.
+  maxHeight: "var(--radix-popover-content-available-height)",
+  display: "flex",
+  flexDirection: "column",
   padding: 0,
   borderRadius: 14,
   overflow: "hidden",
 };
+
+/** Space kept free around the popover, so it is never placed against an edge. */
+const EDGE = 8;
+
+/**
+ * How far down the toolbar reaches. It stays at the top of the page above
+ * everything (z-index 100), so a popover placed under it has a header nobody
+ * can reach; the edge is read when the popover opens, because the host decides
+ * what sits above the bar.
+ */
+function toolbarBottom(): number {
+  const toolbar = document.querySelector("[data-toolbar]");
+  return toolbar ? Math.max(0, toolbar.getBoundingClientRect().bottom) : 0;
+}
 
 // The expanded inspector: the size of the other editor dialogs, the editor
 // taking what the history leaves.
@@ -113,6 +132,7 @@ export default function ServiceOutputPlug({
   const [isOpen, setIsOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [clearTop, setClearTop] = useState(0);
   // What the service produced, unless asked for what it received.
   const [side, setSide] = useState<FlowSide>("output");
   // Which remembered value is shown on each side, 0 being the latest; the
@@ -133,7 +153,10 @@ export default function ServiceOutputPlug({
   const history = side === "input" ? inputHistory : outputHistory;
   const selectedIndex = selected[side];
 
-  const onOpen = () => setIsOpen(true);
+  const onOpen = () => {
+    setClearTop(toolbarBottom());
+    setIsOpen(true);
+  };
 
   const onClose = () => {
     setIsOpen(false);
@@ -251,7 +274,16 @@ export default function ServiceOutputPlug({
         </ContextMenuContent>
       </ContextMenu>
 
-      <PopoverContent className="hkp-set" style={frameStyle}>
+      <PopoverContent
+        className="hkp-set hkp-flow-popover"
+        style={frameStyle}
+        collisionPadding={{
+          top: clearTop + EDGE,
+          right: EDGE,
+          bottom: EDGE,
+          left: EDGE,
+        }}
+      >
         <div className="hkp-flow-header">
           <h2 className="hkp-set-pane-title hkp-flow-title">Flow Inspector</h2>
           {sideSwitch}

@@ -4,6 +4,7 @@
    colours and type used here. */
 
 .hkp-flow-header {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -159,6 +160,7 @@
 }
 
 .hkp-flow-footer {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -166,6 +168,14 @@
   padding: 10px 18px;
   border-top: 1px solid var(--set-line-soft);
   background: var(--set-ground);
+}
+
+/* In the popover, held to the room it was placed in: the body scrolls between
+   a header and a footer that stay put. */
+.hkp-flow-popover .hkp-flow-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Expanded: the inspector fills the dialog, and the editor takes the height
