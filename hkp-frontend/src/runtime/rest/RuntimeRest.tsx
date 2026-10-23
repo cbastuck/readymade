@@ -1,4 +1,10 @@
-import React, { ReactElement, useCallback, useEffect, useState } from "react";
+import React, {
+  ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 import {
   RuntimeDescriptor,
@@ -12,6 +18,7 @@ import {
   InitialServiceFrameState,
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
+import { BoardCtx } from "../../BoardContext";
 
 import RuntimeRestScope from "./RuntimeRestScope";
 import RuntimeRestServiceUI from "./RuntimeRestServiceUI";
@@ -80,6 +87,17 @@ export default function RuntimeRest({
     scope.onResult = onResult;
     scope.authenticatedUser = user;
   }
+
+  // What the runtime's services raise for the person rather than for their
+  // panel — an error, as a toast — goes where the browser runtime's does.
+  const context = useContext(BoardCtx);
+  (scope as RuntimeRestScope).onAction = (action: ServiceAction) => {
+    if (action.action === "notification" && action.payload) {
+      context?.appContext?.pushNotification(action.payload);
+      return true;
+    }
+    return false;
+  };
 
   // The board's order is the pipeline's order, and this is the one place that
   // sees it after every add, removal and rearrange. The scope needs it to say

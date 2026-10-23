@@ -306,6 +306,10 @@ Data HttpClient::process(Data data)
       std::cout << "HTTPClient service error during shutdown: " << err.what() << std::endl;;
     }
 
+    // Said on every outcome, as hkp-node and hkp-python do, so what the panel
+    // shows is this request's and not the last failure's still standing.
+    sendNotification(json{{"requesting", false}, {"status", res.result_int()}, {"error", ""}});
+
     std::string contentType = res.at(boost::beast::http::field::content_type);
     auto isJson = contentType.starts_with("application/json");
     auto isText = contentType.find("text/html") != std::string::npos ||  contentType.find("text/plain") != std::string::npos;
@@ -329,6 +333,9 @@ Data HttpClient::process(Data data)
   catch(std::exception const& e)
   {
       std::cerr << "HTTPClient service Error: " << e.what() << std::endl;
+      // A failed request passes nothing on, so the panel is the only place
+      // that says why — a destination a hosted server refuses, a timeout.
+      sendNotification(json{{"requesting", false}, {"status", 0}, {"error", e.what()}});
       return Null();
   }
 }

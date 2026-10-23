@@ -55,6 +55,40 @@ export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
   };
 
   const notificationTargets = new NotificationTargets();
+
+  // The last error each service reported, by where its notifications arrive.
+  // A remote service says why it failed in its state's `error` — "" or null
+  // once it works again — and a panel shows it where there is room for it. It
+  // is also raised as a toast, since a panel may have no room, be collapsed or
+  // be off screen; once per failure, not on every run that repeats it.
+  const reportedErrors = new Map<string, string>();
+  const raiseError = (service: InstanceId, notification: any): void => {
+    if (!notification || typeof notification !== "object") {
+      return;
+    }
+    const error = notification.error;
+    const key = service.address ?? service.uuid;
+    if (error === undefined) {
+      return;
+    }
+    if (typeof error !== "string" || error === "") {
+      reportedErrors.delete(key);
+      return;
+    }
+    if (reportedErrors.get(key) === error) {
+      return;
+    }
+    reportedErrors.set(key, error);
+    const name = scope.services.find((s) => s.uuid === service.uuid)?.serviceName;
+    scope.onAction({
+      action: "notification",
+      // What raises a toast reads only the payload; a notification names its
+      // service, it does not carry the instance.
+      service: service as ServiceInstance,
+      payload: { type: "error", message: name ? `${name}: ${error}` : error },
+    });
+  };
+
   const app: AppImpl = {
     getAuthenticatedUser: () => scope.authenticatedUser,
     // A remote runtime records its own entries and carries them to the board's
@@ -64,6 +98,7 @@ export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
 
     notify: (service: InstanceId, notification: any): void => {
       notificationTargets.notify(service, notification);
+      raiseError(service, notification);
     },
     /**
      * Emits `result` as if `svc` had just produced it: the services after `svc`

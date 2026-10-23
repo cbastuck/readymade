@@ -175,8 +175,9 @@ struct AuthMiddleware
       return;
     }
     // WebSocket upgrades are authenticated in the WS onaccept handler instead:
-    // a browser cannot set an Authorization header on a handshake, so the token
-    // rides in ?access_token=. Gating here would 401 every notification socket.
+    // a browser cannot set an Authorization header on a handshake, so it
+    // presents a ?ticket= bought with its token (ws_tickets.h). Gating here
+    // would 401 every notification socket.
     if (req.upgrade)
     {
       return;
@@ -1336,9 +1337,8 @@ bool Server::impl::wsOnAccept(const crow::request& req, void** userdata)
 {
   // Same policy as the REST AuthMiddleware: no-auth mode and loopback clients
   // are allowed unless a foreign page is asking (a browser always states the
-  // page's origin on a handshake); otherwise the token (carried in
-  // ?access_token= because a browser can't set headers on a handshake) must
-  // verify and be allow-listed.
+  // page's origin on a handshake); otherwise the socket must present a ticket,
+  // or a token that verifies and is allow-listed (see below).
   const bool local = authenticator->isNoAuth() ||
     isLoopbackHost(callerAddress(req, frontDoor ? frontDoor->frontSecret() : std::string()));
   bool allowed = local && originGate.admits(req);

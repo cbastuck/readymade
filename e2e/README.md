@@ -158,6 +158,10 @@ Where hkp-rt has been built (`hkp-rt/run-tests.sh` builds it; `HKP_RT_BIN`
 names a binary built elsewhere) it is started too, on port 18087, as a second
 runtime server, and `deploy-rt.spec.ts` deploys a board onto it. Without the
 binary that spec is skipped.
+`ws-tickets.spec.ts` deploys nothing: it opens a board with a runtime on each
+server and checks that every runtime socket is opened with a ticket the server
+issued, and never with the token in its address. It covers hkp-rt only where
+hkp-rt is started.
 Two things a spec supplies that the shell would otherwise get from a person:
 
 - **a session** — `readymade-id-token` in localStorage, an unsigned token the

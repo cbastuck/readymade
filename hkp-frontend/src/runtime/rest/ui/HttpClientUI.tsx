@@ -46,6 +46,9 @@ export default function HttpClientUI(props: ServiceUIProps) {
     Array<{ id: string; key: string; value: string }>
   >([]);
   const [body, setBody] = useState<string>("");
+  // Why the last request failed — a refused destination, a timeout — as the
+  // runtime reports it. A request that gets a response reports "" and clears it.
+  const [error, setError] = useState<string>("");
 
   const onUpdate = useCallback(
     (message: any) => {
@@ -93,6 +96,9 @@ export default function HttpClientUI(props: ServiceUIProps) {
       }
       if (message.body !== undefined) {
         setBody(message.body);
+      }
+      if (message.error !== undefined) {
+        setError(message.error || "");
       }
     },
     [userAgentOptions],
@@ -266,6 +272,11 @@ export default function HttpClientUI(props: ServiceUIProps) {
               />
             </div>
           </div>
+          {error && (
+            <div role="alert" className="w-[25rem] text-xs text-red-600 break-words">
+              {error}
+            </div>
+          )}
           {targetsMount && (
             // Only a mount target has a sub-path to name. A URL carries its own
             // path, so a second field for one would be two places to write the

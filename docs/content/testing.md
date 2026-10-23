@@ -231,6 +231,7 @@ knowing before trusting it:
 | Board drift, in a browser | `e2e/tests/smoke/shipped-boards.spec.ts` |
 | Blocks on the running board: the lock, params, detach, editing, making one, wrapping picked services | `e2e/tests/blocks.spec.ts` |
 | Deploying to a real coordinator, in a browser | `e2e/playwright.cloud.config.ts`, `e2e/tests/cloud/deploy.spec.ts` |
+| Runtime sockets opened with a ticket, never the token, in a browser | `e2e/tests/cloud/ws-tickets.spec.ts` |
 | A board across hkp-node and hkp-python | `hkp-node/tests/coordinator-python.test.ts` |
 | A board across hkp-node and hkp-rt; endpoints mounted on hkp-rt | `hkp-node/tests/coordinator-rt.test.ts` |
 | What CI covers | `.github/workflows/run-all-tests.yml` |
