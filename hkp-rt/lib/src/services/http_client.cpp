@@ -163,7 +163,11 @@ json HttpClient::getState() const
 
 Data HttpClient::process(Data data)
 {
-  auto d = getJSONFromData(data);
+  // Nothing came down the pipeline, so the request is the configured one —
+  // what a run with no input is for, and what hkp-node and hkp-python send.
+  // The input only ever overrides what was configured, so nothing reads as an
+  // empty object.
+  auto d = isUndefined(data) ? std::optional<json>(json::object()) : getJSONFromData(data);
   if (!d || d->is_null())
   {
     std::cerr << "HTTPClient service: no JSON data provided" << std::endl;

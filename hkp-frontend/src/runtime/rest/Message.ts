@@ -29,7 +29,8 @@ export type YASHeaderDetails = {
 
 export type Message = {
   purpose: MessagePurpose;
-  data: Data;
+  /** Undefined where a run started with nothing and nothing replaced it. */
+  data: Data | undefined;
   sender: string;
 };
 
@@ -132,6 +133,15 @@ export function deserializeYasMessage(buffer: ArrayBuffer): Message {
     return {
       purpose,
       data: makeNull(),
+      sender,
+    };
+  } else if (dataType === DataTypeId.Undefined) {
+    // A run started with nothing and no service put anything in its place.
+    // hkp-rt and hkp-python write it with a single ignored byte; it passes on
+    // as undefined, which is what a browser runtime hands on in the same case.
+    return {
+      purpose,
+      data: undefined,
       sender,
     };
   } else if (dataType === DataTypeId.BinaryData) {

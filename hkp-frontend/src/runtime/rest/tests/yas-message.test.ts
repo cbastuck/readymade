@@ -34,6 +34,18 @@ describe("deserializeYasMessage", () => {
     expect(message.data).toEqual(bytes);
   });
 
+  it("reads Undefined as undefined", () => {
+    // What hkp-rt ends a run on when it was started with no input and its
+    // services passed that through — written with one ignored byte.
+    const message = deserializeYasMessage(
+      frame(DataTypeId.Undefined, "RUNTIME", new Uint8Array([0x30])),
+    );
+
+    expect(message.purpose).toBe(MessagePurpose.RESULT);
+    expect(message.sender).toBe("RUNTIME");
+    expect(message.data).toBeUndefined();
+  });
+
   it("still refuses a type it cannot read", () => {
     expect(() =>
       deserializeYasMessage(frame(DataTypeId.CustomData, "x", new Uint8Array([0]))),

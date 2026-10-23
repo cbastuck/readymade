@@ -7,6 +7,7 @@
 
 #include <mount.h>
 #include <services/http_client.h>
+#include <egress.h>
 
 using namespace hkp;
 
@@ -195,4 +196,37 @@ TEST_CASE("a configured method is the one the request uses", "[http-client]")
 
   REQUIRE(req.method() == boost::beast::http::verb::post);
   REQUIRE(req.body() == "{\"hi\": \"world\"}");
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// A run with nothing on its input
+//
+// What the configured request is for: the board says where to call, and a run
+// started with no payload calls it. Used to pass the Undefined straight on
+// without dialling, so a board on hkp-rt did nothing where the same board on
+// hkp-node or hkp-python made its request.
+// ──────────────────────────────────────────────────────────────────────────────
+
+TEST_CASE("a run with no input makes the configured request", "[http-client][egress]")
+{
+  // Witnessed by the egress guard, so nothing has to listen: a hosted server
+  // refuses this host's own address, and a refused request passes on Null.
+  // Had the request not been attempted, the Undefined would have come back.
+  std::string problem;
+  egress::setPolicy(egress::readPolicy("public", "", problem));
+  REQUIRE(problem.empty());
+
+  HttpClient client("http-1");
+  client.configure(json{{"url", "http://127.0.0.1:8765/"}});
+  const auto result = client.process(Undefined());
+  egress::setPolicy({});
+
+  REQUIRE(isNull(result));
+}
+
+TEST_CASE("a run with no input and no url passes the nothing on", "[http-client]")
+{
+  HttpClient client("http-1");
+
+  REQUIRE(isUndefined(client.process(Undefined())));
 }
