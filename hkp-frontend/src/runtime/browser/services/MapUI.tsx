@@ -40,6 +40,10 @@ export default function MapUI(props: ServiceUIProps) {
   const [selectedArrayIndex, setSelectedArrayIndex] = useState(0);
   const [mode, setMode] = useState<Mode>(Mode.REPLACE);
   const [isSensingMode, setIsSensingMode] = useState(false);
+  // What the last pass said about itself: notified by the service in every
+  // runtime, never part of the state a board saves.
+  const [error, setError] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   const editableItems = useMemo(() => {
     if (isObjectTemplate(template)) {
@@ -85,6 +89,14 @@ export default function MapUI(props: ServiceUIProps) {
 
     if (needsUpdate(newState.sensingMode, isSensingMode)) {
       setIsSensingMode(newState.sensingMode);
+    }
+
+    if (typeof newState.error === "string") {
+      setError(newState.error);
+    }
+
+    if (Array.isArray(newState.warnings)) {
+      setWarnings(newState.warnings);
     }
   };
 
@@ -305,6 +317,13 @@ export default function MapUI(props: ServiceUIProps) {
             editor.
           </div>
         )}
+
+        {error && <div className="text-xs text-red-600">{error}</div>}
+        {warnings.map((warning) => (
+          <div key={warning} className="text-xs text-amber-600">
+            {warning}
+          </div>
+        ))}
       </div>
     </ServiceUI>
   );

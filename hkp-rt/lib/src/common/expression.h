@@ -20,6 +20,10 @@
  *
  *   Expression e = Expression::parse("round(params.value * 2)");
  *   json result = e.evaluate(input);   // throws EvaluationError on failure
+ *
+ * A member of nothing is nothing: `params.a.b` with no `a` is null, as in the
+ * browser, Node and Python runtimes. Whoever wants to know which reads came up
+ * empty passes an `OnMissing`.
  */
 
 #include <algorithm>
@@ -64,6 +68,10 @@ public:
 // Variables visible to an expression. Always holds "params"; find/filter add
 // "item" and "index" while evaluating their predicate.
 using Scope = std::map<std::string, json>;
+
+// Told the path of a read that found nothing — `params.titel` — once per chain:
+// in `params.a.b.c` with no `a`, only `params.a` is reported.
+using OnMissing = std::function<void(const std::string&)>;
 
 // ── Value helpers ────────────────────────────────────────────────────────────
 
@@ -880,6 +888,72 @@ private:
 
 json evaluateNode(const NodePtr& node, const Scope& scope);
 
+// Who hears about reads that found nothing during the evaluation that asked —
+// and only that one: a find/filter predicate evaluated inside it reports
+// nothing, as in the other runtimes. Set by `ReportingMissing` for one call.
+inline thread_local const OnMissing* currentOnMissing = nullptr;
+
+struct ReportingMissing
+{
+  explicit ReportingMissing(const OnMissing* onMissing) : m_previous(currentOnMissing)
+  {
+    currentOnMissing = onMissing;
+  }
+  ~ReportingMissing() { currentOnMissing = m_previous; }
+  ReportingMissing(const ReportingMissing&) = delete;
+  ReportingMissing& operator=(const ReportingMissing&) = delete;
+
+private:
+  const OnMissing* m_previous;
+};
+
+// How a read is named when it is reported: `params.items[0].title`.
+inline std::string pathOf(const NodePtr& node)
+{
+  if (!node)
+  {
+    return "…";
+  }
+  if (node->kind == Node::Kind::Identifier)
+  {
+    return node->name;
+  }
+  if (node->kind == Node::Kind::Member)
+  {
+    const std::string object = pathOf(node->left);
+    if (!node->computed)
+    {
+      return object + "." + node->name;
+    }
+    if (node->right && node->right->kind == Node::Kind::Literal)
+    {
+      return object + "[" + node->right->value.dump() + "]";
+    }
+    return object + "[…]";
+  }
+  return "…";
+}
+
+// Whether memberOf finds something there, even an empty value.
+inline bool hasMember(const json& object, const json& key)
+{
+  if (object.is_array() || object.is_string())
+  {
+    if (key.is_string() && key.get_ref<const std::string&>() == "length")
+    {
+      return true;
+    }
+    const double index = toNumber(key);
+    const size_t size = object.is_array() ? object.size() : object.get_ref<const std::string&>().size();
+    return !std::isnan(index) && index >= 0 && index < static_cast<double>(size);
+  }
+  if (object.is_object())
+  {
+    return object.contains(toText(key));
+  }
+  return false;
+}
+
 inline json memberOf(const json& object, const json& key)
 {
   if (object.is_array())
@@ -1011,6 +1085,16 @@ inline json evaluateNode(const NodePtr& node, const Scope& scope)
     {
       const json object = evaluateNode(node->left, scope);
       const json key = node->computed ? evaluateNode(node->right, scope) : json(node->name);
+      if (currentOnMissing && !hasMember(object, key))
+      {
+        // A read past a link that already came up empty was reported with it.
+        const bool pastMissing = object.is_null() && node->left &&
+          node->left->kind == Node::Kind::Member;
+        if (!pastMissing)
+        {
+          (*currentOnMissing)(pathOf(node));
+        }
+      }
       return memberOf(object, key);
     }
 
@@ -1097,17 +1181,19 @@ public:
     return expression;
   }
 
-  json evaluate(const json& params) const
+  json evaluate(const json& params, const OnMissing* onMissing = nullptr) const
   {
-    return evaluate(Scope{{"params", params}});
+    return evaluate(Scope{{"params", params}}, onMissing);
   }
 
-  json evaluate(const Scope& scope) const
+  // `onMissing` hears about every read that found nothing, once per chain.
+  json evaluate(const Scope& scope, const OnMissing* onMissing = nullptr) const
   {
     if (!m_root)
     {
       throw EvaluationError("expression is empty");
     }
+    detail::ReportingMissing reporting(onMissing);
     return detail::evaluateNode(m_root, scope);
   }
 

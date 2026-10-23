@@ -38,7 +38,7 @@ The natural producer is the browser **Audio Input** service in its
 The ML dependencies are an optional extra of hkp-python:
 
 ```
-pip install "hkp-python[asr]"
+uv sync --extra asr    # in hkp-python
 ```
 
 The first transcription downloads the selected model from Hugging Face

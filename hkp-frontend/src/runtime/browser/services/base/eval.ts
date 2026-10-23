@@ -1,4 +1,4 @@
-import { parse, evaluate as expEval } from "./expressionEval";
+import { parse, evaluate as expEval, OnMissing } from "./expressionEval";
 import moment from "moment";
 import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import jsep from "jsep";
@@ -166,6 +166,8 @@ export async function evalExpression(
    * continues the run that service is in.
    */
   caller?: InstanceId,
+  /** Hears about every read that found nothing; see expressionEval.ts. */
+  onMissing?: OnMissing,
 ) {
   if (ast === "syntax-error") {
     throw new Error("evalExpression with syntax error");
@@ -184,11 +186,15 @@ export async function evalExpression(
   const getServiceConfig = (rtId: string, svcId: string, prop: string) =>
     (window as any).hkp.getServiceConfig(rtId, svcId).then((x: any) => x[prop]); // window.hkp is untyped
 
-  return expEval(ast, {
-    ...params,
-    ...globalScope,
-    variables: app?.getRuntimeVariable() ?? {},
-    getServiceConfig,
-    processRuntime,
-  });
+  return expEval(
+    ast,
+    {
+      ...params,
+      ...globalScope,
+      variables: app?.getRuntimeVariable() ?? {},
+      getServiceConfig,
+      processRuntime,
+    },
+    onMissing,
+  );
 }
