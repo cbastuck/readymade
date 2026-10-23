@@ -93,12 +93,13 @@
     "tailwindcss": "^3.4.3",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "5.9.3",
-    "vite": "8.0.16",
+    "vite": "8.3.4",
     "vite-plugin-dts": "^5.0.2",
     "vite-plugin-svgr": "5.2.0",
     "vitest": "^4.1.8"
   },
   "overrides": {
-    "dompurify": "^3.4.8"
+    "dompurify": "^3.4.8",
+    "postcss-selector-parser": "7.1.6"
   }
 }
