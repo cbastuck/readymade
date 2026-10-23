@@ -685,6 +685,26 @@ describe("Map service – error recovery", () => {
 });
 
 // ---------------------------------------------------------------------------
+// No input: a Map at the head of a board, run without anything before it
+// ---------------------------------------------------------------------------
+
+describe("Map service – no input", () => {
+  for (const input of [undefined, null]) {
+    for (const mode of ["replace", "add", "overwrite"]) {
+      it(`${mode} mode builds the template from ${input} input`, async () => {
+        const { service } = createMapService();
+        await service.configure({
+          mode,
+          template: { "text=": "'Today is ' + string(1 + 1)", source: "clock" },
+        });
+        const result = await service.process(input);
+        expect(result).toEqual({ text: "Today is 2", source: "clock" });
+      });
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Various data shapes
 // ---------------------------------------------------------------------------
 
