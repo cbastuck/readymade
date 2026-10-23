@@ -275,11 +275,10 @@ widget can be asked about directly:
 
 Images are placed before the question, which is how the model reads them best.
 
-**On the node runtime the answer is pushed, not returned.** Generation takes
-seconds, and the pipeline does not wait — so the service returns nothing, stops
-the push, and calls the rest of the pipeline itself once the answer arrives (the
-inversion-of-control path `http-client` also takes). For a board this is
-invisible: the services after it run with the result, as they would anyway.
+**The answer is the service's answer, however long it takes.** Generation
+takes seconds, and the runtime awaits it, so the services after it run with the
+result — and a [Join](./join.md) around it comes back with the answer beside the
+question rather than instead of it.
 
 For thinking models the reasoning is split off into the `thinking` field;
 `text` carries only the answer. Unsupported input, an unreachable server,

@@ -79,7 +79,7 @@
             }
           ],
           "limit": 10,
-          "summaryChars": 400
+          "summaryChars": 1200
         }
       },
       {
