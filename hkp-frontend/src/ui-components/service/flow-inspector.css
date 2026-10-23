@@ -34,40 +34,83 @@
   padding: 14px 18px 16px;
 }
 
-/* One chip per remembered output, newest first. */
-.hkp-flow-history {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.hkp-flow-chip {
-  display: grid;
-  place-items: center;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 6px;
-  border-radius: 7px;
-  border: 1px solid var(--set-line);
-  background: #fff;
-  color: var(--set-mid);
-  font-size: 11.5px;
-  font-weight: 600;
+/* The History heading folds the list away: the chevron turns when it opens, and
+   folded it still says when the latest output arrived. */
+.hkp-flow-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--set-mut);
   cursor: pointer;
-  transition:
-    border-color 0.12s,
-    background 0.12s;
 }
-.hkp-flow-chip:hover {
-  border-color: #d3d7e0;
+.hkp-flow-toggle:focus-visible {
+  outline: 2px solid var(--set-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
-.hkp-flow-chip[aria-pressed="true"] {
-  border-color: var(--set-accent);
-  background: var(--set-accent-dim);
-  color: var(--set-ink);
+.hkp-flow-chevron {
+  flex: none;
+  transition: transform 0.12s;
 }
-.hkp-flow-chip:focus-visible {
+.hkp-flow-toggle[aria-expanded="true"] .hkp-flow-chevron {
+  transform: rotate(90deg);
+}
+.hkp-flow-latest {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--set-mid);
+}
+
+/* One row per remembered output, newest first: when it arrived, and a line of
+   what it was. A few rows show; the rest scroll. */
+.hkp-flow-history {
+  max-height: 132px;
+  overflow-y: auto;
+  border: 1px solid var(--set-line);
+  border-radius: 10px;
+  background: #fff;
+}
+.hkp-flow-history:focus-visible {
   outline: 2px solid var(--set-accent);
   outline-offset: 1px;
+}
+.hkp-flow-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--set-line-soft);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.hkp-flow-entry:last-child {
+  border-bottom: none;
+}
+.hkp-flow-entry:hover {
+  background: var(--set-hover);
+}
+.hkp-flow-entry[aria-selected="true"] {
+  background: var(--set-accent-dim);
+}
+.hkp-flow-entry-time {
+  flex: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--set-mid);
+}
+.hkp-flow-entry-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--set-ink);
 }
 
 .hkp-flow-edited {

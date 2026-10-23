@@ -19,7 +19,7 @@ import {
   useTheme,
   useThemeControl,
 } from "hkp-frontend/src/ui-components/ThemeContext";
-import ServiceOutputPlug from "./ServiceOutputPlug";
+import ServiceOutputPlug, { rememberOutput } from "./ServiceOutputPlug";
 
 import DragSource from "hkp-frontend/src/components/DragSource";
 import {
@@ -68,7 +68,9 @@ export default function ServiceFrame({
   const [bypass, setBypass] = useState(
     service?.bypass ?? service?.state?.bypass,
   );
-  const [recentProgressData, setRecentProgressData] = useState<any>(undefined);
+  // What the service reported, newest first, for the Flow Inspector. Kept
+  // here, where each output arrives, so a burst of them is kept whole.
+  const [outputHistory, setOutputHistory] = useState<any[]>([]);
 
   const [signalOutput, setSignalOutput] = useState(false);
   const [serviceIsProcessing, setServiceIsProcessing] = useState(false);
@@ -120,7 +122,7 @@ export default function ServiceFrame({
             800,
           );
           if (data !== null) {
-            setRecentProgressData(data);
+            setOutputHistory((history) => rememberOutput(history, data));
             setSignalOutput(true);
             setTimeout(() => setSignalOutput(false), 350);
           }
@@ -374,7 +376,8 @@ export default function ServiceFrame({
   const plug = (
     <ServiceOutputPlug
       isActive={signalOutput}
-      data={recentProgressData}
+      history={outputHistory}
+      onClearHistory={() => setOutputHistory([])}
       onInject={onInject}
       offsetTop={plugSlot ? 0 : undefined}
     />

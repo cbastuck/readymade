@@ -1,6 +1,4 @@
 import { ReactNode, useEffect, useState } from "react";
-
-const MAX_HISTORY = 10;
 import { X, Pin, PinOff, Maximize, Minimize } from "lucide-react";
 
 import {
@@ -23,9 +21,14 @@ import "./flow-inspector.css";
 
 import EditorDialog from "../EditorDialog";
 
+/** One output the service reported, and when it arrived (ms since epoch). */
+export type OutputRecord = { data: any; at: number };
+
 type Props = {
   isActive?: boolean;
-  data: any;
+  /** The outputs the service reported, newest first; see `rememberOutput`. */
+  history: OutputRecord[];
+  onClearHistory: () => void;
   onInject: (data: any) => void;
   /**
    * How far the plug sits below the top of what it is drawn beside — a
@@ -44,6 +47,8 @@ const frameStyle: React.CSSProperties = {
   overflow: "hidden",
 };
 
+const MAX_HISTORY = 10;
+
 // Typed Data objects (FloatRingBuffer etc.) carry a Symbol tag, which
 // structuredClone rejects with DataCloneError — keep the reference instead.
 function safeClone(data: any): any {
@@ -54,9 +59,26 @@ function safeClone(data: any): any {
   }
 }
 
+/**
+ * `history` with `data` as its newest output, arrived `at`, keeping the last
+ * MAX_HISTORY.
+ *
+ * Meant for a functional state update where each output arrives: outputs
+ * reported in quick succession — an Iterator's items — are rendered once, so
+ * a history built from a prop's changes would keep only the last of them.
+ */
+export function rememberOutput(
+  history: OutputRecord[],
+  data: any,
+  at: number = Date.now(),
+): OutputRecord[] {
+  return [{ data: safeClone(data), at }, ...history].slice(0, MAX_HISTORY);
+}
+
 export default function ServiceOutputPlug({
   isActive,
-  data,
+  history,
+  onClearHistory,
   onInject,
   offsetTop = 18,
 }: Props) {
@@ -67,17 +89,16 @@ export default function ServiceOutputPlug({
   // Which remembered output is shown, 0 being the latest; the popover and the
   // expanded view share it.
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [history, setHistory] = useState<any[]>(() =>
-    data != null ? [safeClone(data)] : [],
-  );
+  // The history list starts folded away, and stays as it was left while the
+  // service is on screen.
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
+  // A new output is the one shown.
   useEffect(() => {
-    if (data == null) {
-      return;
-    }
-    setHistory((prev) => [safeClone(data), ...prev].slice(0, MAX_HISTORY));
     setSelectedIndex(0);
-  }, [data]);
+  }, [history[0]]);
+
+  const selected = history[selectedIndex]?.data;
 
   const onOpen = () => setIsOpen(true);
 
@@ -94,7 +115,7 @@ export default function ServiceOutputPlug({
       <EditorDialog
         title="Flow Inspector"
         isOpen={true}
-        value={history[selectedIndex]}
+        value={selected}
         additionalHeaderButtons={[
           <ToolButton
             label="Back to popover"
@@ -134,7 +155,7 @@ export default function ServiceOutputPlug({
           </PopoverTrigger>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem disabled={!data}>Rerun</ContextMenuItem>
+          <ContextMenuItem disabled={!history[0]?.data}>Rerun</ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
 
@@ -163,6 +184,9 @@ export default function ServiceOutputPlug({
           selectedIndex={selectedIndex}
           onSelectIndex={setSelectedIndex}
           onInject={onInject}
+          onClearHistory={onClearHistory}
+          historyExpanded={historyExpanded}
+          onToggleHistory={() => setHistoryExpanded((expanded) => !expanded)}
         />
       </PopoverContent>
     </Popover>
