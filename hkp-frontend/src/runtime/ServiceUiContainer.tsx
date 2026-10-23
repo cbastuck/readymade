@@ -153,6 +153,13 @@ export default function ServiceUiContainer(props: Props) {
     ) {
       return;
     }
+    // Picking a picked service again picks nothing: the way back from a pick
+    // without reaching for Escape. A run is a run, so it is let go of whole
+    // rather than left with a gap.
+    if (picked.has(uuid)) {
+      selection.selectServices(null);
+      return;
+    }
     selection.selectServices({ runtimeId, anchor: uuid, uuids: [uuid] });
   };
 

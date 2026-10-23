@@ -379,13 +379,14 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       }
       svc = services[i];
       if (svc && !svc.bypass) {
+        let call: number | undefined;
         try {
-          onServiceProcess(this.app, svc, params);
+          call = onServiceProcess(this.app, svc, params);
           if (context) {
             this.enterContext(svc, context);
           }
           result = await svc.process(params);
-          onServiceResult(this.app, svc, result);
+          onServiceResult(this.app, svc, result, call);
           params = result;
         } catch (err: any) {
           console.warn(
@@ -393,6 +394,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
               svc.serviceName
             } caused error: ${JSON.stringify(err.message)}`,
           );
+          // The call is over all the same, and says so with nothing produced:
+          // what shows it running counts the calls still open.
+          onServiceResult(this.app, svc, null, call);
         } finally {
           if (context) {
             this.leaveContext(svc, context);

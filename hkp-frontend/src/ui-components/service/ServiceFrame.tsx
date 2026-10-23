@@ -39,6 +39,11 @@ import {
   ServicePickedContext,
   useServicePicked,
 } from "hkp-frontend/src/selection/SelectionContext";
+import {
+  ServiceProcessingReportContext,
+  useServiceProcessingReport,
+} from "./ServiceProcessingContext";
+import { useProcessingSweep } from "./processingSweep";
 
 const DOCS_SERVICES_URL = "https://hookitapp.com/documentation/services";
 
@@ -75,11 +80,8 @@ export default function ServiceFrame({
   const [outputHistory, setOutputHistory] = useState<FlowRecord[]>([]);
 
   const [signalOutput, setSignalOutput] = useState(false);
-  const [serviceIsProcessing, setServiceIsProcessing] = useState(false);
+  const sweep = useProcessingSweep();
   const [serviceIdCopied, setServiceIdCopied] = useState(false);
-  const processingOffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
   const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -93,10 +95,23 @@ export default function ServiceFrame({
   const bodyLocked = locked && panelTookLock === 0;
   const picked = useServicePicked();
   const plugSlot = useUsePlugSlot();
+  // Whatever stands in for this frame — a block's use bar — shows it running.
+  const reportProcessing = useServiceProcessingReport();
+  useEffect(() => {
+    reportProcessing?.({
+      running: sweep.running,
+      sweeping: sweep.sweeping,
+      run: sweep.run,
+    });
+  }, [reportProcessing, sweep.running, sweep.sweeping, sweep.run]);
   const body = (
     <PanelLockHandOverContext.Provider value={locked ? handPanelLock : null}>
       <UsePlugSlotContext.Provider value={null}>
-        <ServicePickedContext.Provider value={false}>{children}</ServicePickedContext.Provider>
+        <ServicePickedContext.Provider value={false}>
+          <ServiceProcessingReportContext.Provider value={null}>
+            {children}
+          </ServiceProcessingReportContext.Provider>
+        </ServicePickedContext.Provider>
       </UsePlugSlotContext.Provider>
     </PanelLockHandOverContext.Provider>
   );
@@ -112,11 +127,7 @@ export default function ServiceFrame({
 
       switch (state) {
         case "call-process":
-          if (processingOffTimerRef.current !== null) {
-            clearTimeout(processingOffTimerRef.current);
-            processingOffTimerRef.current = null;
-          }
-          setServiceIsProcessing(true);
+          sweep.start(__internal.call);
           // What it was called with. A service emitting on its own was called
           // with nothing (null), and hkp-rt says "<undefined>" for a call that
           // carried no value: neither is an input to keep.
@@ -125,10 +136,7 @@ export default function ServiceFrame({
           }
           return;
         case "call-process-finished":
-          processingOffTimerRef.current = setTimeout(
-            () => setServiceIsProcessing(false),
-            800,
-          );
+          sweep.finish(__internal.call);
           if (data !== null) {
             setOutputHistory((history) => rememberFlow(history, data));
             setSignalOutput(true);
@@ -143,9 +151,6 @@ export default function ServiceFrame({
   useEffect(() => {
     service.app.registerNotificationTarget?.(service, onNotification);
     return () => {
-      if (processingOffTimerRef.current !== null) {
-        clearTimeout(processingOffTimerRef.current);
-      }
       if (copyFeedbackTimerRef.current !== null) {
         clearTimeout(copyFeedbackTimerRef.current);
       }
@@ -424,7 +429,7 @@ export default function ServiceFrame({
         <div className="flex items-center">
           <div
             ref={cardRef}
-            className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}${picked ? " hkp-service-card--selected" : ""}`}
+            className={`hkp-service-card${picked ? " hkp-service-card--selected" : ""}`}
             style={s(t.unselectable, {
               position: "relative",
               zIndex: 1,
@@ -463,6 +468,9 @@ export default function ServiceFrame({
                   onCustomEntry={onCustomEntry}
                   onChangeName={onChangeName}
                   readOnly={locked}
+                  processing={sweep.running}
+                  sweeping={sweep.sweeping}
+                  processingRun={sweep.run}
                 />
               </DragSource>
 
@@ -496,7 +504,7 @@ export default function ServiceFrame({
     <div key={`service-frame-${uuid}`} id={`service-frame-${uuid}`}>
       <div className="flex items-center">
         <div
-          className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}${picked ? " hkp-service-card--selected" : ""}`}
+          className={`hkp-service-card${picked ? " hkp-service-card--selected" : ""}`}
           style={s(t.unselectable, {
             transition: "border 800ms",
             border: `solid ${theme.serviceBorderWidth}px ${theme.borderColor}`,
@@ -529,6 +537,9 @@ export default function ServiceFrame({
               onCustomEntry={onCustomEntry}
               onChangeName={onChangeName}
               readOnly={locked}
+              processing={sweep.running}
+              sweeping={sweep.sweeping}
+              processingRun={sweep.run}
             />
           </DragSource>
           <EditorDialog

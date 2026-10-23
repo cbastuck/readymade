@@ -35,10 +35,12 @@ async function twoServices() {
   };
 }
 
+// What a call was handed and what it answered; which call it was is left out.
 const lifecycle = (calls: any[][]) =>
   calls
     .map(([notification]) => notification?.__internal)
-    .filter((internal) => internal?.state?.startsWith("call-process"));
+    .filter((internal) => internal?.state?.startsWith("call-process"))
+    .map(({ state, data }) => ({ state, data }));
 
 describe("app.rerun", () => {
   it("calls the service itself with the input, and the services after it", async () => {

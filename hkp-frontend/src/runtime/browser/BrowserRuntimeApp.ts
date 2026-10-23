@@ -36,8 +36,8 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     // is not among them: it emitted on its own. A replay is the case with
     // nothing to report because the value came from outside.
     if (svc && !options?.replay) {
-      onServiceProcess(app, svc, undefined);
-      onServiceResult(app, svc, result);
+      const call = onServiceProcess(app, svc, undefined);
+      onServiceResult(app, svc, result, call);
     }
     return scope.next(svc, result, run);
   };
