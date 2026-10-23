@@ -1,4 +1,5 @@
 #include "./websocket_client_session.h"
+#include "egress.h"
 
 #include <boost/asio.hpp>
 #include <boost/asio/strand.hpp>
@@ -131,7 +132,7 @@ void WebsocketClientSession::start(std::string id, CallbackFunc callback)
 {
   m_impl->m_callback = callback;
 
-  auto const results = m_impl->m_resolver.resolve(m_impl->m_host, m_impl->m_port);
+  auto const results = ::hkp::egress::resolve(m_impl->m_resolver, m_impl->m_host, m_impl->m_port);
 
   // Make the connection on the IP address we get from a lookup
   auto ep = net::connect(m_impl->m_ws.next_layer(), results);

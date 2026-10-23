@@ -119,5 +119,5 @@ speaking S3 changes nothing outside the service.
 Needs an hkp-node and an hkp-python, kept under the names `node` and `python`
 in *Manage runtime servers* — both default to port 8080, so start one of them
 on another (`PORT=9000 hkp-python`). The latter needs the
-speech and mp3 extras: `pip install "hkp-python[tts,mp3]"`. The first call
+speech and mp3 extras, which a plain `uv sync` in hkp-python installs. The first call
 downloads the Kokoro model (~310 MB) and takes a while; later ones do not.

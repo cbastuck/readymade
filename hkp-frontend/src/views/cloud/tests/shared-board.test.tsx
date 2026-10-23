@@ -101,6 +101,17 @@ const SHARED = {
   boardName: "court",
 };
 
+/** A coordinator handing out bridge tickets, as every server does (wsTicket.ts). */
+const ticketing = () =>
+  vi.fn(async (url: string | URL) =>
+    String(url).endsWith("/ws-tickets")
+      ? new Response(JSON.stringify({ ticket: "anna-ticket", expiresInMs: 30000 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        })
+      : new Response("{}", { status: 404 }),
+  );
+
 async function open() {
   render(<SharedBoard shared={SHARED} user={USER} />);
   await waitFor(() => expect(sockets.length).toBe(1));
@@ -127,6 +138,7 @@ describe("opening a shared board", () => {
   beforeEach(() => {
     sockets.length = 0;
     vi.stubGlobal("WebSocket", FakeSocket);
+    vi.stubGlobal("fetch", ticketing());
   });
 
   afterEach(() => {
@@ -138,7 +150,7 @@ describe("opening a shared board", () => {
     const bridge = await open();
 
     expect(bridge.url).toBe(
-      "wss://node1.example.com/coordinator/bridge?access_token=anna-token",
+      "wss://node1.example.com/coordinator/bridge?ticket=anna-ticket",
     );
     expect(bridge.last("connect")).toEqual({
       type: "connect",
@@ -200,7 +212,7 @@ describe("opening a shared board", () => {
   });
 
   it("sends what the facade does over the bridge, and draws what comes back", async () => {
-    const fetchMock = vi.fn();
+    const fetchMock = ticketing();
     vi.stubGlobal("fetch", fetchMock);
     const bridge = await open();
     bridge.deliver(snapshot());
@@ -215,8 +227,11 @@ describe("opening a shared board", () => {
       serviceUuid: "book",
       payload: { hour: 10 },
     });
-    // Nothing dialled: the member was told no address, and has none to use.
-    expect(fetchMock).not.toHaveBeenCalled();
+    // Nothing dialled but the bridge's own ticket: the member was told no
+    // address, and has none to use.
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      "https://node1.example.com/ws-tickets",
+    ]);
 
     bridge.deliver({
       type: "notification",

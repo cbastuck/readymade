@@ -459,6 +459,16 @@ describe("Map service – add mode", () => {
     expect(result.x).toBe(10);
   });
 
+  it("preserves a falsy input value too, as the other runtimes do", async () => {
+    const { service } = createMapService();
+    await service.configure({
+      mode: "add",
+      template: { "count=": "1", "label=": "'none'", "on=": "true" },
+    });
+    const result = (await service.process({ count: 0, label: "", on: false })) as any;
+    expect(result).toEqual({ count: 0, label: "", on: false });
+  });
+
   it("writes expression result when input key is absent", async () => {
     const { service } = createMapService();
     await service.configure({
@@ -673,15 +683,100 @@ describe("Map service – sensingMode", () => {
 // Error recovery
 // ---------------------------------------------------------------------------
 
-describe("Map service – error recovery", () => {
-  it("returns input unchanged when expression evaluates with a syntax error", async () => {
-    const { service } = createMapService();
-    // Invalid expression string → parseExpression returns "syntax-error"
-    await service.configure({ template: { "bad=": "!!!(invalid syntax[[" } });
-    const input = { x: 1 };
-    const result = await service.process(input);
-    expect(result).toEqual(input);
+/**
+ * What a pass says about itself — the same in every runtime (hkp-node map.ts,
+ * hkp-python map_service.py, hkp-rt map.h).
+ */
+describe("Map service – missing reads, warnings and errors", () => {
+  const reported = (app: ReturnType<typeof createMockApp>) =>
+    app.notify.mock.calls
+      .map(([, payload]) => payload)
+      .filter((payload) => "error" in payload || "warnings" in payload);
+
+  it("maps a read that found nothing to null, and warns", async () => {
+    const { service, app } = createMapService();
+    await service.configure({
+      template: { "title=": "params.titel", "x=": "params.missing.deep" },
+    });
+
+    expect(await service.process({ title: "Hello" })).toEqual({ title: null, x: null });
+    expect(reported(app)).toEqual([
+      { warnings: ["title: params.titel not found", "x: params.missing not found"] },
+    ]);
   });
+
+  it("does not warn about a read that a fallback covered, or a value that is null", async () => {
+    const { service, app } = createMapService();
+    await service.configure({
+      template: { "slug=": "params.id || params.link", "none=": "params.none" },
+    });
+
+    expect(await service.process({ link: "l", none: null })).toEqual({
+      slug: "l",
+      none: null,
+    });
+    expect(reported(app)).toEqual([]);
+  });
+
+  it("stops the flow on a failing term, says why, and clears it once it works", async () => {
+    const { service, app } = createMapService();
+    await service.configure({ template: { "x=": "params.n.toFixed(1)" } });
+
+    expect(await service.process({})).toBeNull();
+    expect(await service.process({ n: 2 })).toEqual({ x: "2.0" });
+    // A failing term is the error alone: what it read is not also a warning.
+    expect(reported(app)).toEqual([
+      { error: "x: params.n.toFixed is not a function" },
+      { error: "" },
+    ]);
+  });
+
+  it("fails an array input when one element fails", async () => {
+    const { service } = createMapService();
+    await service.configure({ template: { "x=": "params.n.toFixed(1)" } });
+
+    expect(await service.process([{ n: 1 }, {}])).toBeNull();
+  });
+
+  it("says a term does not parse as soon as it is configured", async () => {
+    const { service, app } = createMapService();
+    await service.configure({ template: { "x=": "nope(" } });
+
+    expect(reported(app)).toEqual([
+      { error: expect.stringMatching(/^x: invalid expression 'nope\('/) },
+    ]);
+    expect(await service.process({})).toBeNull();
+  });
+
+  it("names a term in a structured template by where it sits", async () => {
+    const { service, app } = createMapService();
+    await service.configure({ template: { items: [{ "title=": "params.titel" }] } });
+
+    expect(await service.process({})).toEqual({ items: [{ title: null }] });
+    expect(reported(app)).toEqual([
+      { warnings: ["items.0.title: params.titel not found"] },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// No input: a Map at the head of a board, run without anything before it
+// ---------------------------------------------------------------------------
+
+describe("Map service – no input", () => {
+  for (const input of [undefined, null]) {
+    for (const mode of ["replace", "add", "overwrite"]) {
+      it(`${mode} mode builds the template from ${input} input`, async () => {
+        const { service } = createMapService();
+        await service.configure({
+          mode,
+          template: { "text=": "'Today is ' + string(1 + 1)", source: "clock" },
+        });
+        const result = await service.process(input);
+        expect(result).toEqual({ text: "Today is 2", source: "clock" });
+      });
+    }
+  }
 });
 
 // ---------------------------------------------------------------------------

@@ -72,7 +72,7 @@ llama-server -m Bonsai-27B-Q1_0.gguf --port 8081 -ngl 99
 **Local backend (hkp-python)** — the in-process engine is an optional extra:
 
 ```
-pip install "hkp-python[llm]"
+uv sync --extra llm    # in hkp-python
 ```
 
 **Local backend (hkp-rt)** — llama.cpp is embedded at build time. It is on by

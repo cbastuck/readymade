@@ -42,6 +42,11 @@ A key ending with `=` marks a **dynamic term**. The `=` suffix is stripped from 
 
 This produces `{ "angle": <computed value> }` in the output.
 
+A read of something that is not there is not an error: `params.a.b` with no `a`
+is empty, as if written `params.a?.b`, and the term's key is kept with the value
+`null`. So `{ "title=": "params.titel" }` produces `{ "title": null }` — and the
+Map warns about it (see [Errors and warnings](#errors-and-warnings)).
+
 ### Scalar Output
 
 When the template contains a single key equal to `"="` (empty string after stripping `=`), the result is a **scalar value** rather than an object:
@@ -148,7 +153,7 @@ useful part.
 | Value | Behaviour |
 |---|---|
 | `replace` | Output contains only the properties defined in the template. Input properties not in the template are discarded. |
-| `add` | Template properties are merged into the input, but existing input keys are **not** overwritten by template values. |
+| `add` | Template properties are merged into the input, but existing input keys are **not** overwritten by template values — even when the input's value is `0`, `""`, `false` or `null`. |
 | `overwrite` | Input properties are merged first, then template properties overwrite them. |
 
 ### `sensingMode`
@@ -161,9 +166,19 @@ Sending `{ command: { action: "inject", params: { ... } } }` causes the Map to i
 
 ---
 
-## Error Handling
+## Errors and warnings
 
-If expression evaluation fails, the Map logs the error to the console and returns the **original input unchanged** (identity pass-through).
+What a pass says about itself is shown in the Map's panel and notified, so a facade
+[notice](../concepts/board.md) can read it too. It is never part of the state a board
+saves. Every runtime's Map behaves the same way.
+
+| Notified | When | The flow |
+|---|---|---|
+| `error` | A term does not parse — said as soon as the template is configured — or fails to evaluate, such as a call to a function that does not exist. Named by where the term sits: `x: nope is not a function`. Cleared (`""`) by the next pass that works. | **Stops**: the Map returns `null`, since a mapping that could not be made has nothing to pass on. With an array input, one failing element stops the whole pass. |
+| `warnings` | A term's value is empty because what it read was not there: `title: params.titel not found`. A read that a fallback covered (`params.id \|\| params.link` with only `link` present) or a field that is present but `null` is not a warning. | **Goes on**: an absent field is often legitimate, and a typo in a field name is only visible this way. |
+
+Both are `error: string` and `warnings: string[]` in the notification, and each is
+notified only when it changes.
 
 ---
 
