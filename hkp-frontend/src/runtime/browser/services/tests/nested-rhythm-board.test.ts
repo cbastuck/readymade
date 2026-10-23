@@ -254,6 +254,35 @@ describe("the Nested Rhythm demo board", () => {
     groove.destroy();
   });
 
+  it("falls silent when the Groove is destroyed while playing", async () => {
+    // Leaving the board destroys its services: the clock inside the Groove
+    // has to stop with it, not go on playing to a board that is gone.
+    const { groove } = await buildGroove();
+    (groove.getInnerInstance("clock") as any).configure({
+      start: true,
+      immediate: true,
+    });
+    await vi.advanceTimersByTimeAsync(4 * EIGHTH_MS);
+    expect(hits.length).toBeGreaterThan(0);
+
+    groove.destroy();
+    hits = [];
+    await vi.advanceTimersByTimeAsync(16 * EIGHTH_MS);
+    expect(hits).toEqual([]);
+  });
+
+  it("stops the clock it replaces when the pipeline is rebuilt", async () => {
+    const { groove } = await buildGroove();
+    const before = groove.getInnerInstance("clock") as any;
+    before.configure({ start: true, immediate: true });
+
+    groove.configure({ pipeline: grooveEntry().state.pipeline });
+    await (groove as any)._scopeBuilding;
+
+    expect(before.hasSchedule()).toBe(false);
+    groove.destroy();
+  });
+
   it("reports what happens inside a pattern under its address through the Switch", async () => {
     // What the overview and the panels listen for: a note inside a case is
     // reported as groove.patterns.straight.beat-1.kick-1, not under its bare name.

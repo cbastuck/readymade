@@ -318,6 +318,25 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     );
   };
 
+  /**
+   * Ends this scope and everything in it: the runtime closing, or a service
+   * that built this scope for its inner pipeline letting go of it.
+   *
+   * Dropping the reference is not enough: a service that emits on its own — a
+   * Timer's beat — holds its schedule, not the scope, and would go on ticking
+   * into a pipeline nobody owns. Each service is destroyed, and one that owns
+   * scopes of its own disposes them in turn, to any depth. Marked disposing
+   * first, so a pass already under way stops at the next service — and whoever
+   * forwards what this scope says outward can stop listening (see the
+   * notification forwarding in BrowserSubService).
+   */
+  dispose = async () => {
+    this.isDisposing = true;
+    while (this.serviceInstances.length > 0) {
+      await this.removeService(this.serviceInstances[0]);
+    }
+  };
+
   removeSubservices = async () => {
     for (const ssvcUuid of Object.keys(this.subservices)) {
       const ssvc = this.subservices[ssvcUuid];
