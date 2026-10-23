@@ -187,7 +187,7 @@ class Map extends ServiceBase<State> {
             }
           : {
               ...accumulated,
-              [key]: x[key] && this.state.mode === "add" ? x[key] : y, // don't overwrite in add mode
+              [key]: x?.[key] && this.state.mode === "add" ? x[key] : y, // don't overwrite in add mode
             };
       }, Promise.resolve(initial));
     } catch (error) {
