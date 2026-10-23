@@ -102,12 +102,18 @@ public:
 
   json getState() const override
   {
-    return Service::mergeStateWith(json{
+    json state{
       { "template", m_template },
       { "mode", m_mode },
       { "arrayMode", m_arrayMode },
       { "sensingMode", m_sensingMode }
-    });
+    };
+    // Only while there is one, so a panel opened after the failure shows it.
+    if (!m_error.empty())
+    {
+      state["error"] = m_error;
+    }
+    return Service::mergeStateWith(state);
   }
 
   Data process(Data data) override
@@ -130,21 +136,26 @@ public:
       return Null();
     }
 
+    std::string failure;
     if (m_arrayMode != "single" && inputJson->is_array())
     {
       json result = json::array();
       for (const auto& item : *inputJson)
       {
-        result.push_back(mapOne(item));
+        result.push_back(mapOne(item, failure));
       }
+      reportError(failure);
       return Data(result);
     }
 
-    return Data(mapOne(*inputJson));
+    json result = mapOne(*inputJson, failure);
+    reportError(failure);
+    return Data(result);
   }
 
 private:
-  json mapOne(const json& inputData)
+  // `failure` keeps the first reason a mapping in this call did not apply.
+  json mapOne(const json& inputData, std::string& failure)
   {
     try
     {
@@ -154,8 +165,25 @@ private:
     {
       std::cerr << "Map service: " << e.what() << " in template "
                 << m_template.dump() << std::endl;
+      if (failure.empty())
+      {
+        failure = e.what();
+      }
       return inputData; // identity - the mapping could not be applied
     }
+  }
+
+  // Sent when it changes, not on every run: a Map behind a fast timer would
+  // otherwise repeat the same message many times a second. An empty error is
+  // sent as null, which clears it.
+  void reportError(const std::string& error)
+  {
+    if (error == m_error)
+    {
+      return;
+    }
+    m_error = error;
+    sendNotification(json{{"error", m_error.empty() ? json(nullptr) : json(m_error)}});
   }
 
   // Merging only applies when both sides are objects; a template that produced
@@ -200,7 +228,7 @@ private:
         // name as well as the value.
         const std::string processedKey = processInjaTemplate(name, inputData);
         const json processedValue = dynamic
-          ? processDynamicValue(value, inputData)
+          ? processDynamicTerm(processedKey, value, inputData)
           : processValue(value, inputData);
 
         if (processedKey.find('.') != std::string::npos)
@@ -280,6 +308,20 @@ private:
     }
   }
 
+  // A failing term is named by its key, since the panel shows one message for
+  // the whole template.
+  json processDynamicTerm(const std::string& key, const json& value, const json& inputData)
+  {
+    try
+    {
+      return processDynamicValue(value, inputData);
+    }
+    catch (const std::exception& e)
+    {
+      throw std::runtime_error(key + ": " + e.what());
+    }
+  }
+
   // The value behind a key marked dynamic with "=". Inja markers keep their
   // meaning; everything else is an expression over `params`.
   json processDynamicValue(const json& value, const json& inputData)
@@ -319,6 +361,9 @@ private:
     m_template = templateNode.is_null() ? json::object() : templateNode;
     m_expressions.clear();
     sendNotification(json{{"template", m_template}});
+    // An error was about the template it replaces; the next run tells about
+    // this one.
+    reportError("");
   }
 
   void updateSensingMode(bool isActive)
@@ -410,6 +455,8 @@ private:
   std::string m_mode = "replace";
   std::string m_arrayMode = "array";
   bool m_sensingMode = false;
+  // Why the last mapping failed; empty when it did not.
+  std::string m_error;
   std::map<std::string, expression::Expression> m_expressions;
 };
 

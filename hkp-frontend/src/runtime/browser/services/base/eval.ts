@@ -168,7 +168,7 @@ export async function evalExpression(
   caller?: InstanceId,
 ) {
   if (ast === "syntax-error") {
-    throw new Error("evalExpression with syntax error");
+    throw new Error("the expression does not parse");
   }
 
   const processRuntime =
