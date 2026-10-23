@@ -19,7 +19,7 @@ import {
   useTheme,
   useThemeControl,
 } from "hkp-frontend/src/ui-components/ThemeContext";
-import ServiceOutputPlug, { rememberOutput } from "./ServiceOutputPlug";
+import ServiceOutputPlug, { FlowRecord, rememberFlow } from "./ServiceOutputPlug";
 
 import DragSource from "hkp-frontend/src/components/DragSource";
 import {
@@ -68,9 +68,11 @@ export default function ServiceFrame({
   const [bypass, setBypass] = useState(
     service?.bypass ?? service?.state?.bypass,
   );
-  // What the service reported, newest first, for the Flow Inspector. Kept
-  // here, where each output arrives, so a burst of them is kept whole.
-  const [outputHistory, setOutputHistory] = useState<any[]>([]);
+  // What the service was called with and what it reported, newest first, for
+  // the Flow Inspector. Kept here, where each value arrives, so a burst of
+  // them is kept whole.
+  const [inputHistory, setInputHistory] = useState<FlowRecord[]>([]);
+  const [outputHistory, setOutputHistory] = useState<FlowRecord[]>([]);
 
   const [signalOutput, setSignalOutput] = useState(false);
   const [serviceIsProcessing, setServiceIsProcessing] = useState(false);
@@ -115,6 +117,12 @@ export default function ServiceFrame({
             processingOffTimerRef.current = null;
           }
           setServiceIsProcessing(true);
+          // What it was called with. A service emitting on its own was called
+          // with nothing (null), and hkp-rt says "<undefined>" for a call that
+          // carried no value: neither is an input to keep.
+          if (data != null && data !== "<undefined>") {
+            setInputHistory((history) => rememberFlow(history, data));
+          }
           return;
         case "call-process-finished":
           processingOffTimerRef.current = setTimeout(
@@ -122,7 +130,7 @@ export default function ServiceFrame({
             800,
           );
           if (data !== null) {
-            setOutputHistory((history) => rememberOutput(history, data));
+            setOutputHistory((history) => rememberFlow(history, data));
             setSignalOutput(true);
             setTimeout(() => setSignalOutput(false), 350);
           }
@@ -376,8 +384,16 @@ export default function ServiceFrame({
   const plug = (
     <ServiceOutputPlug
       isActive={signalOutput}
-      history={outputHistory}
-      onClearHistory={() => setOutputHistory([])}
+      inputHistory={inputHistory}
+      outputHistory={outputHistory}
+      onClearHistory={(side) =>
+        side === "input" ? setInputHistory([]) : setOutputHistory([])
+      }
+      onRerun={
+        service.app?.rerun
+          ? (input: any) => service.app.rerun!(service, input)
+          : undefined
+      }
       onInject={onInject}
       offsetTop={plugSlot ? 0 : undefined}
     />

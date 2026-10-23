@@ -138,6 +138,9 @@ public:
 
 private:
   ServiceList::const_iterator findServiceById(const std::string& id) const;
+  // Calls `svc` the way the runtime does, between the two lifecycle reports
+  // a frame shows its input and output by. True when the push goes on.
+  bool callService(Service& svc, Data& data);
   void processScheduled();
 
   RuntimeHost& m_parent;

@@ -139,6 +139,17 @@ public:
       }));
   }
 
+  // What the service itself said, leaving out the lifecycle pair a pipeline
+  // reports each of its calls with ("__internal").
+  size_t ownNotificationsFrom(const std::string& sender) const {
+    return static_cast<size_t>(std::count_if(
+      sent.cbegin(), sent.cend(), [&](const Sent& s) {
+        const auto j = getJSONFromData(s.data);
+        return s.sender == sender && s.purpose == MessagePurpose::NOTIFICATION &&
+               !(j && j->contains("__internal"));
+      }));
+  }
+
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override {
     REQUIRE(factory);
@@ -227,6 +238,53 @@ TEST_CASE("A scope can be entered at one of its services",
   REQUIRE(skipped->callCount == 0);
 }
 
+TEST_CASE("A nested service's calls are reported with what it received and produced",
+          "[services][sub-service][address]") {
+  // The bracket a frame shows a service's input and output by: the same pair
+  // the runtime sends for its own services, under the nested address.
+  MockHost host;
+  host.factory = makeFactory();
+
+  auto outer = std::make_shared<SubService>("outer");
+  host.addService(outer);
+  outer->configure(json{{"pipeline", json::array({
+    entry("mark", "mark-1"),
+    entry("sub-service", "inner", json{{"pipeline", json::array({
+      entry("witness", "witness-2")
+    })}})
+  })}});
+  host.sent.clear();
+
+  outer->startProcess(json{{"go", 1}});
+
+  auto bracket = [&](const std::string& sender) {
+    std::vector<json> reports;
+    for (const auto& s : host.sent)
+    {
+      auto j = getJSONFromData(s.data);
+      if (s.sender == sender && s.purpose == MessagePurpose::NOTIFICATION && j &&
+          j->contains("__internal"))
+      {
+        reports.push_back((*j)["__internal"]);
+      }
+    }
+    return reports;
+  };
+
+  const auto mark = bracket("outer.mark-1");
+  REQUIRE(mark.size() == 2);
+  REQUIRE(mark[0] == json{{"state", "call-process"}, {"data", {{"go", 1}}}});
+  REQUIRE(mark[1]["state"] == "call-process-finished");
+  REQUIRE(mark[1]["data"]["mark"] == true);
+
+  // Two levels down, under the whole path.
+  const auto witness = bracket("outer.inner.witness-2");
+  REQUIRE(witness.size() == 2);
+  REQUIRE(witness[0]["state"] == "call-process");
+  REQUIRE(witness[0]["data"]["mark"] == true);
+  REQUIRE(witness[1]["state"] == "call-process-finished");
+}
+
 TEST_CASE("A nested service reports under its address at every depth",
           "[services][sub-service][address][notifications]") {
   MockHost host;
@@ -244,10 +302,10 @@ TEST_CASE("A nested service reports under its address at every depth",
   // being configured by populate() — and that report is prefixed too, which is
   // the point: there is no moment at which a nested service speaks under a
   // name the board cannot dial.
-  const auto before = host.notificationsFrom("outer.inner.witness-1");
+  const auto before = host.ownNotificationsFrom("outer.inner.witness-1");
   outer->process(json{{"go", 1}});
 
-  REQUIRE(host.notificationsFrom("outer.inner.witness-1") == before + 1);
+  REQUIRE(host.ownNotificationsFrom("outer.inner.witness-1") == before + 1);
   // Never under the bare instanceId, at any point in its life.
   REQUIRE(host.notificationsFrom("witness-1") == 0);
   REQUIRE(host.notificationsFrom("inner.witness-1") == 0);

@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, Pin, PinOff, Maximize, Minimize } from "lucide-react";
 
 import {
@@ -6,6 +7,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "hkp-frontend/src/ui-components/primitives/popover";
+import {
+  Dialog,
+  DialogContent,
+} from "hkp-frontend/src/ui-components/primitives/dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -19,17 +24,23 @@ import FlowWaveIcon from "./FlowWaveIcon";
 import "../settings/settings.css";
 import "./flow-inspector.css";
 
-import EditorDialog from "../EditorDialog";
+/** One value a service received or produced, and when (ms since epoch). */
+export type FlowRecord = { data: any; at: number };
 
-/** One output the service reported, and when it arrived (ms since epoch). */
-export type OutputRecord = { data: any; at: number };
+/** Which way through the service a value went. */
+export type FlowSide = "input" | "output";
 
 type Props = {
   isActive?: boolean;
-  /** The outputs the service reported, newest first; see `rememberOutput`. */
-  history: OutputRecord[];
-  onClearHistory: () => void;
+  /** What the service was called with and what it produced, newest first;
+   *  see `rememberFlow`. A service emitting on its own receives nothing. */
+  inputHistory: FlowRecord[];
+  outputHistory: FlowRecord[];
+  onClearHistory: (side: FlowSide) => void;
+  /** Carries an output on downstream, as if the service had produced it. */
   onInject: (data: any) => void;
+  /** Runs the service again with an input; absent where its runtime cannot. */
+  onRerun?: (input: any) => void;
   /**
    * How far the plug sits below the top of what it is drawn beside — a
    * service card's header by default; none beside a use's bar, which it is
@@ -47,6 +58,20 @@ const frameStyle: React.CSSProperties = {
   overflow: "hidden",
 };
 
+// The expanded inspector: the size of the other editor dialogs, the editor
+// taking what the history leaves.
+const expandedFrameStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  width: "min(1280px, 92vw)",
+  maxWidth: "none",
+  height: "min(900px, 86vh)",
+  padding: 0,
+  gap: 0,
+  overflow: "hidden",
+  borderRadius: 16,
+};
+
 const MAX_HISTORY = 10;
 
 // Typed Data objects (FloatRingBuffer etc.) carry a Symbol tag, which
@@ -60,45 +85,53 @@ function safeClone(data: any): any {
 }
 
 /**
- * `history` with `data` as its newest output, arrived `at`, keeping the last
+ * `history` with `data` as its newest value, arrived `at`, keeping the last
  * MAX_HISTORY.
  *
- * Meant for a functional state update where each output arrives: outputs
+ * Meant for a functional state update where each value arrives: values
  * reported in quick succession — an Iterator's items — are rendered once, so
  * a history built from a prop's changes would keep only the last of them.
  */
-export function rememberOutput(
-  history: OutputRecord[],
+export function rememberFlow(
+  history: FlowRecord[],
   data: any,
   at: number = Date.now(),
-): OutputRecord[] {
+): FlowRecord[] {
   return [{ data: safeClone(data), at }, ...history].slice(0, MAX_HISTORY);
 }
 
 export default function ServiceOutputPlug({
   isActive,
-  history,
+  inputHistory,
+  outputHistory,
   onClearHistory,
   onInject,
+  onRerun,
   offsetTop = 18,
 }: Props) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  // Which remembered output is shown, 0 being the latest; the popover and the
-  // expanded view share it.
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  // What the service produced, unless asked for what it received.
+  const [side, setSide] = useState<FlowSide>("output");
+  // Which remembered value is shown on each side, 0 being the latest; the
+  // popover and the expanded view share it.
+  const [selected, setSelected] = useState({ input: 0, output: 0 });
   // The history list starts folded away, and stays as it was left while the
   // service is on screen.
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
-  // A new output is the one shown.
+  // A new value is the one shown on its side.
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [history[0]]);
+    setSelected((s) => ({ ...s, input: 0 }));
+  }, [inputHistory[0]]);
+  useEffect(() => {
+    setSelected((s) => ({ ...s, output: 0 }));
+  }, [outputHistory[0]]);
 
-  const selected = history[selectedIndex]?.data;
+  const history = side === "input" ? inputHistory : outputHistory;
+  const selectedIndex = selected[side];
 
   const onOpen = () => setIsOpen(true);
 
@@ -110,22 +143,72 @@ export default function ServiceOutputPlug({
   const onSticky = () => setIsSticky(!isSticky);
   const onMaximize = () => setIsFullscreen(true);
 
+  const sideSwitch = (
+    <div className="hkp-flow-sides" role="group" aria-label="Side">
+      {(["input", "output"] as const).map((each) => (
+        <button
+          key={each}
+          type="button"
+          aria-pressed={side === each}
+          onClick={() => setSide(each)}
+        >
+          {each === "input" ? "Input" : "Output"}
+        </button>
+      ))}
+    </div>
+  );
+
+  // The same inspector in the popover and expanded: the history, the shown
+  // value and what can be done with it.
+  const inspector = (
+    <FlowInspectorPopup
+      key={side}
+      side={side}
+      history={history}
+      selectedIndex={selectedIndex}
+      onSelectIndex={(index) => setSelected((s) => ({ ...s, [side]: index }))}
+      onRun={side === "input" ? onRerun : onInject}
+      onClearHistory={() => onClearHistory(side)}
+      historyExpanded={historyExpanded}
+      onToggleHistory={() => setHistoryExpanded((expanded) => !expanded)}
+    />
+  );
+
   if (isFullscreen) {
+    // Room in the header for the buttons the dialog draws at its right.
+    const headerPaddingRight = 56 + 32;
     return (
-      <EditorDialog
-        title="Flow Inspector"
-        isOpen={true}
-        value={selected}
-        additionalHeaderButtons={[
-          <ToolButton
-            label="Back to popover"
-            onClick={() => setIsFullscreen(false)}
+      <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent
+          className="hkp-set hkp-set-dialog"
+          style={expandedFrameStyle}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          additionalHeaderButtons={[
+            <ToolButton
+              key="minimize"
+              label="Back to popover"
+              onClick={() => setIsFullscreen(false)}
+            >
+              <Minimize size={16} />
+            </ToolButton>,
+          ]}
+        >
+          <div
+            className="hkp-flow-header"
+            style={{ paddingRight: headerPaddingRight }}
           >
-            <Minimize size={16} />
-          </ToolButton>,
-        ]}
-        onClose={onClose}
-      />
+            <DialogPrimitive.Title className="hkp-set-pane-title hkp-flow-title">
+              Flow Inspector
+            </DialogPrimitive.Title>
+            <DialogPrimitive.Description className="sr-only">
+              What the service received and produced
+            </DialogPrimitive.Description>
+            {sideSwitch}
+          </div>
+          <div className="hkp-flow-fill">{inspector}</div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -139,11 +222,15 @@ export default function ServiceOutputPlug({
           <PopoverTrigger asChild>
             <button
               type="button"
-              aria-label="Inspect output"
+              aria-label="Inspect input and output"
               style={{
                 marginTop: offsetTop,
                 marginLeft: 4,
-                zIndex: 1,
+                // Above the drop zone a pipeline lays along each service's
+                // right edge (ServiceWithDropBars, z-index 20), which would
+                // otherwise take the clicks on the plug's last third.
+                position: "relative",
+                zIndex: 21,
               }}
               onClick={onOpen}
             >
@@ -155,13 +242,19 @@ export default function ServiceOutputPlug({
           </PopoverTrigger>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem disabled={!history[0]?.data}>Rerun</ContextMenuItem>
+          <ContextMenuItem
+            disabled={!onRerun || inputHistory.length === 0}
+            onSelect={() => onRerun?.(inputHistory[0].data)}
+          >
+            Rerun with the last input
+          </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
 
       <PopoverContent className="hkp-set" style={frameStyle}>
         <div className="hkp-flow-header">
           <h2 className="hkp-set-pane-title hkp-flow-title">Flow Inspector</h2>
+          {sideSwitch}
           <div className="hkp-flow-tools">
             <ToolButton label="Expand" onClick={onMaximize}>
               <Maximize size={15} />
@@ -179,15 +272,7 @@ export default function ServiceOutputPlug({
           </div>
         </div>
 
-        <FlowInspectorPopup
-          history={history}
-          selectedIndex={selectedIndex}
-          onSelectIndex={setSelectedIndex}
-          onInject={onInject}
-          onClearHistory={onClearHistory}
-          historyExpanded={historyExpanded}
-          onToggleHistory={() => setHistoryExpanded((expanded) => !expanded)}
-        />
+        {inspector}
       </PopoverContent>
     </Popover>
   );

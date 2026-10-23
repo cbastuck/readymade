@@ -387,7 +387,7 @@ test.describe("a block from the library", () => {
     // hidden panel's plug is drawn.
     const plug = uses(page, "ntfy-notification")
       .first()
-      .getByRole("button", { name: "Inspect output" });
+      .getByRole("button", { name: "Inspect input and output" });
     await expect(plug).toBeVisible();
     if (process.env.HKP_E2E_SCREENSHOT) {
       await page.screenshot({ path: process.env.HKP_E2E_SCREENSHOT });

@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Copy,
   Eraser,
+  RotateCcw,
   UndoDot,
 } from "lucide-react";
 
@@ -13,16 +14,23 @@ import {
   SettingsButton,
   SettingsSection,
 } from "hkp-frontend/src/ui-components/settings/kit";
-import type { OutputRecord } from "./ServiceOutputPlug";
+import type { FlowRecord, FlowSide } from "./ServiceOutputPlug";
 import "./flow-inspector.css";
 
 type Props = {
-  history: OutputRecord[];
+  /** Which way through the service the shown values went. */
+  side: FlowSide;
+  history: FlowRecord[];
   /** The shown entry of `history`, 0 being the latest. */
   selectedIndex: number;
   onSelectIndex: (index: number) => void;
-  onInject: (data: any) => void;
-  /** Forgets the remembered outputs; the next one starts a new history. */
+  /**
+   * What the footer's main action does with the shown value: an output is
+   * carried on downstream (Inject), an input runs the service again (Rerun).
+   * Absent where that cannot be done, which disables it.
+   */
+  onRun?: (data: any) => void;
+  /** Forgets the remembered values; the next one starts a new history. */
   onClearHistory: () => void;
   /** Whether the history list is shown, or only its heading. */
   historyExpanded: boolean;
@@ -32,10 +40,11 @@ type Props = {
 /** The body and footer of the Flow Inspector; the frame and header are the
  *  plug's (ServiceOutputPlug), inside an element carrying `hkp-set`. */
 export default function FlowInspectorPopup({
+  side,
   history,
   selectedIndex,
   onSelectIndex,
-  onInject,
+  onRun,
   onClearHistory,
   historyExpanded,
   onToggleHistory,
@@ -49,8 +58,11 @@ export default function FlowInspectorPopup({
   }, [history[0]]);
 
   const selectedData = history[selectedIndex]?.data;
+  // Nothing selected — a cleared or empty history — is an empty editor: the
+  // editor keeps its text when handed no value, which would leave the last
+  // one standing with nothing left to inject.
   const dataAsString = useMemo(
-    () => JSON.stringify(selectedData, null, 2),
+    () => JSON.stringify(selectedData, null, 2) ?? "",
     [selectedData],
   );
   const previews = useMemo(
@@ -91,16 +103,19 @@ export default function FlowInspectorPopup({
     }
   };
 
-  const onInjectInternal = () => {
+  const onRunInternal = () => {
+    if (!onRun) {
+      return;
+    }
     if (!isDirty) {
-      onInject(selectedData);
+      onRun(selectedData);
     } else {
       const buffer = editor.current.getValue();
       try {
-        onInject(JSON.parse(buffer));
+        onRun(JSON.parse(buffer));
       } catch (err) {
-        console.error("FlowInspectorPopup.onInjectInternal", err);
-        onInject(buffer);
+        console.error("FlowInspectorPopup.onRunInternal", err);
+        onRun(buffer);
       }
     }
   };
@@ -169,8 +184,15 @@ export default function FlowInspectorPopup({
             )}
           </section>
         )}
+        {history.length === 0 && (
+          <p className="hkp-set-hint">
+            {side === "input"
+              ? "Nothing received yet. A service that emits on its own — a Timer, an arriving message — receives nothing."
+              : "Nothing produced yet."}
+          </p>
+        )}
         <SettingsSection
-          label="Output"
+          label={side === "input" ? "Input" : "Output"}
           action={
             isDirty && (
               <span className="hkp-flow-edited">
@@ -204,11 +226,16 @@ export default function FlowInspectorPopup({
         </SettingsButton>
         <SettingsButton
           variant="primary"
-          disabled={!selectedData && !isDirty}
-          onClick={onInjectInternal}
+          disabled={!onRun || (!selectedData && !isDirty)}
+          title={
+            side === "input"
+              ? "Run this service again with this input"
+              : "Carry this output on downstream"
+          }
+          onClick={onRunInternal}
         >
-          <BugPlay size={14} />
-          Inject
+          {side === "input" ? <RotateCcw size={14} /> : <BugPlay size={14} />}
+          {side === "input" ? "Rerun" : "Inject"}
         </SettingsButton>
       </div>
     </>

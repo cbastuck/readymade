@@ -6,12 +6,56 @@ import {
   ServiceInstance,
 } from "hkp-frontend/src/types";
 import RuntimeRestScope from "./RuntimeRestScope";
+import {
+  ADDRESS_SEPARATOR,
+  entryName,
+  findInPipeline,
+  resolveNestedState,
+  splitAddress,
+} from "../board/address";
 import { ReactElement } from "react";
 import NotificationTargets from "../NotificationsTargets";
 
 export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
+  /**
+   * `next` for a service inside a scope: the service after it in its own
+   * pipeline runs, started at its address. One that ends its pipeline hands
+   * the value on as that pipeline's answer — after the service holding it, the
+   * way a runtime carries a nested pipeline's push out to its owner.
+   */
+  const nextInScope = (segments: string[], result: any): void => {
+    const owner = scope.services.find((s) => s.uuid === segments[0]);
+    const holder = resolveNestedState(owner?.state, segments.slice(1, -1));
+    const found = findInPipeline(holder, segments[segments.length - 1]);
+    if (!owner || !found) {
+      console.warn(
+        `RuntimeRestApp.next: ${segments.join(ADDRESS_SEPARATOR)} is not in runtime ${scope.descriptor.id}`,
+      );
+      return;
+    }
+
+    const successor = entryName(found.pipeline[found.index + 1]);
+    const outer = segments.slice(0, -1);
+    if (successor) {
+      scope
+        .getApi()
+        .processService(
+          scope,
+          { uuid: [...outer, successor].join(ADDRESS_SEPARATOR) },
+          result,
+          null,
+        )
+        .catch((err) => console.error("RuntimeRestApp.next", err));
+      return;
+    }
+    app.next(
+      { uuid: outer[outer.length - 1], address: outer.join(ADDRESS_SEPARATOR) },
+      result,
+    );
+  };
+
   const notificationTargets = new NotificationTargets();
-  return {
+  const app: AppImpl = {
     getAuthenticatedUser: () => scope.authenticatedUser,
     // A remote runtime records its own entries and carries them to the board's
     // coordinator over its own connection; this side only proxies a view of it,
@@ -43,6 +87,12 @@ export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
         return;
       }
 
+      const segments = splitAddress(svc.address ?? svc.uuid);
+      if (segments.length > 1) {
+        nextInScope(segments, result);
+        return;
+      }
+
       const position = scope.services.findIndex((s) => s.uuid === svc.uuid);
       if (position === -1) {
         console.warn(
@@ -62,6 +112,19 @@ export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
       api.processService(scope, successor, result, null).catch((err) => {
         console.error("RuntimeRestApp.next", err);
       });
+    },
+    /**
+     * Runs `svc` and what follows it, on its host. A nested service is
+     * started at its address — the path through the services containing it —
+     * which every runtime server resolves to the pipeline that holds it.
+     */
+    rerun: (svc: InstanceId, input: any): void => {
+      scope
+        .getApi()
+        .processService(scope, { uuid: svc.address ?? svc.uuid }, input, null)
+        .catch((err) => {
+          console.error("RuntimeRestApp.rerun", err);
+        });
     },
     // Services do not execute in this proxy app; keep the interface total for
     // panels compiled against AppImpl.
@@ -111,4 +174,5 @@ export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
     getRuntimeVariable: () => ({}),
     setRuntimeVariable: (_key: string, _value: any) => {},
   };
+  return app;
 }

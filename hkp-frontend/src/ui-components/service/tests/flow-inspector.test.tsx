@@ -2,29 +2,61 @@ import React, { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 
+// The editor shows what it is handed, and keeps its text when handed none —
+// as the real one does (shared/Editor's setValue).
+vi.mock("hkp-frontend/src/components/shared/Editor", async () => {
+  const React = await import("react");
+  return {
+    default: React.forwardRef(function Editor(
+      { value }: { value?: string },
+      ref: React.Ref<unknown>,
+    ) {
+      const [text, setText] = React.useState(value ?? "");
+      React.useEffect(() => {
+        if (value !== undefined) {
+          setText(value);
+        }
+      }, [value]);
+      React.useImperativeHandle(ref, () => ({ getValue: () => text, setValue: setText }));
+      return React.createElement("pre", { "data-testid": "editor" }, text);
+    }),
+  };
+});
+
 import ServiceOutputPlug, {
-  OutputRecord,
-  rememberOutput,
+  FlowRecord,
+  FlowSide,
+  rememberFlow,
 } from "../ServiceOutputPlug";
 
 /**
- * The Flow Inspector's history, kept the way ServiceFrame keeps it: added to
- * where each output arrives, through a functional state update.
+ * The Flow Inspector's histories, kept the way ServiceFrame keeps them: added
+ * to where each value arrives, through a functional state update.
  */
 let report: (data: unknown, at?: number) => void = () => {};
+let receive: (data: unknown, at?: number) => void = () => {};
+const onInject = vi.fn();
+const onRerun = vi.fn();
 
-function Frame() {
-  const [history, setHistory] = useState<OutputRecord[]>([]);
-  report = (data, at) => setHistory((prev) => rememberOutput(prev, data, at));
+function Frame({ canRerun = true }: { canRerun?: boolean }) {
+  const [inputs, setInputs] = useState<FlowRecord[]>([]);
+  const [outputs, setOutputs] = useState<FlowRecord[]>([]);
+  report = (data, at) => setOutputs((prev) => rememberFlow(prev, data, at));
+  receive = (data, at) => setInputs((prev) => rememberFlow(prev, data, at));
   return React.createElement(ServiceOutputPlug, {
-    history,
-    onClearHistory: () => setHistory([]),
-    onInject: vi.fn(),
+    inputHistory: inputs,
+    outputHistory: outputs,
+    onClearHistory: (side: FlowSide) =>
+      side === "input" ? setInputs([]) : setOutputs([]),
+    onInject,
+    onRerun: canRerun ? onRerun : undefined,
   });
 }
 
 function open() {
-  fireEvent.click(screen.getByRole("button", { name: "Inspect output" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Inspect input and output" }),
+  );
 }
 
 /** Opens the inspector with its history list unfolded. */
@@ -108,6 +140,79 @@ describe("Flow Inspector", () => {
     expect(entries()).toHaveLength(0);
   });
 
+  it("shows what the service received on the Input side, with Rerun", () => {
+    onRerun.mockClear();
+    render(React.createElement(Frame));
+    act(() => {
+      receive({ id: 1 });
+      receive({ id: 2 });
+      report({ out: 2 });
+    });
+    open();
+    fireEvent.click(screen.getByRole("button", { name: /History/ }));
+    expect(entries()).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Input" }));
+    expect(entries()).toHaveLength(2);
+    expect(entries()[0].textContent).toContain('{"id":2}');
+    expect(screen.queryByRole("button", { name: /Inject/ })).toBeNull();
+
+    fireEvent.click(entries()[1]);
+    fireEvent.click(screen.getByRole("button", { name: /Rerun/ }));
+    expect(onRerun).toHaveBeenCalledWith({ id: 1 });
+  });
+
+  it("injects an output downstream on the Output side", () => {
+    onInject.mockClear();
+    render(React.createElement(Frame));
+    act(() => report({ out: 1 }));
+    open();
+
+    fireEvent.click(screen.getByRole("button", { name: /Inject/ }));
+    expect(onInject).toHaveBeenCalledWith({ out: 1 });
+  });
+
+  it("says a service has received nothing, and offers no Rerun where it cannot", () => {
+    render(React.createElement(Frame, { canRerun: false }));
+    act(() => report({ tick: 1 }));
+    open();
+
+    fireEvent.click(screen.getByRole("button", { name: "Input" }));
+    expect(screen.getByText(/Nothing received yet/)).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: /Rerun/ }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
+  it("has the history and both sides when expanded, and keeps them going back", () => {
+    render(React.createElement(Frame));
+    act(() => {
+      receive({ id: 1 });
+      report({ out: 1 });
+      report({ out: 2 });
+    });
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Input" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("Flow Inspector");
+    expect(
+      screen.getByRole("button", { name: "Input" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(screen.getByRole("button", { name: /Rerun/ })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Output" }));
+    fireEvent.click(screen.getByRole("button", { name: /History/ }));
+    expect(entries()).toHaveLength(2);
+    fireEvent.click(entries()[1]);
+
+    // Back in the popover, which stayed open: the same side, history and choice.
+    fireEvent.click(screen.getByRole("button", { name: "Back to popover" }));
+    expect(screen.queryByRole("button", { name: "Back to popover" })).toBeNull();
+    expect(entries()[1].getAttribute("aria-selected")).toBe("true");
+  });
+
   it("clears the remembered outputs, and the next output starts a new history", () => {
     render(React.createElement(Frame));
     act(() => [1, 2, 3].forEach((n) => report({ n })));
@@ -115,8 +220,11 @@ describe("Flow Inspector", () => {
     openHistory();
     expect(entries()).toHaveLength(3);
 
+    expect(screen.getByTestId("editor").textContent).toContain('"n": 3');
     fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
     expect(entries()).toHaveLength(0);
+    // Nothing left to inject, so nothing left in the editor either.
+    expect(screen.getByTestId("editor").textContent).toBe("");
 
     act(() => [4, 5].forEach((n) => report({ n })));
     expect(entries()).toHaveLength(2);

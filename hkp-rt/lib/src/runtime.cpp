@@ -647,33 +647,7 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
 
 void Runtime::sendServiceLifecycleNotification(const Service& service, const std::string& state, const Data& data)
 {
-  json payloadData = nullptr;
-  if (auto j = getJSONFromData(data))
-  {
-    payloadData = *j;
-  }
-  else if (auto s = getStringFromData(data))
-  {
-    payloadData = *s;
-  }
-  else if (isNull(data))
-  {
-    payloadData = nullptr;
-  }
-  else if (isUndefined(data))
-  {
-    payloadData = "<undefined>";
-  }
-  else
-  {
-    // Keep lifecycle messages JSON-serializable for the frontend.
-    payloadData = stringify(data);
-  }
-
-  sendData(
-    json{{"__internal", json{{"state", state}, {"data", payloadData}}}},
-    MessagePurpose::NOTIFICATION,
-    service.getId());
+  sendData(lifecycleNotification(state, data), MessagePurpose::NOTIFICATION, service.getId());
 }
 
 void Runtime::post(std::function<void()> fn)

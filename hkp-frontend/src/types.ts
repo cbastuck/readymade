@@ -412,6 +412,13 @@ export type AppImpl = {
     options?: NextOptions,
   ) => void;
   /**
+   * Runs `svc` again with `input` — the flow inspector rerunning an input it
+   * captured, or one edited by hand — and carries its output on as the
+   * pipeline would: `svc` and everything after it run, nothing before it.
+   * Absent where a runtime cannot start a run at one of its services.
+   */
+  rerun?: (svc: InstanceId, input: any) => void;
+  /**
    * Capture the current run for one late answer. Calling the returned function
    * exactly once resumes after `svc`; until then the original pass reports no
    * result. Standing callbacks and subscriptions must use `next` instead.

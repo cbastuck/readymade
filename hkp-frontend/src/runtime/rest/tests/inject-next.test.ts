@@ -82,3 +82,90 @@ describe("RuntimeRestApp.next", () => {
     );
   });
 });
+
+/**
+ * `app.rerun` — the flow inspector's Rerun on the Input side: the service
+ * itself runs again with the input, and what follows it after.
+ */
+describe("RuntimeRestApp.rerun", () => {
+  it("starts the run at the service itself", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(ok);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const scope = makeScope();
+    scope.app.rerun!({ uuid: "extract" }, { prompt: "42" });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      "http://127.0.0.1:8080/runtimes/process/services/extract/process",
+    );
+    expect(JSON.parse(init.body)).toEqual({ prompt: "42" });
+  });
+
+  it("starts a nested service at its address", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(ok);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const scope = makeScope();
+    scope.app.rerun!({ uuid: "first", address: "each.first" }, { id: 1 });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "http://127.0.0.1:8080/runtimes/process/services/each.first/process",
+    );
+  });
+});
+
+/**
+ * A service inside a scope — the flow inspector's Inject on a nested frame —
+ * carries on in its own pipeline, not from the head of the runtime.
+ */
+describe("RuntimeRestApp.next inside a scope", () => {
+  function scopeWithIterator() {
+    const scope = new RuntimeRestScope(runtime, "", null);
+    scope.services = [
+      {
+        uuid: "each",
+        serviceId: "iterator",
+        serviceName: "Each",
+        state: {
+          pipeline: [
+            { instanceId: "first", serviceId: "monitor", state: {} },
+            { instanceId: "second", serviceId: "map", state: {} },
+          ],
+        },
+      },
+      { uuid: "result", serviceId: "monitor", serviceName: "Result" },
+    ] as Array<ServiceDescriptor>;
+    scope.onResult = vi.fn();
+    return scope;
+  }
+
+  it("runs the service after it in its pipeline, at that service's address", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(ok);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const scope = scopeWithIterator();
+    scope.app.next({ uuid: "first", address: "each.first" }, { id: 1 });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "http://127.0.0.1:8080/runtimes/process/services/each.second/process",
+    );
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ id: 1 });
+  });
+
+  it("carries on after the scope from the last service of its pipeline", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(ok);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const scope = scopeWithIterator();
+    scope.app.next({ uuid: "second", address: "each.second" }, { id: 1 });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "http://127.0.0.1:8080/runtimes/process/services/result/process",
+    );
+  });
+});

@@ -84,6 +84,13 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     defer: (svc: InstanceId) =>
       captureAnswer(svc, scope.contextOf(svc) ?? boardRun()),
 
+    // Somebody at the inspector asked for it, so it is their run; and the
+    // service itself is called, so it reports its input and output as any
+    // call does.
+    rerun: (svc: InstanceId, input: any) => {
+      void scope.next(svc, input, personRun(scope.signedInUser()), false);
+    },
+
     serviceForUserInterface: (service: ServiceInstance) => {
       const known = interactiveServices.get(service);
       if (known) {
