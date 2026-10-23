@@ -40,7 +40,7 @@ that also decided names would have to be told about both.
 is an optional extra on hkp-python:
 
 ```
-pip install "hkp-python[mp3]"
+uv sync --extra mp3    # in hkp-python
 ```
 
 and compiled into hkp-rt with LAME (`HKP_MP3_ENABLED`, on for macOS builds). A

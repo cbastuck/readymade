@@ -54,7 +54,7 @@ The Python runtime synthesizes with Kokoro-82M via
 are an optional extra:
 
 ```
-pip install "hkp-python[tts]"
+uv sync --extra tts    # in hkp-python
 ```
 
 Model files (~310 MB ONNX + ~27 MB voices) download lazily on first use into
