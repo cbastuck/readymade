@@ -20,6 +20,38 @@ class Service;
 class SubRuntime;
 struct ProcessContext;
 
+// What a service's call is reported with — `{"__internal": {"state", "data"}}`
+// with state "call-process" (and the input) or "call-process-finished" (and
+// the output) — kept JSON-serialisable for the frontend: JSON and text as they
+// are, nothing as null, an undefined input as "<undefined>", anything else as
+// its stringified form. One spelling for a runtime and a pipeline nested in
+// it, so the flow inspector reads both alike.
+inline json lifecycleNotification(const std::string& state, const Data& data)
+{
+  json payloadData = nullptr;
+  if (auto j = getJSONFromData(data))
+  {
+    payloadData = *j;
+  }
+  else if (auto s = getStringFromData(data))
+  {
+    payloadData = *s;
+  }
+  else if (isNull(data))
+  {
+    payloadData = nullptr;
+  }
+  else if (isUndefined(data))
+  {
+    payloadData = "<undefined>";
+  }
+  else
+  {
+    payloadData = stringify(data);
+  }
+  return json{{"__internal", json{{"state", state}, {"data", payloadData}}}};
+}
+
 // RuntimeHost — abstract interface through which a Service interacts with its
 // containing runtime.  Both Runtime (the top-level pipeline) and SubRuntime
 // (a nested pipeline) implement this interface, enabling unlimited nesting:

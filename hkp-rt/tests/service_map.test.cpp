@@ -215,3 +215,44 @@ TEST_CASE("Map reports its configuration", "[services][map]") {
   REQUIRE(state["template"] == json{{"x=", "params.x"}});
   REQUIRE(Map::version() == "v1");
 }
+
+// ── Errors: reported on the service, the flow carries on ────────────────────
+
+TEST_CASE("Map reports a failing term by its key and passes the input on", "[services][map]") {
+  Map map("map-1");
+  map.configure(json{{"template", json{{"key=", "nope(1)"}}}});
+
+  REQUIRE(mapped(map, json{{"x", 1}}) == json{{"x", 1}});
+  REQUIRE(map.getState()["error"] == "key: unknown function 'nope'");
+
+  SECTION("a good run clears it") {
+    // Only the branch taken is evaluated, so whether this fails is up to the input.
+    map.configure(json{{"template", json{{"key=", "params.ok ? 1 : nope(1)"}}}});
+    mapped(map, json::object());
+    REQUIRE(map.getState()["error"] == "key: unknown function 'nope'");
+
+    REQUIRE(mapped(map, json{{"ok", true}}) == json{{"key", 1}});
+    REQUIRE_FALSE(map.getState().contains("error"));
+  }
+
+  SECTION("a template change clears it") {
+    map.configure(json{{"template", json{{"key=", "params.x"}}}});
+    REQUIRE_FALSE(map.getState().contains("error"));
+  }
+}
+
+TEST_CASE("Map reports a failure in one array item", "[services][map]") {
+  Map map("map-1");
+  map.configure(json{{"template", json{{"v=", "nope(params.a)"}}}});
+
+  REQUIRE(mapped(map, json::array({json{{"a", 1}}})) == json::array({json{{"a", 1}}}));
+  REQUIRE(map.getState()["error"] == "v: unknown function 'nope'");
+}
+
+TEST_CASE("Map does not report an unknown name as an error", "[services][map]") {
+  Map map("map-1");
+  map.configure(json{{"template", json{{"key=", "valued"}}}});
+
+  REQUIRE(mapped(map, json::object()) == json{{"key", nullptr}});
+  REQUIRE_FALSE(map.getState().contains("error"));
+}

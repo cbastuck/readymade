@@ -25,6 +25,7 @@
 #include "../common/inja.h"
 #include "../common/string_util.h"  
 #include <secrets.h>
+#include "egress.h"
 #include "../runtime_host.h"
 
 namespace beast = boost::beast; // from <boost/beast.hpp>
@@ -162,7 +163,11 @@ json HttpClient::getState() const
 
 Data HttpClient::process(Data data)
 {
-  auto d = getJSONFromData(data);
+  // Nothing came down the pipeline, so the request is the configured one —
+  // what a run with no input is for, and what hkp-node and hkp-python send.
+  // The input only ever overrides what was configured, so nothing reads as an
+  // empty object.
+  auto d = isUndefined(data) ? std::optional<json>(json::object()) : getJSONFromData(data);
   if (!d || d->is_null())
   {
     std::cerr << "HTTPClient service: no JSON data provided" << std::endl;
@@ -267,7 +272,7 @@ Data HttpClient::process(Data data)
           throw beast::system_error{ec};
       }
       
-      auto const results = resolver.resolve(host, port); // Look up the domain name
+      auto const results = ::hkp::egress::resolve(resolver, host, port); // Look up the name, refusing what a hosted server may not reach
       beast::get_lowest_layer(stream).connect(results); // Make the connection on the IP address we get from a lookup
       stream.handshake(ssl::stream_base::client); // Perform the SSL handshake
 
@@ -282,7 +287,7 @@ Data HttpClient::process(Data data)
       net::io_context ioc;
       tcp::resolver resolver(ioc);
       beast::tcp_stream stream(ioc);
-      auto const results = resolver.resolve(host, port);
+      auto const results = ::hkp::egress::resolve(resolver, host, port);
       stream.connect(results);
       auto req = buildRequest(method, path, query, host, version, j);
 
@@ -304,6 +309,10 @@ Data HttpClient::process(Data data)
       auto err = beast::system_error{ec};
       std::cout << "HTTPClient service error during shutdown: " << err.what() << std::endl;;
     }
+
+    // Said on every outcome, as hkp-node and hkp-python do, so what the panel
+    // shows is this request's and not the last failure's still standing.
+    sendNotification(json{{"requesting", false}, {"status", res.result_int()}, {"error", ""}});
 
     std::string contentType = res.at(boost::beast::http::field::content_type);
     auto isJson = contentType.starts_with("application/json");
@@ -328,6 +337,9 @@ Data HttpClient::process(Data data)
   catch(std::exception const& e)
   {
       std::cerr << "HTTPClient service Error: " << e.what() << std::endl;
+      // A failed request passes nothing on, so the panel is the only place
+      // that says why — a destination a hosted server refuses, a timeout.
+      sendNotification(json{{"requesting", false}, {"status", 0}, {"error", e.what()}});
       return Null();
   }
 }

@@ -422,6 +422,8 @@ export class BrowserSubService extends ServiceBase<State> {
   // -------------------------------------------------------------------------
 
   private _teardownScope(): void {
+    // Ends what runs inside, not only the reference: see dispose.
+    void this._scope?.dispose();
     this._scope = null;
     this._scopeBuilding = null;
     this._scopeGeneration++;
@@ -429,12 +431,15 @@ export class BrowserSubService extends ServiceBase<State> {
 
   private _rebuildScope(): void {
     const generation = ++this._scopeGeneration;
+    void this._scope?.dispose();
     this._scope = null;
 
     this._scopeBuilding = (async () => {
       const scope = await this._buildScope();
       if (generation !== this._scopeGeneration) {
-        return; // superseded by a newer configure() call
+        // Superseded by a newer configure() call, or destroyed meanwhile.
+        void scope.dispose();
+        return;
       }
       this._scope = scope;
       // Let the UI know inner instances are now available for wiring.
@@ -491,6 +496,11 @@ export class BrowserSubService extends ServiceBase<State> {
     const innerNotify = scope.app.notify.bind(scope.app);
     scope.app.notify = (svc: any, notification: any) => {
       innerNotify(svc, notification);
+      // A scope being let go of says nothing more outside: the services that
+      // replace its own speak for themselves.
+      if (scope.isDisposing) {
+        return;
+      }
       // Outward under a scoped address rather than the bare instanceId: an
       // instanceId is unique only inside its own pipeline, so on its own it is
       // a name, not an address. `address` rather than `uuid` because the

@@ -46,6 +46,7 @@
 
 #ifdef __APPLE__
 #include "./shareRouter.h"
+#include "./filePanel.h"
 #endif
 
 // Opens a URL in the OS default browser without spawning a shell (no injection risk).
@@ -237,6 +238,9 @@ int real_main(int argc, char *argv[])
     return 1;
   }
   auto window  = windowResult.value();
+#ifdef __APPLE__
+  meanderEnableFileInputs();
+#endif
   auto webview = saucer::smartview::create({.window = window});
 
 #ifdef __APPLE__

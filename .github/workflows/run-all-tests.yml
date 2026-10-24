@@ -1,9 +1,10 @@
 name: Run Selected CI Tests
 
 on:
+  # After a merge to main, and by hand: working branches and PRs don't run
+  # it. Run it on a branch from Actions → Run workflow.
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
     inputs:
       e2e_failure_probe:
@@ -15,13 +16,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
-    # Keep the existing C++/unit lane on main and manual runs.
-    if: github.event_name != 'pull_request' && !inputs.e2e_failure_probe
+    if: ${{ !inputs.e2e_failure_probe }}
     runs-on: macos-latest
     timeout-minutes: 45
     env:
@@ -150,9 +150,7 @@ jobs:
 
   e2e:
     name: E2E browser
-    # Too slow for every PR push: main and manual runs only. Run it on a PR
-    # branch from Actions → Run workflow.
-    if: github.event_name != 'pull_request' && !inputs.e2e_failure_probe
+    if: ${{ !inputs.e2e_failure_probe }}
     runs-on: macos-latest
     timeout-minutes: 30
 

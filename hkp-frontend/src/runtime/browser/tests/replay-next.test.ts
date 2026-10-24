@@ -57,7 +57,14 @@ describe("app.next", () => {
     await scope.app.next(first, { tick: 1 });
 
     expect(outputReports(onNotification.mock.calls)).toEqual([
-      [{ __internal: { state: "call-process-finished", data: { tick: 1 } } }],
+      [
+        {
+          __internal: expect.objectContaining({
+            state: "call-process-finished",
+            data: { tick: 1 },
+          }),
+        },
+      ],
     ]);
   });
 

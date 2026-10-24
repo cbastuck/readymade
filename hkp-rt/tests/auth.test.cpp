@@ -72,22 +72,35 @@ struct TokenOpts
   std::string email = kEmail;
   bool emailVerified = true;
   bool expired = false;
+  bool withExpiry = true;
+  std::string subject = "auth0|abc123";
+  bool notYetValid = false;
 };
 
 std::string mintToken(const TokenOpts& opts)
 {
   const auto now = Clock::now();
-  return jwt::create<Traits>()
+  auto token = jwt::create<Traits>()
       .set_issuer(opts.issuer)
       .set_audience(opts.audience)
       .set_key_id(opts.kid)
       .set_issued_at(now - std::chrono::minutes(1))
-      .set_expires_at(opts.expired ? now - std::chrono::hours(1) : now + std::chrono::hours(1))
-      .set_subject("auth0|abc123")
       .set_payload_claim("email", jwt::basic_claim<Traits>(nlohmann::json(opts.email)))
       .set_payload_claim("email_verified",
-                         jwt::basic_claim<Traits>(nlohmann::json(opts.emailVerified)))
-      .sign(jwt::algorithm::rs256(kPublicKey, kPrivateKey, "", ""));
+                         jwt::basic_claim<Traits>(nlohmann::json(opts.emailVerified)));
+  if (opts.withExpiry)
+  {
+    token.set_expires_at(opts.expired ? now - std::chrono::hours(1) : now + std::chrono::hours(1));
+  }
+  if (!opts.subject.empty())
+  {
+    token.set_subject(opts.subject);
+  }
+  if (opts.notYetValid)
+  {
+    token.set_not_before(now + std::chrono::hours(1));
+  }
+  return token.sign(jwt::algorithm::rs256(kPublicKey, kPrivateKey, "", ""));
 }
 
 AuthConfig jwtConfig()
@@ -212,6 +225,50 @@ TEST_CASE("Expired token is rejected", "[auth]")
   TokenOpts opts;
   opts.expired = true;
   CHECK(auth.authorize(bearer(mintToken(opts))).status == AuthStatus::Unauthenticated);
+}
+
+TEST_CASE("A token without an expiry or a subject is rejected", "[auth]")
+{
+  auto auth = makeAuthenticator();
+  TokenOpts noExpiry;
+  noExpiry.withExpiry = false;
+  CHECK(auth.authorize(bearer(mintToken(noExpiry))).status == AuthStatus::Unauthenticated);
+  TokenOpts noSubject;
+  noSubject.subject = "";
+  CHECK(auth.authorize(bearer(mintToken(noSubject))).status == AuthStatus::Unauthenticated);
+}
+
+TEST_CASE("A token not yet valid is rejected", "[auth]")
+{
+  auto auth = makeAuthenticator();
+  TokenOpts opts;
+  opts.notYetValid = true;
+  CHECK(auth.authorize(bearer(mintToken(opts))).status == AuthStatus::Unauthenticated);
+}
+
+TEST_CASE("A token signed another way is rejected", "[auth]")
+{
+  auto auth = makeAuthenticator();
+  const auto now = Clock::now();
+  const auto hmac = jwt::create<Traits>()
+      .set_issuer(kIssuer)
+      .set_audience(kAudience)
+      .set_key_id(kKid)
+      .set_expires_at(now + std::chrono::hours(1))
+      .set_subject("auth0|abc123")
+      .set_payload_claim("email", jwt::basic_claim<Traits>(nlohmann::json(kEmail)))
+      .set_payload_claim("email_verified", jwt::basic_claim<Traits>(nlohmann::json(true)))
+      .sign(jwt::algorithm::hs256(kPublicKey));
+  CHECK(auth.authorize(bearer(hmac)).status == AuthStatus::Unauthenticated);
+}
+
+TEST_CASE("An issuer that names no audience accepts nothing", "[auth]")
+{
+  AuthConfig config = jwtConfig();
+  config.issuers.front().audiences.clear();
+  Authenticator auth(config);
+  auth.pinSigningKey(kIssuer, kKid, kPublicKey);
+  CHECK(auth.authorize(bearer(mintToken({}))).status == AuthStatus::Unauthenticated);
 }
 
 TEST_CASE("Tampered signature is rejected", "[auth]")

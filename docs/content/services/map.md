@@ -163,7 +163,15 @@ Sending `{ command: { action: "inject", params: { ... } } }` causes the Map to i
 
 ## Error Handling
 
-If expression evaluation fails, the Map logs the error to the console and returns the **original input unchanged** (identity pass-through).
+If expression evaluation fails, the Map returns the **original input unchanged** (identity pass-through), so the rest of the board keeps running, and reports why in its `error` property, naming the term that failed: `key: unknown function 'nope'`. The panel shows it under the mapping.
+
+The error is reported when it changes rather than on every run, and cleared — sent as `null` — by the next run that maps cleanly or by a change of template. In an array, the first failing item is the one reported. A facade can raise it as a toast:
+
+```json
+"notices": [{ "source": { "serviceUuid": "<map uuid>", "path": "error" }, "tone": "error" }]
+```
+
+What counts as a failure is a term that cannot be evaluated — a function that does not exist, an expression that does not parse, reading a member of nothing in the browser runtime. A name that is not in scope is not one: in hkp-rt it evaluates to `null`, in the browser to `undefined`.
 
 ---
 

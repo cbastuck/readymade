@@ -1,0 +1,84 @@
+{
+  "boardName": "Frame Limit Test",
+  "description": "Tests the coordinator's frame limit on a deployed board. A file picked in the browser is read as text and sent on to hkp-node, which reports only how many characters arrived — the report is small, so the only large frame is the one going from the browser to the coordinator. Needs the hkp-node kept under the name \"node\". Start hkp-node with HKP_COORDINATOR_MAX_FRAME_BYTES=1000000, deploy, and send a small file, then a 2 MB one: the small one arrives, the large one is dropped and logged as frame-dropped. Make the two files with:\n\nhead -c 75000 /dev/urandom | base64 > ~/Downloads/small-100kb.txt\nhead -c 1500000 /dev/urandom | base64 > ~/Downloads/large-2mb.txt",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "remote": "node",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "pick",
+        "serviceId": "hookup.to/service/file-source",
+        "serviceName": "The file"
+      }
+    ],
+    "node": [
+      {
+        "uuid": "measure",
+        "serviceId": "map",
+        "serviceName": "Measure",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "chars=": "params.length",
+            "at=": "formatNow('HH:mm:ss')",
+            "summary=": "concat(string(params.length), ' characters arrived at ', formatNow('HH:mm:ss'))"
+          }
+        }
+      },
+      {
+        "uuid": "report",
+        "serviceId": "monitor",
+        "serviceName": "Report",
+        "state": { "logToBoard": true }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "send",
+        "title": "Send a file to hkp-node",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Send a small file first to see the path works, then the 2 MB one. When a value is dropped, the line below keeps its last time; the board log shows frame-dropped.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "file-pick",
+              "label": "Choose a file",
+              "progressServiceUuid": "pick",
+              "action": { "serviceUuid": "pick" }
+            },
+            {
+              "type": "text",
+              "label": "Last arrival:",
+              "source": { "serviceUuid": "report", "path": "summary" },
+              "placeholder": "Nothing has arrived yet"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

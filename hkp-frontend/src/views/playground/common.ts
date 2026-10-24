@@ -1,8 +1,8 @@
 import { DragEvent } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
+  BoardDescriptor,
   PeerJsHostDescriptor,
-  PlaygroundState,
   RuntimeClass,
   SavedBoard,
   User,
@@ -80,7 +80,7 @@ export type LocalBoard = {
 
 export function restoreBoardFromLocalStorage(
   name: string,
-): PlaygroundState | null {
+): BoardDescriptor | null {
   const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
   const data = localStorage.getItem(storageName);
   if (data) {

@@ -158,6 +158,8 @@ export class FeedbackService extends ServiceBase<State> {
   }
 
   private _teardownScope(): void {
+    // Ends what runs inside, not only the reference: see dispose.
+    void this._scope?.dispose();
     this._scope = null;
     this._scopeBuilding = null;
     this._scopeGeneration++;
@@ -165,11 +167,13 @@ export class FeedbackService extends ServiceBase<State> {
 
   private _rebuildScope(): void {
     const generation = ++this._scopeGeneration;
+    void this._scope?.dispose();
     this._scope = null;
 
     this._scopeBuilding = (async () => {
       const scope = await this._buildScope();
       if (generation !== this._scopeGeneration) {
+        void scope.dispose();
         return;
       }
       this._scope = scope;
@@ -207,6 +211,10 @@ export class FeedbackService extends ServiceBase<State> {
     const innerNotify = scope.app.notify.bind(scope.app);
     scope.app.notify = (svc: any, notification: any) => {
       innerNotify(svc, notification);
+      // A scope being let go of says nothing more outside; see dispose.
+      if (scope.isDisposing) {
+        return;
+      }
       outerNotify(svc, notification);
     };
 

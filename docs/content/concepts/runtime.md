@@ -153,6 +153,7 @@ cannot forge:
 | any other `Origin` | refused |
 | no `Origin`, and `Sec-Fetch-Site: cross-site` | a page fetching the address as an image or a script; refused |
 | a `Host` that is a name the server was not given | a page that resolved its own name to this machine; refused |
+| `Forwarded`, `X-Forwarded-For` or `X-Real-IP` | a request a proxy passed on; refused (below) |
 
 What a server allows without being told is the origins Readymade's own apps
 run from and any page served from the machine itself, whatever its port. Every
@@ -161,6 +162,15 @@ server's end and nowhere else: `ALLOWED_ORIGINS` for hkp-node, hkp-python and a
 standalone hkp-rt, which replaces the default with exactly what it names; and
 **Settings → Access → Allowed websites** in the Readymade app, which adds to it
 and applies at once.
+
+**Behind a proxy, where a request comes from says nothing.** A reverse proxy
+on the same host — nginx, Caddy — makes every caller a loopback one, at a name
+the server knows. So a request that says a proxy passed it on is never let in
+for where it comes from: a server without auth refuses it, and hkp-rt's pass
+for loopback callers does not apply to it — it has to carry a token. A proxy
+that adds none of those headers cannot be told apart, which is why a loopback
+bind is a boundary only while nothing forwards to it: put a server behind a
+proxy only with authentication on.
 
 A refusal is a `403` with nothing in it a page can read. To the page that was
 refused it is indistinguishable from a server that is not running, and that is
@@ -177,6 +187,89 @@ another *program* on the same machine — or another account on it — is not a
 browser, states no origin and is let in: a loopback bind is a boundary against
 other machines and, with this, against web pages, not against the machine's own
 software.
+
+### Where a hosted server may connect
+
+The other direction. A board names destinations — an HTTP Client's URL, a feed,
+an asset, a mail server, a model's base URL — and the server dials them. On a
+person's own machine that is the point: a board talks to the printer, the NAS,
+a model on the LAN. On a server other people's boards run on it is not: that
+server's loopback, its private network and a cloud provider's metadata endpoint
+(`169.254.169.254`, which hands out the machine's credentials) are reachable
+from where it runs and are not a board's to reach.
+
+So a server is told it is hosted with **`HKP_EGRESS=public`**, the same in
+hkp-node, hkp-python and a standalone hkp-rt. A destination is then reached only
+when every address its name resolves to is a public internet address — never
+`127.0.0.0/8`, the private ranges (`10/8`, `172.16/12`, `192.168/16`), shared
+address space (`100.64/10`), link-local (`169.254/16`), the IPv6 equivalents, or
+an IPv6 address carrying one of those. Unset, nothing is refused; the desktop
+app's embedded runtime is never told otherwise.
+
+- **Judged on the address connected to**, not on the name a board wrote: a name
+  can be pointed anywhere, and repointed between being checked and being
+  dialled. Every redirect hop is judged the same way, and so is every spelling
+  of an address (`2130706433` is `127.0.0.1`).
+- **`HKP_EGRESS_ALLOW`** lists addresses or ranges reached anyway, an internal
+  model server for instance. Addresses, not names, for the same reason.
+- **A refusal says so** — "This server does not reach private addresses
+  (10.0.0.5)" — where it would otherwise be a timeout or a misleading hint.
+- **What the operator configured is not judged:** the link to a coordinator,
+  the token issuer's keys, a model downloaded from a fixed release address.
+
+The rule lives in one place per runtime (`hkp-node/src/egress.ts`,
+`hkp-python/src/hkp/egress.py`, `hkp-rt/lib/include/egress.h`), and each
+runtime's tests read its sources and fail on any other way of opening a
+connection, so a service added later cannot quietly go around it.
+
+On a machine you run, add the same rule in its **firewall** as a backstop: drop
+the hosted process's traffic to those ranges (by its user, with
+`iptables`/`nftables` owner matching, or as a container's egress policy). It
+covers what code cannot — a library opening a socket nobody listed. Mind what
+the server itself needs on the private network: another runtime's mount on the
+same host, the coordinator, a database. The code-level rule exempts those by
+where they come from; a firewall rule sees one process and has to be told.
+
+### What a token must carry
+
+Every server checks a token the same way (hkp-node `src/auth.ts`,
+hkp-python `hkp/auth.py`, hkp-rt `http/auth.cpp`, the website's `api/auth.php`):
+signed with RS256 by a key of the issuer it names, that issuer being
+`https://<AUTH0_DOMAIN>/`; addressed to one of the accepted audiences
+(`AUTH0_AUDIENCE`); carrying an expiry that has not passed and a subject; and
+not used before its `nbf`. Expiry and subject must be *there* — a check that
+only applied when they were present would accept a token without them. A minute
+of clock skew is allowed. On the desktop, an issuer listed in `settings.json`
+without audiences accepts nothing, rather than a token minted for any
+application of its tenant.
+
+### Opening a socket without the token in its address
+
+A browser cannot set a header on a WebSocket handshake, so a token that
+authenticated one would have to ride in the address — and an address is what
+proxies and access logs keep. So the browser buys a **ticket** first:
+`POST <server>/ws-tickets` with its token in the `Authorization` header, like
+any request, answered with a random value good for one socket, for 30 seconds.
+The socket is opened with `?ticket=` (`hkp-frontend/src/runtime/rest/wsTicket.ts`).
+A ticket remembers what checking the token found — who the caller is, and
+whether the allowlist lets them own — so a coordinator's bridge, which members
+not on the allowlist open too, is judged exactly as the token would have been.
+
+Every runtime server and coordinator issues them. `?access_token=` is still
+accepted from a client that predates tickets, and the browser falls back to it
+only for a server that has no `/ws-tickets` route.
+
+### What an expression may reach
+
+A Map's terms and a Filter's predicate are expressions a board wrote, evaluated
+inside the runtime — on a hosted server, inside a process everyone it lets in
+shares. The evaluator (hkp-node `src/expressionEval.ts`, and its twin in the
+browser runtime) is kept in the repository and changed like security code:
+an expression reads and calls what its scope hands it and nothing else. It has
+no assignment, a name is only one of the scope's own properties, and
+`constructor`, `prototype`, `__proto__` and every other `__` member are refused
+however they are reached, which closes the way from a value to the code behind
+it.
 
 ### Adding one to a board
 

@@ -1,28 +1,53 @@
-import { BugPlay, Check, Copy, UndoDot } from "lucide-react";
+import {
+  BugPlay,
+  Check,
+  ChevronRight,
+  Copy,
+  Eraser,
+  RotateCcw,
+  UndoDot,
+} from "lucide-react";
 
 import Editor from "hkp-frontend/src/components/shared/Editor";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   SettingsButton,
   SettingsSection,
 } from "hkp-frontend/src/ui-components/settings/kit";
+import type { FlowRecord, FlowSide } from "./ServiceOutputPlug";
 import "./flow-inspector.css";
 
 type Props = {
-  history: any[];
+  /** Which way through the service the shown values went. */
+  side: FlowSide;
+  history: FlowRecord[];
   /** The shown entry of `history`, 0 being the latest. */
   selectedIndex: number;
   onSelectIndex: (index: number) => void;
-  onInject: (data: any) => void;
+  /**
+   * What the footer's main action does with the shown value: an output is
+   * carried on downstream (Inject), an input runs the service again (Rerun).
+   * Absent where that cannot be done, which disables it.
+   */
+  onRun?: (data: any) => void;
+  /** Forgets the remembered values; the next one starts a new history. */
+  onClearHistory: () => void;
+  /** Whether the history list is shown, or only its heading. */
+  historyExpanded: boolean;
+  onToggleHistory: () => void;
 };
 
 /** The body and footer of the Flow Inspector; the frame and header are the
  *  plug's (ServiceOutputPlug), inside an element carrying `hkp-set`. */
 export default function FlowInspectorPopup({
+  side,
   history,
   selectedIndex,
   onSelectIndex,
-  onInject,
+  onRun,
+  onClearHistory,
+  historyExpanded,
+  onToggleHistory,
 }: Props) {
   const editor = useRef<any>(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -32,15 +57,33 @@ export default function FlowInspectorPopup({
     setIsDirty(false);
   }, [history[0]]);
 
-  const selectedData = history[selectedIndex];
+  const selectedData = history[selectedIndex]?.data;
+  // Nothing selected — a cleared or empty history — is an empty editor: the
+  // editor keeps its text when handed no value, which would leave the last
+  // one standing with nothing left to inject.
   const dataAsString = useMemo(
-    () => JSON.stringify(selectedData, null, 2),
+    () => JSON.stringify(selectedData, null, 2) ?? "",
     [selectedData],
+  );
+  const previews = useMemo(
+    () => history.map((record) => preview(record.data)),
+    [history],
   );
 
   const onSelect = (i: number) => {
     onSelectIndex(i);
     setIsDirty(false);
+  };
+
+  // Up and down walk the list, as in any list of choices.
+  const onHistoryKey = (event: KeyboardEvent) => {
+    const step =
+      event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+    const next = selectedIndex + step;
+    if (step && next >= 0 && next < history.length) {
+      event.preventDefault();
+      onSelect(next);
+    }
   };
 
   const onResetDirty = () => {
@@ -60,16 +103,19 @@ export default function FlowInspectorPopup({
     }
   };
 
-  const onInjectInternal = () => {
+  const onRunInternal = () => {
+    if (!onRun) {
+      return;
+    }
     if (!isDirty) {
-      onInject(selectedData);
+      onRun(selectedData);
     } else {
       const buffer = editor.current.getValue();
       try {
-        onInject(JSON.parse(buffer));
+        onRun(JSON.parse(buffer));
       } catch (err) {
-        console.error("FlowInspectorPopup.onInjectInternal", err);
-        onInject(buffer);
+        console.error("FlowInspectorPopup.onRunInternal", err);
+        onRun(buffer);
       }
     }
   };
@@ -77,26 +123,76 @@ export default function FlowInspectorPopup({
   return (
     <>
       <div className="hkp-flow-body">
-        {history.length > 1 && (
-          <SettingsSection label="History">
-            <div className="hkp-flow-history">
-              {history.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="hkp-flow-chip"
-                  aria-pressed={i === selectedIndex}
-                  title={i === 0 ? "Latest output" : `${i} outputs ago`}
-                  onClick={() => onSelect(i)}
-                >
-                  {i + 1}
-                </button>
-              ))}
+        {history.length > 0 && (
+          <section className="hkp-set-section">
+            <div className="hkp-set-section-head">
+              <button
+                type="button"
+                className="hkp-flow-toggle"
+                aria-expanded={historyExpanded}
+                onClick={onToggleHistory}
+              >
+                <ChevronRight size={13} className="hkp-flow-chevron" />
+                <span className="hkp-set-label">
+                  History · {history.length}
+                </span>
+                {!historyExpanded && (
+                  <span className="hkp-flow-latest">
+                    latest {timeOf(history[0].at)}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                className="hkp-set-icon-btn hkp-set-icon-btn--neutral"
+                aria-label="Clear history"
+                title="Clear history"
+                onClick={() => {
+                  onClearHistory();
+                  setIsDirty(false);
+                }}
+              >
+                <Eraser size={15} />
+              </button>
             </div>
-          </SettingsSection>
+            {historyExpanded && (
+              <div
+                className="hkp-flow-history"
+                role="listbox"
+                aria-label="History"
+                tabIndex={0}
+                onKeyDown={onHistoryKey}
+              >
+                {history.map((record, i) => (
+                  <div
+                    key={`${record.at}-${i}`}
+                    role="option"
+                    aria-selected={i === selectedIndex}
+                    className="hkp-flow-entry"
+                    title={new Date(record.at).toISOString()}
+                    onClick={() => onSelect(i)}
+                  >
+                    <span className="hkp-flow-entry-time">
+                      {timeOf(record.at)}
+                    </span>
+                    <span className="hkp-flow-entry-preview">
+                      {previews[i]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+        {history.length === 0 && (
+          <p className="hkp-set-hint">
+            {side === "input"
+              ? "Nothing received yet. A service that emits on its own — a Timer, an arriving message — receives nothing."
+              : "Nothing produced yet."}
+          </p>
         )}
         <SettingsSection
-          label="Output"
+          label={side === "input" ? "Input" : "Output"}
           action={
             isDirty && (
               <span className="hkp-flow-edited">
@@ -130,13 +226,42 @@ export default function FlowInspectorPopup({
         </SettingsButton>
         <SettingsButton
           variant="primary"
-          disabled={!selectedData && !isDirty}
-          onClick={onInjectInternal}
+          disabled={!onRun || (!selectedData && !isDirty)}
+          title={
+            side === "input"
+              ? "Run this service again with this input"
+              : "Carry this output on downstream"
+          }
+          onClick={onRunInternal}
         >
-          <BugPlay size={14} />
-          Inject
+          {side === "input" ? <RotateCcw size={14} /> : <BugPlay size={14} />}
+          {side === "input" ? "Rerun" : "Inject"}
         </SettingsButton>
       </div>
     </>
   );
+}
+
+/** When an output arrived, to the millisecond: a burst's items differ there. */
+function timeOf(at: number): string {
+  const date = new Date(at);
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}.${String(date.getMilliseconds()).padStart(3, "0")}`;
+}
+
+/** One line of what an output is; the editor shows the whole of it. */
+function preview(data: any): string {
+  let text: string | undefined;
+  try {
+    // A sample buffer is named by its size rather than spelled out.
+    text = JSON.stringify(data, (_key, value) =>
+      ArrayBuffer.isView(value)
+        ? `${value.constructor.name}(${(value as unknown as ArrayLike<unknown>).length ?? value.byteLength})`
+        : value,
+    );
+  } catch {
+    // Not serialisable; its plain text below says what it is.
+  }
+  text ??= String(data);
+  return text.length > 160 ? `${text.slice(0, 160)}…` : text;
 }

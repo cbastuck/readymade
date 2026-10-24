@@ -155,6 +155,8 @@ class IfService extends ServiceBase<State> {
   }
 
   private _teardownScope(): void {
+    // Ends what runs inside, not only the reference: see dispose.
+    void this._scope?.dispose();
     this._scope = null;
     this._scopeBuilding = null;
     this._scopeGeneration++;
@@ -166,11 +168,13 @@ class IfService extends ServiceBase<State> {
 
   private _rebuildScope(): void {
     const generation = ++this._scopeGeneration;
+    void this._scope?.dispose();
     this._scope = null;
 
     this._scopeBuilding = (async () => {
       const scope = await this._buildScope();
       if (generation !== this._scopeGeneration) {
+        void scope.dispose();
         return;
       }
       this._scope = scope;

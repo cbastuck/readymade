@@ -182,6 +182,8 @@ export class BrowserTracks extends ServiceBase<State> {
   }
 
   destroy(): void {
+    // Ends what runs inside, not only the references: see dispose.
+    this._scopes.forEach((scope) => void scope.dispose());
     this._scopes.clear();
     this._generation++;
     this._building = null;
@@ -296,6 +298,7 @@ export class BrowserTracks extends ServiceBase<State> {
 
   private _rebuild(): void {
     const generation = ++this._generation;
+    this._scopes.forEach((scope) => void scope.dispose());
     this._scopes.clear();
 
     this._building = (async () => {
@@ -307,7 +310,9 @@ export class BrowserTracks extends ServiceBase<State> {
         built.set(REDUCE, await this._buildScope(REDUCE, this.state.reduce));
       }
       if (generation !== this._generation) {
-        return; // superseded by a newer configure()
+        // Superseded by a newer configure().
+        built.forEach((scope) => void scope.dispose());
+        return;
       }
       this._scopes = built;
       this.app.notify(this as any, { __innerScopeReady: true });
@@ -352,6 +357,10 @@ export class BrowserTracks extends ServiceBase<State> {
     const innerNotify = scope.app.notify.bind(scope.app);
     scope.app.notify = (svc: any, notification: any) => {
       innerNotify(svc, notification);
+      // A scope being let go of says nothing more outside; see dispose.
+      if (scope.isDisposing) {
+        return;
+      }
       outerNotify(
         { ...svc, address: joinAddress(this.uuid, svc.address ?? svc.uuid) },
         notification,

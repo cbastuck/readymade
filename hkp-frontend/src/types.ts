@@ -324,7 +324,6 @@ const _actionTypes = [
   "clearBoard",
   "shareBoard",
   "saveBoard",
-  "toggleBoardSync",
   "showBoardSource",
   "createBoardLink",
   "playBoard",
@@ -411,6 +410,13 @@ export type AppImpl = {
     result: any,
     options?: NextOptions,
   ) => void;
+  /**
+   * Runs `svc` again with `input` — the flow inspector rerunning an input it
+   * captured, or one edited by hand — and carries its output on as the
+   * pipeline would: `svc` and everything after it run, nothing before it.
+   * Absent where a runtime cannot start a run at one of its services.
+   */
+  rerun?: (svc: InstanceId, input: any) => void;
   /**
    * Capture the current run for one late answer. Calling the returned function
    * exactly once resumes after `svc`; until then the original pass reports no
@@ -849,11 +855,6 @@ export function isBoardDescriptor(data: any): data is BoardDescriptor {
   );
 }
 
-export type PlaygroundState = BoardDescriptor & {
-  acceptedSyncSenders: Array<any>;
-  rejectedSyncSenders: Array<any>;
-};
-
 export type UsecaseDescriptor = {
   name: string;
   url: string;
@@ -881,9 +882,6 @@ export function isSavedBoard(board: any): board is SavedBoard {
     board.name !== undefined
   );
 }
-
-export type AcceptedSyncSenders = Array<any>;
-export type RejectedSyncSenders = Array<any>;
 
 export enum RemoteRuntimeMessageType {
   PONG = "pong",

@@ -29,6 +29,7 @@ import AssetViewToolbarButton from "../../assets/AssetViewToolbarButton";
 import { PlayProvider } from "../../core/play";
 import { FacadeViewProvider } from "../../facade/FacadeViewContext";
 import {
+  isBackgroundClick,
   SelectionProvider,
   useSelection,
 } from "../../selection/SelectionContext";
@@ -263,6 +264,14 @@ function BoardCanvas({
         }
       }}
       onDragLeave={() => setIsRtClassDragOver(false)}
+      // A click on the canvas's own background, between and around the
+      // runtimes, lets go of the selected runtime; a runtime's own clicks are
+      // its selection to make.
+      onClick={(ev) => {
+        if (isBackgroundClick(ev, "[data-runtime-frame]")) {
+          selection?.selectRuntime(null);
+        }
+      }}
       onDrop={async (ev) => {
         const data = ev.dataTransfer.getData(HKP_DND_RUNTIME_CLASS_TYPE);
         if (data) {

@@ -44,6 +44,9 @@ class Map extends ServiceBase<State> {
   _terms: { [key: string]: any } = {};
   _properties: { [key: string]: any } = {};
   _structuredTemplate: StructuredTemplateNode | undefined = undefined;
+  // Why the last mapping failed, or null when it did not. Reported, never
+  // saved: it says how the board is running, not how it is configured.
+  _error: string | null = null;
 
   constructor(
     app: AppInstance,
@@ -88,6 +91,9 @@ class Map extends ServiceBase<State> {
 
   updateTemplate(template: any) {
     this._structuredTemplate = undefined;
+    // An error was about the template it replaces; the next run tells about
+    // this one.
+    this.reportError(null);
 
     if (isStructuredTemplate(template)) {
       this.state.template = deepCopy(template);
@@ -130,7 +136,28 @@ class Map extends ServiceBase<State> {
     this.app.notify(this, { sensingMode: isActive });
   };
 
-  mapper = async (x: any) => {
+  // Sent when it changes, not on every run: a Map behind a fast timer would
+  // otherwise repeat the same message many times a second.
+  reportError(error: string | null) {
+    if (error === this._error) {
+      return;
+    }
+    this._error = error;
+    this.app.notify(this, { error });
+  }
+
+  // A failing term is named by its key, since the panel shows one message for
+  // the whole template.
+  evalTerm = async (key: string, expression: any, params: any) => {
+    try {
+      return await evalExpression(expression, { params }, this.app, this);
+    } catch (err: any) {
+      const message = err?.message ?? String(err);
+      throw new Error(key ? `${key}: ${message}` : message);
+    }
+  };
+
+  mapper = async (x: any, failures?: string[]) => {
     try {
       if (this._structuredTemplate) {
         const mapped = await this.evalStructuredTemplateNode(
@@ -160,8 +187,7 @@ class Map extends ServiceBase<State> {
       const keys = this._terms ? Object.keys(this._terms) : [];
       // map to scalar value (not an object) if only an '=', i.e. empty string
       if (keys.length === 1 && keys[0] === "") {
-        const expression = this._terms[keys[0]];
-        return await evalExpression(expression, { params: x }, this.app, this);
+        return await this.evalTerm("", this._terms[keys[0]], x);
       }
 
       const initial =
@@ -178,7 +204,7 @@ class Map extends ServiceBase<State> {
         }
 
         const accumulated = await acc;
-        const y = await evalExpression(expression, { params: x }, this.app, this);
+        const y = await this.evalTerm(key, expression, x);
         return key.indexOf(".") !== -1 // dynamic expression
           ? {
               .../*this.state.mode === "replace"
@@ -187,7 +213,7 @@ class Map extends ServiceBase<State> {
             }
           : {
               ...accumulated,
-              [key]: x[key] && this.state.mode === "add" ? x[key] : y, // don't overwrite in add mode
+              [key]: x?.[key] && this.state.mode === "add" ? x[key] : y, // don't overwrite in add mode
             };
       }, Promise.resolve(initial));
     } catch (error) {
@@ -197,6 +223,7 @@ class Map extends ServiceBase<State> {
         "in template",
         JSON.stringify(this.state.template || "<empty>"),
       );
+      failures?.push(error instanceof Error ? error.message : String(error));
       return x; // do not map the input - there was an error - return identity
     }
   };
@@ -208,8 +235,13 @@ class Map extends ServiceBase<State> {
       return null;
     }
 
+    const failures: string[] = [];
+    const mapOne = (x: any) => this.mapper(x, failures);
+
     if (this.state.arrayMode !== "single" && Array.isArray(params)) {
-      return await Promise.all(params.map(this.mapper));
+      const results = await Promise.all(params.map(mapOne));
+      this.reportError(failures[0] ?? null);
+      return results;
     }
 
     if (!this._terms || !this._properties) {
@@ -219,7 +251,8 @@ class Map extends ServiceBase<State> {
       return params;
     }
 
-    const result = await this.mapper(params);
+    const result = await mapOne(params);
+    this.reportError(failures[0] ?? null);
 
     return result;
   };
@@ -251,12 +284,15 @@ class Map extends ServiceBase<State> {
       entries[0].key === "" &&
       entries[0].node.type === "expression"
     ) {
-      return await this.evalStructuredTemplateNode(entries[0].node, params);
+      return await this.evalTerm("", entries[0].node.expression, params);
     }
 
     const out: any = {};
     for (const entry of entries) {
-      const value = await this.evalStructuredTemplateNode(entry.node, params);
+      const value =
+        entry.node.type === "expression"
+          ? await this.evalTerm(entry.key, entry.node.expression, params)
+          : await this.evalStructuredTemplateNode(entry.node, params);
       if (entry.key.indexOf(".") !== -1) {
         merge(out, value, entry.key);
       } else {

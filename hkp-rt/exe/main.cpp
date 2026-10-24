@@ -42,6 +42,19 @@ int main(int argc, char **argv)
     return 1;
   }
 
+  // Before anything can dial out: a hosted server reaches only public
+  // addresses on a board's behalf (egress.h).
+  hkp::egress::setPolicy(config.egress);
+  if (config.egress.hosted)
+  {
+    std::cout << "[hkp-rt] HKP_EGRESS=public: boards reach public addresses only";
+    if (!config.egress.allow.empty())
+    {
+      std::cout << ", and " << config.egress.allow.size() << " allowed address(es) or range(s)";
+    }
+    std::cout << std::endl;
+  }
+
   auto app = std::make_shared<hkp::App>();
   hkp::Server server(app, "hkp-rt", config.allowedOrigins, "", config.auth);
 
