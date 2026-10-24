@@ -242,7 +242,13 @@ export function FilePickRenderer({
           <input
             ref={inputRef}
             type="file"
-            accept={widget.accept ?? "*/*"}
+            // Left off rather than "*/*" to accept anything: "*/*" is not a
+            // valid accept token.
+            accept={
+              widget.accept && widget.accept !== "*/*"
+                ? widget.accept
+                : undefined
+            }
             style={{ display: "none" }}
             onChange={(e) => {
               const f = e.target.files?.[0];

@@ -39,7 +39,7 @@ add_executable(
 )
 
 if(APPLE)
-  target_sources(${PROJECT_NAME} PRIVATE backend/main.mm backend/shareInbox.mm backend/shareRouter.cpp)
+  target_sources(${PROJECT_NAME} PRIVATE backend/main.mm backend/shareInbox.mm backend/shareRouter.cpp backend/filePanel.mm)
 endif()
 
 
