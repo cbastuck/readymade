@@ -45,6 +45,17 @@ type Props = {
   centreSlot?: ReactNode;
 };
 
+/** Marks the bar's own controls — everything between the board menu and the
+ *  account — so they share one hover and pressed state (index.css). Takes no
+ *  part in the layout. */
+function Controls({ children }: { children: ReactNode }) {
+  return (
+    <div data-toolbar-controls style={{ display: "contents" }}>
+      {children}
+    </div>
+  );
+}
+
 /** Holds the middle of the bar without letting it push the controls around,
  *  and without swallowing clicks meant for them. */
 function CentredStatus({ children }: { children: ReactNode }) {
@@ -60,7 +71,9 @@ function CentredStatus({ children }: { children: ReactNode }) {
         pointerEvents: "none",
       }}
     >
-      <div style={{ pointerEvents: "auto", minWidth: 0 }}>{children}</div>
+      <div data-toolbar-controls style={{ pointerEvents: "auto", minWidth: 0 }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -136,7 +149,7 @@ export default function Toolbar({
         {/* Board menu */}
         <BoardMenu menuItemFactory={menuItemFactory} />
 
-        {children ? children : null}
+        {children ? <Controls>{children}</Controls> : null}
 
         {(statusSlot || centreSlot) && (
           <CentredStatus>
@@ -154,8 +167,10 @@ export default function Toolbar({
             gap: 4,
           }}
         >
-          {actionsSlot}
-          <ShareMenu />
+          <Controls>
+            {actionsSlot}
+            <ShareMenu />
+          </Controls>
           <TbSeparator />
           <AccountAvatar />
           {menuSlot ?? (!hideNavigation && <AppMenu />)}
@@ -209,7 +224,7 @@ export default function Toolbar({
 
           <BoardMenu menuItemFactory={menuItemFactory} />
 
-          {children ? children : null}
+          {children ? <Controls>{children}</Controls> : null}
 
           {(statusSlot || centreSlot) && (
             <CentredStatus>
@@ -227,7 +242,7 @@ export default function Toolbar({
               paddingRight: 6,
             }}
           >
-            {actionsSlot}
+            <Controls>{actionsSlot}</Controls>
             <AccountAvatar />
           </div>
           {menuSlot ?? (!hideNavigation && <AppMenu />)}
