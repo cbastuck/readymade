@@ -5,9 +5,9 @@ import {
   RuntimeDescriptor,
   ProcessContext,
   toCanonicalRuntimeClassType,
-  isRuntimeBrowserClassType,
 } from "../../../types";
 import { getDraggedFiles, readFile } from "../../playground/common";
+import { forwardResult } from "./forwardResult";
 import { isRuntimeDescriptorConfig } from "../../../types";
 import RuntimeMenu from "../../../ui-components/toolbar/RuntimeMenu";
 import Description from "../../playground/Description";
@@ -26,39 +26,12 @@ export default function CloudBoard({
   description,
   bridgeWs,
 }: Props) {
-  // The hkp-node coordinator is the sole routing authority for cloud boards.
-  // This handler only needs to handle two cases:
-  //   1. coordinator-initiated call (context.onResolve set) — respond via onResolve
-  //   2. user-initiated browser action — forward result to coordinator via bridge
-  // Remote runtime results are ignored here; the coordinator relays them itself.
   const onRuntimeResult = async (
     runtime: RuntimeDescriptor,
     _uuid: string | null,
     result: unknown,
     context: ProcessContext | null | undefined,
-  ): Promise<void> => {
-    if (context?.onResolve) {
-      context.onResolve(result);
-      return;
-    }
-
-    if (
-      isRuntimeBrowserClassType(runtime.type) &&
-      bridgeWs?.readyState === WebSocket.OPEN
-    ) {
-      bridgeWs.send(
-        JSON.stringify({
-          type: "result-from-browser",
-          runtimeId: runtime.id,
-          data: result,
-          // A source or callback with no active user run is the board's own.
-          // The coordinator must not turn it into the owner's merely because
-          // the owner's browser happened to host this runtime.
-          ...(context?.actor.kind === "board" ? { boardOrigin: true } : {}),
-        }),
-      );
-    }
-  };
+  ): Promise<void> => forwardResult(bridgeWs, runtime, result, context);
 
   const processRuntimeByName = async (
     name: string,

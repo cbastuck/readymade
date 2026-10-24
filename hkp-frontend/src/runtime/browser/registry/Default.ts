@@ -21,6 +21,7 @@ import MapDescriptor from "../services/Map";
 import FilterDescriptor from "../services/Filter";
 import BatcherDescriptor from "../services/Batcher";
 import SwitchDescriptor from "../services/Switch";
+import SpreadDescriptor from "../services/Spread";
 import SelectDescriptor from "../services/Select";
 
 // Data  Accumulators
@@ -140,6 +141,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   BatcherDescriptor,
   SelectDescriptor,
   SwitchDescriptor,
+  SpreadDescriptor,
   SortDescriptor,
   LimitDescriptor,
   FlatMapDescriptor,

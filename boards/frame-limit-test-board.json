@@ -1,6 +1,6 @@
 {
   "boardName": "Frame Limit Test",
-  "description": "Tests the coordinator's frame limit on a deployed board. A file picked in the browser is read as text and sent on to hkp-node, which reports only how many characters arrived — the report is small, so the only large frame is the one going from the browser to the coordinator. Needs the hkp-node kept under the name \"node\". Start hkp-node with HKP_COORDINATOR_MAX_FRAME_BYTES=1000000, deploy, and send a small file, then a 2 MB one: the small one arrives, the large one is dropped and logged as frame-dropped. Make the two files with:\n\nhead -c 75000 /dev/urandom | base64 > ~/Downloads/small-100kb.txt\nhead -c 1500000 /dev/urandom | base64 > ~/Downloads/large-2mb.txt",
+  "description": "Tests the coordinator's frame limit on a deployed board, and getting a file past it in chunks. A file picked in the browser is read as text and sent on to hkp-node, which reports only how many characters arrived — the report is small, so the only large frames are the ones going from the browser to the coordinator. Needs the hkp-node kept under the name \"node\". Start hkp-node with HKP_COORDINATOR_MAX_FRAME_BYTES=1000000 and deploy. Sent whole, a small file arrives and a 2 MB one is dropped and logged as frame-dropped. Sent in chunks, the same 2 MB file crosses as frames of 500,000 characters each, which Gather on hkp-node joins back into one text before it is measured — so the report shows the same count either way. Make the two files with:\n\nhead -c 75000 /dev/urandom | base64 > ~/Downloads/small-100kb.txt\nhead -c 1500000 /dev/urandom | base64 > ~/Downloads/large-2mb.txt",
   "runtimes": [
     {
       "id": "ui",
@@ -19,12 +19,43 @@
   "services": {
     "ui": [
       {
+        "uuid": "pick-chunked",
+        "serviceId": "hookup.to/service/file-source",
+        "serviceName": "In chunks",
+        "state": { "chunkSize": 500000 }
+      },
+      {
+        "uuid": "spread",
+        "serviceId": "hookup.to/service/spread",
+        "serviceName": "One frame per chunk"
+      },
+      {
         "uuid": "pick",
         "serviceId": "hookup.to/service/file-source",
-        "serviceName": "The file"
+        "serviceName": "Whole file"
       }
     ],
     "node": [
+      {
+        "uuid": "gather",
+        "serviceId": "gather",
+        "serviceName": "Gather the chunks",
+        "state": {
+          "maxBytes": 16000000,
+          "timeoutMs": 60000,
+          "pipeline": [
+            {
+              "uuid": "join",
+              "serviceId": "map",
+              "serviceName": "Join",
+              "state": {
+                "mode": "replace",
+                "template": { "=": "join(params.items, '')" }
+              }
+            }
+          ]
+        }
+      },
       {
         "uuid": "measure",
         "serviceId": "map",
@@ -48,6 +79,9 @@
   },
   "facade": {
     "layout": "single",
+    "notices": [
+      { "source": { "serviceUuid": "gather", "path": "error" }, "tone": "error" }
+    ],
     "panels": [
       {
         "id": "send",
@@ -60,15 +94,27 @@
           "items": [
             {
               "type": "text",
-              "placeholder": "Send a small file first to see the path works, then the 2 MB one. When a value is dropped, the line below keeps its last time; the board log shows frame-dropped.",
+              "placeholder": "Send a small file whole first to see the path works, then the 2 MB one: it is dropped, the line below keeps its last time, and the board log shows frame-dropped. Then send the 2 MB one in chunks: it arrives, with the same count it would have had whole.",
               "tone": "muted",
               "fontSize": 12
             },
             {
-              "type": "file-pick",
-              "label": "Choose a file",
-              "progressServiceUuid": "pick",
-              "action": { "serviceUuid": "pick" }
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "file-pick",
+                  "label": "Send whole",
+                  "progressServiceUuid": "pick",
+                  "action": { "serviceUuid": "pick" }
+                },
+                {
+                  "type": "file-pick",
+                  "label": "Send in chunks",
+                  "progressServiceUuid": "pick-chunked",
+                  "action": { "serviceUuid": "pick-chunked" }
+                }
+              ]
             },
             {
               "type": "text",

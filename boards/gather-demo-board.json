@@ -1,0 +1,62 @@
+{
+  "boardName": "Gather Demo",
+  "description": "An array of pieces of text is spread in the browser, so each piece reaches hkp-node as a value of its own, and gathered there: Gather waits until it has every piece, puts them back in order and joins them into one text with its nested Map. Needs the hkp-node kept under the name \"node\". The Monitor shows one text per injection, however many pieces it was sent as.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "remote": "node",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "pieces",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Pieces",
+        "state": {
+          "recentInjection": ["Sent ", "in four ", "pieces, ", "arrived as one."],
+          "plainText": false
+        }
+      },
+      {
+        "uuid": "spread",
+        "serviceId": "hookup.to/service/spread",
+        "serviceName": "Spread"
+      }
+    ],
+    "node": [
+      {
+        "uuid": "gather",
+        "serviceId": "gather",
+        "serviceName": "Gather",
+        "state": {
+          "pipeline": [
+            {
+              "uuid": "join",
+              "serviceId": "map",
+              "serviceName": "Join",
+              "state": {
+                "mode": "replace",
+                "template": { "=": "join(params.items, '')" }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "whole",
+        "serviceId": "monitor",
+        "serviceName": "The whole text"
+      }
+    ]
+  }
+}

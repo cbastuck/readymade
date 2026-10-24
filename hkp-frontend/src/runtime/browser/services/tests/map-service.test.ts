@@ -928,3 +928,16 @@ describe("Map service – various input data shapes", () => {
     });
   });
 });
+
+describe("Map join()", () => {
+  it("makes one text of an array's elements, nothing between them by default", async () => {
+    const { service } = createMapService();
+    await service.configure({
+      template: { "whole=": "join(params.items)", "csv=": "join(params.items, ',')" },
+    });
+    expect(await service.process({ items: ["ab", "cd", null, "ef"] })).toEqual({
+      whole: "abcdef",
+      csv: "ab,cd,,ef",
+    });
+  });
+});

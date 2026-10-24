@@ -121,7 +121,7 @@ describe("a host that owns the fold", () => {
       />,
     );
 
-    expect(screen.queryByText(/Show nested sevices/)).toBeNull();
+    expect(screen.queryByText(/nested services?$|Nothing nested yet/)).toBeNull();
     expect(screen.queryByText("panel:inner")).toBeNull();
 
     rerender(
@@ -133,6 +133,45 @@ describe("a host that owns the fold", () => {
     );
 
     expect(screen.getByText("panel:inner")).toBeTruthy();
-    expect(screen.queryByText(/Show nested sevices/)).toBeNull();
+    expect(screen.queryByText(/nested services?$|Nothing nested yet/)).toBeNull();
+  });
+});
+
+describe("what a folded pipeline says about itself", () => {
+  it("counts what is inside, so a reader knows it is worth opening", () => {
+    render(
+      <SubServicePipelineUI
+        service={pipelineService([
+          { serviceId: "map", instanceId: "a" },
+          { serviceId: "map", instanceId: "b" },
+        ])}
+        findServiceUI={() => null}
+      />,
+    );
+
+    expect(screen.getByText("2")).toBeTruthy();
+    expect(screen.getByText("nested services")).toBeTruthy();
+  });
+
+  it("says one in the singular", () => {
+    render(
+      <SubServicePipelineUI
+        service={pipelineService([{ serviceId: "map", instanceId: "a" }])}
+        findServiceUI={() => null}
+      />,
+    );
+
+    expect(screen.getByText("nested service")).toBeTruthy();
+  });
+
+  it("says when there is nothing inside", () => {
+    render(
+      <SubServicePipelineUI
+        service={pipelineService([])}
+        findServiceUI={() => null}
+      />,
+    );
+
+    expect(screen.getByText("Nothing nested yet")).toBeTruthy();
   });
 });

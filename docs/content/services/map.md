@@ -94,6 +94,7 @@ Expressions have access to the incoming data via `params` and to a set of built-
 | `number` | `number(x)` | Converts a string to a number |
 | `string` | `string(x)` | Converts a value to a string |
 | `concat` | `concat(a, b)` | Concatenates two strings |
+| `join` | `join(arr, sep)` | An array's elements as one string, `sep` between them (none by default) |
 | `stringify` | `stringify(x)` | `JSON.stringify` |
 | `parse` | `parse(s)` | `JSON.parse` |
 | `sum` | `sum(arr)` | Sum of a numeric array |

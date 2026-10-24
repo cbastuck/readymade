@@ -59,6 +59,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "Sequencer.tsx",
   "SpeechSynth.ts",
   "Spotify.tsx",
+  "Spread.ts",
   "BrowserTracks.tsx",
   "Switch.tsx",
   "Thrower.tsx",

@@ -44,6 +44,14 @@ const globalScope = {
   parse: (x: string | undefined) =>
     x !== undefined ? JSON.parse(x) : "<parse undefined>",
   concat: (...args: string[]) => args.join(""),
+  // An array's elements as one text, e.g. join(params.items, ''). An empty
+  // element is nothing, as Array.join has it.
+  join: (arr: unknown, separator?: string) =>
+    Array.isArray(arr)
+      ? arr.join(separator ?? "")
+      : arr === null || arr === undefined
+        ? ""
+        : `${arr}`,
   reformatDate,
   // Current date/time as a formatted string (moment format tokens), e.g.
   // formatNow('dddd, MMMM, D. YYYY HH:mm') -> "Friday, July, 17. 2026 21:13"

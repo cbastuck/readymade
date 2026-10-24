@@ -20,9 +20,36 @@ A facade's `file-pick` widget can hand it a file too: name the File Source as th
 
 ---
 
+### In chunks
+
+With a `chunkSize`, each file is still read whole, but goes on as an **array of
+pieces** of at most that many characters, in order — an array even when the file
+fits in one piece, so what follows does not change shape with the size of the
+file. Several files picked at once go on as an array of such arrays.
+
+The pieces are still one value. What sends them on one by one is a
+[Spread](./spread.md) after the File Source; a [Gather](./gather.md) on the far
+side puts them back together. That is how a file larger than a deployed board's
+frame limit (`HKP_COORDINATOR_MAX_FRAME_BYTES`) still reaches hkp-node:
+
+```
+ui:   file-source (chunkSize: 500000) → spread
+node: gather (join(params.items, '')) → …
+```
+
+`chunkSize` counts characters, not bytes. For ASCII text — base64, CSV, most SQL
+dumps — the two are the same; other text takes up to three bytes per character
+in UTF-8, and a frame also carries the part's wrapping and any JSON escaping, so
+leave room below the limit. A piece never ends between the two halves of a
+surrogate pair.
+
+---
+
 ## Configuration
 
-None. File Source has no configuration properties — content is emitted when the user picks files through the UI.
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `chunkSize` | `number` | `0` | Characters per piece; `0` sends each file whole |
 
 ---
 
@@ -31,7 +58,7 @@ None. File Source has no configuration properties — content is emitted when th
 | | Shape |
 |---|---|
 | **Input** | None (triggered by the file picker) |
-| **Output** | `string` — text content of a single file; `string[]` — text contents when multiple files are selected |
+| **Output** | `String` — text content of a single file; `JSON` — `string[]`, the text contents when multiple files are selected; with a `chunkSize`, `string[]` of pieces per file |
 
 ---
 
