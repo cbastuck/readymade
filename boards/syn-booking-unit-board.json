@@ -994,7 +994,5 @@
         }
       }
     ]
-  },
-  "acceptedSyncSenders": [],
-  "rejectedSyncSenders": []
+  }
 }

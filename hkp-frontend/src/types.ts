@@ -324,7 +324,6 @@ const _actionTypes = [
   "clearBoard",
   "shareBoard",
   "saveBoard",
-  "toggleBoardSync",
   "showBoardSource",
   "createBoardLink",
   "playBoard",
@@ -856,11 +855,6 @@ export function isBoardDescriptor(data: any): data is BoardDescriptor {
   );
 }
 
-export type PlaygroundState = BoardDescriptor & {
-  acceptedSyncSenders: Array<any>;
-  rejectedSyncSenders: Array<any>;
-};
-
 export type UsecaseDescriptor = {
   name: string;
   url: string;
@@ -888,9 +882,6 @@ export function isSavedBoard(board: any): board is SavedBoard {
     board.name !== undefined
   );
 }
-
-export type AcceptedSyncSenders = Array<any>;
-export type RejectedSyncSenders = Array<any>;
 
 export enum RemoteRuntimeMessageType {
   PONG = "pong",
