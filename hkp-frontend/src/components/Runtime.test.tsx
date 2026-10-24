@@ -139,4 +139,43 @@ describe("Runtime background", () => {
     fireEvent.click(screen.getByText("control"));
     expect(screen.getByTestId("picked").textContent).toBe("a,b");
   });
+
+  it("lets go of the services first, then the runtime", () => {
+    renderPicked();
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+    expect(screen.getByTestId("selected").textContent).toBe("node");
+
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+    expect(screen.getByTestId("selected").textContent).toBe("");
+  });
+});
+
+describe("Runtime toggle", () => {
+  const selected = () => screen.getByTestId("selected").textContent;
+  const press = (el: HTMLElement) => {
+    fireEvent.pointerDown(el);
+    fireEvent.click(el);
+  };
+
+  it("selects on the first press, and lets go on the next", () => {
+    renderRuntime();
+    press(screen.getByTestId("runtime-ui"));
+    expect(selected()).toBe("node");
+
+    press(screen.getByTestId("runtime-ui"));
+    expect(selected()).toBe("");
+
+    press(screen.getByTestId("runtime-ui"));
+    expect(selected()).toBe("node");
+  });
+
+  it("keeps the runtime selected when a card or a control is pressed", () => {
+    renderRuntime();
+    press(screen.getByTestId("runtime-ui"));
+
+    press(screen.getByTestId("card"));
+    expect(selected()).toBe("node");
+    press(screen.getByText("control"));
+    expect(selected()).toBe("node");
+  });
 });
