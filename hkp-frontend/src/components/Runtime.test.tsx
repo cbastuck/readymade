@@ -12,6 +12,10 @@ vi.mock("hkp-frontend/src/ui-components/runtime-ui", () => ({
   default: ({ selected }: { selected?: boolean }) => (
     <div data-testid="runtime-ui" data-selected={String(!!selected)}>
       body
+      <div data-service-card data-testid="card">
+        card
+      </div>
+      <button type="button">control</button>
     </div>
   ),
 }));
@@ -33,7 +37,26 @@ const boardContext = {
 
 function SelectionReadout() {
   const selection = useSelection();
-  return <div data-testid="selected">{selection?.selectedRuntimeId ?? ""}</div>;
+  return (
+    <>
+      <div data-testid="selected">{selection?.selectedRuntimeId ?? ""}</div>
+      <div data-testid="picked">
+        {selection?.selectedServices?.uuids.join(",") ?? ""}
+      </div>
+      <button
+        type="button"
+        onClick={() =>
+          selection?.selectServices?.({
+            runtimeId: "node",
+            anchor: "a",
+            uuids: ["a", "b"],
+          })
+        }
+      >
+        pick
+      </button>
+    </>
+  );
 }
 
 // The board holds another runtime ahead of this one, so the selection starts
@@ -88,5 +111,32 @@ describe("Runtime selection", () => {
     renderRuntime(false);
     fireEvent.pointerDown(screen.getByTestId("runtime-ui"));
     expect(screen.getByTestId("runtime-ui").dataset.selected).toBe("false");
+  });
+});
+
+describe("Runtime background", () => {
+  function renderPicked() {
+    renderRuntime();
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+    fireEvent.click(screen.getByText("pick"));
+    expect(screen.getByTestId("picked").textContent).toBe("a,b");
+  }
+
+  it("lets go of the picked services on a click beside the cards", () => {
+    renderPicked();
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+    expect(screen.getByTestId("picked").textContent).toBe("");
+  });
+
+  it("leaves a click on a card to the card", () => {
+    renderPicked();
+    fireEvent.click(screen.getByTestId("card"));
+    expect(screen.getByTestId("picked").textContent).toBe("a,b");
+  });
+
+  it("leaves a click on a control to the control", () => {
+    renderPicked();
+    fireEvent.click(screen.getByText("control"));
+    expect(screen.getByTestId("picked").textContent).toBe("a,b");
   });
 });

@@ -191,6 +191,7 @@ export default function ServiceUiContainer(props: Props) {
         const card = (
           <div
             key={`service-ui-container-${services[pos].uuid}`}
+            data-service-card
             style={{
               display: collapsed ? "none" : "flex",
               flexDirection: "row",

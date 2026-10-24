@@ -28,8 +28,9 @@
  * Within the selected runtime, services can be picked too: a run of them,
  * which is what an action on several services at once — wrapping them in a
  * sub-service, making a block of them — acts on. Unlike the runtime it can be
- * empty, and it is emptied by Escape, by clicking a picked card again, by an
- * action that used it, and by another runtime being selected. Clicking a card
+ * empty, and it is emptied by Escape, by clicking a picked card again, by
+ * clicking the runtime's background, by an action that used it, and by
+ * another runtime being selected. Clicking a card
  * picks it as the anchor; Shift-clicking another service header stretches the
  * run from there.
  */

@@ -325,6 +325,24 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
       // the click, which would cost that click its selection. Selecting the
       // runtime twice is selecting it once.
       onClickCapture={() => selection?.selectRuntime(runtimeId)}
+      // A click on the runtime's own background lets go of the services picked
+      // in it. A card's own clicks are its pick to make, a control keeps its
+      // meaning, and a click from a portal (a menu, a popover) only bubbles
+      // through here in React — it never landed on this runtime.
+      onClick={(ev) => {
+        const target = ev.target as HTMLElement;
+        if (
+          ev.defaultPrevented ||
+          selection?.selectedServices?.runtimeId !== runtimeId ||
+          !ev.currentTarget.contains(target) ||
+          target.closest(
+            "[data-service-card], input, textarea, select, button, a, [contenteditable='true'], [role='button'], [role='menuitem']",
+          )
+        ) {
+          return;
+        }
+        selection.selectServices?.(null);
+      }}
       onDragOver={(ev) => {
         if (ev.dataTransfer.types.includes(HKP_DND_SERVICE_CLASS_TYPE)) {
           setIsSvcClassDragOver(true);
