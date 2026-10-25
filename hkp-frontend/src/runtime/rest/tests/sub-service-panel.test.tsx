@@ -5,6 +5,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import SubServiceUI from "../ui/SubServiceUI";
 import { findServiceUI } from "../UIRegistry";
 import NotificationTargets from "../../NotificationsTargets";
+import BlockUseFrame from "../../ui/BlockUse";
+import NestedNavProvider from "../../ui/NestedNavigation";
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 
 /**
@@ -146,5 +148,56 @@ describe("a scope's panel on a REST runtime", () => {
 
   it("is what the registry hands out for a sub-service", () => {
     expect(findServiceUI("sub-service")).toBe(SubServiceUI);
+  });
+});
+
+describe("a scope's panel on a REST runtime, inside a use of a block", () => {
+  // As the browser panel (see sub-service-in-block): its inside belongs to the
+  // block, so the declarations only read, while the pipeline can still be
+  // folded open and opened as a level.
+  function renderInsideUse() {
+    const scope = scopeProps();
+    render(
+      <NestedNavProvider rootLabel="Board">
+        <BlockUseFrame
+          address="outer.the-scope"
+          locked
+          level={{ id: "the-scope", label: "SubService" }}
+        >
+          <SubServiceUI {...scope.props} />
+        </BlockUseFrame>
+      </NestedNavProvider>,
+    );
+    return scope;
+  }
+
+  it("shows the scope's declarations without offering to change them", () => {
+    renderInsideUse();
+
+    expect(screen.getByText("stops")).toBeTruthy();
+    expect(screen.getByText("inherit")).toBeTruthy();
+    expect(screen.queryAllByRole("combobox")).toHaveLength(0);
+  });
+
+  it("folds its pipeline open in place", async () => {
+    renderInsideUse();
+
+    const fold = screen.getByLabelText("Show content inline");
+    expect(fold.closest("[inert]")).toBeNull();
+    fireEvent.click(fold);
+    expect(await screen.findByText("reads: 0 · writes: 2")).toBeTruthy();
+  });
+
+  it("offers one way onto its level, and it opens the level", () => {
+    renderInsideUse();
+
+    const open = screen.getAllByTitle("Open SubService as its own level");
+    expect(open).toHaveLength(1);
+    expect(open[0].closest("[inert]")).toBeNull();
+
+    fireEvent.click(open[0]);
+    expect(
+      screen.getByRole("navigation", { name: "Nested pipeline" }),
+    ).toBeTruthy();
   });
 });

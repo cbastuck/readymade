@@ -53,7 +53,7 @@ import {
 } from "../../types";
 import { setCapturing } from "../../runtime/captureMode";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
-import { unlinkBlocks } from "../../core/linkBlocks";
+import { serializeBoardSource } from "../../core/linkBlocks";
 import { restoreCoordinators, withCoordinatorEngines } from "../../common";
 import { AppCtx } from "../../AppContext";
 import { PlaygroundProps } from "./Playground.types";
@@ -564,15 +564,11 @@ export function usePlaygroundController(
    */
   const serializeSharedBoard = async () => {
     const state = boardProviderRef.current?.state;
-    const data = await state?.serializeBoard();
+    const data = state ? await serializeBoardSource(state) : null;
     if (!data) {
       return null;
     }
-    const { runtimes, services, blocks } = unlinkBlocks(
-      data,
-      state?.linkage?.blocks,
-      { ownOnly: true },
-    );
+    const { runtimes, services, blocks } = data;
     return { runtimes, services, ...(blocks ? { blocks } : {}) };
   };
 
