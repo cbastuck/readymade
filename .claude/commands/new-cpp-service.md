@@ -197,6 +197,29 @@ These are thread-safe via the App's `io_context`.
 
 ---
 
+## Files a board names
+
+A path that comes from configuration or from the data is never opened as given:
+resolve it through the files guard and open what that returns. It is reached
+only inside the folders the runtime gives boards; a relative path lands in the
+default one (`hkp-rt/lib/include/files.h`, `docs/content/concepts/runtime.md`,
+"Where a board may read and write files").
+
+```cpp
+#include <files.h>
+
+std::string problem;
+auto path = files::resolve(m_path, problem);          // configured: inside a folder
+if (!path) { std::cerr << problem << std::endl; return Null(); }
+auto entry = files::resolveIn(*path, name, problem);  // from the data: inside m_path
+auto in = files::input(*entry);                       // also files::output, files::list
+```
+
+`tests/files_sources.test.cpp` fails on an `ifstream`, `ofstream`, `fopen` or
+directory iteration anywhere else in the library.
+
+---
+
 ## Registration (`hkp-rt/lib/src/registry.cpp`)
 
 1. Add `#include "./services/Name.h"` with the other includes.

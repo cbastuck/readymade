@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./allowedOrigins.h"
+#include "./fileFolders.h"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -410,6 +411,55 @@ public:
   {
     auto settings = readSettings();
     settings["allowedOrigins"] = readymade::normalizeOrigins(origins);
+    return writeSettings(settings);
+  }
+
+  // Where a relative path a board names lands on the embedded runtime, and
+  // the first folder it is given (fileFolders.h).
+  std::filesystem::path getDefaultFileFolder() const
+  {
+    return getRuntimeServerDirPath() / "files";
+  }
+
+  // The folders the person added, beside the default one; see fileFolders.h.
+  std::vector<std::string> getFileFolders() const
+  {
+    std::vector<std::string> folders;
+    const auto settings = readSettings();
+    const auto it = settings.find("fileFolders");
+    if (it != settings.end() && it->is_array())
+    {
+      for (const auto& entry : *it)
+      {
+        if (entry.is_string())
+        {
+          folders.push_back(entry.get<std::string>());
+        }
+      }
+    }
+    return readymade::normalizeFileFolders(folders, m_hkpDirPath);
+  }
+
+  // What the embedded runtime is given: the default folder, created if it is
+  // not there yet, then the person's.
+  std::vector<std::filesystem::path> getRuntimeFileFolders() const
+  {
+    std::vector<std::filesystem::path> folders{getDefaultFileFolder()};
+    std::error_code ec;
+    std::filesystem::create_directories(folders.front(), ec);
+    for (const auto& folder : getFileFolders())
+    {
+      folders.emplace_back(folder);
+    }
+    return folders;
+  }
+
+  // Writes fileFolders. Like allowedOrigins, not read once at startup: the
+  // caller hands the list to the running runtime.
+  bool setFileFolders(const std::vector<std::string>& folders) const
+  {
+    auto settings = readSettings();
+    settings["fileFolders"] = readymade::normalizeFileFolders(folders, m_hkpDirPath);
     return writeSettings(settings);
   }
 

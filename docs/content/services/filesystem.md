@@ -13,21 +13,21 @@ Reads from and writes to the local file system on an hkp-rt server.
 
 Not available in the browser runtime, which cannot reach the file system.
 
-The two differ in what they can reach, and deliberately. On hkp-rt — a runtime
-somebody runs on their own machine — a path is a path on that machine. On
-hkp-node, which is multi-tenant, a board names a path **inside a volume** the
-runtime owns, and nothing it can write resolves outside one: a server that
-offered "the local filesystem" to every board on it would not be multi-tenant
-for long. The rest of this page describes the hkp-rt service; the hkp-node one
-is described below.
+Neither reaches the whole machine. On hkp-rt a path lies inside a **folder the
+runtime gives boards** — one by default, more if the person or the operator adds
+them — because a board is something somebody else may have written, and the
+machine it runs on also holds the app's vault, its settings and a server's
+secrets. On hkp-node, which is multi-tenant, a board names a path **inside a
+volume** the runtime owns, and nothing it can write resolves outside one. The
+rest of this page describes the hkp-rt service; the hkp-node one is described
+below.
 
 ---
 
 ## What it does
 
-Filesystem performs read and write operations on the server's local file
-system. The operation is determined by the incoming pipeline data or by
-configuration.
+Filesystem reads and writes files inside the folders its runtime gives boards.
+The operation is determined by the incoming pipeline data or by configuration.
 
 ---
 
@@ -35,9 +35,26 @@ configuration.
 
 | Property | Type | Description |
 |---|---|---|
-| `path` | `string` | File or directory path on the server |
-| `mode` | `"read" \| "write"` | Operation to perform |
-| `encoding` | `string` | File encoding (e.g. `"utf8"`) for text files |
+| `path` | `string` | A file or folder inside the folders boards are given. Relative paths are taken from the default one |
+| `operation` | `"read" \| "write"` | What a request naming none means |
+
+### Where the files are
+
+| Runtime is | Default folder | Adding more |
+|---|---|---|
+| the desktop app's (`"remote": "embedded"`) | `~/.hkp/cpp/files` | *Folders boards may use* in the app's settings |
+| a standalone hkp-rt | `HKP_FILES_DIR`, else `~/.hkp/cpp/files` | `HKP_FILES_ALLOW` |
+| the iOS and Android apps' | none | — |
+
+A path outside every folder is refused, and so is one that only looks inside:
+`..` and symlinks are followed before the path is compared. A name that arrives
+with the data — `path` in a read request, `meta.path` beside uploaded bytes — is
+taken **inside** the configured `path`, whatever it says, so the data picks a
+file and never the folder. A refusal is logged as `file-refused` and a write
+answers `{ "status": "failure", "error": "…" }`.
+
+Write `"recordings"` rather than `"/Users/me/recordings"`: a relative path means
+the same thing on every machine the board is opened on.
 
 ---
 
@@ -64,13 +81,13 @@ configuration.
 ### Load a configuration file at startup
 
 ```
-timer (one-shot) → filesystem (read, path: "/config/settings.json") → map → configure services
+timer (one-shot) → filesystem (read, path: "config/settings.json") → map → configure services
 ```
 
 ### Append log entries to a file
 
 ```
-data source → map (format log line) → filesystem (write, path: "/logs/output.log")
+data source → map (format log line) → filesystem (write, path: "logs/output.log")
 ```
 
 ### Process a dataset file

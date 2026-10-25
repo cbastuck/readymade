@@ -1,11 +1,11 @@
 #pragma once
 
 #include <iostream>
-#include <fstream>
 #include <regex>
 #include <filesystem>
 #include <chrono>
 
+#include <files.h>
 #include <types/types.h>
 #include <service.h>
 #include <types/data.h>
@@ -24,6 +24,10 @@
  * Arrays: service-dependent
  * Binary: supported (service-dependent)
  * MixedData: native in runtime (service-dependent usage)
+ *
+ * `persistRoot` lies inside a folder this server gives boards, and a file
+ * name made from the input stays inside `persistRoot` (files.h). A root
+ * outside them leaves the cache in memory.
  */
 namespace hkp {
 
@@ -131,7 +135,8 @@ public:
     // the result, then return the same shape.
     // The default "sha" mode (or no persistMode set) falls through to the
     // existing SHA-based logic below — existing configs are unaffected.
-    if (m_persistMode == "filename" && !m_persistRoot.empty() && !forcedUpdate)
+    const auto persistFolder = persistRoot();
+    if (m_persistMode == "filename" && persistFolder && !forcedUpdate)
     {
       const std::filesystem::path inPath(*key);
       std::string lookupName;
@@ -150,10 +155,16 @@ public:
         lookupName = inPath.filename().string();
       }
 
-      auto candidate = std::filesystem::path(m_persistRoot) / lookupName;
-      if (std::filesystem::exists(candidate))
+      std::string problem;
+      const auto candidate = files::resolveIn(*persistFolder, lookupName, problem);
+      if (!candidate)
       {
-        return makeEarlyReturn(Data(json{{m_outputKey, std::filesystem::absolute(candidate).string()}}));
+        std::cerr << "Cache service: " << problem << std::endl;
+        return makeEarlyReturn(next(data));
+      }
+      if (files::exists(*candidate))
+      {
+        return makeEarlyReturn(Data(json{{m_outputKey, candidate->string()}}));
       }
 
       auto result = next(data);
@@ -163,7 +174,7 @@ public:
         {
           if (!mixed->binary.empty())
           {
-            std::ofstream file(candidate, std::ios::binary);
+            auto file = files::output(*candidate, std::ios::binary);
             if (file)
             {
               file.write(reinterpret_cast<const char*>(mixed->binary.data()), mixed->binary.size());
@@ -172,7 +183,7 @@ public:
         }
         else if (auto bin = getBinaryFromData(result))
         {
-          std::ofstream file(candidate, std::ios::binary);
+          auto file = files::output(*candidate, std::ios::binary);
           if (file)
           {
             file.write(reinterpret_cast<const char*>(bin->data()), bin->size());
@@ -180,7 +191,7 @@ public:
         }
         else if (auto str = getStringFromData(result))
         {
-          std::ofstream file(candidate);
+          auto file = files::output(*candidate, std::ios::trunc);
           if (file)
           {
              file << *str;
@@ -189,16 +200,16 @@ public:
         }
         else if (auto jResult = getJSONFromData(result))
         {
-          std::ofstream file(candidate);
+          auto file = files::output(*candidate, std::ios::trunc);
           if (file) 
           {
             file << jResult->dump();
           }
         }
       }
-      if (!isNull(result) && std::filesystem::exists(candidate))
+      if (!isNull(result) && files::exists(*candidate))
       {
-        return makeEarlyReturn(Data(json{{m_outputKey, std::filesystem::absolute(candidate).string()}}));
+        return makeEarlyReturn(Data(json{{m_outputKey, candidate->string()}}));
       }
       return makeEarlyReturn(result);
     }
@@ -212,18 +223,18 @@ public:
       }
     }
 
-    if (!noCache && !forcedUpdate && !m_persistRoot.empty())
+    if (!noCache && !forcedUpdate && persistFolder)
     {
-      auto sha = sha256(*key);
-      auto path = m_persistRoot + "/" + sha;
-      if (std::filesystem::exists(path))
+      std::string problem;
+      const auto path = files::resolveIn(*persistFolder, sha256(*key), problem);
+      if (path && files::exists(*path))
       {
         // Check if file is not older than cache duration
-        auto lastWriteTime = std::filesystem::last_write_time(path);
+        auto lastWriteTime = std::filesystem::last_write_time(path->path());
         auto fileAge = std::chrono::file_clock::now() - lastWriteTime;
         if (maxAge == std::chrono::hours::zero() || fileAge <= maxAge)
         {
-          std::ifstream file(path);
+          auto file = files::input(*path, {});
           if (file)
           {
             std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -245,11 +256,11 @@ public:
     {
       m_cache[*key] = value;
 
-      if (!m_persistRoot.empty())
+      std::string problem;
+      const auto path = persistFolder ? files::resolveIn(*persistFolder, sha256(*key), problem) : std::nullopt;
+      if (path)
       {
-        auto sha = sha256(*key);
-        auto path = m_persistRoot + "/" + sha;
-        std::ofstream file(path);
+        auto file = files::output(*path, std::ios::trunc);
         if (file)
         {
           file << stringify(value);
@@ -259,6 +270,28 @@ public:
     
 
     return makeEarlyReturn(value);
+  }
+
+
+private:
+  // persistRoot, inside a folder this server gives boards; nothing when it is
+  // unset or outside them, and the cache then keeps to memory. Resolved on
+  // every input, since the folders may change while it runs; a refusal is
+  // logged once, not once per input.
+  std::optional<files::Path> persistRoot() const
+  {
+    if (m_persistRoot.empty())
+    {
+      return std::nullopt;
+    }
+    std::string problem;
+    auto folder = files::resolve(m_persistRoot, problem);
+    if (!folder && problem != m_persistProblem)
+    {
+      std::cerr << "Cache service: " << problem << std::endl;
+    }
+    m_persistProblem = problem;
+    return folder;
   }
 
 private:
@@ -316,6 +349,7 @@ private:
   std::string m_key;
   std::string m_outputKey  = "path"; // defaults to "path" for backward compatibility
   std::string m_persistRoot;
+  mutable std::string m_persistProblem; // the refusal last logged
   std::string m_persistMode; // "sha" (default) | "filename"
   std::string m_filenameTemplate;
   std::map<std::string, Data> m_cache;

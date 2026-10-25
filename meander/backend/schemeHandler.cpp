@@ -12,6 +12,7 @@
 #include <crow.h>
 #include <crow/common.h>
 
+#include "files.h"
 #include "server.h"
 
 #ifdef __APPLE__
@@ -976,6 +977,8 @@ json SchemeHandler::currentRuntimeSettings() const
       {"allowExternalRuntimeAccess", m_settings.getAllowExternalAccess()},
       {"allowedUsers", allowedUsers},
       {"allowedOrigins", m_settings.getAllowedOrigins()},
+      {"defaultFileFolder", m_settings.getDefaultFileFolder().string()},
+      {"fileFolders", m_settings.getFileFolders()},
   };
 }
 
@@ -1444,6 +1447,22 @@ saucer::scheme::response SchemeHandler::handleSaveSettings(const Router::Params 
     // In force from the next request on: a page waiting to be let in is told
     // to change this and try again, not to restart the app.
     applyAllowedOrigins();
+  }
+
+  const auto foldersIt = payload.find("fileFolders");
+  if (foldersIt != payload.end() && foldersIt->is_array())
+  {
+    std::vector<std::string> folders;
+    for (const auto& entry : *foldersIt)
+    {
+      if (entry.is_string())
+      {
+        folders.push_back(entry.get<std::string>());
+      }
+    }
+    m_settings.setFileFolders(folders);
+    // Like the origins, in force from the next run on.
+    hkp::files::setFolders(m_settings.getRuntimeFileFolders());
   }
 
   return saucer::scheme::response{
