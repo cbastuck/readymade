@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import SubServicePipelineUI from "../../ui/SubServicePipelineUI";
@@ -7,12 +7,24 @@ import { BrowserSubService } from "./BrowserSubService";
 import ScopeOutput from "../../ui/ScopeOutput";
 import ScopeSlots from "../../ui/ScopeSlots";
 
-function BrowserSubServiceUI(props: ServiceUIProps): JSX.Element {
+type Props = ServiceUIProps & {
+  /**
+   * What a service built on this scope has to say beside it — an Iterator's
+   * items, a Gather's limits — shown above the scope's own controls.
+   */
+  children?: ReactNode;
+  /** That service's state as it arrives, for whatever `children` shows. */
+  onState?: (state: any) => void;
+};
+
+function BrowserSubServiceUI(props: Props): JSX.Element {
+  const { children, onState, ...serviceProps } = props;
   // Incremented whenever the inner scope finishes (re)building so that
   // getActualInstance picks up the newly created service instances.
   const [, setScopeVersion] = useState(0);
 
   const onNotification = useCallback((notification: any) => {
+    onState?.(notification);
     // `scope` and `stopPropagation` because what a scope declares about
     // itself is applied without rebuilding anything: nothing else would tell
     // the panel that what it is showing has changed.
@@ -23,7 +35,7 @@ function BrowserSubServiceUI(props: ServiceUIProps): JSX.Element {
     ) {
       setScopeVersion((v) => v + 1);
     }
-  }, []);
+  }, [onState]);
 
   const getActualInstance = useCallback(
     (instanceId: string): ServiceInstance | null => {
@@ -35,7 +47,8 @@ function BrowserSubServiceUI(props: ServiceUIProps): JSX.Element {
   );
 
   return (
-    <ServiceUI {...props} onNotification={onNotification}>
+    <ServiceUI {...serviceProps} onInit={onState} onNotification={onNotification}>
+      {children}
       {/* Above the pipeline because they are about the scope rather than
           about any one service in it, and because the pipeline below can be
           long. What leaves first, then where what is held is kept: the one is

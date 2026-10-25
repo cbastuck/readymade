@@ -26,7 +26,7 @@
       },
       {
         "uuid": "spread",
-        "serviceId": "hookup.to/service/spread",
+        "serviceId": "spread",
         "serviceName": "One frame per chunk"
       },
       {

@@ -1,4 +1,4 @@
-import BrowserRuntimeScope from "./BrowserRuntimeScope";
+import type BrowserRuntimeScope from "./BrowserRuntimeScope";
 
 type NamedEntry = {
   serviceId: string;

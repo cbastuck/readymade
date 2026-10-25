@@ -47,6 +47,8 @@ import SmoothDescriptor from "../services/Smooth";
 
 // Structure / Containers
 import TracksDescriptor from "../services/BrowserTracks";
+import IteratorDescriptor from "../services/BrowserIterator";
+import GatherDescriptor from "../services/BrowserGather";
 
 // Flows and Composites
 import BoardService from "../services/BoardService";
@@ -156,6 +158,8 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Structure / Containers
   TracksDescriptor,
+  IteratorDescriptor,
+  GatherDescriptor,
   StateDescriptor,
 
   // Sensors

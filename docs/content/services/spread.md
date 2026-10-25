@@ -8,7 +8,16 @@ Sends each item of an array on by itself — one value in, as many out as it has
 
 | Runtime | Service ID |
 |---|---|
-| Browser | `hookup.to/service/spread` |
+| Browser | `spread` |
+| Node.js (hkp-node) | `spread` |
+| Python (hkp-python) | `spread` |
+
+Not in hkp-rt. Spread continues the run itself once per item, and each item's
+result has to leave the runtime on its own. hkp-rt has no way to do that from
+inside a call: a pass a service starts there runs nested in the call it is
+making, so only the call's own answer leaves the runtime, and a pass scheduled
+for later loses the run and the order. An array produced in hkp-rt can be spread
+by a runtime after it.
 
 ---
 
@@ -71,6 +80,10 @@ Put Spread in the browser runtime **where the run begins** — the one a facade
 control or a picked file starts. A browser runtime that the coordinator calls
 into, because a runtime before it produced something, answers the coordinator
 once per call, so only the first item would go on from there.
+
+In hkp-node and hkp-python this does not arise: each item is handed on the way
+a Timer's tick is, as a result of the runtime's own, in the run that reached the
+Spread. There it can sit anywhere in the board.
 
 ---
 

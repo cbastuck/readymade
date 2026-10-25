@@ -8,7 +8,14 @@ Waits for every part a Spread sent on and turns them back into one value — as 
 
 | Runtime | Service ID |
 |---|---|
+| Browser | `gather` |
 | Node.js (hkp-node) | `gather` |
+| Python (hkp-python) | `gather` |
+| C++ (hkp-rt) | `gather` |
+
+Put it in whichever runtime the whole is wanted in — the browser, when a server
+spread a result for a panel to show; hkp-node, when a browser spread a file for
+an import.
 
 ---
 

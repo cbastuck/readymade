@@ -39,10 +39,11 @@ import {
 import { nestedRun } from "hkp-frontend/src/runtime/processContext";
 import ServiceBase from "./ServiceBase";
 import BrowserSubServiceUI from "./BrowserSubServiceUI";
-import BrowserRegistry from "../BrowserRegistry";
-import BrowserRuntimeScope from "../BrowserRuntimeScope";
+// Types only, and the rest loaded where a scope is built: each of these leads
+// back to the registry, which lists the services built on this one — an
+// Iterator, a Gather — and a class cannot be extended before it is defined.
+import type BrowserRuntimeScope from "../BrowserRuntimeScope";
 import { renameLiveServices, renamedEntries } from "../pipelineNames";
-import { addService, configureService } from "../BrowserRuntimeApi";
 import { createSlotStore, SlotStore } from "../../slots";
 import { joinAddress, splitAddress } from "../../board/address";
 
@@ -448,6 +449,15 @@ export class BrowserSubService extends ServiceBase<State> {
   }
 
   private async _buildScope(): Promise<BrowserRuntimeScope> {
+    const [
+      { default: BrowserRegistry },
+      { default: BrowserRuntimeScope },
+      { addService, configureService },
+    ] = await Promise.all([
+      import("../BrowserRegistry"),
+      import("../BrowserRuntimeScope"),
+      import("../BrowserRuntimeApi"),
+    ]);
     const registry = new BrowserRegistry();
     const scope = new BrowserRuntimeScope(
       {

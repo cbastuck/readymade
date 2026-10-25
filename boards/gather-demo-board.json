@@ -29,7 +29,7 @@
       },
       {
         "uuid": "spread",
-        "serviceId": "hookup.to/service/spread",
+        "serviceId": "spread",
         "serviceName": "Spread"
       }
     ],

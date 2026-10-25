@@ -95,7 +95,7 @@ describe("Spread in a runtime", () => {
       results.push({ result, context });
     };
     await api.addService(scope, {
-      serviceId: "hookup.to/service/spread",
+      serviceId: "spread",
       serviceName: "Spread",
     } as any);
     await api.addService(scope, {

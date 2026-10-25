@@ -1,6 +1,6 @@
 /**
  * Service Documentation
- * Service ID: hookup.to/service/spread
+ * Service ID: spread
  * Service Name: Spread
  * Modes: none
  * Key Config: itemsFrom
@@ -36,7 +36,7 @@ import ServiceBase from "./ServiceBase";
 import SpreadUI from "./SpreadUI";
 import { generateUUID } from "./helpers";
 
-const serviceId = "hookup.to/service/spread";
+const serviceId = "spread";
 const serviceName = "Spread";
 
 type State = {
@@ -73,6 +73,11 @@ class Spread extends ServiceBase<State> {
   }
 
   async process(input: any): Promise<null> {
+    // Before anything is awaited: the run this call is in is only this call's
+    // until it gives up control. Without it, two Spreads overlapping — two
+    // files picked in quick succession — leave the runtime unable to say whose
+    // run this service is in, and the items would go on as the board's.
+    const run = this.app.currentContext?.(this);
     const items = this.items(input);
     if (items.length > 0) {
       const group = generateUUID();
@@ -80,7 +85,7 @@ class Spread extends ServiceBase<State> {
       for (const [index, item] of items.entries()) {
         // One at a time, each awaited: the services after this one see the
         // items in order, and a hundred chunks are not all in flight at once.
-        await this.app.next(this, { item, group, index, total });
+        await this.app.next(this, { item, group, index, total }, { run });
       }
       this.app.notify(this, { lastTotal: total });
     }
