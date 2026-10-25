@@ -6,6 +6,7 @@ import { findServiceUI } from "../UIRegistry";
 import { BrowserSubService } from "./BrowserSubService";
 import ScopeOutput from "../../ui/ScopeOutput";
 import ScopeSlots from "../../ui/ScopeSlots";
+import { usePanelBlockLock } from "../../ui/BlockUse";
 
 type Props = ServiceUIProps & {
   /**
@@ -48,7 +49,36 @@ function BrowserSubServiceUI(props: Props): JSX.Element {
 
   return (
     <ServiceUI {...serviceProps} onInit={onState} onNotification={onNotification}>
-      {children}
+      <ScopeBody service={props.service} getActualInstance={getActualInstance}>
+        {children}
+      </ScopeBody>
+    </ServiceUI>
+  );
+}
+
+/**
+ * The panel inside its frame.
+ *
+ * It takes the lock of a block's use over from the frame rather than being
+ * kept out of reach whole, because a nested pipeline is something to look
+ * into: folding it open here and opening it as a level of its own only read,
+ * and the panels inside lock themselves. What writes — the scope's two
+ * declarations, and whatever the service built on it shows — is kept out of
+ * reach here instead.
+ */
+function ScopeBody({
+  service,
+  getActualInstance,
+  children,
+}: {
+  service: ServiceInstance;
+  getActualInstance: (instanceId: string) => ServiceInstance | null;
+  children?: ReactNode;
+}) {
+  const locked = usePanelBlockLock();
+  return (
+    <>
+      {children && <div inert={locked}>{children}</div>}
       {/* Above the pipeline because they are about the scope rather than
           about any one service in it, and because the pipeline below can be
           long. What leaves first, then where what is held is kept: the one is
@@ -56,22 +86,24 @@ function BrowserSubServiceUI(props: Props): JSX.Element {
           services inside it can reach. */}
       <ScopeOutput
         stops={
-          (props.service as unknown as BrowserSubService).state
-            ?.stopPropagation === true
+          (service as unknown as BrowserSubService).state?.stopPropagation ===
+          true
         }
-        onChange={(stops) =>
-          props.service.configure({ stopPropagation: stops })
+        onChange={
+          locked
+            ? undefined
+            : (stops) => service.configure({ stopPropagation: stops })
         }
       />
-      <BrowserScopeSlots service={props.service} />
+      <BrowserScopeSlots service={service} locked={locked} />
       <div className="pb-2">
         <SubServicePipelineUI
-          service={props.service}
+          service={service}
           findServiceUI={findServiceUI}
           getActualInstance={getActualInstance}
         />
       </div>
-    </ServiceUI>
+    </>
   );
 }
 
@@ -82,7 +114,14 @@ function BrowserSubServiceUI(props: Props): JSX.Element {
  * process as the panel, so there is nothing to serialise and no round trip.
  * A scope on a REST runtime would have to report its cells in its state first.
  */
-function BrowserScopeSlots({ service }: { service: ServiceInstance }) {
+function BrowserScopeSlots({
+  service,
+  locked,
+}: {
+  service: ServiceInstance;
+  /** Inside a use of a block: the cells can be read, not changed. */
+  locked: boolean;
+}) {
   const svc = service as unknown as BrowserSubService;
   const { store, inherited } = svc.slotsInUse?.() ?? {
     store: null,
@@ -123,13 +162,17 @@ function BrowserScopeSlots({ service }: { service: ServiceInstance }) {
       inherited={inherited}
       open={open}
       onOpenChange={setOpen}
-      onSlotsChange={(next) => service.configure({ scope: { slots: next } })}
+      onSlotsChange={
+        locked
+          ? undefined
+          : (next) => service.configure({ scope: { slots: next } })
+      }
       // Straight at the store, because that is where a cell is: a slot is
       // named by the Holds at either end and owned by neither, so there is no
       // service whose configure this could be. The store reports the removal,
       // which is what takes it off the screen here and in any other panel
       // showing these same cells.
-      onRemove={(name) => store?.remove(name)}
+      onRemove={locked ? undefined : (name) => store?.remove(name)}
     />
   );
 }

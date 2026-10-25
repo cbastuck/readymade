@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
 
-import { ServiceUIProps } from "hkp-frontend/src/types";
+import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import ScopeOutput from "../../ui/ScopeOutput";
 import ScopeSlots from "../../ui/ScopeSlots";
 import SubServicePipelineUI from "../../ui/SubServicePipelineUI";
+import { usePanelBlockLock } from "../../ui/BlockUse";
 import { findServiceUI } from "../UIRegistry";
 
 /**
@@ -58,30 +59,59 @@ export default function SubServiceUI(props: ServiceUIProps) {
       genericUI={false}
       initialSize={{ width: 320, height: undefined }}
     >
-      {/* Above the pipeline for the reason they are above it in the browser
-          panel: they are about the scope rather than about any one service in
-          it, and the pipeline below can be long. */}
-      <ScopeOutput
+      <ScopeBody
+        service={service}
         stops={stops}
-        onChange={(next) => {
+        slots={slots}
+        onStops={(next) => {
           setStops(next);
           void edit({ stopPropagation: next });
         }}
+        onSlots={(next) => {
+          setSlots(next);
+          void edit({ scope: { slots: next } });
+        }}
       />
+    </RuntimeRestServiceUI>
+  );
+}
+
+/**
+ * The panel inside its frame, taking the lock of a block's use over as the
+ * browser panel does (see BrowserSubServiceUI): the nested pipeline can still
+ * be looked into, the scope's declarations only read.
+ */
+function ScopeBody({
+  service,
+  stops,
+  slots,
+  onStops,
+  onSlots,
+}: {
+  service: ServiceInstance;
+  stops: boolean;
+  slots: "own" | "inherit";
+  onStops: (stops: boolean) => void;
+  onSlots: (slots: "own" | "inherit") => void;
+}) {
+  const locked = usePanelBlockLock();
+  return (
+    <>
+      {/* Above the pipeline for the reason they are above it in the browser
+          panel: they are about the scope rather than about any one service in
+          it, and the pipeline below can be long. */}
+      <ScopeOutput stops={stops} onChange={locked ? undefined : onStops} />
       <ScopeSlots
         cells={null}
         slots={slots}
         inherited={slots === "inherit"}
         open={false}
         onOpenChange={() => {}}
-        onSlotsChange={(next) => {
-          setSlots(next);
-          void edit({ scope: { slots: next } });
-        }}
+        onSlotsChange={locked ? undefined : onSlots}
       />
       <div className="pb-2">
         <SubServicePipelineUI service={service} findServiceUI={findServiceUI} />
       </div>
-    </RuntimeRestServiceUI>
+    </>
   );
 }

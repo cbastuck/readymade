@@ -7,6 +7,7 @@ import {
 } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/RefinementSession";
 import { DEFAULT_GENERATED_BOARD } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/DefaultWorkflowBoard";
 import { saveBoardInCloudMenuItem } from "hkp-frontend/src/cloud/saveBoard";
+import { serializeBoardSource } from "hkp-frontend/src/core/linkBlocks";
 import { Remote } from "./types";
 import { getBackend } from "./backend";
 
@@ -92,7 +93,7 @@ export function createMenuItems(
       title: "Edit Board Source",
       description: "Edit the current board's source in a text editor",
       onClick: async () => {
-        const src = await boardContext?.serializeBoard();
+        const src = await serializeBoardSource(boardContext);
         if (src) {
           setBoardSource(JSON.stringify(src, null, 2));
         }
@@ -103,7 +104,7 @@ export function createMenuItems(
       description:
         "Refine or Build a board using the Workflow Builder using AI",
       onClick: async () => {
-        const src = await boardContext?.serializeBoard();
+        const src = await serializeBoardSource(boardContext);
         if (!src) {
           boardContext?.appContext?.pushNotification({
             type: "error",
