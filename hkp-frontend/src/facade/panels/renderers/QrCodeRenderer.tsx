@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { QrCodeWidget } from "../../types";
-import { findService } from "../../boardServices";
+import { useResolvedService } from "../../serviceNotifications";
 import { resolvePath } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 
@@ -11,9 +11,11 @@ export function QrCodeRenderer({
 }: WidgetRendererProps<QrCodeWidget>) {
   const [url, setUrl] = useState("");
 
-  const sourceService = useMemo(
-    () => findService(boardContext, widget.source.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.source.serviceUuid],
+  // Polled for rather than looked up once: a service inside a sub-service is
+  // built after the facade first draws.
+  const sourceService = useResolvedService(
+    boardContext,
+    widget.source.serviceUuid,
   );
 
   useEffect(() => {
