@@ -32,11 +32,35 @@
  * "{%" is rendered by Inja against the incoming data, whether or not its key is
  * dynamic. Templates written before the `=` convention therefore behave as they
  * always did.
+ *
+ * What a pass says about itself is notified when it changes, and is part of the
+ * state while there is something to say, so a panel opened later shows it;
+ * configuring it does nothing. The same in every runtime (browser Map.ts,
+ * hkp-node map.ts, hkp-python map_service.py):
+ *
+ * - `error`: a term that does not parse — said when the template is configured
+ *   — or that fails to evaluate. A failing pass stops the flow (Null), since a
+ *   mapping that could not be made has nothing to pass on, and is logged, since
+ *   nobody may be watching. With an array input, one failing element fails the
+ *   pass. (An Inja template that fails to render still logs and keeps its text,
+ *   as it always has.)
+ * - `warnings`: a term whose value is empty because what it read was not there
+ *   — `title: params.titel not found`. The flow goes on: an absent field is
+ *   often legitimate, and a typo is only visible this way.
+ *
+ * A lone "=" is the value of its term, whatever the mode; a null one has
+ * nothing to pass on.
  */
 namespace hkp {
 
 class Map : public Service
 {
+  // A term that failed, named by where it sits in the template.
+  struct TermError : std::runtime_error
+  {
+    using std::runtime_error::runtime_error;
+  };
+
 public:
   static std::string serviceId() { return "map"; }
   static std::string version() { return "v1"; }
@@ -108,17 +132,22 @@ public:
       { "arrayMode", m_arrayMode },
       { "sensingMode", m_sensingMode }
     };
-    // Only while there is one, so a panel opened after the failure shows it.
-    if (!m_error.empty())
+    if (!m_reportedError.empty())
     {
-      state["error"] = m_error;
+      state["error"] = m_reportedError;
+    }
+    if (!m_reportedWarnings.empty())
+    {
+      state["warnings"] = m_reportedWarnings;
     }
     return Service::mergeStateWith(state);
   }
 
   Data process(Data data) override
   {
-    auto inputJson = getJSONFromData(data);
+    // No input — a Map at the head of a board run without anything before it
+    // — still builds its template, as in the other runtimes; `params` is null.
+    auto inputJson = isUndefined(data) ? std::optional<json>(nullptr) : getJSONFromData(data);
     if (!inputJson)
     {
       std::cerr << "Map service: input data is not JSON" << std::endl;
@@ -131,59 +160,91 @@ public:
     {
       json learned = json::object();
       flattenInto(*inputJson, "", learned);
-      updateTemplate(learned);
+      updateTemplate(sensed(learned));
       updateSensingMode(false);
       return Null();
     }
 
-    std::string failure;
-    if (m_arrayMode != "single" && inputJson->is_array())
-    {
-      json result = json::array();
-      for (const auto& item : *inputJson)
-      {
-        result.push_back(mapOne(item, failure));
-      }
-      reportError(failure);
-      return Data(result);
-    }
-
-    json result = mapOne(*inputJson, failure);
-    reportError(failure);
-    return Data(result);
-  }
-
-private:
-  // `failure` keeps the first reason a mapping in this call did not apply.
-  json mapOne(const json& inputData, std::string& failure)
-  {
+    m_passWarnings.clear();
     try
     {
-      return mergeWithInput(processTemplate(m_template, inputData), inputData);
+      json result;
+      if (m_arrayMode != "single" && inputJson->is_array())
+      {
+        result = json::array();
+        for (const auto& item : *inputJson)
+        {
+          result.push_back(mapOne(item));
+        }
+      }
+      else
+      {
+        result = mapOne(*inputJson);
+      }
+      report("", m_passWarnings);
+      if (result.is_null())
+      {
+        return Null(); // a lone "=" that is null has nothing to pass on
+      }
+      return Data(result);
+    }
+    catch (const TermError& e)
+    {
+      report(e.what(), m_passWarnings);
+      log(LogLevel::Error, "service.failed", json{{"message", e.what()}});
+      return Null();
     }
     catch (const std::exception& e)
     {
-      std::cerr << "Map service: " << e.what() << " in template "
-                << m_template.dump() << std::endl;
-      if (failure.empty())
-      {
-        failure = e.what();
-      }
-      return inputData; // identity - the mapping could not be applied
+      // A fault in the Map rather than in its template, so it is not the
+      // Map's error. Stopped here rather than thrown on, as the other runtimes
+      // do: a run hkp-rt starts on its event loop, a timer's, has nothing above
+      // it to catch it.
+      std::cerr << "Map service: " << e.what() << std::endl;
+      log(LogLevel::Error, "service.failed", json{{"message", e.what()}});
+      return Null();
     }
   }
 
-  // Sent when it changes, not on every run: a Map behind a fast timer would
-  // otherwise repeat the same message many times a second. An empty error is
-  // sent as null, which clears it.
-  void reportError(const std::string& error)
+private:
+  json mapOne(const json& inputData)
   {
-    if (error == m_error)
+    const json mapped = processTemplate(m_template, inputData, "");
+    return isLoneTerm(m_template) ? mapped : mergeWithInput(mapped, inputData);
+  }
+
+  // An object of a lone "=" key, which stands for its term's value.
+  static bool isLoneTerm(const json& node)
+  {
+    return node.is_object() && node.size() == 1 && node.contains("=");
+  }
+
+  // Where a term sits in a template: `items.0.title`. A lone "=" adds nothing
+  // to the path, since it stands for the value it sits in; at the top it is
+  // named "=". The one rule both configuring and a pass name a term by, so the
+  // same failure is said in the same words.
+  static std::string pathIn(const std::string& label, const std::string& key)
+  {
+    if (key.empty())
     {
-      return;
+      return label.empty() ? "=" : label;
     }
-    m_error = error;
-    sendNotification(json{{"error", m_error.empty() ? json(nullptr) : json(m_error)}});
+    return label.empty() ? key : label + "." + key;
+  }
+
+  // Notifies what a pass or a template said about itself, when it changed.
+  void report(const std::string& error, const std::vector<std::string>& warnings)
+  {
+    if (error != m_reportedError)
+    {
+      sendNotification(json{{"error", error}});
+    }
+    if (warnings != m_reportedWarnings)
+    {
+      sendNotification(json{{"warnings", warnings}});
+    }
+    m_reportedError = error;
+    m_reportedWarnings = warnings;
   }
 
   // Merging only applies when both sides are objects; a template that produced
@@ -207,14 +268,14 @@ private:
     return result;
   }
 
-  json processTemplate(const json& templateNode, const json& inputData)
+  json processTemplate(const json& templateNode, const json& inputData, const std::string& label)
   {
     if (templateNode.is_object())
     {
       // A lone "=" key maps to a scalar rather than to an object.
-      if (templateNode.size() == 1 && templateNode.contains("="))
+      if (isLoneTerm(templateNode))
       {
-        return processDynamicValue(templateNode["="], inputData);
+        return processDynamicValue(templateNode["="], inputData, pathIn(label, ""));
       }
 
       json result = json::object();
@@ -228,8 +289,8 @@ private:
         // name as well as the value.
         const std::string processedKey = processInjaTemplate(name, inputData);
         const json processedValue = dynamic
-          ? processDynamicTerm(processedKey, value, inputData)
-          : processValue(value, inputData);
+          ? processDynamicValue(value, inputData, pathIn(label, name))
+          : processValue(value, inputData, pathIn(label, name));
 
         if (processedKey.find('.') != std::string::npos)
         {
@@ -246,9 +307,9 @@ private:
     else if (templateNode.is_array())
     {
       json result = json::array();
-      for (const auto& item : templateNode)
+      for (size_t i = 0; i < templateNode.size(); ++i)
       {
-        result.push_back(processValue(item, inputData));
+        result.push_back(processValue(templateNode[i], inputData, pathIn(label, std::to_string(i))));
       }
       return result;
     }
@@ -263,19 +324,19 @@ private:
     }
   }
 
-  json processValue(const json& value, const json& inputData)
+  json processValue(const json& value, const json& inputData, const std::string& label)
   {
     if (value.is_object())
     {
       // Process recursively as a nested object
-      return processTemplate(value, inputData);
+      return processTemplate(value, inputData, label);
     }
     else if (value.is_array())
     {
       json result = json::array();
-      for (const auto& item : value)
+      for (size_t i = 0; i < value.size(); ++i)
       {
-        result.push_back(processValue(item, inputData));
+        result.push_back(processValue(value[i], inputData, pathIn(label, std::to_string(i))));
       }
       return result;
     }
@@ -308,41 +369,112 @@ private:
     }
   }
 
-  // A failing term is named by its key, since the panel shows one message for
-  // the whole template.
-  json processDynamicTerm(const std::string& key, const json& value, const json& inputData)
-  {
-    try
-    {
-      return processDynamicValue(value, inputData);
-    }
-    catch (const std::exception& e)
-    {
-      throw std::runtime_error(key + ": " + e.what());
-    }
-  }
-
   // The value behind a key marked dynamic with "=". Inja markers keep their
-  // meaning; everything else is an expression over `params`.
-  json processDynamicValue(const json& value, const json& inputData)
+  // meaning; everything else is an expression over `params`. A failure is
+  // named by `label`, where the term sits in the template; an empty value whose
+  // reads found nothing is a warning.
+  json processDynamicValue(const json& value, const json& inputData, const std::string& label)
   {
     if (!value.is_string())
     {
-      return processValue(value, inputData);
+      return processValue(value, inputData, label);
     }
 
     const std::string& source = value.get_ref<const std::string&>();
     if (isInjaTemplate(source))
     {
-      return processValue(value, inputData);
+      return processValue(value, inputData, label);
     }
 
-    return compile(source).evaluate(inputData);
+    std::vector<std::string> missing;
+    const expression::OnMissing onMissing = [&missing](const std::string& path) {
+      missing.push_back(path);
+    };
+    json result;
+    try
+    {
+      result = compile(source).evaluate(inputData, &onMissing);
+    }
+    catch (const expression::ParseError& e)
+    {
+      throw TermError(label + ": " + invalidExpression(source, e));
+    }
+    catch (const std::exception& e)
+    {
+      throw TermError(label + ": " + e.what());
+    }
+
+    if (result.is_null() && !missing.empty())
+    {
+      std::string paths;
+      for (const auto& path : missing)
+      {
+        paths += (paths.empty() ? "" : ", ") + path;
+      }
+      const std::string warning = label + ": " + paths + " not found";
+      if (std::find(m_passWarnings.begin(), m_passWarnings.end(), warning) == m_passWarnings.end())
+      {
+        m_passWarnings.push_back(warning);
+      }
+    }
+    return result;
+  }
+
+  static std::string invalidExpression(const std::string& source, const std::exception& e)
+  {
+    return "invalid expression '" + source + "': " + e.what();
+  }
+
+  // The first term in a template that does not parse, named — said as soon as
+  // the template is configured rather than on the first pass.
+  static std::string firstParseError(const json& node, const std::string& label)
+  {
+    if (node.is_array())
+    {
+      for (size_t i = 0; i < node.size(); ++i)
+      {
+        const std::string error = firstParseError(node[i], pathIn(label, std::to_string(i)));
+        if (!error.empty())
+        {
+          return error;
+        }
+      }
+      return "";
+    }
+    if (!node.is_object())
+    {
+      return "";
+    }
+    for (const auto& [key, value] : node.items())
+    {
+      const bool dynamic = !key.empty() && key.back() == '=';
+      const std::string name = dynamic ? key.substr(0, key.size() - 1) : key;
+      const std::string where = pathIn(label, name);
+      if (dynamic && value.is_string() && !isInjaTemplate(value.get<std::string>()))
+      {
+        try
+        {
+          expression::Expression::parse(value.get<std::string>());
+        }
+        catch (const expression::ParseError& e)
+        {
+          return where + ": " + invalidExpression(value.get<std::string>(), e);
+        }
+      }
+      else
+      {
+        const std::string error = firstParseError(value, where);
+        if (!error.empty())
+        {
+          return error;
+        }
+      }
+    }
+    return "";
   }
 
   // Expressions are parsed once per distinct source and reused across inputs.
-  // A source that does not parse throws here, which mapOne turns into an
-  // identity mapping for that input.
+  // A source that does not parse throws here, which fails the pass.
   const expression::Expression& compile(const std::string& source)
   {
     auto it = m_expressions.find(source);
@@ -361,9 +493,7 @@ private:
     m_template = templateNode.is_null() ? json::object() : templateNode;
     m_expressions.clear();
     sendNotification(json{{"template", m_template}});
-    // An error was about the template it replaces; the next run tells about
-    // this one.
-    reportError("");
+    report(firstParseError(m_template, ""), {});
   }
 
   void updateSensingMode(bool isActive)
@@ -395,6 +525,51 @@ private:
       // A service that is not part of a pipeline has nowhere to push to.
       std::cerr << "Map service: cannot inject - " << e.what() << std::endl;
     }
+  }
+
+  // A sensed template: the shape of what arrived, and nothing that runs — as in
+  // the other runtimes. Sensing builds a template out of input, which arrives
+  // from wherever the board is fed, and a template runs: a key ending in "=" is
+  // an expression, and a key or text carrying an Inja marker is rendered. So the
+  // suffix is dropped rather than the field, and a marker is escaped to render
+  // back to exactly what arrived.
+  static json sensed(const json& learned)
+  {
+    json safe = json::object();
+    for (const auto& [key, value] : learned.items())
+    {
+      std::string name = key;
+      while (!name.empty() && name.back() == '=')
+      {
+        name.pop_back();
+      }
+      safe[literalText(name)] = value.is_string() ? json(literalText(value.get<std::string>())) : value;
+    }
+    return safe;
+  }
+
+  // Text that Inja renders as itself. Only text with a marker is rendered at
+  // all; in it, every "{" and "#" — what opens an expression, a statement, a
+  // comment or a line statement — is written as an expression that produces it.
+  static std::string literalText(const std::string& text)
+  {
+    if (!isInjaTemplate(text))
+    {
+      return text;
+    }
+    std::string escaped;
+    for (const char c : text)
+    {
+      if (c == '{' || c == '#')
+      {
+        escaped += std::string("{{ \"") + c + "\" }}";
+      }
+      else
+      {
+        escaped += c;
+      }
+    }
+    return escaped;
   }
 
   // Turns nested data into the dotted-key template the mapping UI edits, e.g.
@@ -455,9 +630,12 @@ private:
   std::string m_mode = "replace";
   std::string m_arrayMode = "array";
   bool m_sensingMode = false;
-  // Why the last mapping failed; empty when it did not.
-  std::string m_error;
   std::map<std::string, expression::Expression> m_expressions;
+  // What the current pass found empty, and what was last notified about the
+  // template, so only a change is.
+  std::vector<std::string> m_passWarnings;
+  std::string m_reportedError;
+  std::vector<std::string> m_reportedWarnings;
 };
 
 }

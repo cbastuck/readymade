@@ -295,7 +295,10 @@ how it is spelled: `..` and symlinks are followed before it is compared, and a
 name that arrives with the data — a file inside a configured folder, a cache
 entry's name — is taken inside that folder whatever it says. The rule lives in
 one place (`hkp-rt/lib/include/files.h`); every service resolves through it, and
-a test fails on a file opened any other way.
+a test fails on a file opened any other way. The test reads hkp-rt's own sources,
+so a library that opens files is closed where it is set up: Inja's `include`,
+which would read any path a template names, is switched off wherever hkp-rt
+renders one (`hkp-rt/lib/src/common/inja.h`).
 
 What it does not cover: hkp-rt has one tenant, so everyone a hosted server lets
 in shares its folders; paths the operator names — a runtime config, plugins —

@@ -40,8 +40,10 @@ export default function MapUI(props: ServiceUIProps) {
   const [selectedArrayIndex, setSelectedArrayIndex] = useState(0);
   const [mode, setMode] = useState<Mode>(Mode.REPLACE);
   const [isSensingMode, setIsSensingMode] = useState(false);
-  // Why the last mapping failed, as the service reports it; null clears it.
-  const [error, setError] = useState<string | null>(null);
+  // What the last pass said about itself: notified by the service in every
+  // runtime, never part of the state a board saves.
+  const [error, setError] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   const editableItems = useMemo(() => {
     if (isObjectTemplate(template)) {
@@ -89,8 +91,12 @@ export default function MapUI(props: ServiceUIProps) {
       setIsSensingMode(newState.sensingMode);
     }
 
-    if (newState.error !== undefined) {
-      setError(newState.error || null);
+    if (typeof newState.error === "string") {
+      setError(newState.error);
+    }
+
+    if (Array.isArray(newState.warnings)) {
+      setWarnings(newState.warnings);
     }
   };
 
@@ -311,11 +317,17 @@ export default function MapUI(props: ServiceUIProps) {
             editor.
           </div>
         )}
+
         {error && (
           <div role="alert" className="text-xs text-red-600 break-words">
             {error}
           </div>
         )}
+        {warnings.map((warning) => (
+          <div key={warning} className="text-xs text-amber-600 break-words">
+            {warning}
+          </div>
+        ))}
       </div>
     </ServiceUI>
   );

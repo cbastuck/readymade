@@ -20,6 +20,10 @@
  *
  *   Expression e = Expression::parse("round(params.value * 2)");
  *   json result = e.evaluate(input);   // throws EvaluationError on failure
+ *
+ * A member of nothing is nothing: `params.a.b` with no `a` is null, as in the
+ * browser, Node and Python runtimes. Whoever wants to know which reads came up
+ * empty passes an `OnMissing`.
  */
 
 #include <algorithm>
@@ -34,10 +38,12 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
@@ -64,6 +70,10 @@ public:
 // Variables visible to an expression. Always holds "params"; find/filter add
 // "item" and "index" while evaluating their predicate.
 using Scope = std::map<std::string, json>;
+
+// Told the path of a read that found nothing — `params.titel` — once per chain:
+// in `params.a.b.c` with no `a`, only `params.a` is reported.
+using OnMissing = std::function<void(const std::string&)>;
 
 // ── Value helpers ────────────────────────────────────────────────────────────
 
@@ -880,45 +890,114 @@ private:
 
 json evaluateNode(const NodePtr& node, const Scope& scope);
 
-inline json memberOf(const json& object, const json& key)
-{
-  if (object.is_array())
-  {
-    if (key.is_string() && key.get_ref<const std::string&>() == "length")
-    {
-      return json(static_cast<int64_t>(object.size()));
-    }
-    const double index = toNumber(key);
-    if (std::isnan(index) || index < 0 || index >= static_cast<double>(object.size()))
-    {
-      return json();
-    }
-    return object[static_cast<size_t>(index)];
-  }
+// Who hears about reads that found nothing during the evaluation that asked —
+// and only that one: a find/filter predicate evaluated inside it reports
+// nothing, as in the other runtimes. Set by `ReportingMissing` for one call.
+inline thread_local const OnMissing* currentOnMissing = nullptr;
 
-  if (object.is_string())
+struct ReportingMissing
+{
+  explicit ReportingMissing(const OnMissing* onMissing) : m_previous(currentOnMissing)
   {
-    const std::string& text = object.get_ref<const std::string&>();
+    currentOnMissing = onMissing;
+  }
+  ~ReportingMissing() { currentOnMissing = m_previous; }
+  ReportingMissing(const ReportingMissing&) = delete;
+  ReportingMissing& operator=(const ReportingMissing&) = delete;
+
+private:
+  const OnMissing* m_previous;
+};
+
+// How a read is named when it is reported: `params.items[0].title`.
+inline std::string pathOf(const NodePtr& node)
+{
+  if (!node)
+  {
+    return "…";
+  }
+  if (node->kind == Node::Kind::Identifier)
+  {
+    return node->name;
+  }
+  if (node->kind == Node::Kind::Member)
+  {
+    const std::string object = pathOf(node->left);
+    if (!node->computed)
+    {
+      return object + "." + node->name;
+    }
+    if (node->right && node->right->kind == Node::Kind::Literal)
+    {
+      return object + "[" + node->right->value.dump() + "]";
+    }
+    return object + "[…]";
+  }
+  return "…";
+}
+
+// What object[key] finds, or nothing when nothing is there. One set of rules
+// for every container, so what a read finds and whether it found anything
+// cannot disagree: an array or a string is a sequence — its `length`, or the
+// item at an index within it — and an object is read by the key as text.
+inline std::optional<json> memberOf(const json& object, const json& key)
+{
+  if (object.is_array() || object.is_string())
+  {
+    const size_t size = object.is_array() ? object.size() : object.get_ref<const std::string&>().size();
     if (key.is_string() && key.get_ref<const std::string&>() == "length")
     {
-      return json(static_cast<int64_t>(text.size()));
+      return json(static_cast<int64_t>(size));
     }
     const double index = toNumber(key);
-    if (std::isnan(index) || index < 0 || index >= static_cast<double>(text.size()))
+    if (std::isnan(index) || index < 0 || index >= static_cast<double>(size))
     {
-      return json();
+      return std::nullopt;
     }
-    return json(std::string(1, text[static_cast<size_t>(index)]));
+    const auto at = static_cast<size_t>(index);
+    return object.is_array() ? object[at] : json(std::string(1, object.get_ref<const std::string&>()[at]));
   }
 
   if (object.is_object())
   {
-    const std::string name = toText(key);
-    auto it = object.find(name);
-    return it == object.end() ? json() : *it;
+    auto it = object.find(toText(key));
+    if (it != object.end())
+    {
+      return *it;
+    }
   }
 
-  return json();
+  return std::nullopt;
+}
+
+// A member read's value, and whether it found something there. A read past a
+// link that came up empty was reported with it; one past a link that is there
+// but null is reported itself. Only a member read can tell the two apart, which
+// is why the chain is walked here rather than through evaluateNode.
+inline std::pair<json, bool> readMember(const NodePtr& node, const Scope& scope)
+{
+  json object;
+  bool objectFound = true;
+  if (node->left && node->left->kind == Node::Kind::Member)
+  {
+    auto read = readMember(node->left, scope);
+    object = std::move(read.first);
+    objectFound = read.second;
+  }
+  else
+  {
+    object = evaluateNode(node->left, scope);
+  }
+  const json key = node->computed ? evaluateNode(node->right, scope) : json(node->name);
+  if (auto value = memberOf(object, key))
+  {
+    return {std::move(*value), true};
+  }
+  if (currentOnMissing && objectFound)
+  {
+    (*currentOnMissing)(pathOf(node));
+  }
+  return {json(), false};
 }
 
 inline bool looseEquals(const json& left, const json& right)
@@ -1008,11 +1087,7 @@ inline json evaluateNode(const NodePtr& node, const Scope& scope)
     }
 
     case Node::Kind::Member:
-    {
-      const json object = evaluateNode(node->left, scope);
-      const json key = node->computed ? evaluateNode(node->right, scope) : json(node->name);
-      return memberOf(object, key);
-    }
+      return readMember(node, scope).first;
 
     case Node::Kind::ArrayLiteral:
     {
@@ -1097,17 +1172,19 @@ public:
     return expression;
   }
 
-  json evaluate(const json& params) const
+  json evaluate(const json& params, const OnMissing* onMissing = nullptr) const
   {
-    return evaluate(Scope{{"params", params}});
+    return evaluate(Scope{{"params", params}}, onMissing);
   }
 
-  json evaluate(const Scope& scope) const
+  // `onMissing` hears about every read that found nothing, once per chain.
+  json evaluate(const Scope& scope, const OnMissing* onMissing = nullptr) const
   {
     if (!m_root)
     {
       throw EvaluationError("expression is empty");
     }
+    detail::ReportingMissing reporting(onMissing);
     return detail::evaluateNode(m_root, scope);
   }
 

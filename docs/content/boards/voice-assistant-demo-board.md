@@ -46,6 +46,6 @@ Python runtime were on another machine, which is the point: moving it there is a
 
 Needs an hkp-python kept under the name `python` in *Manage runtime servers*,
 with both extras —
-`pip install "hkp-python[asr,tts]"` — and an OpenAI-compatible LLM server on
+`uv sync --extra asr --extra tts` in hkp-python — and an OpenAI-compatible LLM server on
 port 8081. First use downloads the Whisper and Kokoro models, so give it a
 moment.

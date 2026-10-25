@@ -45,6 +45,7 @@ add_executable(hkp-rt-service-tests
   service_filter.test.cpp
   service_injector.test.cpp
   service_map.test.cpp
+  expression.test.cpp
   service_static.test.cpp
   service_cache.test.cpp
   runtime_lifecycle.test.cpp

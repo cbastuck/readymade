@@ -21,6 +21,10 @@ namespace hkp {
     try
     {
       inja::Environment env;
+      // An include would read the file it names, from anywhere the process can,
+      // past the files guard (files.h) — and a template is what a board, or a
+      // sensed input, wrote. An include renders as a failure instead.
+      env.set_search_included_templates_in_files(false);
       return env.render(templateStr, data);
     }
     catch (const std::exception& e)
