@@ -133,10 +133,11 @@ It reads bytes, not URLs. A document behind a link is `http-client`'s job —
 which keeps fetching, with everything that implies about what a server may be
 asked to reach, in the service that already answers for it.
 
-**The text is pushed, not returned.** Extraction takes long enough to matter and
-the pipeline does not wait, so the service returns nothing, stops the push, and
-calls the rest of the pipeline itself once the text exists (the same
-inversion-of-control path `http-client` takes).
+**The text is the service's answer.** Extraction takes long enough to matter,
+and the runtime awaits it, so the services after it run with the text once it
+exists — and a [Join](./join.md) around it comes back with the text beside what
+it already had, which is how a fetched page is read without losing the record it
+belongs to.
 
 Anything that goes wrong — an encrypted PDF, a missing backend, an empty
 document — is reported as `{ error }` and passes nothing on. A board that

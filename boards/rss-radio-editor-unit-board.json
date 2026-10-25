@@ -1,0 +1,471 @@
+{
+  "boardName": "Radio Editor",
+  "description": "A feed, briefed. Every minute it reads the feed it was given; any article it has not read before is fetched, read by a language model, and given a short brief written to be heard rather than read. What it publishes is the same feed again, with the brief where the feed's own line was.\n\nAn article appears in what it publishes **only once its brief is written**, so whatever reads that feed never sees an article before the editor has. That is the whole of its contract with the radio: the radio reads a feed, as it always did, and this one happens to say something worth hearing.\n\nThree things in its pipeline are worth reading closely. **The claim** is the radio's, a second time: one SQL statement that takes an article or hands back nothing, so an article already briefed stops its own pass. **Two detours** \u2014 the page, then the brief \u2014 each go off and come back *beside* the article rather than instead of it, which is how the brief still knows which article it belongs to. And **a page that cannot be read is not a failure**: the model is told so, and briefs from the title and the feed's line alone. Only a fetch that gets no answer at all is tried again, three times, after which the article is published with the line its feed gave it.\n\nThe model is Claude on hkp-node's `anthropic` backend, with the key from `{{secret.anthropic.key}}` in Settings \u2192 Secrets or `ANTHROPIC_API_KEY` in the runtime's environment. To brief with a local model instead, set the `backend` param to `server`, `serverUrl` to an OpenAI-compatible server, and `apiKey` to empty (or to the token that server wants).\n\nNeeds hkp-node, kept as the remote `node`.",
+  "unit": {
+    "name": "editor",
+    "params": {
+      "feedUrl": "https://hnrss.org/frontpage",
+      "feedName": "Hacker News",
+      "database": "rss-editor",
+      "retryAfter": "-15 minutes",
+      "tries": "3",
+      "backend": "anthropic",
+      "model": "claude-haiku-5-5",
+      "serverUrl": "",
+      "feedTitle": "Briefed",
+      "feedDescription": "Each article with a short brief, written to be heard",
+      "apiKey": "{{secret.anthropic.key}}"
+    }
+  },
+  "runtimes": [
+    {
+      "id": "edit",
+      "name": "Editor",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "briefs",
+      "name": "Briefed",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "edit": [
+      {
+        "uuid": "tick",
+        "serviceId": "timer",
+        "serviceName": "Every minute",
+        "state": {
+          "periodic": true,
+          "periodicValue": 60,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "feed",
+        "serviceId": "rss",
+        "serviceName": "The feed",
+        "state": {
+          "feeds": [
+            {
+              "url": "{{param.feedUrl}}",
+              "name": "{{param.feedName}}"
+            }
+          ],
+          "limit": 10,
+          "summaryChars": 400
+        }
+      },
+      {
+        "uuid": "each",
+        "serviceId": "iterator",
+        "serviceName": "Each article",
+        "state": {
+          "pipeline": [
+            {
+              "instanceId": "name",
+              "serviceId": "map",
+              "serviceName": "Name it",
+              "state": {
+                "mode": "add",
+                "template": {
+                  "guid=": "params.id || params.link",
+                  "retryAfter": "{{param.retryAfter}}",
+                  "tries": "{{param.tries}}"
+                }
+              }
+            },
+            {
+              "instanceId": "claim",
+              "serviceId": "sql",
+              "serviceName": "Claim it, or skip it",
+              "state": {
+                "mode": "query",
+                "database": "{{param.database}}",
+                "schema": "CREATE TABLE IF NOT EXISTS article (\n  guid      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL DEFAULT '',\n  link      TEXT NOT NULL DEFAULT '',\n  blurb     TEXT NOT NULL DEFAULT '',\n  feed      TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  seen      TEXT NOT NULL DEFAULT (datetime('now')),\n  claimed   TEXT NOT NULL DEFAULT (datetime('now')),\n  tries     INTEGER NOT NULL DEFAULT 1,\n  brief     TEXT,\n  written   TEXT\n);",
+                "statement": "INSERT INTO article (guid, title, link, blurb, feed, published)\nVALUES ($guid, $title, $link, $summary, $feed, $published)\nON CONFLICT(guid) DO UPDATE SET claimed = datetime('now'), tries = article.tries + 1\n  WHERE article.written IS NULL\n    AND article.tries < CAST($tries AS INTEGER)\n    AND article.claimed < datetime('now', $retryAfter)\nRETURNING guid, title, link, blurb"
+              }
+            },
+            {
+              "instanceId": "new",
+              "serviceId": "map",
+              "serviceName": "Only the new one",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "=": "params.count ? params.rows[0] : null"
+                }
+              }
+            },
+            {
+              "instanceId": "page",
+              "serviceId": "join",
+              "serviceName": "The page",
+              "state": {
+                "as": "page",
+                "pipeline": [
+                  {
+                    "instanceId": "where",
+                    "serviceId": "map",
+                    "serviceName": "Its address",
+                    "state": {
+                      "mode": "replace",
+                      "template": {
+                        "meta.method": "get",
+                        "meta.url=": "params.link"
+                      }
+                    }
+                  },
+                  {
+                    "instanceId": "fetch",
+                    "serviceId": "http-client",
+                    "serviceName": "Fetch it",
+                    "state": {
+                      "url": "",
+                      "method": "get",
+                      "userAgent": "Mozilla/5.0 (compatible; ReadymadeRadioEditor/1.0)",
+                      "timeoutMs": 20000
+                    }
+                  },
+                  {
+                    "instanceId": "readable",
+                    "serviceId": "map",
+                    "serviceName": "Only a page",
+                    "state": {
+                      "mode": "replace",
+                      "template": {
+                        "=": "params.meta.status === 200 && params.body ? params : 'The article could not be read.'"
+                      }
+                    }
+                  },
+                  {
+                    "instanceId": "text",
+                    "serviceId": "document-extract",
+                    "serviceName": "Its text",
+                    "state": {
+                      "backend": "builtin",
+                      "ocr": "off",
+                      "maxChars": 16000
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "instanceId": "brief",
+              "serviceId": "join",
+              "serviceName": "The brief",
+              "state": {
+                "as": "brief",
+                "pipeline": [
+                  {
+                    "instanceId": "ask",
+                    "serviceId": "map",
+                    "serviceName": "What to read",
+                    "state": {
+                      "mode": "replace",
+                      "template": {
+                        "prompt=": "'Title: ' + params.title + '\\n\\nThe feed says: ' + withoutUrls(params.blurb) + '\\n\\nThe article:\\n' + params.page.text"
+                      }
+                    }
+                  },
+                  {
+                    "instanceId": "write",
+                    "serviceId": "text-generation",
+                    "serviceName": "Write the brief",
+                    "state": {
+                      "backend": "{{param.backend}}",
+                      "model": "{{param.model}}",
+                      "serverUrl": "{{param.serverUrl}}",
+                      "apiKey": "{{param.apiKey}}",
+                      "systemPrompt": "You write the brief a radio presenter reads after an article's title. Say what the article reports or argues and why it matters, in two to four plain sentences and at most 80 words. It will be heard, not read: no markdown, lists, headings, links or quotation marks, and do not open with the title or with phrases like 'This article'. Use only what the text gives you. When the article text is missing or is not the article (an error page, a paywall, a cookie notice), work from the title and the feed's line alone and say less rather than guess.",
+                      "maxTokens": 300,
+                      "temperature": 0.3,
+                      "stream": false
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "instanceId": "keep",
+              "serviceId": "map",
+              "serviceName": "What to keep",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "guid=": "params.guid",
+                  "brief=": "params.brief.text"
+                }
+              }
+            },
+            {
+              "instanceId": "note",
+              "serviceId": "sql",
+              "serviceName": "Keep the brief",
+              "state": {
+                "mode": "run",
+                "database": "{{param.database}}",
+                "statement": "UPDATE article\n   SET brief = $brief, written = datetime('now')\n WHERE guid = $guid"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "end",
+        "serviceId": "stopper",
+        "serviceName": "End of the round",
+        "state": {}
+      }
+    ],
+    "briefs": [
+      {
+        "uuid": "pub-tick",
+        "serviceId": "timer",
+        "serviceName": "Every minute",
+        "state": {
+          "periodic": true,
+          "periodicValue": 60,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "rows",
+        "serviceId": "sql",
+        "serviceName": "The desk, newest first",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "SELECT guid, title, link, feed, IFNULL(brief, '') AS brief,\n       CASE WHEN written IS NOT NULL THEN 'Briefed ' || written\n            WHEN tries >= {{param.tries}} AND claimed < datetime('now', '{{param.retryAfter}}')\n              THEN 'Could not be fetched \u2014 the feed''s own line is used'\n            ELSE 'Reading\u2026' END AS status\n  FROM article\n ORDER BY seen DESC\n LIMIT 50"
+        }
+      },
+      {
+        "uuid": "seen",
+        "serviceId": "monitor",
+        "serviceName": "The desk",
+        "state": {}
+      },
+      {
+        "uuid": "pub-about",
+        "serviceId": "map",
+        "serviceName": "What the feed is called",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "channelTitle": "{{param.feedTitle}}",
+            "channelDescription": "{{param.feedDescription}}",
+            "channelLink": "hkp-mount://briefs/pub-serve"
+          }
+        }
+      },
+      {
+        "uuid": "pub-doc",
+        "serviceId": "sql",
+        "serviceName": "The briefed articles as a feed",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "statement": "SELECT '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'\n    || '<rss version=\"2.0\"><channel>'\n    || '<title><![CDATA[' || replace(IFNULL($channelTitle, ''), ']]>', ']]&gt;') || ']]></title>'\n    || '<link>' || replace(replace(replace(IFNULL($channelLink, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n    || '<description><![CDATA[' || replace(IFNULL($channelDescription, ''), ']]>', ']]&gt;') || ']]></description>'\n    || IFNULL(group_concat(item, '' ORDER BY sortKey DESC), '')\n    || '</channel></rss>' AS feed\n  FROM (\n    SELECT '<item>'\n        || '<title><![CDATA[' || replace(IFNULL(title, ''), ']]>', ']]&gt;') || ']]></title>'\n        || '<link>' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n        || '<guid isPermaLink=\"false\">' || replace(replace(replace(guid, '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</guid>'\n        || '<pubDate>' || IFNULL(published, '') || '</pubDate>'\n        || '<category><![CDATA[' || replace(IFNULL(feed, ''), ']]>', ']]&gt;') || ']]></category>'\n        || '<description><![CDATA[' || replace(COALESCE(NULLIF(brief, ''), blurb, ''), ']]>', ']]&gt;') || ']]></description>'\n        || '</item>' AS item,\n           seen AS sortKey\n      FROM article\n     WHERE written IS NOT NULL\n        OR (tries >= {{param.tries}} AND claimed < datetime('now', '{{param.retryAfter}}'))\n     ORDER BY seen DESC\n     LIMIT 100\n  )"
+        }
+      },
+      {
+        "uuid": "pub-wrap",
+        "serviceId": "map",
+        "serviceName": "As a document",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "meta.status": 200,
+            "meta.contentType": "application/rss+xml; charset=utf-8",
+            "body=": "params.rows[0].feed"
+          }
+        }
+      },
+      {
+        "uuid": "pub-serve",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Serve the feed",
+        "state": {
+          "bypass": false,
+          "mountName": "briefs",
+          "onProcess": [
+            {
+              "instanceId": "keep-briefs",
+              "serviceId": "hold",
+              "serviceName": "Keep the document",
+              "state": {
+                "slot": "document",
+                "op": "write"
+              }
+            }
+          ],
+          "onRequest": [
+            {
+              "instanceId": "serve-briefs",
+              "serviceId": "hold",
+              "serviceName": "Serve the document",
+              "state": {
+                "slot": "document",
+                "op": "read"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "editor",
+        "title": "Editor",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Read now",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "feed",
+                      "payload": {}
+                    }
+                  ],
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "feed",
+                      "path": "fetching"
+                    },
+                    "statusColors": {
+                      "true": "#f59e0b",
+                      "false": "#22c55e"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "label": "Articles in the feed",
+                  "source": {
+                    "serviceUuid": "feed",
+                    "path": "count"
+                  },
+                  "placeholder": "\u2014",
+                  "grow": true
+                },
+                {
+                  "type": "button",
+                  "label": "Refresh the desk",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "rows",
+                      "payload": {}
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Every article the editor has seen, newest first, with the brief the radio will read after its title. An article reaches the published feed only once its brief is written.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "seen",
+                "path": "rows"
+              },
+              "gap": 0,
+              "template": {
+                "direction": "column",
+                "gap": 4,
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.title}}",
+                    "href": "{{item.link}}",
+                    "fontSize": 14
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.feed}} \u00b7 {{item.status}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.brief}}",
+                    "fontSize": 13
+                  }
+                ]
+              },
+              "stripe": {
+                "even": "rgba(127,127,127,0.10)",
+                "odd": "rgba(127,127,127,0.03)",
+                "padding": 10,
+                "radius": 6
+              }
+            },
+            {
+              "type": "text",
+              "label": "Feed",
+              "source": {
+                "serviceUuid": "pub-serve",
+                "path": "__hkpMount"
+              },
+              "placeholder": "not published yet",
+              "tone": "muted",
+              "fontSize": 11,
+              "wrap": true,
+              "copyable": true
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "feed",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "each",
+          "path": "error"
+        }
+      }
+    ],
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "rows",
+        "payload": {}
+      }
+    ]
+  }
+}

@@ -495,7 +495,9 @@ account of its flow (`__internal`), which carries the data passing through.
 state is (`projectNotification`): to the paths the facade's sources read from
 that service, so a facade reading `rows` of `{ rows, count, … }` gives a member
 `rows`. A source with no `path` reads the notification whole and is given it
-whole — which is a reason to name a path. A notification holding none of the
+whole — which is a reason to name a path. A path inside one that is sent whole
+adds nothing and is skipped: a calendar reading `rows` beside a line reading
+`rows.0.day` is sent the rows as a list, not rebuilt as an object holding `0`. A notification holding none of the
 paths is not sent to a member: an empty projection would reveal that the
 service spoke without changing or clearing the widget. Clearing is explicit —
 for example, a table sends `rows: []` — and that value is projected normally.
