@@ -82,6 +82,8 @@ public:
                 const std::string& sender,
                 std::function<void(Data)> callback = nullptr) override;
   void notifyProcessFinished(const Service& svc, const Data& data) override;
+  // As the runtime around it says: Capture mode is the board's, at any depth.
+  bool capturesCalls() const override { return m_parent.capturesCalls(); }
   // Straight out to the runtime around this one: nothing provisions a nested
   // pipeline, so its own vault would always be empty. Asked for each time
   // rather than copied, so a value pushed after a board is running reaches a

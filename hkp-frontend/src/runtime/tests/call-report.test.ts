@@ -8,6 +8,7 @@ import {
   reportedValue,
 } from "../callReport";
 import { onServiceProcess, onServiceResult } from "../serviceState";
+import { setCapturing } from "../captureMode";
 
 /**
  * A call report carries the value only up to a limit; above it, a description.
@@ -100,7 +101,24 @@ describe("a description", () => {
 });
 
 describe("the reports the browser runtime makes", () => {
+  it("carry no value without Capture mode, and say when a call stopped", () => {
+    setCapturing(false);
+    const notify = vi.fn();
+    const app = { notify } as any;
+
+    const call = onServiceProcess(app, { uuid: "svc" } as any, { secret: 1 });
+    onServiceResult(app, { uuid: "svc" } as any, { secret: 2 }, call);
+    onServiceResult(app, { uuid: "svc" } as any, null, call);
+
+    expect(notify.mock.calls.map(([, payload]) => payload)).toEqual([
+      { __internal: { state: "call-process", call } },
+      { __internal: { state: "call-process-finished", call } },
+      { __internal: { state: "call-process-finished", call, stopped: true } },
+    ]);
+  });
+
   it("describe a value above the limit, either side of a call", () => {
+    setCapturing(true);
     const notify = vi.fn();
     const app = { notify } as any;
     const big = "z".repeat(CALL_REPORT_LIMIT + 1);
@@ -111,6 +129,7 @@ describe("the reports the browser runtime makes", () => {
     const [[, began], [, ended]] = notify.mock.calls;
     expect(began.__internal.data.__hkpTooLarge).toMatchObject({ type: "string" });
     expect(ended.__internal.data.__hkpTooLarge).toMatchObject({ type: "string" });
+    setCapturing(false);
   });
 });
 

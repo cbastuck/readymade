@@ -407,12 +407,19 @@ json App::setRuntimeState(const std::string& runtimeId, const json& state,
     {
       rt->setLogData(state["logData"].get<bool>());
     }
+    if (state.contains("capture") && state["capture"].is_boolean())
+    {
+      rt->setCapture(state["capture"].get<bool>());
+    }
   }
   const auto config = rt->getConfiguration();
   return json{
     {"logging", config.logging},
     {"logData", config.logData},
     {"logLevel", config.logLevel},
+    // Answered, never configured: Capture mode is not part of what a runtime
+    // is built from, so nothing that saves a configuration can keep it.
+    {"capture", rt->capturesCalls()},
   };
 }
 

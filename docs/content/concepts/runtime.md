@@ -353,34 +353,55 @@ Everything else — the intermediate values passing between the services inside
 one runtime — stays there. A runtime is a box that can be closed.
 
 **With one exception, and it is the useful one.** Attach a UI to a runtime and
-it starts reporting what each of its services is doing: not only what each
-produced, but the input each was handed. That is what makes the panels live
-(`onServiceProcess` sends `{__internal: {state: "call-process", data}}` before
-every call, `onServiceResult` after it), and it is exactly what is wanted while
-building.
+it reports each call its services make: a pair of notifications around every
+call (`{__internal: {state: "call-process"}}` before it,
+`"call-process-finished"` after it). That is what makes the panels live: the
+processing indicator, the output plug lighting, the overview's activity.
 
-A report carries a value only up to 5 MiB. Above that, a description takes
-its place, `{"__hkpTooLarge": {type, bytes, exact, preview}}`: what the value
-is, how large (`exact` is false where counting stopped at the limit), and how
-it begins. The Flow Inspector shows the description and will not run the value
-again. Without the limit, a value that never needs to leave its runtime would
-leave it anyway, as a report, once for every service it passes through. On a
-deployed board that is past the coordinator's frame limit, and enough to close
-the runtime's connection. The rule is the same in every runtime
-(`callReport.ts`, `call_report.py`, `call_report.h`).
+**What a report carries depends on Capture mode.** Without it, a report says
+only that the call happened and, when it ends, whether it passed nothing on
+(`stopped: true`). With it, a report also carries the value going in and the
+value coming out, which is what the Flow Inspector shows. What passes between
+the services of a run is private, and only what a board outputs is public. So
+the values leave a runtime only while someone building the board asks to see
+them:
 
-It also means that while something is attached, a runtime's internal traffic is
-leaving it. When nothing is attached, nothing is sent — this is not a filter
-applied afterwards: the browser drops a notification with no target
-(`hasCallbacks`), and a runtime server returns early when its socket set is
-empty (`sendJsonNotification`). So it is a property that can be planned around:
-keep a sensitive stage in a runtime nothing is attached to, and its intermediate
-data stays put.
+- **The switch** is the Capture button beside the toolbar's Play buttons, or
+  for a deployed board its owner's in the Cloud Boards view. Opening the
+  inspector while it is off asks whether to turn it on.
+- **It is never saved.** It is not in the board document or a runtime's
+  configuration (`PATCH /runtimes/:id/state` sets it on a running runtime and
+  answers it, and nothing builds a runtime with it). A board always opens with
+  it off. A deployed board's coordinator holds it in its session only, and it
+  ends when the owner's last bridge to the board closes.
+- **Where it is applied:** where a report leaves. In hkp-node and hkp-python
+  that is the server's two exits, the notification socket and the coordinator
+  link (`outgoingPayload`). In hkp-rt it is where the report is made, which a
+  nested pipeline asks of the runtime around it (`capturesCalls`). In the
+  browser it is `serviceState.ts`. A pipeline nested at any depth follows the
+  runtime that holds it.
 
-The caveat is deployment. **A deployed board's coordinator holds its own socket
-to every runtime it provisioned**, because that is how it stays in touch with
-them — so on a deployed board, assume there is always a listener. A step whose
-intermediate data must not leave its machine belongs on a board you own
+Even with Capture mode on, a report carries a value only up to 5 MiB. Above
+that, a description takes its place, `{"__hkpTooLarge": {type, bytes, exact,
+preview}}`: what the value is, how large (`exact` is false where counting
+stopped at the limit), and how it begins. The Flow Inspector shows the
+description and will not run it again. Without the limit, a value that never
+needs to leave its runtime would leave it anyway, once for every service it
+passes through. On a deployed board that is past the coordinator's frame limit,
+and enough to close the runtime's connection. The rule is the same in every
+runtime (`callReport.ts`, `call_report.py`, `call_report.h`).
+
+When nothing is attached, nothing is sent at all. This is not a filter applied
+afterwards: the browser drops a notification with no target (`hasCallbacks`),
+and a runtime server returns early when its socket set is empty
+(`sendJsonNotification`).
+
+The caveat is a service's own notifications. A Monitor shows what passed
+through it, and an error message can quote a value. Capture mode covers call
+reports, not what a service chooses to say. And **a deployed board's
+coordinator holds its own socket to every runtime it provisioned**, so on a
+deployed board, assume there is always a listener for what services say. A step
+whose intermediate data must not leave its machine belongs on a board you own
 yourself.
 
 ---

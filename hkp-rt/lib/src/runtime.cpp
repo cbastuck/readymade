@@ -647,7 +647,8 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
 
 void Runtime::sendServiceLifecycleNotification(const Service& service, const std::string& state, const Data& data)
 {
-  sendData(lifecycleNotification(state, data), MessagePurpose::NOTIFICATION, service.getId());
+  sendData(lifecycleNotification(state, data, capturesCalls()), MessagePurpose::NOTIFICATION,
+           service.getId());
 }
 
 void Runtime::post(std::function<void()> fn)

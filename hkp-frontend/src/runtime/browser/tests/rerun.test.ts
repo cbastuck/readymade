@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import api from "../BrowserRuntimeApi";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
+import { setCapturing } from "../../captureMode";
 import { ServiceInstance } from "hkp-frontend/src/types";
 
 /**
@@ -43,6 +44,10 @@ const lifecycle = (calls: any[][]) =>
     .map(({ state, data }) => ({ state, data }));
 
 describe("app.rerun", () => {
+  // About the values a frame is shown, which reports carry in Capture mode.
+  beforeEach(() => setCapturing(true));
+  afterEach(() => setCapturing(false));
+
   it("calls the service itself with the input, and the services after it", async () => {
     const { scope, first, second } = await twoServices();
     const atFirst = vi.fn();

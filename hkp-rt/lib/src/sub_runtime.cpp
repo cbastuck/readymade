@@ -58,7 +58,9 @@ bool SubRuntime::callService(Service& svc, Data& data)
   // The same bracket Runtime puts around a call, sent through sendData so it
   // arrives under the service's scoped address: what a nested service
   // received and produced is shown in its frame like a top-level one's.
-  sendData(lifecycleNotification("call-process", data), MessagePurpose::NOTIFICATION, svc.getId());
+  const bool capture = m_parent.capturesCalls();
+  sendData(lifecycleNotification("call-process", data, capture), MessagePurpose::NOTIFICATION,
+           svc.getId());
   data = svc.startProcess(data);
   if (svc.takeProcessDeferred())
   {
@@ -67,7 +69,7 @@ bool SubRuntime::callService(Service& svc, Data& data)
     data = Null();
     return false;
   }
-  sendData(lifecycleNotification("call-process-finished", data),
+  sendData(lifecycleNotification("call-process-finished", data, capture),
            MessagePurpose::NOTIFICATION, svc.getId());
   return !isNull(data) && !isEarlyReturn(data);
 }
@@ -208,7 +210,7 @@ void SubRuntime::forwardLog(const LogEntry& entry)
 void SubRuntime::notifyProcessFinished(const Service& svc, const Data& data)
 {
   // A deferred call ending: the half of the bracket callService withheld.
-  sendData(lifecycleNotification("call-process-finished", data),
+  sendData(lifecycleNotification("call-process-finished", data, m_parent.capturesCalls()),
            MessagePurpose::NOTIFICATION, svc.getId());
 }
 

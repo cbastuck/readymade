@@ -1,5 +1,6 @@
 import { AppInstance, InstanceId } from "hkp-frontend/src/types";
-import { reportedValue } from "./callReport";
+import { outgoingPayload } from "./callReport";
+import { isCapturing } from "./captureMode";
 
 /**
  * Each call to a service is bracketed by a pair of notifications, and both
@@ -17,11 +18,16 @@ export function onServiceProcess(
   params: any
 ): number {
   const call = ++lastCall;
-  // What a report carries is bounded as in every runtime: the inspector keeps
-  // a history of these, and would otherwise hold each large value it was shown.
-  app.notify(svc, {
-    __internal: { state: "call-process", data: reportedValue(params), call },
-  });
+  // What a report carries is what Capture mode allows, as in every runtime:
+  // the value only while capturing, and then bounded — the inspector keeps a
+  // history of these, and would otherwise hold each large value it was shown.
+  app.notify(
+    svc,
+    outgoingPayload(
+      { __internal: { state: "call-process", data: params, call } },
+      isCapturing(),
+    ),
+  );
   return call;
 }
 
@@ -31,11 +37,17 @@ export function onServiceResult(
   result: any,
   call?: number
 ) {
-  app.notify(svc, {
-    __internal: {
-      state: "call-process-finished",
-      data: reportedValue(result),
-      ...(call !== undefined ? { call } : {}),
-    },
-  });
+  app.notify(
+    svc,
+    outgoingPayload(
+      {
+        __internal: {
+          state: "call-process-finished",
+          data: result,
+          ...(call !== undefined ? { call } : {}),
+        },
+      },
+      isCapturing(),
+    ),
+  );
 }

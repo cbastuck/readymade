@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 
 // The editor shows what it is handed, and keeps its text when handed none —
@@ -28,6 +28,7 @@ import ServiceOutputPlug, {
   FlowSide,
   rememberFlow,
 } from "../ServiceOutputPlug";
+import { isCapturing, setCapturing } from "hkp-frontend/src/runtime/captureMode";
 
 /**
  * The Flow Inspector's histories, kept the way ServiceFrame keeps them: added
@@ -68,6 +69,11 @@ function openHistory() {
 const entries = () => screen.queryAllByRole("option");
 
 describe("Flow Inspector", () => {
+  // What it shows of a call is what Capture mode sends; these are about
+  // showing it, so the board is captured. Asking to be is below.
+  beforeEach(() => setCapturing(true));
+  afterEach(() => setCapturing(false));
+
   it("keeps every output of a burst rendered at once, as an Iterator's items are", () => {
     render(React.createElement(Frame));
     act(() => {
@@ -272,5 +278,41 @@ describe("Flow Inspector", () => {
 
     act(() => [4, 5].forEach((n) => report({ n })));
     expect(entries()).toHaveLength(2);
+  });
+});
+
+describe("Opening the Flow Inspector without Capture mode", () => {
+  beforeEach(() => setCapturing(false));
+  afterEach(() => setCapturing(false));
+
+  it("asks first, and turning Capture mode on from there opens it", () => {
+    render(React.createElement(Frame));
+    open();
+
+    expect(screen.getByRole("dialog").textContent).toContain(
+      "Capture mode is off, so the inspector shows that this service ran, but not what it received or passed on. Turn Capture mode on? It takes effect from the next run.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Turn on Capture mode" }));
+
+    expect(isCapturing()).toBe(true);
+    expect(screen.getByText("Flow Inspector")).toBeTruthy();
+  });
+
+  it("opens it all the same when the answer is not now", () => {
+    render(React.createElement(Frame));
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Not now" }));
+
+    expect(isCapturing()).toBe(false);
+    expect(screen.getByText("Flow Inspector")).toBeTruthy();
+  });
+
+  it("does not ask while the board is captured", () => {
+    setCapturing(true);
+    render(React.createElement(Frame));
+    open();
+
+    expect(screen.queryByText("Capture mode is off")).toBeNull();
+    expect(screen.getByText("Flow Inspector")).toBeTruthy();
   });
 });

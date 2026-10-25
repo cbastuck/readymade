@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import api from "../BrowserRuntimeApi";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
+import { setCapturing } from "../../captureMode";
 import { ServiceInstance } from "hkp-frontend/src/types";
 
 /**
@@ -18,6 +19,10 @@ const withoutCall = (internals: any[]) =>
   internals.map(({ state, data }) => ({ state, data }));
 
 describe("a call that fails", () => {
+  // About the values a frame is shown, which reports carry in Capture mode.
+  beforeEach(() => setCapturing(true));
+  afterEach(() => setCapturing(false));
+
   it("is reported finished, with nothing produced", async () => {
     const { scope: scope_ } = await api.addRuntime(
       { name: "Browser", type: "browser" } as any,

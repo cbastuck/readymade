@@ -1,7 +1,8 @@
 # Capture mode: what a call report carries, and when
 
-Decided 2026-10-25 while reviewing `hardening_5_to_10`. The size limit below is
-built; Capture mode itself is not.
+Decided 2026-10-25 while reviewing `hardening_5_to_10`. Built the same day: the
+size limit, then Capture mode in all four runtimes, the coordinator and the
+frontend. What is left is under "Open".
 
 ---
 
@@ -49,9 +50,11 @@ reports.
    Its button turns Capture mode on, as the toolbar button does. It is a small
    guide for someone learning Readymade.
 7. **Named "Capture mode"**, a button beside the two Play buttons in the
-   toolbar. The logging docs' use of "record" stays as it is for now.
-   **Open:** the dialog's wording (6) still says "Recording"; align it with the
-   name when building.
+   toolbar. The logging docs' use of "record" stays as it is for now. The
+   dialog's wording (6) was adapted to the name when it was built: "Capture
+   mode is off, so the inspector shows that this service ran, but not what it
+   received or passed on. Turn Capture mode on? It takes effect from the next
+   run."
 
 Not in conflict with `TODO-DEBUGGING.md`, which rejected a trace mode (a rolling
 log of past call pairs). Capture mode keeps nothing. It only decides what a
@@ -82,56 +85,68 @@ The same rule in all four runtimes, each with tests of the same cases:
 
 ---
 
-## To build: Capture mode
+## Built: Capture mode
 
-**The switch.**
-- A toolbar button beside the Play buttons (`components/Toolbar/`), on or off,
-  for the whole board.
-- It is session state in the playground, never part of `BoardDescriptor`, and
-  never written by `serializeBoard`.
+**Where it is applied** — where a report leaves, so a pipeline nested at any
+depth follows the runtime that holds it:
 
-**Reaching the runtimes.**
-- Logging's live switch already reaches running runtimes without rebuilding
-  them (`PATCH /runtimes/:id/state`; `docs/content/concepts/logging.md`, "Reading
-  it, and switching it on").
-- Capture mode should use the same path, with one difference: **logging writes
-  its setting into the stored config, Capture mode must not.**
-- A runtime starts with it off: a fresh one, a restarted one, one a
-  coordinator restores.
+| Runtime | The switch | Applied in | Tests |
+| --- | --- | --- | --- |
+| Browser | `runtime/captureMode.ts`, a store for this window | `runtime/serviceState.ts`, through `outgoingPayload` | `runtime/tests/call-report.test.ts` |
+| hkp-node | `HostedRuntime.setCapture`, set by `applyRuntimeState` | `server.ts`, the notification socket and the coordinator link, through `outgoingPayload` | `tests/flow-notifications.test.ts` (a real server and socket), `tests/call-report.test.ts` |
+| hkp-python | `HostedRuntime.set_capture`, set by `_apply_runtime_state` | `server.py`, the same two exits, through `outgoing_payload` | `tests/test_call_report.py` (a real server and socket) |
+| hkp-rt | `Runtime::setCapture`, set by `App::setRuntimeState`; `RuntimeHost::capturesCalls`, which `SubRuntime` asks of its parent | `lifecycleNotification`, where a report is made | `tests/runtime_context.test.cpp`, `tests/service_scopes.test.cpp`, `tests/call_report.test.cpp` |
 
-**What each runtime does with it.** At the same sites the size limit uses: off
-means no `data` in the report, on means `reportedValue(data)`.
-- Browser: `serviceState.ts`. The switch has to reach the scope, nested scopes
-  included.
-- hkp-node: `runtime.ts`. Nested pipelines are `HostedRuntime`s of their own
-  and must inherit it.
-- hkp-python: `runtime.py`, the same arrangement.
-- hkp-rt: `Runtime` and `SubRuntime`, through `lifecycleNotification`.
-
-**A deployed board.** The owner may switch it on while attached. It is not
-stored, so a coordinator restart or a redeploy turns it off. A member cannot
-switch it on, and never receives call reports anyway (`facadeForMembers`).
-
-**The inspector.** With Capture mode off, opening it shows the dialog (6) and
-then the activity. A report without `data` adds nothing to either history.
-
-**Docs.** `docs/content/concepts/runtime.md` says, in "What crosses a runtime
-boundary", that attaching a UI makes a runtime report its internal traffic.
-That becomes "while Capture mode is on". `vocabulary.md` gets the term once it
-is built; the vocabulary is written by hand.
-
----
+- **The report without Capture mode:** `{state}`, plus `stopped: true` on a
+  `call-process-finished` whose call passed nothing on. Without that flag the
+  overview would read every call as one that stopped.
+- **Never saved.**
+  - Every runtime answers `capture` from `PATCH /runtimes/:id/state` and the
+    coordinator's `setState`, and nothing builds a runtime with it. A board's
+    own runtime `state` cannot switch it on: creation never applies state.
+  - The playground turns it off when a board is opened and when it is left
+    (`PlaygroundController`).
+- **Remote runtimes in the playground:** `RuntimeRestScope.followCapture`
+  tells its runtime once the socket opens, off included, and on every change
+  until the scope closes. Tested in `runtime/rest/tests/capture-follow.test.ts`.
+- **A deployed board:**
+  - `POST /coordinator/users/:username/boards/:boardName/capture`, the owner's
+    alone (`requireSelf`).
+  - `BoardSession.setCapture` applies it over `setState`, and again to a runtime
+    it rebuilds while on. It writes nothing to the config and persists nothing.
+  - The owner's last bridge closing turns it off. The board list reports
+    `capture`.
+  - The Cloud Boards view has the owner's toggle beside Logging, and keeps the
+    browser runtimes it hosts in step.
+  - Tested in `tests/coordinator-log-route.test.ts`.
+- **The coordinator keeps none of it.** A notification is delivered to the
+  bridges and not stored; the only thing kept from one is a published mount
+  address (`onRuntimeNotification`).
+- **UI:**
+  - The Capture button in `PlayBoardControls` (`aria-pressed`, red when on).
+  - The dialog in `ServiceOutputPlug`, shown when the inspector is opened with
+    Capture mode off. Either answer opens the inspector.
+  - `ServiceFrame` keeps no history from a report without a value, and still
+    lights the plug unless the call stopped. `overview/activity.ts` likewise.
+  - Tests: `flow-inspector.test.tsx`, `play-board-controls.test.tsx`,
+    `overview/tests/activity.test.ts`.
+- **Docs:** `docs/content/concepts/runtime.md`, "What crosses a runtime
+  boundary"; `docs/content/concepts/cloud-boards.md`, beside the log switch.
 
 ## Open
 
-- **Other notifications that carry pipeline data.** Call reports are the
-  systematic case, but some services report data in their own notifications:
-  a Monitor shows what passed through it, and an error message can quote a
-  value. The principle covers those too. Each needs a decision: a service whose
-  job is to show data (Monitor) arguably is the opt-in, while an incidental
-  copy of a value is not.
-- **A time limit on a deployed board**, so a switch left on turns itself off
-  (say after 15 minutes). Optional.
-- **The coordinator's own copy.** It keeps the last state each service
-  reported. Check that a call report's `data` never lands there, so that
-  turning Capture mode off leaves nothing behind.
+- **A pass by hand** in the playground and on a deployed board:
+  - the button and the dialog;
+  - a remote runtime's frames filling only while captured;
+  - a deployed board's toggle, and closing the tab ending it.
+
+  `e2e/tests/blocks.spec.ts` now answers the dialog before it expects the
+  inspector, but the E2E suite was not run.
+- **Other notifications that carry pipeline data.** A Monitor shows what
+  passed through it, and an error message can quote a value. Capture mode
+  covers call reports, not what a service chooses to say. Each needs a
+  decision: a service whose job is to show data (Monitor) arguably is the
+  opt-in, while an incidental copy of a value is not.
+- **Two windows on one remote runtime.** Each tells the runtime its own Capture
+  mode when it attaches and when it changes. The last to speak wins.
+- **The vocabulary** has no entry for Capture mode yet; it is written by hand.

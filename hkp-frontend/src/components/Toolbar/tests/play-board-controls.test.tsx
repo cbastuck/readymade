@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 import { BoardCtx, BoardContextState } from "hkp-frontend/src/BoardContext";
 import { PlayProvider } from "hkp-frontend/src/core/play";
 import PlayBoardControls from "../PlayBoardControls";
+import { isCapturing, setCapturing } from "hkp-frontend/src/runtime/captureMode";
 
 function renderControls(extra?: React.ReactNode) {
   const processRuntime = vi.fn();
@@ -86,5 +87,28 @@ describe("the toolbar's play controls", () => {
     expect(
       screen.getByLabelText("Run the board").hasAttribute("disabled"),
     ).toBe(true);
+  });
+});
+
+describe("the toolbar's Capture mode button", () => {
+  afterEach(() => setCapturing(false));
+
+  it("switches Capture mode, and says which it is", () => {
+    renderControls();
+    const button = screen.getByLabelText("Capture mode");
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(button);
+    expect(isCapturing()).toBe(true);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(button);
+    expect(isCapturing()).toBe(false);
+  });
+
+  it("shows Capture mode switched from elsewhere — the inspector's dialog", () => {
+    renderControls();
+    act(() => setCapturing(true));
+    expect(screen.getByLabelText("Capture mode").getAttribute("aria-pressed")).toBe("true");
   });
 });

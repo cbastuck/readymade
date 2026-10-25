@@ -10,7 +10,11 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -18,6 +22,8 @@ import {
   ContextMenuTrigger,
 } from "hkp-frontend/src/ui-components/primitives/context-menu";
 
+import { isTooLarge } from "hkp-frontend/src/runtime/callReport";
+import { isCapturing, setCapturing } from "hkp-frontend/src/runtime/captureMode";
 import { useTheme } from "../ThemeContext";
 import FlowInspectorPopup from "./FlowInspectorPopup";
 import FlowWaveIcon from "./FlowWaveIcon";
@@ -141,6 +147,9 @@ export default function ServiceOutputPlug({
   // The history list starts folded away, and stays as it was left while the
   // service is on screen.
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  // Opening the inspector without Capture mode asks first: what it would show
+  // is only that the service ran, which is worth knowing before looking.
+  const [askingToCapture, setAskingToCapture] = useState(false);
 
   // A new value is the one shown on its side.
   useEffect(() => {
@@ -153,9 +162,25 @@ export default function ServiceOutputPlug({
   const history = side === "input" ? inputHistory : outputHistory;
   const selectedIndex = selected[side];
 
-  const onOpen = () => {
+  const openInspector = () => {
     setClearTop(toolbarBottom());
     setIsOpen(true);
+  };
+  const onOpen = () => {
+    if (isCapturing()) {
+      openInspector();
+    } else {
+      setAskingToCapture(true);
+    }
+  };
+  // Either answer opens it: with the values from the next run on, or with the
+  // activity it has.
+  const onAnswerCapture = (capture: boolean) => {
+    setAskingToCapture(false);
+    if (capture) {
+      setCapturing(true);
+    }
+    openInspector();
   };
 
   const onClose = () => {
@@ -266,7 +291,11 @@ export default function ServiceOutputPlug({
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem
-            disabled={!onRerun || inputHistory.length === 0}
+            disabled={
+              !onRerun ||
+              inputHistory.length === 0 ||
+              isTooLarge(inputHistory[0].data)
+            }
             onSelect={() => onRerun?.(inputHistory[0].data)}
           >
             Rerun with the last input
@@ -306,6 +335,30 @@ export default function ServiceOutputPlug({
 
         {inspector}
       </PopoverContent>
+
+      <Dialog
+        open={askingToCapture}
+        onOpenChange={(open) => !open && setAskingToCapture(false)}
+      >
+        <DialogContent className="max-w-md w-[92vw]">
+          <DialogHeader>
+            <DialogTitle>Capture mode is off</DialogTitle>
+            <DialogDescription>
+              Capture mode is off, so the inspector shows that this service
+              ran, but not what it received or passed on. Turn Capture mode
+              on? It takes effect from the next run.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={() => onAnswerCapture(false)}>
+              Not now
+            </Button>
+            <Button size="sm" onClick={() => onAnswerCapture(true)}>
+              Turn on Capture mode
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Popover>
   );
 }

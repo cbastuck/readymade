@@ -15,13 +15,26 @@
  * what the plain press sends, from here or from the overview, which offers the
  * same control over the same memory: an input is written once and wanted many
  * times.
+ *
+ * Beside them, Capture mode, as a recorder's button beside its play: whether
+ * the board's frames receive the values each service is handed and passes on,
+ * or only that it ran. What passes inside a run is private unless someone
+ * building the board asks to see it, so it is off whenever a board opens and
+ * is never saved with one (`runtime/captureMode.ts`).
  */
 import { useContext, useState } from "react";
-import { Play } from "lucide-react";
+import { Circle, Play } from "lucide-react";
 
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { canPlay, play, useRunParams } from "hkp-frontend/src/core/play";
 import RunParamsDialog from "hkp-frontend/src/ui-components/runtime-ui/RunParamsDialog";
+import {
+  setCapturing,
+  useCapturing,
+} from "hkp-frontend/src/runtime/captureMode";
+
+/** A recorder's red, for the one control that says data is being sent. */
+const CAPTURING_COLOR = "#e5484d";
 
 /** The same target the view controls beside them are, so the two groups read
  *  as one row of things done to the board. */
@@ -83,6 +96,7 @@ export default function PlayBoardControls() {
 
   const playable = !!boardContext && canPlay(boardContext);
   const armed = playable && lastParams !== undefined;
+  const capturing = useCapturing();
 
   return (
     <>
@@ -136,6 +150,28 @@ export default function PlayBoardControls() {
           style={controlStyle(playable, false)}
         >
           <PlayWithInputIcon size={14} strokeWidth={1.75} />
+        </button>
+
+        <button
+          type="button"
+          aria-pressed={capturing}
+          aria-label="Capture mode"
+          title={
+            capturing
+              ? "Capture mode is on: each service's input and output is sent to its inspector. Turn it off when you are done looking."
+              : "Capture mode is off: frames show that services ran, not what they received or passed on. Turn it on to see the data."
+          }
+          onClick={() => setCapturing(!capturing)}
+          style={{
+            ...controlStyle(true, false),
+            color: capturing ? CAPTURING_COLOR : "var(--text, #1a1a1a)",
+          }}
+        >
+          <Circle
+            size={12}
+            strokeWidth={1.75}
+            fill={capturing ? CAPTURING_COLOR : "none"}
+          />
         </button>
       </div>
 
