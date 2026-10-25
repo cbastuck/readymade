@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
+#include <fstream>
+
 #include <types/data.h>
 #include <services/map.h>
 #include "runtime_host.h"
@@ -21,6 +24,8 @@ json mapped(Map& map, const json& input)
 class RecordingHost final : public RuntimeHost {
 public:
   std::vector<json> notifications;
+  std::vector<std::pair<LogLevel, std::string>> logs;
+  std::vector<json> logData;
 
   Data processFrom(const Service&, Data data, bool, std::function<void(Data)>) override
   {
@@ -38,7 +43,11 @@ public:
     }
   }
   void notifyProcessFinished(const Service&, const Data&) override {}
-  void log(const Service&, LogLevel, const std::string&, const nlohmann::json&) override {}
+  void log(const Service&, LogLevel level, const std::string& event, const nlohmann::json& data) override
+  {
+    logs.emplace_back(level, event);
+    logData.push_back(data);
+  }
   void forwardLog(const LogEntry&) override {}
   SecretVault& secrets() override { return m_vault; }
   SlotStore& slots() override { return m_slots; }
@@ -255,6 +264,86 @@ TEST_CASE("Map names a term in a structured template by where it sits", "[servic
     json{{"warnings", {"items.0.title: params.titel not found"}}}});
 }
 
+TEST_CASE("Map warns about a read through a field that is there but null", "[services][map]") {
+  Map map("map-1");
+  RecordingHost host;
+  map.setParentHost(host);
+  map.configure(json{{"template", json{{"name=", "params.author.name"}}}});
+
+  REQUIRE(mapped(map, json{{"author", nullptr}}) == json{{"name", nullptr}});
+  REQUIRE(host.reported() == std::vector<json>{
+    json{{"warnings", {"name: params.author.name not found"}}}});
+}
+
+TEST_CASE("Map logs a failing pass, since nobody may be watching", "[services][map]") {
+  Map map("map-1");
+  RecordingHost host;
+  map.setParentHost(host);
+  map.configure(json{{"template", json{{"x=", "nope(params.n)"}}}});
+
+  map.process(json::object());
+  map.process(json::object());
+  REQUIRE(host.logs.size() == 2);
+  REQUIRE(host.logs[0] == std::pair<LogLevel, std::string>{LogLevel::Error, "service.failed"});
+  REQUIRE(host.logData[0] == json{{"message", "x: unknown function 'nope'"}});
+}
+
+TEST_CASE("Map keeps what it says in its state while it says something", "[services][map]") {
+  Map map("map-1");
+  RecordingHost host;
+  map.setParentHost(host);
+  map.configure(json{{"template", json{{"x=", "nope(params.n)"}}}});
+
+  map.process(json::object());
+  REQUIRE(map.getState()["error"] == "x: unknown function 'nope'");
+
+  map.configure(json{{"template", json{{"x=", "params.missing"}}}});
+  map.process(json::object());
+  REQUIRE_FALSE(map.getState().contains("error"));
+  REQUIRE(map.getState()["warnings"] == json::array({"x: params.missing not found"}));
+
+  map.process(json{{"missing", 1}});
+  REQUIRE_FALSE(map.getState().contains("warnings"));
+}
+
+TEST_CASE("Map names a failing term the same when configured and on a pass", "[services][map]") {
+  const std::vector<std::pair<json, std::string>> cases{
+    {json{{"=", "bad("}, {"x=", "1"}}, "="},
+    {json{{"items", json{{"=", "bad("}}}, {"other", json::array({1})}}, "items"},
+  };
+  for (const auto& [templateNode, name] : cases)
+  {
+    Map map("map-1");
+    RecordingHost host;
+    map.setParentHost(host);
+    map.configure(json{{"template", templateNode}});
+    map.process(json::object());
+
+    const auto reported = host.reported();
+    REQUIRE(reported.size() == 1);
+    REQUIRE(reported[0]["error"].get<std::string>().starts_with(name + ": invalid expression 'bad('"));
+  }
+}
+
+// ── A lone "=": the value of its term, the same in every runtime ─────────────
+
+TEST_CASE("Map's lone '=' whose read found nothing stops the flow", "[services][map]") {
+  Map map("map-1");
+  map.configure(json{{"template", json{{"=", "params.missing"}}}});
+
+  REQUIRE(isNull(map.process(json::object())));
+}
+
+TEST_CASE("Map's lone '=' is its value whatever the mode", "[services][map]") {
+  for (const std::string mode : {"add", "overwrite"})
+  {
+    Map map("map-1");
+    map.configure(json{{"mode", mode}, {"template", json{{"=", "params.inner"}}}});
+
+    REQUIRE(mapped(map, json{{"inner", json{{"a", 1}}}, {"b", 2}}) == json{{"a", 1}});
+  }
+}
+
 // ── Modes ────────────────────────────────────────────────────────────────────
 
 TEST_CASE("Map honours the merge modes", "[services][map]") {
@@ -327,6 +416,42 @@ TEST_CASE("Map learns a flat template in sensing mode", "[services][map]") {
   REQUIRE(state["sensingMode"] == false);
   REQUIRE(state["template"] == json{{"a.b", 1}, {"c", "x"}});
   REQUIRE(mapped(map, json::object()) == json{{"a", json{{"b", 1}}}, {"c", "x"}});
+}
+
+TEST_CASE("Map senses what arrived as data, not as a template that runs", "[services][map]") {
+  Map map("map-1");
+  map.configure(json{{"sensingMode", true}});
+
+  const json arrived{
+    {"pwned=", "params.secret"},
+    {"inja", "{% include \"/etc/hosts\" %}{{ secret }}"},
+    {"{{ secret }}", "key"},
+    {"lines", "{{ a }}\n## for x in [1]\n{# note #}"},
+    {"plain", "#1 {not a marker}"},
+  };
+  REQUIRE(isNull(map.process(arrived)));
+
+  // Every field comes back exactly as it arrived, the suffix aside: nothing in
+  // it was evaluated or rendered against the next input.
+  json expected = arrived;
+  expected.erase("pwned=");
+  expected["pwned"] = "params.secret";
+  REQUIRE(mapped(map, json{{"secret", "s"}, {"a", 1}}) == expected);
+}
+
+TEST_CASE("Map's Inja templates cannot include a file", "[services][map]") {
+  const auto path = std::filesystem::temp_directory_path() / "hkp-map-include.txt";
+  {
+    std::ofstream file(path);
+    file << "file contents";
+  }
+
+  Map map("map-1");
+  const std::string include = "{% include \"" + path.string() + "\" %}";
+  map.configure(json{{"template", json{{"x", include}}}});
+
+  REQUIRE(mapped(map, json::object()) == json{{"x", include}});
+  std::filesystem::remove(path);
 }
 
 // ── State ────────────────────────────────────────────────────────────────────

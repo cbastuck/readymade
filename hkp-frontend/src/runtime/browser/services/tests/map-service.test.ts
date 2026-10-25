@@ -25,6 +25,7 @@ const MapService = MapDescriptor.Map;
 function createMockApp() {
   return {
     notify: vi.fn(),
+    log: vi.fn(),
     next: vi.fn(),
     sendAction: vi.fn(),
     processRuntimeByName: vi.fn(),
@@ -677,6 +678,18 @@ describe("Map service – sensingMode", () => {
     // so replace mode returns those fixed values regardless of new input
     expect(result).toEqual({ name: "Alice", age: 30 });
   });
+
+  it("senses a field named like an expression as data, not as code", async () => {
+    const { service } = createMapService();
+    await service.configure({ sensingMode: true });
+    await service.process({ "pwned=": "params.secret", ok: 1 });
+
+    expect(service.state.template).toEqual({ pwned: "params.secret", ok: 1 });
+    expect(await service.process({ secret: "s" })).toEqual({
+      pwned: "params.secret",
+      ok: 1,
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -756,6 +769,85 @@ describe("Map service – missing reads, warnings and errors", () => {
     expect(reported(app)).toEqual([
       { warnings: ["items.0.title: params.titel not found"] },
     ]);
+  });
+
+  it("warns about a read through a field that is there but null", async () => {
+    const { service, app } = createMapService();
+    await service.configure({ template: { "name=": "params.author.name" } });
+
+    expect(await service.process({ author: null })).toEqual({ name: null });
+    expect(reported(app)).toEqual([
+      { warnings: ["name: params.author.name not found"] },
+    ]);
+  });
+
+  it("logs a failing pass, since nobody may be watching", async () => {
+    const { service, app } = createMapService();
+    await service.configure({ template: { "x=": "params.n.toFixed(1)" } });
+
+    await service.process({});
+    await service.process({});
+    expect(app.log).toHaveBeenCalledTimes(2);
+    expect(app.log).toHaveBeenCalledWith(service, "error", "service.failed", {
+      message: "x: params.n.toFixed is not a function",
+    });
+  });
+
+  it("keeps what it says in its state while it says something", async () => {
+    const { service } = createMapService();
+    await service.configure({ template: { "x=": "params.n.toFixed(1)" } });
+
+    await service.process({});
+    expect(await service.getConfiguration()).toMatchObject({
+      error: "x: params.n.toFixed is not a function",
+    });
+
+    await service.configure({ template: { "x=": "params.missing" } });
+    await service.process({});
+    const state = await service.getConfiguration();
+    expect(state).not.toHaveProperty("error");
+    expect(state.warnings).toEqual(["x: params.missing not found"]);
+
+    await service.process({ missing: 1 });
+    expect(await service.getConfiguration()).not.toHaveProperty("warnings");
+  });
+
+  it("names a failing term the same when configured and on a pass", async () => {
+    for (const [template, name] of [
+      [{ "=": "bad(", "x=": "1" }, "="],
+      [{ items: { "=": "bad(" }, other: [1] }, "items"],
+    ] as const) {
+      const { service, app } = createMapService();
+      await service.configure({ template });
+      await service.process({});
+
+      const errors = reported(app).filter((payload) => "error" in payload);
+      expect(errors).toEqual([
+        { error: expect.stringMatching(new RegExp(`^${name}: invalid expression 'bad\\('`)) },
+      ]);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A lone "=": the value of its term, the same in every runtime
+// ---------------------------------------------------------------------------
+
+describe("Map service – lone '='", () => {
+  it("is null when its read found nothing, so the flow stops", async () => {
+    const { service } = createMapService();
+    await service.configure({ template: { "=": "params.missing" } });
+
+    expect(await service.process({})).toBeNull();
+  });
+
+  it("is its value whatever the mode", async () => {
+    for (const mode of ["add", "overwrite"]) {
+      const { service } = createMapService();
+      await service.configure({ mode, template: { "=": { a: 1 } } });
+
+      expect(await service.process({ b: 2 })).toEqual({ a: 1 });
+    }
   });
 });
 

@@ -17,17 +17,22 @@ import ServiceBase from "hkp-frontend/src/runtime/browser/services/ServiceBase";
  * Binary: not intended for raw binary payloads
  * MixedData: not native in browser runtime
  *
- * What a pass says about itself is notified, never kept in the state a board
- * saves — the same in every runtime (hkp-node map.ts, hkp-python
- * map_service.py, hkp-rt map.h):
+ * What a pass says about itself is notified when it changes, and is part of
+ * the state while there is something to say, so a panel opened later shows it;
+ * configuring it does nothing. The same in every runtime (hkp-node map.ts,
+ * hkp-python map_service.py, hkp-rt map.h):
  *
  * - `error`: a term that does not parse — said when the template is
  *   configured — or that fails to evaluate. A failing pass stops the flow
- *   (null), since a mapping that could not be made has nothing to pass on.
- *   With an array input, one failing element fails the pass.
+ *   (null), since a mapping that could not be made has nothing to pass on,
+ *   and is logged, since nobody may be watching. With an array input, one
+ *   failing element fails the pass.
  * - `warnings`: a term whose value is empty because what it read was not
  *   there — `title: params.titel not found`. The flow goes on: an absent field
  *   is often legitimate, and a typo is only visible this way.
+ *
+ * A lone "=" is the value of its term, whatever the mode; a null one has
+ * nothing to pass on.
  */
 
 const serviceId = "hookup.to/service/map";
@@ -153,7 +158,7 @@ class Map extends ServiceBase<State> {
     );
     this.report(
       broken
-        ? `${broken[0] || "="}: ${(broken[1] as { parseError: string }).parseError}`
+        ? `${pathIn("", broken[0])}: ${(broken[1] as { parseError: string }).parseError}`
         : "",
       [],
     );
@@ -169,6 +174,15 @@ class Map extends ServiceBase<State> {
     }
     this._reported = { error, warnings };
   }
+
+  getConfiguration = async () => ({
+    ...this.state,
+    bypass: this.bypass,
+    ...(this._reported.error ? { error: this._reported.error } : {}),
+    ...(this._reported.warnings.length
+      ? { warnings: this._reported.warnings }
+      : {}),
+  });
 
   /**
    * One term's value. A failure is named by `label`, where the term sits in
@@ -215,6 +229,10 @@ class Map extends ServiceBase<State> {
         "",
       );
 
+      if (isLoneTerm(this._structuredTemplate)) {
+        return mapped;
+      }
+
       const canMergeObjects =
         mapped !== null &&
         typeof mapped === "object" &&
@@ -237,7 +255,9 @@ class Map extends ServiceBase<State> {
     const keys = this._terms ? Object.keys(this._terms) : [];
     // map to scalar value (not an object) if only an '=', i.e. empty string
     if (keys.length === 1 && keys[0] === "") {
-      return await this.evaluateTerm(this._terms[""], x, warnings, "=");
+      return keyed(
+        await this.evaluateTerm(this._terms[""], x, warnings, pathIn("", "")),
+      );
     }
 
     const initial =
@@ -250,7 +270,7 @@ class Map extends ServiceBase<State> {
     return await keys.reduce(async (acc, key) => {
       const accumulated = await acc;
       const y = keyed(
-        await this.evaluateTerm(this._terms[key], x, warnings, key),
+        await this.evaluateTerm(this._terms[key], x, warnings, pathIn("", key)),
       );
       return key.indexOf(".") !== -1 // dynamic expression
         ? {
@@ -270,7 +290,7 @@ class Map extends ServiceBase<State> {
 
   process = async (params: any) => {
     if (this.state.sensingMode) {
-      this.updateTemplate(flatten(params));
+      this.updateTemplate(sensed(flatten(params)));
       this.updateSensingMode(false);
       return null;
     }
@@ -295,6 +315,7 @@ class Map extends ServiceBase<State> {
         throw error;
       }
       this.report(error.message, [...warnings]);
+      this.app.log(this, "error", "service.failed", { message: error.message });
       return null;
     }
   };
@@ -310,18 +331,20 @@ class Map extends ServiceBase<State> {
     }
 
     if (node.type === "expression") {
-      return await this.evaluateTerm(node.term, params, warnings, label || "=");
+      return await this.evaluateTerm(node.term, params, warnings, label);
     }
 
     if (node.type === "array") {
       const out: any[] = [];
       for (const [index, item] of node.items.entries()) {
         out.push(
-          await this.evalStructuredTemplateNode(
-            item,
-            params,
-            warnings,
-            pathIn(label, String(index)),
+          keyed(
+            await this.evalStructuredTemplateNode(
+              item,
+              params,
+              warnings,
+              pathIn(label, String(index)),
+            ),
           ),
         );
       }
@@ -329,17 +352,14 @@ class Map extends ServiceBase<State> {
     }
 
     const entries = node.entries;
-    if (
-      entries.length === 1 &&
-      entries[0].dynamic &&
-      entries[0].key === "" &&
-      entries[0].node.type === "expression"
-    ) {
-      return await this.evalStructuredTemplateNode(
-        entries[0].node,
-        params,
-        warnings,
-        label,
+    if (isLoneTerm(node)) {
+      return keyed(
+        await this.evalStructuredTemplateNode(
+          entries[0].node,
+          params,
+          warnings,
+          pathIn(label, ""),
+        ),
       );
     }
 
@@ -428,8 +448,41 @@ function compileTerm(source: unknown): Term {
   }
 }
 
-/** Where a term sits in a structured template: `items.0.title`. */
+/**
+ * A sensed template: the shape of what arrived, and nothing that runs — as in
+ * the other runtimes. Sensing builds a template out of input, which arrives
+ * from wherever the board is fed, and a key ending in "=" is an expression: a
+ * field named `pwned=` would be compiled as code on the next pass. The suffix
+ * is dropped rather than the field, so the field is still sensed.
+ */
+function sensed(flat: Record<string, unknown>): Record<string, unknown> {
+  const safe: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(flat)) {
+    safe[key.replace(/=+$/, "")] = value;
+  }
+  return safe;
+}
+
+/** An object of a lone "=" key, which stands for its term's value. */
+function isLoneTerm(node: StructuredTemplateNode): boolean {
+  return (
+    node.type === "object" &&
+    node.entries.length === 1 &&
+    node.entries[0].dynamic &&
+    node.entries[0].key === ""
+  );
+}
+
+/**
+ * Where a term sits in a template: `items.0.title`. A lone "=" adds nothing to
+ * the path, since it stands for the value it sits in; at the top it is named
+ * "=". The one rule both configuring and a pass name a term by, so the same
+ * failure is said in the same words.
+ */
 function pathIn(label: string, key: string): string {
+  if (!key) {
+    return label || "=";
+  }
   return label ? `${label}.${key}` : key;
 }
 
@@ -445,7 +498,7 @@ function keyed(value: unknown): unknown {
 function firstParseError(node: StructuredTemplateNode, label: string): string {
   if (node.type === "expression") {
     return "parseError" in node.term
-      ? `${label || "="}: ${node.term.parseError}`
+      ? `${label}: ${node.term.parseError}`
       : "";
   }
   if (node.type === "array") {

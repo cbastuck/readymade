@@ -14,9 +14,12 @@ The Map service takes incoming data (`params`) and applies a **template** to pro
 - hkp-node — service ID `map`
 - hkp-python — service ID `map`
 
-The browser, hkp-rt and hkp-node services share the same template dialect, the same
-modes and the same UI. hkp-python implements the flat-template subset (no nested or
-array templates, no inject command).
+All four share the same template dialect — flat, nested and array templates — the
+same modes, the same inject command and the same UI, and they say the same things
+about a pass (see [Errors and warnings](#errors-and-warnings)). What each runtime
+adds is listed where it applies: [Inja templates](#hkp-rt-inja-templates) on hkp-rt,
+[mount addresses](#an-address-a-board-mentions) on hkp-node and hkp-python, and the
+built-in functions only a browser can offer.
 
 ---
 
@@ -55,7 +58,9 @@ When the template contains a single key equal to `"="` (empty string after strip
 { "=": "params.value * 2" }
 ```
 
-The pipeline receives the raw computed value, not a wrapper object.
+The pipeline receives the raw computed value, not a wrapper object — whatever the
+`mode`, since there is no object to merge into the input. A value that is `null`,
+including a read that found nothing, has nothing to pass on: the flow stops there.
 
 ### Nested Keys (Dot Notation)
 
@@ -136,7 +141,7 @@ useful part.
 
 **Note:** `Math.cos` is not directly available. To compute cosine, use the identity `sin(θ + 1.5708)` (i.e. sin(θ + π/2)).
 
-**Runtime differences:** `moment`, `fromVault`, `toVault`, `fromQueryParam` and `fromStorage` exist only in the browser runtime — they need a browser or the user vault. hkp-rt and hkp-node provide everything else, including `reformatDate`/`formatNow` over the moment token subset `YYYY YY MMMM MMM MM M DD D dddd ddd HH H hh h mm m ss s A a` and `[escaped literals]`.
+**Runtime differences:** `moment`, `fromVault`, `toVault`, `fromQueryParam` and `fromStorage` exist only in the browser runtime — they need a browser or the user vault. hkp-rt, hkp-node and hkp-python provide everything else, including `reformatDate`/`formatNow` over the moment token subset `YYYY YY MMMM MMM MM M DD D dddd ddd HH H hh h mm m ss s A a` and `[escaped literals]` — except `withoutUrls`, which hkp-rt does not have yet.
 
 ---
 
@@ -161,6 +166,12 @@ useful part.
 
 When `sensingMode: true`, the first input object that arrives is used to automatically construct a template (flattened key structure, static values). After this first input the service sets `sensingMode` back to `false` and returns `null` for that first item. Subsequent items are processed normally using the learned template.
 
+What is sensed is data, never something that runs: the input decides the shape of the
+template, not what the runtime evaluates. A field whose name ends in `=` is learned
+without the suffix — as the static field `pwned`, not as the expression `pwned=` —
+and on hkp-rt a key or text carrying an Inja marker is kept as that text rather than
+rendered.
+
 ### `command.inject`
 
 Sending `{ command: { action: "inject", params: { ... } } }` causes the Map to immediately process the provided `params` through the template and emit the result downstream, without waiting for an external trigger.
@@ -170,13 +181,15 @@ Sending `{ command: { action: "inject", params: { ... } } }` causes the Map to i
 ## Errors and warnings
 
 What a pass says about itself is shown in the Map's panel and notified, so a facade
-[notice](../concepts/board.md) can read it too. It is never part of the state a board
-saves. Every runtime's Map behaves the same way.
+[notice](../concepts/board.md) can read it too. While there is something to say it is
+also part of the Map's state, so a panel opened later shows it; configuring it does
+nothing. A pass that fails is [logged](../concepts/logging.md) as `service.failed`, for
+the board nobody is watching. Every runtime's Map behaves the same way.
 
 | Notified | When | The flow |
 |---|---|---|
 | `error` | A term does not parse — said as soon as the template is configured — or fails to evaluate, such as a call to a function that does not exist. Named by where the term sits: `x: nope is not a function`. Cleared (`""`) by the next pass that works. | **Stops**: the Map returns `null`, since a mapping that could not be made has nothing to pass on. With an array input, one failing element stops the whole pass. |
-| `warnings` | A term's value is empty because what it read was not there: `title: params.titel not found`. A read that a fallback covered (`params.id \|\| params.link` with only `link` present) or a field that is present but `null` is not a warning. | **Goes on**: an absent field is often legitimate, and a typo in a field name is only visible this way. |
+| `warnings` | A term's value is empty because what it read was not there: `title: params.titel not found`. A read through a field that is there but `null` is one too: `name: params.author.name not found` for `{ "author": null }`. A read that a fallback covered (`params.id \|\| params.link` with only `link` present), or a field read directly that is present but `null` (`params.author`), is not a warning. | **Goes on**: an absent field is often legitimate, and a typo in a field name is only visible this way. |
 
 Both are `error: string` and `warnings: string[]` in the notification, and each is
 notified only when it changes.
@@ -210,6 +223,10 @@ Alongside the `=`-suffix convention, the hkp-rt Map also renders **Inja** (a C++
 ```
 
 Note the difference in scope: an Inja template addresses the incoming data directly (`{{ value }}`), while an expression addresses it through `params` (`"angle=": "params.value * 0.1"`). Inja's own filters and functions apply inside `{{ }}`; the built-in table above applies inside expressions.
+
+`{% include %}` is not available: it would read the file it names past the
+[files guard](../concepts/runtime.md#where-a-board-may-read-and-write-files), so a template that includes one renders as a
+failure and is kept as its text.
 
 ---
 

@@ -318,9 +318,13 @@ export default function MapUI(props: ServiceUIProps) {
           </div>
         )}
 
-        {error && <div className="text-xs text-red-600">{error}</div>}
+        {error && (
+          <div role="alert" className="text-xs text-red-600 break-words">
+            {error}
+          </div>
+        )}
         {warnings.map((warning) => (
-          <div key={warning} className="text-xs text-amber-600">
+          <div key={warning} className="text-xs text-amber-600 break-words">
             {warning}
           </div>
         ))}

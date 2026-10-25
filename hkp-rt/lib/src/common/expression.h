@@ -38,10 +38,12 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
@@ -934,65 +936,68 @@ inline std::string pathOf(const NodePtr& node)
   return "…";
 }
 
-// Whether memberOf finds something there, even an empty value.
-inline bool hasMember(const json& object, const json& key)
+// What object[key] finds, or nothing when nothing is there. One set of rules
+// for every container, so what a read finds and whether it found anything
+// cannot disagree: an array or a string is a sequence — its `length`, or the
+// item at an index within it — and an object is read by the key as text.
+inline std::optional<json> memberOf(const json& object, const json& key)
 {
   if (object.is_array() || object.is_string())
   {
+    const size_t size = object.is_array() ? object.size() : object.get_ref<const std::string&>().size();
     if (key.is_string() && key.get_ref<const std::string&>() == "length")
     {
-      return true;
+      return json(static_cast<int64_t>(size));
     }
     const double index = toNumber(key);
-    const size_t size = object.is_array() ? object.size() : object.get_ref<const std::string&>().size();
-    return !std::isnan(index) && index >= 0 && index < static_cast<double>(size);
+    if (std::isnan(index) || index < 0 || index >= static_cast<double>(size))
+    {
+      return std::nullopt;
+    }
+    const auto at = static_cast<size_t>(index);
+    return object.is_array() ? object[at] : json(std::string(1, object.get_ref<const std::string&>()[at]));
   }
+
   if (object.is_object())
   {
-    return object.contains(toText(key));
+    auto it = object.find(toText(key));
+    if (it != object.end())
+    {
+      return *it;
+    }
   }
-  return false;
+
+  return std::nullopt;
 }
 
-inline json memberOf(const json& object, const json& key)
+// A member read's value, and whether it found something there. A read past a
+// link that came up empty was reported with it; one past a link that is there
+// but null is reported itself. Only a member read can tell the two apart, which
+// is why the chain is walked here rather than through evaluateNode.
+inline std::pair<json, bool> readMember(const NodePtr& node, const Scope& scope)
 {
-  if (object.is_array())
+  json object;
+  bool objectFound = true;
+  if (node->left && node->left->kind == Node::Kind::Member)
   {
-    if (key.is_string() && key.get_ref<const std::string&>() == "length")
-    {
-      return json(static_cast<int64_t>(object.size()));
-    }
-    const double index = toNumber(key);
-    if (std::isnan(index) || index < 0 || index >= static_cast<double>(object.size()))
-    {
-      return json();
-    }
-    return object[static_cast<size_t>(index)];
+    auto read = readMember(node->left, scope);
+    object = std::move(read.first);
+    objectFound = read.second;
   }
-
-  if (object.is_string())
+  else
   {
-    const std::string& text = object.get_ref<const std::string&>();
-    if (key.is_string() && key.get_ref<const std::string&>() == "length")
-    {
-      return json(static_cast<int64_t>(text.size()));
-    }
-    const double index = toNumber(key);
-    if (std::isnan(index) || index < 0 || index >= static_cast<double>(text.size()))
-    {
-      return json();
-    }
-    return json(std::string(1, text[static_cast<size_t>(index)]));
+    object = evaluateNode(node->left, scope);
   }
-
-  if (object.is_object())
+  const json key = node->computed ? evaluateNode(node->right, scope) : json(node->name);
+  if (auto value = memberOf(object, key))
   {
-    const std::string name = toText(key);
-    auto it = object.find(name);
-    return it == object.end() ? json() : *it;
+    return {std::move(*value), true};
   }
-
-  return json();
+  if (currentOnMissing && objectFound)
+  {
+    (*currentOnMissing)(pathOf(node));
+  }
+  return {json(), false};
 }
 
 inline bool looseEquals(const json& left, const json& right)
@@ -1082,21 +1087,7 @@ inline json evaluateNode(const NodePtr& node, const Scope& scope)
     }
 
     case Node::Kind::Member:
-    {
-      const json object = evaluateNode(node->left, scope);
-      const json key = node->computed ? evaluateNode(node->right, scope) : json(node->name);
-      if (currentOnMissing && !hasMember(object, key))
-      {
-        // A read past a link that already came up empty was reported with it.
-        const bool pastMissing = object.is_null() && node->left &&
-          node->left->kind == Node::Kind::Member;
-        if (!pastMissing)
-        {
-          (*currentOnMissing)(pathOf(node));
-        }
-      }
-      return memberOf(object, key);
-    }
+      return readMember(node, scope).first;
 
     case Node::Kind::ArrayLiteral:
     {

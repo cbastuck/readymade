@@ -33,23 +33,34 @@
  * dynamic. Templates written before the `=` convention therefore behave as they
  * always did.
  *
- * What a pass says about itself is notified, never kept in the state a board
- * saves — the same in every runtime (browser Map.ts, hkp-node map.ts,
- * hkp-python map_service.py):
+ * What a pass says about itself is notified when it changes, and is part of the
+ * state while there is something to say, so a panel opened later shows it;
+ * configuring it does nothing. The same in every runtime (browser Map.ts,
+ * hkp-node map.ts, hkp-python map_service.py):
  *
  * - `error`: a term that does not parse — said when the template is configured
  *   — or that fails to evaluate. A failing pass stops the flow (Null), since a
- *   mapping that could not be made has nothing to pass on. With an array input,
- *   one failing element fails the pass. (An Inja template that fails to render
- *   still logs and keeps its text, as it always has.)
+ *   mapping that could not be made has nothing to pass on, and is logged, since
+ *   nobody may be watching. With an array input, one failing element fails the
+ *   pass. (An Inja template that fails to render still logs and keeps its text,
+ *   as it always has.)
  * - `warnings`: a term whose value is empty because what it read was not there
  *   — `title: params.titel not found`. The flow goes on: an absent field is
  *   often legitimate, and a typo is only visible this way.
+ *
+ * A lone "=" is the value of its term, whatever the mode; a null one has
+ * nothing to pass on.
  */
 namespace hkp {
 
 class Map : public Service
 {
+  // A term that failed, named by where it sits in the template.
+  struct TermError : std::runtime_error
+  {
+    using std::runtime_error::runtime_error;
+  };
+
 public:
   static std::string serviceId() { return "map"; }
   static std::string version() { return "v1"; }
@@ -115,12 +126,21 @@ public:
 
   json getState() const override
   {
-    return Service::mergeStateWith(json{
+    json state{
       { "template", m_template },
       { "mode", m_mode },
       { "arrayMode", m_arrayMode },
       { "sensingMode", m_sensingMode }
-    });
+    };
+    if (!m_reportedError.empty())
+    {
+      state["error"] = m_reportedError;
+    }
+    if (!m_reportedWarnings.empty())
+    {
+      state["warnings"] = m_reportedWarnings;
+    }
+    return Service::mergeStateWith(state);
   }
 
   Data process(Data data) override
@@ -140,7 +160,7 @@ public:
     {
       json learned = json::object();
       flattenInto(*inputJson, "", learned);
-      updateTemplate(learned);
+      updateTemplate(sensed(learned));
       updateSensingMode(false);
       return Null();
     }
@@ -162,11 +182,26 @@ public:
         result = mapOne(*inputJson);
       }
       report("", m_passWarnings);
+      if (result.is_null())
+      {
+        return Null(); // a lone "=" that is null has nothing to pass on
+      }
       return Data(result);
+    }
+    catch (const TermError& e)
+    {
+      report(e.what(), m_passWarnings);
+      log(LogLevel::Error, "service.failed", json{{"message", e.what()}});
+      return Null();
     }
     catch (const std::exception& e)
     {
-      report(e.what(), m_passWarnings);
+      // A fault in the Map rather than in its template, so it is not the
+      // Map's error. Stopped here rather than thrown on, as the other runtimes
+      // do: a run hkp-rt starts on its event loop, a timer's, has nothing above
+      // it to catch it.
+      std::cerr << "Map service: " << e.what() << std::endl;
+      log(LogLevel::Error, "service.failed", json{{"message", e.what()}});
       return Null();
     }
   }
@@ -174,12 +209,26 @@ public:
 private:
   json mapOne(const json& inputData)
   {
-    return mergeWithInput(processTemplate(m_template, inputData, ""), inputData);
+    const json mapped = processTemplate(m_template, inputData, "");
+    return isLoneTerm(m_template) ? mapped : mergeWithInput(mapped, inputData);
   }
 
-  // Where a term sits in a structured template: `items.0.title`.
+  // An object of a lone "=" key, which stands for its term's value.
+  static bool isLoneTerm(const json& node)
+  {
+    return node.is_object() && node.size() == 1 && node.contains("=");
+  }
+
+  // Where a term sits in a template: `items.0.title`. A lone "=" adds nothing
+  // to the path, since it stands for the value it sits in; at the top it is
+  // named "=". The one rule both configuring and a pass name a term by, so the
+  // same failure is said in the same words.
   static std::string pathIn(const std::string& label, const std::string& key)
   {
+    if (key.empty())
+    {
+      return label.empty() ? "=" : label;
+    }
     return label.empty() ? key : label + "." + key;
   }
 
@@ -224,9 +273,9 @@ private:
     if (templateNode.is_object())
     {
       // A lone "=" key maps to a scalar rather than to an object.
-      if (templateNode.size() == 1 && templateNode.contains("="))
+      if (isLoneTerm(templateNode))
       {
-        return processDynamicValue(templateNode["="], inputData, label.empty() ? "=" : label);
+        return processDynamicValue(templateNode["="], inputData, pathIn(label, ""));
       }
 
       json result = json::object();
@@ -348,11 +397,11 @@ private:
     }
     catch (const expression::ParseError& e)
     {
-      throw std::runtime_error(label + ": " + invalidExpression(source, e));
+      throw TermError(label + ": " + invalidExpression(source, e));
     }
     catch (const std::exception& e)
     {
-      throw std::runtime_error(label + ": " + e.what());
+      throw TermError(label + ": " + e.what());
     }
 
     if (result.is_null() && !missing.empty())
@@ -400,7 +449,7 @@ private:
     {
       const bool dynamic = !key.empty() && key.back() == '=';
       const std::string name = dynamic ? key.substr(0, key.size() - 1) : key;
-      const std::string where = key == "=" ? (label.empty() ? "=" : label) : pathIn(label, name);
+      const std::string where = pathIn(label, name);
       if (dynamic && value.is_string() && !isInjaTemplate(value.get<std::string>()))
       {
         try
@@ -476,6 +525,51 @@ private:
       // A service that is not part of a pipeline has nowhere to push to.
       std::cerr << "Map service: cannot inject - " << e.what() << std::endl;
     }
+  }
+
+  // A sensed template: the shape of what arrived, and nothing that runs — as in
+  // the other runtimes. Sensing builds a template out of input, which arrives
+  // from wherever the board is fed, and a template runs: a key ending in "=" is
+  // an expression, and a key or text carrying an Inja marker is rendered. So the
+  // suffix is dropped rather than the field, and a marker is escaped to render
+  // back to exactly what arrived.
+  static json sensed(const json& learned)
+  {
+    json safe = json::object();
+    for (const auto& [key, value] : learned.items())
+    {
+      std::string name = key;
+      while (!name.empty() && name.back() == '=')
+      {
+        name.pop_back();
+      }
+      safe[literalText(name)] = value.is_string() ? json(literalText(value.get<std::string>())) : value;
+    }
+    return safe;
+  }
+
+  // Text that Inja renders as itself. Only text with a marker is rendered at
+  // all; in it, every "{" and "#" — what opens an expression, a statement, a
+  // comment or a line statement — is written as an expression that produces it.
+  static std::string literalText(const std::string& text)
+  {
+    if (!isInjaTemplate(text))
+    {
+      return text;
+    }
+    std::string escaped;
+    for (const char c : text)
+    {
+      if (c == '{' || c == '#')
+      {
+        escaped += std::string("{{ \"") + c + "\" }}";
+      }
+      else
+      {
+        escaped += c;
+      }
+    }
+    return escaped;
   }
 
   // Turns nested data into the dotted-key template the mapping UI edits, e.g.
