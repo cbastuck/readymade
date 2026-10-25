@@ -275,7 +275,9 @@ public:
 
 private:
   // persistRoot, inside a folder this server gives boards; nothing when it is
-  // unset or outside them, and the cache then keeps to memory.
+  // unset or outside them, and the cache then keeps to memory. Resolved on
+  // every input, since the folders may change while it runs; a refusal is
+  // logged once, not once per input.
   std::optional<files::Path> persistRoot() const
   {
     if (m_persistRoot.empty())
@@ -284,10 +286,11 @@ private:
     }
     std::string problem;
     auto folder = files::resolve(m_persistRoot, problem);
-    if (!folder)
+    if (!folder && problem != m_persistProblem)
     {
       std::cerr << "Cache service: " << problem << std::endl;
     }
+    m_persistProblem = problem;
     return folder;
   }
 
@@ -346,6 +349,7 @@ private:
   std::string m_key;
   std::string m_outputKey  = "path"; // defaults to "path" for backward compatibility
   std::string m_persistRoot;
+  mutable std::string m_persistProblem; // the refusal last logged
   std::string m_persistMode; // "sha" (default) | "filename"
   std::string m_filenameTemplate;
   std::map<std::string, Data> m_cache;

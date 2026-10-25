@@ -100,8 +100,10 @@ data on its output. Services:
   (`docs/content/concepts/runtime.md`, "Where a hosted server may connect")
 - **Opens a file a board names only inside the folders its runtime gives boards** — on
   hkp-rt through `files.h` (`files::resolve`, `files::resolveIn`), with a relative path
-  landing in the default folder; a test fails on a file opened any other way
-  (`docs/content/concepts/runtime.md`, "Where a board may read and write files")
+  landing in the default folder; a test fails on a file opened any other way. The one
+  exception is a model the speech and text-generation services hand to their model
+  library by path (`docs/content/concepts/runtime.md`, "Where a board may read and
+  write files")
 
 For browser services, the service and its UI share the same JS process — state sync is a
 direct method call. For remote runtimes (Node, Python, C++), the UI communicates via REST;

@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <random>
+
 #include "../fileFolders.h"
 
 using namespace readymade;
@@ -38,3 +40,29 @@ TEST_CASE("no folder holding the app's own data is kept", "[fileFolders]") {
   // Beside it is fine.
   REQUIRE(normalizeFileFolders({"/Users/me/.hkpx"}, kAppData) == std::vector<std::string>{"/Users/me/.hkpx"});
 }
+
+#ifndef _WIN32 // creating a symlink there takes a privilege tests do not have
+TEST_CASE("no folder that reaches the app's own data on disk is kept", "[fileFolders]") {
+  // The runtime follows a folder's symlinks before comparing a board's path
+  // with it, so a folder that is only spelled differently is the same folder.
+  namespace fs = std::filesystem;
+  const auto scratch = fs::temp_directory_path() / ("hkp-file-folders-" + std::to_string(std::random_device{}()));
+  fs::remove_all(scratch);
+  const auto home = scratch / "home";
+  const auto appData = home / ".hkp";
+  fs::create_directories(appData / "cpp");
+  fs::create_directories(home / "Music");
+  fs::create_symlink(home, scratch / "to-home");
+  fs::create_symlink(appData / "cpp", scratch / "to-cpp");
+
+  // A symlink to the folder around the app's data, and one into it.
+  REQUIRE(normalizeFileFolders({(scratch / "to-home").string()}, appData).empty());
+  REQUIRE(normalizeFileFolders({(scratch / "to-cpp").string()}, appData).empty());
+  REQUIRE(normalizeFileFolders({(scratch / "to-cpp" / "files").string()}, appData).empty());
+  // A folder beside it, reached through the same symlink, is fine.
+  REQUIRE(normalizeFileFolders({(scratch / "to-home" / "Music").string()}, appData) ==
+          std::vector<std::string>{(scratch / "to-home" / "Music").string()});
+
+  fs::remove_all(scratch);
+}
+#endif

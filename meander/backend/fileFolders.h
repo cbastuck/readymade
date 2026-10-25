@@ -65,9 +65,41 @@ inline bool isWithinFolder(const std::filesystem::path& a, const std::filesystem
 }
 
 /**
+ * Whether `a` is `b` or lies beneath it on disk: `a` with its symlinks
+ * followed, then it and each folder around it compared with `b` as the file
+ * system sees them. Neither a symlink, nor a spelling that differs only in
+ * case on a volume that ignores case, nor a second route to the same folder
+ * (`/System/Volumes/Data/Users/…`) gets past it. What does not exist is never
+ * the same as anything.
+ */
+inline bool isWithinFolderOnDisk(const std::filesystem::path& a, const std::filesystem::path& b)
+{
+  namespace fs = std::filesystem;
+  std::error_code ec;
+  auto current = fs::weakly_canonical(a, ec);
+  if (ec)
+  {
+    return false;
+  }
+  while (true)
+  {
+    if (fs::equivalent(current, b, ec) && !ec)
+    {
+      return true;
+    }
+    if (!current.has_relative_path())
+    {
+      return false;
+    }
+    current = current.parent_path();
+  }
+}
+
+/**
  * The folders as they are kept: absolute paths, normal, each once, none
- * holding or held by `appData` (`~/.hkp`). A relative path or an empty one is
- * dropped rather than guessed at.
+ * holding or held by `appData` (`~/.hkp`) — as spelled or on disk. A relative
+ * path or an empty one is dropped rather than guessed at. Settings are read
+ * through this too, so a hand-edited file is held to the same rule.
  */
 inline std::vector<std::string> normalizeFileFolders(const std::vector<std::string>& values,
                                                      const std::filesystem::path& appData)
@@ -93,7 +125,11 @@ inline std::vector<std::string> normalizeFileFolders(const std::vector<std::stri
     {
       folder = folder.parent_path();
     }
-    if (isWithinFolder(folder, data) || isWithinFolder(data, folder))
+    // By spelling, and then on disk: the runtime follows a folder's symlinks
+    // before it compares a board's path with it (files.h), so a folder that
+    // only looks unrelated to `~/.hkp` here would hold it there.
+    if (isWithinFolder(folder, data) || isWithinFolder(data, folder) || isWithinFolderOnDisk(folder, appData) ||
+        isWithinFolderOnDisk(appData, folder))
     {
       continue;
     }

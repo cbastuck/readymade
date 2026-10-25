@@ -302,7 +302,10 @@ in shares its folders; paths the operator names â€” a runtime config, plugins â€
 are the operator's; and a folder should hold nothing but what boards may have,
 because a board that may write there may write all of it. The models the speech
 and text-generation services load are named by path too and are not confined:
-they are read by the model library, never handed back to the board.
+the model library reads them, and a file that is not a model fails to load.
+The one way any of it comes back is speech-to-text's `tokensPath`, the
+vocabulary a transcript is spelled from: a file shaped like one, should it load,
+spells the transcript.
 
 ### Adding one to a board
 
