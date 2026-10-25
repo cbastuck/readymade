@@ -1186,7 +1186,22 @@ inline const std::map<std::string, Builtin>& builtins()
        for (const auto& arg : args) { result += toText(arg); }
        return json(result);
      }},
-    {"encodeURI", [](const std::vector<json>& args) -> json {
+    // An array's elements as one text, e.g. the parts a gather collected:
+    // join(params.items, ''). An empty element is nothing, as Array.join has it.
+    {"join", [](const std::vector<json>& args) -> json {
+       const json arg = argAt(args, 0);
+       const json separatorArg = argAt(args, 1);
+       const std::string separator = separatorArg.is_null() ? "" : toText(separatorArg);
+       if (!arg.is_array()) { return json(arg.is_null() ? "" : toText(arg)); }
+       std::string result;
+       for (size_t i = 0; i < arg.size(); ++i)
+       {
+         if (i > 0) { result += separator; }
+         if (!arg[i].is_null()) { result += toText(arg[i]); }
+       }
+       return json(result);
+     }},
+    {"encodeURI",[](const std::vector<json>& args) -> json {
        static const std::string unreserved =
          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
          "-_.!~*'();/?:@&=+$,#";

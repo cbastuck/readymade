@@ -86,10 +86,18 @@ So a group is bounded, and one that never completes is let go:
 - **`maxBytes`** — a group whose parts add up to more is refused: what it held
   is dropped, the parts still on their way are ignored, and the board log
   records `gather.refused`.
+- **`maxGroups`** — how many groups may be incomplete at once. A part that
+  would start one more is refused, logged as `gather.refused`, and the rest of
+  that group with it. Nothing already arriving is given up to make room. The
+  most one Gather holds is therefore `maxGroups × maxBytes`, which is what to
+  lower on a server that others' boards run on.
 - **`timeoutMs`** — a group still incomplete that long after its first part is
   let go, logged as `gather.timed-out`. Checked whenever a part arrives.
 
-Either way `error` says what happened, in the service's state and as a
+What a group is called is bounded too: a part naming a `group` longer than 256
+characters is not a part, and passes through. Spread names its groups by UUID.
+
+Whichever limit it was, `error` says what happened, in the service's state and as a
 notification — a facade `notice` on `error` shows it — because a group that
 never arrives looks, from outside, exactly like nothing having been sent.
 
@@ -101,6 +109,7 @@ never arrives looks, from outside, exactly like nothing having been sent.
 |---|---|---|---|
 | `pipeline` | `array` | `[]` | The nested services that make one value of `{ group, items }`; none passes the items on as an array |
 | `maxBytes` | `number` | `67108864` | The most one group may hold (64 MiB, the coordinator's default frame limit) |
+| `maxGroups` | `number` | `16` | How many groups may be incomplete at once |
 | `timeoutMs` | `number` | `60000` | How long a group may take to complete |
 | `bypass` | `boolean` | `false` | Pass every input through untouched |
 | `stopPropagation` | `boolean` | `false` | Pass nothing on, even a complete group |

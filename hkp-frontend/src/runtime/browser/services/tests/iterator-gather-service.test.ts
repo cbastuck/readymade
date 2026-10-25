@@ -9,7 +9,11 @@
 
 import { describe, expect, it, vi } from "vitest";
 import IteratorDescriptor from "../BrowserIterator";
-import GatherDescriptor from "../BrowserGather";
+import GatherDescriptor, {
+  isPart,
+  MAX_GROUP_LENGTH,
+  MAX_REFUSED,
+} from "../BrowserGather";
 
 function createApp() {
   return {
@@ -210,6 +214,47 @@ describe("Gather", () => {
     });
   });
 
+  it("refuses a new group past maxGroups, keeping the ones already arriving", async () => {
+    const { service, app } = create(GatherDescriptor);
+    service.configure({ maxGroups: 2 });
+
+    await service.process(part("a", 0, 2, "a0"));
+    await service.process(part("b", 0, 2, "b0"));
+    expect(await service.process(part("c", 0, 2, "c0"))).toBeNull();
+
+    expect(service.progress).toEqual({
+      pending: 2,
+      error: "group c refused: 2 groups are already incomplete",
+    });
+    expect(app.log).toHaveBeenCalledWith(service, "error", "gather.refused", {
+      group: "c",
+      message: "group c refused: 2 groups are already incomplete",
+    });
+    // The groups it kept still complete, and the refused one stays refused.
+    expect(await service.process(part("a", 1, 2, "a1"))).toEqual(["a0", "a1"]);
+    expect(await service.process(part("c", 1, 2, "c1"))).toBeNull();
+    expect(service.progress.pending).toBe(1);
+  });
+
+  it("forgets the oldest refusals rather than keeping every one", async () => {
+    const { service } = create(GatherDescriptor);
+    service.configure({ maxGroups: 1 });
+    await service.process(part("held", 0, 2, "x"));
+
+    for (let i = 0; i <= MAX_REFUSED; i++) {
+      await service.process(part(`flood-${i}`, 0, 2, "x"));
+    }
+    const refused: Map<string, number> = service.refused;
+    expect(refused.size).toBe(MAX_REFUSED);
+    expect(refused.has("flood-0")).toBe(false);
+    expect(refused.has(`flood-${MAX_REFUSED}`)).toBe(true);
+  });
+
+  it("does not take a part whose group is too long to hold", () => {
+    expect(isPart(part("g".repeat(MAX_GROUP_LENGTH), 0, 1, "x"))).toBe(true);
+    expect(isPart(part("g".repeat(MAX_GROUP_LENGTH + 1), 0, 1, "x"))).toBe(false);
+  });
+
   it("holds a part claiming an enormous total without allocating for it", async () => {
     const { service } = create(GatherDescriptor);
 
@@ -219,10 +264,13 @@ describe("Gather", () => {
 
   it("keeps its limits in what a board saves", async () => {
     const { service } = create(GatherDescriptor);
-    service.configure({ maxBytes: 1000, timeoutMs: 5000 });
+    service.configure({ maxBytes: 1000, maxGroups: 4, timeoutMs: 5000 });
+    // Fewer than one group would refuse everything; it is not taken.
+    service.configure({ maxGroups: 0 });
 
     expect(await service.getConfiguration()).toMatchObject({
       maxBytes: 1000,
+      maxGroups: 4,
       timeoutMs: 5000,
     });
   });

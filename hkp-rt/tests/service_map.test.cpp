@@ -256,3 +256,27 @@ TEST_CASE("Map does not report an unknown name as an error", "[services][map]") 
   REQUIRE(mapped(map, json::object()) == json{{"key", nullptr}});
   REQUIRE_FALSE(map.getState().contains("error"));
 }
+
+// ── join: what a gather collected, as one text ───────────────────────────────
+
+TEST_CASE("Map joins an array into one text", "[services][map]") {
+  Map map("map-1");
+  map.configure(json{{"template", json{
+    {"whole=", "join(params.items)"},
+    {"csv=", "join(params.items, ',')"},
+  }}});
+
+  REQUIRE(mapped(map, json{{"items", json::array({"ab", "cd", nullptr, 1, true})}}) ==
+          json{{"whole", "abcd1true"}, {"csv", "ab,cd,,1,true"}});
+  REQUIRE_FALSE(map.getState().contains("error"));
+}
+
+TEST_CASE("Map's join answers with text whatever it is given", "[services][map]") {
+  Map map("map-1");
+  map.configure(json{{"template", json{
+    {"missing=", "join(params.missing)"},
+    {"whole=", "join(params.s)"},
+  }}});
+
+  REQUIRE(mapped(map, json{{"s", "whole"}}) == json{{"missing", ""}, {"whole", "whole"}});
+}

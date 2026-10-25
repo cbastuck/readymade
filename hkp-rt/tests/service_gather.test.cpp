@@ -161,6 +161,40 @@ TEST_CASE("Gather refuses a group whose parts disagree on how many there are",
   REQUIRE(f.gather->getState()["error"] == "group g said 2 parts, then 3");
 }
 
+TEST_CASE("Gather refuses a new group past maxGroups, keeping the ones already arriving",
+          "[gather]")
+{
+  Fixture f(json{{"maxGroups", 2}});
+  f.run(part("a", 0, 2, "a0"));
+  f.run(part("b", 0, 2, "b0"));
+  REQUIRE(f.run(part("c", 0, 2, "c0")).is_null());
+
+  auto state = f.gather->getState();
+  REQUIRE(state["pending"] == 2);
+  REQUIRE(state["error"] == "group c refused: 2 groups are already incomplete");
+  REQUIRE(f.host.logged == std::vector<std::string>{"error gather.refused"});
+  // The groups it kept still complete, and the refused one stays refused.
+  REQUIRE(f.run(part("a", 1, 2, "a1")) == json::array({"a0", "a1"}));
+  REQUIRE(f.run(part("c", 1, 2, "c1")).is_null());
+  REQUIRE(f.gather->getState()["pending"] == 1);
+}
+
+TEST_CASE("Gather forgets the oldest refusals rather than keeping every one", "[gather]")
+{
+  Fixture f(json{{"maxGroups", 1}});
+  f.run(part("held", 0, 2, "x"));
+  for (size_t i = 0; i <= Gather::maxRefused; ++i)
+    f.run(part("flood-" + std::to_string(i), 0, 2, "x"));
+
+  // A slot free again: a group still remembered as refused stays refused, one
+  // forgotten starts afresh.
+  REQUIRE(f.run(part("held", 1, 2, "y")) == json::array({"x", "y"}));
+  f.run(part("flood-" + std::to_string(Gather::maxRefused), 1, 2, "x"));
+  REQUIRE(f.gather->getState()["pending"] == 0);
+  f.run(part("flood-0", 1, 2, "x"));
+  REQUIRE(f.gather->getState()["pending"] == 1);
+}
+
 TEST_CASE("Gather knows a part when it sees one", "[gather]")
 {
   REQUIRE(Gather::isPart(part("g", 0, 1, nullptr)));
@@ -169,6 +203,9 @@ TEST_CASE("Gather knows a part when it sees one", "[gather]")
   REQUIRE_FALSE(Gather::isPart(part("g", 1, 1, "x")));
   REQUIRE_FALSE(Gather::isPart(json{{"item", "x"}, {"group", "g"}, {"index", 0.5}, {"total", 2}}));
   REQUIRE_FALSE(Gather::isPart(json::array({part("g", 0, 1, "x")})));
+  // A group is held for as long as its parts are, so its name is bounded.
+  REQUIRE(Gather::isPart(part(std::string(Gather::maxGroupLength, 'g'), 0, 1, "x")));
+  REQUIRE_FALSE(Gather::isPart(part(std::string(Gather::maxGroupLength + 1, 'g'), 0, 1, "x")));
 
   // A total that large is held without being allocated for.
   Fixture f;
@@ -178,10 +215,13 @@ TEST_CASE("Gather knows a part when it sees one", "[gather]")
 
 TEST_CASE("Gather reads its limits from the board as well as later", "[gather]")
 {
-  Fixture f(json{{"maxBytes", 1000}, {"timeoutMs", 5000}});
+  Fixture f(json{{"maxBytes", 1000}, {"maxGroups", 4}, {"timeoutMs", 5000}});
   REQUIRE(f.gather->getState()["maxBytes"] == 1000);
-  f.gather->configure(json{{"maxBytes", 2000}});
+  REQUIRE(f.gather->getState()["maxGroups"] == 4);
+  f.gather->configure(json{{"maxBytes", 2000}, {"maxGroups", 0}});
   REQUIRE(f.gather->getState()["maxBytes"] == 2000);
+  // Fewer than one group would refuse everything; it is not taken.
+  REQUIRE(f.gather->getState()["maxGroups"] == 4);
   REQUIRE(f.gather->getState()["timeoutMs"] == 5000);
   REQUIRE(Gather::serviceId() == "gather");
 }

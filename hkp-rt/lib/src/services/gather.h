@@ -17,7 +17,7 @@
  * Service Name: Gather
  * Runtime: hkp-rt
  * Modes: none — the items as an array, or what the nested pipeline makes of them
- * Key Config: pipeline, maxBytes, timeoutMs, bypass
+ * Key Config: pipeline, maxBytes, maxGroups, timeoutMs, bypass
  * IO: in=one part a Spread sent on -> out=the whole group, once every part is in; null until then
  * Arrays: what a group becomes, in the order it was spread
  * Binary: not a part, so passed through untouched
@@ -37,16 +37,26 @@ namespace hkp {
 // answer Tracks gives its reducer. With none the items travel on as an array;
 // with one, the pipeline is given `{ group, items }` and its answer goes on.
 //
-// **Collecting a group holds it in memory.** `maxBytes` bounds one group, and a
-// group still incomplete after `timeoutMs` is let go — checked whenever a part
-// arrives. Both are logged and reported as `error`, because a group that never
-// arrives looks, from outside, exactly like nothing having been sent.
+// **Collecting a group holds it in memory.** `maxBytes` bounds one group,
+// `maxGroups` how many may be incomplete at once — so the most held is the two
+// multiplied — and a group still incomplete after `timeoutMs` is let go, checked
+// whenever a part arrives. Each is logged and reported as `error`, because a
+// group that never arrives looks, from outside, exactly like nothing having
+// been sent.
 //
 // Matches `gather` in hkp-node, hkp-python and the browser runtime.
 class Gather : public SubService
 {
 public:
   static std::string serviceId() { return "gather"; }
+
+  // Refusals remembered at once, the oldest forgotten first. They expire
+  // anyway; this keeps a stream of new groups, each refused, from growing the
+  // list instead of the groups.
+  static constexpr size_t maxRefused = 1024;
+  // The longest group a part may name. A group is held as long as its parts
+  // are, and is not counted against `maxBytes`; Spread names its groups by UUID.
+  static constexpr size_t maxGroupLength = 256;
 
   explicit Gather(const std::string& instanceId)
     : SubService(instanceId, "gather")
@@ -62,7 +72,10 @@ public:
     const auto group = value.find("group");
     const auto index = value.find("index");
     const auto total = value.find("total");
-    if (group == value.end() || !group->is_string() || group->get<std::string>().empty())
+    if (group == value.end() || !group->is_string())
+      return false;
+    const auto& name = group->get_ref<const std::string&>();
+    if (name.empty() || name.size() > maxGroupLength)
       return false;
     if (index == value.end() || !index->is_number_integer() || index->get<int64_t>() < 0)
       return false;
@@ -81,6 +94,8 @@ public:
     {
       if (j->contains("maxBytes") && (*j)["maxBytes"].is_number() && (*j)["maxBytes"].get<double>() > 0)
         m_maxBytes = static_cast<uint64_t>((*j)["maxBytes"].get<double>());
+      if (j->contains("maxGroups") && (*j)["maxGroups"].is_number() && (*j)["maxGroups"].get<double>() >= 1)
+        m_maxGroups = static_cast<size_t>((*j)["maxGroups"].get<double>());
       if (j->contains("timeoutMs") && (*j)["timeoutMs"].is_number() && (*j)["timeoutMs"].get<double>() > 0)
         m_timeoutMs = static_cast<int64_t>((*j)["timeoutMs"].get<double>());
     }
@@ -92,6 +107,7 @@ public:
     auto state = SubService::getState();
     state.update(json{
       {"maxBytes",  m_maxBytes},
+      {"maxGroups", m_maxGroups},
       {"timeoutMs", m_timeoutMs},
       {"pending",   m_collecting.size()},
       {"error",     m_lastError},
@@ -117,7 +133,15 @@ public:
 
     auto found = m_collecting.find(group);
     if (found == m_collecting.end())
+    {
+      if (m_collecting.size() >= m_maxGroups)
+      {
+        refuse(group, now, "group " + group + " refused: " + std::to_string(m_maxGroups) +
+                           " groups are already incomplete");
+        return Null();
+      }
       found = m_collecting.emplace(group, Collecting{{}, total, 0, now}).first;
+    }
     auto& collecting = found->second;
 
     if (collecting.total != total)
@@ -194,6 +218,15 @@ private:
   {
     m_collecting.erase(group);
     m_refused[group] = now;
+    // Ordered by name, not by age: the oldest is looked for, among few enough.
+    while (m_refused.size() > maxRefused)
+    {
+      auto oldest = m_refused.begin();
+      for (auto it = m_refused.begin(); it != m_refused.end(); ++it)
+        if (it->second < oldest->second)
+          oldest = it;
+      m_refused.erase(oldest);
+    }
     m_lastError = message;
     log(LogLevel::Error, "gather.refused", json{{"group", group}, {"message", message}});
     sendNotification(json{{"error", message}, {"pending", m_collecting.size()}});
@@ -225,6 +258,9 @@ private:
 
   // As much as the coordinator lets through in one frame by default.
   uint64_t m_maxBytes = 64ull * 1024 * 1024;
+  // Groups incomplete at once. A new group beyond it is refused rather than
+  // making room: what is already arriving is not given up for what arrives next.
+  size_t   m_maxGroups = 16;
   int64_t  m_timeoutMs = 60000;
   std::string m_lastError;
   std::map<std::string, Collecting> m_collecting;

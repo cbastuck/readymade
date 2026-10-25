@@ -12,6 +12,7 @@ const MIB = 1024 * 1024;
 export default function GatherUI(props: ServiceUIProps) {
   const { service } = props;
   const [maxBytes, setMaxBytes] = useState(64 * MIB);
+  const [maxGroups, setMaxGroups] = useState(16);
   const [timeoutMs, setTimeoutMs] = useState(60_000);
   const [pending, setPending] = useState(0);
   const [error, setError] = useState("");
@@ -19,6 +20,9 @@ export default function GatherUI(props: ServiceUIProps) {
   const onState = useCallback((state: any) => {
     if (typeof state?.maxBytes === "number") {
       setMaxBytes(state.maxBytes);
+    }
+    if (typeof state?.maxGroups === "number") {
+      setMaxGroups(state.maxGroups);
     }
     if (typeof state?.timeoutMs === "number") {
       setTimeoutMs(state.timeoutMs);
@@ -42,6 +46,16 @@ export default function GatherUI(props: ServiceUIProps) {
             const parsed = Number.parseFloat(value);
             if (Number.isFinite(parsed) && parsed > 0) {
               service.configure({ maxBytes: Math.floor(parsed * MIB) });
+            }
+          }}
+        />
+        <InputField
+          label="Max groups"
+          value={String(maxGroups)}
+          onChange={(value) => {
+            const parsed = Number.parseInt(value, 10);
+            if (Number.isFinite(parsed) && parsed >= 1) {
+              service.configure({ maxGroups: parsed });
             }
           }}
         />

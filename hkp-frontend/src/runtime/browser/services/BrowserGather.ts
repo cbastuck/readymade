@@ -3,7 +3,7 @@
  * Service ID: gather
  * Service Name: Gather
  * Modes: none — the items as an array, or what the nested pipeline makes of them
- * Key Config: pipeline, maxBytes, timeoutMs, bypass
+ * Key Config: pipeline, maxBytes, maxGroups, timeoutMs, bypass
  * IO: in=one part a Spread sent on -> out=the whole group, once every part is in; null until then
  *
  * The other half of Spread. Spread turns one array into as many values as it
@@ -20,10 +20,11 @@
  * answer Tracks gives its reducer. With none the items travel on as an array;
  * with one, the pipeline is given `{ group, items }` and its answer goes on.
  *
- * **Collecting a group holds it in memory.** `maxBytes` bounds one group, and a
- * group still incomplete after `timeoutMs` is let go; both are logged and
- * reported as `error`, because a group that never arrives looks, from outside,
- * exactly like nothing having been sent.
+ * **Collecting a group holds it in memory.** `maxBytes` bounds one group,
+ * `maxGroups` how many may be incomplete at once — so the most held is the two
+ * multiplied — and a group still incomplete after `timeoutMs` is let go; each is
+ * logged and reported as `error`, because a group that never arrives looks,
+ * from outside, exactly like nothing having been sent.
  *
  * Matches `gather` in hkp-node, hkp-python and hkp-rt.
  */
@@ -39,6 +40,22 @@ const serviceName = "Gather";
 /** As much as the coordinator lets through in one frame by default. */
 const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 60_000;
+/**
+ * Groups incomplete at once. A new group beyond it is refused rather than
+ * making room: what is already arriving is not given up for what arrives next.
+ */
+const DEFAULT_MAX_GROUPS = 16;
+/**
+ * Refusals remembered at once, the oldest forgotten first. They expire anyway;
+ * this keeps a stream of new groups, each refused, from growing the list
+ * instead of the groups.
+ */
+export const MAX_REFUSED = 1024;
+/**
+ * The longest group a part may name. A group is held as long as its parts are,
+ * and is not counted against `maxBytes`; Spread names its groups by UUID.
+ */
+export const MAX_GROUP_LENGTH = 256;
 
 /** One item of an array a Spread sent on, and where it sits in it. */
 export type Part = {
@@ -58,6 +75,7 @@ export function isPart(value: unknown): value is Part {
     "item" in part &&
     typeof part.group === "string" &&
     part.group !== "" &&
+    part.group.length <= MAX_GROUP_LENGTH &&
     Number.isInteger(part.total) &&
     (part.total as number) > 0 &&
     Number.isInteger(part.index) &&
@@ -99,6 +117,7 @@ type Collecting = {
 /** What this service keeps beside the scope it is. */
 type Collection = {
   maxBytes: number;
+  maxGroups: number;
   timeoutMs: number;
 };
 
@@ -118,6 +137,7 @@ export class BrowserGather extends BrowserSubService {
     // board saves of this service — the scope's configuration — carries it.
     Object.assign(this.state, {
       maxBytes: DEFAULT_MAX_BYTES,
+      maxGroups: DEFAULT_MAX_GROUPS,
       timeoutMs: DEFAULT_TIMEOUT_MS,
     } satisfies Collection);
   }
@@ -135,6 +155,9 @@ export class BrowserGather extends BrowserSubService {
     const changed: Partial<Collection> = {};
     if (typeof config.maxBytes === "number" && config.maxBytes > 0) {
       changed.maxBytes = Math.floor(config.maxBytes);
+    }
+    if (typeof config.maxGroups === "number" && config.maxGroups >= 1) {
+      changed.maxGroups = Math.floor(config.maxGroups);
     }
     if (typeof config.timeoutMs === "number" && config.timeoutMs > 0) {
       changed.timeoutMs = Math.floor(config.timeoutMs);
@@ -165,6 +188,15 @@ export class BrowserGather extends BrowserSubService {
 
     let collecting = this.collecting.get(group);
     if (!collecting) {
+      const { maxGroups } = this.collection;
+      if (this.collecting.size >= maxGroups) {
+        this.refuse(
+          group,
+          now,
+          `group ${group} refused: ${maxGroups} groups are already incomplete`,
+        );
+        return null;
+      }
       collecting = {
         items: new Map(),
         total,
@@ -233,6 +265,10 @@ export class BrowserGather extends BrowserSubService {
   private refuse(group: string, now: number, message: string): void {
     this.collecting.delete(group);
     this.refused.set(group, now);
+    // A Map keeps insertion order, so the first key is the oldest refusal.
+    while (this.refused.size > MAX_REFUSED) {
+      this.refused.delete(this.refused.keys().next().value as string);
+    }
     this.lastError = message;
     this.app.log(this, "error", "gather.refused", { group, message });
     this.app.notify(this as any, { error: message, pending: this.collecting.size });
