@@ -213,6 +213,22 @@ export function unlinkBlocks<T extends BoardDescriptor>(
   };
 }
 
+/**
+ * The board as its source view shows it: the one flat document a share link
+ * carries, with the board's own uses written back and its blocks beside them.
+ * The plain serialisation has every use expanded and no blocks, so source
+ * applied from it would quietly turn each use into a copy.
+ */
+export async function serializeBoardSource(board: {
+  serializeBoard: () => Promise<BoardDescriptor | null>;
+  linkage?: { blocks?: BlockLinkage };
+}): Promise<BoardDescriptor | null> {
+  const serialized = await board.serializeBoard();
+  return serialized
+    ? unlinkBlocks(serialized, board.linkage?.blocks, { ownOnly: true })
+    : null;
+}
+
 /** A unit's document with the blocks it holds now, which editing may have changed. */
 export function withUnitBlocks(
   name: string,

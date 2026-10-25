@@ -5,6 +5,7 @@ import { defaultUnitOrigin, linkBoard } from "../linkUnits";
 import {
   checkAddressesIntoUses,
   linkBlocks,
+  serializeBoardSource,
   unlinkBlocks,
   withUnitBlocks,
 } from "../linkBlocks";
@@ -64,6 +65,29 @@ describe("linkBlocks", () => {
     const linked = linkBlocks(plain);
     expect(linked.linkage).toBeUndefined();
     expect(linked.board).toEqual(plain);
+  });
+});
+
+describe("serializeBoardSource", () => {
+  it("shows the board's own uses as uses, with their blocks beside them", async () => {
+    // What Edit Board Source shows. The flat serialisation alone has the use
+    // expanded and no blocks, and applying it would turn the use into a copy.
+    const source = board();
+    const linked = linkBlocks(source);
+    const shown = await serializeBoardSource({
+      serializeBoard: async () => linked.board,
+      linkage: { blocks: linked.linkage },
+    });
+    expect(shown?.blocks).toEqual([{ ...hit, tags: undefined }]);
+    expect(shown?.services).toEqual(source.services);
+  });
+
+  it("leaves a board without blocks as it serialises", async () => {
+    const plain = board({ blocks: undefined, services: { ui: [] } });
+    const shown = await serializeBoardSource({
+      serializeBoard: async () => plain,
+    });
+    expect(shown).toEqual(plain);
   });
 });
 

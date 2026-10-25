@@ -10,6 +10,7 @@ import {
   storeBoardToLocalStorage,
 } from "hkp-frontend/src/views/playground/common";
 import { createBoardLink } from "hkp-frontend/src/views/playground/BoardLink";
+import { serializeBoardSource } from "hkp-frontend/src/core/linkBlocks";
 import { saveBoardInCloudMenuItem } from "hkp-frontend/src/cloud/saveBoard";
 import { assureJSON, stringifyIfNeeded } from "hkp-frontend/src/common";
 import {
@@ -42,7 +43,7 @@ export default function BoardMenu({ menuItemFactory }: Props) {
     if (boardContext && board) {
       const src = boardContext.errorOnFetch
         ? restoreBoardFromLocalStorage(board)
-        : await boardContext?.serializeBoard();
+        : await serializeBoardSource(boardContext);
       setBoardSource(JSON.stringify(src, null, 2));
       setShowBoardSource(true);
     }
@@ -94,7 +95,7 @@ export default function BoardMenu({ menuItemFactory }: Props) {
 
     const src = boardContext.errorOnFetch
       ? restoreBoardFromLocalStorage(board)
-      : await boardContext.serializeBoard();
+      : await serializeBoardSource(boardContext);
 
     if (!src) {
       boardContext.appContext?.pushNotification({
