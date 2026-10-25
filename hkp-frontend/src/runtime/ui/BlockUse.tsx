@@ -215,7 +215,10 @@ type Props = {
   /** The service's address — its uuid at the top of a runtime, a dotted path below. */
   address: string;
   runtimeId?: string;
-  /** What opening this service as its own level takes, when it hosts a pipeline. */
+  /**
+   * What opening this service as its own level takes, when it hosts a
+   * pipeline — offered on the bar of a use, which shows no panel to open it from.
+   */
   level?: { id: string; label: string };
   /** Takes the service out of the pipeline holding it. */
   onRemove?: () => void;
@@ -286,7 +289,11 @@ export default function BlockUseFrame({
   }
   const panel = (
     <div className="inline-flex flex-col">
-      {use ? (
+      {/* Only a use draws its own way onto a level, since only a use hides
+          its panel. A panel inside one shows it, and a pipeline's host takes
+          the lock over so that its own buttons for that stay in reach (see
+          BrowserSubServiceUI): a second button here would duplicate them. */}
+      {use && (
         <UseBar
           use={use}
           editable={!inside}
@@ -294,8 +301,6 @@ export default function BlockUseFrame({
           processing={processing}
           onRemove={inside ? undefined : onRemove}
         />
-      ) : (
-        level && <OpenLevel level={level} />
       )}
       <BlockLockContext.Provider value={true}>
         {/* A use shows its bar and not its panel: nothing in the panel can be
