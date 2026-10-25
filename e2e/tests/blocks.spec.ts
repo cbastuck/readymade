@@ -387,7 +387,7 @@ test.describe("a block from the library", () => {
     // hidden panel's plug is drawn.
     const plug = uses(page, "ntfy-notification")
       .first()
-      .getByRole("button", { name: "Inspect output" });
+      .getByRole("button", { name: "Inspect input and output" });
     await expect(plug).toBeVisible();
     if (process.env.HKP_E2E_SCREENSHOT) {
       await page.screenshot({ path: process.env.HKP_E2E_SCREENSHOT });
@@ -579,6 +579,24 @@ test.describe("wrapping picked services", () => {
     );
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("service-selection-bar")).toHaveCount(0);
+  });
+
+  test("clicking a picked service again picks nothing", async ({ page }) => {
+    const card = page.locator("#service-frame-the-hit .hkp-service-card");
+    // A spot of the card that is neither a control nor its header's name.
+    const box = (await card.boundingBox())!;
+    const blank = { x: 6, y: box.height - 6 };
+
+    await card.click({ position: blank });
+    await expect(page.locator(".hkp-service-card--selected")).toHaveCount(1);
+    await card.click({ position: blank });
+    await expect(page.locator(".hkp-service-card--selected")).toHaveCount(0);
+
+    // A run lets go whole, rather than keeping a gap.
+    await pick(page, "on-a-hit", "the-hit");
+    await expect(page.locator(".hkp-service-card--selected")).toHaveCount(2);
+    await card.click({ position: blank });
+    await expect(page.locator(".hkp-service-card--selected")).toHaveCount(0);
   });
 
   test("a picked run made a block is saved as its first use", async ({ page }) => {

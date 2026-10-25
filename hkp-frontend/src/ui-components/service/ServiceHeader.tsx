@@ -4,6 +4,7 @@ import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import BypassSwitch from "./BypassSwitch";
 import ServiceSettings from "./ServiceSettings";
 import ServiceName from "./ServiceName";
+import { ProcessingSweep } from "./processingSweep";
 
 type Props = {
   showBypassOnlyIfExplicit: boolean;
@@ -21,6 +22,12 @@ type Props = {
   onChangeName: (newName: string) => void;
   /** Keeps everything that writes out of reach; what only reads stays. */
   readOnly?: boolean;
+  /** The service is running: the header is tinted (see processingSweep). */
+  processing?: boolean;
+  /** A run began: a bar crosses the header's lower edge once. */
+  sweeping?: boolean;
+  /** Which run the bar crosses for; a new one restarts it. */
+  processingRun?: number;
 };
 
 export default function ServiceHeader({
@@ -37,10 +44,20 @@ export default function ServiceHeader({
   onCustomEntry,
   onChangeName,
   readOnly = false,
+  processing = false,
+  sweeping = false,
+  processingRun = 0,
 }: Props) {
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
   const bypassDisabled = showBypassOnlyIfExplicit && bypass === undefined;
+  const processingClass = [
+    processing && "hkp-service-header--processing",
+    sweeping && "hkp-service-header--sweeping",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const processingSweep = sweeping && <ProcessingSweep run={processingRun} />;
   const bypassSwitch = (
     <BypassSwitch
       bypass={!!bypass}
@@ -61,6 +78,7 @@ export default function ServiceHeader({
     return (
       <div
         data-service-header
+        className={processingClass || undefined}
         style={{
           display: "flex",
           alignItems: "center",
@@ -92,12 +110,16 @@ export default function ServiceHeader({
 
         {/* Power / bypass button */}
         {!bypassDisabled && bypassControl}
+        {processingSweep}
       </div>
     );
   }
 
   return (
-    <div data-service-header className="flex items-end">
+    <div
+      data-service-header
+      className={processingClass ? `flex items-end ${processingClass}` : "flex items-end"}
+    >
       <ServiceSettings
         service={service}
         isCollapsed={isCollapsed}
@@ -115,6 +137,7 @@ export default function ServiceHeader({
         onRename={onChangeName}
       />
       {bypassControl}
+      {processingSweep}
     </div>
   );
 }

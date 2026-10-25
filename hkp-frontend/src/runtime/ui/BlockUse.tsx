@@ -18,6 +18,12 @@ import {
 } from "lucide-react";
 
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import { useServicePicked } from "hkp-frontend/src/selection/SelectionContext";
+import { ServiceProcessingReportContext } from "hkp-frontend/src/ui-components/service/ServiceProcessingContext";
+import {
+  ProcessingSweep,
+  SweepState,
+} from "hkp-frontend/src/ui-components/service/processingSweep";
 import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
 import {
   BlockDefinition,
@@ -242,6 +248,12 @@ export default function BlockUseFrame({
   const [handedOver, handOver] = useLockHandOver();
   // Beside the use, where its frame draws its output plug.
   const [plugSlot, setPlugSlot] = useState<HTMLElement | null>(null);
+  // Whether the use's service is running, as its hidden frame reports it.
+  const [processing, setProcessing] = useState<SweepState>({
+    running: false,
+    sweeping: false,
+    run: 0,
+  });
   // Only a locked panel has a lock to hand over.
   const lockedHere = !use?.editing && (!!use || inside);
   const addressed = (
@@ -279,6 +291,7 @@ export default function BlockUseFrame({
           use={use}
           editable={!inside}
           level={level}
+          processing={processing}
           onRemove={inside ? undefined : onRemove}
         />
       ) : (
@@ -297,7 +310,9 @@ export default function BlockUseFrame({
           className="hkp-block-locked"
           style={use ? { display: "none" } : { opacity: 0.7 }}
         >
-          {addressed}
+          <ServiceProcessingReportContext.Provider value={use ? setProcessing : null}>
+            {addressed}
+          </ServiceProcessingReportContext.Provider>
         </div>
       </BlockLockContext.Provider>
     </div>
@@ -345,14 +360,20 @@ function UseBar({
   use,
   editable,
   level,
+  processing,
   onRemove,
 }: {
   use: UseInfo;
   editable: boolean;
   level?: { id: string; label: string };
+  /** The use's service is running; the bar shows it as a frame's header does. */
+  processing: SweepState;
   onRemove?: () => void;
 }) {
   const board = useBoardContext();
+  // The bar is all a use shows, so it shows what its frame would: picked, and
+  // running.
+  const picked = useServicePicked();
   // Anything smaller zooms iOS in on focus, and it stays zoomed.
   const fontSize = useIsMobileHost() ? 16 : 12;
   const { placed, definition, outermost } = use;
@@ -372,7 +393,9 @@ function UseBar({
 
   return (
     <div
-      className="hkp-block-use-bar flex flex-col gap-1 my-1 px-2 py-1 rounded"
+      className={`hkp-block-use-bar flex flex-col gap-1 my-1 px-2 py-1 rounded${
+        picked ? " hkp-block-use-bar--selected" : ""
+      }`}
       style={{
         // The bar is all a use shows, so it is as wide as what it says.
         minWidth: 180,
@@ -381,7 +404,13 @@ function UseBar({
         background: "var(--hkp-accent-dim)",
       }}
     >
-      <div className="flex items-center gap-2">
+      {/* Its title row is the use's header: where a running service shows. */}
+      <div
+        className={`hkp-block-use-title flex items-center gap-2${
+          processing.running ? " hkp-block-use-title--processing" : ""
+        }`}
+      >
+        {processing.sweeping && <ProcessingSweep run={processing.run} />}
         <Boxes
           size={14}
           strokeWidth={1.5}

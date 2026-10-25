@@ -187,12 +187,12 @@ describe("the output plug of a use", () => {
       </BoardCtx.Provider>,
     );
     const slot = container.querySelector("[data-use-output]")!;
-    const own = slot.querySelectorAll('[aria-label="Inspect output"]');
+    const own = slot.querySelectorAll('[aria-label="Inspect input and output"]');
     expect(own).toHaveLength(1);
     expect(own[0].closest("[inert]")).toBeNull();
 
     // The service inside the use keeps its plug in its own (hidden) frame.
-    const all = container.querySelectorAll('[aria-label="Inspect output"]');
+    const all = container.querySelectorAll('[aria-label="Inspect input and output"]');
     expect(all).toHaveLength(2);
     expect(lockedPanel(container).contains(all[1] === own[0] ? all[0] : all[1])).toBe(true);
   });

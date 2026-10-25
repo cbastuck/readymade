@@ -16,6 +16,7 @@
 #include <boost/beast/websocket/ssl.hpp>
 
 #include <secrets.h>
+#include "egress.h"
 #include <yas/buffers.hpp>
 
 #include "../mount.h"
@@ -185,8 +186,8 @@ private:
       m_ws = std::make_unique<Plain>(m_strand);
     }
 
-    m_resolver.async_resolve(
-      m_options.target.host, m_options.target.port,
+    ::hkp::egress::asyncResolve(
+      m_resolver, m_options.target.host, m_options.target.port,
       [self = shared_from_this(), generation](const boost::system::error_code& ec,
                                               tcp::resolver::results_type results) {
         if (generation != self->m_generation) return;

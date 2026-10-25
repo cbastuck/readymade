@@ -1,4 +1,4 @@
-import { parse, eval as expEval } from "expression-eval";
+import { parse, evaluate as expEval } from "./expressionEval";
 import moment from "moment";
 import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import jsep from "jsep";
@@ -44,6 +44,14 @@ const globalScope = {
   parse: (x: string | undefined) =>
     x !== undefined ? JSON.parse(x) : "<parse undefined>",
   concat: (...args: string[]) => args.join(""),
+  // An array's elements as one text, e.g. join(params.items, ''). An empty
+  // element is nothing, as Array.join has it.
+  join: (arr: unknown, separator?: string) =>
+    Array.isArray(arr)
+      ? arr.join(separator ?? "")
+      : arr === null || arr === undefined
+        ? ""
+        : `${arr}`,
   reformatDate,
   // Current date/time as a formatted string (moment format tokens), e.g.
   // formatNow('dddd, MMMM, D. YYYY HH:mm') -> "Friday, July, 17. 2026 21:13"
@@ -168,7 +176,7 @@ export async function evalExpression(
   caller?: InstanceId,
 ) {
   if (ast === "syntax-error") {
-    throw new Error("evalExpression with syntax error");
+    throw new Error("the expression does not parse");
   }
 
   const processRuntime =

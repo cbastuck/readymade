@@ -7,6 +7,7 @@
 #include <types/data.h>
 #include <types/message.h>
 
+#include <call_report.h>
 #include <log_entry.h>
 
 #include <mounts.h>
@@ -19,6 +20,16 @@ namespace hkp {
 class Service;
 class SubRuntime;
 struct ProcessContext;
+
+// What a service's call is reported with — `{"__internal": {"state", "data"}}`
+// with state "call-process" (and the input) or "call-process-finished" (and
+// the output) — kept JSON-serialisable for the frontend, and no larger than a
+// report may carry (call_report.h). One spelling for a runtime and a pipeline
+// nested in it, so the flow inspector reads both alike.
+inline json lifecycleNotification(const std::string& state, const Data& data)
+{
+  return json{{"__internal", json{{"state", state}, {"data", call_report::reported(data)}}}};
+}
 
 // RuntimeHost — abstract interface through which a Service interacts with its
 // containing runtime.  Both Runtime (the top-level pipeline) and SubRuntime

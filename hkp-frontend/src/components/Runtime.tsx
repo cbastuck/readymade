@@ -23,7 +23,7 @@ import {
   withoutSession,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
-import { useSelection } from "../selection/SelectionContext";
+import { isBackgroundClick, useSelection } from "../selection/SelectionContext";
 
 import RuntimeUI from "hkp-frontend/src/ui-components/runtime-ui";
 import { usePlatform } from "../platform/PlatformContext";
@@ -312,19 +312,46 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
   };
 
   const selected = selection?.selectedRuntimeId === runtimeId;
+  // Whether the runtime was selected before the gesture now landing on it
+  // selected it: the press selects at once, so by the click that follows,
+  // being selected says nothing about whether it was selected already.
+  const selectedAtPress = useRef<boolean | null>(null);
+  const selectedBeforeClick = useRef(false);
 
   return (
     <div
+      data-runtime-frame
       className={isSvcClassDragOver ? "hkp-runtime-svc-drop-active" : undefined}
       // Capture, so that touching a runtime anywhere selects it — a header
       // button, a service panel, a text field — without taking the interaction
       // away from whatever was actually clicked.
-      onPointerDownCapture={() => selection?.selectRuntime(runtimeId)}
+      onPointerDownCapture={() => {
+        selectedAtPress.current = selected;
+        selection?.selectRuntime(runtimeId);
+      }}
       // The same aim, from the event after it: a webview that has just ended a
       // native drag can withhold the next pointerdown while still delivering
       // the click, which would cost that click its selection. Selecting the
       // runtime twice is selecting it once.
-      onClickCapture={() => selection?.selectRuntime(runtimeId)}
+      onClickCapture={() => {
+        selectedBeforeClick.current = selectedAtPress.current ?? selected;
+        selectedAtPress.current = null;
+        selection?.selectRuntime(runtimeId);
+      }}
+      // A click on the runtime's own background lets go of what is picked in
+      // it, one step at a time: the services picked in it first, then the
+      // runtime itself, as clicking a picked card lets go of the card. A card's
+      // own clicks are its pick to make.
+      onClick={(ev) => {
+        if (!selection || !isBackgroundClick(ev, "[data-service-card]")) {
+          return;
+        }
+        if (selection.selectedServices?.runtimeId === runtimeId) {
+          selection.selectServices?.(null);
+        } else if (selectedBeforeClick.current) {
+          selection.selectRuntime(null);
+        }
+      }}
       onDragOver={(ev) => {
         if (ev.dataTransfer.types.includes(HKP_DND_SERVICE_CLASS_TYPE)) {
           setIsSvcClassDragOver(true);

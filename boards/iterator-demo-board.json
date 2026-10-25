@@ -1,0 +1,55 @@
+{
+  "boardName": "Iterator Demo",
+  "description": "An Injector holds an array of five numbers. Inject it, and the Iterator runs its nested pipeline once per number: a Filter that stops the ones not above 50, then a Map that doubles what is left. The Monitor after the Iterator is called once, with the answers collected into one array — [198, 128] — because an item whose pipeline stopped contributes nothing.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "numbers",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Five numbers",
+        "state": {
+          "recentInjection": [3, 42, 99, 7, 64],
+          "plainText": false
+        }
+      },
+      {
+        "uuid": "each",
+        "serviceId": "iterator",
+        "serviceName": "Iterator",
+        "state": {
+          "pipeline": [
+            {
+              "instanceId": "above-50",
+              "serviceId": "hookup.to/service/filter",
+              "serviceName": "Above 50",
+              "state": { "conditions": ["params > 50"] }
+            },
+            {
+              "instanceId": "double",
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Double",
+              "state": {
+                "mode": "replace",
+                "arrayMode": "single",
+                "template": { "=": "params * 2" }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "collected",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Collected"
+      }
+    ]
+  }
+}

@@ -18,6 +18,7 @@
 
 #include "./services/root_certificates.h"
 #include "./services/sha256_openssl.h"
+#include "egress.h"
 
 namespace hkp {
 
@@ -105,7 +106,7 @@ AssetStore::FetchResponse fetchUrl(const std::string& target,
   const auto timeout = std::chrono::seconds(30);
   net::io_context ioc;
   tcp::resolver resolver(ioc);
-  const auto endpoints = resolver.resolve(host, port);
+  const auto endpoints = ::hkp::egress::resolve(resolver, host, port);
 
   if (isHttps)
   {

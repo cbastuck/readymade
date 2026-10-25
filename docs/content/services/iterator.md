@@ -12,7 +12,19 @@ Runs a nested pipeline once per item. Iteration you can see in the board.
 
 | Runtime | Service ID |
 |---|---|
+| Browser | `iterator` |
 | Node.js (hkp-node) | `iterator` |
+| Python (hkp-python) | `iterator` |
+| C++ (hkp-rt) | `iterator` |
+
+The same board reads the same in each. Where they differ:
+
+- **C++** collects what an item answers as JSON, as a [Tracks](./tracks.md)
+  branch's is: there is no data type for a list of audio buffers. An item
+  answering with audio or bytes contributes nothing, as one that stopped does.
+  An input that is not JSON is one item, handed over untouched.
+- **Browser**: a service inside that throws is reported by the runtime, which
+  carries on, so `failed` counts only what escapes it.
 
 ---
 

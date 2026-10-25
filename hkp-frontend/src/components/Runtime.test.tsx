@@ -12,6 +12,10 @@ vi.mock("hkp-frontend/src/ui-components/runtime-ui", () => ({
   default: ({ selected }: { selected?: boolean }) => (
     <div data-testid="runtime-ui" data-selected={String(!!selected)}>
       body
+      <div data-service-card data-testid="card">
+        card
+      </div>
+      <button type="button">control</button>
     </div>
   ),
 }));
@@ -33,7 +37,26 @@ const boardContext = {
 
 function SelectionReadout() {
   const selection = useSelection();
-  return <div data-testid="selected">{selection?.selectedRuntimeId ?? ""}</div>;
+  return (
+    <>
+      <div data-testid="selected">{selection?.selectedRuntimeId ?? ""}</div>
+      <div data-testid="picked">
+        {selection?.selectedServices?.uuids.join(",") ?? ""}
+      </div>
+      <button
+        type="button"
+        onClick={() =>
+          selection?.selectServices?.({
+            runtimeId: "node",
+            anchor: "a",
+            uuids: ["a", "b"],
+          })
+        }
+      >
+        pick
+      </button>
+    </>
+  );
 }
 
 // The board holds another runtime ahead of this one, so the selection starts
@@ -88,5 +111,71 @@ describe("Runtime selection", () => {
     renderRuntime(false);
     fireEvent.pointerDown(screen.getByTestId("runtime-ui"));
     expect(screen.getByTestId("runtime-ui").dataset.selected).toBe("false");
+  });
+});
+
+describe("Runtime background", () => {
+  function renderPicked() {
+    renderRuntime();
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+    fireEvent.click(screen.getByText("pick"));
+    expect(screen.getByTestId("picked").textContent).toBe("a,b");
+  }
+
+  it("lets go of the picked services on a click beside the cards", () => {
+    renderPicked();
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+    expect(screen.getByTestId("picked").textContent).toBe("");
+  });
+
+  it("leaves a click on a card to the card", () => {
+    renderPicked();
+    fireEvent.click(screen.getByTestId("card"));
+    expect(screen.getByTestId("picked").textContent).toBe("a,b");
+  });
+
+  it("leaves a click on a control to the control", () => {
+    renderPicked();
+    fireEvent.click(screen.getByText("control"));
+    expect(screen.getByTestId("picked").textContent).toBe("a,b");
+  });
+
+  it("lets go of the services first, then the runtime", () => {
+    renderPicked();
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+    expect(screen.getByTestId("selected").textContent).toBe("node");
+
+    fireEvent.click(screen.getByTestId("runtime-ui"));
+    expect(screen.getByTestId("selected").textContent).toBe("");
+  });
+});
+
+describe("Runtime toggle", () => {
+  const selected = () => screen.getByTestId("selected").textContent;
+  const press = (el: HTMLElement) => {
+    fireEvent.pointerDown(el);
+    fireEvent.click(el);
+  };
+
+  it("selects on the first press, and lets go on the next", () => {
+    renderRuntime();
+    press(screen.getByTestId("runtime-ui"));
+    expect(selected()).toBe("node");
+
+    press(screen.getByTestId("runtime-ui"));
+    expect(selected()).toBe("");
+
+    press(screen.getByTestId("runtime-ui"));
+    expect(selected()).toBe("node");
+  });
+
+  it("keeps the runtime selected when a card or a control is pressed", () => {
+    renderRuntime();
+    press(screen.getByTestId("runtime-ui"));
+
+    press(screen.getByTestId("card"));
+    expect(selected()).toBe("node");
+    press(screen.getByText("control"));
+    expect(selected()).toBe("node");
   });
 });

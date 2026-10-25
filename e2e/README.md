@@ -158,6 +158,10 @@ Where hkp-rt has been built (`hkp-rt/run-tests.sh` builds it; `HKP_RT_BIN`
 names a binary built elsewhere) it is started too, on port 18087, as a second
 runtime server, and `deploy-rt.spec.ts` deploys a board onto it. Without the
 binary that spec is skipped.
+`ws-tickets.spec.ts` deploys nothing: it opens a board with a runtime on each
+server and checks that every runtime socket is opened with a ticket the server
+issued, and never with the token in its address. It covers hkp-rt only where
+hkp-rt is started.
 Two things a spec supplies that the shell would otherwise get from a person:
 
 - **a session** — `readymade-id-token` in localStorage, an unsigned token the
@@ -264,16 +268,14 @@ if diagnostics stop enforcing it, the unexpected pass fails the suite.
 once on web; these process contracts are independent of desktop/mobile shells.
 
 
-## PR and cloud CI
+## Cloud CI
 
-`.github/workflows/run-all-tests.yml` runs two E2E jobs. **E2E Node cloud**
-runs on every pull request push, main push and normal manual run; use that exact
-job name as a required check in the target branch's protection settings.
-**E2E browser** takes about nine minutes, so it runs only on main pushes and
-manual runs — to check a PR branch, start the workflow on it from Actions → Run
-workflow. Do not make it a required check: a job skipped by its condition counts
-as passing, so it would gate nothing. The existing C++/unit job also stays on
-main pushes and normal manual runs.
+`.github/workflows/run-all-tests.yml` runs two E2E jobs, **E2E Node cloud** and
+**E2E browser** (about nine minutes), beside the C++/unit job. The workflow runs
+on main pushes and manual runs only — pushes to a working branch or a pull
+request run nothing. To check a branch before merging, start the workflow on it
+from Actions → Run workflow. None of its jobs can be a required check: a pull
+request never runs them, so a required one would block every merge.
 
 The workflow has read-only repository permissions, does not persist checkout
 credentials, and cancels obsolete runs for the same PR/ref. The browser job

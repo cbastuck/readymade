@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types/types.h>
+#include "egress.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/beast/core.hpp>
@@ -42,7 +43,7 @@ public:
 
   void startImpl(const std::string &id)
   {
-    auto const results = m_resolver.resolve(m_host, m_port);
+    auto const results = ::hkp::egress::resolve(m_resolver, m_host, m_port);
 
     // Make the connection on the IP address we get from a lookup
     auto ep = net::connect(m_ws.next_layer(), results);

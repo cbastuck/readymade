@@ -182,6 +182,17 @@ public:
         return s.sender == sender && s.purpose == MessagePurpose::NOTIFICATION;
       }));
   }
+
+  // What the service itself said, leaving out the lifecycle pair a pipeline
+  // reports each of its calls with ("__internal").
+  size_t ownNotificationsFrom(const std::string& sender) const {
+    return static_cast<size_t>(std::count_if(
+      sent.cbegin(), sent.cend(), [&](const Sent& s) {
+        const auto j = getJSONFromData(s.data);
+        return s.sender == sender && s.purpose == MessagePurpose::NOTIFICATION &&
+               !(j && j->contains("__internal"));
+      }));
+  }
   void log(const Service&, LogLevel, const std::string&,
            const nlohmann::json& = nullptr) override {}
 
@@ -867,7 +878,7 @@ TEST_CASE("A nested service's notifications reach the board",
   // Under its scoped address, not the bare instanceId: an instanceId is unique
   // only inside its own pipeline, so each boundary prefixes its owner on the
   // way out. See address.h.
-  REQUIRE(host.notificationsFrom("sub-1.nested-1") == 1);
+  REQUIRE(host.ownNotificationsFrom("sub-1.nested-1") == 1);
   REQUIRE(host.notificationsFrom("nested-1") == 0);
 }
 

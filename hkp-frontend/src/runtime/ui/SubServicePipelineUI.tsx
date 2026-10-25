@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Maximize2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Layers, Maximize2 } from "lucide-react";
 
 import {
   ServiceAction,
@@ -155,12 +155,36 @@ export default function SubServicePipelineUI({
         <div className="flex w-full items-center gap-2 mt-1">
           {!hostFolds && (
             <>
-              <span
-                className="text-gray-400 whitespace-nowrap"
-                style={{ fontSize: 12 }}
-              >
-                Show nested sevices
-              </span>
+              {/* How much is inside, so a folded panel says whether it is
+                  worth opening: the structure accent while it holds
+                  something, muted while it holds nothing. */}
+              {pipeline.length > 0 ? (
+                <span
+                  className="flex items-center gap-1 whitespace-nowrap"
+                  style={{ fontSize: 12, color: "var(--hkp-accent-secondary)" }}
+                >
+                  <span
+                    className="flex items-center gap-1 rounded-full px-2"
+                    style={{
+                      backgroundColor: "var(--hkp-accent-secondary-dim)",
+                      lineHeight: "18px",
+                    }}
+                  >
+                    <Layers size={12} strokeWidth={1.5} />
+                    {pipeline.length}
+                  </span>
+                  {pipeline.length === 1
+                    ? "nested service"
+                    : "nested services"}
+                </span>
+              ) : (
+                <span
+                  className="text-gray-400 whitespace-nowrap"
+                  style={{ fontSize: 12 }}
+                >
+                  Nothing nested yet
+                </span>
+              )}
 
               <button
                 className="hkp-svc-btn hkp-svc-btn--icon flex items-center"

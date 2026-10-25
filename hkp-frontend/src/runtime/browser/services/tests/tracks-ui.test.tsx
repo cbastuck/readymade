@@ -106,7 +106,7 @@ describe("the Tracks panel", () => {
     expect(
       screen.queryByTitle("Open Tracks · visual-branch as its own level"),
     ).toBeNull();
-    expect(screen.queryByText(/Show nested sevices/)).toBeNull();
+    expect(screen.queryByText(/nested services?$|Nothing nested yet/)).toBeNull();
 
     // … and opens its neighbour without touching it.
     fireEvent.click(second);

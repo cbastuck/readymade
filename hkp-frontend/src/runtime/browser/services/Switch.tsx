@@ -302,6 +302,8 @@ class Switch extends ServiceBase<State> {
   }
 
   private _teardownScopes(): void {
+    // Ends what runs inside, not only the references: see dispose.
+    this._scopes.forEach((scope) => void scope?.dispose());
     this._scopes = [];
     this._scopesBuilding = null;
     this._scopeGeneration++;
@@ -309,6 +311,7 @@ class Switch extends ServiceBase<State> {
 
   private _rebuildScopes(): void {
     const generation = ++this._scopeGeneration;
+    this._scopes.forEach((scope) => void scope?.dispose());
     this._scopes = [];
 
     const pipelines = [
@@ -322,6 +325,7 @@ class Switch extends ServiceBase<State> {
         scopes.push(pipeline.length > 0 ? await this._buildScope(pipeline) : null);
       }
       if (generation !== this._scopeGeneration) {
+        scopes.forEach((scope) => void scope?.dispose());
         return;
       }
       this._scopes = scopes;
@@ -361,6 +365,10 @@ class Switch extends ServiceBase<State> {
     const innerNotify = scope.app.notify.bind(scope.app);
     scope.app.notify = (svc: any, notification: any) => {
       innerNotify(svc, notification);
+      // A scope being let go of says nothing more outside; see dispose.
+      if (scope.isDisposing) {
+        return;
+      }
       outerNotify(
         { ...svc, address: joinAddress(this.uuid, svc.address ?? svc.uuid) },
         notification,

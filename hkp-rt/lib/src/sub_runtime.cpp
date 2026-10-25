@@ -53,20 +53,37 @@ void SubRuntime::populate(const json& servicesConfig)
   }
 }
 
+bool SubRuntime::callService(Service& svc, Data& data)
+{
+  // The same bracket Runtime puts around a call, sent through sendData so it
+  // arrives under the service's scoped address: what a nested service
+  // received and produced is shown in its frame like a top-level one's.
+  sendData(lifecycleNotification("call-process", data), MessagePurpose::NOTIFICATION, svc.getId());
+  data = svc.startProcess(data);
+  if (svc.takeProcessDeferred())
+  {
+    // The service will emit() its real result later, and emit() reports it
+    // then (notifyProcessFinished). Nothing more runs synchronously.
+    data = Null();
+    return false;
+  }
+  sendData(lifecycleNotification("call-process-finished", data),
+           MessagePurpose::NOTIFICATION, svc.getId());
+  return !isNull(data) && !isEarlyReturn(data);
+}
+
 Data SubRuntime::process(Data data)
 {
   for (auto& svc : m_services)
   {
-    data = svc->startProcess(data);
-    if (isNull(data))
+    if (!callService(*svc, data))
     {
       break;
     }
-    if (isEarlyReturn(data))
-    {
-      data = getControlFlowData(data);
-      break;
-    }
+  }
+  if (isEarlyReturn(data))
+  {
+    data = getControlFlowData(data);
   }
   return data;
 }
@@ -84,15 +101,12 @@ Data SubRuntime::processFrom(const Service& svc, Data data,
        next != m_services.cend();
        ++next)
   {
-    data = (*next)->startProcess(data);
-    if (isNull(data))
+    if (!callService(**next, data))
     {
-      shouldBubbleToParent = false;
-      break;
-    }
-    if (isEarlyReturn(data))
-    {
-      data = getControlFlowData(data);
+      if (isEarlyReturn(data))
+      {
+        data = getControlFlowData(data);
+      }
       shouldBubbleToParent = false;
       break;
     }
@@ -191,10 +205,11 @@ void SubRuntime::forwardLog(const LogEntry& entry)
   m_parent.forwardLog(entry);
 }
 
-void SubRuntime::notifyProcessFinished(const Service&, const Data&)
+void SubRuntime::notifyProcessFinished(const Service& svc, const Data& data)
 {
-  // Nested services aren't surfaced as top-level frames, so a SubRuntime sends
-  // no per-service "call-process" bracket and has none to close here.
+  // A deferred call ending: the half of the bracket callService withheld.
+  sendData(lifecycleNotification("call-process-finished", data),
+           MessagePurpose::NOTIFICATION, svc.getId());
 }
 
 std::shared_ptr<SubRuntime> SubRuntime::createSubRuntime(const Service& ownerInParent,

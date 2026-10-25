@@ -40,6 +40,8 @@ export default function MapUI(props: ServiceUIProps) {
   const [selectedArrayIndex, setSelectedArrayIndex] = useState(0);
   const [mode, setMode] = useState<Mode>(Mode.REPLACE);
   const [isSensingMode, setIsSensingMode] = useState(false);
+  // Why the last mapping failed, as the service reports it; null clears it.
+  const [error, setError] = useState<string | null>(null);
 
   const editableItems = useMemo(() => {
     if (isObjectTemplate(template)) {
@@ -85,6 +87,10 @@ export default function MapUI(props: ServiceUIProps) {
 
     if (needsUpdate(newState.sensingMode, isSensingMode)) {
       setIsSensingMode(newState.sensingMode);
+    }
+
+    if (newState.error !== undefined) {
+      setError(newState.error || null);
     }
   };
 
@@ -303,6 +309,11 @@ export default function MapUI(props: ServiceUIProps) {
           >
             Current template cannot be rendered as mapping rows. Use JSON
             editor.
+          </div>
+        )}
+        {error && (
+          <div role="alert" className="text-xs text-red-600 break-words">
+            {error}
           </div>
         )}
       </div>

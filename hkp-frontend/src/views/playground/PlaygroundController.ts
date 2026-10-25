@@ -49,9 +49,6 @@ import {
   BoardDescriptor,
   ExternalInput,
   RuntimeDescriptor,
-  PlaygroundState,
-  AcceptedSyncSenders,
-  RejectedSyncSenders,
   RuntimeClass,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
@@ -87,7 +84,7 @@ export type PlaygroundControllerState = {
   isActionAvailable: (action: Action) => boolean;
   serializeBoard: (
     descriptor: BoardDescriptor,
-  ) => Promise<PlaygroundState | null>;
+  ) => Promise<BoardDescriptor | null>;
   onUpdateBoardState: (newState: BoardDescriptor) => void;
   onAction: (action: Action) => boolean;
   onSaveDialog: (
@@ -131,17 +128,11 @@ export function usePlaygroundController(
   const boardSourceUrlRef = useRef<string | null>(null);
   const facadeRef = useRef<FacadeDescriptor | undefined>(undefined);
   const [initialFetched, setInitialFetched] = useState(false);
-  const [acceptedSyncSenders, setAcceptedSyncSenders] =
-    useState<AcceptedSyncSenders>([]);
-  const [rejectedSyncSenders, setRejectedSyncSenders] =
-    useState<RejectedSyncSenders>([]);
 
   // Keep refs for values used inside stable callbacks
   const requestedBoardNameRef = useRef(requestedBoardName);
   const descriptionRef = useRef(description);
   const initialFetchedRef = useRef(initialFetched);
-  const acceptedSyncSendersRef = useRef(acceptedSyncSenders);
-  const rejectedSyncSendersRef = useRef(rejectedSyncSenders);
 
   useEffect(() => {
     requestedBoardNameRef.current = requestedBoardName;
@@ -197,12 +188,6 @@ export function usePlaygroundController(
   useEffect(() => {
     initialFetchedRef.current = initialFetched;
   }, [initialFetched]);
-  useEffect(() => {
-    acceptedSyncSendersRef.current = acceptedSyncSenders;
-  }, [acceptedSyncSenders]);
-  useEffect(() => {
-    rejectedSyncSendersRef.current = rejectedSyncSenders;
-  }, [rejectedSyncSenders]);
 
   const tryFetch = useCallback(async () => {
     try {
@@ -329,7 +314,7 @@ export function usePlaygroundController(
   });
 
   const getInitialPlayground =
-    async (): Promise<Partial<PlaygroundState> | null> => {
+    async (): Promise<Partial<BoardDescriptor> | null> => {
       const params = Object.fromEntries(
         new URLSearchParams(document.location.search),
       );
@@ -379,7 +364,7 @@ export function usePlaygroundController(
                   : `Restored the unsaved changes to '${brd}'.`,
             });
             return {
-              ...(draft.documents.composition as Partial<PlaygroundState>),
+              ...(draft.documents.composition as Partial<BoardDescriptor>),
               boardName: brd,
             };
           }
@@ -408,7 +393,7 @@ export function usePlaygroundController(
     // derived from the route, the URL parameters or local storage. Either way
     // it goes through the same path below, so its name, description and facade
     // end up in the state the board is saved from.
-    const initialBord: Partial<PlaygroundState> | null =
+    const initialBord: Partial<BoardDescriptor> | null =
       props.boardDescriptor || (await getInitialPlayground());
     if (!initialBord) {
       return boardProviderRef.current!.state;
@@ -418,8 +403,6 @@ export function usePlaygroundController(
       boardName: bName = requestedBoardNameRef.current || defaultName,
       description: desc = "",
       facade: facadeData,
-      acceptedSyncSenders: accepted = [],
-      rejectedSyncSenders: rejected = [],
       runtimes = [],
       services = {},
       registry = {},
@@ -427,16 +410,12 @@ export function usePlaygroundController(
       units,
       blocks,
       assets,
-    } = initialBord as PlaygroundState & UnitDocument;
+    } = initialBord as BoardDescriptor & UnitDocument;
 
-    setAcceptedSyncSenders(accepted);
-    setRejectedSyncSenders(rejected);
     setInitialFetched(true);
     setDescription(desc);
 
     // Keep refs in sync immediately for same-tick usage
-    acceptedSyncSendersRef.current = accepted;
-    rejectedSyncSendersRef.current = rejected;
     initialFetchedRef.current = true;
     descriptionRef.current = desc;
     facadeRef.current = facadeData;
@@ -505,10 +484,8 @@ export function usePlaygroundController(
 
   const serializeBoard = async (
     descriptor: BoardDescriptor,
-  ): Promise<PlaygroundState | null> => {
+  ): Promise<BoardDescriptor | null> => {
     const desc = descriptionRef.current;
-    const accepted = acceptedSyncSendersRef.current;
-    const rejected = rejectedSyncSendersRef.current;
 
     return {
       ...descriptor,
@@ -518,8 +495,6 @@ export function usePlaygroundController(
       // never went through `fetchBoard`, and serialising the fetched one would
       // save it without the facade it is being looked at through.
       facade: boardProviderRef.current?.state.facade ?? facadeRef.current,
-      acceptedSyncSenders: accepted,
-      rejectedSyncSenders: rejected,
     };
   };
 

@@ -682,6 +682,89 @@ describe("Map service – error recovery", () => {
     const result = await service.process(input);
     expect(result).toEqual(input);
   });
+
+  it("reports a failing term by its key, and clears it on the next good run", async () => {
+    const { service, app } = createMapService();
+    await service.configure({ template: { "key=": "nope(1)" } });
+    await service.process({ x: 1 });
+    expect(app.notify).toHaveBeenCalledWith(service, {
+      error: "key: Not a function",
+    });
+
+    await service.configure({ template: { "key=": "params.x" } });
+    app.notify.mockClear();
+    expect(await service.process({ x: 1 })).toEqual({ key: 1 });
+    // Already cleared by the template change: nothing new to say.
+    expect(app.notify).not.toHaveBeenCalledWith(service, { error: null });
+  });
+
+  it("a good run after a failure clears the error", async () => {
+    const { service, app } = createMapService();
+    await service.configure({ template: { "key=": "params.a.b" } });
+    await service.process({});
+    expect(service._error).toMatch(/^key: /);
+
+    await service.process({ a: { b: 2 } });
+    expect(app.notify).toHaveBeenLastCalledWith(service, { error: null });
+    expect(service._error).toBeNull();
+  });
+
+  it("reports the same error once, not on every run", async () => {
+    const { service, app } = createMapService();
+    await service.configure({ template: { "key=": "nope(1)" } });
+    app.notify.mockClear();
+    await service.process({});
+    await service.process({});
+    await service.process({});
+    const errorCalls = app.notify.mock.calls.filter(
+      ([, payload]: any[]) => payload && "error" in payload,
+    );
+    expect(errorCalls).toHaveLength(1);
+  });
+
+  it("reports a failure in one array item", async () => {
+    const { service } = createMapService();
+    await service.configure({ template: { "v=": "params.a.b" } });
+    const result = await service.process([{ a: { b: 1 } }, {}]);
+    expect(result).toEqual([{ v: 1 }, {}]);
+    expect(service._error).toMatch(/^v: /);
+  });
+
+  it("names the key of a failing term in a structured template", async () => {
+    const { service } = createMapService();
+    await service.configure({
+      template: { nested: { static: 1 }, "computed=": "nope(1)" },
+    });
+    await service.process({});
+    expect(service._error).toBe("computed: Not a function");
+  });
+
+  it("keeps the error out of what the board saves", async () => {
+    const { service } = createMapService();
+    await service.configure({ template: { "key=": "nope(1)" } });
+    await service.process({});
+    expect(await service.getConfiguration()).not.toHaveProperty("error");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// No input: a Map at the head of a board, run without anything before it
+// ---------------------------------------------------------------------------
+
+describe("Map service – no input", () => {
+  for (const input of [undefined, null]) {
+    for (const mode of ["replace", "add", "overwrite"]) {
+      it(`${mode} mode builds the template from ${input} input`, async () => {
+        const { service } = createMapService();
+        await service.configure({
+          mode,
+          template: { "text=": "'Today is ' + string(1 + 1)", source: "clock" },
+        });
+        const result = await service.process(input);
+        expect(result).toEqual({ text: "Today is 2", source: "clock" });
+      });
+    }
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -842,6 +925,19 @@ describe("Map service – various input data shapes", () => {
         x: 8,
         y: 15,
       },
+    });
+  });
+});
+
+describe("Map join()", () => {
+  it("makes one text of an array's elements, nothing between them by default", async () => {
+    const { service } = createMapService();
+    await service.configure({
+      template: { "whole=": "join(params.items)", "csv=": "join(params.items, ',')" },
+    });
+    expect(await service.process({ items: ["ab", "cd", null, "ef"] })).toEqual({
+      whole: "abcdef",
+      csv: "ab,cd,,ef",
     });
   });
 });

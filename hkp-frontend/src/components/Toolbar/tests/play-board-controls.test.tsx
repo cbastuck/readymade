@@ -53,7 +53,7 @@ describe("the toolbar's play controls", () => {
     fireEvent.click(
       screen.getAllByLabelText("Run the board with parameters")[0],
     );
-    fireEvent.click(screen.getByText("Process Runtime"));
+    fireEvent.click(screen.getByText("Process"));
     expect(processRuntime).toHaveBeenCalledTimes(1);
 
     // The other one is armed too, and sends the same thing.

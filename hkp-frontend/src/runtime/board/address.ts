@@ -116,3 +116,57 @@ function findEntry(state: unknown, name: string): PipelineEntry | null {
   }
   return null;
 }
+
+/**
+ * The pipeline that holds the nested service called `name`, and where in it
+ * that service is — what "the service after it" is asked of.
+ *
+ * Searched by the shape of an entry, as `resolveNestedState` is: a list in
+ * which an entry with a `serviceId` carries the name. `state` is the state of
+ * the service whose pipelines are searched.
+ */
+export function findInPipeline(
+  state: unknown,
+  name: string,
+): { pipeline: unknown[]; index: number } | null {
+  if (Array.isArray(state)) {
+    const index = state.findIndex((item) => isEntryNamed(item, name));
+    if (index !== -1) {
+      return { pipeline: state, index };
+    }
+    for (const item of state) {
+      const found = findInPipeline(item, name);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+  if (!state || typeof state !== "object") {
+    return null;
+  }
+  for (const value of Object.values(state as Record<string, unknown>)) {
+    const found = findInPipeline(value, name);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+}
+
+/** The name a pipeline entry is called by, if `item` is one. */
+export function entryName(item: unknown): string | undefined {
+  if (!item || typeof item !== "object") {
+    return undefined;
+  }
+  const record = item as Record<string, unknown>;
+  if (typeof record.serviceId !== "string") {
+    return undefined;
+  }
+  const name = record.instanceId ?? record.uuid;
+  return typeof name === "string" ? name : undefined;
+}
+
+function isEntryNamed(item: unknown, name: string): boolean {
+  return entryName(item) === name;
+}

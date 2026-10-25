@@ -1,0 +1,35 @@
+{
+  "boardName": "Spread Demo",
+  "description": "An Injector holds an array of three words. Inject it, and Spread sends each word on by itself: the Monitor after it is called three times, once per word, each wrapped as { item, group, index, total } so that a Gather further on could put the array back together.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "words",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Three words",
+        "state": {
+          "recentInjection": ["one", "value", "spread"],
+          "plainText": false
+        }
+      },
+      {
+        "uuid": "spread",
+        "serviceId": "spread",
+        "serviceName": "Spread"
+      },
+      {
+        "uuid": "each",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Each word"
+      }
+    ]
+  }
+}

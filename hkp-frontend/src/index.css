@@ -282,24 +282,62 @@ blockquote:after {
 
 /* ── Playground theme tokens & overrides ─────────────────────────────────── */
 
-@keyframes hkp-processing-pulse {
-  0%,
-  100% {
-    outline-color: var(--hkp-accent, #0abcfb);
+/* A service at work: its header tinted for as long as it runs, and a bar
+   crossing its lower edge once when a run begins (processingSweep.tsx says
+   when). A place of its own — the header — rather than a ring, which is what a
+   picked service shows (--selected), so the two never read as one, and nothing
+   that changes a size, which would shift the services around it. A block use
+   shows the same on its title row. */
+.hkp-service-header--processing,
+.hkp-block-use-title--processing {
+  background-color: var(--hkp-accent-dim, rgb(39 132 213 / 0.12));
+}
+/* Where the bar crosses: also after a run that was over at once, so this is
+   not the tint's. The card rounds the corners the bar is clipped to. */
+.hkp-service-header--sweeping {
+  position: relative;
+  overflow: hidden;
+}
+/* A use bar's title row reaches to the edges of its bar — the margin and the
+   padding cancel out — with room below it for the crossing bar. Kept whether
+   or not the use is running, so the bar does not change height when it
+   starts. */
+.hkp-block-use-title {
+  position: relative;
+  overflow: hidden;
+  margin: -0.25rem -0.5rem 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+/* One crossing. Its duration is set where the bar is drawn, from the one
+   constant the timer that takes the bar away uses as well. */
+.hkp-processing-sweep {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 35%;
+  height: 2px;
+  background: var(--hkp-accent, #0abcfb);
+  animation-name: hkp-processing-sweep;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+@keyframes hkp-processing-sweep {
+  from {
+    transform: translateX(-100%);
   }
-  50% {
-    outline-color: color-mix(
-      in srgb,
-      var(--hkp-accent, #0abcfb) 35%,
-      transparent
-    );
+  to {
+    transform: translateX(290%);
   }
 }
-
-.hkp-service-card--processing {
-  outline: 0.29px solid var(--hkp-accent, #0abcfb);
-  outline-offset: 0px;
-  animation: hkp-processing-pulse 1.8s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  .hkp-processing-sweep {
+    width: 100%;
+    animation-name: none;
+    opacity: 0.6;
+  }
 }
 
 @keyframes fpulse {
@@ -1210,13 +1248,16 @@ blockquote:after {
   border-radius: 8px;
 }
 
-/* A service picked for a whole-selection action (wrap, make block). A shadow
-   rather than an outline, which --processing animates. Important because the
-   classic theme's card sets its own shadow inline; the playground rules name
-   :hover as well, since the card hover lift sets its shadow !important too and
-   a card is usually hovered right after being picked. */
+/* A service picked for a whole-selection action (wrap, make block): a ring,
+   which nothing else on a card draws — a running service shows in its header
+   (--processing). A shadow rather than a border, which would change the card's
+   size. Important because the classic theme's card sets its own shadow inline;
+   the playground rules name :hover as well, since the card hover lift sets its
+   shadow !important too and a card is usually hovered right after being
+   picked. A use bar standing in for a block's frame shows the same. */
 .hkp-service-card--selected,
 [data-theme="playground"] .hkp-service-card.hkp-service-card--selected,
-[data-theme="playground"] .hkp-service-card.hkp-service-card--selected:hover {
+[data-theme="playground"] .hkp-service-card.hkp-service-card--selected:hover,
+.hkp-block-use-bar--selected {
   box-shadow: 0 0 0 2px var(--hkp-accent, #0abcfb) !important;
 }

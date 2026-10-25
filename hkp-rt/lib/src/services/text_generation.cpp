@@ -1,4 +1,5 @@
 #include "./text_generation.h"
+#include "egress.h"
 
 #include <algorithm>
 #include <atomic>
@@ -996,7 +997,7 @@ Data TextGeneration::process(Data data)
 
         net::io_context ioc;
         tcp::resolver resolver(ioc);
-        const auto endpoints = resolver.resolve(host, port);
+        const auto endpoints = ::hkp::egress::resolve(resolver, host, port);
 
         if (isHttps)
         {
@@ -1032,6 +1033,12 @@ Data TextGeneration::process(Data data)
       catch (const ServerError& e)
       {
         // The server answered and said no; its message is the useful part.
+        return fail(e.what());
+      }
+      catch (const ::hkp::egress::Refused& e)
+      {
+        // Refused here, not unreachable: telling the person to start a server
+        // would be advice about the wrong problem.
         return fail(e.what());
       }
       catch (const std::exception&)

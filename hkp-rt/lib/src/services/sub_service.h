@@ -215,6 +215,15 @@ public:
 protected:
   bool supportsSubservices() const override { return true; }
 
+  // For a service built on this scope — an Iterator, a Gather — that enters the
+  // same pipeline differently: once per item, once per complete group.
+  SubService(const std::string& instanceId, const std::string& instanceName)
+    : Service(instanceId, instanceName)
+  {}
+
+  const std::shared_ptr<SubRuntime>& pipeline() const { return m_pipeline; }
+  bool stopsPropagation() const { return m_stopPropagation; }
+
 private:
   // Flush live sub-service states back into m_pipelineConfig before a rebuild
   // so that reconfigured sub-services don't lose their settings.

@@ -49,11 +49,7 @@ export async function removeRuntime(
   _runtime: RuntimeDescriptor,
   _user: User | null,
 ): Promise<void> {
-  const scope_ = scope as BrowserRuntimeScope;
-  scope_.isDisposing = true;
-  while (scope_.serviceInstances.length > 0) {
-    await removeService(scope, scope_.serviceInstances[0]);
-  }
+  await (scope as BrowserRuntimeScope).dispose();
 }
 
 async function restoreRuntime(

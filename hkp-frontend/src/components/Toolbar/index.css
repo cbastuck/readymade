@@ -6,3 +6,22 @@
   font-size: 12px;
   letter-spacing: 1px;
 }
+
+/* The bar's own controls (data-toolbar-controls in index.tsx). Painted as a
+   layer over whatever background a button already has rather than in place of
+   it, so a control that is lit — the chosen board view — darkens on hover
+   instead of losing its fill. !important because each button sets its
+   background inline. */
+[data-toolbar-controls] button:not(:disabled):hover,
+[data-toolbar-controls] button[data-state="open"] {
+  background-image: linear-gradient(
+    color-mix(in oklch, var(--text, #1a1a1a) 8%, transparent),
+    color-mix(in oklch, var(--text, #1a1a1a) 8%, transparent)
+  ) !important;
+}
+[data-toolbar-controls] button:not(:disabled):active {
+  background-image: linear-gradient(
+    color-mix(in oklch, var(--text, #1a1a1a) 15%, transparent),
+    color-mix(in oklch, var(--text, #1a1a1a) 15%, transparent)
+  ) !important;
+}

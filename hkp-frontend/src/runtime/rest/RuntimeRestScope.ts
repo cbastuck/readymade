@@ -20,25 +20,15 @@ import {
   serializeYasMessage,
 } from "./Message";
 import { TextSymbol, isBinaryData, isData, passesNothing } from "./Data";
-
-/** Append the bearer token to a WebSocket URL as ?access_token= for auth. */
-export function withAccessToken(
-  wsUrl: string,
-  token: string | undefined,
-): string {
-  if (!token) {
-    return wsUrl;
-  }
-  const url = new URL(wsUrl);
-  url.searchParams.set("access_token", token);
-  return url.toString();
-}
+import { authenticatedSocketUrl, ticketUrlFor } from "./wsTicket";
 
 export default class RuntimeRestScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;
   app: AppImpl;
   authenticatedUser: User | null = null;
   runtimeOutput: WebSocket | undefined;
+  /** Set by close(), so that a socket still waiting for its ticket never opens. */
+  private closed = false;
   registry: ServiceRegistry = [];
   /**
    * Bytes that could not be sent because the socket was not open, since the
@@ -84,111 +74,128 @@ export default class RuntimeRestScope implements RuntimeScope {
     this.authenticatedUser = user;
     this.app = createRuntimeRestApp(this);
     if (runtimeOutputUrl) {
-      // authenticate the WS upgrade the same way it authenticates REST
-      this.runtimeOutput = new WebSocket(
-        withAccessToken(runtimeOutputUrl, user?.idToken),
-      );
+      // The upgrade is authenticated as REST is, by the person's token — which
+      // buys a ticket first, so it never appears in the socket's address
+      // (wsTicket.ts). Without a token there is nothing to wait for.
+      const token = user?.idToken;
+      if (!token) {
+        this.openRuntimeOutput(runtimeOutputUrl);
+      } else {
+        const base = runtime.url || new URL(runtimeOutputUrl).origin.replace(/^ws/, "http");
+        void authenticatedSocketUrl(runtimeOutputUrl, ticketUrlFor(base), token).then(
+          (url) => {
+            if (!this.closed) {
+              this.openRuntimeOutput(url);
+            }
+          },
+        );
+      }
+    }
+  }
 
-      this.runtimeOutput.onmessage = async (event) => {
-        const isBinary = typeof event.data !== "string";
-        if (isBinary) {
-          let message;
-          try {
-            message = deserializeYasMessage(await event.data.arrayBuffer());
-          } catch (err) {
-            // A frame this client cannot read is dropped, not thrown: this is
-            // an event handler, so a throw here is an unhandled rejection per
-            // frame, and a runtime streaming results sends many.
-            console.warn("RuntimeRestScope.runtimeOutput: dropping frame", err);
-            return;
-          }
+  /** Opens the runtime's socket at `url`, which carries whatever lets it in. */
+  private openRuntimeOutput(url: string): void {
+    this.runtimeOutput = new WebSocket(url);
+
+    this.runtimeOutput.onmessage = async (event) => {
+      const isBinary = typeof event.data !== "string";
+      if (isBinary) {
+        let message;
+        try {
+          message = deserializeYasMessage(await event.data.arrayBuffer());
+        } catch (err) {
+          // A frame this client cannot read is dropped, not thrown: this is
+          // an event handler, so a throw here is an unhandled rejection per
+          // frame, and a runtime streaming results sends many.
+          console.warn("RuntimeRestScope.runtimeOutput: dropping frame", err);
+          return;
+        }
+        if (
+          message.purpose === MessagePurpose.RESULT ||
+          message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE ||
+          message.purpose === MessagePurpose.RESULT_WITH_REQUEST_ID
+        ) {
+          let context: ProcessContext | null = null;
           if (
-            message.purpose === MessagePurpose.RESULT ||
             message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE ||
             message.purpose === MessagePurpose.RESULT_WITH_REQUEST_ID
           ) {
-            let context: ProcessContext | null = null;
-            if (
-              message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE ||
-              message.purpose === MessagePurpose.RESULT_WITH_REQUEST_ID
-            ) {
-              console.log(
-                "RuntimeRestScope.onmessage with context or awaiting!!",
-                message,
-              );
-              context = {
-                onResolve:
-                  message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE
-                    ? (data: any) => {
-                        console.log("RuntimeRestScope.onResolve", data);
-                        const context = { requestId: message.sender };
-                        this.sendMessageViaWebsocket(
-                          data,
-                          {
-                            ...context,
-                            actor: { kind: "local" },
-                          },
-                          "resolveResult",
-                        );
-                      }
-                    : undefined, // only resolve the runtime that is actually awaiting the result
-                requestId: message.sender,
-                actor: { kind: "local" },
-              };
-            }
-            this.deliverResult(message.data, context);
-          } else if (message.purpose === MessagePurpose.NOTIFICATION) {
-            this.app.notify({ uuid: message.sender }, message.data);
-            this.emitReport(message.sender, message.data);
-          } else {
             console.log(
-              "RuntimeRestScope.runtimeOutput.onmessage unknown message purpose",
+              "RuntimeRestScope.onmessage with context or awaiting!!",
               message,
             );
+            context = {
+              onResolve:
+                message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE
+                  ? (data: any) => {
+                      console.log("RuntimeRestScope.onResolve", data);
+                      const context = { requestId: message.sender };
+                      this.sendMessageViaWebsocket(
+                        data,
+                        {
+                          ...context,
+                          actor: { kind: "local" },
+                        },
+                        "resolveResult",
+                      );
+                    }
+                  : undefined, // only resolve the runtime that is actually awaiting the result
+              requestId: message.sender,
+              actor: { kind: "local" },
+            };
           }
+          this.deliverResult(message.data, context);
+        } else if (message.purpose === MessagePurpose.NOTIFICATION) {
+          this.app.notify({ uuid: message.sender }, message.data);
+          this.emitReport(message.sender, message.data);
         } else {
-          // old JSON format
-          const msg = JSON.parse(event.data);
-          if (msg.type === "notification") {
-            const { instanceId, value } = msg;
-
-            if (value) {
-              let data;
-              try {
-                data = JSON.parse(value);
-              } catch (_err) {
-                data = value;
-              }
-              this.app.notify({ uuid: instanceId }, data);
-              this.emitReport(instanceId, data);
-            }
-          } else if (msg.type === "result") {
-            this.deliverResult(msg.data, null);
-          } else if (msg.type === "log" && msg.entry) {
-            // What this runtime recorded. A board attached to a coordinator has
-            // its entries kept there — the runtime sends them over its own
-            // connection, and this copy is for whoever is watching now. A board
-            // this browser coordinates (the playground, Readymade running
-            // locally) has no other destination, so this is where they surface.
-            this.emitLog(msg.entry);
-          } else {
-            console.warn(
-              "RuntimeRestScope.runtimeOutput.onmessage unknown message type",
-              msg,
-            );
-          }
+          console.log(
+            "RuntimeRestScope.runtimeOutput.onmessage unknown message purpose",
+            message,
+          );
         }
-      };
-      this.runtimeOutput.onerror = (event) => {
-        console.error("RuntimeRestScope.runtimeOutput.onerror", event);
-      };
-      this.runtimeOutput.onopen = (event) => {
-        console.log("RuntimeRestScope.runtimeOutput.onopen", event);
-        // the first message is the protocol
-        const protocol = JSON.stringify({ type: "readwrite", id: runtime.id });
-        this.runtimeOutput?.send(protocol);
-      };
-    }
+      } else {
+        // old JSON format
+        const msg = JSON.parse(event.data);
+        if (msg.type === "notification") {
+          const { instanceId, value } = msg;
+
+          if (value) {
+            let data;
+            try {
+              data = JSON.parse(value);
+            } catch (_err) {
+              data = value;
+            }
+            this.app.notify({ uuid: instanceId }, data);
+            this.emitReport(instanceId, data);
+          }
+        } else if (msg.type === "result") {
+          this.deliverResult(msg.data, null);
+        } else if (msg.type === "log" && msg.entry) {
+          // What this runtime recorded. A board attached to a coordinator has
+          // its entries kept there — the runtime sends them over its own
+          // connection, and this copy is for whoever is watching now. A board
+          // this browser coordinates (the playground, Readymade running
+          // locally) has no other destination, so this is where they surface.
+          this.emitLog(msg.entry);
+        } else {
+          console.warn(
+            "RuntimeRestScope.runtimeOutput.onmessage unknown message type",
+            msg,
+          );
+        }
+      }
+    };
+    this.runtimeOutput.onerror = (event) => {
+      console.error("RuntimeRestScope.runtimeOutput.onerror", event);
+    };
+    this.runtimeOutput.onopen = (event) => {
+      console.log("RuntimeRestScope.runtimeOutput.onopen", event);
+      // the first message is the protocol
+      const protocol = JSON.stringify({ type: "readwrite", id: this.descriptor.id });
+      this.runtimeOutput?.send(protocol);
+    };
   }
 
   /**
@@ -328,6 +335,7 @@ export default class RuntimeRestScope implements RuntimeScope {
   };
 
   close = async (): Promise<void> => {
+    this.closed = true;
     const socket = this.runtimeOutput;
     if (!socket) {
       return;

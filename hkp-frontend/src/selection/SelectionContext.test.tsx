@@ -8,6 +8,7 @@ function Readout() {
     <>
       <div data-testid="selected">{selection?.selectedRuntimeId ?? ""}</div>
       <button onClick={() => selection?.selectRuntime("node")}>pick node</button>
+      <button onClick={() => selection?.selectRuntime(null)}>let go</button>
     </>
   );
 }
@@ -62,6 +63,23 @@ describe("SelectionProvider", () => {
     expect(selected()).toBe("ui");
   });
 
+  it("selects nothing once let go, and does not fall back", () => {
+    const rerender = renderWith(["ui", "node"]);
+    fireEvent.click(screen.getByText("pick node"));
+    fireEvent.click(screen.getByText("let go"));
+    expect(selected()).toBe("");
+
+    rerender(["ui", "node", "python"]);
+    expect(selected()).toBe("");
+  });
+
+  it("selects again once a runtime is picked after letting go", () => {
+    renderWith(["ui", "node"]);
+    fireEvent.click(screen.getByText("let go"));
+    fireEvent.click(screen.getByText("pick node"));
+    expect(selected()).toBe("node");
+  });
+
   it("returns to what was picked when that runtime comes back", () => {
     const rerender = renderWith(["ui", "node"]);
     fireEvent.click(screen.getByText("pick node"));
@@ -92,6 +110,7 @@ function PickedReadout() {
       </button>
       <button onClick={() => selection?.selectRuntime("ui")}>pick ui</button>
       <button onClick={() => selection?.selectRuntime("node")}>pick node</button>
+      <button onClick={() => selection?.selectRuntime(null)}>let go</button>
     </>
   );
 }
@@ -118,6 +137,13 @@ describe("picked services", () => {
     fireEvent.click(screen.getByText("pick node"));
     expect(picked()).toBe("");
     fireEvent.click(screen.getByText("pick ui"));
+    expect(picked()).toBe("");
+  });
+
+  it("lets them go with the runtime", () => {
+    renderPicked();
+    fireEvent.click(screen.getByText("pick services"));
+    fireEvent.click(screen.getByText("let go"));
     expect(picked()).toBe("");
   });
 

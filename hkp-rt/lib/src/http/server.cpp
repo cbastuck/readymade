@@ -18,6 +18,7 @@
 #include "uuid.h"
 #include "process_context.h"
 #include "http/front_door.h"
+#include "http/ws_tickets.h"
 
 #include <atomic>
 #include <thread>
@@ -74,11 +75,23 @@ inline std::string bearerToken(const std::string& header)
   return header.substr(prefixLen);
 }
 
+inline bool forwarded(const crow::request& req)
+{
+  return isForwarded([&req](const char* name) { return req.get_header_value(name); });
+}
+
 // Where a request came from. Behind the front door every request arrives from
 // this process, which says who the caller was in a header — believed only
-// beside the secret the front door alone knows. See http/front_door.h.
+// beside the secret the front door alone knows. See http/front_door.h. A
+// request another proxy says it passed on is from nowhere in particular, and
+// so never from this machine: behind nginx or Caddy on the same host every
+// caller would otherwise be a loopback one (origins.h).
 inline std::string callerAddress(const crow::request& req, const std::string& frontSecret)
 {
+  if (forwarded(req))
+  {
+    return "";
+  }
   if (!frontSecret.empty() &&
       req.get_header_value(FrontDoor::FRONT_HEADER) == frontSecret)
   {
@@ -123,7 +136,8 @@ struct OriginGate
     return admitsWithoutCredential(
       RequestSource{req.get_header_value("Origin"),
                     req.get_header_value("Sec-Fetch-Site"),
-                    req.get_header_value("Host")},
+                    req.get_header_value("Host"),
+                    forwarded(req)},
       m_allowed, m_ownNames);
   }
 
@@ -161,8 +175,9 @@ struct AuthMiddleware
       return;
     }
     // WebSocket upgrades are authenticated in the WS onaccept handler instead:
-    // a browser cannot set an Authorization header on a handshake, so the token
-    // rides in ?access_token=. Gating here would 401 every notification socket.
+    // a browser cannot set an Authorization header on a handshake, so it
+    // presents a ?ticket= bought with its token (ws_tickets.h). Gating here
+    // would 401 every notification socket.
     if (req.upgrade)
     {
       return;
@@ -319,6 +334,22 @@ struct Server::impl
     authMiddleware.authenticator = authenticator.get();
     authMiddleware.capabilities = &capabilities;
     authMiddleware.origins = &originGate;
+
+    // A ticket for the notification socket, minted for whoever this request
+    // was let in as, so the socket is opened without a token in its address.
+    CROW_ROUTE(crow, "/ws-tickets")
+        .methods("POST"_method)([this](const crow::request& req) {
+          const auto ticket = wsTickets.mint(callerOfRequest(req));
+          if (ticket.empty())
+          {
+            return crow::response(503);
+          }
+          crow::response res(json{{"ticket", ticket},
+                                  {"expiresInMs", std::chrono::milliseconds(WsTickets<Caller>::TTL).count()}}
+                               .dump());
+          res.set_header("Content-Type", "application/json");
+          return res;
+        });
 
     CROW_ROUTE(crow, "/runtimes")
         .methods("GET"_method)([this]() { return getRuntimes(); }); 
@@ -563,6 +594,9 @@ struct Server::impl
   std::string name;
   std::string allowedOrigins;
   OriginGate originGate;
+  // What a browser opens the notification socket with instead of its token;
+  // see http/ws_tickets.h.
+  WsTickets<Caller> wsTickets;
   std::string displayName;
   std::string bindAddress;
   std::string instanceId = generateUUID();
@@ -1303,14 +1337,27 @@ bool Server::impl::wsOnAccept(const crow::request& req, void** userdata)
 {
   // Same policy as the REST AuthMiddleware: no-auth mode and loopback clients
   // are allowed unless a foreign page is asking (a browser always states the
-  // page's origin on a handshake); otherwise the token (carried in
-  // ?access_token= because a browser can't set headers on a handshake) must
-  // verify and be allow-listed.
+  // page's origin on a handshake); otherwise the socket must present a ticket,
+  // or a token that verifies and is allow-listed (see below).
   const bool local = authenticator->isNoAuth() ||
     isLoopbackHost(callerAddress(req, frontDoor ? frontDoor->frontSecret() : std::string()));
   bool allowed = local && originGate.admits(req);
   // Whoever a token names; nobody for a socket let in without one.
   Caller caller;
+  // A browser presents a ticket it was given for its token (ws_tickets.h);
+  // `?access_token=` is what browsers sent before tickets, and is still taken,
+  // though it puts the token where logs keep it.
+  if (!allowed)
+  {
+    if (const char* ticket = req.url_params.get("ticket"))
+    {
+      if (auto held = wsTickets.redeem(ticket))
+      {
+        allowed = true;
+        caller = std::move(*held);
+      }
+    }
+  }
   if (!allowed)
   {
     if (const char* token = req.url_params.get("access_token"))

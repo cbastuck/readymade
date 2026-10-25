@@ -21,6 +21,7 @@ import MapDescriptor from "../services/Map";
 import FilterDescriptor from "../services/Filter";
 import BatcherDescriptor from "../services/Batcher";
 import SwitchDescriptor from "../services/Switch";
+import SpreadDescriptor from "../services/Spread";
 import SelectDescriptor from "../services/Select";
 
 // Data  Accumulators
@@ -46,6 +47,8 @@ import SmoothDescriptor from "../services/Smooth";
 
 // Structure / Containers
 import TracksDescriptor from "../services/BrowserTracks";
+import IteratorDescriptor from "../services/BrowserIterator";
+import GatherDescriptor from "../services/BrowserGather";
 
 // Flows and Composites
 import BoardService from "../services/BoardService";
@@ -140,6 +143,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   BatcherDescriptor,
   SelectDescriptor,
   SwitchDescriptor,
+  SpreadDescriptor,
   SortDescriptor,
   LimitDescriptor,
   FlatMapDescriptor,
@@ -154,6 +158,8 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Structure / Containers
   TracksDescriptor,
+  IteratorDescriptor,
+  GatherDescriptor,
   StateDescriptor,
 
   // Sensors

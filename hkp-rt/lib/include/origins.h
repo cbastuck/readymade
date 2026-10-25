@@ -23,6 +23,13 @@ namespace hkp
  *
  * A caller that is not a browser sends none of these, and is let in as
  * before: another process on this machine is not what this guards against.
+ *
+ * A request a proxy passed on is never let in this way. A reverse proxy on the
+ * same host — nginx, Caddy — makes every caller a loopback one and every
+ * request arrive at a name the server knows, so where it comes from says
+ * nothing any more. One that says so (`Forwarded`, `X-Forwarded-For`,
+ * `X-Real-IP`) is refused here; one that says nothing cannot be told apart,
+ * which is why a loopback bind is a boundary only while nothing forwards to it.
  */
 
 namespace origins
@@ -308,7 +315,22 @@ struct RequestSource
   std::string origin;       // `Origin`
   std::string secFetchSite; // `Sec-Fetch-Site`
   std::string host;         // `Host`
+  bool forwarded = false;   // a proxy says it passed the request on
 };
+
+/** Whether a request carries a header a proxy adds when it passes one on. */
+template <class HeaderReader>
+bool isForwarded(const HeaderReader& header)
+{
+  for (const char* name : {"Forwarded", "X-Forwarded-For", "X-Real-IP"})
+  {
+    if (!origins::trim(header(name)).empty())
+    {
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Whether a request that carries no credential may be let in on the strength
@@ -318,6 +340,10 @@ inline bool admitsWithoutCredential(const RequestSource& source,
                                     const AllowedOrigins& allowed,
                                     const std::vector<std::string>& ownNames)
 {
+  if (source.forwarded)
+  {
+    return false;
+  }
   if (!origins::trim(source.origin).empty())
   {
     if (!allowed.allowsWithoutCredential(source.origin))

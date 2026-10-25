@@ -379,7 +379,12 @@ AuthResult Authenticator::authorize(const std::string& authorizationHeader) cons
   }
   const auto& decoded = *decodedOpt;
 
-  if (!decoded.has_issuer() || !decoded.has_key_id())
+  // The same checks in every runtime (hkp-node's auth.ts, hkp-python's
+  // auth.py, the website's auth.php): RS256 only, a trusted issuer, one of its
+  // audiences, and an expiry and a subject that must be there — jwt-cpp checks
+  // an expiry only when one is present.
+  if (!decoded.has_issuer() || !decoded.has_key_id() || !decoded.has_expires_at() ||
+      !decoded.has_subject() || decoded.get_subject().empty())
   {
     return {AuthStatus::Unauthenticated, std::nullopt};
   }
@@ -412,7 +417,8 @@ AuthResult Authenticator::authorize(const std::string& authorizationHeader) cons
   }
 
   // Audience: the token's aud must contain one of the issuer's accepted values.
-  if (!issuer->audiences.empty())
+  // An issuer that names none accepts nothing, rather than a token minted for
+  // any application of its tenant.
   {
     std::set<std::string> tokenAud;
     if (decoded.has_audience())

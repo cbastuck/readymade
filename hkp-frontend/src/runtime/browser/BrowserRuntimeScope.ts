@@ -318,6 +318,25 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     );
   };
 
+  /**
+   * Ends this scope and everything in it: the runtime closing, or a service
+   * that built this scope for its inner pipeline letting go of it.
+   *
+   * Dropping the reference is not enough: a service that emits on its own — a
+   * Timer's beat — holds its schedule, not the scope, and would go on ticking
+   * into a pipeline nobody owns. Each service is destroyed, and one that owns
+   * scopes of its own disposes them in turn, to any depth. Marked disposing
+   * first, so a pass already under way stops at the next service — and whoever
+   * forwards what this scope says outward can stop listening (see the
+   * notification forwarding in BrowserSubService).
+   */
+  dispose = async () => {
+    this.isDisposing = true;
+    while (this.serviceInstances.length > 0) {
+      await this.removeService(this.serviceInstances[0]);
+    }
+  };
+
   removeSubservices = async () => {
     for (const ssvcUuid of Object.keys(this.subservices)) {
       const ssvc = this.subservices[ssvcUuid];
@@ -379,13 +398,14 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       }
       svc = services[i];
       if (svc && !svc.bypass) {
+        let call: number | undefined;
         try {
-          onServiceProcess(this.app, svc, params);
+          call = onServiceProcess(this.app, svc, params);
           if (context) {
             this.enterContext(svc, context);
           }
           result = await svc.process(params);
-          onServiceResult(this.app, svc, result);
+          onServiceResult(this.app, svc, result, call);
           params = result;
         } catch (err: any) {
           console.warn(
@@ -393,6 +413,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
               svc.serviceName
             } caused error: ${JSON.stringify(err.message)}`,
           );
+          // The call is over all the same, and says so with nothing produced:
+          // what shows it running counts the calls still open.
+          onServiceResult(this.app, svc, null, call);
         } finally {
           if (context) {
             this.leaveContext(svc, context);

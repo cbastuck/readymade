@@ -236,9 +236,7 @@ private:
     timeout.idle_timeout = m_options.idleTimeout;
     timeout.keep_alive_pings = true;
     m_ws.set_option(timeout);
-    // No ceiling of the library's own: exceeding one closes the connection,
-    // and a board would lose its runtime over one large value.
-    m_ws.read_message_max(0);
+    m_ws.read_message_max(m_options.maxMessageBytes);
 
     const std::string bearer = m_options.bearer;
     m_ws.set_option(websocket::stream_base::decorator(
