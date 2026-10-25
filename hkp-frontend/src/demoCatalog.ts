@@ -279,6 +279,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     icon: "🥁",
     tags: ["Audio"],
   },
+  {
+    slug: "step-sequencer-coreaudio",
+    label: "Step Sequencer → CoreAudio",
+    description:
+      "Browser drum sequencer synthesises audio and streams it to CoreAudio through the C++ runtime the Readymade app embeds.",
+    icon: "🥁",
+    tags: ["Audio", "Needs app"],
+  },
 ];
 
 export const ALL_DEMO_TAGS = Array.from(

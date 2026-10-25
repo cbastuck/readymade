@@ -37,6 +37,7 @@ import sqlImportBoard from "../../boards/sql-import-board.json";
 import rssAggregatorBoard from "../../boards/rss-demo-board.json";
 import meetingPollBoard from "../../boards/meeting-poll-demo-board.json";
 import nestedRhythmBoard from "../../boards/nested-rhythm-demo-board.json";
+import stepSequencerCoreOutBoard from "../../boards/step-sequencer-coreout-board.json";
 
 const REGISTRY: Record<string, BoardDescriptor> = {
   "alpaca-markets": alpacaBoard as BoardDescriptor,
@@ -76,6 +77,7 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   "rss-aggregator": rssAggregatorBoard as BoardDescriptor,
   "meeting-poll": meetingPollBoard as BoardDescriptor,
   "nested-rhythm": nestedRhythmBoard as BoardDescriptor,
+  "step-sequencer-coreaudio": stepSequencerCoreOutBoard as BoardDescriptor,
 };
 
 export function findDemoBoard(slug: string): BoardDescriptor | undefined {
