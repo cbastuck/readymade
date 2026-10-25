@@ -1,6 +1,6 @@
-import { KeyboardEvent, useState, useEffect, useRef, useMemo } from "react";
+import { KeyboardEvent, useState, useEffect, useRef } from "react";
 import { DataTableWidget } from "../../types";
-import { findService } from "../../boardServices";
+import { useResolvedService } from "../../serviceNotifications";
 import { resolvePath } from "../../readValue";
 import { useFacadeState } from "../../FacadeStateContext";
 import { useWidgetActions } from "../../useWidgetActions";
@@ -118,9 +118,11 @@ export function DataTableRenderer({
     });
   };
 
-  const sourceService = useMemo(
-    () => findService(boardContext, widget.source.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.source.serviceUuid],
+  // Polled for rather than looked up once: a service inside a sub-service is
+  // built after the facade first draws.
+  const sourceService = useResolvedService(
+    boardContext,
+    widget.source.serviceUuid,
   );
 
   useEffect(() => {

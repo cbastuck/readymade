@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import LevelMeter from "hkp-frontend/src/ui-components/LevelMeter";
 import { LevelMeterWidget } from "../../types";
-import { findService } from "../../boardServices";
+import { useResolvedService } from "../../serviceNotifications";
 import { resolvePath } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 
@@ -12,9 +12,11 @@ export function LevelMeterRenderer({
 }: WidgetRendererProps<LevelMeterWidget>) {
   const [level, setLevel] = useState<number>(widget.min ?? -60);
 
-  const sourceService = useMemo(
-    () => findService(boardContext, widget.source.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.source.serviceUuid],
+  // Polled for rather than looked up once: a service inside a sub-service is
+  // built after the facade first draws.
+  const sourceService = useResolvedService(
+    boardContext,
+    widget.source.serviceUuid,
   );
 
   useEffect(() => {

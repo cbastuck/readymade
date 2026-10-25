@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { MessageListWidget } from "../../types";
 import { findService } from "../../boardServices";
+import { useResolvedService } from "../../serviceNotifications";
 import { extractText } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { serviceForUserInterface } from "hkp-frontend/src/types";
@@ -28,9 +29,11 @@ export function MessageListRenderer({
   const bottomRef = useRef<HTMLDivElement>(null);
   const [composerValue, setComposerValue] = useState("");
 
-  const sourceService = useMemo(
-    () => findService(boardContext, widget.source.serviceUuid),
-    [boardContext, widget.source.serviceUuid],
+  // Polled for rather than looked up once: a service inside a sub-service is
+  // built after the facade first draws.
+  const sourceService = useResolvedService(
+    boardContext,
+    widget.source.serviceUuid,
   );
 
   const actionService = useMemo(

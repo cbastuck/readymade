@@ -1,10 +1,20 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useReducer, useRef } from "react";
 
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import { canReachService } from "./boardServices";
+import { canReachService, isBuiltInside } from "./boardServices";
 import { executeActions } from "./executeActions";
 import { FacadeIdentity } from "./FacadeIdentity";
 import { FacadeDescriptor } from "./types";
+
+/** How often init asks again whether a sub-service has built what it names. */
+const RECHECK_MS = 50;
+
+/**
+ * How long init waits for that before running anyway, as it did when only the
+ * holder was asked about: an address spelled wrong is never built, and should
+ * not keep the rest of init from running.
+ */
+const BUILD_WAIT_MS = 5000;
 
 /**
  * Runs a facade's `init` once per board — once the services it names can be
@@ -15,6 +25,11 @@ import { FacadeDescriptor } from "./types";
  * at all. What `init` asks of a service then finds nothing and is dropped, and
  * a board whose first view depends on it — a poll that reads its meetings on
  * opening — shows nothing, with nothing on screen to tap that would fetch it.
+ *
+ * A service inside a sub-service is waited for until it is built, not only
+ * until its holder is: the widgets showing it subscribe to it then, in the
+ * render that finds it and so before this effect runs. Nothing redraws a
+ * facade when a sub-service finishes building, so init asks again by itself.
  */
 export function useFacadeInit({
   facade,
@@ -32,12 +47,33 @@ export function useFacadeInit({
   identity: FacadeIdentity;
 }): void {
   const init = facade.init ?? [];
-  const ready = init.every((action) => {
-    const uuid = (action as { serviceUuid?: unknown }).serviceUuid;
-    return typeof uuid !== "string" || canReachService(boardContext, uuid);
-  });
+  const named = init
+    .map((action) => (action as { serviceUuid?: unknown }).serviceUuid)
+    .filter((uuid): uuid is string => typeof uuid === "string");
+  const reachable = named.every((uuid) => canReachService(boardContext, uuid));
+  const built = named.every((uuid) => isBuiltInside(boardContext, uuid));
 
   const ranFor = useRef<string | null>(null);
+  const building = useRef<{ boardName: string; since: number } | null>(null);
+  const [, recheck] = useReducer((n: number) => n + 1, 0);
+
+  let ready = reachable && built;
+  if (reachable && !built) {
+    if (building.current?.boardName !== boardName) {
+      building.current = { boardName, since: Date.now() };
+    }
+    ready = Date.now() - building.current.since >= BUILD_WAIT_MS;
+  }
+  const waiting = reachable && !ready && ranFor.current !== boardName;
+
+  useEffect(() => {
+    if (!waiting) {
+      return;
+    }
+    const timer = setTimeout(recheck, RECHECK_MS);
+    return () => clearTimeout(timer);
+  });
+
   useEffect(() => {
     if (!init.length || !ready || ranFor.current === boardName) {
       return;
