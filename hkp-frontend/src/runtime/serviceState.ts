@@ -1,4 +1,5 @@
 import { AppInstance, InstanceId } from "hkp-frontend/src/types";
+import { reportedValue } from "./callReport";
 
 /**
  * Each call to a service is bracketed by a pair of notifications, and both
@@ -16,7 +17,11 @@ export function onServiceProcess(
   params: any
 ): number {
   const call = ++lastCall;
-  app.notify(svc, { __internal: { state: "call-process", data: params, call } });
+  // What a report carries is bounded as in every runtime: the inspector keeps
+  // a history of these, and would otherwise hold each large value it was shown.
+  app.notify(svc, {
+    __internal: { state: "call-process", data: reportedValue(params), call },
+  });
   return call;
 }
 
@@ -29,7 +34,7 @@ export function onServiceResult(
   app.notify(svc, {
     __internal: {
       state: "call-process-finished",
-      data: result,
+      data: reportedValue(result),
       ...(call !== undefined ? { call } : {}),
     },
   });

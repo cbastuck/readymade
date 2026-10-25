@@ -359,6 +359,16 @@ produced, but the input each was handed. That is what makes the panels live
 every call, `onServiceResult` after it), and it is exactly what is wanted while
 building.
 
+A report carries a value only up to 5 MiB. Above that, a description takes
+its place, `{"__hkpTooLarge": {type, bytes, exact, preview}}`: what the value
+is, how large (`exact` is false where counting stopped at the limit), and how
+it begins. The Flow Inspector shows the description and will not run the value
+again. Without the limit, a value that never needs to leave its runtime would
+leave it anyway, as a report, once for every service it passes through. On a
+deployed board that is past the coordinator's frame limit, and enough to close
+the runtime's connection. The rule is the same in every runtime
+(`callReport.ts`, `call_report.py`, `call_report.h`).
+
 It also means that while something is attached, a runtime's internal traffic is
 leaving it. When nothing is attached, nothing is sent — this is not a filter
 applied afterwards: the browser drops a notification with no target

@@ -172,6 +172,50 @@ describe("Flow Inspector", () => {
     expect(onInject).toHaveBeenCalledWith({ out: 1 });
   });
 
+  it("shows how a value too large to keep began, and will not run it again", () => {
+    onRerun.mockClear();
+    render(React.createElement(Frame));
+    act(() =>
+      receive({
+        __hkpTooLarge: {
+          type: "string",
+          bytes: 12 * 1024 * 1024,
+          exact: true,
+          preview: "the beginning",
+        },
+      }),
+    );
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Input" }));
+
+    expect(screen.getByRole("note").textContent).toBe(
+      "Text of 12 MiB: too large to keep whole. Only how it begins is shown, and it cannot be run again from here.",
+    );
+    expect(screen.getByTestId("editor").textContent).toBe("the beginning");
+    const rerun = screen.getByRole("button", { name: /Rerun/ }) as HTMLButtonElement;
+    expect(rerun.disabled).toBe(true);
+    fireEvent.click(rerun);
+    expect(onRerun).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /History/ }));
+    expect(entries()[0].textContent).toContain("Text of 12 MiB, too large to keep");
+  });
+
+  it("says when only a lower bound of the size is known, and will not inject it", () => {
+    render(React.createElement(Frame));
+    act(() =>
+      report({ __hkpTooLarge: { type: "json", bytes: 5 * 1024 * 1024 + 1, exact: false } }),
+    );
+    open();
+
+    expect(screen.getByRole("note").textContent).toBe(
+      "JSON of more than 5 MiB: too large to keep whole. None of it is shown, and it cannot be carried on from here.",
+    );
+    expect(
+      (screen.getByRole("button", { name: /Inject/ }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
   it("says a service has received nothing, and offers no Rerun where it cannot", () => {
     render(React.createElement(Frame, { canRerun: false }));
     act(() => report({ tick: 1 }));

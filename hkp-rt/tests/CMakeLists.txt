@@ -58,6 +58,7 @@ add_executable(hkp-rt-service-tests
   service_tracks.test.cpp
   service_iterator.test.cpp
   service_gather.test.cpp
+  call_report.test.cpp
   http_response_origin.test.cpp
   http_server_lifecycle.test.cpp
   http_stream.test.cpp

@@ -14,6 +14,7 @@ import {
   SettingsButton,
   SettingsSection,
 } from "hkp-frontend/src/ui-components/settings/kit";
+import { isTooLarge, TooLarge } from "hkp-frontend/src/runtime/callReport";
 import type { FlowRecord, FlowSide } from "./ServiceOutputPlug";
 import "./flow-inspector.css";
 
@@ -58,12 +59,18 @@ export default function FlowInspectorPopup({
   }, [history[0]]);
 
   const selectedData = history[selectedIndex]?.data;
+  // A value too large for a report to carry arrived as its description: only
+  // how it began is here, so it is shown but not edited, and not run again.
+  const tooLarge = isTooLarge(selectedData) ? selectedData.__hkpTooLarge : null;
   // Nothing selected — a cleared or empty history — is an empty editor: the
   // editor keeps its text when handed no value, which would leave the last
   // one standing with nothing left to inject.
   const dataAsString = useMemo(
-    () => JSON.stringify(selectedData, null, 2) ?? "",
-    [selectedData],
+    () =>
+      tooLarge
+        ? (tooLarge.preview ?? "")
+        : (JSON.stringify(selectedData, null, 2) ?? ""),
+    [selectedData, tooLarge],
   );
   const previews = useMemo(
     () => history.map((record) => preview(record.data)),
@@ -104,7 +111,7 @@ export default function FlowInspectorPopup({
   };
 
   const onRunInternal = () => {
-    if (!onRun) {
+    if (!onRun || tooLarge) {
       return;
     }
     if (!isDirty) {
@@ -210,10 +217,16 @@ export default function FlowInspectorPopup({
             )
           }
         >
+          {tooLarge && (
+            <p className="hkp-set-hint" role="note">
+              {tooLargeNote(tooLarge, side)}
+            </p>
+          )}
           <div className="hkp-flow-editor">
             <Editor
               ref={editor}
               value={dataAsString}
+              readOnly={!!tooLarge}
               onChange={() => setIsDirty(true)}
             />
           </div>
@@ -226,7 +239,7 @@ export default function FlowInspectorPopup({
         </SettingsButton>
         <SettingsButton
           variant="primary"
-          disabled={!onRun || (!selectedData && !isDirty)}
+          disabled={!onRun || !!tooLarge || (!selectedData && !isDirty)}
           title={
             side === "input"
               ? "Run this service again with this input"
@@ -249,8 +262,38 @@ function timeOf(at: number): string {
   return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}.${String(date.getMilliseconds()).padStart(3, "0")}`;
 }
 
+/** What a value too large to keep is, e.g. "Text of 12.3 MiB". */
+function describeTooLarge({ type, bytes, exact }: TooLarge["__hkpTooLarge"]): string {
+  const kind = type === "string" ? "Text" : type === "binary" ? "Binary data" : "JSON";
+  return `${kind} of ${exact ? "" : "more than "}${sizeOf(bytes)}`;
+}
+
+/** Why the inspector shows only part of a value, and what it cannot do. */
+function tooLargeNote(tooLarge: TooLarge["__hkpTooLarge"], side: FlowSide): string {
+  const shown =
+    tooLarge.preview !== undefined
+      ? "Only how it begins is shown"
+      : "None of it is shown";
+  const run = side === "input" ? "run again" : "carried on";
+  return `${describeTooLarge(tooLarge)}: too large to keep whole. ${shown}, and it cannot be ${run} from here.`;
+}
+
+/** A size in bytes the way a person reads one. */
+function sizeOf(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${Math.round((bytes / 1024) * 10) / 10} KiB`;
+  }
+  return `${Math.round((bytes / (1024 * 1024)) * 10) / 10} MiB`;
+}
+
 /** One line of what an output is; the editor shows the whole of it. */
 function preview(data: any): string {
+  if (isTooLarge(data)) {
+    return `${describeTooLarge(data.__hkpTooLarge)}, too large to keep`;
+  }
   let text: string | undefined;
   try {
     // A sample buffer is named by its size rather than spelled out.

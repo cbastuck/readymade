@@ -7,6 +7,7 @@
 #include <types/data.h>
 #include <types/message.h>
 
+#include <call_report.h>
 #include <log_entry.h>
 
 #include <mounts.h>
@@ -22,34 +23,12 @@ struct ProcessContext;
 
 // What a service's call is reported with — `{"__internal": {"state", "data"}}`
 // with state "call-process" (and the input) or "call-process-finished" (and
-// the output) — kept JSON-serialisable for the frontend: JSON and text as they
-// are, nothing as null, an undefined input as "<undefined>", anything else as
-// its stringified form. One spelling for a runtime and a pipeline nested in
-// it, so the flow inspector reads both alike.
+// the output) — kept JSON-serialisable for the frontend, and no larger than a
+// report may carry (call_report.h). One spelling for a runtime and a pipeline
+// nested in it, so the flow inspector reads both alike.
 inline json lifecycleNotification(const std::string& state, const Data& data)
 {
-  json payloadData = nullptr;
-  if (auto j = getJSONFromData(data))
-  {
-    payloadData = *j;
-  }
-  else if (auto s = getStringFromData(data))
-  {
-    payloadData = *s;
-  }
-  else if (isNull(data))
-  {
-    payloadData = nullptr;
-  }
-  else if (isUndefined(data))
-  {
-    payloadData = "<undefined>";
-  }
-  else
-  {
-    payloadData = stringify(data);
-  }
-  return json{{"__internal", json{{"state", state}, {"data", payloadData}}}};
+  return json{{"__internal", json{{"state", state}, {"data", call_report::reported(data)}}}};
 }
 
 // RuntimeHost — abstract interface through which a Service interacts with its
