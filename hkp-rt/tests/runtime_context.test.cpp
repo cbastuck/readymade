@@ -238,6 +238,43 @@ TEST_CASE("what a runtime emits by itself is board work in one standing run",
   REQUIRE(heard.results[0].actor == "board");
 }
 
+TEST_CASE("a runtime's call reports carry values only while it is captured",
+          "[runtime][capture]") {
+  Heard heard;
+  auto app = appWith(json::array({
+    service(Source::serviceId(), "source"), service(Spy::serviceId(), "spy"),
+  }));
+  app->setRuntimeOutputSink("rt-1", heard.sink());
+  auto& source = instance<Source>("source");
+
+  auto spyReports = [&] {
+    std::lock_guard<std::mutex> lock(heard.mutex);
+    std::vector<json> reports;
+    for (const auto& said : heard.notifications)
+      if (said.sender == "spy" && said.payload.contains("__internal"))
+        reports.push_back(said.payload["__internal"]);
+    return reports;
+  };
+
+  source.emitNow(1);
+  REQUIRE(eventually([&] { return spyReports().size() == 2; }));
+  for (const auto& report : spyReports())
+    REQUIRE_FALSE(report.contains("data"));
+
+  // Switched on while running, not configured: it is not in what the runtime
+  // reports as its configuration.
+  REQUIRE(app->setRuntimeState("rt-1", json{{"capture", true}})["capture"] == true);
+  source.emitNow(2);
+  REQUIRE(eventually([&] { return spyReports().size() == 4; }));
+  REQUIRE(spyReports()[2].contains("data"));
+  REQUIRE(spyReports()[3].contains("data"));
+
+  REQUIRE(app->setRuntimeState("rt-1", json{{"capture", false}})["capture"] == false);
+  source.emitNow(3);
+  REQUIRE(eventually([&] { return spyReports().size() == 6; }));
+  REQUIRE_FALSE(spyReports()[4].contains("data"));
+}
+
 TEST_CASE("each emission is a run of its own once a board keeps a log",
           "[runtime][context][autonomous]") {
   auto app = appWith(json::array({

@@ -393,6 +393,8 @@ test.describe("a block from the library", () => {
       await page.screenshot({ path: process.env.HKP_E2E_SCREENSHOT });
     }
     await plug.click();
+    // Without Capture mode it asks first; either answer opens the inspector.
+    await page.getByRole("button", { name: "Not now" }).click();
     await expect(page.getByText("Flow Inspector").first()).toBeVisible();
     await page.keyboard.press("Escape");
 

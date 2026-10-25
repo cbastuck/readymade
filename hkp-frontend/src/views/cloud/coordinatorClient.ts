@@ -10,6 +10,9 @@ export type CoordinatorBoardInfo = {
   /** Reasons the session failed to come up cleanly (e.g. a runtime that could
    *  not be provisioned). Present when status is "error". */
   errors?: string[];
+  /** Capture mode, as the coordinator holds it for this board while its owner
+   *  is attached; never part of `config`. Absent from older coordinators. */
+  capture?: boolean;
 };
 
 async function coordinatorFetch(
@@ -209,6 +212,32 @@ export async function setCoordinatorBoardLogging(
     level: string;
     unreachable: string[];
   }>;
+}
+
+/**
+ * Turn Capture mode on or off for a deployed board: whether its runtimes send
+ * what each service received and passed on, or only that it ran.
+ *
+ * Held by the coordinator for as long as the owner is attached, and never
+ * saved. Reports the runtimes that did not take it.
+ */
+export async function setCoordinatorBoardCapture(
+  coordinatorUrl: string,
+  username: string,
+  idToken: string,
+  boardName: string,
+  enabled: boolean,
+): Promise<{ capture: boolean; unreachable: string[] }> {
+  const res = await coordinatorFetch(
+    `${coordinatorUrl}/users/${encodeURIComponent(username)}/boards/${encodeURIComponent(boardName)}/capture`,
+    idToken,
+    // No Content-Type: coordinatorFetch sets it (see setCoordinatorBoardLogging).
+    { method: "POST", body: JSON.stringify({ enabled }) },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to change Capture mode: ${res.status}`);
+  }
+  return res.json() as Promise<{ capture: boolean; unreachable: string[] }>;
 }
 
 export async function deleteCoordinatorBoard(

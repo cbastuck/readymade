@@ -88,14 +88,27 @@ TEST_CASE("A description is told apart from a value", "[call-report]")
   REQUIRE_FALSE(call_report::isTooLarge(json::array({json{{"__hkpTooLarge", json::object()}}})));
 }
 
-TEST_CASE("A lifecycle report describes a value above the limit, and carries one at it",
+TEST_CASE("A captured lifecycle report describes a value above the limit, and carries one at it",
           "[call-report]")
 {
   const std::string above(call_report::limit + 1, 'z');
-  const auto report = lifecycleNotification("call-process-finished", Data(above));
+  const auto report = lifecycleNotification("call-process-finished", Data(above), true);
   REQUIRE(report["__internal"]["state"] == "call-process-finished");
   REQUIRE(report["__internal"]["data"]["__hkpTooLarge"]["bytes"] == call_report::limit + 1);
 
   const std::string at(call_report::limit, 'z');
-  REQUIRE(lifecycleNotification("call-process", Data(at))["__internal"]["data"] == at);
+  REQUIRE(lifecycleNotification("call-process", Data(at), true)["__internal"]["data"] == at);
+}
+
+TEST_CASE("A lifecycle report without Capture mode says only that the call happened",
+          "[call-report][capture]")
+{
+  REQUIRE(lifecycleNotification("call-process", Data(json{{"secret", 1}}), false) ==
+          json{{"__internal", {{"state", "call-process"}}}});
+  REQUIRE(lifecycleNotification("call-process-finished", Data(json{{"secret", 1}}), false) ==
+          json{{"__internal", {{"state", "call-process-finished"}}}});
+  // And whether it passed nothing on, which is what a stopped pipeline is.
+  REQUIRE(lifecycleNotification("call-process-finished", Data(Null()), false) ==
+          json{{"__internal", {{"state", "call-process-finished"}, {"stopped", true}}}});
+  REQUIRE(lifecycleNotification("call-process-finished", Data(Undefined()), false)["__internal"]["stopped"] == true);
 }

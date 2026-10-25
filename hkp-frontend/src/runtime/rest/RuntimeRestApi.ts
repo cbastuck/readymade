@@ -260,6 +260,31 @@ export async function addRuntime(
   };
 }
 
+/**
+ * Changes what a running runtime does without rebuilding it — Capture mode,
+ * here (`PATCH /runtimes/:id/state`, which every runtime server answers).
+ *
+ * Answers whether the runtime took it. Never throws: a runtime that cannot be
+ * reached is reported by everything else, and one that does not take it goes
+ * on reporting activity without values, which is the private default.
+ */
+export async function setRuntimeState(
+  runtime: RuntimeDescriptor,
+  state: Record<string, unknown>,
+  user: User | null,
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/state`, {
+      method: "PATCH",
+      body: JSON.stringify(state),
+      headers: { "content-type": "application/json", ...authHeaders(user) },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function removeRuntime(
   scope_: RuntimeScope,
   runtime: RuntimeDescriptor,

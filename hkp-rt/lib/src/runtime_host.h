@@ -21,14 +21,29 @@ class Service;
 class SubRuntime;
 struct ProcessContext;
 
-// What a service's call is reported with — `{"__internal": {"state", "data"}}`
-// with state "call-process" (and the input) or "call-process-finished" (and
-// the output) — kept JSON-serialisable for the frontend, and no larger than a
-// report may carry (call_report.h). One spelling for a runtime and a pipeline
-// nested in it, so the flow inspector reads both alike.
-inline json lifecycleNotification(const std::string& state, const Data& data)
+// What a service's call is reported with — `{"__internal": {"state", …}}` with
+// state "call-process" (before) or "call-process-finished" (after). One
+// spelling for a runtime and a pipeline nested in it, so the flow inspector
+// reads both alike.
+//
+// The value itself — the input, then the output — only while the board is
+// captured (`capture`), and then no larger than a report may carry
+// (call_report.h). Otherwise the report says only that the call happened and,
+// when it ends, whether it passed nothing on (`stopped`): what goes between
+// the services of a run stays in the runtime unless someone building the board
+// asked to see it.
+inline json lifecycleNotification(const std::string& state, const Data& data, bool capture)
 {
-  return json{{"__internal", json{{"state", state}, {"data", call_report::reported(data)}}}};
+  json internal{{"state", state}};
+  if (capture)
+  {
+    internal["data"] = call_report::reported(data);
+  }
+  else if (state == "call-process-finished" && (isNull(data) || isUndefined(data)))
+  {
+    internal["stopped"] = true;
+  }
+  return json{{"__internal", std::move(internal)}};
 }
 
 // RuntimeHost — abstract interface through which a Service interacts with its
@@ -58,6 +73,11 @@ public:
 
   /** The run currently calling a service, if any. */
   virtual const ProcessContext* currentContext() const { return nullptr; }
+
+  // Whether a call's reports carry the values going in and out — Capture
+  // mode, switched by someone building the board and never saved. A host that
+  // does not know says no: what passes inside a run stays private by default.
+  virtual bool capturesCalls() const { return false; }
 
   /** Execute one explicit late continuation under the context it captured. */
   virtual Data withContext(const ProcessContext&, std::function<Data()> fn)

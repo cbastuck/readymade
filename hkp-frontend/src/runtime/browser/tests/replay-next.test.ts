@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import api from "../BrowserRuntimeApi";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
+import { setCapturing } from "../../captureMode";
 import { ServiceInstance } from "hkp-frontend/src/types";
 
 /**
@@ -49,6 +50,10 @@ const outputReports = (calls: any[][]) =>
   );
 
 describe("app.next", () => {
+  // About the values a frame is shown, which reports carry in Capture mode.
+  beforeEach(() => setCapturing(true));
+  afterEach(() => setCapturing(false));
+
   it("reports the output of a service that emitted on its own", async () => {
     const { scope, first } = await twoServices();
     const onNotification = vi.fn();

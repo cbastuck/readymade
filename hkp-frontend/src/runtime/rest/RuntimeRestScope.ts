@@ -7,12 +7,14 @@ import {
   RuntimeScope,
   ServiceAction,
   ServiceDescriptor,
+  ServiceInstance,
   ServiceRegistry,
   User,
 } from "hkp-frontend/src/types";
 
 import { AssetsSource } from "hkp-frontend/src/runtime/board/assets";
-import api from "./RuntimeRestApi";
+import api, { setRuntimeState } from "./RuntimeRestApi";
+import { isCapturing, onCaptureChange } from "../captureMode";
 import { createRuntimeRestApp } from "./RuntimeRestApp";
 import {
   MessagePurpose,
@@ -29,6 +31,8 @@ export default class RuntimeRestScope implements RuntimeScope {
   runtimeOutput: WebSocket | undefined;
   /** Set by close(), so that a socket still waiting for its ticket never opens. */
   private closed = false;
+  /** Stops telling the runtime when Capture mode changes; see followCapture. */
+  private releaseCapture: (() => void) | undefined;
   registry: ServiceRegistry = [];
   /**
    * Bytes that could not be sent because the socket was not open, since the
@@ -195,6 +199,7 @@ export default class RuntimeRestScope implements RuntimeScope {
       // the first message is the protocol
       const protocol = JSON.stringify({ type: "readwrite", id: this.descriptor.id });
       this.runtimeOutput?.send(protocol);
+      this.followCapture();
     };
   }
 
@@ -334,8 +339,45 @@ export default class RuntimeRestScope implements RuntimeScope {
     console.warn("RuntimeRestScope.onConfig not set");
   };
 
+  /**
+   * Keeps the runtime's Capture mode the board's, from the moment there is a
+   * runtime to tell — its socket opening says so — until this scope closes.
+   *
+   * Told on opening as well as on every change, off included: a runtime keeps
+   * no memory of a board, but one this window attaches to again may still be
+   * capturing from before, and opening a board is where Capture mode is off.
+   */
+  private followCapture(): void {
+    if (this.releaseCapture) {
+      return;
+    }
+    const tell = (on: boolean) =>
+      void setRuntimeState(this.descriptor, { capture: on }, this.authenticatedUser).then(
+        (took) => {
+          // Not taking it leaves the runtime private, which is safe — and,
+          // unsaid, looks like an inspector that is broken. A server older
+          // than Capture mode, or one refusing the request, is why.
+          if (!took && on) {
+            this.onAction({
+              action: "notification",
+              // What raises a toast reads only the payload.
+              service: {} as ServiceInstance,
+              payload: {
+                type: "error",
+                message: `${this.descriptor.name}: Capture mode did not reach this runtime, so its frames show activity but no values. Its server may need updating or restarting.`,
+              },
+            });
+          }
+        },
+      );
+    tell(isCapturing());
+    this.releaseCapture = onCaptureChange(tell);
+  }
+
   close = async (): Promise<void> => {
     this.closed = true;
+    this.releaseCapture?.();
+    this.releaseCapture = undefined;
     const socket = this.runtimeOutput;
     if (!socket) {
       return;

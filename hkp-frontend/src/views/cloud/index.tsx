@@ -12,6 +12,7 @@ import useSWR from "swr";
 import {
   ArrowRight,
   ChevronDown,
+  Circle,
   Cloud,
   CloudOff,
   Plus,
@@ -25,6 +26,7 @@ import BoardProvider, {
   useBoardContext,
 } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
+import { setCapturing } from "../../runtime/captureMode";
 import { runtimeApis } from "../playground";
 import {
   CoordinatorDescriptor,
@@ -46,6 +48,7 @@ import {
   listCoordinatorBoards,
   listSharedBoards,
   registerCoordinatorBoard,
+  setCoordinatorBoardCapture,
   setCoordinatorBoardLogging,
   stopCoordinatorBoard,
 } from "./coordinatorClient";
@@ -1064,6 +1067,20 @@ export default function CloudBoards({
   );
 
   /**
+   * Whether this board's runtimes send what each service received and passed
+   * on (Capture mode) — as the coordinator holds it, so that what the toggle
+   * shows is what the runtimes do. Never in the config: it lasts while the
+   * owner is attached.
+   */
+  const captureOn = openBoard?.capture === true;
+
+  // The browser runtimes this window hosts for the board follow it too.
+  useEffect(() => {
+    setCapturing(captureOn);
+  }, [captureOn]);
+  useEffect(() => () => setCapturing(false), []);
+
+  /**
    * How much this board records — the least severe level it keeps.
    *
    * `debug` is what keeps the flow itself (every service call and return), and
@@ -1074,6 +1091,32 @@ export default function CloudBoards({
     ((openBoard?.config?.runtimes ?? []).find(
       (runtime: { state?: Record<string, unknown> }) => runtime.state?.logLevel,
     )?.state?.logLevel as LogLevel | undefined) ?? "info";
+
+  /** Turn Capture mode on or off for the deployed board, while it runs. */
+  const applyCapture = async (enabled: boolean) => {
+    const board = selectedBoard;
+    const coordinator = selectedCoordinator;
+    if (!board || !coordinator || !user) {
+      return;
+    }
+    try {
+      const result = await setCoordinatorBoardCapture(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        board.boardName,
+        enabled,
+      );
+      if (result.unreachable.length > 0) {
+        toast.error(`Not applied to: ${result.unreachable.join(", ")}`);
+      }
+      await reloadBoards();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to change Capture mode",
+      );
+    }
+  };
 
   /**
    * Turn logging on or off for the deployed board.
@@ -1227,6 +1270,36 @@ export default function CloudBoards({
       >
         <ScrollText size={14} strokeWidth={1.75} />
         {loggingOn ? "Logging on" : "Logging off"}
+      </button>
+      <button
+        type="button"
+        aria-pressed={captureOn}
+        onClick={() => void applyCapture(!captureOn)}
+        title={
+          captureOn
+            ? "Capture mode is on: each service's input and output is sent to this coordinator and to you. It ends when you leave the board."
+            : "Capture mode is off: frames show that services ran, not what they received or passed on."
+        }
+        style={{
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          border: "none",
+          background: "none",
+          padding: "2px 4px",
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: captureOn ? "#e5484d" : "var(--text-dim, #6b7280)",
+          cursor: "pointer",
+        }}
+      >
+        <Circle
+          size={12}
+          strokeWidth={1.75}
+          fill={captureOn ? "#e5484d" : "none"}
+        />
+        {captureOn ? "Capture on" : "Capture off"}
       </button>
       {loggingOn && (
         // Only while it is on: a level for a log nobody is keeping is a control

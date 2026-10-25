@@ -51,6 +51,7 @@ import {
   RuntimeDescriptor,
   RuntimeClass,
 } from "../../types";
+import { setCapturing } from "../../runtime/captureMode";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import { unlinkBlocks } from "../../core/linkBlocks";
 import { restoreCoordinators, withCoordinatorEngines } from "../../common";
@@ -188,6 +189,9 @@ export function usePlaygroundController(
   useEffect(() => {
     initialFetchedRef.current = initialFetched;
   }, [initialFetched]);
+  // And leaving a board ends it: the next one is not captured because this
+  // one was.
+  useEffect(() => () => setCapturing(false), []);
 
   const tryFetch = useCallback(async () => {
     try {
@@ -412,6 +416,9 @@ export function usePlaygroundController(
       assets,
     } = initialBord as BoardDescriptor & UnitDocument;
 
+    // A board opens with Capture mode off, whatever the last one had: seeing
+    // the values inside a run is asked for each time, never carried over.
+    setCapturing(false);
     setInitialFetched(true);
     setDescription(desc);
 

@@ -84,6 +84,9 @@ public:
 class MockHost final : public RuntimeHost {
 public:
   std::list<std::shared_ptr<Service>> services;
+  // Capture mode, as a runtime would answer it.
+  bool capture = false;
+  bool capturesCalls() const override { return capture; }
   std::function<std::shared_ptr<Service>(const std::string&, const std::string&)> factory;
 
   void addService(std::shared_ptr<Service> svc) {
@@ -244,6 +247,7 @@ TEST_CASE("A nested service's calls are reported with what it received and produ
   // the runtime sends for its own services, under the nested address.
   MockHost host;
   host.factory = makeFactory();
+  host.capture = true;
 
   auto outer = std::make_shared<SubService>("outer");
   host.addService(outer);
@@ -283,6 +287,20 @@ TEST_CASE("A nested service's calls are reported with what it received and produ
   REQUIRE(witness[0]["state"] == "call-process");
   REQUIRE(witness[0]["data"]["mark"] == true);
   REQUIRE(witness[1]["state"] == "call-process-finished");
+
+  SECTION("without Capture mode, only that each call happened") {
+    host.capture = false;
+    host.sent.clear();
+    outer->startProcess(json{{"go", 2}});
+
+    REQUIRE(bracket("outer.mark-1") == std::vector<json>{
+      json{{"state", "call-process"}},
+      json{{"state", "call-process-finished"}},
+    });
+    REQUIRE(bracket("outer.inner.witness-2").size() == 2);
+    for (const auto& report : bracket("outer.inner.witness-2"))
+      REQUIRE_FALSE(report.contains("data"));
+  }
 }
 
 TEST_CASE("A nested service reports under its address at every depth",

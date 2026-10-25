@@ -130,20 +130,27 @@ export default function ServiceFrame({
           sweep.start(__internal.call);
           // What it was called with. A service emitting on its own was called
           // with nothing (null), and hkp-rt says "<undefined>" for a call that
-          // carried no value: neither is an input to keep.
-          if (data != null && data !== "<undefined>") {
+          // carried no value: neither is an input to keep. Nor is a report
+          // without Capture mode, which carries no value at all.
+          if ("data" in __internal && data != null && data !== "<undefined>") {
             setInputHistory((history) => rememberFlow(history, data));
           }
           return;
-        case "call-process-finished":
+        case "call-process-finished": {
           sweep.finish(__internal.call);
-          if (data !== null) {
+          // Without Capture mode the report says only whether the call passed
+          // anything on: the plug still lights, and nothing is kept.
+          const carried = "data" in __internal;
+          const stopped = carried ? data === null : __internal.stopped === true;
+          if (carried && data !== null) {
             setOutputHistory((history) => rememberFlow(history, data));
+          }
+          if (!stopped) {
             setSignalOutput(true);
             setTimeout(() => setSignalOutput(false), 350);
           }
-
           return;
+        }
       }
     }
   };

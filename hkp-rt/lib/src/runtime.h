@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include <list>
 #include <vector>
 
@@ -117,6 +119,12 @@ public:
   void setLogLevel(LogLevel level) { m_logLevel = level; }
   bool isLogging() const { return m_logging; }
 
+  // Capture mode: whether call reports carry their values (lifecycleNotification).
+  // Set while the board runs and never part of its configuration, so a runtime
+  // always starts without it. Read from whichever thread a service runs on.
+  void setCapture(bool enabled) { m_capture.store(enabled, std::memory_order_relaxed); }
+  bool capturesCalls() const override { return m_capture.load(std::memory_order_relaxed); }
+
   // Create a SubRuntime from a JSON array of service-config objects.
   // Services are parented to the SubRuntime (not this Runtime) so that
   // next() / nextAsync() work correctly inside the nested pipeline.
@@ -202,6 +210,7 @@ private:
   std::shared_ptr<const ProcessContext> m_boardRun;
   bool m_logData = false;
   bool m_logging = false;
+  std::atomic<bool> m_capture{false};
   LogLevel m_logLevel = LogLevel::Info;
   std::vector<std::function<void(const LogEntry&)>> m_logTargets;
   std::array<std::function<void()>, 100> m_scheduledProcesses;

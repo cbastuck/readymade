@@ -165,6 +165,26 @@ describe("ActivityTracker", () => {
     expect(tracker.isQuiet(now + STOPPED_COOLDOWN_MS)).toBe(true);
   });
 
+  it("reads a call without Capture mode by what its report says", () => {
+    // No value either side, and whether it passed anything on said outright:
+    // without it every call would read as one that stopped.
+    const { tracker, targets } = trackerOnBoard();
+    targets.get("a")!({ __internal: { state: "call-process" } });
+    targets.get("a")!({ __internal: { state: "call-process-finished" } });
+
+    const a = tracker.get("a")!;
+    expect(a.calls).toBe(1);
+    expect(a.lastIn).toBeUndefined();
+    expect(a.lastOut).toBeUndefined();
+    expect(a.lastStopped).toBe(false);
+    expect(a.litUntil).toBeGreaterThan(performance.now());
+
+    targets.get("a")!({
+      __internal: { state: "call-process-finished", stopped: true },
+    });
+    expect(tracker.get("a")!.lastStopped).toBe(true);
+  });
+
   it("lets a glow fade out though a later call passed nothing on", () => {
     const { tracker, targets } = trackerOnBoard();
     targets.get("a")!({

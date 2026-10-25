@@ -634,6 +634,17 @@ posture because entries carry board data (`coordinator/logStore.ts`).
 Runs, entries, levels and what each runtime actually does: **Logging**
 (`concepts/logging.md`).
 
+**Capture mode is the opposite of the log switch in one respect: it is never
+kept.** It decides whether the runtimes' call reports carry the values going
+into and out of each service, or only that a call happened
+(`concepts/runtime.md`, "What crosses a runtime boundary").
+- The switch is `POST …/capture`, the owner's alone.
+- It is applied to the runtimes already running over the same `setState`
+  operation logging uses, and to a runtime the session rebuilds while it is on.
+- It is held by the session and written nowhere. A restart or a redeploy turns
+  it off, and so does the owner's last bridge to the board closing.
+- The board list reports it as `capture`.
+
 ---
 
 ## Getting back to an editor: fork

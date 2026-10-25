@@ -206,16 +206,25 @@ export class ActivityTracker {
       activity.calls += 1;
       // What the runtime handed the service: the input it is about to work
       // on, and the half of what a service did that a result cannot explain
-      // on its own.
-      activity.lastIn = capture(internal.data, now);
+      // on its own. Only while the board is captured; otherwise the report
+      // says no more than that the call began.
+      if ("data" in internal) {
+        activity.lastIn = capture(internal.data, now);
+      }
       return;
     }
 
     if (internal.state === "call-process-finished") {
       activity.startedAt = undefined;
-      activity.lastOut = capture(internal.data, now);
-      activity.lastStopped =
-        internal.data === null || internal.data === undefined;
+      // Without Capture mode a report carries no value, and says in `stopped`
+      // whether the call passed nothing on.
+      const carried = "data" in internal;
+      if (carried) {
+        activity.lastOut = capture(internal.data, now);
+      }
+      activity.lastStopped = carried
+        ? internal.data === null || internal.data === undefined
+        : internal.stopped === true;
 
       // Nothing was passed on, so nothing travels onward either — which is
       // what a stopped pipeline looks like from the outside. Only a flicker:
