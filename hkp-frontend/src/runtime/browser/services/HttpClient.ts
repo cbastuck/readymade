@@ -17,7 +17,8 @@ import { HttpMethod, METHODS } from "./http-client-methods";
  * Modes: none (method is configuration, not a mode)
  * Key Config: url, __hkpMount (target), path, query, method, headers,
  *             userAgent, body, timeoutMs
- * IO: in=body to send (string | object | bytes | {meta, body|binary})
+ * IO: in=body to send (string | object | bytes | {meta, body|binary}), whose
+ *     meta may also say the method, the mount sub-path or the url to call
  *     out=null immediately; the response is pushed through the rest of the
  *     pipeline when it arrives, shaped {meta, body?, binary?}
  *
@@ -93,6 +94,42 @@ function headerRecord(headers: Headers): Record<string, string> {
     record[key.toLowerCase()] = value;
   });
   return record;
+}
+
+/**
+ * What the input says about where it is going, as against what it carries.
+ *
+ * The same request envelope hkp-node's client reads: `{meta: {method, path,
+ * url}, binary | body}`, the mirror of the response envelope and the shape
+ * `http-server-subservices` hands its pipeline. What is unsaid stays as
+ * configured, so a board that names none of them is unaffected.
+ *
+ * `path` is a sub-path of a mount, exactly as the configured field is. `url`
+ * stands in for the configured `url` and for nothing more — a board whose
+ * addresses arrive as data, a record fetched by its own id — so a resolved
+ * mount still wins over it, as it wins over the field.
+ */
+function requestMeta(input: unknown): {
+  path?: string;
+  method?: HttpMethod;
+  url?: string;
+} {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return {};
+  }
+  const meta = (input as { meta?: Record<string, unknown> }).meta;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
+    return {};
+  }
+  const method =
+    typeof meta.method === "string" ? meta.method.toLowerCase() : "";
+  return {
+    ...(typeof meta.path === "string" && meta.path ? { path: meta.path } : {}),
+    ...(METHODS.includes(method as HttpMethod)
+      ? { method: method as HttpMethod }
+      : {}),
+    ...(typeof meta.url === "string" && meta.url ? { url: meta.url } : {}),
+  };
 }
 
 class HttpClient extends ServiceBase<State> {
@@ -194,13 +231,14 @@ class HttpClient extends ServiceBase<State> {
    * service takes).
    */
   process(input: any): any {
-    const target = this.targetUrl();
+    const request = requestMeta(input);
+    const target = this.targetUrl(request.path, request.url);
     if (!target) {
       // Either nothing is configured, or the mount's owner has not published an
       // address yet. Say so and stop; the next input tries again, by which time
       // the coordinator has usually handed the address over.
-      const pending = [this.state.__hkpMount, this.state.url].find((value) =>
-        parseMountRef(value),
+      const pending = [this.state.__hkpMount, request.url ?? this.state.url].find(
+        (value) => parseMountRef(value),
       );
       this.app.notify(this, {
         error: pending
@@ -212,7 +250,13 @@ class HttpClient extends ServiceBase<State> {
 
     const deferred = this.app.defer?.(this);
     const resume = deferred ?? ((result: any) => this.app.next(this, result));
-    void this.send(target, input, resume, () => deferred?.(null));
+    void this.send(
+      target,
+      input,
+      request.method ?? this.state.method,
+      resume,
+      () => deferred?.(null),
+    );
     return null;
   }
 
@@ -228,16 +272,23 @@ class HttpClient extends ServiceBase<State> {
    * A reference in either field is "not ready yet" rather than something to
    * dial: it names a service whose address nobody has published, and falling
    * back past it would silently call something else.
+   *
+   * A URL the input names stands in for the configured one, and nothing more.
    */
-  private targetUrl(): string | null {
+  private targetUrl(
+    path = this.state.path,
+    url = this.state.url,
+  ): string | null {
     const mount = this.state.__hkpMount;
     if (mount) {
-      return parseMountRef(mount) ? null : this.withQuery(this.join(mount));
+      return parseMountRef(mount)
+        ? null
+        : this.withQuery(this.join(mount, path));
     }
-    if (!this.state.url || parseMountRef(this.state.url)) {
+    if (!url || parseMountRef(url)) {
       return null;
     }
-    return this.withQuery(this.state.url);
+    return this.withQuery(url);
   }
 
   /**
@@ -249,14 +300,12 @@ class HttpClient extends ServiceBase<State> {
    * a runtime and resolved by the coordinator, so naming a sub-path of it
    * needs a field of its own.
    */
-  private join(base: string): string {
-    if (!this.state.path) {
+  private join(base: string, path: string): string {
+    if (!path) {
       return base;
     }
     const stem = base.endsWith("/") ? base.slice(0, -1) : base;
-    const suffix = this.state.path.startsWith("/")
-      ? this.state.path
-      : `/${this.state.path}`;
+    const suffix = path.startsWith("/") ? path : `/${path}`;
     return `${stem}${suffix}`;
   }
 
@@ -280,12 +329,12 @@ class HttpClient extends ServiceBase<State> {
   private async send(
     url: string,
     input: any,
+    method: HttpMethod,
     resume: (result: any) => void,
     cancel: () => void,
   ): Promise<void> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.state.timeoutMs);
-    const method = this.state.method;
     this.inFlight += 1;
     this.app.notify(this, {
       requesting: true,
@@ -295,7 +344,7 @@ class HttpClient extends ServiceBase<State> {
     });
 
     try {
-      const request = this.requestBody(input);
+      const request = this.requestBody(input, method);
       // Headers are a free-form map, and a credential is as likely to be part
       // of one — `Bearer <token>` — as to be a field of its own. Resolved
       // against the address being called, so a header bound to one host cannot
@@ -379,8 +428,8 @@ class HttpClient extends ServiceBase<State> {
    * Accepts what an `http-server-subservices` produces, so a request received
    * on one runtime can be forwarded from another unchanged.
    */
-  private requestBody(input: any): RequestBody {
-    if (this.state.method === "get") {
+  private requestBody(input: any, method: HttpMethod): RequestBody {
+    if (method === "get") {
       return null;
     }
     if (input === undefined || input === null) {

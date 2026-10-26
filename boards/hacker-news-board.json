@@ -1,6 +1,6 @@
 {
   "boardName": "Hacker News Reader",
-  "description": "Hacker News as an app: the front page, the newest stories, the best of recent days, Ask HN and Show HN, and a search over every story ever posted. Pick a story to open it; pick its comments to read the discussion beside the list, in the order Hacker News ranks it.\n\nEverything runs in the browser — no runtime to install. The stories come from the Hacker News search API Algolia hosts, which answers any origin. A thread is asked for twice at once: Algolia sends every comment in one document, oldest first and written in HTML, and Hacker News's own API sends the order it ranks them in. The browser's SQL service puts the two together — plain paragraphs, in Hacker News's order. That query reads nothing it stores, so the board keeps no database.",
+  "description": "Hacker News as an app: the front page, the newest stories, the best of recent days, Ask HN and Show HN, and a search over every story ever posted. Pick a story to open it; pick its comments to read the whole discussion beside the list, every reply under the comment it answers and the top-level comments in the order Hacker News ranks them. Fold a comment to skip to the next one, or collapse the whole thread to its top-level comments and open the ones worth reading.\n\nEverything runs in the browser — no runtime to install. The stories come from the Hacker News search API Algolia hosts, which answers any origin. A thread is asked for twice at once: Algolia sends every comment in one document, oldest first and written in HTML, and Hacker News's own API sends the order it ranks them in. The browser's SQL service puts the two together — plain paragraphs, nested as the thread is. The one thing the board keeps is which comments were folded, in a small SQL database in this browser, so a folded thread is still folded when it is opened again.",
   "runtimes": [
     {
       "id": "ui",
@@ -182,6 +182,17 @@
                     "name": "rank",
                     "pipeline": [
                       {
+                        "instanceId": "ranking-address",
+                        "serviceId": "hookup.to/service/map",
+                        "serviceName": "Where to ask",
+                        "state": {
+                          "mode": "replace",
+                          "template": {
+                            "meta.url=": "concat('https://hacker-news.firebaseio.com/v0/item/', params.id, '.json')"
+                          }
+                        }
+                      },
+                      {
                         "instanceId": "ranking",
                         "serviceId": "http-client",
                         "serviceName": "HN's order",
@@ -198,6 +209,17 @@
                   {
                     "name": "tree",
                     "pipeline": [
+                      {
+                        "instanceId": "tree-address",
+                        "serviceId": "hookup.to/service/map",
+                        "serviceName": "Where to ask",
+                        "state": {
+                          "mode": "replace",
+                          "template": {
+                            "meta.url=": "concat('https://hn.algolia.com/api/v1/items/', params.id)"
+                          }
+                        }
+                      },
                       {
                         "instanceId": "tree",
                         "serviceId": "http-client",
@@ -230,13 +252,81 @@
               }
             },
             {
+              "instanceId": "keep",
+              "serviceId": "hookup.to/service/hold",
+              "serviceName": "Keep the thread",
+              "state": {
+                "slot": "thread",
+                "op": "write"
+              }
+            },
+            {
+              "instanceId": "fold-all",
+              "serviceId": "sql",
+              "serviceName": "Fold the whole thread",
+              "state": {
+                "mode": "run",
+                "emit": "input",
+                "database": "hacker-news",
+                "schema": "-- Which comments a reader folded, per story, and whether a story was folded\n-- down to its top-level comments as a whole. A comment's own row wins over the\n-- story's.\nCREATE TABLE IF NOT EXISTS fold (\n  story     INTEGER NOT NULL,\n  comment   INTEGER NOT NULL,\n  collapsed INTEGER NOT NULL,\n  PRIMARY KEY (story, comment)\n);\nCREATE TABLE IF NOT EXISTS story_fold (\n  story        INTEGER PRIMARY KEY,\n  collapse_all INTEGER NOT NULL\n);",
+                "statement": "INSERT INTO story_fold (story, collapse_all)\nSELECT CAST($story AS INTEGER), CAST($all AS INTEGER)\n WHERE $all IS NOT NULL AND $story IS NOT NULL\n    ON CONFLICT(story) DO UPDATE SET collapse_all = excluded.collapse_all"
+              }
+            },
+            {
+              "instanceId": "fold-reset",
+              "serviceId": "sql",
+              "serviceName": "Forget single folds",
+              "state": {
+                "mode": "run",
+                "emit": "input",
+                "database": "hacker-news",
+                "schema": "-- Which comments a reader folded, per story, and whether a story was folded\n-- down to its top-level comments as a whole. A comment's own row wins over the\n-- story's.\nCREATE TABLE IF NOT EXISTS fold (\n  story     INTEGER NOT NULL,\n  comment   INTEGER NOT NULL,\n  collapsed INTEGER NOT NULL,\n  PRIMARY KEY (story, comment)\n);\nCREATE TABLE IF NOT EXISTS story_fold (\n  story        INTEGER PRIMARY KEY,\n  collapse_all INTEGER NOT NULL\n);",
+                "statement": "DELETE FROM fold\n WHERE $all IS NOT NULL\n   AND story = CAST($story AS INTEGER)"
+              }
+            },
+            {
+              "instanceId": "fold-one",
+              "serviceId": "sql",
+              "serviceName": "Fold one comment",
+              "state": {
+                "mode": "run",
+                "emit": "input",
+                "database": "hacker-news",
+                "schema": "-- Which comments a reader folded, per story, and whether a story was folded\n-- down to its top-level comments as a whole. A comment's own row wins over the\n-- story's.\nCREATE TABLE IF NOT EXISTS fold (\n  story     INTEGER NOT NULL,\n  comment   INTEGER NOT NULL,\n  collapsed INTEGER NOT NULL,\n  PRIMARY KEY (story, comment)\n);\nCREATE TABLE IF NOT EXISTS story_fold (\n  story        INTEGER PRIMARY KEY,\n  collapse_all INTEGER NOT NULL\n);",
+                "statement": "INSERT INTO fold (story, comment, collapsed)\nSELECT CAST($story AS INTEGER), CAST($comment AS INTEGER), CAST($collapsed AS INTEGER)\n WHERE $comment IS NOT NULL AND $story IS NOT NULL\n    ON CONFLICT(story, comment) DO UPDATE SET collapsed = excluded.collapsed"
+              }
+            },
+            {
+              "instanceId": "show",
+              "serviceId": "hookup.to/service/hold",
+              "serviceName": "The thread kept",
+              "state": {
+                "slot": "thread",
+                "op": "read"
+              }
+            },
+            {
+              "instanceId": "post",
+              "serviceId": "sql",
+              "serviceName": "The post's own text",
+              "state": {
+                "mode": "query",
+                "emit": "input",
+                "database": "hacker-news",
+                "schema": "-- Which comments a reader folded, per story, and whether a story was folded\n-- down to its top-level comments as a whole. A comment's own row wins over the\n-- story's.\nCREATE TABLE IF NOT EXISTS fold (\n  story     INTEGER NOT NULL,\n  comment   INTEGER NOT NULL,\n  collapsed INTEGER NOT NULL,\n  PRIMARY KEY (story, comment)\n);\nCREATE TABLE IF NOT EXISTS story_fold (\n  story        INTEGER PRIMARY KEY,\n  collapse_all INTEGER NOT NULL\n);",
+                "statement": "WITH RECURSIVE\n-- The post's own text, where it has one (an Ask HN, say), made readable the\n-- way the comments are.\nclean(t) AS (\n  SELECT replace(replace(replace(json_extract($body, '$.text'), '<p>', char(10) || char(10)), '<pre><code>', char(10)), '</code></pre>', char(10))\n   WHERE NULLIF(json_extract($body, '$.text'), '') IS NOT NULL\n  UNION ALL\n  SELECT substr(t, 1, instr(t, '<') - 1) || substr(t, instr(t, '<') + instr(substr(t, instr(t, '<')), '>'))\n    FROM clean\n   WHERE instr(t, '<') > 0 AND instr(substr(t, instr(t, '<')), '>') > 0\n)\nSELECT replace(replace(replace(replace(replace(replace(t,\n         '&#x27;', ''''), '&quot;', '\"'), '&#x2F;', '/'), '&gt;', '>'), '&lt;', '<'), '&amp;', '&') AS text\n  FROM clean\n WHERE NOT (instr(t, '<') > 0 AND instr(substr(t, instr(t, '<')), '>') > 0)"
+              }
+            },
+            {
               "instanceId": "comments",
               "serviceId": "sql",
               "serviceName": "Readable comments",
               "state": {
                 "mode": "query",
+                "emit": "result",
                 "database": "hacker-news",
-                "statement": "WITH RECURSIVE\n-- HN's own order for the top-level comments, from its API's kids. The tree\n-- from Algolia lists them oldest first.\nrank(id, pos) AS (\n  SELECT CAST(value AS INTEGER), CAST(key AS INTEGER) FROM json_each($order)\n),\nentry(pos, kind, author, created, replies, t) AS (\n  SELECT -1, 'post',\n         json_extract($body, '$.author'),\n         json_extract($body, '$.created_at_i'),\n         json_array_length($body, '$.children'),\n         json_extract($body, '$.text')\n  UNION ALL\n  SELECT IFNULL(rank.pos, 100000 + CAST(c.key AS INTEGER)), 'comment',\n         json_extract(c.value, '$.author'),\n         json_extract(c.value, '$.created_at_i'),\n         json_array_length(c.value, '$.children'),\n         json_extract(c.value, '$.text')\n    FROM json_each($body, '$.children') AS c\n    LEFT JOIN rank ON rank.id = json_extract(c.value, '$.id')\n),\n-- HN writes comments as HTML. Paragraphs become blank lines, then one tag is\n-- cut out per step until none is left; entities are decoded last, so an\n-- escaped '<' in the text is never taken for a tag.\nclean(pos, kind, author, created, replies, t) AS (\n  SELECT pos, kind, author, created, replies,\n         replace(replace(replace(t, '<p>', char(10) || char(10)), '<pre><code>', char(10)), '</code></pre>', char(10))\n    FROM entry\n   WHERE t IS NOT NULL AND t <> ''\n  UNION ALL\n  SELECT pos, kind, author, created, replies,\n         substr(t, 1, instr(t, '<') - 1) || substr(t, instr(t, '<') + instr(substr(t, instr(t, '<')), '>'))\n    FROM clean\n   WHERE instr(t, '<') > 0 AND instr(substr(t, instr(t, '<')), '>') > 0\n),\ndone AS (\n  SELECT pos, kind, author, replies, t,\n         CAST(strftime('%s', 'now') AS INTEGER) - created AS age\n    FROM clean\n   WHERE NOT (instr(t, '<') > 0 AND instr(substr(t, instr(t, '<')), '>') > 0)\n)\nSELECT kind,\n       author\n         || ' · ' || CASE WHEN age < 3600  THEN max(1, age / 60) || ' min ago'\n                          WHEN age < 86400 THEN (age / 3600) || ' h ago'\n                          ELSE (age / 86400) || ' d ago' END\n         || CASE WHEN kind = 'comment' AND replies = 1 THEN ' · 1 reply'\n                 WHEN kind = 'comment' AND replies > 1 THEN ' · ' || replies || ' replies'\n                 ELSE '' END AS byline,\n       replace(replace(replace(replace(replace(replace(t,\n         '&#x27;', ''''), '&quot;', '\"'), '&#x2F;', '/'), '&gt;', '>'), '&lt;', '<'), '&amp;', '&') AS text\n  FROM done\n ORDER BY pos"
+                "schema": "-- Which comments a reader folded, per story, and whether a story was folded\n-- down to its top-level comments as a whole. A comment's own row wins over the\n-- story's.\nCREATE TABLE IF NOT EXISTS fold (\n  story     INTEGER NOT NULL,\n  comment   INTEGER NOT NULL,\n  collapsed INTEGER NOT NULL,\n  PRIMARY KEY (story, comment)\n);\nCREATE TABLE IF NOT EXISTS story_fold (\n  story        INTEGER PRIMARY KEY,\n  collapse_all INTEGER NOT NULL\n);",
+                "statement": "WITH RECURSIVE\nstory(id) AS (SELECT CAST(json_extract($body, '$.id') AS INTEGER)),\nfolded_story(all_folded) AS (\n  SELECT IFNULL((SELECT collapse_all FROM story_fold WHERE story = (SELECT id FROM story)), 0)\n),\n-- HN's own order for the top-level comments, from its API's kids. The tree\n-- from Algolia lists every level oldest first; below the top level that is\n-- the order kept.\nrank(id, pos) AS (\n  SELECT CAST(value AS INTEGER), CAST(key AS INTEGER) FROM json_each($order)\n),\n-- The thread, depth first: each entry's sort key is its parent's with its own\n-- place appended, so ordering by it puts every reply under the comment it\n-- answers. A folded comment is listed, but nothing under it is walked.\ntree(depth, sort, node, folded) AS (\n  SELECT 0, '', $body, 0 WHERE $body IS NOT NULL\n  UNION ALL\n  SELECT tree.depth + 1,\n         tree.sort || printf('%06d.', CASE WHEN tree.depth = 0\n                                           THEN IFNULL(rank.pos, 100000 + CAST(c.key AS INTEGER))\n                                           ELSE CAST(c.key AS INTEGER) END),\n         c.value,\n         COALESCE(f.collapsed,\n                  CASE WHEN tree.depth = 0 THEN (SELECT all_folded FROM folded_story) ELSE 0 END)\n    FROM tree\n    JOIN json_each(tree.node, '$.children') AS c\n    LEFT JOIN rank ON tree.depth = 0 AND rank.id = json_extract(c.value, '$.id')\n    LEFT JOIN fold AS f\n           ON f.story = (SELECT id FROM story)\n          AND f.comment = json_extract(c.value, '$.id')\n   WHERE tree.folded = 0\n),\n-- A deleted comment keeps its place when it has replies, so they are not left\n-- hanging under the wrong one.\nentry(sort, depth, id, folded, hidden, author, created, replies, t) AS (\n  SELECT sort, depth,\n         json_extract(node, '$.id'),\n         folded,\n         CASE WHEN folded THEN (SELECT count(*) FROM json_tree(node, '$.children')\n                                 WHERE type = 'object' AND path LIKE '%.children')\n              ELSE 0 END,\n         IFNULL(json_extract(node, '$.author'), '[deleted]'),\n         json_extract(node, '$.created_at_i'),\n         json_array_length(node, '$.children'),\n         IFNULL(NULLIF(json_extract(node, '$.text'), ''), '[deleted]')\n    FROM tree\n   WHERE depth > 0\n     AND (NULLIF(json_extract(node, '$.text'), '') IS NOT NULL\n          OR json_array_length(node, '$.children') > 0)\n),\n-- HN writes comments as HTML. Paragraphs become blank lines, then one tag is\n-- cut out per step until none is left; entities are decoded last, so an\n-- escaped '<' in the text is never taken for a tag.\nclean(sort, depth, id, folded, hidden, author, created, replies, t) AS (\n  SELECT sort, depth, id, folded, hidden, author, created, replies,\n         replace(replace(replace(t, '<p>', char(10) || char(10)), '<pre><code>', char(10)), '</code></pre>', char(10))\n    FROM entry\n  UNION ALL\n  SELECT sort, depth, id, folded, hidden, author, created, replies,\n         substr(t, 1, instr(t, '<') - 1) || substr(t, instr(t, '<') + instr(substr(t, instr(t, '<')), '>'))\n    FROM clean\n   WHERE instr(t, '<') > 0 AND instr(substr(t, instr(t, '<')), '>') > 0\n),\ndone AS (\n  SELECT sort, depth, id, folded, hidden, author, replies,\n         CAST(strftime('%s', 'now') AS INTEGER) - created AS age,\n         replace(replace(replace(replace(replace(replace(t,\n           '&#x27;', ''''), '&quot;', '\"'), '&#x2F;', '/'), '&gt;', '>'), '&lt;', '<'), '&amp;', '&') AS t\n    FROM clean\n   WHERE NOT (instr(t, '<') > 0 AND instr(substr(t, instr(t, '<')), '>') > 0)\n)\nSELECT (SELECT id FROM story) AS story,\n       id,\n       depth,\n       -- How far a reply sits in from the comment it answers; deep threads\n       -- stop moving right, so the text keeps a readable width.\n       min(depth - 1, 8) * 16 AS indent,\n       author\n         || ' · ' || CASE WHEN age < 3600  THEN max(1, age / 60) || ' min ago'\n                          WHEN age < 86400 THEN (age / 3600) || ' h ago'\n                          ELSE (age / 86400) || ' d ago' END\n         || CASE WHEN replies = 1 THEN ' · 1 reply'\n                 WHEN replies > 1 THEN ' · ' || replies || ' replies'\n                 ELSE '' END AS byline,\n       -- Folded, a comment is its first line: enough to know which one it is.\n       CASE WHEN folded\n            THEN CASE WHEN length(trim(replace(t, char(10), ' '))) > 140\n                      THEN substr(trim(replace(t, char(10), ' ')), 1, 140) || '…'\n                      ELSE trim(replace(t, char(10), ' ')) END\n            ELSE t END AS text,\n       folded,\n       1 - folded AS foldTo,\n       CASE WHEN NOT folded THEN '[–]'\n            WHEN hidden > 0 THEN '[+' || hidden || ']'\n            ELSE '[+]' END AS foldLabel\n  FROM done\n ORDER BY sort"
               }
             }
           ]
@@ -249,7 +339,7 @@
     "init": [
       {
         "type": "process",
-        "serviceUuid": "menu.pick",
+        "serviceUuid": "menu",
         "payload": {
           "feed": "top"
         }
@@ -413,35 +503,16 @@
                             "value": "{{item.discussion}}"
                           },
                           {
-                            "type": "configure",
-                            "serviceUuid": "thread.both",
-                            "configure": {
-                              "track": "rank",
-                              "configureService": {
-                                "instanceId": "ranking",
-                                "state": {
-                                  "url": "https://hacker-news.firebaseio.com/v0/item/{{item.id}}.json"
-                                }
-                              }
-                            }
-                          },
-                          {
-                            "type": "configure",
-                            "serviceUuid": "thread.both",
-                            "configure": {
-                              "track": "tree",
-                              "configureService": {
-                                "instanceId": "tree",
-                                "state": {
-                                  "url": "https://hn.algolia.com/api/v1/items/{{item.id}}"
-                                }
-                              }
-                            }
+                            "type": "set-state",
+                            "key": "threadId",
+                            "value": "{{item.id}}"
                           },
                           {
                             "type": "process",
                             "serviceUuid": "thread.both",
-                            "payload": {}
+                            "payload": {
+                              "id": "{{item.id}}"
+                            }
                           }
                         ]
                       }
@@ -486,8 +557,60 @@
                   "tone": "muted",
                   "fontSize": 11,
                   "grow": true
+                },
+                {
+                  "type": "button",
+                  "label": "Collapse all",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "thread.fold-all",
+                      "payload": {
+                        "story": {
+                          "$state": "threadId"
+                        },
+                        "all": 1
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Expand all",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "thread.fold-all",
+                      "payload": {
+                        "story": {
+                          "$state": "threadId"
+                        },
+                        "all": 0
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "thread.both.tree",
+                    "path": "requesting"
+                  },
+                  "statusColors": {
+                    "true": "#f59e0b",
+                    "false": "#22c55e"
+                  }
                 }
               ]
+            },
+            {
+              "type": "text",
+              "source": {
+                "serviceUuid": "thread.post",
+                "path": "rows.0.text"
+              },
+              "placeholder": "",
+              "fontSize": 13
             },
             {
               "type": "repeat",
@@ -503,19 +626,53 @@
                 "radius": 6
               },
               "template": {
-                "direction": "column",
-                "gap": 4,
+                "direction": "row",
                 "items": [
                   {
-                    "type": "text",
-                    "placeholder": "{{item.byline}}",
-                    "tone": "muted",
-                    "fontSize": 11
+                    "direction": "column",
+                    "width": "{{item.indent}}",
+                    "items": []
                   },
                   {
-                    "type": "text",
-                    "placeholder": "{{item.text}}",
-                    "fontSize": 13
+                    "direction": "column",
+                    "gap": 4,
+                    "grow": true,
+                    "items": [
+                      {
+                        "direction": "row",
+                        "gap": 8,
+                        "align": "center",
+                        "items": [
+                          {
+                            "type": "text",
+                            "placeholder": "{{item.byline}}",
+                            "tone": "muted",
+                            "fontSize": 11,
+                            "grow": true
+                          },
+                          {
+                            "type": "button",
+                            "label": "{{item.foldLabel}}",
+                            "actions": [
+                              {
+                                "type": "process",
+                                "serviceUuid": "thread.fold-one",
+                                "payload": {
+                                  "story": "{{item.story}}",
+                                  "comment": "{{item.id}}",
+                                  "collapsed": "{{item.foldTo}}"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.text}}",
+                        "fontSize": 13
+                      }
+                    ]
                   }
                 ]
               }
@@ -531,6 +688,41 @@
           "path": "error"
         },
         "message": "Could not load the stories — {{value}}"
+      },
+      {
+        "source": {
+          "serviceUuid": "thread.both.tree",
+          "path": "error"
+        },
+        "message": "Could not load the discussion — {{value}}"
+      },
+      {
+        "source": {
+          "serviceUuid": "thread.both.ranking",
+          "path": "error"
+        },
+        "message": "Could not load Hacker News's comment order — {{value}}"
+      },
+      {
+        "source": {
+          "serviceUuid": "thread.fold-all",
+          "path": "error"
+        },
+        "message": "Could not fold the discussion — {{value}}"
+      },
+      {
+        "source": {
+          "serviceUuid": "thread.fold-one",
+          "path": "error"
+        },
+        "message": "Could not fold that comment — {{value}}"
+      },
+      {
+        "source": {
+          "serviceUuid": "thread.post",
+          "path": "error"
+        },
+        "message": "Could not read the post — {{value}}"
       },
       {
         "source": {

@@ -357,6 +357,23 @@ does on hkp-node.
 - The panel's **Run** button tries the statement with no parameters and shows
   what it did; it does not call the rest of the pipeline.
 
+### Inspecting the database
+
+The panel's **Inspect database** button opens what the service's database
+holds, in a dialog beside the service: its tables and views down the side, each
+with how many rows it has, and the rows of the one picked, a hundred at a time.
+The tables this service's statement names come first, marked **written here**
+(after `INSERT INTO`, `REPLACE INTO`, `UPDATE` or `DELETE FROM`) or **read
+here** — a reading of the statement's text, not a parse of it. **Definition**
+shows the `CREATE` statement SQLite keeps for the table.
+
+It only looks. It applies no schema, changes no row and tells the board
+nothing, so a database the board has not created yet shows no tables rather
+than being created by being looked at. While it is open it looks again after
+every pass the service reports, so a table being written fills in as the board
+runs. To change rows, use the [SQL Explorer](../boards/sql-explorer-board.md)
+board.
+
 ---
 
 ## Moving a database

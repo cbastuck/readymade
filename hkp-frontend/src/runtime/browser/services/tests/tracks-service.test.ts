@@ -203,6 +203,50 @@ describe("Tracks service", () => {
     ]);
   });
 
+  it("answers the address its notifications are forwarded under", async () => {
+    // A facade reading a service inside a track looks it up at
+    // `<tracks>.<instanceId>`: the track's name is not part of the address,
+    // and the reducer's services are reached the same way.
+    const { service } = createTracks();
+    service.configure({ tracks: [answering("a", 1)], reduce: reducer("params.results[0]") });
+    await service.process({});
+
+    expect(service.findNested("a")).toBe(service.getInnerInstance("a"));
+    expect(service.findNested("a")).not.toBeNull();
+    expect(service.findNested("reduce-1")).toBe(service.getInnerInstance("reduce-1"));
+    expect(service.findNested("nobody")).toBeNull();
+    expect(service.findNested("a.deeper")).toBeNull();
+  });
+
+  it("says whether its tracks are built yet", async () => {
+    const { service } = createTracks();
+    expect(service.isScopeBuilt()).toBe(true);
+
+    service.configure({ tracks: [answering("a", 1)], reduce: reducer("params.results") });
+    expect(service.isScopeBuilt()).toBe(false);
+
+    await service.process({});
+    expect(service.isScopeBuilt()).toBe(true);
+  });
+
+  it("keeps what a service inside was configured to since, not what it was built with", async () => {
+    // A configure sent straight to `<tracks>.<instanceId>` reaches the live
+    // instance and not this service, so a board saving the stored pipelines
+    // would lose it.
+    const { service } = createTracks();
+    service.configure({ tracks: [answering("a", 1), answering("b", 2)] });
+    await service.process({});
+
+    service.findNested("b").configure({ template: { "=": "20" } });
+
+    const saved = await service.getConfiguration();
+    expect(saved.tracks.map((t: any) => t.pipeline[0].state.template)).toEqual([
+      { "=": "1" },
+      { "=": "20" },
+    ]);
+    expect(await service.process({})).toEqual([1, 20]);
+  });
+
   it("passes its input through when bypassed", async () => {
     const { service } = createTracks();
     service.configure({ tracks: [answering("a", 1)] });

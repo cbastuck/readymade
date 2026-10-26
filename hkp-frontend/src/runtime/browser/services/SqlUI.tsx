@@ -10,6 +10,7 @@ import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import PillRadioGroup from "hkp-frontend/src/ui-components/PillRadioGroup";
 import Editor from "hkp-frontend/src/components/shared/Editor";
 import { EMITS, MODES } from "./sql-modes";
+import SqlInspector, { InspectableSql } from "./SqlInspector";
 
 /**
  * The browser SQL service's panel.
@@ -18,7 +19,8 @@ import { EMITS, MODES } from "./sql-modes";
  * because most services on a board leave it to one other. Run tries the
  * statement with no parameters and shows what it did — the rest of the
  * pipeline is not called, so trying a DELETE here changes the tables but
- * nothing downstream.
+ * nothing downstream. Inspect opens what the database holds, beside the
+ * service rather than in a board of its own.
  */
 
 const MODE_LABELS: Record<string, string> = {
@@ -63,6 +65,9 @@ export default function SqlUI(props: ServiceUIProps) {
   const [schema, setSchema] = useState("");
   const [outcome, setOutcome] = useState("");
   const [error, setError] = useState("");
+  const [inspecting, setInspecting] = useState(false);
+  // Moves on every pass the service reports, so an open inspector looks again.
+  const [revision, setRevision] = useState(0);
 
   const update = (config: any) => {
     if (
@@ -97,6 +102,7 @@ export default function SqlUI(props: ServiceUIProps) {
     if (done !== null) {
       setOutcome(done);
       setError("");
+      setRevision((n) => n + 1);
     }
     if (typeof config?.error === "string") {
       setOutcome("");
@@ -165,12 +171,20 @@ export default function SqlUI(props: ServiceUIProps) {
           </div>
         </div>
 
-        <Button
-          className="hkp-svc-btn w-full"
-          onClick={() => props.service.process({})}
-        >
-          Run
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            className="hkp-svc-btn flex-1"
+            onClick={() => props.service.process({})}
+          >
+            Run
+          </Button>
+          <Button
+            className="hkp-svc-btn flex-1"
+            onClick={() => setInspecting(true)}
+          >
+            Inspect database
+          </Button>
+        </div>
 
         {outcome || error ? (
           <div className="text-xs">
@@ -179,6 +193,12 @@ export default function SqlUI(props: ServiceUIProps) {
           </div>
         ) : null}
       </div>
+      <SqlInspector
+        service={props.service as unknown as InspectableSql}
+        isOpen={inspecting}
+        revision={revision}
+        onClose={() => setInspecting(false)}
+      />
     </ServiceUI>
   );
 }

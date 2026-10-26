@@ -58,7 +58,7 @@ What the input leaves unsaid stays as configured, so a board that names neither
 is unaffected. `path` is a sub-path of a mount, exactly as the configured field
 is: a typed URL carries its own path and is not rewritten from a distance.
 
-On hkp-node.
+On hkp-node and in the browser.
 
 ### On hkp-node, hkp-python and the browser
 

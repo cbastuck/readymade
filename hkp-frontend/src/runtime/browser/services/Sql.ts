@@ -66,6 +66,12 @@ import {
   sqlDatabases,
   sqliteMessage,
 } from "./sql-database";
+import {
+  InspectedRows,
+  InspectedTable,
+  listTables,
+  readRows,
+} from "./sql-inspect";
 
 const serviceId = "sql";
 const serviceName = "SQL";
@@ -276,6 +282,29 @@ class Sql extends ServiceBase<State> {
     } catch (err) {
       return this.fail(`${this.state.mode} failed: ${sqliteMessage(err)}`);
     }
+  }
+
+  /**
+   * The tables in the database this service names, for the inspector: each
+   * with its row count, and what this service's statement does with it.
+   *
+   * Read only, and said to nobody — looking is not a pass of the board, so
+   * nothing is notified, nothing goes onward, and no schema is applied.
+   */
+  async inspectTables(): Promise<{ database: string; tables: InspectedTable[] }> {
+    const database = this.state.database || DEFAULT_DATABASE;
+    const db = await sqlDatabases().open(database);
+    return { database, tables: listTables(db, this.state.statement) };
+  }
+
+  /** A page of one table's rows in this service's database; see inspectTables. */
+  async inspectRows(
+    table: string,
+    offset: number,
+    limit: number,
+  ): Promise<InspectedRows> {
+    const db = await sqlDatabases().open(this.state.database || DEFAULT_DATABASE);
+    return readRows(db, table, offset, limit);
   }
 
   /**

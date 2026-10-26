@@ -118,9 +118,10 @@ class Fetcher extends ServiceBase<State> {
       ? await parseAndEvalExpression(this.state.bodyExpression, { params }, this.app, this)
       : this.getBody(paramsBody);
 
-    const substitutedUrl = data?.variables
-      ? substituteUrl(url, data.variables)
-      : url;
+    const substitutedUrl = fillFromInput(
+      data?.variables ? substituteUrl(url, data.variables) : url,
+      params,
+    );
 
     const method = paramsMethod || this.state.method;
     const headers = paramsHeaders || this.state.headers;
@@ -129,7 +130,12 @@ class Fetcher extends ServiceBase<State> {
         const resolvedAcc = await acc;
         if (key.endsWith("=")) {
           const value = headers[key];
-          const processed = await parseAndEvalExpression(value, {}, this.app, this);
+          const processed = await parseAndEvalExpression(
+            value,
+            { params },
+            this.app,
+            this
+          );
           return Promise.resolve({
             ...resolvedAcc,
             [key.slice(0, -1)]: processed,
@@ -169,6 +175,35 @@ class Fetcher extends ServiceBase<State> {
       return null;
     }
   }
+}
+
+const INPUT_REF = /\{\{\s*params((?:\.[\w$]+)*)\s*\}\}/g;
+
+/** The value at a dotted path (".a.b") of the input, or empty. */
+function readInput(params: any, path: string): string {
+  const value = path
+    .split(".")
+    .filter(Boolean)
+    .reduce((at, key) => (at == null ? undefined : at[key]), params);
+  return value == null ? "" : String(value);
+}
+
+/**
+ * Fills `{{params.…}}` in a URL from the input it is fetched for.
+ *
+ * Written as the whole URL, the value is the whole address and is used as it
+ * is. Inside a longer one it is a part of the address — an id, a search term —
+ * and is encoded as one, so a value holding `&` or `/` cannot change where the
+ * request goes.
+ */
+function fillFromInput(url: string, params: any): string {
+  const whole = url.trim().match(new RegExp(`^${INPUT_REF.source}$`));
+  if (whole) {
+    return readInput(params, whole[1]);
+  }
+  return url.replace(INPUT_REF, (_, path: string) =>
+    encodeURIComponent(readInput(params, path))
+  );
 }
 
 function substituteUrl(
