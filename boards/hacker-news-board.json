@@ -1,0 +1,544 @@
+{
+  "boardName": "Hacker News Reader",
+  "description": "Hacker News as an app: the front page, the newest stories, the best of recent days, Ask HN and Show HN, and a search over every story ever posted. Pick a story to open it; pick its comments to read the discussion beside the list, in the order Hacker News ranks it.\n\nEverything runs in the browser — no runtime to install. The stories come from the Hacker News search API Algolia hosts, which answers any origin. A thread is asked for twice at once: Algolia sends every comment in one document, oldest first and written in HTML, and Hacker News's own API sends the order it ranks them in. The browser's SQL service puts the two together — plain paragraphs, in Hacker News's order. That query reads nothing it stores, so the board keeps no database.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "menu",
+        "serviceId": "sub-service",
+        "serviceName": "Which list",
+        "state": {
+          "stopPropagation": true,
+          "pipeline": [
+            {
+              "instanceId": "pick",
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "The lists",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "feeds": [
+                    {
+                      "id": "top",
+                      "label": "Top",
+                      "url": "https://hn.algolia.com/api/v1/search",
+                      "query": {
+                        "hitsPerPage": "30",
+                        "tags": "front_page"
+                      },
+                      "current=": "params.feed == 'top'"
+                    },
+                    {
+                      "id": "new",
+                      "label": "New",
+                      "url": "https://hn.algolia.com/api/v1/search_by_date",
+                      "query": {
+                        "hitsPerPage": "30",
+                        "tags": "story"
+                      },
+                      "current=": "params.feed == 'new'"
+                    },
+                    {
+                      "id": "best",
+                      "label": "Best",
+                      "url": "https://hn.algolia.com/api/v1/search_by_date",
+                      "query": {
+                        "hitsPerPage": "30",
+                        "tags": "story",
+                        "numericFilters": "points>300"
+                      },
+                      "current=": "params.feed == 'best'"
+                    },
+                    {
+                      "id": "ask",
+                      "label": "Ask",
+                      "url": "https://hn.algolia.com/api/v1/search_by_date",
+                      "query": {
+                        "hitsPerPage": "30",
+                        "tags": "ask_hn",
+                        "numericFilters": "points>10"
+                      },
+                      "current=": "params.feed == 'ask'"
+                    },
+                    {
+                      "id": "show",
+                      "label": "Show",
+                      "url": "https://hn.algolia.com/api/v1/search_by_date",
+                      "query": {
+                        "hitsPerPage": "30",
+                        "tags": "show_hn",
+                        "numericFilters": "points>10"
+                      },
+                      "current=": "params.feed == 'show'"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "instanceId": "view",
+              "serviceId": "hookup.to/service/monitor",
+              "serviceName": "Menu"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "front",
+        "serviceId": "sub-service",
+        "serviceName": "Stories",
+        "state": {
+          "stopPropagation": true,
+          "pipeline": [
+            {
+              "instanceId": "request",
+              "serviceId": "http-client",
+              "serviceName": "Ask Algolia",
+              "state": {
+                "url": "https://hn.algolia.com/api/v1/search",
+                "method": "get",
+                "query": {
+                  "hitsPerPage": "30",
+                  "tags": "front_page"
+                },
+                "headers": {},
+                "timeoutMs": 10000
+              }
+            },
+            {
+              "instanceId": "hits",
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "The stories",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "=": "params.body.hits"
+                }
+              }
+            },
+            {
+              "instanceId": "shape",
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "One story",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "id=": "params.objectID",
+                  "title=": "params.title",
+                  "link=": "params.url || concat('https://news.ycombinator.com/item?id=', params.objectID)",
+                  "site=": "params.url ? params.url.split('/')[2].replace('www.', '') : 'news.ycombinator.com'",
+                  "discussion=": "concat('https://news.ycombinator.com/item?id=', params.objectID)",
+                  "byline=": "concat(string(params.points), ' points · ', params.author, ' · ', moment(params.created_at).fromNow())",
+                  "commentsLabel=": "concat(string(params.num_comments || 0), ' comments')"
+                }
+              }
+            },
+            {
+              "instanceId": "listing",
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "The listing",
+              "state": {
+                "mode": "replace",
+                "arrayMode": "single",
+                "template": {
+                  "stories=": "params",
+                  "count=": "params.length"
+                }
+              }
+            },
+            {
+              "instanceId": "view",
+              "serviceId": "hookup.to/service/monitor",
+              "serviceName": "Listing"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "thread",
+        "serviceId": "sub-service",
+        "serviceName": "Discussion",
+        "state": {
+          "stopPropagation": true,
+          "pipeline": [
+            {
+              "instanceId": "both",
+              "serviceId": "tracks",
+              "serviceName": "Thread and its order",
+              "state": {
+                "run": "parallel",
+                "tracks": [
+                  {
+                    "name": "rank",
+                    "pipeline": [
+                      {
+                        "instanceId": "ranking",
+                        "serviceId": "http-client",
+                        "serviceName": "HN's order",
+                        "state": {
+                          "url": "",
+                          "method": "get",
+                          "query": {},
+                          "headers": {},
+                          "timeoutMs": 15000
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "tree",
+                    "pipeline": [
+                      {
+                        "instanceId": "tree",
+                        "serviceId": "http-client",
+                        "serviceName": "Every comment",
+                        "state": {
+                          "url": "",
+                          "method": "get",
+                          "query": {},
+                          "headers": {},
+                          "timeoutMs": 15000
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "reduce": [
+                  {
+                    "instanceId": "merge",
+                    "serviceId": "hookup.to/service/map",
+                    "serviceName": "Side by side",
+                    "state": {
+                      "mode": "replace",
+                      "template": {
+                        "order=": "params.results[0].body.kids",
+                        "body=": "params.results[1].body"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "instanceId": "comments",
+              "serviceId": "sql",
+              "serviceName": "Readable comments",
+              "state": {
+                "mode": "query",
+                "database": "hacker-news",
+                "statement": "WITH RECURSIVE\n-- HN's own order for the top-level comments, from its API's kids. The tree\n-- from Algolia lists them oldest first.\nrank(id, pos) AS (\n  SELECT CAST(value AS INTEGER), CAST(key AS INTEGER) FROM json_each($order)\n),\nentry(pos, kind, author, created, replies, t) AS (\n  SELECT -1, 'post',\n         json_extract($body, '$.author'),\n         json_extract($body, '$.created_at_i'),\n         json_array_length($body, '$.children'),\n         json_extract($body, '$.text')\n  UNION ALL\n  SELECT IFNULL(rank.pos, 100000 + CAST(c.key AS INTEGER)), 'comment',\n         json_extract(c.value, '$.author'),\n         json_extract(c.value, '$.created_at_i'),\n         json_array_length(c.value, '$.children'),\n         json_extract(c.value, '$.text')\n    FROM json_each($body, '$.children') AS c\n    LEFT JOIN rank ON rank.id = json_extract(c.value, '$.id')\n),\n-- HN writes comments as HTML. Paragraphs become blank lines, then one tag is\n-- cut out per step until none is left; entities are decoded last, so an\n-- escaped '<' in the text is never taken for a tag.\nclean(pos, kind, author, created, replies, t) AS (\n  SELECT pos, kind, author, created, replies,\n         replace(replace(replace(t, '<p>', char(10) || char(10)), '<pre><code>', char(10)), '</code></pre>', char(10))\n    FROM entry\n   WHERE t IS NOT NULL AND t <> ''\n  UNION ALL\n  SELECT pos, kind, author, created, replies,\n         substr(t, 1, instr(t, '<') - 1) || substr(t, instr(t, '<') + instr(substr(t, instr(t, '<')), '>'))\n    FROM clean\n   WHERE instr(t, '<') > 0 AND instr(substr(t, instr(t, '<')), '>') > 0\n),\ndone AS (\n  SELECT pos, kind, author, replies, t,\n         CAST(strftime('%s', 'now') AS INTEGER) - created AS age\n    FROM clean\n   WHERE NOT (instr(t, '<') > 0 AND instr(substr(t, instr(t, '<')), '>') > 0)\n)\nSELECT kind,\n       author\n         || ' · ' || CASE WHEN age < 3600  THEN max(1, age / 60) || ' min ago'\n                          WHEN age < 86400 THEN (age / 3600) || ' h ago'\n                          ELSE (age / 86400) || ' d ago' END\n         || CASE WHEN kind = 'comment' AND replies = 1 THEN ' · 1 reply'\n                 WHEN kind = 'comment' AND replies > 1 THEN ' · ' || replies || ' replies'\n                 ELSE '' END AS byline,\n       replace(replace(replace(replace(replace(replace(t,\n         '&#x27;', ''''), '&quot;', '\"'), '&#x2F;', '/'), '&gt;', '>'), '&lt;', '<'), '&amp;', '&') AS text\n  FROM done\n ORDER BY pos"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "menu.pick",
+        "payload": {
+          "feed": "top"
+        }
+      },
+      {
+        "type": "process",
+        "serviceUuid": "front.request",
+        "payload": {}
+      }
+    ],
+    "panels": [
+      {
+        "id": "stories",
+        "title": "Hacker News",
+        "width": "55%",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 6,
+              "align": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "repeat",
+                  "source": {
+                    "serviceUuid": "menu.view",
+                    "path": "feeds"
+                  },
+                  "direction": "row",
+                  "gap": 6,
+                  "template": {
+                    "type": "button",
+                    "label": "{{item.label}}",
+                    "selected": "{{item.current}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "menu.pick",
+                        "payload": {
+                          "feed": "{{item.id}}"
+                        }
+                      },
+                      {
+                        "type": "configure",
+                        "serviceUuid": "front.request",
+                        "configure": {
+                          "url": "{{item.url}}",
+                          "query": "{{item.query}}"
+                        }
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "front.request",
+                        "payload": {}
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "front.request",
+                    "path": "requesting"
+                  },
+                  "statusColors": {
+                    "true": "#f59e0b",
+                    "false": "#22c55e"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "placeholder": "Search stories…",
+              "submitLabel": "Search",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "menu.pick",
+                  "payload": {
+                    "feed": "search"
+                  }
+                },
+                {
+                  "type": "configure",
+                  "serviceUuid": "front.request",
+                  "configure": {
+                    "url": "https://hn.algolia.com/api/v1/search",
+                    "query": {
+                      "query": "$$input",
+                      "tags": "story",
+                      "hitsPerPage": "30"
+                    }
+                  }
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "front.request",
+                  "payload": {}
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "front.view",
+                "path": "stories"
+              },
+              "gap": 0,
+              "stripe": {
+                "even": "rgba(127,127,127,0.10)",
+                "odd": "rgba(127,127,127,0.03)",
+                "padding": 10,
+                "radius": 6
+              },
+              "template": {
+                "direction": "column",
+                "gap": 3,
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.title}}",
+                    "href": "{{item.link}}",
+                    "fontSize": 14
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.site}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  },
+                  {
+                    "direction": "row",
+                    "gap": 8,
+                    "align": "center",
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.byline}}",
+                        "tone": "muted",
+                        "fontSize": 11,
+                        "grow": true
+                      },
+                      {
+                        "type": "button",
+                        "label": "{{item.commentsLabel}}",
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "threadTitle",
+                            "value": "{{item.title}}"
+                          },
+                          {
+                            "type": "set-state",
+                            "key": "threadLink",
+                            "value": "{{item.discussion}}"
+                          },
+                          {
+                            "type": "configure",
+                            "serviceUuid": "thread.both",
+                            "configure": {
+                              "track": "rank",
+                              "configureService": {
+                                "instanceId": "ranking",
+                                "state": {
+                                  "url": "https://hacker-news.firebaseio.com/v0/item/{{item.id}}.json"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "configure",
+                            "serviceUuid": "thread.both",
+                            "configure": {
+                              "track": "tree",
+                              "configureService": {
+                                "instanceId": "tree",
+                                "state": {
+                                  "url": "https://hn.algolia.com/api/v1/items/{{item.id}}"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "thread.both",
+                            "payload": {}
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "discussion",
+        "title": "Discussion",
+        "width": "45%",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "value": {
+                "$state": "threadTitle"
+              },
+              "placeholder": "Pick a story's comments to read the discussion here.",
+              "fontSize": 15
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "align": "center",
+              "items": [
+                {
+                  "type": "text",
+                  "value": {
+                    "$state": "threadLink"
+                  },
+                  "href": "{{value}}",
+                  "placeholder": "",
+                  "tone": "muted",
+                  "fontSize": 11,
+                  "grow": true
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "thread.comments",
+                "path": "rows"
+              },
+              "gap": 0,
+              "stripe": {
+                "even": "rgba(127,127,127,0.10)",
+                "odd": "rgba(127,127,127,0.03)",
+                "padding": 10,
+                "radius": 6
+              },
+              "template": {
+                "direction": "column",
+                "gap": 4,
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.byline}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.text}}",
+                    "fontSize": 13
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "front.request",
+          "path": "error"
+        },
+        "message": "Could not load the stories — {{value}}"
+      },
+      {
+        "source": {
+          "serviceUuid": "thread.comments",
+          "path": "error"
+        },
+        "message": "Could not read the discussion — {{value}}"
+      }
+    ]
+  }
+}
