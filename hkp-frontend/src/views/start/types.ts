@@ -266,6 +266,28 @@ export interface CoordinatorsController {
   onManage?: () => void;
 }
 
+/** A board that can be launched from outside the app — the Home Screen, a
+ *  widget, a shortcut — by what it is: a saved board by its name, a demo by
+ *  its slug. Nothing else has an identity that outlives the session. */
+export type PinnableAction = Extract<BoardAction, { kind: "saved" | "demo" }>;
+
+/** Host-backed list of pinned boards: what the board details offer to pin,
+ *  and what the host turns into whatever its platform launches from. The host
+ *  holds the list, so a board pinned elsewhere (a widget's configuration) shows
+ *  as pinned here. Absent on hosts with no Home Screen. */
+export interface PinsController {
+  isPinned: (action: PinnableAction) => boolean;
+  /** `title` is what the platform shows under the icon. */
+  pin: (action: PinnableAction, title: string) => Promise<void>;
+  unpin: (action: PinnableAction) => Promise<void>;
+}
+
+export function isPinnable(
+  action: BoardAction | undefined,
+): action is PinnableAction {
+  return action?.kind === "saved" || action?.kind === "demo";
+}
+
 // ── News banner ───────────────────────────────────────────────────────────────
 
 export interface NewsItem {

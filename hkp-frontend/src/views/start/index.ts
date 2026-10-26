@@ -3,6 +3,7 @@ export type {
   StartPageProps,
   RuntimeEntry,
   CoordinatorsController,
+  PinsController,
   RemotesController,
 } from "./StartPage";
 export { default as MobileStartPage } from "./mobile/MobileStartPage";
@@ -15,12 +16,14 @@ export type {
   FolderNode,
   NewsItem,
   PersistedNode,
+  PinnableAction,
   RuntimeNode,
   RuntimeServiceInfo,
   SavedBoardEntry,
   StartPageTree,
   TreeNode,
 } from "./types";
+export { isPinnable } from "./types";
 export { localStorageStartPageStore } from "./store";
 export type { StartPageStore } from "./store";
 export {

@@ -278,6 +278,7 @@ Beyond the platform seam, each shell brings things a browser cannot:
 | Local model backends | — | yes | — | — |
 | Secret store, with a consent prompt | — | yes | — | — |
 | Share into the app | — | yes | yes | — |
+| Pin a board to the Home Screen | — | — | yes | yes |
 | LAN discovery (`_readymade._tcp`) | — | yes | yes | yes |
 
 The pattern in that table is worth reading. What lives *in the runtime* reaches
@@ -291,6 +292,19 @@ desktop. And what the platform defines itself has to be written per platform —
 sharing is a macOS app extension (`meander/backend/shareRouter.cpp`) and an iOS
 Share Extension (`meander-ios/ReadymadeIOS/ShareExtension/`), which is why it
 exists on two targets rather than four.
+
+Pinning shows the same split from the other side. The web app asks once —
+Pin in a board's details on the mobile start page, through
+`hkp://home-screen/` — and each shell turns the pinned list into what its
+platform launches from. Android lets an app ask for a launcher icon
+(`requestPinShortcut`), so a pin is an icon after one confirmation. iOS does
+not let an app place anything on the Home Screen, so there a pin becomes a
+quick action on the Readymade icon, a board for the Readymade widget and the
+Open Board shortcut action, and the person places it
+(`meander-ios/ReadymadeIOS/Features/HomeScreen/`, `Widget/`). Every way in
+arrives as one link, `readymade://board?saved=<name>` or `?demo=<slug>`; the
+shell keeps the board and the app takes it from `hkp://home-screen/launch`
+as it mounts, which is what makes a cold start the same as a warm one.
 
 The code is the authority on this table. It is a summary of what is built today,
 and the flags above move faster than prose.

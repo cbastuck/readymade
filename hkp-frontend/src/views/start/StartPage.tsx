@@ -34,6 +34,7 @@ import {
   CoordinatorsController,
   FolderNode,
   NewsItem,
+  PinsController,
   RemotesController,
   PresetNode,
   RuntimeNode,
@@ -53,7 +54,7 @@ import FolderPicker from "./FolderPicker";
 import EditorDialog from "hkp-frontend/src/ui-components/EditorDialog";
 
 export type { RuntimeEntry };
-export type { CoordinatorsController, RemotesController };
+export type { CoordinatorsController, PinsController, RemotesController };
 
 export interface StartPageProps {
   /** Persistence for the user's folder tree. */
@@ -140,6 +141,10 @@ export interface StartPageProps {
    *  Their hosts also join the Remotes source, a coordinator host being a
    *  runtime host too. */
   manageCoordinators?: CoordinatorsController;
+  /** Pinning saved boards and demos to the Home Screen. When set, the mobile
+   *  board details offer Pin / Unpin; the desktop has no Home Screen and
+   *  ignores it. */
+  pins?: PinsController;
   /** Whether the host can act on an action kind. Hosts lacking a view for one
    *  (the iOS/Android app has no cloud-coordinator or remote-runtime view)
    *  return false, and the entry is browsable without an Open action.

@@ -10,6 +10,7 @@ import {
   MobileStartPage,
   localStorageStartPageStore,
   BoardAction,
+  PinsController,
   RemotesController,
   createEmptyBoard,
   initialsOf,
@@ -40,6 +41,10 @@ import {
 } from "./share/shareInbox";
 import ShareBoardPicker from "./share/ShareBoardPicker";
 import BoardShareConsumer from "./share/BoardShareConsumer";
+import { toast } from "hkp-frontend/src/ui-components/primitives/sonner";
+import { openShortcutsApp, takeLaunch } from "./homeScreen/homeScreen";
+import { usePins } from "./homeScreen/usePins";
+import HomeScreenSheet from "./homeScreen/HomeScreenSheet";
 
 // Boards on iOS live in the webview's localStorage (the same store the mobile
 // playground's save sheet writes to), and so does the start-page folder tree.
@@ -59,10 +64,15 @@ function StartScreen({
   onOpenSession,
   onShowAccount,
   remotes,
+  pins,
+  onBoardDeleted,
 }: {
   onOpenSession: (session: BoardSession) => void;
   onShowAccount: () => void;
   remotes: RemotesController;
+  pins: PinsController;
+  /** A deleted board cannot be launched any more: the host unpins it. */
+  onBoardDeleted: (name: string) => void;
 }) {
   const { user } = useAppContext();
   const cloudLogin = useCloudLogin();
@@ -107,12 +117,16 @@ function StartScreen({
     }
   }, []);
 
-  const deleteBoard = useCallback((name: string) => {
-    localStorage.removeItem(`${localStoragePrefix}${name}`);
-    // Deleting happens on the start page (no session change), so refresh the
-    // share extension's board mirror here.
-    mirrorBoardsToNative(getLocalBoards().map((board) => board.name));
-  }, []);
+  const deleteBoard = useCallback(
+    (name: string) => {
+      localStorage.removeItem(`${localStoragePrefix}${name}`);
+      // Deleting happens on the start page (no session change), so refresh the
+      // share extension's board mirror here.
+      mirrorBoardsToNative(getLocalBoards().map((board) => board.name));
+      onBoardDeleted(name);
+    },
+    [onBoardDeleted],
+  );
 
   const handleCreateNamedBoard = (name: string) => {
     // Persist right away so the folder reference resolves on return.
@@ -199,6 +213,7 @@ function StartScreen({
       manageRemotes={remotes}
       withCloudBoards
       manageCoordinators={coordinators}
+      pins={pins}
       canOpen={(action) => action.kind !== "runtime"}
       title="Readymade"
       badge={buildVersion.version}
@@ -217,6 +232,81 @@ export default function MobileApp() {
   const [session, setSession] = useState<BoardSession | null>(null);
   const [showAccount, setShowAccount] = useState(false);
   const remotes = useBackendRemotes();
+  const { pins, unpinIfPinned, pinnedTitle, dismissPinned } = usePins();
+
+  // A board launched from outside the app — the Home Screen, a widget, a
+  // shortcut, a quick action. Opened the way a share opens its board: any
+  // other board is closed first and the effect below opens this one once the
+  // session is clear, so nothing of the previous board carries over.
+  const [launchSession, setLaunchSession] = useState<BoardSession | null>(null);
+
+  const openLaunch = useCallback(async () => {
+    const target = await takeLaunch();
+    if (!target) {
+      return;
+    }
+    setShowAccount(false);
+    let next: BoardSession | null = null;
+    if (target.kind === "saved") {
+      if (getLocalBoards().some((board) => board.name === target.id)) {
+        next = { name: target.id };
+      } else {
+        toast.error(`“${target.id}” is no longer on this device`, {
+          description: "It was deleted or renamed. Unpin it from its board's details.",
+        });
+      }
+    } else {
+      const board = findDemoBoard(target.id);
+      if (board) {
+        next = { name: board.boardName ?? target.id, descriptor: board };
+      } else {
+        toast.error("This demo is not part of this version of Readymade");
+      }
+    }
+    if (!next) {
+      setSession(null);
+      return;
+    }
+    const opening = next;
+    // The saved board already open stays as it is: launching it again is
+    // coming back to it, not starting over.
+    setSession((prev) =>
+      opening.descriptor === undefined &&
+      prev?.descriptor === undefined &&
+      prev?.name === opening.name
+        ? prev
+        : null,
+    );
+    setLaunchSession(opening);
+  }, []);
+
+  useEffect(() => {
+    if (launchSession && session === null) {
+      setSession(launchSession);
+      setLaunchSession(null);
+    } else if (launchSession && session?.name === launchSession.name) {
+      setLaunchSession(null);
+    }
+  }, [launchSession, session]);
+
+  useEffect(() => {
+    // The shell calls this when it is asked to open a board while the app
+    // runs; on a cold start the board is already waiting, so take it now.
+    window.__readymadeOnLaunch = () => void openLaunch();
+    void openLaunch();
+    return () => {
+      delete window.__readymadeOnLaunch;
+    };
+  }, [openLaunch]);
+
+  const handleBoardDeleted = useCallback(
+    (name: string) => {
+      void unpinIfPinned({ kind: "saved", name }).catch(() => {
+        // The pin outlives the board; launching it says the board is gone.
+      });
+    },
+    [unpinIfPinned],
+  );
 
   // Share feature: a share captured by the iOS share extension is delivered by
   // the native bridge, previewed in a picker, then injected into the board the
@@ -334,6 +424,8 @@ export default function MobileApp() {
             onOpenSession={setSession}
             onShowAccount={() => setShowAccount(true)}
             remotes={remotes}
+            pins={pins}
+            onBoardDeleted={handleBoardDeleted}
           />
         ) : (
           <MobilePlaygroundWithRouter
@@ -358,6 +450,13 @@ export default function MobileApp() {
             edits nobody agreed to lose. */}
         {showAccount && (
           <MobileAccountPage onBack={() => setShowAccount(false)} />
+        )}
+        {pinnedTitle && (
+          <HomeScreenSheet
+            title={pinnedTitle}
+            onOpenShortcuts={() => void openShortcutsApp()}
+            onClose={dismissPinned}
+          />
         )}
         {pendingShare && (
           <ShareBoardPicker
