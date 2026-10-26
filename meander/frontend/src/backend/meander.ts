@@ -232,6 +232,35 @@ export const meanderBackend: BackendAdapter = {
     return typeof body.token === "string" ? body.token : null;
   },
 
+  async listSharedBoards(): Promise<Array<SavedBoardEntry> | null> {
+    const res = await fetch("hkp://shared-boards");
+    if (!res.ok) {
+      // No iCloud Drive folder on this Mac, or a host without the route.
+      return null;
+    }
+    return res.json();
+  },
+
+  async loadSharedBoard(boardName: string): Promise<BoardDescriptor> {
+    const res = await fetch(`hkp://shared-boards/${encodePathSegment(boardName)}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load board from iCloud Drive: ${res.statusText}`);
+    }
+    const board = await res.json();
+    return board.boardName ? board : { ...board, boardName };
+  },
+
+  async saveSharedBoard(name: string, payload: BoardDescriptor): Promise<void> {
+    const res = await fetch(`hkp://shared-boards/${encodePathSegment(name)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to save board to iCloud Drive: ${res.statusText}`);
+    }
+  },
+
   async loadStartPageTree(): Promise<StartPageTree | null> {
     const res = await fetch("hkp://startpage");
     if (!res.ok) {

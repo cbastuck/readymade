@@ -57,6 +57,7 @@ import { serializeBoardSource } from "../../core/linkBlocks";
 import { restoreCoordinators, withCoordinatorEngines } from "../../common";
 import { AppCtx } from "../../AppContext";
 import { PlaygroundProps } from "./Playground.types";
+import { isHostLibrary, loadLibraryBoard } from "../../core/boardLibrary";
 
 /** The two keys that make a board a unit, a composition, or both. */
 type UnitDocument = Pick<UnitBoard, "unit" | "units">;
@@ -372,7 +373,12 @@ export function usePlaygroundController(
               boardName: brd,
             };
           }
-          const localBoard = restoreBoardFromLocalStorage(brd);
+          // The host's library where it keeps one — the mobile apps open a
+          // saved board by name, and it is in their library, not in this
+          // page's storage.
+          const localBoard = isHostLibrary()
+            ? await loadLibraryBoard(brd).catch(() => null)
+            : restoreBoardFromLocalStorage(brd);
           if (localBoard) {
             return localBoard;
           }

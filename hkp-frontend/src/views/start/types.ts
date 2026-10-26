@@ -72,6 +72,11 @@ export type BoardAction =
       sharedBy?: string;
     }
   | { kind: "cloud-stored"; id: string; name: string }
+  /** A board the Readymade iOS app keeps in iCloud Drive, seen from the Mac
+   *  that iCloud Drive brings the folder to. Opened, and saved back there; the
+   *  by-name actions of a saved board (history, source, art, upload, delete)
+   *  are the local library's and do not apply. */
+  | { kind: "icloud"; name: string }
   /** Watch a runtime running on a remote server. Carries the server by the name
    *  the Remotes source shows — what a host looks it up by in its own store —
    *  and the runtime's id on it. Without an id the whole server is watched,

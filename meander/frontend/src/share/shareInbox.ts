@@ -94,17 +94,3 @@ export function releaseSharedFile(id: string): void {
     // Sweep on the native side cleans up if this never lands.
   });
 }
-
-/**
- * Mirror the current board names to the native shell (hkpShareBoards handler),
- * which persists them in the App Group so the share extension can offer a
- * native board picker. No-op outside the iOS shell.
- */
-export function mirrorBoardsToNative(names: string[]): void {
-  try {
-    const webkit = (window as unknown as Record<string, any>).webkit;
-    webkit?.messageHandlers?.hkpShareBoards?.postMessage({ boards: names });
-  } catch {
-    // Not running in the iOS shell — nothing to mirror.
-  }
-}

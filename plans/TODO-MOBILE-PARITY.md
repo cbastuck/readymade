@@ -44,7 +44,7 @@ calling convention.
 | # | Milestone | State |
 |---|---|---|
 | M1 | Pin a board to the Home Screen | built 2026-10-26; the pass on devices open |
-| M2 | Boards in native storage, history and resume | open |
+| M2 | Boards in native storage, history and resume | built 2026-10-26; the iCloud pass on devices open |
 | M3 | Building: presets, blocks, Run and Run with… | open |
 | M4 | Observing: flow inspector, Capture mode, deploy checks, overview | open |
 | M5 | Secrets on the device | open |
@@ -166,75 +166,101 @@ App Intents metadata holds `OpenBoardIntent`, `BoardEntity` and the Siri phrase
 
 ## M2: Boards in native storage, history and resume
 
-Today `MobileApp` keeps boards and the finder's folder tree in the webview's
-localStorage, which iOS may evict. **Both shells already serve `hkp://boards/`**:
-iOS writes `Documents/Boards/<name>.json`, Android has `BoardStore.kt`. Mobile
-just does not use it. `targets.md` already claims "boards on disk" for both,
-which is not yet true.
+Before this, `MobileApp` kept boards and the finder's folder tree in the
+webview's localStorage, which iOS may evict, while units saved by name already
+went to `hkp://boards/`. A composition was split across two stores.
 
-### Decided
+### Decided (2026-10-26)
 
-- **Boards live in the app's own native storage**, reached through `hkp://boards/`
-  exactly as on the desktop. localStorage stops being a board store.
-- **On iOS, where the person can see them.** The board folder is visible in the
-  Files app (`UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace`). With
-  iCloud on, it lives in the app's iCloud Drive container
-  (`NSUbiquitousContainers`, public document scope), so the same folder shows up
-  in Finder on a Mac.
+- **Boards live in the app's own library** behind `hkp://boards/`, as on the
+  desktop. localStorage stops being a board store on mobile.
+- **One file per board, named the desktop's way**: `<encoded name>.hkpp`, with
+  the encoding of `meander/backend/boardName.h`. Swift and Kotlin implement the
+  same rule; the Swift and C++ encoders were compared on awkward names
+  (separators, dots, `%`, non-ASCII, control characters) and agree.
+- **iCloud container `iCloud.com.readymadeit.readymade`**, shown as "Readymade".
+  Neutral, so the Mac app can join it formally later. Permanent once created.
+- **iCloud by default, local fallback.** With iCloud Drive off, boards stay in
+  the app's Documents, visible in Files under On My iPhone. Boards kept locally
+  move into iCloud once it is on.
+- **Only the boards sync.** History and the finder's folder tree stay on each
+  device: history is rewritten at every pause in editing, which is constant
+  traffic for iCloud and a conflict when two devices edit at once.
+- **On the Mac, an iCloud source in the finder.** A board opened from it saves
+  back there; `~/.hkp` stays where new boards go, so nothing existing moves.
 
-### Shared with the Mac
+### Built (2026-10-26)
 
-The macOS app is not sandboxed (`meander/hkp-saucer.entitlements`), so it can read
-and write an iCloud Drive folder as an ordinary path:
-`~/Library/Mobile Documents/iCloud~com~readymadeit~app-ios/Documents/Boards`
-(the folder name depends on the container id chosen). The desktop then keeps
-**two board roots**: `~/.hkp` as today, and the shared folder when it exists. That
-needs changes in `meander/backend/settings.h`: the save path is currently
-required to sit under `~/.hkp` (`getBoardsSavePath`), and page trust (`pageTrust.h`)
-must allow the second root. The same board then appears on the phone and on the
-Mac, and Finder can back it up and move it.
+- [x] **iOS board library** (`Features/Boards/BoardLibrary.swift`): one queue
+  for all board files, which first resolves the container, renames the old
+  `<name>.json` boards, and adopts local boards into iCloud, so no request
+  sees it half-prepared. Coordinated reads and writes; a board iCloud has not
+  downloaded yet (`.<file>.icloud`) is listed and asked for. `hkp://boards/` is
+  answered from that queue, and only for tasks WebKit has not stopped.
+- [x] **iOS** `hkp://history/` and `hkp://startpage` in Application Support,
+  with the desktop's history rules (50 entries, consecutive "config" entries
+  collapse, the registry stripped).
+- [x] iCloud entitlements and `NSUbiquitousContainers` (public scope),
+  `UIFileSharingEnabled` and `LSSupportsOpeningDocumentsInPlace`.
+- [x] The board-name mirror for the share extension and the Open Board intent
+  is written by the library on every change. The web app no longer posts it
+  (`hkpShareBoards` and `mirrorBoardsToNative` are gone).
+- [x] **Android**: the same naming (`BoardFileName` in `bridge/BoardStore.kt`),
+  old `.json` boards renamed, `hkp://history/` and `hkp://startpage`. Fixed on
+  the way: board and preset names were percent-decoded twice, so a name with
+  `%` failed and `+` became a space.
+- [x] **Web**: `core/boardLibrary.ts` (hkp-frontend) is the one place that
+  decides between the host's library and localStorage, through the new
+  `listSavedBoards` / `deleteSavedBoard` platform capabilities. The Hub tab, the
+  save sheet and the playground's load-by-name use it. Test:
+  `core/tests/board-library.test.tsx`.
+- [x] **`MobileApp`** lists, describes, creates and deletes boards through the
+  backend; the finder's tree comes from `hkp://startpage`; snapshots go to the
+  history; the finder shows a board's history and offers Continue.
+- [x] **Migration** (`meander/frontend/src/library/migrateLocalBoards.ts`): once
+  per launch, before anything lists or opens a board, every localStorage board
+  is copied into the library (a taken name gets " (n)") and removed from
+  localStorage only once its copy is in; the folder tree comes along when the
+  library has none.
+- [x] History and resume are shared by both hosts
+  (`meander/frontend/src/library/boardHistory.ts`); the desktop's `App.tsx` and
+  `MeanderPlayground.tsx` use it too.
+- [x] **Desktop**: `meander/backend/sharedBoards.h` (tests:
+  `tests/sharedBoards.test.cpp`) and `hkp://shared-boards/`; an **iCloud**
+  source in the finder (`library/useICloudSource.ts`), a new board action
+  `{ kind: "icloud" }`, and the session's library carried to Save and to
+  Continue.
+- [x] Docs: `targets.md`, "Where boards live".
 
-### Work
+Verified: both frontends typecheck and the hkp-frontend suite passes; the iOS
+app builds for a device; the Android Kotlin compiles; the desktop app builds
+with the new routes, and its backend tests pass (76, six new).
 
-- [ ] **Spike**: create the iCloud container (it cannot be changed once
-  created: set public scope **before** the first run), and check on a device
-  that a file written by iOS appears in Finder on a Mac and the other way round.
-  Also check what iOS does when iCloud is off or full (local `Documents/` fallback).
-- [ ] **One file format.** The desktop writes `<name>.hkpp`, iOS writes
-  `<name>.json`. Settle on `.hkpp` and declare it as an exported UTI on iOS, so a
-  board file opened from Files launches Readymade (this also helps M9).
-- [ ] iOS `BoardStore` writes into the ubiquity container, falling back to local
-  Documents. Writes go through `NSFileCoordinator`.
-- [ ] `MobileApp` lists, opens, saves and deletes boards through `getBackend()`,
-  the same calls `meander/frontend/src/StartPage.tsx` makes, instead of
-  `getLocalBoards` and `storeBoardToLocalStorage`. The mobile save sheet
-  (`MobilePlaygroundInner.onSave`) goes the same way.
-- [ ] **Migration**: on first launch after the change, every localStorage board
-  is copied into the native store (a name already there is kept and the copy
-  gets a suffix). Nothing is deleted from localStorage until all copies have
-  succeeded.
-- [ ] `hkp://startpage` on iOS and Android (the finder's folder tree, kept beside
-  the boards as the desktop does).
-- [ ] `hkp://history/` on iOS and Android, matching the desktop contract
-  (`fetchHistoryBoards`, `pushBoardSnapshot`, `loadBoardHistory` in
-  `meander/frontend/src/backend/meander.ts`). `MobileApp` passes
-  `onBoardSnapshot` to the mobile playground, as `MeanderPlayground.tsx` does.
-- [ ] **History in the finder**: `listBoardHistory` passed to `MobileStartPage`.
-  `MobileBoardDetails` already has a History section, which has had no data
-  until now.
-- [ ] **Resume**: "Continue" on the start page (`recentBoardName`,
-  `onContinueRecent`), restoring the latest snapshot as `App.tsx` does on desktop.
-- [ ] The share extension's board mirror (`mirrorBoardsToNative`) is no longer
-  needed once the boards are files the extension can read. Remove it.
-- [ ] **Desktop**: a second board root for the shared folder (above).
-- [ ] Docs: correct `targets.md`, and add a section on where boards live per host.
+### Still open
+
+- [ ] **The pass on devices.** On first launch the container is created: check
+  that Files shows "Readymade" in iCloud Drive, that boards saved on the phone
+  appear in Finder on a Mac and in the desktop's iCloud source, and that a board
+  saved back from the Mac reaches the phone. With iCloud Drive off: boards in On
+  My iPhone; turning it on moves them. The migration with real localStorage
+  boards, including a name clash.
+- [ ] **Signing**: the iCloud capability and the container have to be added to
+  the app's identifier (automatic signing should do it from the entitlements;
+  otherwise once in Signing & Capabilities). Raise the build number for a
+  device that already had the app, or iOS keeps the old container settings.
+- [ ] The desktop writes into iCloud Drive without file coordination (it is
+  C++); a board edited on the phone and the Mac at the same moment can end in an
+  iCloud conflict copy. Deleting from the Mac's iCloud source is not offered.
+- [ ] Board art on mobile (`<encoded>.art` beside the board on the desktop) is
+  M10.
+- [ ] A board renamed by the migration (" (2)") is not renamed in the folder
+  tree or in pins that named it.
 
 ### Open
 
 - Android has no iCloud. Its boards stay in app storage; Google Drive or
   Storage Access Framework export is a separate question and is not planned.
 - Presets (`Documents/Presets` on iOS) probably belong in the shared folder too.
-  Decide alongside the file format.
 
 ---
 

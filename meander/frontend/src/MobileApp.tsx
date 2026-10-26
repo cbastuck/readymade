@@ -8,8 +8,9 @@ import MobilePlaygroundWithRouter from "hkp-frontend/src/views/playground/mobile
 import type { OpenCloudBoardSignal } from "hkp-frontend/src/views/cloud/mobile/MobileCloudBoards";
 import {
   MobileStartPage,
-  localStorageStartPageStore,
   BoardAction,
+  BoardHistoryItem,
+  BoardState,
   PinsController,
   RemotesController,
   createEmptyBoard,
@@ -18,43 +19,70 @@ import {
   useCloudBoardSources,
   useLocalStorageCoordinators,
 } from "hkp-frontend/src/views/start";
+import type { StartPageStore } from "hkp-frontend/src/views/start";
 import { commitUrl } from "hkp-frontend/src/projectMeta";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
 import { MobileAccountPage } from "hkp-frontend/src/views/profile";
 import { useUserProfile } from "hkp-frontend/src/core/userProfile";
-import {
-  getLocalBoards,
-  localStoragePrefix,
-  storeBoardToLocalStorage,
-} from "hkp-frontend/src/views/playground/common";
 import { findDemoBoard } from "hkp-frontend/src/demoRegistry";
 import { useAppContext } from "hkp-frontend/src/AppContext";
 import { BoardDescriptor } from "hkp-frontend/src/types";
+import { BoardSnapshot } from "hkp-frontend/src/core/boardSnapshots";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
 import SecretConsentDialog from "./SecretConsentDialog";
 import RuntimeUserSync from "./RuntimeUserSync";
 import { useBackendRemotes } from "./useBackendRemotes";
-import {
-  SharePayload,
-  drainNextShare,
-  mirrorBoardsToNative,
-} from "./share/shareInbox";
+import { SharePayload, drainNextShare } from "./share/shareInbox";
 import ShareBoardPicker from "./share/ShareBoardPicker";
 import BoardShareConsumer from "./share/BoardShareConsumer";
 import { toast } from "hkp-frontend/src/ui-components/primitives/sonner";
 import { openShortcutsApp, takeLaunch } from "./homeScreen/homeScreen";
 import { usePins } from "./homeScreen/usePins";
 import HomeScreenSheet from "./homeScreen/HomeScreenSheet";
+import { getBackend } from "./backend";
+import { migrateLocalBoards } from "./library/migrateLocalBoards";
+import {
+  lastBoardName,
+  recordSnapshot,
+  resumeBoard,
+  resumedFrom,
+} from "./library/boardHistory";
 
-// Boards on iOS live in the webview's localStorage (the same store the mobile
-// playground's save sheet writes to), and so does the start-page folder tree.
-const store = localStorageStartPageStore();
 const buildVersion = splitBuildVersion(__READYMADE_BUILD_VERSION__);
+
+// Boards an older version kept in the webview's storage move into the library
+// once, before anything lists or opens one. Started at most once per launch,
+// however often the app renders.
+let libraryMigration: Promise<void> | null = null;
+function whenLibraryReady(): Promise<void> {
+  libraryMigration ??= migrateLocalBoards().catch((err: unknown) => {
+    console.error("Could not move the boards into the library", err);
+  });
+  return libraryMigration;
+}
+
+async function savedBoardNames(): Promise<string[]> {
+  await whenLibraryReady();
+  return (await getBackend()).fetchSavedBoards();
+}
+
+// Boards live in the app's own library (hkp://boards/: iCloud Drive or the
+// app's Documents on iOS, app storage on Android), and the start page's folder
+// tree beside it — never in the webview's storage, which the OS may clear.
+const store: StartPageStore = {
+  load: async () => {
+    await whenLibraryReady();
+    return (await getBackend()).loadStartPageTree();
+  },
+  save: async (tree) => (await getBackend()).saveStartPageTree(tree),
+};
 
 /** What the playground should boot into; null shows the start page. */
 type BoardSession = {
   name?: string;
   descriptor?: BoardDescriptor;
+  /** The unit documents a session resumed from history was stored with. */
+  units?: Record<string, BoardDescriptor>;
   /** Set when the session was opened to run a cloud board: the playground
    *  boots into its Cloud tab with that board hydrated. */
   cloudBoard?: OpenCloudBoardSignal;
@@ -66,6 +94,7 @@ function StartScreen({
   remotes,
   pins,
   onBoardDeleted,
+  recentBoardName,
 }: {
   onOpenSession: (session: BoardSession) => void;
   onShowAccount: () => void;
@@ -73,6 +102,8 @@ function StartScreen({
   pins: PinsController;
   /** A deleted board cannot be launched any more: the host unpins it. */
   onBoardDeleted: (name: string) => void;
+  /** The board last worked on, offered to continue. */
+  recentBoardName: string | null;
 }) {
   const { user } = useAppContext();
   const cloudLogin = useCloudLogin();
@@ -95,42 +126,72 @@ function StartScreen({
     openCloudStored,
   } = useCloudBoardSources();
 
-  const listSavedBoards = useCallback(
-    async () =>
-      // createdAt is written on every save, so it is the board's last-write
-      // time — what the details panel and the "recent" sort want.
-      getLocalBoards().map((board) => ({
-        name: board.name,
-        modified: board.createdAt,
-      })),
-    [],
-  );
+  const listSavedBoards = useCallback(async () => {
+    await whenLibraryReady();
+    return (await getBackend()).fetchSavedBoardEntries();
+  }, []);
 
   const describeBoard = useCallback(async (name: string) => {
     try {
-      const raw = localStorage.getItem(`${localStoragePrefix}${name}`);
-      return raw
-        ? ((JSON.parse(raw) as { description?: string }).description ?? undefined)
-        : undefined;
+      return (await (await getBackend()).loadBoard(name)).description;
     } catch {
       return undefined;
     }
   }, []);
 
   const deleteBoard = useCallback(
-    (name: string) => {
-      localStorage.removeItem(`${localStoragePrefix}${name}`);
-      // Deleting happens on the start page (no session change), so refresh the
-      // share extension's board mirror here.
-      mirrorBoardsToNative(getLocalBoards().map((board) => board.name));
+    async (name: string) => {
+      const backend = await getBackend();
+      await backend.deleteBoard(name);
+      await backend.clearBoardHistory(name);
       onBoardDeleted(name);
     },
     [onBoardDeleted],
   );
 
-  const handleCreateNamedBoard = (name: string) => {
-    // Persist right away so the folder reference resolves on return.
-    storeBoardToLocalStorage(name, JSON.stringify(createEmptyBoard(name)));
+  const listBoardHistory = useCallback(
+    async (name: string): Promise<BoardHistoryItem[]> => {
+      const entries = await (await getBackend()).loadBoardHistory(name);
+      return entries.map((entry) => ({
+        timestamp: entry.timestamp,
+        label: entry.label,
+        open: () => {
+          const { board, units } = resumedFrom(entry);
+          onOpenSession({ name, descriptor: board, units });
+        },
+      }));
+    },
+    [onOpenSession],
+  );
+
+  const continueRecent = async () => {
+    if (!recentBoardName) {
+      return;
+    }
+    const resumed = await resumeBoard(recentBoardName);
+    if (resumed) {
+      onOpenSession({
+        name: recentBoardName,
+        descriptor: resumed.board,
+        units: resumed.units,
+      });
+    } else {
+      toast.error(`“${recentBoardName}” is no longer on this device`);
+    }
+  };
+
+  const boardStates = useMemo<Record<string, BoardState>>(
+    () => (recentBoardName ? { [recentBoardName]: "recent" } : {}),
+    [recentBoardName],
+  );
+
+  const handleCreateNamedBoard = async (name: string) => {
+    try {
+      // Persist right away so the folder reference resolves on return.
+      await (await getBackend()).saveBoard(name, createEmptyBoard(name));
+    } catch {
+      // Opening still works; the board just isn't saved yet.
+    }
     onOpenSession({ name });
   };
 
@@ -201,8 +262,12 @@ function StartScreen({
       listSavedBoards={listSavedBoards}
       onOpen={handleOpen}
       onCreateBoard={() => onOpenSession({})}
-      onCreateNamedBoard={handleCreateNamedBoard}
+      onCreateNamedBoard={(name) => void handleCreateNamedBoard(name)}
+      recentBoardName={recentBoardName}
+      onContinueRecent={() => void continueRecent()}
+      boardStates={boardStates}
       describeBoard={describeBoard}
+      listBoardHistory={listBoardHistory}
       onDeleteBoard={deleteBoard}
       uploadBoardToCloud={uploadBoardToCloud}
       extraSources={[sharedSource]}
@@ -233,6 +298,34 @@ export default function MobileApp() {
   const [showAccount, setShowAccount] = useState(false);
   const remotes = useBackendRemotes();
   const { pins, unpinIfPinned, pinnedTitle, dismissPinned } = usePins();
+  // Read again each time the start page shows: working on a board makes it
+  // the one to continue.
+  const [recentBoardName, setRecentBoardName] = useState<string | null>(null);
+  useEffect(() => {
+    if (session === null) {
+      setRecentBoardName(lastBoardName());
+    }
+  }, [session]);
+
+  const sessionNameRef = useRef<string | undefined>(undefined);
+  sessionNameRef.current = session?.name;
+  const onBoardSnapshot = useCallback(
+    (snapshot: BoardSnapshot) => recordSnapshot(snapshot, sessionNameRef.current),
+    [],
+  );
+  const onSaveBoard = useCallback(
+    (name: string, payload: BoardDescriptor) => {
+      void getBackend()
+        .then((backend) => backend.saveBoard(name, payload))
+        .then(() => toast.success(`Saved “${name}”`))
+        .catch((err: unknown) =>
+          toast.error(`Could not save “${name}”`, {
+            description: err instanceof Error ? err.message : undefined,
+          }),
+        );
+    },
+    [],
+  );
 
   // A board launched from outside the app — the Home Screen, a widget, a
   // shortcut, a quick action. Opened the way a share opens its board: any
@@ -248,7 +341,8 @@ export default function MobileApp() {
     setShowAccount(false);
     let next: BoardSession | null = null;
     if (target.kind === "saved") {
-      if (getLocalBoards().some((board) => board.name === target.id)) {
+      const names = await savedBoardNames().catch(() => [] as string[]);
+      if (names.includes(target.id)) {
         next = { name: target.id };
       } else {
         toast.error(`“${target.id}” is no longer on this device`, {
@@ -318,7 +412,10 @@ export default function MobileApp() {
   // shares queue on window.__READYMADE_SHARES__ instead of clobbering the UI.
   const shareActiveRef = useRef(false);
 
-  const promoteNextShare = useCallback(() => {
+  // The library's board names, read when a share needs a board.
+  const [shareBoardNames, setShareBoardNames] = useState<string[]>([]);
+
+  const promoteNextShare = useCallback(async () => {
     if (shareActiveRef.current) {
       return;
     }
@@ -332,7 +429,8 @@ export default function MobileApp() {
       return;
     }
     shareActiveRef.current = true;
-    const boards = getLocalBoards().map((board) => board.name);
+    const boards = await savedBoardNames().catch(() => [] as string[]);
+    setShareBoardNames(boards);
     if (next.boardName && boards.includes(next.boardName)) {
       // Pre-tagged in the share extension's picker: skip the in-app picker and
       // run the board directly. Close any other open board first; the effect
@@ -353,29 +451,18 @@ export default function MobileApp() {
     }
   }, [shareToInject, session]);
 
-  // Keep the native share extension's board picker in sync: mirror the board
-  // names whenever the user lands on the start page (which is also where
-  // boards get created, renamed, and deleted).
-  useEffect(() => {
-    mirrorBoardsToNative(getLocalBoards().map((board) => board.name));
-  }, [session]);
-
   useEffect(() => {
     // Native pushes each envelope onto the queue and then calls this; also
     // drain anything queued before mount (cold launch from the share sheet).
-    window.__readymadeOnShare = promoteNextShare;
-    promoteNextShare();
+    const onShare = () => void promoteNextShare();
+    window.__readymadeOnShare = onShare;
+    onShare();
     return () => {
-      if (window.__readymadeOnShare === promoteNextShare) {
+      if (window.__readymadeOnShare === onShare) {
         delete window.__readymadeOnShare;
       }
     };
   }, [promoteNextShare]);
-
-  const shareBoards = useCallback(
-    () => getLocalBoards().map((board) => board.name),
-    [],
-  );
 
   const handlePickShareBoard = useCallback(
     (name: string) => {
@@ -397,13 +484,13 @@ export default function MobileApp() {
   const handleCancelShare = useCallback(() => {
     shareActiveRef.current = false;
     setPendingShare(null);
-    promoteNextShare();
+    void promoteNextShare();
   }, [promoteNextShare]);
 
   const handleShareConsumed = useCallback(() => {
     setShareToInject(null);
     shareActiveRef.current = false;
-    promoteNextShare();
+    void promoteNextShare();
   }, [promoteNextShare]);
 
   const availableRuntimeEngines = useMemo(
@@ -426,12 +513,16 @@ export default function MobileApp() {
             remotes={remotes}
             pins={pins}
             onBoardDeleted={handleBoardDeleted}
+            recentBoardName={recentBoardName}
           />
         ) : (
           <MobilePlaygroundWithRouter
             boardName={session.name}
             boardDescriptor={session.descriptor}
+            unitDocuments={session.units}
             openCloudBoard={session.cloudBoard}
+            onBoardSnapshot={onBoardSnapshot}
+            onSaveBoard={onSaveBoard}
             onChangeBoardname={(name: string) =>
               setSession((prev) => ({ ...prev, name }))
             }
@@ -461,7 +552,7 @@ export default function MobileApp() {
         {pendingShare && (
           <ShareBoardPicker
             share={pendingShare}
-            boards={shareBoards()}
+            boards={shareBoardNames}
             onPick={handlePickShareBoard}
             onCancel={handleCancelShare}
           />

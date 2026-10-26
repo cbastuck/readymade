@@ -293,6 +293,34 @@ sharing is a macOS app extension (`meander/backend/shareRouter.cpp`) and an iOS
 Share Extension (`meander-ios/ReadymadeIOS/ShareExtension/`), which is why it
 exists on two targets rather than four.
 
+### Where boards live
+
+Every host keeps its saved boards behind `hkp://boards/`, as one file per
+board named by the desktop's rule (`meander/backend/boardName.h`):
+`<encoded name>.hkpp`, where the encoding keeps letters, digits, `-`, `_` and
+spaces and writes every other UTF-8 byte as `%XX`. The same board is therefore
+the same file on every host, which is what lets two of them share a folder.
+
+| Host | Boards | History, folder tree |
+|---|---|---|
+| Web | the page's local storage | the page's local storage |
+| Desktop | `~/.hkp/meanders/` | beside the boards |
+| iOS | iCloud Drive (`iCloud.com.readymadeit.readymade`, shown as "Readymade" in Files and Finder) when it is on, the app's Documents otherwise | the app's Application Support, on this device only |
+| Android | the app's files | the app's files |
+
+On iOS the board library (`meander-ios/ReadymadeIOS/Features/Boards/BoardLibrary.swift`)
+does all its file work on one queue, answers `hkp://boards/` from it, and
+coordinates every read and write, which is also what downloads a board iCloud
+has not brought to the phone yet. History stays on the device on purpose: it is
+rewritten at every pause in editing, which would be constant traffic for iCloud
+and a conflict whenever two devices edit at once.
+
+A Mac signed in to the same iCloud account gets the iOS app's folder through
+iCloud Drive, and the desktop app — not sandboxed — reads it as a path
+(`meander/backend/sharedBoards.h`, `hkp://shared-boards/`). It appears as an
+**iCloud** source in the desktop's board finder; a board opened from there is
+saved back there, and `~/.hkp` stays where new boards go.
+
 Pinning shows the same split from the other side. The web app asks once —
 Pin in a board's details on the mobile start page, through
 `hkp://home-screen/` — and each shell turns the pinned list into what its

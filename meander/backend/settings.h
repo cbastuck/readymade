@@ -2,6 +2,7 @@
 
 #include "./allowedOrigins.h"
 #include "./fileFolders.h"
+#include "./sharedBoards.h"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -586,6 +587,17 @@ public:
   std::filesystem::path getRuntimeServerDirPath() const
   {
     return m_hkpDirPath / "cpp";
+  }
+
+  // The boards the iOS app keeps in iCloud Drive (sharedBoards.h). A Mac's
+  // only: iCloud Drive brings that folder nowhere else.
+  readymade::SharedBoards getSharedBoards() const
+  {
+#if defined(__APPLE__)
+    return readymade::SharedBoards(readymade::SharedBoards::iCloudFolder(m_hkpDirPath.parent_path()));
+#else
+    return readymade::SharedBoards({});
+#endif
   }
 
   std::filesystem::path getMeandersDirPath() const

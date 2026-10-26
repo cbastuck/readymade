@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useBoardContext } from "../../../BoardContext";
 import { MobileHostContext } from "../../../MobileHostContext";
 import { withCoordinatorEngines } from "../../../common";
-import { storeBoardToLocalStorage } from "../common";
+import { isHostLibrary, saveLibraryBoard } from "../../../core/boardLibrary";
 import { createBoardLink } from "../BoardLink";
 import { M } from "./tokens";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
@@ -274,13 +274,19 @@ function PlaygroundShell({
       toast.error("Could not read the current board");
       return;
     }
-    // Persist boardName alongside the source so loading restores the name.
-    storeBoardToLocalStorage(
-      finalName,
-      JSON.stringify({ ...data, boardName: finalName, name: finalName }),
-      data.description,
+    try {
+      await saveLibraryBoard(finalName, data);
+    } catch (err) {
+      toast.error(`Could not save “${finalName}”`, {
+        description: err instanceof Error ? err.message : undefined,
+      });
+      return;
+    }
+    toast.success(
+      isHostLibrary()
+        ? `Saved “${finalName}”`
+        : `Saved “${finalName}” to this device`,
     );
-    toast.success(`Saved “${finalName}” to this device`);
   };
 
   const onShare = async () => {
