@@ -1,0 +1,155 @@
+/* SQL inspector — the settings dialog's frame (settings/settings.css): tables
+   down the side as its navigation, the picked table's rows in the pane. */
+
+.hkp-set-nav-item.hkp-sqli-table {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-weight: 600;
+}
+
+.hkp-sqli-table-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hkp-sqli-table-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--set-mid);
+}
+
+.hkp-sqli-use {
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.hkp-sqli-use--writes {
+  background: var(--set-warn-bg);
+  color: var(--set-warn);
+}
+.hkp-sqli-use--reads {
+  background: var(--set-ok-bg);
+  color: var(--set-ok);
+}
+
+.hkp-sqli-empty {
+  padding: 8px 10px;
+}
+
+.hkp-sqli-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hkp-sqli-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.hkp-sqli-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hkp-sqli-error {
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--set-line-soft);
+  color: var(--set-danger);
+  font-size: 12.5px;
+}
+
+.hkp-sqli-definition {
+  flex: 0 0 auto;
+  max-height: 30%;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--set-line-soft);
+  background: var(--set-ground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  color: var(--set-ink);
+}
+
+/* The rows: scrolls both ways inside the pane, header kept in view. */
+.hkp-sqli-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.hkp-sqli-grid table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+  min-width: 100%;
+}
+
+.hkp-sqli-grid th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--set-line);
+  background: var(--set-ground);
+  color: var(--set-mid);
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.hkp-sqli-grid td {
+  max-width: 360px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--set-line-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--set-ink);
+}
+
+.hkp-sqli-grid th:first-child,
+.hkp-sqli-grid td:first-child {
+  padding-left: 24px;
+}
+
+.hkp-sqli-grid tbody tr:hover td {
+  background: var(--set-hover);
+}
+
+.hkp-sqli-null {
+  color: var(--set-mut) !important;
+  font-style: italic;
+}
+
+.hkp-sqli-pager {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 24px;
+  border-top: 1px solid var(--set-line-soft);
+  background: var(--set-ground);
+}
+
+.hkp-sqli-grid .hkp-sqli-empty {
+  padding: 12px 24px;
+}

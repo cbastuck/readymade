@@ -272,27 +272,41 @@ export function canReachService(
 }
 
 /**
- * Whether the service a scoped address names has been built inside the
- * service holding it — what a widget showing it has to find before it can
- * listen.
+ * Whether the service an address names has been built, along with whatever
+ * pipelines it holds itself — what a widget showing a service inside has to
+ * find before it can listen.
  *
  * Reaching the holder is enough to ask it to process: it waits for its own
  * pipeline first. Hearing the answer is not: a scope builds its pipeline after
  * it is added itself, and a widget subscribes to the service inside, so an
- * answer that arrives before then is heard by nobody. Only a browser scope can
- * tell; anything else counts as built.
+ * answer that arrives before then is heard by nobody. That holds for a holder
+ * named by its own uuid as much as for a service named inside one — processing
+ * `menu` runs the Monitor in it whether or not anybody is listening yet. Only a
+ * browser scope can tell; anything else counts as built.
  */
 export function isBuiltInside(
   boardContext: BoardContextState,
   uuid: string,
 ): boolean {
   for (const scope of Object.values(boardContext.scopes)) {
+    const svc = (scope as any).findServiceInstance?.(uuid)?.[0];
+    if (svc) {
+      return holdsBuiltScope(svc);
+    }
     const owner = ownerOfNested(scope, uuid);
     if (owner && typeof owner.service.findNested === "function") {
-      return !!owner.service.findNested(owner.rest);
+      const nested = owner.service.findNested(owner.rest);
+      return !!nested && holdsBuiltScope(nested);
     }
   }
   return true;
+}
+
+/** Whether a service holding pipelines of its own has built them. One holding
+ *  none is built by being there. */
+function holdsBuiltScope(service: unknown): boolean {
+  const holder = service as { isScopeBuilt?: () => boolean };
+  return typeof holder.isScopeBuilt === "function" ? holder.isScopeBuilt() : true;
 }
 
 export function processService(
