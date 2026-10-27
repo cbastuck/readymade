@@ -15,6 +15,7 @@ import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import { bakeAddressing } from "hkp-frontend/src/runtime/board/remote";
 import { resolveTemplateVarsInObject } from "hkp-frontend/src/templateVars";
+import { runRuntime } from "hkp-frontend/src/core/play";
 
 import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
@@ -86,12 +87,8 @@ export default function RuntimeHeader({
    * which is exactly the configuration the panel says it is not using.
    */
   const runWithParams = (params?: unknown) => {
-    const scope = boardContext?.scopes[runtimeId];
-    const api =
-      boardContext?.runtimeApis[runtime.type] ||
-      boardContext?.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
-    if (scope && api) {
-      api.processRuntime(scope, params, null);
+    if (boardContext) {
+      runRuntime(boardContext, runtimeId, params);
     }
     if (showRunWithParams) {
       setShowRunWithParams(false);

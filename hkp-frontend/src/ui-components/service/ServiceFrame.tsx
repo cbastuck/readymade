@@ -47,6 +47,11 @@ import { useProcessingSweep } from "./processingSweep";
 
 const DOCS_SERVICES_URL = "https://hookitapp.com/documentation/services";
 
+/** Where a service's documentation page is. */
+export function serviceDocsUrl(serviceId: string): string {
+  return `${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`;
+}
+
 type Props = {
   service: ServiceInstance;
   showBypassOnlyIfExplicit?: boolean;
@@ -214,7 +219,7 @@ export default function ServiceFrame({
     }
   };
 
-  const helpUrl = `${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`;
+  const helpUrl = serviceDocsUrl(serviceId);
 
   const onConfig = () => setConfigVisible(true);
 
@@ -353,7 +358,7 @@ export default function ServiceFrame({
       <div>
         Service:{" "}
         <a
-          href={`${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`}
+          href={serviceDocsUrl(serviceId)}
           target="_blank"
           rel="noopener noreferrer"
         >

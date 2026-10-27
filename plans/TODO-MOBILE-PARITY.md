@@ -45,7 +45,7 @@ calling convention.
 |---|---|---|
 | M1 | Pin a board to the Home Screen | built 2026-10-26; the pass on devices open |
 | M2 | Boards in native storage, history and resume | built 2026-10-26; the iCloud pass on devices open |
-| M3 | Building: presets, blocks, Run and Run with… | open |
+| M3 | Building: presets, blocks, Run and Run with… | built 2026-10-27; multi-pipeline services and the pass on devices open |
 | M4 | Observing: flow inspector, Capture mode, deploy checks, overview | open |
 | M5 | Secrets on the device | open |
 | M6 | Board Assist | open, needs M5 |
@@ -266,46 +266,78 @@ with the new routes, and its backend tests pass (76, six new).
 
 ## M3: Building: presets, blocks, Run and Run with…
 
-### Presets and Building Blocks
+### Built (2026-10-27)
 
-- [ ] `AddServiceSheet` offers what the desktop palette does (`Sidebar.tsx`):
-  sub-service presets, the board's own blocks and the library blocks, filtered
-  to what the target runtime can run (`usePresetsForService`,
-  `linkage.blocks.definitions`).
-- [ ] Apply a preset to a service, and save its configuration as one, from the
-  service sheet (`PresetMenu`, `SavePresetDialog`; storage via `hkp://presets`,
-  which both shells already serve).
+Every piece calls logic that now lives in `core/` or is exported beside the
+desktop component that used it; the desktop calls the same code, and its tests
+pass unchanged.
 
-### Run and Run with…
+- [x] **Shared first.** What a palette offers moved out of `Sidebar` into
+  `core/palette.ts` (`paletteFor`, `paletteKey`); running a runtime and running
+  from a service out of `RuntimeHeader` and `ServiceSettings` into `core/play`
+  (`runRuntime`, `runFrom`); parsing a hand-written payload out of
+  `RunParamsDialog` into `core/runPayloads` (`parseRunJson`, `isTextFile`,
+  `readFileText`, `RunPayloadMode`). Exported, not moved: `applyPresetTo`
+  (`PresetMenu`), `savePresetFrom` (`SavePresetDialog`), `wrapRun`,
+  `makeBlockOfRun`, `blockNameForRun` (`WrapSelection`), `serviceDocsUrl`
+  (`ServiceFrame`).
+- [x] **`AddServiceSheet`** lists the runtime's entries from `paletteFor`
+  behind a switcher: Services (first, what is added most often) and Building
+  Blocks (blocks and composed presets, each under its heading), with counts. A
+  search that finds nothing in the tab shown offers the other tab's matches. A
+  runtime offering services alone shows no switcher. The
+  sub-pipeline picker inside a service still offers services only (as the
+  desktop's nested selector does; `concepts/blocks.md`, "Known gaps").
+- [x] **Service sheet** rows: Run, Run with…, Presets, Make block, Edit block,
+  Apply to block / Cancel editing, Detach from block, Documentation. The working
+  copy of a block is unlocked in the sheet (Configure, the sub-pipeline) while it
+  is edited. Make block is offered for a sub-service only: one ordinary service
+  is rarely worth a block, and a preset keeps its configuration.
+- [x] **Presets sheet** (`PresetsSheet.tsx`): apply one, or keep the
+  configuration as a preset with tags. Storage is the shells' `hkp://presets`,
+  already attached on iOS and Android (`MeanderPlatformProvider`).
+- [x] **Run sheet** (`RunSheet.tsx`): Fields, Text, JSON, File, and the payloads
+  saved per board, in the same store as the desktop's dialog.
+- [x] **Runtime card menu**: Run, Run with…, Select services, Make block (every
+  service in the runtime, after naming it; a runtime holding just one
+  sub-service makes that one a block where it is), Clear services (asks by a
+  second tap), Delete Runtime. The desktop's runtime menu has Wrap in
+  SubService for the whole runtime but no Make block; worth adding there too.
+- [x] **Selection mode**: boxes in place of the chevrons, and a bar sticking to
+  the bottom of the list with Wrap and Make block, enabled once the picked
+  services are a run.
+- [x] **Play and Play with…** in the top bar (`core/play`, under a
+  `PlayProvider`), lit while Play carries the last input.
+- [x] **Deployed boards** (`MobileCloudBoards`, the canvas with a `bridge`) get
+  Run and saving a preset, and nothing that rebuilds the board: no applying a
+  preset, Make block, Edit, Detach, selection or Clear.
+- [x] Docs: `concepts/blocks.md` and `concepts/presets.md`.
 
-- [ ] Service sheet: **Run** and **Run with…** (the input editor from
-  `RunParamsDialog`, `core/runPayloads`).
-- [ ] Runtime card menu: **Run**, **Run with…**, **Clear**. Today the only entry
-  is Remove.
-- [ ] Board: **Play** and **Play with…** in the top bar (`core/play`,
-  `PlayBoardControls`), so a board driven by something that has not happened yet
-  can be started from the phone.
+Tests: `core/tests/palette.test.ts`, `core/tests/play.test.ts` (runRuntime,
+runFrom), `tests/mobile-building.test.tsx` (run sheet, add sheet, service sheet
+actions and block states, runtime menu, selection mode, deployed boards). The
+hkp-frontend suite passes (2529) and both frontends typecheck.
 
-### Blocks and sub-services
+### Still open
 
-Drilling into a block use already works and is read-only, with its params panel
-(`BlockUseFrame` in `ServiceSheet.tsx`).
-
-- [ ] **Make block** from a configured sub-service (`core/blockActions`).
-- [ ] **Select several services and wrap them** in a sub-service, optionally
-  making a block of it in one step (`core/wrapActions`). On a phone: a selection
-  mode on the runtime card (checkboxes in place of the reorder steppers), then
-  "Wrap" / "Make block" in a bar at the bottom.
-- [ ] **Edit a block's definition** as a level, applied to every use
-  (`TODO-BLOCKS.md`, "Editing a definition"). Navigating into it reuses the
-  breadcrumb trail the service sheet already has.
-- [ ] **Detach** a use.
-- [ ] **Check on a device** that services with several pipelines (Switch, Tracks,
-  Hold, If, Feedback) can be navigated. They draw desktop panels
-  (`TracksPanel`, `HoldPanel`, `NamedPipelinesPanel`) that expect
-  `NestedNavigation`, which mobile does not provide. Each one that cannot be
-  navigated gets the drill-in the sub-service already has (`MobileSubPipeline`).
-- [ ] **Documentation** entry in the service sheet, opening the service's docs page.
+- [ ] **Services with several pipelines cannot be navigated on a phone.**
+  Checked in the code rather than on a device, and it is not a maybe: Switch,
+  If, Feedback, Tracks, Hold, HttpEndpoint and CommunicationDispatcher draw
+  their pipelines through `SubServicePipelineUI`, which renders nothing on a
+  mobile host (it leaves `pipeline` to the sheet's own drill-in). A section shows
+  its name and count, and nothing inside it can be seen or changed. The sheet's
+  trail walks `state.pipeline` and wraps edits in `configureService`; a section
+  has its own shape per service (`cases[].pipeline`, `tracks[]`, …) and its own
+  edit route (`NamedPipelinesPanel`'s `onEdit`). Proposed: on a mobile host,
+  `SubServicePipelineUI` draws `MobileSubPipeline` for a section (list, add,
+  remove, reorder through the proxy's `configure`, which already speaks that
+  protocol), and drilling into an entry of a section becomes a crumb that
+  carries how to configure through it rather than only an instance id.
+- [ ] **The pass on devices**: the sheets at phone size, the sticky selection bar
+  (`overflow: clip` on the runtime card, iOS 16+), the file picker in Run with…,
+  Documentation opening outside the app.
+- [ ] Adding a block inside a sub-pipeline from the sheet (the desktop lacks it
+  too).
 
 ---
 

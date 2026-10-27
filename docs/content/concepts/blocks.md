@@ -175,6 +175,18 @@ where it was, and makes that the block's first use. On its own, any service at
 the top of a runtime offers Make block in its menu, wrapping just itself. Escape,
 or selecting another runtime, lets the picked services go.
 
+On a phone a sub-service's sheet offers Make block, and a use's sheet Edit
+block, Detach, and Apply or Cancel while it is the working copy. One ordinary
+service is not offered as a block there — a preset keeps its configuration —
+so making a block of services is done from the runtime: **Make block** in its
+menu wraps all of them (a runtime holding just one sub-service makes that one
+a block where it is), and **Select services** puts a box on each, with a bar
+at the bottom offering Wrap and Make block once the picked services are a run.
+The add-service sheet keeps the board's blocks and the library's behind a
+**Building Blocks** tab, beside Services, from the same list the sidebar draws
+(`core/palette.ts`). A deployed board offers none of this: what it is made of
+changes in the playground and is deployed again.
+
 Wrapping keeps the board doing what it did:
 
 - The services are recreated inside the sub-service from the configuration they
@@ -251,8 +263,10 @@ library itself, so a board depends on nothing outside it.
   its id within the pipeline it was placed in.
 - **Nested drops.** The palette adds a use to a runtime's own services; inside a
   sub-pipeline a block is not yet offered by its selector.
-- **Mobile** locks uses and their insides, and shows params, but the mobile
-  sheet only drills into a remote runtime's sub-services — as for any service.
+- **Mobile** drills into a service's `pipeline` only. A service holding several
+  — Switch, If, Feedback, Tracks, Hold — draws them through the desktop's
+  pipeline editor, which a phone does not show, so their pipelines and any use
+  inside them are out of reach there.
 - **Applying an edit closes a level open on the working copy**, since its
   pipeline is rebuilt.
 
@@ -269,13 +283,14 @@ library itself, so a board depends on nothing outside it.
 | What a person does to a use | `hkp-frontend/src/core/blockActions.ts` |
 | Wrapping picked services, and making a block of them | `hkp-frontend/src/runtime/board/wrap.ts` (what may be wrapped), `hkp-frontend/src/core/wrapActions.ts` (doing it), `hkp-frontend/src/ui-components/runtime-ui/WrapSelection.tsx` |
 | Picking services | `hkp-frontend/src/selection/SelectionContext.tsx`, `hkp-frontend/src/runtime/ServiceUiContainer.tsx` |
-| Adding a use from the palette | `hkp-frontend/src/core/serviceOperations.ts` (`addService`) |
+| Adding a use from the palette | `hkp-frontend/src/core/palette.ts` (what is offered), `hkp-frontend/src/core/serviceOperations.ts` (`addService`) |
+| The phone's actions and selection mode | `hkp-frontend/src/views/playground/mobile/ServiceSheet.tsx`, `MobileBoardCanvas.tsx`, `MakeBlockSheet.tsx` |
 | Copying a library block into a board | `hkp-frontend/src/runtime/board/blocks.ts` (`withAdoptedDefinition`), `core/presets.ts` (`isUsableAsBlock`) |
 | Blocks the build ships | `hkp-frontend/presets/sub-service/`, listed in `src/presetRegistry.ts` |
 | The bar, the lock, the edit bar | `hkp-frontend/src/runtime/ui/BlockUse.tsx` |
 | Refusing addresses into a use | `hkp-frontend/src/facade/boardServices.ts` |
 | Worked example | `boards/nested-rhythm-demo-board.json` |
-| Tests | `runtime/board/tests/blocks.test.ts`, `runtime/board/tests/wrap.test.ts`, `core/tests/linkBlocks.test.ts`, `core/tests/block-use.integration.test.ts`, `core/tests/wrap-services.integration.test.ts`, `e2e/tests/blocks.spec.ts` |
+| Tests | `runtime/board/tests/blocks.test.ts`, `runtime/board/tests/wrap.test.ts`, `core/tests/linkBlocks.test.ts`, `core/tests/block-use.integration.test.ts`, `core/tests/wrap-services.integration.test.ts`, `core/tests/palette.test.ts`, `tests/mobile-building.test.tsx`, `e2e/tests/blocks.spec.ts` |
 
 ---
 

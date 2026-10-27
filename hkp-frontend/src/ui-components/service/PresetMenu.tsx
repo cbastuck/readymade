@@ -23,11 +23,46 @@ import {
 } from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
 import { Bookmark, Save } from "lucide-react";
-import { ServiceDescriptor } from "hkp-frontend/src/types";
-import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
+import {
+  BoardContextState,
+  useBoardContext,
+} from "hkp-frontend/src/BoardContext";
 import { Preset } from "hkp-frontend/src/core/presets";
 import { unavailableSecrets } from "hkp-frontend/src/core/secrets";
 import { usePresetsForService } from "./usePresetsForService";
+
+/**
+ * Configures a service from a preset and says how it went. A secret the preset
+ * names that this device does not hold does not stop it: the preset is right,
+ * the key is simply not here, and naming it is more use than refusing.
+ */
+export async function applyPresetTo(
+  boardContext: BoardContextState,
+  preset: Preset,
+  runtime: RuntimeDescriptor,
+  serviceUuid: string,
+): Promise<void> {
+  try {
+    await boardContext.applyPreset(preset, runtime, { uuid: serviceUuid });
+    const missing = unavailableSecrets(preset.state);
+    if (missing.length) {
+      toast.warning(
+        `Applied “${preset.name}”. No secret named ${missing
+          .map((alias) => `“${alias}”`)
+          .join(", ")} on this device.`,
+      );
+    } else {
+      toast.success(`Applied “${preset.name}”`);
+    }
+  } catch (err) {
+    toast.error(
+      `Could not apply “${preset.name}”: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
+}
 
 export default function PresetMenu({
   service,
@@ -45,32 +80,10 @@ export default function PresetMenu({
       boardContext?.runtimes.find((rt) => rt.id === runtimeId),
     )[0];
 
-  const apply = async (preset: Preset) => {
-    if (!boardContext || !runtime) {
-      return;
-    }
-    try {
-      await boardContext.applyPreset(preset, runtime, { uuid: service.uuid });
-      const missing = unavailableSecrets(preset.state);
-      if (missing.length) {
-        // Applied all the same: the preset is right, the key is simply not on
-        // this device, and naming it is more use than refusing to configure.
-        toast.warning(
-          `Applied “${preset.name}”. No secret named ${missing
-            .map((alias) => `“${alias}”`)
-            .join(", ")} on this device.`,
-        );
-      } else {
-        toast.success(`Applied “${preset.name}”`);
-      }
-    } catch (err) {
-      toast.error(
-        `Could not apply “${preset.name}”: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      );
-    }
-  };
+  const apply = (preset: Preset) =>
+    boardContext && runtime
+      ? applyPresetTo(boardContext, preset, runtime, service.uuid)
+      : undefined;
 
   return (
     <DropdownMenuSub>

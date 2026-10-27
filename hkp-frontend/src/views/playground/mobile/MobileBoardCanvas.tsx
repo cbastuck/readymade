@@ -6,17 +6,23 @@ import {
   RuntimeDescriptor,
   RuntimeScope,
   ServiceAction,
-  ServiceClass,
+  ServiceClassWithPreset,
   ServiceDescriptor,
   ServiceRegistry,
   isRuntimeBrowserClassType,
+  isRuntimeRestClassType,
   toCanonicalRuntimeClassType,
+  toCanonicalServiceId,
 } from "../../../types";
+import { toast } from "sonner";
 import { M, SERVICE_UI_ZOOM } from "./tokens";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import AddRuntimeSheet from "./AddRuntimeSheet";
 import AddServiceSheet from "./AddServiceSheet";
 import ServiceSheet from "./ServiceSheet";
+import RunSheet from "./RunSheet";
+import MakeBlockSheet from "./MakeBlockSheet";
+import BottomSheet from "./BottomSheet";
 import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import MobileFacadeView from "./MobileFacadeView";
@@ -24,6 +30,16 @@ import { passesNothing } from "../../../runtime/rest/Data";
 import { boardRun } from "../../../runtime/processContext";
 import { narrowBoardContext } from "../../../facade/boardServices";
 import { useEditReportingService } from "../../../core/editedServices";
+import { runRuntime } from "../../../core/play";
+import { SUB_SERVICE_ID, paletteFor } from "../../../core/palette";
+import { contiguousRun } from "../../../runtime/board/wrap";
+import { blockUseAt } from "../../../runtime/board/blocks";
+import { usePresetsForService } from "../../../ui-components/service/usePresetsForService";
+import {
+  blockNameForRun,
+  makeBlockOfRun,
+  wrapRun,
+} from "../../../ui-components/runtime-ui/WrapSelection";
 
 // Presence of a `bridge` prop means this canvas renders a *cloud* board: browser
 // runtime results are forwarded to the coordinator over `bridge.ws`. When omitted
@@ -166,6 +182,7 @@ function ServiceCard({
   canDown,
   onMoveUp,
   onMoveDown,
+  selected,
 }: {
   service: ServiceDescriptor;
   onTap: () => void;
@@ -175,6 +192,8 @@ function ServiceCard({
   canDown: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  /** Picked in selection mode; undefined outside it, where a tap opens the service. */
+  selected?: boolean;
 }) {
   const body = (
     <>
@@ -246,6 +265,34 @@ function ServiceCard({
     );
   }
 
+  if (selected !== undefined) {
+    // Selection mode: a tap picks or unpicks, the box in place of the steppers.
+    return (
+      <div>
+        <button
+          onClick={onTap}
+          role="checkbox"
+          aria-checked={selected}
+          style={{
+            ...cardStyle,
+            cursor: "pointer",
+            border: `1.5px solid ${selected ? M.teal : M.border}`,
+            boxShadow: selected ? `0 0 0 3px ${M.tealLight}` : cardStyle.boxShadow,
+          }}
+        >
+          {body}
+          <MobileIcon
+            name={selected ? "checkSquare" : "square"}
+            size={22}
+            color={selected ? M.teal : M.borderStrong}
+            strokeWidth={selected ? 2 : 1.6}
+          />
+        </button>
+        <FlowArrow />
+      </div>
+    );
+  }
+
   return (
     <div>
       <button onClick={onTap} style={{ ...cardStyle, cursor: "pointer" }}>
@@ -267,6 +314,134 @@ function ServiceCard({
   );
 }
 
+// ── Runtime menu entry ─────────────────────────────────────────
+function MenuItem({
+  icon,
+  label,
+  danger = false,
+  onClick,
+}: {
+  icon: MobileIconName;
+  label: string;
+  danger?: boolean;
+  onClick: () => void;
+}) {
+  const color = danger ? M.danger : M.textPrimary;
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        padding: "14px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        border: "none",
+        background: M.card,
+        cursor: "pointer",
+        textAlign: "left",
+        fontSize: 15,
+        fontFamily: "inherit",
+        fontWeight: 500,
+        color,
+      }}
+    >
+      <MobileIcon name={icon} size={17} color={danger ? M.danger : M.textSecondary} />
+      {label}
+    </button>
+  );
+}
+
+// ── Selection bar (selection mode) ─────────────────────────────
+// Sticks to the bottom of the board list while the runtime's services are on
+// screen, so the actions stay in reach of a thumb however long the list is.
+function SelectionBar({
+  count,
+  contiguous,
+  onWrap,
+  onMakeBlock,
+  onCancel,
+}: {
+  count: number;
+  /** Whether the picked services sit next to each other — their order is their wiring. */
+  contiguous: boolean;
+  onWrap: () => void;
+  onMakeBlock: () => void;
+  onCancel: () => void;
+}) {
+  const enabled = count > 0 && contiguous;
+  const action = (primary: boolean): CSSProperties => ({
+    flex: 1,
+    height: 40,
+    border: primary ? "none" : `1.5px solid ${M.teal}`,
+    borderRadius: 10,
+    background: primary ? M.teal : M.tealLight,
+    color: primary ? "#fff" : M.tealDark,
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: enabled ? "pointer" : "default",
+    opacity: enabled ? 1 : 0.45,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  });
+  return (
+    <div
+      data-testid="mobile-selection-bar"
+      style={{
+        position: "sticky",
+        bottom: 0,
+        margin: "0 12px 12px",
+        padding: 10,
+        background: M.card,
+        border: `1px solid ${M.border}`,
+        borderRadius: 14,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ flex: 1, fontSize: 13, color: M.textSecondary }}>
+          {count === 0
+            ? "Tap services to select them"
+            : !contiguous
+              ? "Only services next to each other can be wrapped"
+              : `${count} ${count === 1 ? "service" : "services"} selected`}
+        </span>
+        <button
+          onClick={onCancel}
+          style={{
+            border: "none",
+            background: "none",
+            color: M.textSecondary,
+            fontFamily: "inherit",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: "pointer",
+            padding: "4px 6px",
+          }}
+        >
+          Done
+        </button>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button disabled={!enabled} onClick={onWrap} style={action(false)}>
+          <MobileIcon name="layers" size={14} color={M.tealDark} />
+          Wrap
+        </button>
+        <button disabled={!enabled} onClick={onMakeBlock} style={action(true)}>
+          <MobileIcon name="boxes" size={14} color="#fff" />
+          Make block
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Runtime card ───────────────────────────────────────────────
 function RuntimeCard({
   runtime,
@@ -277,6 +452,9 @@ function RuntimeCard({
   onServiceTap,
   onAddService,
   onRemoveRuntime,
+  structural,
+  onRunWith,
+  onMakeBlock,
 }: {
   runtime: RuntimeDescriptor;
   services: ServiceDescriptor[];
@@ -288,15 +466,83 @@ function RuntimeCard({
   onServiceTap: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
   onAddService: () => void;
   onRemoveRuntime: () => void;
+  /** Whether what the board is made of may change here (see ServiceSheet). */
+  structural: boolean;
+  onRunWith: () => void;
+  /** Asks for a name, then makes a block of these services. */
+  onMakeBlock: (uuids: string[]) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [fullView, setFullView] = useState(false);
   const editable = useEditReportingService();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setConfirmClear(false);
+  };
   const [reordering, setReordering] = useState(false);
   // Reordering is only meaningful with 2+ services; if a removal drops the list
   // to a single service, fall back to the normal (tappable) rendering.
   const isReordering = reordering && services.length > 1;
+  // Selection mode: services picked to be wrapped in a sub-service, or made a
+  // block, in one step. Kept in the runtime's order, which is their wiring.
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const canSelect =
+    structural &&
+    (isRuntimeBrowserClassType(runtime.type) || isRuntimeRestClassType(runtime.type));
+  const isSelecting = selecting && canSelect && services.length > 0;
+  const order = services.map((svc) => svc.uuid);
+  const pickedInOrder = order.filter((uuid) => picked.includes(uuid));
+  const contiguous = pickedInOrder.length > 0 && !!contiguousRun(order, pickedInOrder);
+
+  const stopSelecting = () => {
+    setSelecting(false);
+    setPicked([]);
+  };
+
+  const togglePicked = (uuid: string) =>
+    setPicked((current) =>
+      current.includes(uuid)
+        ? current.filter((id) => id !== uuid)
+        : [...current, uuid],
+    );
+
+  // The whole runtime as one block: what selecting every service and making a
+  // block of them does. A runtime holding just one sub-service already is a
+  // pipeline, which is made a block where it is rather than wrapped again; one
+  // holding just a use of a block has nothing to make.
+  const only = services.length === 1 ? services[0] : null;
+  const onlyIsUse =
+    !!only && !!blockUseAt(boardContext.linkage?.blocks, only.uuid, runtime.id);
+  const onlyIsSubService =
+    !!only && toCanonicalServiceId(only.serviceId) === SUB_SERVICE_ID;
+  const canMakeBlockOfAll = canSelect && services.length > 0 && !onlyIsUse;
+  const makeBlockOfAll = () => {
+    if (only && onlyIsSubService) {
+      boardContext
+        .makeBlock(only.uuid, runtime.id)
+        .then((made) =>
+          toast.success(`"${made.name}" is now a block of this board`, {
+            description: "Add it again from Building Blocks.",
+          }),
+        )
+        .catch((err) =>
+          toast.error("Could not make a block", { description: err.message }),
+        );
+      return;
+    }
+    onMakeBlock(order);
+  };
+
+  const run = () => {
+    if (runRuntime(boardContext, runtime.id)) {
+      toast.success(`Running “${runtime.name}”`);
+    } else {
+      toast.error("The runtime is not running yet");
+    }
+  };
 
   const moveService = (svc: ServiceDescriptor, index: number, dir: -1 | 1) => {
     // reorderService treats the target as an insertion slot and subtracts 1 when
@@ -473,7 +719,9 @@ function RuntimeCard({
         background: M.runtimeBg,
         border: `1.5px solid ${M.runtimeBorder}`,
         borderRadius: 18,
-        overflow: "hidden",
+        // Clipped rather than hidden: hidden would make the card a scroll
+        // container, and the selection bar would stick to it, not the list.
+        overflow: "clip",
       }}
     >
       {/* Header */}
@@ -532,7 +780,7 @@ function RuntimeCard({
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {services.length > 1 && !collapsed && (
+          {services.length > 1 && !collapsed && !isSelecting && (
             <button
               onClick={() => setReordering((v) => !v)}
               title={isReordering ? "Done reordering" : "Reorder services"}
@@ -556,7 +804,7 @@ function RuntimeCard({
               />
             </button>
           )}
-          {scope && services.length > 0 && !isReordering && (
+          {scope && services.length > 0 && !isReordering && !isSelecting && (
             <button
               onClick={() => setFullView(true)}
               title="Show full service UIs"
@@ -595,9 +843,9 @@ function RuntimeCard({
               color={M.textSecondary}
             />
           </button>
-          <div style={{ position: "relative" }}>
+          <div>
             <button
-              onClick={() => setMenuOpen((v) => !v)}
+              onClick={() => setMenuOpen(true)}
               title="More options"
               style={{
                 width: 28,
@@ -613,50 +861,6 @@ function RuntimeCard({
             >
               <MobileIcon name="more" size={14} color={M.textSecondary} />
             </button>
-            {menuOpen && (
-              <>
-                <div
-                  onClick={() => setMenuOpen(false)}
-                  style={{ position: "fixed", inset: 0, zIndex: 100 }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 6px)",
-                    right: 0,
-                    background: "#fff",
-                    border: `1px solid ${M.border}`,
-                    borderRadius: 10,
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-                    minWidth: 148,
-                    zIndex: 101,
-                    overflow: "hidden",
-                  }}
-                >
-                  <button
-                    onClick={() => { setMenuOpen(false); onRemoveRuntime(); }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 14px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      border: "none",
-                      background: "none",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      fontSize: 14,
-                      fontFamily: "inherit",
-                      fontWeight: 500,
-                      color: M.danger,
-                    }}
-                  >
-                    <MobileIcon name="trash" size={14} color={M.danger} />
-                    Delete Runtime
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -681,20 +885,40 @@ function RuntimeCard({
               <ServiceCard
                 key={svc.uuid}
                 service={svc}
-                onTap={() => onServiceTap(svc, runtime)}
+                onTap={() =>
+                  isSelecting ? togglePicked(svc.uuid) : onServiceTap(svc, runtime)
+                }
                 active={activeServiceId === svc.uuid}
                 reordering={isReordering}
                 canUp={i > 0}
                 canDown={i < services.length - 1}
                 onMoveUp={() => moveService(svc, i, -1)}
                 onMoveDown={() => moveService(svc, i, 1)}
+                selected={isSelecting ? picked.includes(svc.uuid) : undefined}
               />
             ))
           )}
         </div>
       )}
 
-      {!collapsed && !isReordering && (
+      {isSelecting && !collapsed && (
+        <SelectionBar
+          count={pickedInOrder.length}
+          contiguous={contiguous}
+          onWrap={() =>
+            void wrapRun(boardContext, runtime.id, pickedInOrder).then(
+              (done) => done && stopSelecting(),
+            )
+          }
+          onMakeBlock={() => {
+            onMakeBlock(pickedInOrder);
+            stopSelecting();
+          }}
+          onCancel={stopSelecting}
+        />
+      )}
+
+      {!collapsed && !isReordering && !isSelecting && (
         <div style={{ padding: "0px 12px 12px" }}>
           <button
             onClick={onAddService}
@@ -720,6 +944,93 @@ function RuntimeCard({
           </button>
         </div>
       )}
+
+      {/* A sheet rather than a dropdown: the card clips what it holds, and a
+          menu this long would be cut off by a card any shorter than it. */}
+      <BottomSheet
+        open={menuOpen}
+        onClose={closeMenu}
+        title={runtime.name}
+        height="auto"
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            // The frame's colour, showing between the rows, is the line between them.
+            gap: 1,
+            background: M.border,
+            border: `1px solid ${M.border}`,
+            borderRadius: 14,
+            overflow: "hidden",
+          }}
+        >
+          <MenuItem
+            icon="play"
+            label="Run"
+            onClick={() => {
+              closeMenu();
+              run();
+            }}
+          />
+          <MenuItem
+            icon="playWith"
+            label="Run with…"
+            onClick={() => {
+              closeMenu();
+              onRunWith();
+            }}
+          />
+          {canSelect && services.length > 0 && (
+            <MenuItem
+              icon="checkSquare"
+              label="Select services"
+              onClick={() => {
+                closeMenu();
+                setReordering(false);
+                setCollapsed(false);
+                setSelecting(true);
+              }}
+            />
+          )}
+          {canMakeBlockOfAll && (
+            <MenuItem
+              icon="boxes"
+              label="Make block"
+              onClick={() => {
+                closeMenu();
+                makeBlockOfAll();
+              }}
+            />
+          )}
+          {structural && services.length > 0 && (
+            <MenuItem
+              icon="eraser"
+              label={confirmClear ? "Tap again to clear" : "Clear services"}
+              danger={confirmClear}
+              onClick={() => {
+                // Every service goes at once, so the first tap asks.
+                if (!confirmClear) {
+                  setConfirmClear(true);
+                  return;
+                }
+                closeMenu();
+                stopSelecting();
+                boardContext.removeAllServices(runtime);
+              }}
+            />
+          )}
+          <MenuItem
+            icon="trash"
+            label="Delete Runtime"
+            danger
+            onClick={() => {
+              closeMenu();
+              onRemoveRuntime();
+            }}
+          />
+        </div>
+      </BottomSheet>
     </div>
   );
 }
@@ -795,12 +1106,18 @@ function BoardList({
   onAddService,
   onRemoveRuntime,
   onShowAddRuntime,
+  structural,
+  onRunWith,
+  onMakeBlock,
 }: {
   onServiceTap: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
   activeServiceId: string | null;
   onAddService: (rt: RuntimeDescriptor) => void;
   onRemoveRuntime: (rt: RuntimeDescriptor) => void;
   onShowAddRuntime: () => void;
+  structural: boolean;
+  onRunWith: (rt: RuntimeDescriptor) => void;
+  onMakeBlock: (rt: RuntimeDescriptor, uuids: string[]) => void;
 }) {
   const boardContext = useBoardContext();
   const [reorderingRuntimes, setReorderingRuntimes] = useState(false);
@@ -855,6 +1172,9 @@ function BoardList({
                   onServiceTap={onServiceTap}
                   onAddService={() => onAddService(rt)}
                   onRemoveRuntime={() => onRemoveRuntime(rt)}
+                  structural={structural}
+                  onRunWith={() => onRunWith(rt)}
+                  onMakeBlock={(uuids) => onMakeBlock(rt, uuids)}
                 />
                 {i < runtimes.length - 1 && <RuntimeConnector />}
               </div>
@@ -1327,6 +1647,18 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
     service: ServiceDescriptor;
     runtime: RuntimeDescriptor;
   } | null>(null);
+  const [runWithRuntime, setRunWithRuntime] =
+    useState<RuntimeDescriptor | null>(null);
+  const [blockOf, setBlockOf] = useState<{
+    runtime: RuntimeDescriptor;
+    uuids: string[];
+  } | null>(null);
+  // A deployed board is attached to, not rebuilt: what it is made of changes
+  // in the playground, and is deployed again.
+  const structural = !bridge;
+  // Kept current while the board is open, so a preset kept from a service's
+  // sheet is in the add sheet the next time it opens.
+  const subServicePresets = usePresetsForService(SUB_SERVICE_ID);
 
   useWireBrowserScopes(boardContext, bridge);
 
@@ -1363,7 +1695,7 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
     });
   };
 
-  const handleAddService = (svc: ServiceClass) => {
+  const handleAddService = (svc: ServiceClassWithPreset) => {
     if (!addServiceRuntime) {
       return;
     }
@@ -1392,8 +1724,15 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
     boardContext.removeRuntime(rt);
   };
 
+  // What the runtime can run, with the building blocks it can hold: the
+  // board's own blocks and the ones kept on this device (`core/palette`).
   const activeRegistry = addServiceRuntime
-    ? (registry[addServiceRuntime.id] ?? [])
+    ? paletteFor(
+        registry[addServiceRuntime.id] ?? [],
+        addServiceRuntime.type,
+        subServicePresets,
+        boardContext.linkage?.blocks?.definitions[""] ?? [],
+      )
     : [];
 
   return (
@@ -1466,6 +1805,9 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
           onAddService={setAddServiceRuntime}
           onRemoveRuntime={handleRemoveRuntime}
           onShowAddRuntime={() => setShowAddRuntime(true)}
+          structural={structural}
+          onRunWith={setRunWithRuntime}
+          onMakeBlock={(runtime, uuids) => setBlockOf({ runtime, uuids })}
         />
       )}
 
@@ -1493,6 +1835,40 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
         runtime={selectedServiceRuntime}
         onRemove={handleRemoveService}
         onRename={handleRenameService}
+        structural={structural}
+      />
+      <RunSheet
+        open={!!runWithRuntime}
+        onClose={() => setRunWithRuntime(null)}
+        target={`the first service of ${runWithRuntime?.name ?? "the runtime"}`}
+        onRun={(params) => {
+          if (runWithRuntime) {
+            runRuntime(boardContext, runWithRuntime.id, params);
+          }
+          setRunWithRuntime(null);
+        }}
+      />
+      <MakeBlockSheet
+        open={!!blockOf}
+        onClose={() => setBlockOf(null)}
+        count={blockOf?.uuids.length ?? 0}
+        initialName={
+          blockOf
+            ? blockNameForRun(boardContext, blockOf.runtime.id, blockOf.uuids)
+            : ""
+        }
+        onMake={(name) => {
+          if (!blockOf) {
+            return;
+          }
+          void makeBlockOfRun(
+            boardContext,
+            blockOf.runtime.id,
+            blockOf.uuids,
+            name,
+            "Building Blocks",
+          ).then(() => setBlockOf(null));
+        }}
       />
       {fullScreenService && (
         <FullServiceView

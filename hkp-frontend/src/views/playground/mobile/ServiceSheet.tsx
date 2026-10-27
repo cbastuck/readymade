@@ -2,14 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import BottomSheet from "./BottomSheet";
 import JsonEditor from "./JsonEditor";
-import MobileIcon from "./MobileIcon";
+import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import MobileSubPipeline, { PipelineEntry } from "./MobileSubPipeline";
 import BlockUseFrame from "../../../runtime/ui/BlockUse";
 import {
   blockUseAt,
   blockUseContaining,
+  outermostUses,
 } from "../../../runtime/board/blocks";
 import AddServiceSheet from "./AddServiceSheet";
+import RunSheet from "./RunSheet";
+import PresetsSheet from "./PresetsSheet";
+import { runFrom } from "../../../core/play";
+import { SUB_SERVICE_ID } from "../../../core/palette";
+import { serviceDocsUrl } from "../../../ui-components/service/ServiceFrame";
+import { openInBrowser } from "../../../runtime/browser/services/helpers";
 import { M, SERVICE_UI_ZOOM } from "./tokens";
 import {
   ServiceAction,
@@ -18,6 +25,7 @@ import {
   ServiceInstance,
   RuntimeDescriptor,
   isRuntimeBrowserClassType,
+  toCanonicalServiceId,
   isRuntimeRestClassType,
   isRuntimeGraphQLClassType,
 } from "../../../types";
@@ -62,6 +70,53 @@ function NotAvailable({ reason }: { reason: string }) {
   );
 }
 
+/** One thing done to the service, as a row of the sheet's action list. */
+function ActionRow({
+  icon,
+  label,
+  sublabel,
+  onClick,
+  tone = "neutral",
+}: {
+  icon: MobileIconName;
+  label: string;
+  sublabel?: string;
+  onClick: () => void;
+  tone?: "neutral" | "accent";
+}) {
+  const color = tone === "accent" ? M.tealDark : M.textSecondary;
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        width: "100%",
+        padding: "11px 14px",
+        border: "none",
+        background: M.card,
+        cursor: "pointer",
+        textAlign: "left",
+        fontFamily: "inherit",
+      }}
+    >
+      <MobileIcon name={icon} size={17} color={color} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 500, color: M.textPrimary }}>
+          {label}
+        </div>
+        {sublabel && (
+          <div style={{ fontSize: 12, color: M.textMuted, marginTop: 1 }}>
+            {sublabel}
+          </div>
+        )}
+      </div>
+      <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
+    </button>
+  );
+}
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -69,6 +124,12 @@ type Props = {
   runtime: RuntimeDescriptor | null;
   onRemove: (service: ServiceDescriptor, runtime: RuntimeDescriptor) => void;
   onRename: (runtimeId: string, instanceId: string, name: string) => void;
+  /**
+   * Whether what the board is made of may change here: false for a deployed
+   * board, which is attached to, not rebuilt — that is done in the playground
+   * and deployed again. Running a service and configuring it stay.
+   */
+  structural?: boolean;
 };
 
 // One breadcrumb level past the top-level service.
@@ -103,6 +164,7 @@ export default function ServiceSheet({
   runtime,
   onRemove,
   onRename,
+  structural = true,
 }: Props) {
   const boardContext = useBoardContext();
   const editable = useEditReportingService();
@@ -128,6 +190,8 @@ export default function ServiceSheet({
   const [rootState, setRootState] = useState<any>(null);
   const [path, setPath] = useState<Crumb[]>([]);
   const [addPickerOpen, setAddPickerOpen] = useState(false);
+  const [runSheetOpen, setRunSheetOpen] = useState(false);
+  const [presetsOpen, setPresetsOpen] = useState(false);
 
   const scope = runtime ? boardContext?.scopes[runtime.id] : undefined;
   const boardName = boardContext?.boardName ?? "";
@@ -178,6 +242,8 @@ export default function ServiceSheet({
       setPath([]);
       setRootState(null);
       setAddPickerOpen(false);
+      setRunSheetOpen(false);
+      setPresetsOpen(false);
     }
   }, [open]);
 
@@ -256,7 +322,10 @@ export default function ServiceSheet({
   const activeAddress = [service?.uuid ?? "", ...pathIds].join(".");
   const activeUse = blockUseAt(blocks, activeAddress, runtime?.id);
   const insideUse = blockUseContaining(blocks, activeAddress, runtime?.id);
-  const locked = !!activeUse || !!insideUse;
+  // The one use unlocked as its block's working copy is edited like any
+  // other service, until the edit is applied or cancelled.
+  const editingHere = !!activeUse && blocks?.editing === activeUse.key;
+  const locked = (!!activeUse && !editingHere) || !!insideUse;
   const blockOf = (entry: PipelineEntry) => {
     const use = blockUseAt(blocks, `${activeAddress}.${entry.instanceId}`, runtime?.id);
     return use
@@ -657,6 +726,140 @@ export default function ServiceSheet({
       </div>
     ) : null;
 
+  // ── What can be done to the active level ──────────────────────
+  const isSubService =
+    toCanonicalServiceId(active.serviceId ?? "") === SUB_SERVICE_ID;
+  const outermost =
+    !!activeUse && !!blocks && outermostUses(blocks).includes(activeUse);
+  // A sub-service is a pipeline somebody built, which is what a block is made
+  // of. One other service on its own is rarely worth a block — a preset keeps
+  // its configuration — so several are made one from the runtime's menu.
+  const canMakeBlock = structural && !locked && !activeUse && isSubService;
+  const canEditBlock =
+    structural && outermost && !insideUse && !editingHere && !blocks?.editing;
+  const canDetach = structural && outermost && !insideUse && !editingHere;
+
+  const run = () => {
+    if (boardContext && runFrom(boardContext, runtime.id, service)) {
+      toast.success(`Running from “${service.serviceName}”`);
+    } else {
+      toast.error("The runtime is not running yet");
+    }
+  };
+
+  const makeBlock = () => {
+    boardContext
+      ?.makeBlock(activeAddress, runtime.id)
+      .then((made) =>
+        toast.success(`"${made.name}" is now a block of this board`, {
+          description: "Add it again from Building Blocks.",
+        }),
+      )
+      .catch((err) =>
+        toast.error("Could not make a block", { description: err.message }),
+      );
+  };
+
+  const finishEdit = (action: () => Promise<void>) =>
+    action()
+      .then(refreshRoot)
+      .catch((err) =>
+        toast.error("Could not finish editing the block", {
+          description: err.message,
+        }),
+      );
+
+  const renderActions = () => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        // The frame's colour, showing between the rows, is the line between them.
+        gap: 1,
+        background: M.border,
+        border: `1px solid ${M.border}`,
+        borderRadius: 14,
+        overflow: "hidden",
+      }}
+    >
+      {isRoot && (
+        <>
+          <ActionRow
+            icon="play"
+            tone="accent"
+            label="Run"
+            sublabel="From this service on, with nothing on its input"
+            onClick={run}
+          />
+          <ActionRow
+            icon="playWith"
+            tone="accent"
+            label="Run with…"
+            sublabel="From this service on, with an input you write"
+            onClick={() => setRunSheetOpen(true)}
+          />
+        </>
+      )}
+      {isRoot && !activeUse && !insideUse && (
+        <ActionRow
+          icon="bookmark"
+          label="Presets"
+          sublabel={structural ? "Apply one, or keep this configuration" : "Keep this configuration"}
+          onClick={() => setPresetsOpen(true)}
+        />
+      )}
+      {canMakeBlock && (
+        <ActionRow
+          icon="boxes"
+          label="Make block"
+          sublabel="Use this pipeline again on this board, changed in one place"
+          onClick={makeBlock}
+        />
+      )}
+      {canEditBlock && activeUse && (
+        <ActionRow
+          icon="pencil"
+          label="Edit block"
+          sublabel="What you change here applies to every use"
+          onClick={() => boardContext?.editBlock(activeUse.key)}
+        />
+      )}
+      {editingHere && boardContext && (
+        <>
+          <ActionRow
+            icon="check"
+            tone="accent"
+            label="Apply to block"
+            sublabel="Every use of the block takes these changes"
+            onClick={() => void finishEdit(boardContext.applyBlockEdit)}
+          />
+          <ActionRow
+            icon="x"
+            label="Cancel editing"
+            sublabel="Put this use back as the block makes it"
+            onClick={() => void finishEdit(boardContext.cancelBlockEdit)}
+          />
+        </>
+      )}
+      {canDetach && activeUse && (
+        <ActionRow
+          icon="unlink"
+          label="Detach from block"
+          sublabel="An ordinary copy that no longer follows the block"
+          onClick={() => {
+            boardContext?.detachBlockUse(activeUse.key);
+            void refreshRoot();
+          }}
+        />
+      )}
+      <ActionRow
+        icon="info"
+        label="Documentation"
+        onClick={() => openInBrowser(serviceDocsUrl(active.serviceId))}
+      />
+    </div>
+  );
+
   return (
     <>
       <BottomSheet
@@ -897,6 +1100,8 @@ export default function ServiceSheet({
 
             {/* Sub-services pipeline */}
             {renderSubPipeline()}
+
+            {renderActions()}
 
             {/* Name row — only for the top-level board service */}
             {isRoot && (
@@ -1210,6 +1415,24 @@ export default function ServiceSheet({
         runtime={{ ...runtime, name: active.serviceName }}
         registry={subRegistry}
         onAdd={(svc) => addSub(svc)}
+      />
+      <RunSheet
+        open={runSheetOpen}
+        onClose={() => setRunSheetOpen(false)}
+        target="this service"
+        onRun={(params) => {
+          setRunSheetOpen(false);
+          if (boardContext) {
+            runFrom(boardContext, runtime.id, service, params);
+          }
+        }}
+      />
+      <PresetsSheet
+        open={presetsOpen}
+        onClose={() => setPresetsOpen(false)}
+        service={service}
+        runtime={runtime}
+        canApply={structural}
       />
     </>
   );

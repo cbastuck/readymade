@@ -19,6 +19,7 @@ import {
   RuntimeApiMap,
   RuntimeDescriptor,
   RuntimeScope,
+  ServiceDescriptor,
   toCanonicalRuntimeClassType,
 } from "hkp-frontend/src/types";
 
@@ -53,18 +54,65 @@ export function play(board: PlayableBoard, params?: unknown): boolean {
   return true;
 }
 
+/**
+ * Runs one runtime from the top, handing `params` to its first service — what
+ * a runtime's own Run does, where building one means watching what it does.
+ * Answers whether the runtime could be asked.
+ */
+export function runRuntime(
+  board: PlayableBoard,
+  runtimeId: string,
+  params?: unknown,
+): boolean {
+  const found = resolveRuntime(board, runtimeId);
+  if (!found) {
+    return false;
+  }
+  const [scope, api] = found;
+  api.processRuntime(scope, params, null);
+  return true;
+}
+
+/**
+ * Runs a runtime's pipeline from one of its services onward, that service
+ * included, handing it `params`. The services before it are left alone — what
+ * running the runtime cannot do, since that always starts at the top. Answers
+ * whether the runtime could be asked.
+ */
+export function runFrom(
+  board: PlayableBoard,
+  runtimeId: string,
+  service: ServiceDescriptor,
+  params?: unknown,
+): boolean {
+  const found = resolveRuntime(board, runtimeId);
+  if (!found) {
+    return false;
+  }
+  const [scope, api] = found;
+  Promise.resolve(api.processService(scope, service, params, null)).catch(
+    (err) => console.error(`Running ${service.uuid} failed:`, err),
+  );
+  return true;
+}
+
 /** The scope and api of the runtime the board is entered at, where both exist. */
 function resolve(board: PlayableBoard) {
   const first = board.runtimes[0];
-  if (!first) {
+  return first ? resolveRuntime(board, first.id) : null;
+}
+
+function resolveRuntime(board: PlayableBoard, runtimeId: string) {
+  const runtime = board.runtimes.find((rt) => rt.id === runtimeId);
+  if (!runtime) {
     return null;
   }
-  const scope = board.scopes[first.id];
+  const scope = board.scopes[runtime.id];
   // A runtime names its engine by type, and a board may spell that in the
   // form it was written in rather than the one the apis are filed under.
   const api =
-    board.runtimeApis[first.type] ||
-    board.runtimeApis[toCanonicalRuntimeClassType(first.type)];
+    board.runtimeApis[runtime.type] ||
+    board.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
   return scope && api ? ([scope, api] as const) : null;
 }
 
