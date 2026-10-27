@@ -379,6 +379,13 @@ the desktop dialog, a page of the phones' Settings (opened from the gear on the
 start page and from a board's menu). Both are one model
 (`hkp-frontend/src/views/secrets/secretsModel.ts`) in two layouts.
 
+Board Assist's provider tokens are kept here too, as
+`readymade.assist.anthropic` and `readymade.assist.openai-compatible`, each
+allowed only to its provider's host. The app registers the vault as their
+store at start-up (`setAssistTokenStore`, `meander/frontend/src/main.tsx`) when
+the host injected one; the web, which has none, keeps them in local storage
+(`docs/content/concepts/board-assistant.md`).
+
 The code is the authority on this table. It is a summary of what is built today,
 and the flags above move faster than prose.
 

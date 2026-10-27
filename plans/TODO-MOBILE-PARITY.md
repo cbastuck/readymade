@@ -48,7 +48,7 @@ calling convention.
 | M3 | Building: presets, blocks, Run and Run with… | built 2026-10-27; multi-pipeline services and the pass on devices open |
 | M4 | Observing: flow inspector, Capture mode, deploy checks, overview | built 2026-10-27; the overview decision and the pass on devices open |
 | M5 | Secrets on the device | built 2026-10-27; the pass on devices open |
-| M6 | Board Assist | open, needs M5 |
+| M6 | Board Assist | built 2026-10-27; the pass on devices open |
 | M7 | Assets in the board finder | open |
 | M8 | Settings: licenses and about | built 2026-10-27 with the Settings page; the pass on devices open |
 | M9 | Sharing into the app | open |
@@ -538,25 +538,86 @@ run on a device.
   clear them.
 - [ ] A secret changed while a board runs is not pushed to its runtimes, as
   on the desktop (`TODO-SECRETS.md`, 3b).
-- [ ] Assist's provider token in the vault is M6.
+- [x] Assist's provider token in the vault (M6).
 
 ---
 
 ## M6: Board Assist
 
 Needs M5: the provider token belongs in the vault, not in localStorage, where
-`assist/settings.ts` keeps it today.
+`assist/settings.ts` kept it.
 
-- [ ] A full-screen **Assist** page, opened from the top bar: prompt, streamed
-  answer, and the proposed change as a preview to accept or discard
-  (`BoardAssistPreview`, `snapshotComparison`, `validation`). The panel itself is
-  desktop layout. The logic under it (`anthropic.ts`, `openAICompatible.ts`,
-  `scope.ts`, `mcpKnowledge.ts`) is used as it is.
-- [ ] Scope: the service or runtime the person has open stands in for the
-  desktop's selection (`SelectionContext`).
-- [ ] **Assist settings** (provider, model, endpoint) as a section of the
-  Settings page (M5), with the token stored as a secret. The desktop moves to the same store, so a token
-  is kept in one place.
+### Decided
+
+- **One model, two layouts.** What `BoardAssistPanel` did beside its layout —
+  models, the conversation, preview, apply, revert, the connection check —
+  moved into `assist/useBoardAssist.ts`; the desktop panel uses it unchanged in
+  behaviour and its 95 tests pass as they were.
+- **What was opened last stands in for the selection.** The hook takes a
+  focus (`AssistFocus`: a runtime and services) instead of reading
+  `SelectionContext`; the desktop passes its selection, the phone what
+  `MobileBoardCanvas` reports (`onFocus`) when a service is tapped or
+  inspected, a service added to a runtime, a runtime run with parameters or a
+  block made. Mounting a `SelectionProvider` in the mobile tree was not an
+  option: desktop components rendered there read it and would start showing
+  picks.
+- **A phone reviews in words first.** The desktop's Monaco diff does not fit a
+  phone, so the preview is a page: `describeProposal` (a sentence per runtime
+  or service added, removed, changed or reordered, and the board's other parts)
+  and a line diff with the unchanged lines folded (`assist/proposalDiff.ts`).
+  Read-only: a proposal is changed by asking for another.
+- **Tokens are secrets.** On a host with a vault (`hostKeepsVault`, i.e. an
+  injected `__HKP_VAULT__`: desktop, iOS, Android) they are kept as
+  `readymade.assist.anthropic` and `readymade.assist.openai-compatible`, each
+  with its provider's host as audience (the API base URL's host follows the URL),
+  so a board can name one but not take it anywhere else. Registered in
+  `meander/frontend/src/main.tsx` (`setAssistTokenStore`); tokens already in
+  localStorage move on the first launch. The web keeps localStorage. The other
+  settings stay in localStorage everywhere.
+
+### Built (2026-10-27)
+
+- [x] A full-screen **Assist** page (`views/assist/MobileAssistPage.tsx`),
+  opened from a sparkle in the top bar (lazy, kept mounted once opened so the
+  conversation survives Back): the model line opening a sheet (model, effort,
+  asset contents, refresh, provider settings), Context as Whole board or the
+  focused runtime, the thread with each proposal's preflight, Review changes,
+  Apply/Revert, the connection notice and the revert confirmation (the
+  desktop's own components, styled for a finger), and a sticky composer with
+  Send/Stop, the disclosure and New conversation. The top bar's decorative
+  mark is hidden under 400px so five controls leave room for the name.
+- [x] **Review changes** page (`views/assist/MobileAssistPreview.tsx`).
+- [x] Scope from what was opened last (above).
+- [x] **Board Assist** in the phones' Settings, after Appearance as in the
+  desktop dialog (`MobileSettingsPage`), and the settings can now open at a
+  section (`initialSection`; `onOpenSettings(section)` through the mobile
+  playground), which is how the Assist page leads to it. Token fields now show
+  a refused save in place.
+- [x] Tokens in the vault, desktop included (above).
+- [x] Docs: `concepts/board-assistant.md` ("On a phone", where tokens are
+  kept), `targets.md` ("Where secrets live").
+
+Tests: `tests/mobile-assist.test.tsx` (no provider, the focused runtime as
+context and in the request, nothing focused, review then apply, discard,
+hidden and shown again); `assist/proposalDiff.test.ts`;
+`assist/tokenStore.test.ts` (written with audience, the audience following the
+URL, removal, the move out of localStorage, the vault winning over a stale copy,
+a refusal, no store); `AssistSettings.test.tsx` (the vault note, a refused token
+shown); the section order and opening at a section in
+`tests/mobile-settings.test.tsx`. The hkp-frontend suite passes (3013) and both
+frontends typecheck. Nothing has run on a device.
+
+### Still open
+
+- [ ] **The pass on devices**: the page at phone sizes (the keyboard over the
+  sticky composer on iOS, a long proposal's review), streaming on a real
+  provider, the top bar on the smallest phones, and a token moving out of
+  localStorage on the first launch of each app.
+- [ ] Removing `readymade.assist.*` in Settings → Secrets while the Assist page
+  is open is not noticed until it reads the settings again (the vault has no
+  change event).
+- [ ] A phone has no nested navigation context, so a request never says which
+  sub-pipeline is open; the desktop sends it.
 
 ---
 

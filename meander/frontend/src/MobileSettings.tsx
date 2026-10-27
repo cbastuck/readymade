@@ -99,6 +99,8 @@ function ConnectionsContent({ remotes }: { remotes: RemotesController }) {
 
 type Props = {
   onClose: () => void;
+  /** The section to open at, over the list, rather than the list itself. */
+  initialSection?: string;
   /**
    * The remotes the host keeps, the same controller the start page and the
    * playground's runtime picker are given, so a server added here is in both.
@@ -108,10 +110,10 @@ type Props = {
 
 /**
  * The app's settings on a phone: the desktop dialog's sections (About,
- * Appearance, Connections, Secrets, Access, Licences), each a page. Board
- * Assist is left out until a phone has Assist to configure.
+ * Appearance, Board Assist, Connections, Secrets, Access, Licences), each a
+ * page.
  */
-export default function MobileSettings({ onClose, remotes }: Props) {
+export default function MobileSettings({ onClose, initialSection, remotes }: Props) {
   const platform = usePlatform();
 
   const about = kitSection({
@@ -170,6 +172,11 @@ export default function MobileSettings({ onClose, remotes }: Props) {
   ];
 
   return (
-    <MobileSettingsPage onClose={onClose} leadingSections={[about]} sections={sections} />
+    <MobileSettingsPage
+      onClose={onClose}
+      initialSection={initialSection}
+      leadingSections={[about]}
+      sections={sections}
+    />
   );
 }

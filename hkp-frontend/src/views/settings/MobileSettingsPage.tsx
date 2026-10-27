@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
-import { ChevronRight, Palette } from "lucide-react";
+import { ChevronRight, Palette, Sparkles } from "lucide-react";
 
 import AppearanceSettings from "../../ui-components/AppearanceSettings";
+import AssistSettings, { ASSIST_SETTINGS_SECTION } from "../../assist/AssistSettings";
 import MobilePage from "../playground/mobile/MobilePage";
 import { M } from "../playground/mobile/tokens";
 import "../../ui-components/settings/settings.css";
@@ -61,6 +62,15 @@ const appearanceSection = kitSection({
   content: <AppearanceSettings />,
 });
 
+// After Appearance, where the desktop dialog lists it: every host has it.
+const assistSection = kitSection({
+  id: ASSIST_SETTINGS_SECTION,
+  label: "Board Assist",
+  icon: <Sparkles size={18} />,
+  subtitle: "Provider, model server, knowledge",
+  content: <AssistSettings />,
+});
+
 type Props = {
   /** Leaves the settings and returns to whatever was showing. */
   onClose: () => void;
@@ -68,6 +78,11 @@ type Props = {
   leadingSections?: MobileSettingsSection[];
   /** Host sections listed after it. */
   sections?: MobileSettingsSection[];
+  /**
+   * The section to open at, over the list: Back from it then lands on the
+   * list, as if it had been chosen there.
+   */
+  initialSection?: string;
 };
 
 /**
@@ -83,9 +98,10 @@ export default function MobileSettingsPage({
   onClose,
   leadingSections = [],
   sections = [],
+  initialSection,
 }: Props) {
-  const all = [...leadingSections, appearanceSection, ...sections];
-  const [openId, setOpenId] = useState<string | null>(null);
+  const all = [...leadingSections, appearanceSection, assistSection, ...sections];
+  const [openId, setOpenId] = useState<string | null>(initialSection ?? null);
   const open = all.find((section) => section.id === openId);
 
   return (

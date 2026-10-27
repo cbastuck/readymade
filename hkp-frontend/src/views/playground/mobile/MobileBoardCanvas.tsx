@@ -28,6 +28,7 @@ import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import MobileFacadeView from "./MobileFacadeView";
 import { passesNothing } from "../../../runtime/rest/Data";
 import { boardRun } from "../../../runtime/processContext";
+import type { AssistFocus } from "../../../assist/useBoardAssist";
 import { narrowBoardContext } from "../../../facade/boardServices";
 import { useEditReportingService } from "../../../core/editedServices";
 import { runRuntime } from "../../../core/play";
@@ -73,6 +74,12 @@ type MobileBoardCanvasProps = {
    * is switched by its coordinator. Left out, the canvas switches its own.
    */
   capture?: CaptureControl;
+  /**
+   * Told which runtime, and which of its services, the person opened last —
+   * what a phone has in place of the desktop's selection, and what Board
+   * Assist narrows a request to.
+   */
+  onFocus?: (focus: AssistFocus) => void;
 };
 
 // ── Flow connector between service cards ───────────────────────
@@ -1741,6 +1748,7 @@ function ViewToggle({
 export default function MobileBoardCanvas({
   bridge,
   capture,
+  onFocus,
 }: MobileBoardCanvasProps) {
   const boardContext = useBoardContext();
 
@@ -1928,15 +1936,28 @@ export default function MobileBoardCanvas({
           onServiceTap={(svc, rt) => {
             setSelectedService(svc);
             setSelectedServiceRuntime(rt);
+            onFocus?.({ runtimeId: rt.id, serviceUuids: [svc.uuid] });
           }}
-          onInspect={(service, runtime) => setInspected({ service, runtime })}
+          onInspect={(service, runtime) => {
+            setInspected({ service, runtime });
+            onFocus?.({ runtimeId: runtime.id, serviceUuids: [service.uuid] });
+          }}
           activeServiceId={selectedService?.uuid ?? null}
-          onAddService={setAddServiceRuntime}
+          onAddService={(runtime) => {
+            setAddServiceRuntime(runtime);
+            onFocus?.({ runtimeId: runtime.id, serviceUuids: [] });
+          }}
           onRemoveRuntime={handleRemoveRuntime}
           onShowAddRuntime={() => setShowAddRuntime(true)}
           structural={structural}
-          onRunWith={setRunWithRuntime}
-          onMakeBlock={(runtime, uuids) => setBlockOf({ runtime, uuids })}
+          onRunWith={(runtime) => {
+            setRunWithRuntime(runtime);
+            onFocus?.({ runtimeId: runtime.id, serviceUuids: [] });
+          }}
+          onMakeBlock={(runtime, uuids) => {
+            setBlockOf({ runtime, uuids });
+            onFocus?.({ runtimeId: runtime.id, serviceUuids: uuids });
+          }}
         />
       )}
 

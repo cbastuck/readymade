@@ -1,8 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import AssistSettings from "./AssistSettings";
-import { readAssistSettings, saveAssistSettings } from "./settings";
+import {
+  readAssistSettings,
+  saveAssistSettings,
+  setAssistTokenStore,
+} from "./settings";
 beforeEach(() => localStorage.clear());
+afterEach(() => setAssistTokenStore(null));
 
 function type(label: string, value: string) {
   const field = screen.getByLabelText(label);
@@ -80,5 +85,22 @@ it("warns about plain HTTP endpoints on another machine without refusing them", 
   expect(screen.queryByText(/API token, your prompts/)).toBeNull();
   expect(readAssistSettings().mcpKnowledgeUrl).toBe(
     "http://knowledge.lan:8787/mcp",
+  );
+});
+
+it("says tokens are kept with the device's secrets where the host has them, and when one was refused", async () => {
+  setAssistTokenStore({
+    read: () => null,
+    write: async () => {
+      throw new Error("refused");
+    },
+    remove: async () => {},
+    setAudience: async () => {},
+  });
+  render(<AssistSettings />);
+  expect(screen.getByText("readymade.assist.anthropic")).toBeTruthy();
+  fireEvent.blur(type("API token", "sk-ant"));
+  expect((await screen.findByRole("alert")).textContent).toBe(
+    "Could not save on this device.",
   );
 });

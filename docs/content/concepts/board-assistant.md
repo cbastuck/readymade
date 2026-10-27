@@ -66,10 +66,44 @@ effort levels. The provider, model, effort and server settings are saved on this
 device. **API settings** replaces **Send** if the active provider lacks its required
 settings; local servers can send with no API token.
 
-Tokens are stored in the browser or app webview's local storage, outside board
-files and share links. This is not the native operating system's encrypted
-credential store. Requests go directly to the selected provider or API server;
-hosted API usage is billed to that account.
+Where tokens are kept depends on the host. The desktop and phone apps keep them
+with their other secrets (`targets.md`, "Where secrets live"), as
+`readymade.assist.anthropic` and `readymade.assist.openai-compatible`, so they
+are listed, and can be removed, in **Settings → Secrets** like any other
+credential. Each is allowed only to its provider's host — `api.anthropic.com`,
+or the host of the API base URL, which it follows when the URL changes — so a
+board that names one as `{{secret.readymade.assist.anthropic}}` can use it for
+its own calls to that provider and nowhere else. A token an older build kept in
+local storage moves there on the first launch. The website has no secret store
+and keeps tokens in the browser's local storage. Either way they stay outside
+board files and share links. The other settings stay in local storage on every
+host. Requests go directly to the selected provider or API server; hosted API
+usage is billed to that account.
+
+## On a phone
+
+On iOS and Android, Board Assist is a page of its own, opened with the sparkle
+button in a board's top bar. Leaving it with Back keeps the conversation, as
+hiding the desktop panel does. The provider's settings are a section of
+**Settings**, after Appearance, and the page leads there when no provider is set
+up; the model, effort and **Include asset contents** are in a sheet opened from
+the model line at the top.
+
+A phone has no selection. What it has instead is what the person opened last:
+tapping a service, inspecting its flow, adding a service to a runtime, running a
+runtime with parameters or making a block of services makes that runtime, and
+those services, what **Context** narrows to. The choice above the conversation
+names it ("Browser · Timer"), beside **Whole board**.
+
+**Review changes** opens the proposal as a page: what it does in a sentence per
+change — runtimes and services added, removed, changed or reordered, the facade,
+blocks or assets changed — and then the board document's lines that differ,
+with the unchanged ones folded. It is read-only; ask for another proposal to
+change it. **Apply changes** applies it exactly as **Apply board** does, with
+the same checks, connection confirmation and revert
+(`hkp-frontend/src/views/assist/`, `hkp-frontend/src/assist/proposalDiff.ts`).
+Both layouts share one model of the conversation
+(`hkp-frontend/src/assist/useBoardAssist.ts`).
 
 ## Building and editing
 

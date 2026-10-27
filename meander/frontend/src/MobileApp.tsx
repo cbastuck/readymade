@@ -100,7 +100,7 @@ function StartScreen({
 }: {
   onOpenSession: (session: BoardSession) => void;
   onShowAccount: () => void;
-  onOpenSettings: () => void;
+  onOpenSettings: (section?: string) => void;
   remotes: RemotesController;
   pins: PinsController;
   /** A deleted board cannot be launched any more: the host unpins it. */
@@ -300,7 +300,10 @@ function StartScreen({
 export default function MobileApp() {
   const [session, setSession] = useState<BoardSession | null>(null);
   const [showAccount, setShowAccount] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  // Open, and at which section when something asked for one.
+  const [showSettings, setShowSettings] = useState<{ section?: string } | null>(
+    null,
+  );
   const remotes = useBackendRemotes();
   const { pins, unpinIfPinned, pinnedTitle, dismissPinned } = usePins();
   // Read again each time the start page shows: working on a board makes it
@@ -344,7 +347,7 @@ export default function MobileApp() {
       return;
     }
     setShowAccount(false);
-    setShowSettings(false);
+    setShowSettings(null);
     let next: BoardSession | null = null;
     if (target.kind === "saved") {
       const names = await savedBoardNames().catch(() => [] as string[]);
@@ -516,7 +519,7 @@ export default function MobileApp() {
           <StartScreen
             onOpenSession={setSession}
             onShowAccount={() => setShowAccount(true)}
-            onOpenSettings={() => setShowSettings(true)}
+            onOpenSettings={() => setShowSettings({})}
             remotes={remotes}
             pins={pins}
             onBoardDeleted={handleBoardDeleted}
@@ -535,7 +538,7 @@ export default function MobileApp() {
             }
             onNewBoard={() => setSession({})}
             onHome={() => setSession(null)}
-            onOpenSettings={() => setShowSettings(true)}
+            onOpenSettings={(section) => setShowSettings({ section })}
             availableRuntimeEngines={availableRuntimeEngines}
           >
             <BoardShareConsumer
@@ -553,7 +556,8 @@ export default function MobileApp() {
         {/* Over the board too, for the same reason as the account. */}
         {showSettings && (
           <MobileSettings
-            onClose={() => setShowSettings(false)}
+            initialSection={showSettings.section}
+            onClose={() => setShowSettings(null)}
             remotes={remotes}
           />
         )}

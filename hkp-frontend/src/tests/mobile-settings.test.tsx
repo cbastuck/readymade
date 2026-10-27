@@ -50,13 +50,30 @@ describe("the settings page", () => {
       </ThemeProvider>,
     );
 
-    const [about, appearance, secrets] = ["About", "Appearance", "Secrets"].map(
-      (label) => screen.getByText(label),
-    );
+    const [about, appearance, assist, secrets] = [
+      "About",
+      "Appearance",
+      "Board Assist",
+      "Secrets",
+    ].map((label) => screen.getByText(label));
     const follows = (a: Element, b: Element) =>
       !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
     expect(follows(about, appearance)).toBe(true);
-    expect(follows(appearance, secrets)).toBe(true);
+    expect(follows(appearance, assist)).toBe(true);
+    expect(follows(assist, secrets)).toBe(true);
+  });
+
+  it("opens at a section when one is asked for, with the list behind it", () => {
+    render(
+      <ThemeProvider>
+        <MobileSettingsPage onClose={() => {}} initialSection="ai-assist" />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText("Provider")).toBeTruthy();
+    expect(screen.getByLabelText("API token")).toBeTruthy();
+    fireEvent.click(screen.getAllByLabelText("Back").at(-1)!);
+    expect(screen.queryByLabelText("API token")).toBeNull();
+    expect(screen.getByText("Board Assist")).toBeTruthy();
   });
 
   it("opens a section as its own page and comes back to the list", () => {

@@ -10,7 +10,10 @@ import {
   SettingsStack,
 } from "../ui-components/settings/kit";
 import {
+  ASSIST_SETTINGS_SECTION,
+  ASSIST_TOKEN_ALIASES,
   AssistSettings as Settings,
+  assistTokensInVault,
   readAssistSettings,
   saveAssistSettings,
   useAssistSettings,
@@ -62,6 +65,8 @@ const resetsModel = new Set<TextField>([
  * closed) — not on every keystroke, since the panel re-queries models and
  * clears its conversation when the provider or server changes.
  */
+export { ASSIST_SETTINGS_SECTION };
+
 export default function AssistSettings() {
   const settings = useAssistSettings();
   const draftFrom = (from: Settings): Record<TextField, string> => ({
@@ -76,12 +81,19 @@ export default function AssistSettings() {
   const draftsRef = useRef(drafts);
   draftsRef.current = drafts;
 
-  const persist = (patch: Partial<Settings>) => {
+  /** Saves, and says beside `field` when this device could not keep it. */
+  const persist = (patch: Partial<Settings>, field?: TextField) => {
+    const failed = () => {
+      if (field)
+        setErrors((current) => ({
+          ...current,
+          [field]: "Could not save on this device.",
+        }));
+    };
     try {
-      saveAssistSettings(patch);
-      return true;
+      saveAssistSettings(patch).catch(failed);
     } catch {
-      return false;
+      failed();
     }
   };
 
@@ -103,13 +115,10 @@ export default function AssistSettings() {
       ([key, value]) => saved[key as keyof Settings] !== value,
     );
     if (!changed) return;
-    if (
-      !persist({ ...patch, ...(resetsModel.has(field) ? { model: "" } : {}) })
-    )
-      setErrors((current) => ({
-        ...current,
-        [field]: "Could not save on this device.",
-      }));
+    persist(
+      { ...patch, ...(resetsModel.has(field) ? { model: "" } : {}) },
+      field,
+    );
   };
 
   // Escape closes the dialog without blurring the focused field; keep what was
@@ -158,7 +167,7 @@ export default function AssistSettings() {
     );
   const removeToken = (field: "anthropicToken" | "openAICompatibleToken") => {
     setDrafts((current) => ({ ...current, [field]: "" }));
-    persist({ [field]: "", model: "" });
+    persist({ [field]: "", model: "" }, field);
   };
 
   return (
@@ -204,6 +213,7 @@ export default function AssistSettings() {
                   {...text("anthropicToken")}
                 />
               </SettingsField>
+              {error("anthropicToken")}
             </SettingsSection>
           ) : (
             <>
@@ -244,6 +254,7 @@ export default function AssistSettings() {
                     {...text("openAICompatibleToken")}
                   />
                 </SettingsField>
+                {error("openAICompatibleToken")}
               </SettingsSection>
               <SettingsSection
                 label="Thinking mode (llama.cpp)"
@@ -300,7 +311,17 @@ export default function AssistSettings() {
       </SettingsSection>
 
       <SettingsNote>
-        Tokens and URLs stay in this device's local storage, never in a board.
+        {assistTokensInVault() ? (
+          <>
+            Tokens are kept with this device's secrets, as{" "}
+            <code>{ASSIST_TOKEN_ALIASES.anthropicToken}</code> and{" "}
+            <code>{ASSIST_TOKEN_ALIASES.openAICompatibleToken}</code>, each
+            allowed only to its provider's host. URLs stay in this device's
+            local storage. Neither is ever written into a board.
+          </>
+        ) : (
+          "Tokens and URLs stay in this device's local storage, never in a board."
+        )}{" "}
         Your prompt and board context go to the selected provider — see the
         Board assistant documentation for exactly what is sent where.
       </SettingsNote>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useBoardContext } from "../../../BoardContext";
@@ -29,6 +29,12 @@ import {
   RemoteRuntimeStore,
   RemoteRuntimeStoreCtx,
 } from "../../../ui-components/toolbar/useRemoteRuntimeEditing";
+import type { AssistFocus } from "../../../assist/useBoardAssist";
+import { ASSIST_SETTINGS_SECTION } from "../../../assist/settings";
+
+// Loaded on first use, as the desktop panel is: the providers' clients are
+// not small, and most sessions never ask.
+const MobileAssistPage = lazy(() => import("../../assist/MobileAssistPage"));
 
 type Tab = "board" | "cloud" | "hub";
 
@@ -36,8 +42,9 @@ type MobilePlaygroundInnerProps = {
   suggestedName?: string;
   /** Navigates back to the host's start page; renders a home button when set. */
   onHome?: () => void;
-  /** Opens the host's settings; the board menu offers it when set. */
-  onOpenSettings?: () => void;
+  /** Opens the host's settings, at one section when it is named; the board
+   *  menu offers it when set. */
+  onOpenSettings?: (section?: string) => void;
   /** Cloud board to open: lands on the Cloud tab with that board hydrated,
    *  which is how a host opens one from outside the playground. */
   openCloudBoard?: OpenCloudBoardSignal;
@@ -144,6 +151,7 @@ function TopBar({
   armed,
   onPlay,
   onPlayWith,
+  onAssist,
 }: {
   boardName: string;
   runtimeCount: number;
@@ -156,6 +164,7 @@ function TopBar({
   armed: boolean;
   onPlay: () => void;
   onPlayWith: () => void;
+  onAssist: () => void;
 }) {
   const capture = useCaptureControl();
   return (
@@ -194,7 +203,11 @@ function TopBar({
           <MobileIcon name="chevronLeft" size={17} color={M.textSecondary} />
         </button>
       )}
+      {/* Decoration, given up on the smallest phones for the board's name:
+          five controls share the bar with it. */}
+      <style>{`@media (max-width: 400px) { .hkp-mobile-bar-mark { display: none !important; } }`}</style>
       <div
+        className="hkp-mobile-bar-mark"
         style={{
           width: 32,
           height: 32,
@@ -236,7 +249,7 @@ function TopBar({
           service{serviceCount !== 1 ? "s" : ""}
         </div>
       </div>
-      {/* Closer together than the rest of the bar: four controls and a
+      {/* Closer together than the rest of the bar: five controls and a
           board's name share the width of the smallest phones. */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         {/* Starting the board where a board starts: a board driven by
@@ -258,6 +271,7 @@ function TopBar({
         {/* Beside the two Play buttons, as on the desktop: whether a run
             shows what it carried. */}
         <CaptureButton control={capture} />
+        <BarButton icon="sparkles" label="Board Assist" onClick={onAssist} />
         <button
           onClick={onMenu}
           aria-label="Board menu"
@@ -308,6 +322,15 @@ function PlaygroundShell({
   const [saveOpen, setSaveOpen] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
   const [playWithOpen, setPlayWithOpen] = useState(false);
+  // Board Assist stays mounted once opened, so its conversation outlives a
+  // look at the board, as the desktop panel's does.
+  const [assistOpen, setAssistOpen] = useState(false);
+  const [assistOpened, setAssistOpened] = useState(false);
+  // What the person opened last, standing in for the desktop's selection.
+  const [focus, setFocus] = useState<AssistFocus>({
+    runtimeId: null,
+    serviceUuids: [],
+  });
   // What the board was last run with: what the plain Play sends again.
   const [lastParams, setLastParams] = useRunParams();
 
@@ -441,6 +464,10 @@ function PlaygroundShell({
             }
           }}
           onPlayWith={() => setPlayWithOpen(true)}
+          onAssist={() => {
+            setAssistOpened(true);
+            setAssistOpen(true);
+          }}
         />
       )}
 
@@ -452,7 +479,7 @@ function PlaygroundShell({
           flexDirection: "column",
         }}
       >
-        {tab === "board" && <MobileBoardCanvas />}
+        {tab === "board" && <MobileBoardCanvas onFocus={setFocus} />}
         {tab === "cloud" && <MobileCloudBoards openBoard={cloudTarget} />}
         {tab === "hub" && (
           <MobileHub
@@ -531,6 +558,18 @@ function PlaygroundShell({
           play(boardContext, params);
         }}
       />
+      {assistOpened && (
+        <Suspense fallback={null}>
+          <MobileAssistPage
+            open={assistOpen}
+            onBack={() => setAssistOpen(false)}
+            focus={focus}
+            onOpenSettings={
+              onOpenSettings && (() => onOpenSettings(ASSIST_SETTINGS_SECTION))
+            }
+          />
+        </Suspense>
+      )}
       <SaveBoardSheet
         open={saveOpen}
         initialName={displayName}
