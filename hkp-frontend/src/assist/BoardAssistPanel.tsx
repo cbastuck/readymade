@@ -45,6 +45,7 @@ export default function BoardAssistPanel({
   const {
     settings,
     compatible,
+    openCode,
     providerReady,
     models,
     modelsLoading,
@@ -127,17 +128,22 @@ export default function BoardAssistPanel({
               <span>
                 <strong>Model settings</strong>
                 <small>
-                  {compatible ? "OpenAI compatible" : "Anthropic"}
+                  {compatible
+                    ? "OpenAI compatible"
+                    : openCode
+                      ? "OpenCode server"
+                      : "Anthropic"}
                   {model ? ` · ${model.display_name}` : ""}
-                  {` · ${
-                    compatible
-                      ? settings.openAIThinking === "default"
-                        ? "Server default"
-                        : `Thinking ${settings.openAIThinking}`
-                      : effort === "default"
-                        ? "Model default"
-                        : `${effort} effort`
-                  }`}
+                  {!openCode &&
+                    ` · ${
+                      compatible
+                        ? settings.openAIThinking === "default"
+                          ? "Server default"
+                          : `Thinking ${settings.openAIThinking}`
+                        : effort === "default"
+                          ? "Model default"
+                          : `${effort} effort`
+                    }`}
                 </small>
               </span>
               <ChevronDown size={14} strokeWidth={1.75} aria-hidden="true" />
@@ -157,6 +163,7 @@ export default function BoardAssistPanel({
                 >
                   <option value="anthropic">Anthropic</option>
                   <option value="openai-compatible">OpenAI compatible</option>
+                  <option value="opencode">OpenCode server</option>
                 </select>
               </label>
               <label>
@@ -174,7 +181,9 @@ export default function BoardAssistPanel({
                         ? "Querying models…"
                         : compatible
                           ? "Configure an API server"
-                          : "Enter an Anthropic token"}
+                          : openCode
+                            ? "Configure an OpenCode server"
+                            : "Enter an Anthropic token"}
                     </option>
                   )}
                   {models.map((item) => (
@@ -184,7 +193,7 @@ export default function BoardAssistPanel({
                   ))}
                 </select>
               </label>
-              <div className="hkp-assist-row">
+              {!openCode && <div className="hkp-assist-row">
                 <label>
                   Effort{" "}
                   <select
@@ -223,7 +232,7 @@ export default function BoardAssistPanel({
                 >
                   Refresh models
                 </button>
-              </div>
+              </div>}
             </div>
           </details>
           <label className="hkp-assist-context">
@@ -452,10 +461,13 @@ export default function BoardAssistPanel({
           <p className="hkp-assist-hint">
             {assist.disclosure}
           </p>
-          {compatible && unencryptedRemote(settings.openAICompatibleUrl) && (
+          {(compatible || openCode) &&
+            unencryptedRemote(
+              compatible ? settings.openAICompatibleUrl : settings.openCodeUrl,
+            ) && (
             <p className="hkp-assist-error" role="alert">
               This server is reached over unencrypted HTTP on another machine.
-              Your token, prompts and board can be read on the way.
+              Your {openCode ? "password" : "token"}, prompts and board can be read on the way.
             </p>
           )}
         </form>

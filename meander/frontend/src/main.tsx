@@ -5,7 +5,9 @@ import { setSecretStore } from "hkp-frontend/src/core/secrets";
 import {
   hostKeepsVault,
   setVaultPersist,
+  vaultDelete,
   vaultGet,
+  vaultSet,
   vaultSecretStore,
 } from "hkp-frontend/src/vault";
 import {
@@ -91,10 +93,15 @@ if (hostKeepsVault()) {
         throw new Error("This build cannot store secrets");
       }
       await backend.setSecret(alias, value);
+      // The host injects the vault only when a page opens. Keep this copy in
+      // step after an Assist write so the saved password is immediately
+      // readable as well as present after the next reload.
+      vaultSet(alias, value);
       await backend.setSecretAudience?.(alias, audience);
     },
     remove: async (alias) => {
       await (await getBackend()).deleteSecret?.(alias);
+      vaultDelete(alias);
     },
     setAudience: async (alias, audience) => {
       await (await getBackend()).setSecretAudience?.(alias, audience);

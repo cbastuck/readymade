@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   link: vi.fn(),
   localModels: vi.fn(),
   localRun: vi.fn(),
+  openCodeModels: vi.fn(),
+  openCodeRun: vi.fn(),
 }));
 vi.mock("../BoardContext", () => ({ useBoardContext: () => mocks.board }));
 vi.mock("../selection/SelectionContext", () => ({
@@ -71,6 +73,10 @@ vi.mock("./anthropic", () => ({
 vi.mock("./openAICompatible", () => ({
   listOpenAIModels: mocks.localModels,
   runOpenAICompatibleTurn: mocks.localRun,
+}));
+vi.mock("./openCode", () => ({
+  listOpenCodeModels: mocks.openCodeModels,
+  runOpenCodeTurn: mocks.openCodeRun,
 }));
 import BoardAssistPanel from "./BoardAssistPanel";
 import { readAssistSettings, saveAssistSettings } from "./settings";
@@ -306,6 +312,45 @@ describe("Board Assist panel", () => {
       }),
     );
     expect(screen.queryByRole("button", { name: "API settings" })).toBeNull();
+    view.unmount();
+    view.host.remove();
+  });
+  it("uses OpenCode's model catalog and stateless generation API", async () => {
+    saveAssistSettings({
+      provider: "opencode",
+      openCodeUrl: "http://127.0.0.1:4096",
+      openCodeUsername: "opencode",
+      openCodePassword: "server-password",
+    });
+    mocks.openCodeModels.mockResolvedValue([
+      { id: "opencode-go/deepseek-v4-flash", display_name: "DeepSeek" },
+    ]);
+    mocks.openCodeRun.mockResolvedValue({
+      conversation: [],
+      text: "OpenCode proposal",
+      board: proposed,
+    });
+    const view = mount();
+    await screen.findByRole("option", { name: "DeepSeek" });
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Build with OpenCode" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByRole("button", { name: "Apply board" });
+    expect(mocks.openCodeModels).toHaveBeenCalledWith(
+      "http://127.0.0.1:4096",
+      "opencode",
+      "server-password",
+      expect.any(AbortSignal),
+    );
+    expect(mocks.openCodeRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: "http://127.0.0.1:4096",
+        username: "opencode",
+        password: "server-password",
+        contextTokens: 8192,
+      }),
+    );
     view.unmount();
     view.host.remove();
   });

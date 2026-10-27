@@ -61,6 +61,7 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
   const {
     settings,
     compatible,
+    openCode,
     providerReady,
     modelsLoading,
     model,
@@ -93,6 +94,8 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
     ? settings.openAIThinking === "default"
       ? "Server default"
       : `Thinking ${settings.openAIThinking}`
+    : openCode
+      ? "OpenCode server"
     : effort === "default"
       ? "Model default"
       : `${effort} effort`;
@@ -132,7 +135,11 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
           >
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>
-                {compatible ? "OpenAI compatible" : "Anthropic"}
+                {compatible
+                  ? "OpenAI compatible"
+                  : openCode
+                    ? "OpenCode server"
+                    : "Anthropic"}
                 {model ? ` · ${model.display_name}` : ""}
               </span>
               <span style={{ display: "block", fontSize: 12.5, color: M.textSecondary }}>
@@ -403,10 +410,14 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
               )}
             </div>
             <p style={hint}>{assist.disclosure}</p>
-            {compatible && unencryptedRemote(settings.openAICompatibleUrl) && (
+            {(compatible || openCode) &&
+              unencryptedRemote(
+                compatible ? settings.openAICompatibleUrl : settings.openCodeUrl,
+              ) && (
               <p role="alert" style={{ ...hint, color: M.danger }}>
                 This server is reached over unencrypted HTTP on another
-                machine. Your token, prompts and board can be read on the way.
+                machine. Your {openCode ? "password" : "token"}, prompts and
+                board can be read on the way.
               </p>
             )}
             {entries.length > 0 && (
@@ -459,7 +470,7 @@ function ModelSettings({
   assist: ReturnType<typeof useBoardAssist>;
   onOpenSettings?: () => void;
 }) {
-  const { settings, compatible, models, modelsLoading, model, efforts, effort, busy } = assist;
+  const { settings, compatible, openCode, models, modelsLoading, model, efforts, effort, busy } = assist;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <label style={{ fontSize: 13, color: M.textSecondary }}>
@@ -480,7 +491,7 @@ function ModelSettings({
           ))}
         </select>
       </label>
-      <label style={{ fontSize: 13, color: M.textSecondary }}>
+      {!openCode && <label style={{ fontSize: 13, color: M.textSecondary }}>
         {compatible ? "Thinking" : "Effort"}
         <select
           disabled={busy || (!compatible && efforts.length === 1)}
@@ -508,7 +519,7 @@ function ModelSettings({
             ))
           )}
         </select>
-      </label>
+      </label>}
       <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15 }}>
         <input
           type="checkbox"

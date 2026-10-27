@@ -11,6 +11,7 @@ import {
   runAssistTurn,
 } from "./anthropic";
 import { listOpenAIModels, runOpenAICompatibleTurn } from "./openAICompatible";
+import { listOpenCodeModels, runOpenCodeTurn } from "./openCode";
 import { saveAssistSettings, useAssistSettings } from "./settings";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
@@ -76,9 +77,12 @@ export function useBoardAssist({
   const navigation = useNestedNavigation();
   const settings = useAssistSettings();
   const compatible = settings.provider === "openai-compatible";
+  const openCode = settings.provider === "opencode";
   const providerReady = compatible
     ? !!settings.openAICompatibleUrl.trim()
-    : !!settings.anthropicToken.trim();
+    : openCode
+      ? !!settings.openCodeUrl.trim()
+      : !!settings.anthropicToken.trim();
   const [models, setModels] = useState<AssistModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [reload, setReload] = useState(0);
@@ -122,8 +126,14 @@ export function useBoardAssist({
           settings.openAICompatibleToken,
           controller.signal,
         )
-      : listAssistModels(settings.anthropicToken, controller.signal)
-    )
+      : openCode
+        ? listOpenCodeModels(
+            settings.openCodeUrl,
+            settings.openCodeUsername,
+            settings.openCodePassword,
+            controller.signal,
+          )
+        : listAssistModels(settings.anthropicToken, controller.signal))
       .then((list) => {
         if (controller.signal.aborted) return;
         setModels(list);
@@ -145,7 +155,11 @@ export function useBoardAssist({
     settings.anthropicToken,
     settings.openAICompatibleUrl,
     settings.openAICompatibleToken,
+    settings.openCodeUrl,
+    settings.openCodeUsername,
+    settings.openCodePassword,
     compatible,
+    openCode,
     providerReady,
     reload,
   ]);
@@ -166,6 +180,7 @@ export function useBoardAssist({
   }, [
     settings.provider,
     settings.openAICompatibleUrl,
+    settings.openCodeUrl,
     settings.mcpKnowledgeUrl,
   ]);
 
@@ -292,7 +307,15 @@ export function useBoardAssist({
             contextTokens: settings.openAIContextTokens,
             thinking: settings.openAIThinking,
           })
-        : await runAssistTurn(request);
+        : openCode
+          ? await runOpenCodeTurn({
+              ...request,
+              baseURL: settings.openCodeUrl,
+              username: settings.openCodeUsername,
+              password: settings.openCodePassword,
+              contextTokens: settings.openAIContextTokens,
+            })
+          : await runAssistTurn(request);
       controller.signal.throwIfAborted();
       conversation.current = result.conversation;
       // A server the person keeps is named, not addressed, whatever the model
@@ -554,6 +577,7 @@ export function useBoardAssist({
   return {
     settings,
     compatible,
+    openCode,
     providerReady,
     models,
     modelsLoading,
@@ -609,7 +633,11 @@ export function useBoardAssist({
         ? "including asset contents"
         : "without asset contents"
     }, are sent to ${
-      compatible ? settings.openAICompatibleUrl : "Anthropic"
+      compatible
+        ? settings.openAICompatibleUrl
+        : openCode
+          ? settings.openCodeUrl
+          : "Anthropic"
     }.`,
   };
 }

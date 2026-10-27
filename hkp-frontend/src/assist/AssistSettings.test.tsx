@@ -47,6 +47,33 @@ it("shows only the chosen provider's settings and saves the choice at once", () 
   });
 });
 
+it("configures an OpenCode server and shows its current CORS origin", () => {
+  render(<AssistSettings />);
+  fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));
+  expect(readAssistSettings().provider).toBe("opencode");
+  expect(screen.getByLabelText("Server URL")).toBeTruthy();
+  expect(screen.getByLabelText("Server username")).toBeTruthy();
+  expect(screen.getByLabelText("Server password")).toBeTruthy();
+  expect(screen.getByText(/opencode serve --cors/).textContent).toContain(
+    window.location.origin,
+  );
+  fireEvent.blur(type("Server URL", "http://127.0.0.1:4096"));
+  fireEvent.blur(type("Server password", " server-password "));
+  expect(readAssistSettings()).toMatchObject({
+    openCodeUrl: "http://127.0.0.1:4096",
+    openCodePassword: "server-password",
+  });
+});
+
+it("keeps a focused OpenCode password when the page reloads", () => {
+  const view = render(<AssistSettings />);
+  fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));
+  type("Server password", "server-password");
+  fireEvent(window, new Event("pagehide"));
+  expect(readAssistSettings().openCodePassword).toBe("server-password");
+  view.unmount();
+});
+
 it("rejects invalid values in place without saving them", () => {
   saveAssistSettings({ provider: "openai-compatible" });
   render(<AssistSettings />);

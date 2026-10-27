@@ -67,6 +67,19 @@ describe("with a host that keeps secrets", () => {
     expect(stored().openAICompatibleUrl).toBe("https://llm.example.com/v1");
   });
 
+  it("keeps an OpenCode server password in the vault with its server audience", async () => {
+    const vault = fakeVault();
+    setAssistTokenStore(vault.store);
+    await saveAssistSettings({
+      openCodeUrl: "http://127.0.0.1:4096",
+      openCodePassword: "server-password",
+    });
+    const alias = ASSIST_TOKEN_ALIASES.openCodePassword;
+    expect(vault.values.get(alias)).toBe("server-password");
+    expect(vault.audiences.get(alias)).toEqual(["127.0.0.1"]);
+    expect(stored()).not.toHaveProperty("openCodePassword");
+  });
+
   it("removes a token from the vault when it is cleared", async () => {
     const vault = fakeVault();
     setAssistTokenStore(vault.store);

@@ -3,12 +3,15 @@ import { destinationHost } from "../core/secrets";
 
 export type Effort = "default" | "low" | "medium" | "high" | "xhigh" | "max";
 export type AssistSettings = {
-  provider: "anthropic" | "openai-compatible";
+  provider: "anthropic" | "openai-compatible" | "opencode";
   openAIContextTokens: number;
   openAIThinking: "default" | "off" | "on";
   anthropicToken: string;
   openAICompatibleToken: string;
   openAICompatibleUrl: string;
+  openCodeUrl: string;
+  openCodeUsername: string;
+  openCodePassword: string;
   mcpKnowledgeUrl: string;
   /** Whether requests carry asset contents, or only their ids and types. */
   includeAssetContents: boolean;
@@ -26,6 +29,9 @@ const defaults: AssistSettings = {
   anthropicToken: "",
   openAICompatibleToken: "",
   openAICompatibleUrl: "https://api.openai.com/v1",
+  openCodeUrl: "http://127.0.0.1:4096",
+  openCodeUsername: "opencode",
+  openCodePassword: "",
   mcpKnowledgeUrl: "",
   includeAssetContents: false,
   model: "",
@@ -36,6 +42,7 @@ const defaults: AssistSettings = {
 export const ASSIST_TOKEN_ALIASES = {
   anthropicToken: "readymade.assist.anthropic",
   openAICompatibleToken: "readymade.assist.openai-compatible",
+  openCodePassword: "readymade.assist.opencode",
 } as const;
 type TokenField = keyof typeof ASSIST_TOKEN_ALIASES;
 const tokenFields = Object.keys(ASSIST_TOKEN_ALIASES) as TokenField[];
@@ -63,7 +70,9 @@ function tokenAudience(field: TokenField, settings: AssistSettings): string[] {
   const host = destinationHost(
     field === "anthropicToken"
       ? "https://api.anthropic.com"
-      : settings.openAICompatibleUrl,
+      : field === "openAICompatibleToken"
+        ? settings.openAICompatibleUrl
+        : settings.openCodeUrl,
   );
   return host ? [host] : [];
 }
@@ -183,6 +192,17 @@ export function saveAssistSettings(
         store.setAudience(
           ASSIST_TOKEN_ALIASES.openAICompatibleToken,
           tokenAudience("openAICompatibleToken", next),
+        ),
+      );
+    if (
+      patch.openCodeUrl !== undefined &&
+      patch.openCodePassword === undefined &&
+      next.openCodePassword
+    )
+      writes.push(
+        store.setAudience(
+          ASSIST_TOKEN_ALIASES.openCodePassword,
+          tokenAudience("openCodePassword", next),
         ),
       );
   }
