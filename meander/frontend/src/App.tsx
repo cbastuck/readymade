@@ -14,6 +14,13 @@ import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.s
 import StartPage from "./StartPage";
 import MeanderAppMenu from "./MeanderAppMenu";
 import { getBackend } from "./backend";
+import {
+  lastBoardLibrary,
+  lastBoardName,
+  resumeBoard,
+  type BoardLibraryKind,
+  type ResumedBoard,
+} from "./library/boardHistory";
 import LoadIndicator from "./LoadIndicator";
 import { VaultProvider } from "hkp-frontend/src/VaultContext";
 import { DEMO_BOARDS } from "./demoBoards";
@@ -37,34 +44,9 @@ function shouldRenderPlaygroundFromUrl() {
   return pathname === "/playground" || pathname.startsWith("/playground/");
 }
 
-/** A resumed session: the board, and the unit documents it was stored with. */
-type ResumedBoard = {
-  board: BoardDescriptor;
-  units?: Record<string, BoardDescriptor>;
-};
-
 async function tryResumeLastBoard(): Promise<ResumedBoard | undefined> {
-  const lastBoardName = localStorage.getItem("lastActiveBoardName");
-  if (!lastBoardName) {
-    return undefined;
-  }
-  const backend = await getBackend();
-  try {
-    const history = await backend.loadBoardHistory(lastBoardName);
-    if (history.length > 0) {
-      const entry = history[0];
-      // A composition is stored as a composition, so it has to be linked again
-      // to run — and these are the only documents left to link it from.
-      const units = entry.units?.length
-        ? Object.fromEntries(entry.units.map((unit) => [unit.uri, unit.board]))
-        : undefined;
-      return { board: entry.snapshot, units };
-    }
-  } catch {}
-  try {
-    return { board: await backend.loadBoard(lastBoardName) };
-  } catch {}
-  return undefined;
+  const name = lastBoardName();
+  return name ? resumeBoard(name, lastBoardLibrary()) : undefined;
 }
 
 type View =
@@ -78,6 +60,8 @@ type View =
       source?: string;
       /** Unit documents a resumed composition links against, keyed by `uri`. */
       units?: Record<string, BoardDescriptor>;
+      /** The library the board is kept in, which saving writes back to. */
+      library?: BoardLibraryKind;
     };
 
 /** Top-left logo for the cloud view, matching the playground's. */
@@ -193,8 +177,9 @@ function MeanderShell() {
   const onRestoreBoard = (
     board: BoardDescriptor | null | undefined,
     source?: string,
+    library?: BoardLibraryKind,
   ) => {
-    setView({ type: "playground", board: board ?? null, source });
+    setView({ type: "playground", board: board ?? null, source, library });
     navigate("/playground", { replace: true });
   };
 
@@ -215,6 +200,7 @@ function MeanderShell() {
         type: "playground",
         board: resumed?.board ?? null,
         units: resumed?.units,
+        library: resumed ? lastBoardLibrary() : undefined,
       }),
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -247,6 +233,7 @@ function MeanderShell() {
         initialBoard={view.board}
         boardFilePath={view.source}
         unitDocuments={view.units}
+        library={view.library}
         onLogo={onShowStartPage}
         shareToInject={share.shareToInject}
         onShareConsumed={share.onShareConsumed}

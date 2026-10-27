@@ -1,5 +1,4 @@
 import { DragEvent, useMemo, useRef, useState } from "react";
-import JSON5 from "json5";
 import { ChevronDown, Trash, X } from "lucide-react";
 
 import MappingTable, {
@@ -8,6 +7,11 @@ import MappingTable, {
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import {
   SavedPayload,
+  isJsonFile,
+  isTextFile,
+  parseRunJson,
+  readFileText,
+  RunPayloadMode,
   useRunPayloads,
 } from "hkp-frontend/src/core/runPayloads";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
@@ -47,21 +51,8 @@ type Props = {
   container?: HTMLElement | null;
 };
 
-/**
- * How the payload is written, not what it is.
- *
- * Fields build an object a name at a time, which is what most services read.
- * Text is the payload itself — a request body pasted from an API's reference
- * manual, a document, anything whose shape is not a flat map of names to
- * values. Building one of those a row at a time is not possible, and quoting
- * it into a single field is not something anyone should be asked to do.
- * JSON is a value that is not an object of strings — a list of items for an
- * Iterator, numbers, nesting — parsed before it is sent, because neither of
- * the other two can say it. File is a file itself — an image, a recording —
- * sent as the `File`, the way a facade's file-pick sends one; a JSON or text
- * file may instead be opened in its editor, to be looked at first.
- */
-type Mode = "fields" | "text" | "json" | "file";
+/** How the payload is written; see `RunPayloadMode`. */
+type Mode = RunPayloadMode;
 
 const MODES: { mode: Mode; label: string }[] = [
   { mode: "fields", label: "Fields" },
@@ -70,34 +61,6 @@ const MODES: { mode: Mode; label: string }[] = [
   { mode: "file", label: "File" },
 ];
 
-type Parsed = { ok: true; value: unknown } | { ok: false; error: string };
-
-/**
- * The quotes macOS substitutes while typing, straightened. A last resort for
- * when the text area's own opt-out is ignored: only tried once the text as
- * typed has failed to parse, so curly quotes inside strings of JSON that
- * already parses are left alone.
- */
-const straightenQuotes = (text: string) =>
-  text.replace(/[“”„‟]/g, '"').replace(/[‘’‚‛]/g, "'");
-
-/**
- * JSON5 rather than JSON: what people type by hand is a JS literal —
- * `[{type: 1}]`, single quotes, a trailing comma — and JSON5 reads that
- * without evaluating anything. Plain JSON is a subset, so it parses as before.
- */
-function parseJson(text: string): Parsed {
-  try {
-    return { ok: true, value: JSON5.parse(text) };
-  } catch (error) {
-    try {
-      return { ok: true, value: JSON5.parse(straightenQuotes(text)) };
-    } catch {
-      return { ok: false, error: (error as Error).message };
-    }
-  }
-}
-
 /** Code, not prose: no smart quotes, dashes, corrections or capitals. */
 const codeInputProps = {
   spellCheck: false,
@@ -105,47 +68,6 @@ const codeInputProps = {
   autoCapitalize: "off",
   autoComplete: "off",
 } as const;
-
-const extension = (file: File) =>
-  file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
-
-const JSON_EXTENSIONS = ["json", "json5"];
-const TEXT_EXTENSIONS = [
-  "txt",
-  "md",
-  "csv",
-  "tsv",
-  "xml",
-  "yaml",
-  "yml",
-  "html",
-  "js",
-  "ts",
-  "log",
-];
-
-const isJsonFile = (file: File) =>
-  file.type === "application/json" || JSON_EXTENSIONS.includes(extension(file));
-
-/**
- * A file that can be opened in an editor: something to look at and change
- * before running — a request body, a list of test items. Anything else is the
- * payload as it is, and is sent untouched.
- */
-const isTextFile = (file: File) =>
-  isJsonFile(file) ||
-  file.type.startsWith("text/") ||
-  TEXT_EXTENSIONS.includes(extension(file));
-
-const readText = (file: File) =>
-  typeof file.text === "function"
-    ? file.text()
-    : new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file);
-      });
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) {
@@ -177,7 +99,7 @@ export default function RunParamsDialog({
   const [text, setText] = useState("");
   const [json, setJson] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const parsed = useMemo(() => parseJson(json), [json]);
+  const parsed = useMemo(() => parseRunJson(json), [json]);
   const jsonError = json.length > 0 && !parsed.ok ? parsed.error : null;
 
   const [dragging, setDragging] = useState(false);
@@ -216,7 +138,7 @@ export default function RunParamsDialog({
       setMode("file");
       return;
     }
-    const content = await readText(picked);
+    const content = await readFileText(picked);
     if (isJsonFile(picked)) {
       setJson(content);
       setMode("json");

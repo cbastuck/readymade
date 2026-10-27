@@ -27,14 +27,13 @@ import { isCapturing, setCapturing } from "hkp-frontend/src/runtime/captureMode"
 import { useTheme } from "../ThemeContext";
 import FlowInspectorPopup from "./FlowInspectorPopup";
 import FlowWaveIcon from "./FlowWaveIcon";
+import type { FlowRecord, FlowSide } from "./flowRecords";
 import "../settings/settings.css";
 import "./flow-inspector.css";
 
-/** One value a service received or produced, and when (ms since epoch). */
-export type FlowRecord = { data: any; at: number };
-
-/** Which way through the service a value went. */
-export type FlowSide = "input" | "output";
+// Where they were kept before they were shared with the mobile canvas.
+export type { FlowRecord, FlowSide } from "./flowRecords";
+export { rememberFlow } from "./flowRecords";
 
 type Props = {
   isActive?: boolean;
@@ -96,34 +95,6 @@ const expandedFrameStyle: React.CSSProperties = {
   overflow: "hidden",
   borderRadius: 16,
 };
-
-const MAX_HISTORY = 10;
-
-// Typed Data objects (FloatRingBuffer etc.) carry a Symbol tag, which
-// structuredClone rejects with DataCloneError — keep the reference instead.
-function safeClone(data: any): any {
-  try {
-    return structuredClone(data);
-  } catch (_err) {
-    return data;
-  }
-}
-
-/**
- * `history` with `data` as its newest value, arrived `at`, keeping the last
- * MAX_HISTORY.
- *
- * Meant for a functional state update where each value arrives: values
- * reported in quick succession — an Iterator's items — are rendered once, so
- * a history built from a prop's changes would keep only the last of them.
- */
-export function rememberFlow(
-  history: FlowRecord[],
-  data: any,
-  at: number = Date.now(),
-): FlowRecord[] {
-  return [{ data: safeClone(data), at }, ...history].slice(0, MAX_HISTORY);
-}
 
 export default function ServiceOutputPlug({
   isActive,

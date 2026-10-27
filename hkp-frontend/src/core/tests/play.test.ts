@@ -1,24 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { canPlay, play } from "../play";
+import { canPlay, play, runFrom, runRuntime } from "../play";
 import {
   RuntimeApiMap,
   RuntimeDescriptor,
   RuntimeScope,
+  ServiceDescriptor,
 } from "hkp-frontend/src/types";
 
 function board(runtimes: Array<Partial<RuntimeDescriptor>>) {
   const processRuntime = vi.fn();
+  const processService = vi.fn(async () => null);
   const scopes: { [id: string]: RuntimeScope } = {};
   for (const runtime of runtimes) {
     scopes[runtime.id!] = { id: runtime.id } as unknown as RuntimeScope;
   }
   return {
     processRuntime,
+    processService,
     board: {
       runtimes: runtimes as RuntimeDescriptor[],
       scopes,
-      runtimeApis: { browser: { processRuntime } } as unknown as RuntimeApiMap,
+      runtimeApis: {
+        browser: { processRuntime, processService },
+      } as unknown as RuntimeApiMap,
     },
   };
 }
@@ -60,6 +65,49 @@ describe("play", () => {
     restoring.scopes = {};
     expect(canPlay(restoring)).toBe(false);
     expect(play(restoring)).toBe(false);
+    expect(processRuntime).not.toHaveBeenCalled();
+  });
+});
+
+describe("runRuntime", () => {
+  it("runs the runtime asked for, not the one the board starts at", () => {
+    const { board: subject, processRuntime } = board([
+      { id: "ui", type: "browser" },
+      { id: "second", type: "browser" },
+    ]);
+
+    expect(runRuntime(subject, "second", ["a"])).toBe(true);
+    expect(processRuntime).toHaveBeenCalledTimes(1);
+    expect(processRuntime.mock.calls[0][0]).toBe(subject.scopes.second);
+    expect(processRuntime.mock.calls[0][1]).toEqual(["a"]);
+  });
+
+  it("says when the runtime cannot be asked", () => {
+    const { board: subject, processRuntime } = board([
+      { id: "ui", type: "browser" },
+    ]);
+    expect(runRuntime(subject, "gone")).toBe(false);
+    subject.scopes = {};
+    expect(runRuntime(subject, "ui")).toBe(false);
+    expect(processRuntime).not.toHaveBeenCalled();
+  });
+});
+
+describe("runFrom", () => {
+  it("hands the input to the service it starts at, in that service's runtime", () => {
+    const { board: subject, processService, processRuntime } = board([
+      { id: "ui", type: "browser" },
+      { id: "second", type: "browser" },
+    ]);
+    const service = { uuid: "s2", serviceId: "monitor" } as ServiceDescriptor;
+
+    expect(runFrom(subject, "second", service, { text: "hi" })).toBe(true);
+    expect(processService).toHaveBeenCalledWith(
+      subject.scopes.second,
+      service,
+      { text: "hi" },
+      null,
+    );
     expect(processRuntime).not.toHaveBeenCalled();
   });
 });

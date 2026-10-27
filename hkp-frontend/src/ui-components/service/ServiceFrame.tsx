@@ -19,7 +19,8 @@ import {
   useTheme,
   useThemeControl,
 } from "hkp-frontend/src/ui-components/ThemeContext";
-import ServiceOutputPlug, { FlowRecord, rememberFlow } from "./ServiceOutputPlug";
+import ServiceOutputPlug from "./ServiceOutputPlug";
+import { FlowRecord, readCallReport, rememberFlow } from "./flowRecords";
 
 import DragSource from "hkp-frontend/src/components/DragSource";
 import {
@@ -46,6 +47,11 @@ import {
 import { useProcessingSweep } from "./processingSweep";
 
 const DOCS_SERVICES_URL = "https://hookitapp.com/documentation/services";
+
+/** Where a service's documentation page is. */
+export function serviceDocsUrl(serviceId: string): string {
+  return `${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`;
+}
 
 type Props = {
   service: ServiceInstance;
@@ -117,40 +123,30 @@ export default function ServiceFrame({
   );
 
   const onNotification = (notification: any) => {
-    const { bypass, __internal } = notification || {};
+    const { bypass } = notification || {};
     if (bypass !== undefined) {
       setBypass(bypass);
     }
 
-    if (__internal !== undefined) {
-      const { state, data } = __internal;
-
-      switch (state) {
-        case "call-process":
-          sweep.start(__internal.call);
-          // What it was called with. A service emitting on its own was called
-          // with nothing (null), and hkp-rt says "<undefined>" for a call that
-          // carried no value: neither is an input to keep. Nor is a report
-          // without Capture mode, which carries no value at all.
-          if ("data" in __internal && data != null && data !== "<undefined>") {
-            setInputHistory((history) => rememberFlow(history, data));
-          }
-          return;
-        case "call-process-finished": {
-          sweep.finish(__internal.call);
-          // Without Capture mode the report says only whether the call passed
-          // anything on: the plug still lights, and nothing is kept.
-          const carried = "data" in __internal;
-          const stopped = carried ? data === null : __internal.stopped === true;
-          if (carried && data !== null) {
-            setOutputHistory((history) => rememberFlow(history, data));
-          }
-          if (!stopped) {
-            setSignalOutput(true);
-            setTimeout(() => setSignalOutput(false), 350);
-          }
-          return;
-        }
+    // What it was called with and what it passed on, where the report carries
+    // them (`readCallReport`). Without Capture mode it says only whether the
+    // call passed anything on: the plug still lights, and nothing is kept.
+    const reading = readCallReport(notification);
+    if (reading?.phase === "start") {
+      sweep.start(reading.call);
+      const { input } = reading;
+      if (input) {
+        setInputHistory((history) => rememberFlow(history, input.data));
+      }
+    } else if (reading?.phase === "finish") {
+      sweep.finish(reading.call);
+      const { output } = reading;
+      if (output) {
+        setOutputHistory((history) => rememberFlow(history, output.data));
+      }
+      if (!reading.stopped) {
+        setSignalOutput(true);
+        setTimeout(() => setSignalOutput(false), 350);
       }
     }
   };
@@ -214,7 +210,7 @@ export default function ServiceFrame({
     }
   };
 
-  const helpUrl = `${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`;
+  const helpUrl = serviceDocsUrl(serviceId);
 
   const onConfig = () => setConfigVisible(true);
 
@@ -353,7 +349,7 @@ export default function ServiceFrame({
       <div>
         Service:{" "}
         <a
-          href={`${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`}
+          href={serviceDocsUrl(serviceId)}
           target="_blank"
           rel="noopener noreferrer"
         >

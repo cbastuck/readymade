@@ -72,6 +72,11 @@ export type BoardAction =
       sharedBy?: string;
     }
   | { kind: "cloud-stored"; id: string; name: string }
+  /** A board the Readymade iOS app keeps in iCloud Drive, seen from the Mac
+   *  that iCloud Drive brings the folder to. Opened, and saved back there; the
+   *  by-name actions of a saved board (history, source, art, upload, delete)
+   *  are the local library's and do not apply. */
+  | { kind: "icloud"; name: string }
   /** Watch a runtime running on a remote server. Carries the server by the name
    *  the Remotes source shows — what a host looks it up by in its own store —
    *  and the runtime's id on it. Without an id the whole server is watched,
@@ -264,6 +269,28 @@ export interface CoordinatorsController {
    *  source offers it as an action — the source is where a user notices that
    *  no coordinator is configured. */
   onManage?: () => void;
+}
+
+/** A board that can be launched from outside the app — the Home Screen, a
+ *  widget, a shortcut — by what it is: a saved board by its name, a demo by
+ *  its slug. Nothing else has an identity that outlives the session. */
+export type PinnableAction = Extract<BoardAction, { kind: "saved" | "demo" }>;
+
+/** Host-backed list of pinned boards: what the board details offer to pin,
+ *  and what the host turns into whatever its platform launches from. The host
+ *  holds the list, so a board pinned elsewhere (a widget's configuration) shows
+ *  as pinned here. Absent on hosts with no Home Screen. */
+export interface PinsController {
+  isPinned: (action: PinnableAction) => boolean;
+  /** `title` is what the platform shows under the icon. */
+  pin: (action: PinnableAction, title: string) => Promise<void>;
+  unpin: (action: PinnableAction) => Promise<void>;
+}
+
+export function isPinnable(
+  action: BoardAction | undefined,
+): action is PinnableAction {
+  return action?.kind === "saved" || action?.kind === "demo";
 }
 
 // ── News banner ───────────────────────────────────────────────────────────────

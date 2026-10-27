@@ -11,7 +11,10 @@ import { toast } from "sonner";
 import CustomDialog from "../CustomDialog";
 import { Button } from "../primitives/button";
 import { Input } from "../primitives/input";
-import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import {
+  BoardContextState,
+  useBoardContext,
+} from "hkp-frontend/src/BoardContext";
 import { WrapRefused } from "hkp-frontend/src/core/wrapActions";
 import { nameForRun } from "hkp-frontend/src/runtime/board/wrap";
 import { useSelection } from "hkp-frontend/src/selection/SelectionContext";
@@ -24,6 +27,63 @@ function refused(title: string, err: unknown) {
   toast.error(title, { description: reasons.join("\n") });
 }
 
+/**
+ * Wraps the run `uuids` of a runtime in a sub-service, saying why when it
+ * cannot be. Answers whether it was done.
+ */
+export function wrapRun(
+  boardContext: BoardContextState,
+  runtimeId: string,
+  uuids: string[],
+): Promise<boolean> {
+  return boardContext
+    .wrapServices(runtimeId, uuids)
+    .then(() => true)
+    .catch((err) => {
+      refused("Could not wrap the services", err);
+      return false;
+    });
+}
+
+/**
+ * Wraps the run `uuids` of a runtime and makes a block named `name` of it, in
+ * one step, saying how it went. `addedFrom` names where the block is added
+ * again, in the host's terms. Answers whether it was done.
+ */
+export function makeBlockOfRun(
+  boardContext: BoardContextState,
+  runtimeId: string,
+  uuids: string[],
+  name: string,
+  addedFrom = "the Building Blocks sidebar",
+): Promise<boolean> {
+  return boardContext
+    .wrapServices(runtimeId, uuids, { asBlock: true, name })
+    .then(({ block }) => {
+      toast.success(`"${block?.name ?? name}" is now a block of this board`, {
+        description: `Add it again from ${addedFrom}.`,
+      });
+      return true;
+    })
+    .catch((err) => {
+      refused("Could not make a block", err);
+      return false;
+    });
+}
+
+/** What a block made of these services is called until somebody says otherwise. */
+export function blockNameForRun(
+  boardContext: BoardContextState | null,
+  runtimeId: string,
+  uuids: string[],
+): string {
+  return nameForRun(
+    (boardContext?.services[runtimeId] ?? [])
+      .filter((svc) => uuids.includes(svc.uuid))
+      .map((svc) => svc.serviceName || svc.serviceId),
+  );
+}
+
 /** What the two actions need, and the dialog that names a block before it is made. */
 export function useWrapActions() {
   const boardContext = useBoardContext();
@@ -34,36 +94,30 @@ export function useWrapActions() {
     name: string;
   } | null>(null);
 
-  const namesOf = (runtimeId: string, uuids: string[]) =>
-    (boardContext?.services[runtimeId] ?? [])
-      .filter((svc) => uuids.includes(svc.uuid))
-      .map((svc) => svc.serviceName || svc.serviceId);
-
   const wrap = (runtimeId: string, uuids: string[]) => {
-    boardContext
-      ?.wrapServices(runtimeId, uuids)
-      .then(() => selection?.selectServices?.(null))
-      .catch((err) => refused("Could not wrap the services", err));
+    if (boardContext) {
+      void wrapRun(boardContext, runtimeId, uuids).then(
+        (done) => done && selection?.selectServices?.(null),
+      );
+    }
   };
 
   const makeBlock = (runtimeId: string, uuids: string[], name: string) => {
-    boardContext
-      ?.wrapServices(runtimeId, uuids, { asBlock: true, name })
-      .then(({ block }) => {
-        selection?.selectServices?.(null);
-        setNaming(null);
-        toast.success(`"${block?.name ?? name}" is now a block of this board`, {
-          description: "Add it again from the Building Blocks sidebar.",
-        });
-      })
-      .catch((err) => refused("Could not make a block", err));
+    if (boardContext) {
+      void makeBlockOfRun(boardContext, runtimeId, uuids, name).then((done) => {
+        if (done) {
+          selection?.selectServices?.(null);
+          setNaming(null);
+        }
+      });
+    }
   };
 
   const askToMakeBlock = (runtimeId: string, uuids: string[]) =>
     setNaming({
       runtimeId,
       uuids,
-      name: nameForRun(namesOf(runtimeId, uuids)),
+      name: blockNameForRun(boardContext, runtimeId, uuids),
     });
 
   const dialog = naming && (

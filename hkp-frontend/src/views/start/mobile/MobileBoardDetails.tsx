@@ -198,10 +198,17 @@ export default function MobileBoardDetails({
   onRevokeShare,
   onLeaveShare,
   loadHistory,
+  pinned,
+  onTogglePin,
 }: {
   board: BoardNode;
   description?: string;
   onOpen?: () => void;
+  /** Whether the board is pinned to the Home Screen; read with onTogglePin. */
+  pinned?: boolean;
+  /** Pins the board when it is not pinned, unpins it when it is. Enables the
+   *  Home Screen action. */
+  onTogglePin?: () => Promise<void>;
   onUploadToCloud?: () => Promise<void>;
   /** Folders the board is filed in, each as a display path ("Work › Audio"). */
   folders?: string[];
@@ -232,7 +239,24 @@ export default function MobileBoardDetails({
     "idle",
   );
   const [cloudError, setCloudError] = useState<string | null>(null);
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
   const meta = stateMeta(board.state);
+
+  const togglePin = async () => {
+    if (!onTogglePin || pinBusy) {
+      return;
+    }
+    setPinBusy(true);
+    setPinError(null);
+    try {
+      await onTogglePin();
+    } catch (err) {
+      setPinError(reasonOf(err));
+    } finally {
+      setPinBusy(false);
+    }
+  };
   const modified = formatModified(board.modified);
 
   const revokeShare = async (email: string) => {
@@ -475,6 +499,24 @@ export default function MobileBoardDetails({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {onOpen && <ActionButton label="Open board" tone="primary" onClick={onOpen} />}
+        {onTogglePin && (
+          <>
+            <ActionButton
+              label={
+                pinBusy
+                  ? pinned
+                    ? "Unpinning…"
+                    : "Pinning…"
+                  : pinned
+                    ? "Unpin from Home Screen"
+                    : "Pin to Home Screen"
+              }
+              disabled={pinBusy}
+              onClick={() => void togglePin()}
+            />
+            {pinError && <ErrorText>{pinError}</ErrorText>}
+          </>
+        )}
         {onUploadToCloud && (
           <>
             <ActionButton

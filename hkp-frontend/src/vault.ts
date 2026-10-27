@@ -41,6 +41,16 @@ function normalize(entry: string | Partial<VaultEntry> | undefined): VaultEntry 
   };
 }
 
+/**
+ * Whether the host keeps a secret store at all. Every host that has one
+ * injects its vault, empty or not; the web has none.
+ */
+const injected = window.__HKP_VAULT__ !== undefined;
+
+export function hostKeepsVault(): boolean {
+  return injected;
+}
+
 const cache: Record<string, VaultEntry> = {};
 for (const [alias, entry] of Object.entries(window.__HKP_VAULT__ ?? {})) {
   const normalized = normalize(entry);

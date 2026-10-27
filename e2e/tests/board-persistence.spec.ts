@@ -84,6 +84,8 @@ test("native host writes survive document replacement", async ({ page, profile, 
 });
 
 test("a deleted seed is not restored by another navigation", async ({ page, profile, openBoard }) => {
+  // Loads the app twice, each one a cold load of every module.
+  test.slow();
   await openBoard(name);
   await page.evaluate(async ({ name, native }) => {
     localStorage.removeItem(`hkp-playground-${name}`);

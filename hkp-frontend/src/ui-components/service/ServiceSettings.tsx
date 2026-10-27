@@ -26,7 +26,6 @@ import {
   isRuntimeBrowserClassType,
   isRuntimeRestClassType,
   ServiceDescriptor,
-  toCanonicalRuntimeClassType,
 } from "hkp-frontend/src/types";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import MenuIcon from "../MenuIcon";
@@ -40,6 +39,7 @@ import { toCanonicalServiceId } from "hkp-frontend/src/types";
 import { isScopedAddress } from "hkp-frontend/src/runtime/board/address";
 import { useSelection } from "hkp-frontend/src/selection/SelectionContext";
 import { useWrapActions } from "../runtime-ui/WrapSelection";
+import { runFrom } from "hkp-frontend/src/core/play";
 
 type Props = {
   service: ServiceDescriptor;
@@ -182,19 +182,8 @@ export default function ServiceSettings({
    */
   const runFromHere = (params?: unknown) => {
     setRunWithParamsOpen(false);
-    if (!boardContext || runtimeId === null) {
-      return;
-    }
-    const runtime = boardContext.runtimes.find((rt) => rt.id === runtimeId);
-    const scope = boardContext.scopes[runtimeId];
-    const api =
-      runtime &&
-      (boardContext.runtimeApis[runtime.type] ||
-        boardContext.runtimeApis[toCanonicalRuntimeClassType(runtime.type)]);
-    if (scope && api) {
-      Promise.resolve(api.processService(scope, service, params, null)).catch(
-        (err) => console.error(`Running ${service.uuid} failed:`, err),
-      );
+    if (boardContext && runtimeId !== null) {
+      runFrom(boardContext, runtimeId, service, params);
     }
   };
 

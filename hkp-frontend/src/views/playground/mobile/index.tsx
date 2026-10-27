@@ -20,6 +20,8 @@ const runtimeApis: RuntimeApiMap = {
 type MobilePlaygroundProps = PlaygroundProps & {
   /** Navigates back to the host's start page (renders a home button). */
   onHome?: () => void;
+  /** Opens the host's settings, at one section when it is named. */
+  onOpenSettings?: (section?: string) => void;
   /** Cloud board to open on arrival — boots into the Cloud tab with that
    *  board hydrated instead of the local board. */
   openCloudBoard?: OpenCloudBoardSignal;
@@ -76,6 +78,7 @@ function MobilePlayground(props: MobilePlaygroundProps) {
       <MobilePlaygroundInner
         suggestedName={suggestedName}
         onHome={props.onHome}
+        onOpenSettings={props.onOpenSettings}
         openCloudBoard={props.openCloudBoard}
       />
       {/* Host-provided children rendered inside the board context (e.g. the

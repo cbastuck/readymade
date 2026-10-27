@@ -83,14 +83,20 @@ export function useProcessingSweep() {
   return { ...state, start, finish };
 }
 
-/** The bar itself: one crossing, started afresh for every run. */
-export function ProcessingSweep({ run }: { run: number }) {
+/**
+ * The bar itself: one crossing, started afresh for every run. In the theme's
+ * accent unless told otherwise — the mobile canvas has its own.
+ */
+export function ProcessingSweep({ run, color }: { run: number; color?: string }) {
   return (
     <span
       key={run}
       aria-hidden
       className="hkp-processing-sweep"
-      style={{ animationDuration: `${SWEEP_MS}ms` }}
+      style={{
+        animationDuration: `${SWEEP_MS}ms`,
+        ...(color ? { background: color } : {}),
+      }}
     />
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import JSON5 from "json5";
 
 /**
  * Inputs written for "Run with parameters", kept to be run again.
@@ -115,3 +116,87 @@ export function useRunPayloads(boardName: string | undefined) {
 
   return { payloads, save, remove };
 }
+
+/**
+ * How a payload is written, not what it is.
+ *
+ * Fields build an object a name at a time, which is what most services read.
+ * Text is the payload itself — a request body pasted from an API's reference
+ * manual, a document, anything whose shape is not a flat map of names to
+ * values. JSON is a value that is not an object of strings — a list of items
+ * for an Iterator, numbers, nesting — parsed before it is sent. File is a
+ * file itself — an image, a recording — sent as the `File`, the way a
+ * facade's file-pick sends one.
+ */
+export type RunPayloadMode = "fields" | "text" | "json" | "file";
+
+export type ParsedRunJson =
+  | { ok: true; value: unknown }
+  | { ok: false; error: string };
+
+/**
+ * The quotes macOS and iOS substitute while typing, straightened. A last
+ * resort for when the text area's own opt-out is ignored: only tried once the
+ * text as typed has failed to parse, so curly quotes inside strings of JSON
+ * that already parses are left alone.
+ */
+const straightenQuotes = (text: string) =>
+  text.replace(/[“”„‟]/g, '"').replace(/[‘’‚‛]/g, "'");
+
+/**
+ * JSON5 rather than JSON: what people type by hand is a JS literal —
+ * `[{type: 1}]`, single quotes, a trailing comma — and JSON5 reads that
+ * without evaluating anything. Plain JSON is a subset, so it parses as before.
+ */
+export function parseRunJson(text: string): ParsedRunJson {
+  try {
+    return { ok: true, value: JSON5.parse(text) };
+  } catch (error) {
+    try {
+      return { ok: true, value: JSON5.parse(straightenQuotes(text)) };
+    } catch {
+      return { ok: false, error: (error as Error).message };
+    }
+  }
+}
+
+const extension = (file: File) =>
+  file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+
+const JSON_EXTENSIONS = ["json", "json5"];
+const TEXT_EXTENSIONS = [
+  "txt",
+  "md",
+  "csv",
+  "tsv",
+  "xml",
+  "yaml",
+  "yml",
+  "html",
+  "js",
+  "ts",
+  "log",
+];
+
+export const isJsonFile = (file: File) =>
+  file.type === "application/json" || JSON_EXTENSIONS.includes(extension(file));
+
+/**
+ * A file that can be opened in an editor: something to look at and change
+ * before running — a request body, a list of test items. Anything else is the
+ * payload as it is, and is sent untouched.
+ */
+export const isTextFile = (file: File) =>
+  isJsonFile(file) ||
+  file.type.startsWith("text/") ||
+  TEXT_EXTENSIONS.includes(extension(file));
+
+export const readFileText = (file: File) =>
+  typeof file.text === "function"
+    ? file.text()
+    : new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+      });

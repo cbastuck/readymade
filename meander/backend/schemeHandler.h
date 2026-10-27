@@ -44,6 +44,11 @@ private:
   saucer::scheme::response handleListBoards(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleDeleteBoard(const Router::Params &p, const saucer::scheme::request &req) const;
 
+  saucer::scheme::response handleListSharedBoards(const Router::Params &p, const saucer::scheme::request &req) const;
+  saucer::scheme::response handleLoadSharedBoard(const Router::Params &p, const saucer::scheme::request &req) const;
+  saucer::scheme::response handleSaveSharedBoard(const Router::Params &p, const saucer::scheme::request &req) const;
+  saucer::scheme::response handleDeleteSharedBoard(const Router::Params &p, const saucer::scheme::request &req) const;
+
   saucer::scheme::response handleListBoardHistories(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handlePushBoardSnapshot(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleLoadBoardHistory(const Router::Params &p, const saucer::scheme::request &req) const;
