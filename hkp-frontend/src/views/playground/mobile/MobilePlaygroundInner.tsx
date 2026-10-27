@@ -36,6 +36,8 @@ type MobilePlaygroundInnerProps = {
   suggestedName?: string;
   /** Navigates back to the host's start page; renders a home button when set. */
   onHome?: () => void;
+  /** Opens the host's settings; the board menu offers it when set. */
+  onOpenSettings?: () => void;
   /** Cloud board to open: lands on the Cloud tab with that board hydrated,
    *  which is how a host opens one from outside the playground. */
   openCloudBoard?: OpenCloudBoardSignal;
@@ -282,6 +284,7 @@ function TopBar({
 function PlaygroundShell({
   suggestedName,
   onHome,
+  onOpenSettings,
   openCloudBoard,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -501,6 +504,7 @@ function PlaygroundShell({
         onShare={onShare}
         onNew={onNew}
         onDeploy={() => setDeployOpen(true)}
+        onOpenSettings={onOpenSettings}
       />
       <DeployBoardSheet
         open={deployOpen}
@@ -570,6 +574,7 @@ function HubUnknownRemoteDialog() {
 export default function MobilePlaygroundInner({
   suggestedName,
   onHome,
+  onOpenSettings,
   openCloudBoard,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -585,6 +590,7 @@ export default function MobilePlaygroundInner({
           <PlaygroundShell
             suggestedName={suggestedName}
             onHome={onHome}
+            onOpenSettings={onOpenSettings}
             openCloudBoard={openCloudBoard}
           />
         </PlayProvider>

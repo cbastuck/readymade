@@ -281,6 +281,7 @@ export default function MobileStartPage(props: StartPageProps) {
     initials,
     onAvatarClick,
     avatarTitle,
+    onOpenSettings,
     menuSlot,
   } = props;
 
@@ -590,6 +591,16 @@ export default function MobileStartPage(props: StartPageProps) {
                 style={iconButtonStyle}
               >
                 <MobileIcon name="server" size={16} color={M.textSecondary} />
+              </button>
+            )}
+            {onOpenSettings && (
+              <button
+                title="Settings"
+                aria-label="Settings"
+                onClick={onOpenSettings}
+                style={iconButtonStyle}
+              >
+                <MobileIcon name="settings" size={16} color={M.textSecondary} />
               </button>
             )}
             {(initials || onAvatarClick) && (

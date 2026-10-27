@@ -126,4 +126,23 @@ describe("mobile start page sources", () => {
       await screen.findByText("Log in to see your cloud boards"),
     ).toBeTruthy();
   });
+
+  it("opens the host's settings from the gear beside the account", () => {
+    const onOpenSettings = vi.fn();
+    render(
+      <AppProvider>
+        <MobileStartPage
+          store={emptyStore}
+          listSavedBoards={async () => []}
+          news={[]}
+          onOpen={() => {}}
+          onCreateBoard={() => {}}
+          onOpenSettings={onOpenSettings}
+        />
+      </AppProvider>,
+    );
+
+    fireEvent.click(screen.getByLabelText("Settings"));
+    expect(onOpenSettings).toHaveBeenCalled();
+  });
 });

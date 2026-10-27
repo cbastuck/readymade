@@ -173,6 +173,12 @@ export interface StartPageProps {
   /** Avatar click action: log in while logged out, log out while logged in. */
   onAvatarClick?: () => void;
   avatarTitle?: string;
+  /**
+   * Opens the host's settings. The mobile start page shows a gear for it;
+   * the desktop one reaches settings through the host's app menu
+   * (`menuSlot`) and ignores this.
+   */
+  onOpenSettings?: () => void;
   /** Rightmost slot in the top bar (host app menu etc.). */
   menuSlot?: ReactNode;
 }

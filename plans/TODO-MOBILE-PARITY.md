@@ -47,10 +47,10 @@ calling convention.
 | M2 | Boards in native storage, history and resume | built 2026-10-26; the iCloud pass on devices open |
 | M3 | Building: presets, blocks, Run and Run with… | built 2026-10-27; multi-pipeline services and the pass on devices open |
 | M4 | Observing: flow inspector, Capture mode, deploy checks, overview | built 2026-10-27; the overview decision and the pass on devices open |
-| M5 | Secrets on the device | open |
+| M5 | Secrets on the device | built 2026-10-27; the pass on devices open |
 | M6 | Board Assist | open, needs M5 |
 | M7 | Assets in the board finder | open |
-| M8 | Settings: licenses and about | open |
+| M8 | Settings: licenses and about | built 2026-10-27 with the Settings page; the pass on devices open |
 | M9 | Sharing into the app | open |
 | M10 | Board finder extras: source, fork, import, QR | open |
 
@@ -432,22 +432,113 @@ passes (2971) and both frontends typecheck.
 
 ## M5: Secrets on the device
 
-A must-have. Boards with `{{secret.…}}` cannot run on a phone today, because the
-vault is the desktop backend's (`saucer.exposed`, `meander/backend/vault.h`).
+A must-have. Boards with `{{secret.…}}` could not run on a phone, because the
+vault was the desktop backend's (`saucer.exposed`, `meander/backend/vault.h`).
 
-- [ ] **iOS Keychain / Android Keystore** behind the vault's host calls
-  (`listSecrets`, `setSecret`, `deleteSecret`, `listSecretAudiences`,
-  `setSecretAudience`, `grantSecrets`, `revokeSecretGrant` in `backend/meander.ts`),
-  reached through `hkp://secrets` rather than `saucer.exposed`, which only the
-  desktop has.
-- [ ] Values and audiences injected at page creation, as on the desktop
-  (`WKUserScript` on iOS, the init script on Android), for the app's own page only.
-- [ ] Grants kept by the host (`hostKeepsGrants`), so consent survives a relaunch.
-  `SecretConsentDialog` is already mounted in `MobileApp`.
-- [ ] A **Secrets** page off the account page, from `SecretsTab`'s model: list,
-  add, remove, audiences, grants.
-- [ ] Coordinate with `TODO-SECRETS.md` Prio B before building, so mobile does
-  not get a second design.
+### Decided (2026-10-27)
+
+- **No second design.** `TODO-SECRETS.md` Prio B is about provisioners without
+  a native vault (the website store, the coordinator's). A phone is a native
+  provisioner like the desktop, so it gets the desktop's shape exactly: the
+  page reads an injected copy (`vault.ts`, `grants.ts`), writes go to the host,
+  grants are kept by the host, and the alias is the interface between vaults.
+  Nothing syncs a phone's secrets anywhere.
+- **On the device only.** iOS: Keychain items with
+  `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` — not in iCloud Keychain,
+  not restored onto another phone, readable whenever the app runs after the
+  first unlock. Android: the Keystore holds keys, not data, so each entry is
+  sealed with an AES-GCM key that never leaves it and kept in private
+  preferences; a backup restored elsewhere carries ciphertext without the key
+  and reads as empty. Grants name secrets and hold none, so they are a file
+  (Application Support; the app's files).
+- **One route family on both shells**, `hkp://secrets/` (`values`,
+  `values/<alias>`, `grants`), described in `targets.md`, "Where secrets live".
+  `meander/frontend/src/backend/meander.ts` uses it when there is no
+  `saucer.exposed`, so the web app has one adapter for three hosts.
+- **The route answers only the app's own page.** Every other `hkp://` route
+  answers `*`; this one requires a per-launch token injected with the vault
+  (`X-Hkp-Secrets-Token`), because an iframe shares the scheme on iOS and the
+  bridge object on Android. Chosen over checking `Origin`, which a custom
+  scheme may state as `null`.
+- **Secrets live in Settings, not on the account page** (asked for after the
+  first pass, which had put them under the account). A phone gets the desktop
+  dialog's sections as a **Settings** page: a list, each section its own page,
+  opened from a gear on the start page and from Settings in a board's menu.
+  None of it needs an account, so the avatar is the account again.
+
+### Built (2026-10-27)
+
+- [x] **iOS** (`Features/Secrets/DeviceVault.swift`): `DeviceVault` (Keychain),
+  `SecretGrants` (`grants.json`), `SecretsPage` (the token, and the
+  `WKUserScript` for the app's own pages — `hkp://app`, and the dev server's
+  origin in Debug). The script is replaced after every change, because iOS
+  reloads a page whose content process it reclaimed and a script written at
+  launch would bring back a deleted secret. `hkp://secrets` in
+  `BoardListView.swift`.
+- [x] **Android** (`bridge/DeviceVault.kt`): `DeviceVault`, `SecretGrants`,
+  `SecretsPage`; the values, grants and token are written into `index.html` as
+  `MainActivity` serves it (escaped for an inline script), and `index.html` is
+  now `no-store`. `hkp://secrets` in `HkpSchemeRouter`.
+- [x] **Web**: the backend adapter falls back to `hkp://secrets` without
+  `saucer`; `main.tsx` already turned on host grants when `__HKP_GRANTS__` is
+  injected, and `SecretConsentDialog` was already mounted in `MobileApp`.
+- [x] **Shared first**: what `SecretsTab` did beside its layout moved into
+  `views/secrets/secretsModel.ts` (`useSecrets`, `parseAudience`,
+  `secretProblem`); the desktop tab uses it unchanged in behaviour.
+  `MobileAccountPage`'s frame became `views/playground/mobile/MobilePage.tsx`;
+  `RuntimeAccessSheet`'s content became `RuntimeAccessContent`.
+- [x] **Settings page** (`views/settings/MobileSettingsPage.tsx`, the host's
+  sections in `meander/frontend/src/MobileSettings.tsx`): About, Appearance,
+  Connections, Secrets, Access, Licences — the desktop dialog's tabs in its
+  order. A section written in the settings kit (`kitSection`) is the desktop
+  tab's own content in a page, with inputs raised to 16px so iOS does not zoom.
+  Board Assist is left out until M6 gives a phone Assist to configure. Opened
+  over whatever is showing (`onOpenSettings` on the start page and the mobile
+  playground); in a board's menu it replaces the Runtime access row, which a
+  host without settings still gets. The stored coordinators now announce a
+  change (`COORDINATORS_CHANGED` in `common.tsx`), so a coordinator added in
+  Settings reaches a board already open.
+- [x] **Secrets page** (`views/secrets/MobileSecretsPage.tsx`): the stored
+  secrets as references with their audience (an unconstrained one says it will
+  be pinned on first use), Add secret, a sheet per secret to change its hosts
+  or replace its value (never shown) and to remove it on a second tap, the
+  runtimes allowed with Forget, and where this phone keeps them.
+- [x] Docs: `targets.md` (the hosts table, "Where secrets live").
+
+Tests: `tests/mobile-secrets.test.tsx` (listing, add with and without an
+audience, a refused name, changing hosts and value separately, remove on a
+second tap, a refusal from the store, forgetting a grant, a shell with no
+store); `tests/mobile-settings.test.tsx` (section order, a section as a page
+and back, a kit section framed, the board menu with and without settings, a
+coordinator stored elsewhere reaching a list already showing); the start
+page's gear in `tests/mobile-start-sources.test.tsx`. The hkp-frontend suite passes
+(2991) and both frontends typecheck; the backend adapter's route calls were
+checked once against a stubbed `fetch`. The iOS app builds for a device
+(`xcodebuild`, Debug, unsigned) and the Android Kotlin compiles. Nothing has
+run on a device.
+
+### Still open
+
+- [ ] **The pass on devices.** Add a secret, open a board that names it in a
+  browser runtime and in the embedded runtime (no prompt) and in a remote one
+  (the prompt, then Don't ask again surviving a relaunch); delete one and
+  check a reload no longer resolves it; an iOS page reload after the content
+  process is killed; the token check against a real WebKit preflight (the
+  route answers `OPTIONS` with the header allowed, but nothing has run it).
+- [ ] **Settings at phone size**: the kit sections (About, Appearance,
+  Connections, Licences) were written for the desktop dialog's pane and are
+  checked only in jsdom. Appearance changes the theme, accent and font on the
+  document; the mobile tree draws itself in its own fixed colours
+  (`tokens.ts`), so on a phone it reaches the service panels and the kit
+  pages rather than the cards. Whether that is enough to keep the section, or
+  the mobile tree should follow the accent, wants a look on a device.
+- [ ] **Keychain items outlive the app on iOS**: deleting and reinstalling
+  keeps the secrets while the grants (a file) are gone. Probably right — the
+  next board asks again — but worth deciding whether a first launch should
+  clear them.
+- [ ] A secret changed while a board runs is not pushed to its runtimes, as
+  on the desktop (`TODO-SECRETS.md`, 3b).
+- [ ] Assist's provider token in the vault is M6.
 
 ---
 
@@ -463,8 +554,8 @@ Needs M5: the provider token belongs in the vault, not in localStorage, where
   `scope.ts`, `mcpKnowledge.ts`) is used as it is.
 - [ ] Scope: the service or runtime the person has open stands in for the
   desktop's selection (`SelectionContext`).
-- [ ] **Assist settings** (provider, model, endpoint) on the account page, with
-  the token stored as a secret. The desktop moves to the same store, so a token
+- [ ] **Assist settings** (provider, model, endpoint) as a section of the
+  Settings page (M5), with the token stored as a secret. The desktop moves to the same store, so a token
   is kept in one place.
 
 ---
@@ -490,10 +581,12 @@ The asset view lives in the **board finder**, not in the playground's toolbar.
 
 ## M8: Settings: licenses and about
 
-- [ ] **Licenses** page off the account page, reading the same data as the desktop
-  (`components/Licenses`). `scripts/collect-licenses.py` already collects the iOS
-  and Android targets, so this is UI only.
-- [ ] **About**: version, commit (already shown as the start page badge), links.
+- [x] **Licences**, a section of the Settings page (M5): the desktop tab's
+  content (`LicencesTabContent`) for the phone's own surface (`currentSurface`).
+- [x] **About**, a section of the Settings page: version, the build's commit
+  (linked), and the embedded runtime's address.
+- [ ] The pass on devices: the licence list's length and its full texts at
+  phone size, the commit link opening outside the app.
 
 ---
 
