@@ -6,7 +6,8 @@ export type MobileIconName =
   | "layers" | "check" | "monitor" | "server" | "package" | "gitBranch"
   | "maximize2" | "minimize2" | "cloud" | "refresh" | "search" | "lock" | "user"
   | "moveVertical" | "folder" | "copy" | "play" | "playWith" | "pencil" | "boxes"
-  | "bookmark" | "unlink" | "info" | "eraser" | "square" | "checkSquare";
+  | "bookmark" | "unlink" | "info" | "eraser" | "square" | "checkSquare"
+  | "record" | "activity" | "rotateCcw" | "send";
 
 const paths: Record<MobileIconName, ReactNode> = {
   list: <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>,
@@ -51,6 +52,11 @@ const paths: Record<MobileIconName, ReactNode> = {
   eraser: <><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></>,
   square: <rect x="3" y="3" width="18" height="18" rx="4"/>,
   checkSquare: <><rect x="3" y="3" width="18" height="18" rx="4"/><polyline points="8 12 11 15 16 9"/></>,
+  // Capture mode: filled while it is on (capture.tsx).
+  record: <circle cx="12" cy="12" r="7"/>,
+  activity: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>,
+  rotateCcw: <><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></>,
+  send: <><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>,
 };
 
 type Props = {

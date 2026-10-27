@@ -13,6 +13,11 @@ import {
 import AddServiceSheet from "./AddServiceSheet";
 import RunSheet from "./RunSheet";
 import PresetsSheet from "./PresetsSheet";
+import MobileFlowInspector from "./MobileFlowInspector";
+import { flowActions } from "./FlowSheet";
+import { rootServiceUI } from "./serviceUI";
+import { useServiceFlow } from "./boardFlow";
+import { previewFlow, timeOf } from "../../../ui-components/service/flowRecords";
 import { runFrom } from "../../../core/play";
 import { SUB_SERVICE_ID } from "../../../core/palette";
 import { serviceDocsUrl } from "../../../ui-components/service/ServiceFrame";
@@ -40,14 +45,12 @@ import {
   configureService as configureBrowserService,
 } from "../../../runtime/browser/BrowserRuntimeApi";
 import { personRun } from "../../../runtime/processContext";
-import { makeServiceInstance as makeRestInstance } from "../../../runtime/rest/RuntimeRest";
 import { findServiceUI as findRestServiceUI } from "../../../runtime/rest/UIRegistry";
 import RuntimeRestServiceUI from "../../../runtime/rest/RuntimeRestServiceUI";
 import {
   getServiceConfig as getRestServiceConfig,
   configureService as configureRestService,
 } from "../../../runtime/rest/RuntimeRestApi";
-import { makeServiceInstance as makeGraphQLInstance } from "../../../runtime/graphql/RuntimeGraphQL";
 import { findServiceUI as findGraphQLServiceUI } from "../../../runtime/graphql/UIRegistry";
 import RuntimeGraphQLServiceUI from "../../../runtime/graphql/RuntimeGraphQLServiceUI";
 import {
@@ -172,6 +175,7 @@ export default function ServiceSheet({
   const [nameValue, setNameValue] = useState("");
   const [uiExpanded, setUiExpanded] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(false);
+  const [flowExpanded, setFlowExpanded] = useState(false);
   const [configDraft, setConfigDraft] = useState<any>(null);
   const [configError, setConfigError] = useState<string | null>(null);
   const [configSaving, setConfigSaving] = useState(false);
@@ -194,6 +198,7 @@ export default function ServiceSheet({
   const [presetsOpen, setPresetsOpen] = useState(false);
 
   const scope = runtime ? boardContext?.scopes[runtime.id] : undefined;
+  const serviceFlow = useServiceFlow(runtime?.id, service?.uuid);
   const boardName = boardContext?.boardName ?? "";
   const subRegistry: ServiceClass[] = useMemo(
     () =>
@@ -237,6 +242,7 @@ export default function ServiceSheet({
     if (!open) {
       setUiExpanded(false);
       setConfigExpanded(false);
+      setFlowExpanded(false);
       setEditingName(false);
       setConfigError(null);
       setPath([]);
@@ -493,45 +499,7 @@ export default function ServiceSheet({
 
     // Root node — use the real runtime instance.
     if (isRoot) {
-      if (isRuntimeBrowserClassType(runtime.type)) {
-        const browserScope = scope as BrowserRuntimeScope | undefined;
-        const instance =
-          browserScope?.findServiceInstance(service.uuid)?.[0] ?? null;
-        const UI = instance
-          ? (findBrowserServiceUI(service.serviceId) ??
-            browserScope?.registry.findServiceModule(service.serviceId)
-              ?.createUI ??
-            null)
-          : null;
-        return {
-          instance,
-          UI,
-          reason: scope ? "Service UI not available" : "Runtime not yet initialized",
-        };
-      }
-      if (isRuntimeRestClassType(runtime.type)) {
-        if (!scope) {
-          return { instance: null, UI: null, reason: "Runtime not yet initialized" };
-        }
-        const instance = makeRestInstance(scope, service, boardName);
-        const UI =
-          findRestServiceUI({
-            serviceId: service.serviceId,
-            version: service.version,
-            capabilities: service.capabilities,
-          }) ?? RuntimeRestServiceUI;
-        return { instance, UI };
-      }
-      if (isRuntimeGraphQLClassType(runtime.type)) {
-        if (!scope) {
-          return { instance: null, UI: null, reason: "Runtime not yet initialized" };
-        }
-        const instance = makeGraphQLInstance(scope, service, boardName);
-        const UI =
-          findGraphQLServiceUI(service.serviceId) ?? RuntimeGraphQLServiceUI;
-        return { instance, UI };
-      }
-      return { instance: null, UI: null, reason: "Service UI not available for this runtime type" };
+      return rootServiceUI(boardContext, runtime, service);
     }
 
     // Sub-service node — proxy instance routing configure() through the parent.
@@ -769,6 +737,18 @@ export default function ServiceSheet({
         }),
       );
 
+  // The last thing the service did, so the row says it before it is opened.
+  const flowSummary = () => {
+    const last = serviceFlow.output[0] ?? serviceFlow.input[0];
+    if (!last) {
+      return "What it received and passed on";
+    }
+    const way = serviceFlow.output[0] ? "Out" : "In";
+    return `${way} ${timeOf(last.at)} · ${previewFlow(last.data)}`;
+  };
+
+  const { onRerun, onInject } = flowActions(boardContext, runtime.id, service.uuid);
+
   const renderActions = () => (
     <div
       style={{
@@ -797,6 +777,12 @@ export default function ServiceSheet({
             label="Run with…"
             sublabel="From this service on, with an input you write"
             onClick={() => setRunSheetOpen(true)}
+          />
+          <ActionRow
+            icon="activity"
+            label="Flow"
+            sublabel={flowSummary()}
+            onClick={() => setFlowExpanded(true)}
           />
         </>
       )}
@@ -866,9 +852,43 @@ export default function ServiceSheet({
         open={open}
         onClose={onClose}
         title={isRoot ? service.serviceName : active.serviceName}
-        height={uiExpanded || configExpanded ? "92%" : "70%"}
+        height={uiExpanded || configExpanded || flowExpanded ? "92%" : "70%"}
       >
-        {configExpanded ? (
+        {flowExpanded ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                onClick={() => setFlowExpanded(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "6px 10px",
+                  border: `1px solid ${M.border}`,
+                  borderRadius: 8,
+                  background: M.card,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: M.textSecondary,
+                  fontFamily: "inherit",
+                }}
+              >
+                <MobileIcon name="minimize2" size={13} color={M.textSecondary} />
+                Collapse
+              </button>
+              <span style={{ fontSize: 13, fontWeight: 700, color: M.textPrimary }}>
+                Flow
+              </span>
+            </div>
+            <MobileFlowInspector
+              runtimeId={runtime.id}
+              serviceUuid={service.uuid}
+              onRerun={onRerun}
+              onInject={onInject}
+            />
+          </div>
+        ) : configExpanded ? (
           <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {renderBreadcrumb()}
             {/* Config toolbar */}

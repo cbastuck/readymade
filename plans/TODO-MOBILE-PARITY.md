@@ -46,7 +46,7 @@ calling convention.
 | M1 | Pin a board to the Home Screen | built 2026-10-26; the pass on devices open |
 | M2 | Boards in native storage, history and resume | built 2026-10-26; the iCloud pass on devices open |
 | M3 | Building: presets, blocks, Run and Run with… | built 2026-10-27; multi-pipeline services and the pass on devices open |
-| M4 | Observing: flow inspector, Capture mode, deploy checks, overview | open |
+| M4 | Observing: flow inspector, Capture mode, deploy checks, overview | built 2026-10-27; the overview decision and the pass on devices open |
 | M5 | Secrets on the device | open |
 | M6 | Board Assist | open, needs M5 |
 | M7 | Assets in the board finder | open |
@@ -347,20 +347,86 @@ Delivering the observability promise on the go. The same features apply to
 **cloud boards** (`MobileCloudBoards` over the coordinator bridge), because
 watching a deployment is the main reason to observe from a phone.
 
-- [ ] **Capture mode** switch in the top bar, or in the board menu if space is
-  short. It is held in `runtime/captureMode` and, as on desktop, never saved.
-  It covers local and cloud boards.
-- [ ] **Flow inspector** per service: a "Flow" tab or section in the service
-  sheet with the last values in and out, their history, and **Rerun** / **Inject**
-  (`FlowInspectorPopup`'s body is the model; its frame is desktop-only).
-  The Capture mode prompt from `TODO-CAPTURE-MODE.md` (decision 6) appears here too.
-- [ ] **Activity on the board list**: a service card shows that it is processing
-  (`processingSweep`), so the activity is visible without opening anything.
-- [ ] **Deploy checks**: `DeployBoardSheet` shows the per-runtime findings of
-  `deployPreflight` (as `DeployDialog` does) instead of one generic error.
-- [ ] **Overview** (`overview/`): the whole board as one live graph, read-only,
-  with pinch to zoom and pan to move. Proposed for observing bigger boards and
-  not yet confirmed. Decide after the flow inspector is in.
+### Built (2026-10-27)
+
+- [x] **Shared first.** Reading a call report moved out of `ServiceFrame` into
+  `ui-components/service/flowRecords.ts` (`readCallReport`), with
+  `rememberFlow` and the inspector's text helpers out of `ServiceOutputPlug` and
+  `FlowInspectorPopup` (`previewFlow`, `timeOf`, `tooLargeNote`, `flowText`,
+  `editedValue`). `ProcessingSweep` takes a colour. The desktop reads reports
+  through the same function, and its tests pass unchanged.
+- [x] **The board's flow** (`views/playground/mobile/boardFlow.tsx`): the
+  desktop keeps a service's history in its frame, which is on screen as long as
+  the board is; a phone opens a service only when asked, so a history begun in
+  the sheet would miss everything before it. `BoardFlow` listens to every
+  service a runtime holds from the moment the canvas is shown, outside React
+  (a clock-driven board reports many times a second), and only the card and
+  sheet of the service that reported re-render.
+- [x] **Activity on the board list**: a card is tinted while its service runs
+  and the sweep bar crosses once per run (`useProcessingSweep`, fed by the
+  board's flow); its dot turns teal.
+- [x] **Capture mode** (`capture.tsx`): a round button beside Play in the top
+  bar, as on the desktop (the four controls sit closer together to leave the
+  board's name room on the smallest phones). A cloud board has the same button
+  in its top bar, asking the coordinator (`setCoordinatorBoardCapture`), and
+  the canvas is handed that switch, so the prompt in a service's Flow asks the
+  coordinator too. The browser runtimes a cloud board hosts follow it, and
+  leaving the Cloud tab turns it off, as the desktop's Cloud Boards view does.
+- [x] **Flow inspector** in the service sheet (`MobileFlowInspector.tsx`): a
+  **Flow** row whose sublabel already says what the service did last; it opens
+  Input / Output with counts, the history (time and one line each), the value
+  in an editable field, Edited · Revert, Copy, and Rerun / Inject. A value too
+  large to keep is shown read-only with the desktop's note. With Capture mode
+  off it says so in the desktop dialog's words, in place, with a button that
+  turns it on. Rerun and Inject are out of reach on a block's use, as its
+  configuration is.
+- [x] **Expanded service cards** (asked for after the first pass): a tap on a
+  card expands it in place rather than opening its sheet. While Capture mode is
+  on it shows what the service passed on last, kept current; while it is off,
+  a line saying so and Turn on. **Inspect** opens the flow inspector on its own
+  (`FlowSheet.tsx`), **UI** unfolds the service's own panel below the buttons,
+  the card's full width (`ServiceUIPanel`, built by the same `rootServiceUI`
+  the sheet uses), and **…** the service's sheet — in the order UI, Inspect,
+  …. Each card expands on its
+  own, so several services can be watched at once, and only an expanded card
+  re-renders on a value. Rerun / Inject go through one function for both
+  sheets (`flowActions`). The runtime header's full view (every service's
+  panel at once, browser runtimes only) is gone: a card's UI does its job, for
+  any runtime, one service at a time.
+- [x] **Deploy checks**: `DeployBoardSheet` asks `checkDeploy` as it opens
+  (the findings do not depend on the coordinator), lists each runtime's finding
+  as `DeployDialog` does, keeps the coordinators out of reach while one blocks
+  the deploy, offers Check again, and shows the findings of a deploy that
+  preflight stopped after all instead of a toast.
+- [x] Docs: `concepts/runtime.md` ("What crosses a runtime boundary") and
+  `concepts/cloud-boards.md` (the deploy findings, the Capture switch; the
+  "no per-runtime dialog" gap is gone).
+
+Tests: `ui-components/service/tests/flow-records.test.ts` (reading reports),
+`tests/mobile-observing.test.tsx` (the board's flow, card activity, Flow in the
+sheet with Inject and an edited Rerun, the Capture prompt locally and on a
+deployed board, the switch), `tests/mobile-deploy-sheet.test.tsx` (findings,
+blocking, Check again, a deploy stopped by preflight). The hkp-frontend suite
+passes (2971) and both frontends typecheck.
+
+### Still open
+
+- [ ] **Overview** (`overview/`): the whole board as one live graph,
+  read-only, with pinch to zoom and pan to move. The flow inspector is in, so
+  this is now to be decided: is a graph worth it on a phone, or is the board
+  list with live cards enough for observing bigger boards?
+- [ ] **The pass on devices**: the Capture button and the cloud one (the
+  coordinator's round trip, the browser runtimes following it), the Flow view
+  at phone size and the keyboard over the value field, the sweep on cards of a
+  clock-driven board, the deploy findings against a real unreachable server.
+- [ ] **Services inside a sub-service have no Flow.** The board's flow listens
+  to what a runtime holds itself; a nested service reports under its address
+  (`overview/activity.ts` registers by it), and Rerun / Inject would go by it
+  too. Worth doing with M3's multi-pipeline drill-in, which needs the same
+  addressing.
+- [ ] One Capture mode per window, as on the desktop: the local board and the
+  Cloud tab share it, so opening a cloud board sets it to that board's, and
+  leaving the Cloud tab turns it off for the local board as well.
 
 ---
 

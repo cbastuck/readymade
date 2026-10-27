@@ -22,6 +22,7 @@ import BoardMenuSheet from "./BoardMenuSheet";
 import DeployBoardSheet from "./DeployBoardSheet";
 import SaveBoardSheet from "./SaveBoardSheet";
 import RunSheet from "./RunSheet";
+import { CaptureButton, useCaptureControl } from "./capture";
 import RuntimeUnreachableDialog from "../../../ui-components/RuntimeUnreachableDialog";
 import UnknownRemoteDialog from "../../../ui-components/UnknownRemoteDialog";
 import {
@@ -154,6 +155,7 @@ function TopBar({
   onPlay: () => void;
   onPlayWith: () => void;
 }) {
+  const capture = useCaptureControl();
   return (
     <div
       style={{
@@ -218,44 +220,60 @@ function TopBar({
         >
           {boardName || "Untitled Board"}
         </div>
-        <div style={{ fontSize: 11, color: M.textMuted, marginTop: 2 }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: M.textMuted,
+            marginTop: 2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
           {runtimeCount} runtime{runtimeCount !== 1 ? "s" : ""} · {serviceCount}{" "}
           service{serviceCount !== 1 ? "s" : ""}
         </div>
       </div>
-      {/* Starting the board where a board starts: a board driven by
-          something that has not happened yet is otherwise watched doing
-          nothing. */}
-      <BarButton
-        icon="play"
-        label={armed ? "Run the board again" : "Run the board"}
-        onClick={onPlay}
-        disabled={!playable}
-        lit={armed}
-      />
-      <BarButton
-        icon="playWith"
-        label="Run the board with parameters"
-        onClick={onPlayWith}
-        disabled={!playable}
-      />
-      <button
-        onClick={onMenu}
-        aria-label="Board menu"
-        style={{
-          width: 34,
-          height: 34,
-          border: "none",
-          background: "rgba(0,0,0,0.06)",
-          borderRadius: 9,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-        }}
-      >
-        <MobileIcon name="more" size={16} color={M.textSecondary} />
-      </button>
+      {/* Closer together than the rest of the bar: four controls and a
+          board's name share the width of the smallest phones. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        {/* Starting the board where a board starts: a board driven by
+            something that has not happened yet is otherwise watched doing
+            nothing. */}
+        <BarButton
+          icon="play"
+          label={armed ? "Run the board again" : "Run the board"}
+          onClick={onPlay}
+          disabled={!playable}
+          lit={armed}
+        />
+        <BarButton
+          icon="playWith"
+          label="Run the board with parameters"
+          onClick={onPlayWith}
+          disabled={!playable}
+        />
+        {/* Beside the two Play buttons, as on the desktop: whether a run
+            shows what it carried. */}
+        <CaptureButton control={capture} />
+        <button
+          onClick={onMenu}
+          aria-label="Board menu"
+          style={{
+            width: 34,
+            height: 34,
+            border: "none",
+            background: "rgba(0,0,0,0.06)",
+            borderRadius: 9,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <MobileIcon name="more" size={16} color={M.textSecondary} />
+        </button>
+      </div>
     </div>
   );
 }

@@ -40,6 +40,26 @@ import {
   makeBlockOfRun,
   wrapRun,
 } from "../../../ui-components/runtime-ui/WrapSelection";
+import { ProcessingSweep } from "../../../ui-components/service/processingSweep";
+import {
+  BoardFlow,
+  BoardFlowContext,
+  useServiceActivity,
+  useServiceFlow,
+} from "./boardFlow";
+import {
+  CaptureControl,
+  CaptureControlContext,
+  useCaptureControl,
+} from "./capture";
+import FlowSheet from "./FlowSheet";
+import { ServiceUIPanel } from "./serviceUI";
+import { isTooLarge } from "../../../runtime/callReport";
+import {
+  flowText,
+  previewFlow,
+  timeOf,
+} from "../../../ui-components/service/flowRecords";
 
 // Presence of a `bridge` prop means this canvas renders a *cloud* board: browser
 // runtime results are forwarded to the coordinator over `bridge.ws`. When omitted
@@ -48,6 +68,11 @@ export type MobileBoardBridge = { ws: WebSocket | null };
 
 type MobileBoardCanvasProps = {
   bridge?: MobileBoardBridge;
+  /**
+   * The Capture mode switch, where it is not this window's: a deployed board
+   * is switched by its coordinator. Left out, the canvas switches its own.
+   */
+  capture?: CaptureControl;
 };
 
 // ── Flow connector between service cards ───────────────────────
@@ -173,9 +198,213 @@ function Stepper({
 }
 
 // ── Service card ───────────────────────────────────────────────
+// A card's colour while its service runs: the header tint of the desktop's frame.
+const RUNNING_TINT = "#f0faf8";
+
+/** How much of the latest output an expanded card shows; Inspect has it all. */
+const LATEST_CHARS = 1200;
+
+/**
+ * What an expanded card shows below its row: what the service passed on last,
+ * while Capture mode is on — observing a board without opening anything — and
+ * the way to the rest of it.
+ */
+function ServiceCardDetails({
+  runtime,
+  service,
+  onInspect,
+  onOpen,
+}: {
+  runtime: RuntimeDescriptor;
+  service: ServiceDescriptor;
+  onInspect: () => void;
+  onOpen: () => void;
+}) {
+  const capture = useCaptureControl();
+  const { output } = useServiceFlow(runtime.id, service.uuid);
+  // Further still: the service's own panel, below the buttons — a Monitor or
+  // a meter watched in the list beside the others.
+  const [showUI, setShowUI] = useState(false);
+  const latest = output[0];
+
+  const label: CSSProperties = {
+    fontSize: 10.5,
+    fontWeight: 600,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: M.textMuted,
+  };
+  const button: CSSProperties = {
+    flex: 1,
+    height: 38,
+    borderRadius: 10,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    fontFamily: "inherit",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+  };
+
+  return (
+    <>
+      <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {capture.on ? (
+          <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                marginBottom: 6,
+              }}
+            >
+              <span style={label}>Latest output</span>
+              {latest && (
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: M.textMuted,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {timeOf(latest.at)}
+                </span>
+              )}
+            </div>
+            {latest ? (
+              <pre
+                aria-label="Latest output"
+                style={{
+                  margin: 0,
+                  padding: "8px 10px",
+                  maxHeight: 140,
+                  overflow: "hidden",
+                  background: "#f8f5f2",
+                  border: `1px solid ${M.border}`,
+                  borderRadius: 10,
+                  fontSize: 11.5,
+                  lineHeight: 1.4,
+                  color: M.textPrimary,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-all",
+                }}
+              >
+                {isTooLarge(latest.data)
+                  ? previewFlow(latest.data)
+                  : flowText(latest.data).slice(0, LATEST_CHARS)}
+              </pre>
+            ) : (
+              <div style={{ fontSize: 12.5, color: M.textMuted }}>
+                Nothing produced yet.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              fontSize: 12.5,
+              lineHeight: 1.4,
+              color: M.textSecondary,
+            }}
+          >
+            <span style={{ flex: 1 }}>
+              Capture mode is off, so what this service passes on is not shown.
+            </span>
+            <button
+              onClick={() => capture.set(true)}
+              disabled={capture.busy}
+              style={{
+                flexShrink: 0,
+                height: 30,
+                padding: "0 10px",
+                border: `1px solid ${M.danger}`,
+                borderRadius: 8,
+                background: "#fff",
+                color: M.danger,
+                fontFamily: "inherit",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: capture.busy ? "default" : "pointer",
+                opacity: capture.busy ? 0.5 : 1,
+              }}
+            >
+              Turn on
+            </button>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => setShowUI((shown) => !shown)}
+            aria-expanded={showUI}
+            style={{
+              ...button,
+              border: `1.5px solid ${showUI ? M.teal : M.border}`,
+              background: showUI ? M.tealLight : M.card,
+              color: showUI ? M.tealDark : M.textSecondary,
+            }}
+          >
+            <MobileIcon
+              name={showUI ? "minimize2" : "maximize2"}
+              size={13}
+              color={showUI ? M.tealDark : M.textSecondary}
+            />
+            UI
+          </button>
+          {/* Plain like the others: teal in this row means UI is shown, and
+              Inspect only opens a sheet. */}
+          <button
+            onClick={onInspect}
+            style={{
+              ...button,
+              border: `1.5px solid ${M.border}`,
+              background: M.card,
+              color: M.textSecondary,
+            }}
+          >
+            <MobileIcon name="activity" size={14} color={M.textSecondary} />
+            Inspect
+          </button>
+          {/* Everything else about the service: its sheet. */}
+          <button
+            onClick={onOpen}
+            aria-label="More"
+            title="Everything else about this service"
+            style={{
+              ...button,
+              flex: "0 0 46px",
+              border: `1.5px solid ${M.border}`,
+              background: M.card,
+              color: M.textSecondary,
+            }}
+          >
+            <MobileIcon name="more" size={16} color={M.textSecondary} />
+          </button>
+        </div>
+      </div>
+      {/* The width of the card, so the panel has all the room there is. */}
+      {showUI && (
+        <div
+          data-service-ui
+          style={{ borderTop: `1px solid ${M.border}`, background: "#fff" }}
+        >
+          <ServiceUIPanel runtime={runtime} service={service} />
+        </div>
+      )}
+    </>
+  );
+}
+
 function ServiceCard({
   service,
+  runtime,
   onTap,
+  onInspect,
   active,
   reordering,
   canUp,
@@ -185,16 +414,26 @@ function ServiceCard({
   selected,
 }: {
   service: ServiceDescriptor;
+  runtime: RuntimeDescriptor;
+  /** Picks it in selection mode, and opens its sheet otherwise. */
   onTap: () => void;
+  /** Opens what it received and passed on. */
+  onInspect: () => void;
   active: boolean;
   reordering: boolean;
   canUp: boolean;
   canDown: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
-  /** Picked in selection mode; undefined outside it, where a tap opens the service. */
+  /** Picked in selection mode; undefined outside it, where a tap expands it. */
   selected?: boolean;
 }) {
+  // Whether it is running, as the desktop's frame shows it: what is happening
+  // on the board is seen without opening anything.
+  const activity = useServiceActivity(runtime.id, service.uuid);
+  // Expanded, it shows what the service passed on last. Each card on its own,
+  // so several can be watched at once.
+  const [expanded, setExpanded] = useState(false);
   const body = (
     <>
       <div
@@ -235,7 +474,9 @@ function ServiceCard({
 
   const cardStyle: CSSProperties = {
     width: "100%",
-    background: M.card,
+    position: "relative",
+    overflow: "hidden",
+    background: activity.running ? RUNNING_TINT : M.card,
     border: `1.5px solid ${active ? M.teal : M.border}`,
     borderRadius: 14,
     padding: "12px 14px",
@@ -248,13 +489,20 @@ function ServiceCard({
       : "0 1px 3px rgba(0,0,0,0.06)",
     transition: "all 0.15s",
   };
+  const sweep = activity.sweeping && (
+    <ProcessingSweep run={activity.run} color={M.teal} />
+  );
 
   if (reordering) {
     // A static row dedicated to reordering — tapping the body does nothing; the
     // steppers own all interaction.
     return (
-      <div style={{ ...cardStyle, cursor: "default", marginBottom: 8 }}>
+      <div
+        data-running={activity.running || undefined}
+        style={{ ...cardStyle, cursor: "default", marginBottom: 8 }}
+      >
         {body}
+        {sweep}
         <Stepper
           canUp={canUp}
           canDown={canDown}
@@ -273,6 +521,7 @@ function ServiceCard({
           onClick={onTap}
           role="checkbox"
           aria-checked={selected}
+          data-running={activity.running || undefined}
           style={{
             ...cardStyle,
             cursor: "pointer",
@@ -281,6 +530,7 @@ function ServiceCard({
           }}
         >
           {body}
+          {sweep}
           <MobileIcon
             name={selected ? "checkSquare" : "square"}
             size={22}
@@ -295,20 +545,55 @@ function ServiceCard({
 
   return (
     <div>
-      <button onClick={onTap} style={{ ...cardStyle, cursor: "pointer" }}>
-        {body}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: M.green,
-            }}
+      <div
+        data-service-card={service.uuid}
+        data-running={activity.running || undefined}
+        style={{ ...cardStyle, display: "block", padding: 0 }}
+      >
+        <button
+          onClick={() => setExpanded((open) => !open)}
+          aria-expanded={expanded}
+          style={{
+            width: "100%",
+            padding: "12px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            border: "none",
+            background: "none",
+            textAlign: "left",
+            fontFamily: "inherit",
+            cursor: "pointer",
+          }}
+        >
+          {body}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: activity.running ? M.teal : M.green,
+                boxShadow: activity.running ? `0 0 0 3px ${M.tealLight}` : "none",
+              }}
+            />
+            <MobileIcon
+              name={expanded ? "chevronUp" : "chevronDown"}
+              size={14}
+              color={M.textMuted}
+            />
+          </div>
+        </button>
+        {expanded && (
+          <ServiceCardDetails
+            runtime={runtime}
+            service={service}
+            onInspect={onInspect}
+            onOpen={onTap}
           />
-          <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
-        </div>
-      </button>
+        )}
+        {sweep}
+      </div>
       <FlowArrow />
     </div>
   );
@@ -446,10 +731,10 @@ function SelectionBar({
 function RuntimeCard({
   runtime,
   services,
-  scope,
   boardContext,
   activeServiceId,
   onServiceTap,
+  onInspect,
   onAddService,
   onRemoveRuntime,
   structural,
@@ -458,12 +743,12 @@ function RuntimeCard({
 }: {
   runtime: RuntimeDescriptor;
   services: ServiceDescriptor[];
-  scope: RuntimeScope | undefined;
   registry: ServiceRegistry;
   boardName: string;
   boardContext: BoardContextState;
   activeServiceId: string | null;
   onServiceTap: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
+  onInspect: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
   onAddService: () => void;
   onRemoveRuntime: () => void;
   /** Whether what the board is made of may change here (see ServiceSheet). */
@@ -473,8 +758,6 @@ function RuntimeCard({
   onMakeBlock: (uuids: string[]) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [fullView, setFullView] = useState(false);
-  const editable = useEditReportingService();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const closeMenu = () => {
@@ -550,168 +833,6 @@ function RuntimeCard({
     const target = dir === -1 ? index - 1 : index + 2;
     boardContext.arrangeService(runtime, svc.uuid, target);
   };
-
-  const handleServiceAction = (cmd: ServiceAction) => {
-    if (cmd.action === "remove") {
-      boardContext.removeService({ uuid: cmd.service.uuid }, runtime);
-    } else if (cmd.action === "rename" && cmd.payload?.value) {
-      boardContext.setServiceName(
-        runtime.id,
-        cmd.service.uuid,
-        cmd.payload.value,
-      );
-    }
-  };
-
-  if (fullView && scope) {
-    // Full view renders the services' own UI panels, which live on the service
-    // instances a browser scope holds. A remote runtime has no such instances
-    // here — on desktop its panels are built by the RuntimeRest component,
-    // which the mobile renderer never mounts — so it expands to a hint instead.
-    const fullViewScope = isRuntimeBrowserClassType(runtime.type)
-      ? (scope as BrowserRuntimeScope)
-      : undefined;
-    const fullViewPanels = services.map((svc) => {
-      const instance = fullViewScope?.findServiceInstance(svc.uuid)?.[0] ?? null;
-      const UI = instance
-        ? (findServiceUI(svc.serviceId) ??
-          fullViewScope?.registry.findServiceModule(svc.serviceId)?.createUI ??
-          null)
-        : null;
-      if (!UI || !instance) {
-        return null;
-      }
-      return (
-        <UI
-          key={svc.uuid}
-          service={editable(instance)}
-          showBypassOnlyIfExplicit={false}
-          draggable={false}
-          onServiceAction={handleServiceAction}
-        />
-      );
-    });
-
-    return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 50,
-          background: M.bg,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Compact header strip for returning to card view */}
-        <div
-          style={{
-            background: M.runtimeBg,
-            paddingTop: "max(10px, env(safe-area-inset-top))",
-            paddingBottom: 10,
-            paddingLeft: 12,
-            paddingRight: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            borderBottom: `1px solid ${M.runtimeBorder}`,
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: M.blue,
-              flexShrink: 0,
-            }}
-          />
-          <span
-            style={{
-              flex: 1,
-              fontSize: 13,
-              fontWeight: 600,
-              color: M.textPrimary,
-            }}
-          >
-            {runtime.name}
-          </span>
-          <button
-            onClick={() => onAddService()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "4px 8px",
-              border: `1px solid ${M.runtimeBorder}`,
-              borderRadius: 7,
-              background: "#fff",
-              cursor: "pointer",
-              fontSize: 11,
-              fontWeight: 600,
-              color: M.blue,
-            }}
-          >
-            <MobileIcon name="plus" size={11} color={M.blue} />
-            Service
-          </button>
-          <button
-            onClick={() => setFullView(false)}
-            title="Switch to card view"
-            style={{
-              width: 28,
-              height: 28,
-              border: "none",
-              background: "rgba(255,255,255,0.5)",
-              borderRadius: 7,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-          >
-            <MobileIcon name="minimize2" size={14} color={M.textSecondary} />
-          </button>
-        </div>
-        {/* Full service UIs — rendered directly so cards fill the container */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            overflowX: "hidden",
-            WebkitOverflowScrolling: "touch",
-            background: "#fff",
-            padding: "6px",
-          }}
-        >
-          <div
-            style={{
-              zoom: SERVICE_UI_ZOOM,
-              width: `calc(100% / ${SERVICE_UI_ZOOM})`,
-            }}
-          >
-            {fullViewPanels.some(Boolean) ? (
-              fullViewPanels
-            ) : (
-              <div
-                style={{
-                  padding: 24,
-                  fontSize: 14,
-                  color: M.textMuted,
-                  textAlign: "center",
-                }}
-              >
-                {fullViewScope
-                  ? "No service UIs available"
-                  : "Service UIs of a remote runtime are shown on desktop only"}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -804,25 +925,6 @@ function RuntimeCard({
               />
             </button>
           )}
-          {scope && services.length > 0 && !isReordering && !isSelecting && (
-            <button
-              onClick={() => setFullView(true)}
-              title="Show full service UIs"
-              style={{
-                width: 28,
-                height: 28,
-                border: "none",
-                background: "rgba(255,255,255,0.5)",
-                borderRadius: 7,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              <MobileIcon name="maximize2" size={14} color={M.textSecondary} />
-            </button>
-          )}
           <button
             onClick={() => setCollapsed(!collapsed)}
             style={{
@@ -885,9 +987,11 @@ function RuntimeCard({
               <ServiceCard
                 key={svc.uuid}
                 service={svc}
+                runtime={runtime}
                 onTap={() =>
                   isSelecting ? togglePicked(svc.uuid) : onServiceTap(svc, runtime)
                 }
+                onInspect={() => onInspect(svc, runtime)}
                 active={activeServiceId === svc.uuid}
                 reordering={isReordering}
                 canUp={i > 0}
@@ -1102,6 +1206,7 @@ function RuntimeReorderRow({
 // ── Board list (runtimes + services) ────────────────────────────
 function BoardList({
   onServiceTap,
+  onInspect,
   activeServiceId,
   onAddService,
   onRemoveRuntime,
@@ -1111,6 +1216,7 @@ function BoardList({
   onMakeBlock,
 }: {
   onServiceTap: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
+  onInspect: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
   activeServiceId: string | null;
   onAddService: (rt: RuntimeDescriptor) => void;
   onRemoveRuntime: (rt: RuntimeDescriptor) => void;
@@ -1124,7 +1230,7 @@ function BoardList({
   if (!boardContext) {
     return null;
   }
-  const { runtimes, services, scopes, registry, boardName } = boardContext;
+  const { runtimes, services, registry, boardName } = boardContext;
 
   // Only meaningful with 2+ runtimes; a removal that drops to one exits the mode.
   const isReorderingRuntimes = reorderingRuntimes && runtimes.length > 1;
@@ -1164,12 +1270,12 @@ function BoardList({
                 <RuntimeCard
                   runtime={rt}
                   services={services[rt.id] ?? []}
-                  scope={scopes[rt.id]}
                   registry={registry[rt.id] ?? []}
                   boardName={boardName ?? ""}
                   boardContext={boardContext}
                   activeServiceId={activeServiceId}
                   onServiceTap={onServiceTap}
+                  onInspect={onInspect}
                   onAddService={() => onAddService(rt)}
                   onRemoveRuntime={() => onRemoveRuntime(rt)}
                   structural={structural}
@@ -1632,7 +1738,10 @@ function ViewToggle({
 }
 
 // ── Canvas root ─────────────────────────────────────────────────
-export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
+export default function MobileBoardCanvas({
+  bridge,
+  capture,
+}: MobileBoardCanvasProps) {
   const boardContext = useBoardContext();
 
   const [view, setView] = useState<"facade" | "board">("facade");
@@ -1649,6 +1758,11 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
   } | null>(null);
   const [runWithRuntime, setRunWithRuntime] =
     useState<RuntimeDescriptor | null>(null);
+  // The service whose flow is open on its own, from its card's Inspect.
+  const [inspected, setInspected] = useState<{
+    service: ServiceDescriptor;
+    runtime: RuntimeDescriptor;
+  } | null>(null);
   const [blockOf, setBlockOf] = useState<{
     runtime: RuntimeDescriptor;
     uuids: string[];
@@ -1661,6 +1775,20 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
   const subServicePresets = usePresetsForService(SUB_SERVICE_ID);
 
   useWireBrowserScopes(boardContext, bridge);
+
+  // What every service received and passed on, from the moment the board is
+  // shown: the cards' activity and each service's flow (`boardFlow`).
+  const [flow] = useState(() => new BoardFlow());
+  const flowRuntimes = boardContext?.runtimes;
+  const flowServices = boardContext?.services;
+  const flowScopes = boardContext?.scopes;
+  useEffect(
+    () =>
+      flowRuntimes && flowServices && flowScopes
+        ? flow.attach(flowRuntimes, flowServices, flowScopes)
+        : undefined,
+    [flow, flowRuntimes, flowServices, flowScopes],
+  );
 
   // When a different board loads, prefer its facade ("App") view by default,
   // mirroring the desktop where the facade is shown first when present.
@@ -1735,7 +1863,7 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
       )
     : [];
 
-  return (
+  const canvas = (
     <div
       style={{
         position: "relative",
@@ -1801,6 +1929,7 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
             setSelectedService(svc);
             setSelectedServiceRuntime(rt);
           }}
+          onInspect={(service, runtime) => setInspected({ service, runtime })}
           activeServiceId={selectedService?.uuid ?? null}
           onAddService={setAddServiceRuntime}
           onRemoveRuntime={handleRemoveRuntime}
@@ -1836,6 +1965,12 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
         onRemove={handleRemoveService}
         onRename={handleRenameService}
         structural={structural}
+      />
+      <FlowSheet
+        open={!!inspected}
+        onClose={() => setInspected(null)}
+        service={inspected?.service ?? null}
+        runtime={inspected?.runtime ?? null}
       />
       <RunSheet
         open={!!runWithRuntime}
@@ -1878,5 +2013,13 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
         />
       )}
     </div>
+  );
+
+  return (
+    <BoardFlowContext.Provider value={flow}>
+      <CaptureControlContext.Provider value={capture ?? null}>
+        {canvas}
+      </CaptureControlContext.Provider>
+    </BoardFlowContext.Provider>
   );
 }
