@@ -141,6 +141,34 @@ describe("what a service says", () => {
 
     expect(received).toEqual([]);
   });
+
+  it("raises a service's error as a toast, named as the board names it", async () => {
+    // A statement a member's stale page sends, refused by the database: what
+    // they are shown is why, not a crash of the view looking up the name.
+    const { api } = attached();
+    const { scope } = (await api.restoreRuntime(
+      runtime,
+      [{ uuid: "mon-1", serviceId: "monitor", serviceName: "Say yes" }] as Array<ServiceDescriptor>,
+      null,
+      "b",
+    ))!;
+    const actions: unknown[] = [];
+    scope.onAction = (action) => {
+      actions.push(action);
+      return true;
+    };
+
+    (scope as unknown as {
+      notify: (uuid: string, payload: unknown) => void;
+    }).notify("mon-1", { error: "the poll is closed" });
+
+    expect(actions).toEqual([
+      expect.objectContaining({
+        action: "notification",
+        payload: { type: "error", message: "Say yes: the poll is closed" },
+      }),
+    ]);
+  });
 });
 
 describe("acting on an attached board", () => {

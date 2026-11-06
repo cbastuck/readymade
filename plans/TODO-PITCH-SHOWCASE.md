@@ -133,7 +133,7 @@ range; the cards behind them show depth.
 | | RSS Radio | video · run it yourself (node, python) | collage exists (`reading-radio-*.png`); video | *registered and card written 2026-11-06;* finish the editor unit drafted in `6096cec8`, shoot — **last**, after the demos that work (the editor is what needs the Anthropic key, or a local OpenAI-compatible model) |
 | | Live Radio | in the Readymade app | video: a phone scans the QR code and plays the mic | register, shoot |
 | **For your club, team and customers** | **Court Booking** (hero) | browser (`court-booking-browser`) | video: two members, one slot, the second refused | *shot 2026-11-06* (`court-booking.mp4`, 28 s; see "The shoots") |
-| | Meeting Poll | browser (`meeting-poll-browser`) | video: deployed, several members answering | *variant done 2026-11-06;* shoot |
+| | Meeting Poll | browser (`meeting-poll-browser`) | video: deployed, several members answering | *variant done 2026-11-06; shot 2026-11-06* (`meeting-poll.mp4`, 29 s) |
 | | **AI Collaboration** (SYN Mail Desk) | video · run it yourself (node, IMAP, SMTP, model) | video | *registered 2026-11-06, the card titled AI Collaboration (the board keeps its name);* shoot |
 
 Every pick needs the same checklist: board polished · slug registered ·
@@ -271,16 +271,26 @@ python3 tools/generate.py remotion/videos/<slug>   # narration, storyboard, vide
 ```
 
 The render's mux needs `ffmpeg` on the PATH (`/opt/homebrew/bin`), and the
-take needs `npm ci` in hkp-node.
+take needs `npm ci` in hkp-node. **One take per run:** the server's data is
+disposable per start, not per take, so two takes that deploy as the same
+person to the same coordinator collide (the second finds Sam already listed).
 
 - [x] **Court Booking.** *Shot 2026-11-06* (`court-booking.film.ts`, cut
       `CourtBooking`): the timetable; Ana takes tomorrow at six and the rest of
       her day closes; she and Sam confirm one hour at once, one gets it, the
       other is told. Its booking and race beats moved into `e2e/film/court.ts`,
       shared with the Golden Path take, which still passes on its tape.
-- [ ] **Meeting Poll.** Same harness; needs a cast of three (`cast` makes two)
-      and the deployed meeting-poll board: Sam calls it, two members answer on
-      their phones, the closed poll turns a late answer down.
+- [x] **Meeting Poll.** *Shot 2026-11-06* (`meeting-poll.film.ts`, cut
+      `MeetingPoll`): Sam calls a team dinner and puts up three evenings; Ana
+      and Ben answer on their phones; Sam sees who can make which and the best
+      so far; he closes the poll, and a tap on Ana's stale page is refused by
+      the schema's trigger ("the poll is closed"). `cast` now has Ben,
+      `deployAndShare` lists further members, and `memberOpensIt` opens the
+      board on anybody's phone. The take fails on any page error on Ana's
+      phone, because the first take found one: a refusal on an attached board
+      threw in `raiseError` (the coordinator's runtime scope had no
+      `services`), showing a TypeError toast over the reason. Fixed in
+      `bridgeRuntimeApi.ts`, with a test.
 - [ ] **Health Log.** The browser version, no server: Generate fake data,
       Trends, a point's journal beside it. Needs a take without the film
       config's node and sign-in, or one that simply doesn't use them.
