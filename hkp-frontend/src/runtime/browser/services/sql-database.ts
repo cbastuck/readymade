@@ -47,6 +47,8 @@ export type Database = {
     sql: string,
     params?: SqlParams,
   ): { changes: number; lastInsertRowid: number };
+  /** The database as an SQLite file: the bytes any SQLite tool opens. */
+  file(): Uint8Array;
 };
 
 /** Where a database's bytes are kept between page loads. */
@@ -279,6 +281,7 @@ function wrap(
           lastInsertRowid: Number(sqlite3.capi.sqlite3_last_insert_rowid(db)),
         };
       }),
+    file: () => sqlite3.capi.sqlite3_js_db_export(db),
   };
 }
 

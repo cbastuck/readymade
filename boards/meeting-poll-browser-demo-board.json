@@ -1,0 +1,649 @@
+{
+  "boardName": "Meeting Poll (Browser)",
+  "description": "Dates for a meeting — the Meeting Poll board with the database moved into the browser. Nothing to install: the SQL services run SQLite compiled to WebAssembly, and the polls are kept in this browser between visits. Whoever is signed in to the app is the board's owner here, so they call meetings, put up times and answer them; the statements are the same as on the server, and the database still refuses what the page would not have offered, and says why. What it gives up is the team: the tables belong to this browser alone, so nobody else answers. Deployed on hkp-node and shared, every member answers as themselves.",
+  "runtimes": [
+    {
+      "id": "office",
+      "name": "Office",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "office": [
+      {
+        "uuid": "who-is-here",
+        "serviceId": "sql",
+        "serviceName": "Who is here",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meetings",
+          "schema": "-- Who is who: an address, and what the board's member list called it the\n-- last time they came by. Everybody else is shown the name, never the address.\nCREATE TABLE IF NOT EXISTS person (\n  email TEXT PRIMARY KEY,\n  name  TEXT\n);\nCREATE TABLE IF NOT EXISTS poll (\n  name      TEXT PRIMARY KEY,\n  -- The address of whoever called it. Only the board's owner may, so a call\n  -- by anybody else arrives naming nobody, and is refused below.\n  organiser TEXT,\n  closed    INTEGER NOT NULL DEFAULT 0,\n  created   TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE TABLE IF NOT EXISTS option (\n  id         INTEGER PRIMARY KEY,\n  poll       TEXT NOT NULL,\n  -- Who put the date up: what the trigger below checks it against.\n  proposedBy TEXT,\n  starts     TEXT NOT NULL CONSTRAINT a_date_and_a_time\n             CHECK (starts GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]')\n);\n-- A date is on the poll once, however often it is put up.\nCREATE UNIQUE INDEX IF NOT EXISTS one_option_per_time\n  ON option (poll, starts);\nCREATE TABLE IF NOT EXISTS vote (\n  id     INTEGER PRIMARY KEY,\n  option INTEGER NOT NULL REFERENCES option (id) ON DELETE CASCADE,\n  -- The address of whoever answered, as the server that signed them in said.\n  voter  TEXT NOT NULL,\n  castAt TEXT NOT NULL DEFAULT (datetime('now'))\n);\n-- One person, one answer per date: a second tap cannot count twice.\nCREATE UNIQUE INDEX IF NOT EXISTS one_vote_per_option\n  ON vote (option, voter);\n-- The rules a WHERE clause would only decline to break. Said here they are\n-- refused with a reason, which is what the board has to show a person.\nCREATE TRIGGER IF NOT EXISTS the_owner_calls_the_meetings\nBEFORE INSERT ON poll\nWHEN NEW.organiser IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'only the board''s owner can call a meeting');\nEND;\nCREATE TRIGGER IF NOT EXISTS a_date_is_for_a_meeting\nBEFORE INSERT ON option\nWHEN NOT EXISTS (SELECT 1 FROM poll WHERE name = NEW.poll)\nBEGIN\n  SELECT RAISE(ABORT, 'there is no meeting to put a date up for');\nEND;\nCREATE TRIGGER IF NOT EXISTS the_organiser_puts_up_the_dates\nBEFORE INSERT ON option\nWHEN EXISTS (SELECT 1 FROM poll WHERE name = NEW.poll)\n AND NEW.proposedBy IS NOT (SELECT organiser FROM poll WHERE name = NEW.poll)\nBEGIN\n  SELECT RAISE(ABORT, 'only the person who called the meeting can put up a date');\nEND;\nCREATE TRIGGER IF NOT EXISTS a_closed_poll_takes_no_dates\nBEFORE INSERT ON option\nWHEN (SELECT closed FROM poll WHERE name = NEW.poll) = 1\nBEGIN\n  SELECT RAISE(ABORT, 'the poll is closed');\nEND;\nCREATE TRIGGER IF NOT EXISTS a_closed_poll_takes_no_answers\nBEFORE INSERT ON vote\nWHEN (SELECT p.closed FROM poll p JOIN option o ON o.poll = p.name\n       WHERE o.id = NEW.option) = 1\nBEGIN\n  SELECT RAISE(ABORT, 'the poll is closed');\nEND;",
+          "statement": "INSERT INTO person (email, name)\nSELECT $caller_email, $caller_name\n WHERE coalesce($caller_email, '') <> ''\n-- A name is the member list's, and only a shared board has one: opened\n-- anywhere else, the name it gave last time stands.\nON CONFLICT (email) DO UPDATE SET name = coalesce(excluded.name, person.name)"
+        }
+      },
+      {
+        "uuid": "open-poll",
+        "serviceId": "sql",
+        "serviceName": "Call a meeting",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "INSERT INTO poll (name, organiser)\nSELECT trim($poll),\n       -- The owner calls the meetings. Anybody else's call names nobody,\n       -- which the schema refuses with its reason.\n       CASE WHEN $caller_role = 'owner' THEN $caller_email END\n WHERE $intent = 'create'\n   AND trim($poll) <> ''\n   AND coalesce($caller_email, '') <> ''\n   -- Calling a meeting that is already there opens it.\n   AND NOT EXISTS (SELECT 1 FROM poll WHERE name = trim($poll))"
+        }
+      },
+      {
+        "uuid": "put-up-date",
+        "serviceId": "sql",
+        "serviceName": "Put up a date",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "INSERT INTO option (poll, proposedBy, starts)\n-- A date picker says '2026-09-24T14:00'; the poll keeps it with a space.\nSELECT trim($poll), $caller_email, replace(trim($starts), 'T', ' ')\n WHERE $intent = 'propose'"
+        }
+      },
+      {
+        "uuid": "withdraw-date",
+        "serviceId": "sql",
+        "serviceName": "Withdraw a date",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "DELETE FROM option\n WHERE $intent = 'withdraw'\n   AND id = $option\n   AND EXISTS (\n     SELECT 1 FROM poll p\n      WHERE p.name = option.poll AND p.organiser = $caller_email AND p.closed = 0\n   )"
+        }
+      },
+      {
+        "uuid": "say-yes",
+        "serviceId": "sql",
+        "serviceName": "Works for me",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "INSERT INTO vote (option, voter)\nSELECT $option, $caller_email\n WHERE $intent = 'vote'\n   AND coalesce($caller_email, '') <> ''"
+        }
+      },
+      {
+        "uuid": "take-it-back",
+        "serviceId": "sql",
+        "serviceName": "Take an answer back",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "DELETE FROM vote\n WHERE $intent = 'unvote'\n   AND option = $option\n   AND voter  = $caller_email\n   AND NOT EXISTS (\n     SELECT 1 FROM option o JOIN poll p ON p.name = o.poll\n      WHERE o.id = $option AND p.closed = 1\n   )"
+        }
+      },
+      {
+        "uuid": "close-poll",
+        "serviceId": "sql",
+        "serviceName": "Close or reopen",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "UPDATE poll\n   SET closed = CASE $intent WHEN 'close' THEN 1 ELSE 0 END\n WHERE $intent IN ('close', 'reopen')\n   AND name      = $poll\n   AND organiser = $caller_email"
+        }
+      },
+      {
+        "uuid": "the-dates",
+        "serviceId": "sql",
+        "serviceName": "The dates",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  ),\n  me(email) AS (SELECT coalesce($caller_email, '')),\n  meeting AS (\n    SELECT p.organiser AS organiser, p.closed AS closed\n      FROM poll p JOIN shown ON p.name = shown.name\n  ),\n  answers AS (\n    SELECT o.id     AS id,\n           o.starts AS starts,\n           count(v.id) AS yes,\n           max(CASE WHEN v.voter = me.email THEN 1 ELSE 0 END) AS mine,\n           group_concat(\n             CASE\n               WHEN v.voter IS NULL THEN NULL\n               WHEN v.voter = me.email THEN 'you'\n               -- Everybody else by the name the member list gave them, never\n               -- by their address.\n               ELSE coalesce(\n                 nullif(who.name, ''),\n                 CASE WHEN v.voter = m.organiser THEN 'the organiser' ELSE 'a member' END\n               )\n             END, ', ') AS voters\n      FROM shown\n      JOIN option o ON o.poll = shown.name\n      CROSS JOIN me\n      LEFT JOIN meeting m ON 1 = 1\n      LEFT JOIN vote v ON v.option = o.id\n      LEFT JOIN person who ON who.email = v.voter\n     GROUP BY o.id, o.starts\n  ),\n  best(n) AS (SELECT coalesce(max(yes), 0) FROM answers)\nSELECT\n  a.id     AS id,\n  -- The meeting each date belongs to, so that answering it keeps whoever\n  -- answers on that meeting even after a newer one is called.\n  shown.name AS poll,\n  a.starts AS starts,\n  a.yes    AS yes,\n  a.mine   AS mine,\n  CASE strftime('%w', substr(a.starts, 1, 10))\n    WHEN '0' THEN 'Sun' WHEN '1' THEN 'Mon' WHEN '2' THEN 'Tue'\n    WHEN '3' THEN 'Wed' WHEN '4' THEN 'Thu' WHEN '5' THEN 'Fri'\n    ELSE 'Sat'\n  END || ' ' || substr(a.starts, 1, 10) || ' at ' || substr(a.starts, 12, 5) AS label,\n  CASE WHEN a.yes = 0 THEN 'Nobody yet' ELSE a.voters END AS who,\n  CASE\n    WHEN a.yes = best.n AND best.n > 0 THEN a.yes || ' yes - best so far'\n    ELSE a.yes || ' yes'\n  END AS score,\n  CASE WHEN a.mine = 1 THEN 'unvote' ELSE 'vote' END AS intent,\n  CASE WHEN a.mine = 1 THEN 'Take it back' ELSE 'Works for me' END AS answerLabel,\n  CASE WHEN m.closed = 1 OR me.email = '' THEN 1 ELSE 0 END AS locked\nFROM answers a\nCROSS JOIN shown\nCROSS JOIN best\nCROSS JOIN me\nLEFT JOIN meeting m ON 1 = 1\nORDER BY a.starts"
+        }
+      },
+      {
+        "uuid": "the-poll",
+        "serviceId": "sql",
+        "serviceName": "The meeting",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  ),\n  me(email) AS (SELECT coalesce($caller_email, ''))\nSELECT\n  coalesce(p.name, '') AS name,\n  CASE WHEN p.name IS NULL THEN ''\n    ELSE (SELECT count(*) FROM option o WHERE o.poll = p.name) || ' dates · '\n      || (SELECT count(DISTINCT v.voter)\n            FROM vote v JOIN option o ON o.id = v.option\n           WHERE o.poll = p.name) || ' answered'\n  END AS progress,\n  CASE\n    WHEN p.name IS NULL AND $caller_role = 'owner'\n      THEN 'No meeting yet. Call one on Organise, and everybody the board is shared with can answer it.'\n    WHEN p.name IS NULL\n      THEN 'Nothing to answer yet: no meeting has been called.'\n    WHEN p.organiser = me.email AND p.closed = 1\n      THEN 'You closed this poll. The answers stand as they are.'\n    WHEN p.organiser = me.email\n      THEN 'You called this meeting, so you put up the dates and you close the poll.'\n    WHEN p.closed = 1\n      THEN 'Closed by ' || coalesce(nullif(org.name, ''), 'the board''s owner') || '. The answers stand as they are.'\n    ELSE 'Called by ' || coalesce(nullif(org.name, ''), 'the board''s owner') || ', who puts up the dates. Answer the ones that work for you.'\n  END AS notice\nFROM shown\nCROSS JOIN me\nLEFT JOIN poll p ON p.name = shown.name\nLEFT JOIN person org ON org.email = p.organiser"
+        }
+      },
+      {
+        "uuid": "organising",
+        "serviceId": "sql",
+        "serviceName": "What the owner runs",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\n-- One row for the board's owner and none for anybody else, so what the\n-- facade draws from it is there only for the one who may use it.\nSELECT\n  coalesce(p.name, '') AS name,\n  CASE\n    WHEN p.name IS NULL THEN 'No meeting yet: call one below.'\n    ELSE 'Organising ' || p.name || CASE WHEN p.closed = 1 THEN ' (closed)' ELSE '' END\n  END AS heading,\n  CASE WHEN p.name IS NULL THEN 1 ELSE 0 END AS nothingToClose,\n  CASE WHEN p.closed = 1 THEN 'Reopen the poll' ELSE 'Close the poll' END AS closeLabel,\n  CASE WHEN p.closed = 1 THEN 'reopen' ELSE 'close' END AS closeIntent,\n  CASE\n    WHEN p.closed = 1 THEN 'Let people answer ' || p.name || ' again?'\n    ELSE 'Close voting on ' || coalesce(p.name, '') || '?'\n  END AS closePrompt,\n  CASE WHEN p.name IS NULL THEN 'Put up a date' ELSE 'Put up a date for ' || p.name END AS proposeLabel\nFROM shown\nLEFT JOIN poll p ON p.name = shown.name AND p.organiser = $caller_email\nWHERE $caller_role = 'owner'"
+        }
+      },
+      {
+        "uuid": "withdrawable",
+        "serviceId": "sql",
+        "serviceName": "Dates to withdraw",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "meetings",
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\nSELECT\n  o.id     AS id,\n  p.name   AS poll,\n  CASE strftime('%w', substr(o.starts, 1, 10))\n    WHEN '0' THEN 'Sun' WHEN '1' THEN 'Mon' WHEN '2' THEN 'Tue'\n    WHEN '3' THEN 'Wed' WHEN '4' THEN 'Thu' WHEN '5' THEN 'Fri'\n    ELSE 'Sat'\n  END || ' ' || substr(o.starts, 1, 10) || ' at ' || substr(o.starts, 12, 5) AS label,\n  p.closed AS locked,\n  'Take ' || o.starts || ' off the poll, along with every answer given to it?' AS dropPrompt\nFROM shown\nJOIN poll p   ON p.name = shown.name AND p.organiser = $caller_email\nJOIN option o ON o.poll = p.name\nWHERE $caller_role = 'owner'\nORDER BY o.starts"
+        }
+      },
+      {
+        "uuid": "the-meetings",
+        "serviceId": "sql",
+        "serviceName": "Every meeting",
+        "state": {
+          "mode": "query",
+          "emit": "result",
+          "database": "meetings",
+          "statement": "WITH\n  shown(name) AS (\n    -- The meeting asked for, or else the one called last: somebody opening the\n    -- board has asked for nothing yet.\n    SELECT coalesce(\n      (SELECT name FROM poll WHERE name = trim(coalesce($poll, ''))),\n      (SELECT name FROM poll ORDER BY created DESC, rowid DESC LIMIT 1)\n    )\n  )\nSELECT\n  p.name AS name,\n  p.name || CASE WHEN p.closed = 1 THEN ' (closed)' ELSE '' END AS label,\n  -- Which one is shown, for the picker to mark it as chosen.\n  CASE WHEN p.name = shown.name THEN 1 ELSE 0 END AS current\nFROM poll p\nCROSS JOIN shown\nORDER BY p.created DESC, p.rowid DESC"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "state": {
+      "poll": ""
+    },
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "who-is-here",
+        "payload": {
+          "intent": "none",
+          "poll": {
+            "$state": "poll"
+          }
+        }
+      }
+    ],
+    "panels": [
+      {
+        "id": "vote",
+        "title": "Which dates work?",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Answer every date that works for you — none, one or all of them. Everybody the board is shared with answers the same poll, each as themselves.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text",
+              "label": "Answering as",
+              "value": {
+                "$user": "name"
+              },
+              "placeholder": "nobody — sign in to answer"
+            },
+            {
+              "direction": "column",
+              "collapsible": true,
+              "title": "Meetings",
+              "summary": {
+                "serviceUuid": "the-meetings",
+                "path": "count"
+              },
+              "open": true,
+              "gap": 8,
+              "items": [
+                {
+                  "direction": "row",
+                  "wrap": true,
+                  "gap": 6,
+                  "align": "center",
+                  "items": [
+                    {
+                      "type": "repeat",
+                      "source": {
+                        "serviceUuid": "the-meetings",
+                        "path": "rows"
+                      },
+                      "direction": "row",
+                      "wrap": true,
+                      "gap": 6,
+                      "template": {
+                        "type": "button",
+                        "label": "{{item.label}}",
+                        "selected": "{{item.current}}",
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "poll",
+                            "value": "{{item.name}}"
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "who-is-here",
+                            "payload": {
+                              "intent": "none",
+                              "poll": "{{item.name}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "the-poll",
+                "path": "rows"
+              },
+              "template": {
+                "direction": "column",
+                "gap": 4,
+                "items": [
+                  {
+                    "direction": "row",
+                    "gap": 8,
+                    "align": "baseline",
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.name}}",
+                        "fontSize": 15,
+                        "grow": true
+                      },
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.progress}}",
+                        "tone": "muted",
+                        "fontSize": 11
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.notice}}",
+                    "tone": "muted",
+                    "fontSize": 12
+                  }
+                ]
+              }
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "the-dates",
+                "path": "rows"
+              },
+              "frame": {
+                "padding": 6,
+                "radius": 8,
+                "maxWidth": 560
+              },
+              "stripe": {
+                "odd": "rgba(127,127,127,0.07)",
+                "padding": 8,
+                "radius": 6
+              },
+              "gap": 0,
+              "template": {
+                "direction": "row",
+                "gap": 10,
+                "align": "center",
+                "items": [
+                  {
+                    "direction": "column",
+                    "gap": 2,
+                    "grow": true,
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.label}}",
+                        "fontSize": 14
+                      },
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.who}}",
+                        "tone": "muted",
+                        "fontSize": 11
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.score}}",
+                    "fontSize": 12
+                  },
+                  {
+                    "type": "button",
+                    "label": "{{item.answerLabel}}",
+                    "disabled": "{{item.locked}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "who-is-here",
+                        "payload": {
+                          "intent": "{{item.intent}}",
+                          "poll": "{{item.poll}}",
+                          "option": "{{item.id}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "meeting",
+        "title": "The meeting",
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Calling a meeting, putting up its dates and closing it are the board owner's. Everybody else answers on Vote. Pick the meeting to work on, or call a new one.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "direction": "column",
+              "collapsible": true,
+              "title": "Meetings",
+              "summary": {
+                "serviceUuid": "the-meetings",
+                "path": "count"
+              },
+              "open": true,
+              "gap": 8,
+              "items": [
+                {
+                  "direction": "row",
+                  "wrap": true,
+                  "gap": 6,
+                  "align": "center",
+                  "items": [
+                    {
+                      "type": "repeat",
+                      "source": {
+                        "serviceUuid": "the-meetings",
+                        "path": "rows"
+                      },
+                      "direction": "row",
+                      "wrap": true,
+                      "gap": 6,
+                      "template": {
+                        "type": "button",
+                        "label": "{{item.label}}",
+                        "selected": "{{item.current}}",
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "poll",
+                            "value": "{{item.name}}"
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "who-is-here",
+                            "payload": {
+                              "intent": "none",
+                              "poll": "{{item.name}}"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "repeat",
+                      "source": {
+                        "serviceUuid": "organising",
+                        "path": "rows"
+                      },
+                      "template": {
+                        "type": "text-input",
+                        "placeholder": "Call a new meeting…",
+                        "submitLabel": "Call it",
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "poll"
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "who-is-here",
+                            "payload": {
+                              "intent": "create",
+                              "poll": "$$input"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "organising",
+                "path": "rows"
+              },
+              "template": {
+                "direction": "column",
+                "gap": 14,
+                "align": "stretch",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.heading}}",
+                    "fontSize": 15
+                  },
+                  {
+                    "type": "text-input",
+                    "label": "{{item.proposeLabel}}",
+                    "inputType": "datetime",
+                    "submitLabel": "Propose it",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "who-is-here",
+                        "payload": {
+                          "intent": "propose",
+                          "poll": "{{item.name}}",
+                          "starts": "$$input"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "withdrawable",
+                "path": "rows"
+              },
+              "frame": {
+                "padding": 6,
+                "radius": 8,
+                "maxWidth": 440
+              },
+              "stripe": {
+                "odd": "rgba(127,127,127,0.07)",
+                "padding": 6,
+                "radius": 6
+              },
+              "gap": 0,
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "center",
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.label}}",
+                    "fontSize": 12,
+                    "grow": true
+                  },
+                  {
+                    "type": "button",
+                    "label": "Withdraw",
+                    "disabled": "{{item.locked}}",
+                    "confirm": "{{item.dropPrompt}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "who-is-here",
+                        "payload": {
+                          "intent": "withdraw",
+                          "poll": "{{item.poll}}",
+                          "option": "{{item.id}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "organising",
+                "path": "rows"
+              },
+              "template": {
+                "direction": "row",
+                "items": [
+                  {
+                    "type": "button",
+                    "label": "{{item.closeLabel}}",
+                    "disabled": "{{item.nothingToClose}}",
+                    "confirm": "{{item.closePrompt}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "who-is-here",
+                        "payload": {
+                          "intent": "{{item.closeIntent}}",
+                          "poll": "{{item.name}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "tabs": [
+      {
+        "id": "answer",
+        "title": "Vote",
+        "panels": [
+          "vote"
+        ]
+      },
+      {
+        "id": "organise",
+        "title": "Organise",
+        "panels": [
+          "meeting"
+        ],
+        "visibleTo": "owner"
+      }
+    ],
+    "defaultTab": "answer",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "who-is-here",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "open-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "put-up-date",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "withdraw-date",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "say-yes",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "take-it-back",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "close-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-dates",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-poll",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "organising",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "withdrawable",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "the-meetings",
+          "path": "error"
+        }
+      }
+    ]
+  }
+}

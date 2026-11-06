@@ -40,6 +40,18 @@ import nestedRhythmBoard from "../../boards/nested-rhythm-demo-board.json";
 import timelineBoard from "../../boards/timeline-demo-board.json";
 import liveRadioBoard from "../../boards/live-radio-demo-board.json";
 import sharedCostsBoard from "../../boards/shared-costs-demo-board.json";
+import hackerNewsBoard from "../../boards/hacker-news-board.json";
+import healthLogBrowserBoard from "../../boards/health-log-browser-demo-board.json";
+import meetingPollBrowserBoard from "../../boards/meeting-poll-browser-demo-board.json";
+import rssRadioBoard from "../../boards/rss-radio-board.json";
+import rssRadioEditorUnit from "../../boards/rss-radio-editor-unit-board.json";
+import rssRadioVoiceUnit from "../../boards/rss-radio-voice-unit-board.json";
+import rssRadioUnit from "../../boards/rss-radio-unit-board.json";
+import rssRadioLibraryUnit from "../../boards/rss-radio-library-unit-board.json";
+import synMailDeskBoard from "../../boards/syn-mail-desk-board.json";
+import synBookingUnit from "../../boards/syn-booking-unit-board.json";
+import synHotelsUnit from "../../boards/syn-hotels-unit-board.json";
+import synMailDeskUnit from "../../boards/syn-mail-desk-unit-board.json";
 
 const REGISTRY: Record<string, BoardDescriptor> = {
   "alpaca-markets": alpacaBoard as BoardDescriptor,
@@ -82,8 +94,41 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   timeline: timelineBoard as BoardDescriptor,
   "live-radio": liveRadioBoard as BoardDescriptor,
   "shared-costs": sharedCostsBoard as BoardDescriptor,
+  "hacker-news": hackerNewsBoard as BoardDescriptor,
+  "health-log-browser": healthLogBrowserBoard as BoardDescriptor,
+  "meeting-poll-browser": meetingPollBrowserBoard as BoardDescriptor,
+  // Its units disagree on which params they set, which JSON typing cannot
+  // reconcile with UnitEntry's string record.
+  "rss-radio": rssRadioBoard as unknown as BoardDescriptor,
+  "syn-mail-desk": synMailDeskBoard as BoardDescriptor,
+};
+
+/**
+ * The units a composed demo is made of, keyed by the `uri` it names each one
+ * with. A demo arrives at no URL, so there is nothing beside it to find them
+ * at: they travel with it, as a restored draft's do.
+ */
+const UNITS: Record<string, Record<string, BoardDescriptor>> = {
+  "rss-radio": {
+    "rss-demo-board.json": rssAggregatorBoard as BoardDescriptor,
+    "rss-radio-editor-unit-board.json": rssRadioEditorUnit as BoardDescriptor,
+    "rss-radio-voice-unit-board.json": rssRadioVoiceUnit as BoardDescriptor,
+    "rss-radio-unit-board.json": rssRadioUnit as BoardDescriptor,
+    "rss-radio-library-unit-board.json": rssRadioLibraryUnit as BoardDescriptor,
+  },
+  "syn-mail-desk": {
+    "syn-booking-unit-board.json": synBookingUnit as BoardDescriptor,
+    "syn-hotels-unit-board.json": synHotelsUnit as BoardDescriptor,
+    "syn-mail-desk-unit-board.json": synMailDeskUnit as BoardDescriptor,
+  },
 };
 
 export function findDemoBoard(slug: string): BoardDescriptor | undefined {
   return REGISTRY[slug.toLowerCase()];
+}
+
+export function findDemoUnits(
+  slug: string,
+): Record<string, BoardDescriptor> | undefined {
+  return UNITS[slug.toLowerCase()];
 }

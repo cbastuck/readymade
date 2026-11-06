@@ -35,6 +35,18 @@ type Props = {
 /** Upper bound on how long a caller waits for the Auth0 session to settle. */
 const AUTH_RESOLVE_TIMEOUT_MS = 5000;
 
+/**
+ * Whether a rejection is something cancelled rather than something failed.
+ * Recognised the way Monaco (from VS Code) marks its own: an error named and
+ * worded "Canceled". In Safari Monaco starts a clipboard write on every click
+ * and key press and cancels it at the next one; one Safari refused has nobody
+ * waiting on it, so its cancellation arrives unhandled — once per keystroke.
+ */
+export function isCancellation(reason: unknown): boolean {
+  const error = reason as { name?: unknown; message?: unknown } | null;
+  return error?.name === "Canceled" && error?.message === "Canceled";
+}
+
 const AppCtx = createContext<AppContextState>({
   user: null,
   appViewMode: "wide",
@@ -166,6 +178,9 @@ function AppProvider({ children }: Props) {
   });
 
   const onUnhandledException = useRef((event: any) => {
+    if (isCancellation(event.reason)) {
+      return;
+    }
     pushNotification({
       message: `Unhandled rejection: ${event.reason}`,
       type: "error",
