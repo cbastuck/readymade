@@ -1,6 +1,7 @@
 # Commercial licensing (the paid alternative to AGPL)
 
-Drafted 2026-10-11. **Nothing here is effective.** The clause text below is a
+Drafted 2026-10-11; brought into the offer frame of 2026-10-19 on 2026-11-06.
+**Nothing here is effective.** The clause text below is a
 first draft to be reviewed by a lawyer under German law before it is offered to
 anyone; prices are not decided. The structure is settled: one agreement holding
 the common terms, plus one schedule per tier, so a customer who needs both tiers
@@ -9,6 +10,42 @@ signs one document.
 The right to sell this at all comes from `CLA.md` §1, which reserves the
 Maintainer's right to license contributions "under AGPL-3.0 or any other license
 terms of the Maintainer's choosing".
+
+---
+
+## Where the licence sits in the offer
+
+Decided 2026-10-19. Two questions place anyone who wants Readymade: who the
+app is for, and who runs it.
+
+| | **You run it** | **We run it** |
+| --- | --- | --- |
+| **For yourself** — your club, your team, you | Community | Cloud |
+| **For your customers** — a product of your own | Partner | Partner on Cloud (later) |
+
+- **Cloud and Partner are where the money comes from.** The commercial licence
+  is not an offer of its own: it is the contract under Partner. Nobody is sold
+  "an engine licence".
+- **Community** is the AGPL, free, with nothing withheld. The prebuilt apps
+  (desktop, iOS, Android) are **pay what you want**, €0 included: a
+  convenience inside Community, not a revenue line, and never called a
+  donation.
+- **Cloud** is us running a deployed board for the people its owner adds. It
+  is not open yet; public material says so and never claims there is nothing
+  to host.
+- **Partner** is one offer with three ways to deliver it, not three products:
+  - **embed** a full board, runtimes or individual services in your own app —
+    Schedule A. This is the path from prototype to app: try a flow in
+    Readymade, then wrap your app around the board. A board whose runtimes
+    are all browser and hkp-rt ones runs inside the app and needs no server;
+  - **host it yourself** for your customers — Schedule B;
+  - **have us run it** for your customers, once Cloud opens. Decided as a use
+    case on 2026-11-06, built later; it makes us the host of content someone
+    else provides (Open questions).
+
+The pitch carries this as the commercial track
+(`COMMERCIAL_SLIDES` in `hkp-website/src/pages/Pitch.tsx`); the detail and,
+eventually, the prices are on `hkp-website/astro/pages/pricing.astro`.
 
 ---
 
@@ -41,7 +78,7 @@ Two consequences worth holding on to:
 
 | | **Schedule A — Embedded** | **Schedule B — Hosted** |
 | --- | --- | --- |
-| What they do | Ship a native or standalone product containing the Covered Software to their end users | Operate the Covered Software as a service their end users reach over a network |
+| What they do | Ship a native or standalone product containing the Covered Software — a full board, runtimes or individual services — to their end users | Operate the Covered Software as a service their end users reach over a network |
 | Relief granted | AGPL §§4–6 source obligations on distribution | AGPL §13 obligation to offer source to remote users |
 | Does **not** cover | Operating a hosted service | Distributing object code to end users |
 | Term | Annual, auto-renewing | Annual, auto-renewing |
@@ -52,7 +89,8 @@ Both tiers are **annual, never perpetual**. A perpetual commercial licence is a
 single payment ever, which removes the renewal event the whole model depends on.
 
 A customer doing both (a native app *and* a hosted backend) signs both
-schedules.
+schedules. Both are Partner; the schedules are how the contract says which
+way it is delivered.
 
 **Two axes, not one.** Schedules A and B say *what you may do*. How you pay is a
 separate choice — flat fee, or the revenue share in Schedule R — and it attaches
@@ -155,6 +193,10 @@ move the arrangement toward a regulated offering — the Vermögensanlagengesetz
 here, the Howey analysis for any US customer. That is a serious problem rather
 than paperwork.
 
+**Not stated publicly yet (decided 2026-11-06):** the commitment below stays
+out of the pitch and the pricing page until there is traction; before that it
+reads oddly. The reasoning stands for when it is made.
+
 **What we do instead:** publish a plain commitment, in the licence page and the
 pitch, of the form *"X% of commercial licence revenue is spent on Readymade
 development, reported once a year."* It carries nearly all the narrative value,
@@ -168,6 +210,37 @@ risk.
 A real vehicle (gGmbH, e.V., Stiftung) is a conversation for after there is
 revenue — and note those structures exist to *remove* founder control, which is
 the opposite of what is needed now.
+
+---
+
+## Decided: AGPL stays (revisited 2026-11-06)
+
+A licence that makes every commercial use pay — the Sustainable Use License
+(n8n), the Business Source License with an additional use grant, Commons
+Clause — was considered and rejected. It would make Partner a requirement
+rather than an option and shut out a competing hosted Readymade, but:
+
+- **It cannot be combined with GPL code.** The GPL forbids further
+  restrictions, and a ban on commercial use is one. Readymade is an
+  integration project: its value is highest when any library — GPL, LGPL,
+  AGPL, MIT, BSD — can be wrapped in a service and shipped without a legal
+  question first. A restrictive licence would cost exactly that, starting with
+  the espeak-linked desktop build.
+- **Partner gains little.** A commercial licence never covers third-party GPL
+  code (see *What this licence cannot grant*), so a closed product avoids GPL
+  services under any licence of ours. The loss would fall on open builders,
+  who are the community.
+- **Cloud does not depend on it.** It sells running the board. What keeps a
+  competitor from offering "Readymade Cloud" is the name, so registering the
+  word mark (Open questions) protects it, not the licence.
+
+So the line stays: whoever wants their source closed, the product under their
+own name, or the board run for them pays; whoever is content to stay open does
+not, and contributes boards and services instead.
+
+Not a reason, but worth checking with counsel: runtimes are separate processes
+talking over the network, which may let a GPL service run in its own runtime
+beside a closed product. Untested; not to be claimed publicly.
 
 ---
 
@@ -195,6 +268,19 @@ prioritised — none of it binding. Belongs in §7 or the Order Form.
 
 ## Open questions
 
+- [ ] **Partner on Cloud: which contract.** When we run what a Partner sells,
+      we operate the Covered Software and the Partner's own services on our
+      infrastructure. Is that Schedule B with "infrastructure you control"
+      widened to infrastructure operated for you by the Maintainer, or a Cloud
+      agreement that includes the white-label and closed-source terms? Either
+      way it needs terms for content we host on someone else's behalf:
+      acceptable use, who answers a takedown notice, who the end users' data
+      belongs to.
+- [ ] **Pay what you want in the stores.** The pricing page now offers the
+      builds as pay what you want, €0 included. How that works on the App
+      Store (a free app with an optional in-app payment?) and for the desktop
+      download is not decided.
+
 - [ ] **Prices.** Nothing below is decided. Indicative only, for a solo
       maintainer: Embedded €2–8k/yr, Hosted €5–20k/yr, with a small-company band
       (say under €1M revenue or 10 staff) at €500–1.5k so the customers most
@@ -215,6 +301,14 @@ prioritised — none of it binding. Belongs in §7 or the Order Form.
 - [ ] **Patent indemnity.** §9 excludes it. Confirm that stays excluded —
       a solo maintainer cannot carry it, and silence is worse than an explicit
       exclusion.
+- [ ] **Is a board a modification?** For counsel. Hosting Readymade
+      unmodified triggers no AGPL §13 obligation, and the pricing page now
+      says so: hosting it for customers with your own boards needs no licence;
+      with services of your own, kept closed, it needs Schedule B. That rests
+      on a board being input the runtimes load (like a document in an
+      editor), not a modification of the program — plausible, untested.
+      Services compiled into or registered in a runtime are taken to be
+      modifications.
 - [ ] **Hosted scope metric.** Flat by size band avoids any need to audit or
       meter the customer. Revisit only if a customer's scale makes it absurd.
 - [ ] **Governing law for non-EU customers.** German law and Berlin venue work
@@ -443,7 +537,8 @@ formed to operate the Readymade project. Amendments require text form.
 You may, for the Term:
 
 1. use and modify the Covered Software for the purpose of building Your Product;
-2. incorporate the Covered Software, modified or unmodified, into Your Product;
+2. incorporate the Covered Software, in whole or in part, modified or
+   unmodified, into Your Product;
 3. distribute Your Product in object-code form to your end users, directly or
    through an app store or other channel,
 
