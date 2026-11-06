@@ -93,7 +93,10 @@ A phone has no selection. What it has instead is what the person opened last:
 tapping a service, inspecting its flow, adding a service to a runtime, running a
 runtime with parameters or making a block of services makes that runtime, and
 those services, what **Context** narrows to. The choice above the conversation
-names it ("Browser · Timer"), beside **Whole board**.
+names it ("Browser · Timer"), beside **Whole board**. The open nested pipeline
+is likewise the one last drilled into in a service's sheet: the sub-services
+passed through on the way, and the one shown if it holds a pipeline of its own,
+sent as the levels the desktop's breadcrumb would show.
 
 **Review changes** opens the proposal as a page: what it does in a sentence per
 change — runtimes and services added, removed, changed or reordered, the facade,

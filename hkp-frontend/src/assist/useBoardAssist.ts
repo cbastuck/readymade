@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useBoardContext } from "../BoardContext";
-import { useNestedNavigation } from "../runtime/ui/NestedNavigation";
+import {
+  NestedLevel,
+  useNestedNavigation,
+} from "../runtime/ui/NestedNavigation";
 import { BoardDescriptor } from "../types";
 import { BoardDocuments, linkBoardDocument } from "../core/boardPersistence";
 import {
@@ -55,6 +58,12 @@ export type AssistPreview = {
 export type AssistFocus = {
   runtimeId: string | null | undefined;
   serviceUuids: string[];
+  /**
+   * The sub-pipeline open on a phone, outermost first, in the levels the
+   * desktop's nested navigation keeps. The desktop leaves it out: there the
+   * navigation itself says what is open.
+   */
+  openPipeline?: NestedLevel[];
 };
 
 /**
@@ -275,7 +284,7 @@ export function useBoardAssist({
           includeAssetContents: settings.includeAssetContents,
           units: captured.units,
           selectedServiceUuids: scope === "board" ? [] : focus.serviceUuids,
-          openNestedPipeline: navigation?.stack ?? [],
+          openNestedPipeline: navigation?.stack ?? focus.openPipeline ?? [],
           availableRuntimeEngines: ctx.availableRuntimeEngines,
           serviceCatalog: Object.fromEntries(
             Object.entries(ctx.registry).map(([id, services]) => [

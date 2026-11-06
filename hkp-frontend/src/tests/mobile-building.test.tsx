@@ -236,6 +236,81 @@ describe("mobile service sheet", () => {
     );
   });
 
+  it("says which sub-pipeline is open, as the desktop's levels do", async () => {
+    boardContext = board({
+      registry: {
+        rt: [
+          {
+            serviceId: "hookup.to/service/sub-service",
+            serviceName: "Sub Service",
+            capabilities: ["subservices"],
+          },
+          { serviceId: "hookup.to/service/timer", serviceName: "Ticker" },
+        ],
+      },
+    });
+    const nested = {
+      ...subService,
+      state: {
+        pipeline: [
+          {
+            serviceId: "hookup.to/service/sub-service",
+            instanceId: "inner",
+            state: {
+              pipeline: [
+                { serviceId: "hookup.to/service/timer", instanceId: "tick", state: {} },
+              ],
+            },
+          },
+        ],
+      },
+    } as ServiceDescriptor;
+    const onOpenPipeline = vi.fn();
+    render(
+      <ServiceSheet
+        open
+        onClose={() => {}}
+        service={nested}
+        runtime={runtime}
+        onRemove={() => {}}
+        onRename={() => {}}
+        onOpenPipeline={onOpenPipeline}
+      />,
+    );
+    const outer = { id: "svc-2", label: "Pipeline" };
+    const inner = { id: "inner", label: "Sub Service" };
+    await waitFor(() => expect(onOpenPipeline).toHaveBeenLastCalledWith([outer]));
+
+    fireEvent.click(await screen.findByText("Sub Service"));
+    await waitFor(() => expect(onOpenPipeline).toHaveBeenLastCalledWith([outer, inner]));
+
+    // A service that hosts no pipeline is shown inside its parent's.
+    fireEvent.click(await screen.findByText("Ticker"));
+    await screen.findByTitle("Up one level");
+    expect(onOpenPipeline).toHaveBeenLastCalledWith([outer, inner]);
+
+    fireEvent.click(screen.getByTitle("Up one level"));
+    fireEvent.click(screen.getByTitle("Up one level"));
+    await waitFor(() => expect(onOpenPipeline).toHaveBeenLastCalledWith([outer]));
+  });
+
+  it("says no sub-pipeline is open on a service without one", () => {
+    boardContext = board();
+    const onOpenPipeline = vi.fn();
+    render(
+      <ServiceSheet
+        open
+        onClose={() => {}}
+        service={timer}
+        runtime={runtime}
+        onRemove={() => {}}
+        onRename={() => {}}
+        onOpenPipeline={onOpenPipeline}
+      />,
+    );
+    expect(onOpenPipeline).toHaveBeenLastCalledWith([]);
+  });
+
   it("offers no block of one ordinary service: a preset keeps that", () => {
     boardContext = board();
     openSheet(timer);

@@ -77,7 +77,7 @@ type MobileBoardCanvasProps = {
   /**
    * Told which runtime, and which of its services, the person opened last —
    * what a phone has in place of the desktop's selection, and what Board
-   * Assist narrows a request to.
+   * Assist narrows a request to — and which sub-pipeline in it is open.
    */
   onFocus?: (focus: AssistFocus) => void;
 };
@@ -1986,6 +1986,15 @@ export default function MobileBoardCanvas({
         onRemove={handleRemoveService}
         onRename={handleRenameService}
         structural={structural}
+        onOpenPipeline={(openPipeline) =>
+          selectedService &&
+          selectedServiceRuntime &&
+          onFocus?.({
+            runtimeId: selectedServiceRuntime.id,
+            serviceUuids: [selectedService.uuid],
+            openPipeline,
+          })
+        }
       />
       <FlowSheet
         open={!!inspected}

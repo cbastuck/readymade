@@ -616,8 +616,15 @@ frontends typecheck. Nothing has run on a device.
 - [ ] Removing `readymade.assist.*` in Settings → Secrets while the Assist page
   is open is not noticed until it reads the settings again (the vault has no
   change event).
-- [ ] A phone has no nested navigation context, so a request never says which
-  sub-pipeline is open; the desktop sends it.
+- [x] A phone has no nested navigation context, so a request never said which
+  sub-pipeline is open; the desktop sends it. The service sheet now reports the
+  levels it is inside (`onOpenPipeline`: the hosts drilled through, and the one
+  shown if it hosts a pipeline, by uuid and name as the desktop's levels are),
+  and they travel with the focus (`AssistFocus.openPipeline`) as what was opened
+  last; `useBoardAssist` sends them where no navigation is mounted. Tests in
+  `mobile-building.test.tsx` and `mobile-assist.test.tsx`. Hosts with several
+  pipelines (Switch, Tracks) are not drilled into on a phone, so they never
+  appear.
 
 ---
 

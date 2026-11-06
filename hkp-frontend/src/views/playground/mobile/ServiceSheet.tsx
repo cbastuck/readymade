@@ -5,6 +5,7 @@ import JsonEditor from "./JsonEditor";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import MobileSubPipeline, { PipelineEntry } from "./MobileSubPipeline";
 import BlockUseFrame from "../../../runtime/ui/BlockUse";
+import type { NestedLevel } from "../../../runtime/ui/NestedNavigation";
 import {
   blockUseAt,
   blockUseContaining,
@@ -133,6 +134,12 @@ type Props = {
    * and deployed again. Running a service and configuring it stay.
    */
   structural?: boolean;
+  /**
+   * Told which pipelines the sheet is inside, outermost first, whenever that
+   * changes while it is open: the hosts drilled through, and the one shown if
+   * it hosts a pipeline. What the desktop's nested navigation says is open.
+   */
+  onOpenPipeline?: (levels: NestedLevel[]) => void;
 };
 
 // One breadcrumb level past the top-level service.
@@ -168,6 +175,7 @@ export default function ServiceSheet({
   onRemove,
   onRename,
   structural = true,
+  onOpenPipeline,
 }: Props) {
   const boardContext = useBoardContext();
   const editable = useEditReportingService();
@@ -321,6 +329,26 @@ export default function ServiceSheet({
   const activeHasSub = hasSubservices(activeCaps);
   const activePipeline: PipelineEntry[] = active.state?.pipeline ?? [];
   const pathIds = useMemo(() => path.map((c) => c.instanceId), [path]);
+
+  // Every level drilled through hosts a pipeline; the one shown counts only
+  // if it hosts one too. Ids are the hosts' as the desktop's levels use them.
+  const openLevels = useMemo<NestedLevel[]>(() => {
+    if (!service) {
+      return [];
+    }
+    const levels = [
+      { id: service.uuid, label: service.serviceName },
+      ...path.map((c) => ({ id: c.instanceId, label: c.serviceName })),
+    ];
+    return activeHasSub ? levels : levels.slice(0, -1);
+  }, [service, path, activeHasSub]);
+  const reportOpenPipeline = useRef(onOpenPipeline);
+  reportOpenPipeline.current = onOpenPipeline;
+  useEffect(() => {
+    if (open) {
+      reportOpenPipeline.current?.(openLevels);
+    }
+  }, [open, openLevels]);
 
   // Where this level is, as the board addresses it, and whether it belongs to
   // a block: a use, or inside one, is drilled into but not changed here.

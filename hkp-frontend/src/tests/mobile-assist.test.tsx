@@ -112,6 +112,7 @@ describe("the Assist page", () => {
     expect(screen.getByText(/runtime Browser with an outline/)).toBeTruthy();
 
     await ask("Slow it down");
+    expect(mocks.run.mock.calls[0][0].context.openNestedPipeline).toEqual([]);
     expect(mocks.run.mock.calls[0][0].scope).toEqual({
       kind: "runtime",
       runtimeId: "ui",
@@ -120,6 +121,20 @@ describe("the Assist page", () => {
 
     fireEvent.click(within(context).getByRole("radio", { name: "Whole board" }));
     expect(screen.getByText(/the whole board, without asset contents/)).toBeTruthy();
+  });
+
+  it("says which sub-pipeline was opened last, as the desktop does", async () => {
+    saveAssistSettings({ anthropicToken: "test-token" });
+    const openPipeline = [{ id: "wrap", label: "Pipeline" }];
+    render(
+      <MobileAssistPage
+        open
+        onBack={() => {}}
+        focus={{ runtimeId: "ui", serviceUuids: ["wrap"], openPipeline }}
+      />,
+    );
+    await ask("Add a monitor in here");
+    expect(mocks.run.mock.calls[0][0].context.openNestedPipeline).toEqual(openPipeline);
   });
 
   it("offers only the whole board while nothing has been opened", () => {
