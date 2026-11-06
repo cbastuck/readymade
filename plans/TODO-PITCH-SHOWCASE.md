@@ -1,6 +1,6 @@
 # Pitch showcase: the demos, the AI slide and the commercial track
 
-Drafted 2026-11-06 on `commercial_case`. Nothing built yet.
+Drafted 2026-11-06 on `commercial_case`. Commercial slides in the deck; the rest not built.
 
 The pitch explains *how* Readymade works (services, composition, blocks,
 distribution, the facade) and then says "Open a board. Use it. Then look under
@@ -116,18 +116,34 @@ browser, for you") and what deploying the board changes.
 
 ### 09+ — Commercial track
 
-- [ ] Rewrite the slides around the offer table (*yourself / your customers* ×
+- [x] Rewrite the slides around the offer table (*yourself / your customers* ×
       *you run it / we run it*). Cloud and Partner are where the money comes
       from; the commercial licence is the contract under Partner;
       pay-what-you-want builds sit inside Community and are never called a
-      donation.
+      donation. *Done 2026-11-06:* `COMMERCIAL_SLIDES` in
+      `hkp-website/src/pages/Pitch.tsx`, after Try it and shown only with
+      `SHOW_COMMERCIAL_DRAFT` — the offer table (`OfferTable`), then
+      Community, Cloud (badged *not open yet*), Partner (Court Booking),
+      Embed it (prototype to app: the board and its hkp-rt go into your
+      own app), the licence. Labels run 08–13 for now; renumber when 07 lands. The development commitment
+      (a published share of licence revenue spent on Readymade) is left out
+      on purpose: not stated before there is traction. The
+      two markdown drafts in `hkp-website/` are superseded by the deck.
 - [ ] Refer back to the numbers on 07 instead of repeating the AI argument.
-- [ ] Court Booking stays the worked example (it already is in slide 02 of the
-      draft).
-- [ ] Bring `TODO-COMMERCIAL-LICENSING.md` up to the Oct 19 decisions.
-- [ ] Get `hkp-website/astro/pages/pricing.astro` into shape, still behind
+- [x] Court Booking stays the worked example (it already is in slide 02 of the
+      draft). *Holds:* it is the Partner slide's example and its link.
+- [x] Bring `TODO-COMMERCIAL-LICENSING.md` up to the Oct 19 decisions.
+      *Done 2026-11-06:* the offer table and Partner's three deliveries
+      (embed, host, Partner on Cloud later), AGPL re-vetted and kept, the
+      development commitment held back until traction.
+- [x] Get `hkp-website/astro/pages/pricing.astro` into shape, still behind
       `SHOW_COMMERCIAL_DRAFT`; the pitch covers the offer, the page covers the
-      detail.
+      detail. *Done 2026-11-06:* laid out by the offer table — Community (AGPL,
+      pay-what-you-want builds), Cloud (not open yet, no price), Partner
+      (Embedded and Hosted, the revenue-share option, Partner on Cloud later);
+      the development commitment removed. The table is drawn like slide 08's
+      and is the page's navigation: a chosen cell (kept in the address,
+      `/pricing/#cloud`) shows only its own text. Figures still placeholders.
 - [ ] Keep to the vocabulary rule: no *fund*, *invest*, *shares*, *stake*,
       *equity*, *returns*. And no "there is nothing to host" while Cloud is
       not an offer yet.
@@ -190,6 +206,13 @@ When `ios_feature_add` merges later, its version of those files wins.
 ---
 
 ## Open questions
+
+- [ ] Partner on Cloud (decided 2026-11-06 as a use case, built later): we
+      run the runtimes a Partner sells to their customers. That makes us the
+      host of content someone else provides, so it needs terms of its own
+      (acceptable use, who answers a takedown notice, who the customers'
+      data belongs to) before it is offered. The deck names it as coming
+      with Cloud, not as available.
 
 - [ ] Later round: a real comparison (the Shared Costs app built on an
       ordinary stack with an assistant), which would allow a measured claim
