@@ -22,6 +22,8 @@ export function cast(domain: string, coordinatorName: string) {
     coordinator: { name: coordinatorName, url: `${FILM_NODE_URL}/coordinator` },
     sam: { sub: "film|sam", email: `sam@${domain}`, name: "Sam" } as Person,
     ana: { sub: "film|ana", email: `ana@${domain}`, name: "Ana" } as Person,
+    // A third person, for a story about more than one member.
+    ben: { sub: "film|ben", email: `ben@${domain}`, name: "Ben" } as Person,
   };
 }
 export type Cast = ReturnType<typeof cast>;
@@ -145,9 +147,15 @@ export async function askTheAssistant(
 /**
  * Beat 4: deploy, then add the member by her address. Off camera the board
  * keeps its log (what beat 6 watches) and Sam is on his own list under his
- * name, so what he does carries it.
+ * name, so what he does carries it; so is anybody in `more`.
  */
-export async function deployAndShare(page: Page, take: Take, people: Cast) {
+export async function deployAndShare(
+  page: Page,
+  take: Take,
+  people: Cast,
+  /** Members listed after Ana, off camera. */
+  more: Person[] = [],
+) {
   // A board with a facade opens as its app, the controls a tap away. On some
   // boards the revealed bar retracts again by itself a moment later (see the
   // break log in the plan), so revealing it and opening the deploy menu are
@@ -178,10 +186,7 @@ export async function deployAndShare(page: Page, take: Take, people: Cast) {
   await page.getByRole("button", { name: "Logging off" }).click();
   await expect(page.getByRole("button", { name: "Logging on" })).toBeVisible();
   await page.getByRole("button", { name: "Members" }).click();
-  await page.getByLabel("Email").fill(people.sam.email);
-  await page.getByLabel("Name", { exact: true }).fill(people.sam.name);
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  await expect(page.getByLabel("Members").getByText(people.sam.email)).toBeVisible();
+  await addMember(page, people.sam);
 
   await page.getByLabel("Email").fill(people.ana.email);
   await page.getByLabel("Name", { exact: true }).fill(people.ana.name);
@@ -193,7 +198,16 @@ export async function deployAndShare(page: Page, take: Take, people: Cast) {
   });
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByLabel("Members").getByText(people.ana.email)).toBeVisible();
+  for (const person of more) await addMember(page, person);
   await page.getByRole("button", { name: "Done" }).click();
+}
+
+/** One more entry on the open members dialog: an address and its name. */
+async function addMember(page: Page, person: Person) {
+  await page.getByLabel("Email").fill(person.email);
+  await page.getByLabel("Name", { exact: true }).fill(person.name);
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByLabel("Members").getByText(person.email)).toBeVisible();
 }
 
 /**
@@ -208,37 +222,53 @@ export async function anaOpensIt(
   /** The board's name in her list; omitted, the first board shared with her. */
   boardTitle?: string,
 ) {
+  const { member, close } = await memberOpensIt(browser, baseURL, people, people.ana, boardTitle, take);
+  return { ana: member, close };
+}
+
+/**
+ * Any member's phone, the same way in. Only a `take` films it — Ana's beat 5
+ * stills; another member's way in is off camera.
+ */
+export async function memberOpensIt(
+  browser: Browser,
+  baseURL: string | undefined,
+  people: Cast,
+  person: Person,
+  boardTitle?: string,
+  take?: Take,
+) {
   const { defaultBrowserType: _engine, ...iphone } = devices["iPhone 15"];
   const phone = await browser.newContext({ ...iphone, baseURL });
   await prepareContext(phone, { profile: "mobile", hostConfig: {}, baseURL, serverOrigins: [FILM_NODE_URL] });
-  const ana = await phone.newPage();
-  await signIn(ana, people.ana, people.coordinator);
-  await ana.goto("/");
+  const member = await phone.newPage();
+  await signIn(member, person, people.coordinator);
+  await member.goto("/");
   // The harness keeps the phone off the internet, so the news card says it is
   // offline; it is not part of the story.
-  await ana.getByRole("button", { name: /close|dismiss/i }).first().tap().catch(() => {});
-  await shot(take, ana, {
+  await member.getByRole("button", { name: /close|dismiss/i }).first().tap().catch(() => {});
+  if (take) await shot(take, member, {
     id: "5-home",
     beat: "5",
     screen: "member",
-    named: { cloud: ana.getByText("Cloud Boards", { exact: true }) },
+    named: { cloud: member.getByText("Cloud Boards", { exact: true }) },
   });
-  await ana.getByText("Cloud Boards", { exact: true }).tap();
-  await ana.getByText(people.coordinator.name, { exact: true }).tap();
-  await expect(ana.getByText(`Shared with you as “${people.ana.name}”`)).toBeVisible();
+  await member.getByText("Cloud Boards", { exact: true }).tap();
+  await member.getByText(people.coordinator.name, { exact: true }).tap();
+  await expect(member.getByText(`Shared with you as “${person.name}”`)).toBeVisible();
   // A board the assistant named is found by what the list says of it.
   const board = boardTitle
-    ? ana.getByText(boardTitle).last()
-    : ana.getByText(`Shared with you as “${people.ana.name}”`).first();
-  await shot(take, ana, {
+    ? member.getByText(boardTitle).last()
+    : member.getByText(`Shared with you as “${person.name}”`).first();
+  if (take) await shot(take, member, {
     id: "5-shared",
     beat: "5",
     screen: "member",
     named: { board },
   });
   await board.tap();
-  await ana.getByRole("button", { name: "Open board" }).tap();
-  return { ana, close: () => phone.close() };
+  await member.getByRole("button", { name: "Open board" }).tap();
+  return { member, close: () => phone.close() };
 }
 
 /**

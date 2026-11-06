@@ -361,6 +361,11 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       href: "/documentation/boards/meeting-poll-browser-demo-board/",
     },
     opens: "browser",
+    media: {
+      video: "/images/pitch/meeting-poll.mp4",
+      poster: "/images/pitch/meeting-poll.jpg",
+      alt: "Meeting Poll deployed: two members answer on their phones, the owner sees the best date, closes the poll, and a late answer is turned down.",
+    },
     deployed:
       "Deployed and shared, the team answers one poll, each member as themselves, and only the owner sets it up.",
   },

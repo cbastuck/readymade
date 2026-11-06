@@ -65,6 +65,11 @@ class CoordinatorRuntimeScope implements RuntimeScope {
    */
   readonly viaCoordinator = true;
   registry: ServiceRegistry = [];
+  /**
+   * The runtime's services in pipeline order, as a REST runtime's scope keeps
+   * them: what the shared app names a service by when it raises its error.
+   */
+  services: Array<ServiceDescriptor> = [];
   onResult: RuntimeScope["onResult"] = async () => {};
   onConfig?: (instanceId: string, config: object) => void;
   onAction: (action: ServiceAction) => boolean = () => false;
@@ -156,6 +161,7 @@ export function createBridgeRuntimeApi(
         ...svc,
         state: svc.uuid in live ? live[svc.uuid] : (svc as { state?: unknown }).state,
       })) as Array<ServiceDescriptor>;
+      scope.services = restored;
 
       return { runtime, services: restored, scope, registry };
     },
