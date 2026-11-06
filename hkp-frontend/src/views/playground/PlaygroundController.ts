@@ -42,7 +42,7 @@ import {
   createBoardFromTemplate,
   importFromLink,
 } from "./BoardActions";
-import { findDemoBoard } from "../../demoRegistry";
+import { findDemoBoard, findDemoUnits } from "../../demoRegistry";
 
 import {
   Action,
@@ -150,9 +150,9 @@ export function usePlaygroundController(
   const routeBoardRef = useRef<string | undefined>(undefined);
   routeBoardRef.current = props.match?.params?.board;
   const draftName = () => routeBoardRef.current || requestedBoardNameRef.current;
-  // Units a restored draft was stored with, keyed by `uri`: a composition
-  // restored from a draft has nowhere else to link them from.
-  const draftUnitsRef = useRef<Record<string, UnitBoard> | undefined>(
+  // Units handed over with the composition, keyed by `uri`: a restored draft's
+  // or a bundled demo's. Neither has anywhere else to link them from.
+  const carriedUnitsRef = useRef<Record<string, UnitBoard> | undefined>(
     undefined,
   );
 
@@ -327,12 +327,13 @@ export function usePlaygroundController(
       if (params.demo) {
         const demo = findDemoBoard(params.demo);
         if (demo) {
+          carriedUnitsRef.current = findDemoUnits(params.demo);
           return demo;
         }
       }
 
       boardSourceUrlRef.current = null;
-      draftUnitsRef.current = undefined;
+      carriedUnitsRef.current = undefined;
       const brd =
         props.match?.params?.board ||
         props.boardName ||
@@ -356,7 +357,7 @@ export function usePlaygroundController(
             draft &&
             (savedAt === undefined || Date.parse(draft.updatedAt) > savedAt)
           ) {
-            draftUnitsRef.current = draft.documents.units.length
+            carriedUnitsRef.current = draft.documents.units.length
               ? Object.fromEntries(
                   draft.documents.units.map((unit) => [unit.uri, unit.board]),
                 )
@@ -480,12 +481,12 @@ export function usePlaygroundController(
     // opened from were not kept — so without them a composition comes back as
     // the flat board it was running as, and the faces its units contribute go
     // missing.
-    const carried = props.unitDocuments ?? draftUnitsRef.current;
+    const carried = props.unitDocuments ?? carriedUnitsRef.current;
     const fromBoard =
       carried && Object.keys(carried).length
         ? filesUnitOrigin(
             new Map(Object.entries(carried)),
-            "the documents this board was restored with",
+            "the documents this board came with",
           )
         : undefined;
 

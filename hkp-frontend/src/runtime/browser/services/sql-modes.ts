@@ -17,6 +17,11 @@ export type SqlMode = (typeof MODES)[number];
 /** The modes that run the configured statement, and need one. */
 export const STATEMENT_MODES: readonly SqlMode[] = ["query", "run", "exec"];
 
+/** What `export` hands on: SQL text that recreates the database, or the
+ *  SQLite file itself. */
+export const FORMATS = ["sql", "sqlite"] as const;
+export type SqlFormat = (typeof FORMATS)[number];
+
 /** Whether the statement's result travels onward, or the input it ran on. */
 export const EMITS = ["result", "input"] as const;
 export type SqlEmit = (typeof EMITS)[number];

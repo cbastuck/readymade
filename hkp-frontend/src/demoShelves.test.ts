@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEMO_CATALOG, DemoCatalogEntry } from "./demoCatalog";
-import { findDemoBoard } from "./demoRegistry";
+import { findDemoBoard, findDemoUnits } from "./demoRegistry";
 import { DEMO_SHELVES, membersOf, resolveShelf } from "./demoShelves";
 
 const entry = (slug: string, extra: Partial<DemoCatalogEntry> = {}) => ({
@@ -79,10 +79,14 @@ describe("the shelves", () => {
     }
   });
 
-  it("give a video pick a video and the board to run it yourself", () => {
+  // A video pick is listed before it is shot: until then its card is text
+  // and the board to run yourself, and the media it gets is a video.
+  it("give a video pick the board to run it yourself, and a video once it has media", () => {
     for (const pick of DEMO_CATALOG.filter((e) => e.opens === "video")) {
       expect(pick.runItYourself, pick.slug).toBeDefined();
-      expect(pick.media && "video" in pick.media, pick.slug).toBe(true);
+      if (pick.media) {
+        expect("video" in pick.media, pick.slug).toBe(true);
+      }
     }
   });
 
@@ -95,6 +99,17 @@ describe("the shelves", () => {
       expect(membersOf(pick).length, pick.slug).toBe(
         pick.members?.length ?? 0,
       );
+    }
+  });
+
+  // A demo opens at no URL, so a composed one has nowhere to find its units
+  // but what the registry hands over with it.
+  it("carry every unit a composed pick is made of", () => {
+    for (const pick of DEMO_CATALOG.filter((e) => e.opens)) {
+      const board = findDemoBoard(pick.slug) as { units?: { uri: string }[] };
+      for (const { uri } of board?.units ?? []) {
+        expect(findDemoUnits(pick.slug)?.[uri], `${pick.slug}: ${uri}`).toBeDefined();
+      }
     }
   });
 });

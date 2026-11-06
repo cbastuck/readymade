@@ -126,13 +126,13 @@ range; the cards behind them show depth.
 
 | Shelf | Pick | Opens | Media | Work |
 | --- | --- | --- | --- | --- |
-| **For yourself** | **Health Log** (hero) | browser (new variant) | still or short video | browser-SQL variant; export the database as a `.sqlite` file; keep the not-a-medical-device wording |
-| | HN Reader | browser | still | rebase onto `hacker_news_board` (below), register |
-| | RSS Radio | video · run it yourself (node, python) | collage exists (`reading-radio-*.png`); video | finish the editor unit drafted in `6096cec8`, shoot |
+| **For yourself** | **Health Log** (hero) | browser (`health-log-browser`) | still or short video | *variant and `.sqlite` export done 2026-11-06* (the SQL service's `export` takes `format: "sqlite"` on both runtimes; the board's button sits first in its pipeline and stops there); keep the not-a-medical-device wording |
+| | HN Reader | browser | still | *done 2026-11-06:* rebased, registered as `hacker-news`, card written; still to take |
+| | RSS Radio | video · run it yourself (node, python) | collage exists (`reading-radio-*.png`); video | *registered and card written 2026-11-06;* finish the editor unit drafted in `6096cec8`, shoot — **last**, after the demos that work (the editor is what needs the Anthropic key, or a local OpenAI-compatible model) |
 | | Live Radio | in the Readymade app | video: a phone scans the QR code and plays the mic | register, shoot |
 | **For your club, team and customers** | **Court Booking** (hero) | browser (`court-booking-browser`) | video: two members, one slot, the second refused | shoot |
-| | Meeting Poll | browser (new variant) | video: deployed, several members answering | browser-SQL variant like Court Booking's; shoot |
-| | **AI Collaboration** (SYN Mail Desk) | video · run it yourself (node, IMAP, SMTP, model) | video | retitle the board for visitors; shoot |
+| | Meeting Poll | browser (`meeting-poll-browser`) | video: deployed, several members answering | *variant done 2026-11-06;* shoot |
+| | **AI Collaboration** (SYN Mail Desk) | video · run it yourself (node, IMAP, SMTP, model) | video | *registered 2026-11-06, the card titled AI Collaboration (the board keeps its name);* shoot |
 
 Every pick needs the same checklist: board polished · slug registered ·
 **outcome line** (what you get, e.g. "Your club's courts, bookable from a
@@ -198,7 +198,8 @@ browser, for you") and what deploying the board changes.
 - [x] A shelf list (id, title, one line, hero slug, pick slugs) beside the
       catalog. *Done:* `DEMO_SHELVES` in `hkp-frontend/src/demoShelves.ts`,
       naming the planned slugs (`meeting-poll-browser`,
-      `syn-mail-desk`, `health-log-browser`, `hn-reader`, `rss-radio`) before
+      `syn-mail-desk`, `health-log-browser`, `rss-radio`; `hn-reader` became
+      `hacker-news`, after its board's file) before
       their boards exist. `resolveShelf` leaves out what the catalog lacks and
       falls back to the first pick that exists while a hero does not.
       `demoShelves.test.ts` checks that heroes open in the browser, that every
@@ -228,8 +229,18 @@ browser, for you") and what deploying the board changes.
 - [x] Registered `timeline` and `live-radio` (the app pick), with catalog
       entries. `timeline` stays registered for the start page after its
       shelf was dropped.
-- [ ] Spotlight content for each pick as its board lands: the planned slugs
-      above. (Shared Costs had its card done 2026-11-06, then moved to the AI
+- [x] Spotlight content for each pick as its board lands: the planned slugs
+      above. *Done 2026-11-06:* every slug on both shelves is registered and
+      has its card, so no shelf shows a "not registered yet" card. The video
+      picks (RSS Radio, AI Collaboration) have no video yet:
+      `demoShelves.test.ts` now asks a video pick for `runItYourself` always
+      and for a video only once it has `media`, so in production such a card
+      is text and the board to run yourself. **The shoots have to land before
+      `SHOW_PITCH_GALLERY` goes on.** Both are compositions of units, and a
+      demo opens at no URL, so `demoRegistry.ts` carries their unit documents
+      (`findDemoUnits`) and the playground links from them on `?demo=`, as it
+      does for a restored draft; the shelf test checks every unit a composed
+      pick names is carried. Opening either in the browser is not tried yet. (Shared Costs had its card done 2026-11-06, then moved to the AI
       slide; a newer render of its video goes under the same path.) Swap a planned slug for the real one if the board's name ends
       up different.
 
@@ -239,7 +250,15 @@ browser, for you") and what deploying the board changes.
 
 Read from `hacker_news_board` and `ios_feature_add`, never written to.
 
-**HN Reader.** `hacker_news_board` and the root `commercial_case` both start at
+**HN Reader.** *Done 2026-11-06.* The root `commercial_case` is rebased onto
+`hacker_news_board` (the pre-rebase head is kept as
+`commercial_case-pre-hn-rebase`). `boardServices.ts` conflicted: both sides
+added a function in the same place, and both were kept. `http.md` merged on
+its own. Typecheck and the frontend suite pass. The five commits that were
+already on `origin/commercial_case` are rewritten, so the next push is a
+force-push.
+
+`hacker_news_board` and the root `commercial_case` both start at
 `b9174c6d`, and the HN branch changes only root files: submodule pointers are
 identical on both. So the **root** `commercial_case` is rebased onto it, and
 **hkp-node's `commercial_case` needs no rebase** for this. Expect overlaps in
@@ -262,15 +281,14 @@ When `ios_feature_add` merges later, its version of those files wins.
 ## Milestones
 
 1. **Mergeable `commercial_case`.**
-   - root rebased onto `hacker_news_board`; OpenCode ported
+   - root rebased onto `hacker_news_board` (done); OpenCode ported
    - gallery component, with the browser and app picks registered
-   - browser variants of Meeting Poll and Health Log
+   - browser variants of Meeting Poll and Health Log (done; the Health Log export is not)
    - slide 07 with the existing videos
    - commercial slides rewritten in the deck; pricing page behind its flag
 2. **The shoots.**
    - Court Booking with two members, Live Radio with a phone, Meeting Poll,
-     Health Log, AI Collaboration, RSS Radio
-   - the Health Log export, if it didn't make 1
+     Health Log, AI Collaboration; RSS Radio last, once its editor unit works
 3. **Public demos** (separate plan): a guest role on deployed boards on
    node1, so Court Booking and Meeting Poll can be used, not just watched.
 

@@ -4,13 +4,14 @@
  * Service Name: SQL
  * Runtime: browser
  * Modes: query | run | exec | databases | export | import
- * Key Config: statement, schema, mode, emit, database
+ * Key Config: statement, schema, mode, emit, database, format
  * IO: in=JSON (the statement's named parameters) -> out=JSON
  *     query     -> { rows, count }
  *     run       -> { changes, lastInsertRowid }
  *     exec      -> { executed: true }
  *     databases -> { rows: [{ name, bytes }], count }   (in: ignored)
- *     export    -> the database as SQL text             (in: ignored)
+ *     export    -> the database as SQL text, or with     (in: ignored)
+ *                  format "sqlite" as an SQLite file (Uint8Array)
  *     import    -> { executed: true }                   (in: SQL text)
  *
  * The browser implementation of the `sql` service hkp-node also provides,
@@ -45,7 +46,9 @@
  * whole database as an SQLite dump and `import` runs one arriving as input,
  * in this runtime and in hkp-node alike (`sql-dump.ts`), which is how tables
  * built in a browser move to a server. `databases` lists what there is to
- * export.
+ * export. With `format: "sqlite"`, `export` hands on the database file itself
+ * instead, for a person keeping their data rather than another runtime: any
+ * SQLite tool opens it.
  *
  * **What it hands onward is separate from what it did.** By default the result
  * travels. `emit: "input"` passes the input through untouched instead, so
@@ -56,7 +59,15 @@ import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import ServiceBase from "./ServiceBase";
 import SqlUI from "./SqlUI";
-import { EMITS, MODES, STATEMENT_MODES, SqlEmit, SqlMode } from "./sql-modes";
+import {
+  EMITS,
+  FORMATS,
+  MODES,
+  STATEMENT_MODES,
+  SqlEmit,
+  SqlFormat,
+  SqlMode,
+} from "./sql-modes";
 import { codeOf, dumpDatabase, refuseImport } from "./sql-dump";
 import {
   DEFAULT_DATABASE,
@@ -79,6 +90,7 @@ const serviceName = "SQL";
 type State = {
   mode: SqlMode;
   emit: SqlEmit;
+  format: SqlFormat;
   database: string;
   statement: string;
   schema: string;
@@ -176,6 +188,7 @@ class Sql extends ServiceBase<State> {
     super(app, board, descriptor, id, {
       mode: "query",
       emit: "result",
+      format: "sql",
       database: "",
       statement: "",
       schema: "",
@@ -198,6 +211,14 @@ class Sql extends ServiceBase<State> {
     ) {
       this.state.emit = config.emit as SqlEmit;
       this.app.notify(this, { emit: this.state.emit });
+    }
+    if (
+      typeof config.format === "string" &&
+      FORMATS.includes(config.format as SqlFormat) &&
+      config.format !== this.state.format
+    ) {
+      this.state.format = config.format as SqlFormat;
+      this.app.notify(this, { format: this.state.format });
     }
     if (
       typeof config.statement === "string" &&
@@ -265,11 +286,16 @@ class Sql extends ServiceBase<State> {
 
     try {
       if (mode === "export") {
-        const dump = dumpDatabase(db);
-        // Reported as what was exported, not as the dump itself: the text
+        const { format } = this.state;
+        const exported = format === "sqlite" ? db.file() : dumpDatabase(db);
+        // Reported as what was exported, not as the export itself: it
         // travels to the next service, and a panel has no use for a copy.
-        this.app.notify(this, { exported: name, bytes: dump.length });
-        return emit === "input" ? input : dump;
+        this.app.notify(this, {
+          exported: name,
+          format,
+          bytes: exported.length,
+        });
+        return emit === "input" ? input : exported;
       }
       const result = this.execute(db, input, caller);
       // Reported either way: what the statement did is this service's own

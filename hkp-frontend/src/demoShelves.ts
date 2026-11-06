@@ -26,7 +26,7 @@ export const DEMO_SHELVES: DemoShelf[] = [
     title: "For yourself",
     line: "Tools of your own, with your data where you keep it.",
     hero: "health-log-browser",
-    picks: ["hn-reader", "rss-radio", "live-radio"],
+    picks: ["hacker-news", "rss-radio", "live-radio"],
   },
   {
     id: "together",

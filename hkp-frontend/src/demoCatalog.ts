@@ -308,6 +308,100 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "SQL"],
   },
   {
+    slug: "hacker-news",
+    label: "Hacker News Reader",
+    description:
+      "Hacker News as an app: the front page, New, Best, Ask and Show, and a search over every story ever posted. Open a story's comments beside the list, every reply under the comment it answers; fold a branch to skip it, and it is still folded next time. Everything runs in the browser.",
+    icon: "🗞️",
+    tags: ["Live data", "SQL"],
+    outcome: "Hacker News to read, not to scroll: whole threads, folded where you left them.",
+    expect:
+      "Pick a list or search, then open a story's comments: the thread appears beside the list. Fold a branch with [–], or Collapse all and open the ones worth reading.",
+    underTheHood: {
+      text: "Two APIs' answers joined by SQL in the browser",
+      href: "/documentation/boards/hacker-news-board/",
+    },
+    opens: "browser",
+  },
+  {
+    slug: "health-log-browser",
+    label: "Private Health Log (Browser)",
+    description:
+      "The same personal health log with nothing to install: SQLite runs in the browser and keeps the history between visits. Blood glucose, blood pressure, weight and a daily journal, as tables and time-series charts — a record of what you enter, not a medical device. What it gives up is reach: the history belongs to this browser on this device alone, and leaves it as a .sqlite file any SQLite tool opens.",
+    icon: "🩺",
+    tags: ["SQL", "Personal Data"],
+    outcome: "Your glucose, blood pressure and weight, charted, in a record that is yours.",
+    expect:
+      "Log a value, or Generate fake data under Your data for six months of history. Then open Trends and hover a point: that day's journal is beside it.",
+    underTheHood: {
+      text: "One SQL query feeding a table and three charts",
+      href: "/documentation/boards/health-log-browser-demo-board/",
+    },
+    opens: "browser",
+    deployed:
+      "Deployed, the history lives on a runtime you choose, and you open the same log from your phone and your laptop.",
+  },
+  {
+    slug: "meeting-poll-browser",
+    label: "Meeting Poll (Browser)",
+    description:
+      "The same meeting poll with nothing to install: SQLite runs in the browser and keeps the polls between visits. Whoever is signed in is the owner here — calls the meeting, puts up the dates and answers them — and the database still turns down what the page would not offer. What it gives up is the team, since the tables belong to this browser alone.",
+    icon: "🗳️",
+    tags: ["SQL"],
+    outcome: "A date everybody can make, without the email thread.",
+    expect:
+      "Signed in, call a meeting, put up two or three dates and say which ones work. Close the poll and try to answer again: the database turns it down.",
+    underTheHood: {
+      text: "Who may do what as triggers and indexes in the schema",
+      href: "/documentation/boards/meeting-poll-browser-demo-board/",
+    },
+    opens: "browser",
+    deployed:
+      "Deployed and shared, the team answers one poll, each member as themselves, and only the owner sets it up.",
+  },
+  {
+    slug: "rss-radio",
+    label: "Reading Radio",
+    description:
+      "Anything that publishes RSS or Atom, as a podcast: a reading list, a brief of each article written by a model, read aloud and served at an address any podcast player can follow. Five units, each of which runs on its own.",
+    icon: "🎧",
+    tags: ["Needs Node", "Needs Python", "Audio"],
+    outcome: "The articles you meant to read, as a podcast for the way to work.",
+    expect:
+      "Watch a feed become a reading list, the editor write a brief of each article, and a podcast player pick up the episodes.",
+    underTheHood: {
+      text: "Five units joined by feeds and mount references, not wires",
+      href: "/documentation/boards/rss-radio-board/",
+    },
+    opens: "video",
+    runItYourself: {
+      href: "/playground?demo=rss-radio",
+      needs:
+        "an hkp-node and an hkp-python kept under the names node and python, and an Anthropic key",
+    },
+  },
+  {
+    slug: "syn-mail-desk",
+    label: "AI Collaboration",
+    description:
+      "Enquiries arrive by email, a model drafts each reply, and a person decides. Three lanes — incoming, needs review, waiting for the customer: drag a draft across to approve it and it goes out over SMTP, or edit it first.",
+    icon: "📬",
+    tags: ["Needs Node", "Integration"],
+    outcome: "Every enquiry answered, and every reply read by a person before it goes.",
+    expect:
+      "Watch mail arrive in the first lane, a drafted reply appear for review, and an approved one leave for the customer as it is dragged across.",
+    underTheHood: {
+      text: "A review facade on an existing app, its units included unchanged",
+      href: "/documentation/boards/syn-mail-desk-board/",
+    },
+    opens: "video",
+    runItYourself: {
+      href: "/playground?demo=syn-mail-desk",
+      needs:
+        "an hkp-node kept under the name node, an IMAP and SMTP mailbox, and an Anthropic key",
+    },
+  },
+  {
     slug: "meeting-poll",
     label: "Meeting Poll",
     description:
