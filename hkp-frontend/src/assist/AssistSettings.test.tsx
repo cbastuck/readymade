@@ -1,8 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import AssistSettings from "./AssistSettings";
-import { readAssistSettings, saveAssistSettings } from "./settings";
+import {
+  readAssistSettings,
+  saveAssistSettings,
+  setAssistTokenStore,
+} from "./settings";
 beforeEach(() => localStorage.clear());
+afterEach(() => setAssistTokenStore(null));
 
 function type(label: string, value: string) {
   const field = screen.getByLabelText(label);
@@ -40,6 +45,33 @@ it("shows only the chosen provider's settings and saves the choice at once", () 
     openAIThinking: "off",
     openAIContextTokens: 16384,
   });
+});
+
+it("configures an OpenCode server and shows its current CORS origin", () => {
+  render(<AssistSettings />);
+  fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));
+  expect(readAssistSettings().provider).toBe("opencode");
+  expect(screen.getByLabelText("Server URL")).toBeTruthy();
+  expect(screen.getByLabelText("Server username")).toBeTruthy();
+  expect(screen.getByLabelText("Server password")).toBeTruthy();
+  expect(screen.getByText(/opencode serve --cors/).textContent).toContain(
+    window.location.origin,
+  );
+  fireEvent.blur(type("Server URL", "http://127.0.0.1:4096"));
+  fireEvent.blur(type("Server password", " server-password "));
+  expect(readAssistSettings()).toMatchObject({
+    openCodeUrl: "http://127.0.0.1:4096",
+    openCodePassword: "server-password",
+  });
+});
+
+it("keeps a focused OpenCode password when the page reloads", () => {
+  const view = render(<AssistSettings />);
+  fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));
+  type("Server password", "server-password");
+  fireEvent(window, new Event("pagehide"));
+  expect(readAssistSettings().openCodePassword).toBe("server-password");
+  view.unmount();
 });
 
 it("rejects invalid values in place without saving them", () => {
@@ -80,5 +112,22 @@ it("warns about plain HTTP endpoints on another machine without refusing them", 
   expect(screen.queryByText(/API token, your prompts/)).toBeNull();
   expect(readAssistSettings().mcpKnowledgeUrl).toBe(
     "http://knowledge.lan:8787/mcp",
+  );
+});
+
+it("says tokens are kept with the device's secrets where the host has them, and when one was refused", async () => {
+  setAssistTokenStore({
+    read: () => null,
+    write: async () => {
+      throw new Error("refused");
+    },
+    remove: async () => {},
+    setAudience: async () => {},
+  });
+  render(<AssistSettings />);
+  expect(screen.getByText("readymade.assist.anthropic")).toBeTruthy();
+  fireEvent.blur(type("API token", "sk-ant"));
+  expect((await screen.findByRole("alert")).textContent).toBe(
+    "Could not save on this device.",
   );
 });

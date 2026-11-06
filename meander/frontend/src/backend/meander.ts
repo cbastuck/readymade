@@ -22,6 +22,50 @@ import { forgetGrant } from "hkp-frontend/src/grants";
 
 const encodePathSegment = (value: string) => encodeURIComponent(value);
 
+declare global {
+  interface Window {
+    /**
+     * Injected by the phone shells with the vault: what a request to
+     * hkp://secrets carries to show it comes from the app's own page.
+     */
+    __HKP_SECRETS_TOKEN__?: string;
+  }
+}
+
+/**
+ * The desktop's secret store, reached through calls the window exposes. The
+ * phone shells have no such calls: they keep secrets behind hkp://secrets
+ * (`secretsRequest`), so undefined here is a phone, not an older desktop.
+ */
+function saucerExposed(): Record<string, any> | undefined {
+  return (window as any).saucer?.exposed;
+}
+
+/**
+ * A request to the phone shells' secret store (the Keychain on iOS, a
+ * Keystore-sealed store on Android). Throws with the shell's own words when it
+ * refuses, so a failed save says why.
+ */
+async function secretsRequest(
+  path: string,
+  method: "GET" | "POST" | "DELETE",
+  body?: unknown,
+): Promise<any> {
+  const res = await fetch(`hkp://secrets/${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Hkp-Secrets-Token": window.__HKP_SECRETS_TOKEN__ ?? "",
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const answer = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(answer?.error ?? `The secret store refused: ${res.statusText}`);
+  }
+  return answer;
+}
+
 /**
  * Backend implementation for the Meander desktop app.
  * Uses the hkp:// custom scheme registered by the native webview.
@@ -143,20 +187,26 @@ export const meanderBackend: BackendAdapter = {
   },
 
   async listSecrets(): Promise<string[]> {
-    const saucer = (window as any).saucer;
-    if (!saucer?.exposed?.secretAliases) {
+    const saucer = saucerExposed();
+    if (!saucer) {
+      return Object.keys(await secretsRequest("values", "GET"));
+    }
+    if (!saucer.secretAliases) {
       // An older app build: the injected vault is the only source of names.
       return vaultAliases();
     }
-    return (await saucer.exposed.secretAliases()) ?? [];
+    return (await saucer.secretAliases()) ?? [];
   },
 
   async setSecret(alias: string, value: string): Promise<void> {
-    const saucer = (window as any).saucer;
-    if (!saucer?.exposed?.setSecret) {
+    const saucer = saucerExposed();
+    if (!saucer) {
+      await secretsRequest(`values/${encodePathSegment(alias)}`, "POST", { value });
+    } else if (!saucer.setSecret) {
       throw new Error("This build cannot store secrets");
+    } else {
+      await saucer.setSecret(alias, value);
     }
-    await saucer.exposed.setSecret(alias, value);
     // The injected copy is what boards resolve against, and it is only read at
     // page creation — so the write has to land in both places or a secret just
     // saved would not resolve until the app is restarted.
@@ -164,22 +214,28 @@ export const meanderBackend: BackendAdapter = {
   },
 
   async deleteSecret(alias: string): Promise<void> {
-    const saucer = (window as any).saucer;
-    if (!saucer?.exposed?.deleteSecret) {
+    const saucer = saucerExposed();
+    if (!saucer) {
+      await secretsRequest(`values/${encodePathSegment(alias)}`, "DELETE");
+    } else if (!saucer.deleteSecret) {
       throw new Error("This build cannot store secrets");
+    } else {
+      await saucer.deleteSecret(alias);
     }
-    await saucer.exposed.deleteSecret(alias);
     vaultDelete(alias);
   },
 
   async listSecretAudiences(): Promise<Record<string, string[]>> {
-    const saucer = (window as any).saucer;
-    if (!saucer?.exposed?.secretAudiences) {
+    const saucer = saucerExposed();
+    if (!saucer) {
+      return await secretsRequest("values", "GET");
+    }
+    if (!saucer.secretAudiences) {
       // An older app build: it holds values only, so nothing is constrained.
       return {};
     }
     try {
-      const parsed = JSON.parse((await saucer.exposed.secretAudiences()) || "{}");
+      const parsed = JSON.parse((await saucer.secretAudiences()) || "{}");
       return parsed && typeof parsed === "object" ? parsed : {};
     } catch {
       return {};
@@ -187,11 +243,14 @@ export const meanderBackend: BackendAdapter = {
   },
 
   async setSecretAudience(alias: string, audience: string[]): Promise<void> {
-    const saucer = (window as any).saucer;
-    if (!saucer?.exposed?.setSecretAudience) {
+    const saucer = saucerExposed();
+    if (!saucer) {
+      await secretsRequest(`values/${encodePathSegment(alias)}`, "POST", { audience });
+    } else if (!saucer.setSecretAudience) {
       throw new Error("This build cannot constrain secrets");
+    } else {
+      await saucer.setSecretAudience(alias, audience);
     }
-    await saucer.exposed.setSecretAudience(alias, audience);
     // Same reason the value is written twice: the injected copy is what boards
     // resolve against and is only read at page creation, so a constraint saved
     // here would not apply until the app is restarted.
@@ -199,21 +258,28 @@ export const meanderBackend: BackendAdapter = {
   },
 
   async grantSecrets(key: string, aliases: string[]): Promise<void> {
-    const saucer = (window as any).saucer;
-    if (!saucer?.exposed?.grantSecrets) {
+    const saucer = saucerExposed();
+    if (!saucer) {
+      await secretsRequest("grants", "POST", { key, aliases });
+      return;
+    }
+    if (!saucer.grantSecrets) {
       // An older app build with nowhere durable to write one. The grant holds
       // for this session, which means being asked again next launch.
       return;
     }
-    await saucer.exposed.grantSecrets(key, aliases);
+    await saucer.grantSecrets(key, aliases);
   },
 
   async revokeSecretGrant(key: string): Promise<void> {
-    const saucer = (window as any).saucer;
-    if (!saucer?.exposed?.revokeSecretGrant) {
+    const saucer = saucerExposed();
+    if (!saucer) {
+      await secretsRequest("grants", "DELETE", { key });
+    } else if (!saucer.revokeSecretGrant) {
       throw new Error("This build cannot revoke a grant");
+    } else {
+      await saucer.revokeSecretGrant(key);
     }
-    await saucer.exposed.revokeSecretGrant(key);
     forgetGrant(key);
   },
 
@@ -230,6 +296,35 @@ export const meanderBackend: BackendAdapter = {
     }
     const body = await res.json();
     return typeof body.token === "string" ? body.token : null;
+  },
+
+  async listSharedBoards(): Promise<Array<SavedBoardEntry> | null> {
+    const res = await fetch("hkp://shared-boards");
+    if (!res.ok) {
+      // No iCloud Drive folder on this Mac, or a host without the route.
+      return null;
+    }
+    return res.json();
+  },
+
+  async loadSharedBoard(boardName: string): Promise<BoardDescriptor> {
+    const res = await fetch(`hkp://shared-boards/${encodePathSegment(boardName)}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load board from iCloud Drive: ${res.statusText}`);
+    }
+    const board = await res.json();
+    return board.boardName ? board : { ...board, boardName };
+  },
+
+  async saveSharedBoard(name: string, payload: BoardDescriptor): Promise<void> {
+    const res = await fetch(`hkp://shared-boards/${encodePathSegment(name)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to save board to iCloud Drive: ${res.statusText}`);
+    }
   },
 
   async loadStartPageTree(): Promise<StartPageTree | null> {

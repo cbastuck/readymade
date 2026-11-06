@@ -2,8 +2,13 @@ import { type TouchEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useBoardContext } from "../../../BoardContext";
-import { BoardDescriptor, SavedBoard } from "../../../types";
-import { getLocalBoard, getLocalBoards, removeLocalBoard } from "../common";
+import { BoardDescriptor } from "../../../types";
+import {
+  deleteLibraryBoard,
+  LibraryBoard,
+  listLibraryBoards,
+  loadLibraryBoard,
+} from "../../../core/boardLibrary";
 import { M } from "./tokens";
 import { stripMarkup } from "../../../ui-components/Markup";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
@@ -84,11 +89,11 @@ function SavedBoardRow({
   onOpen,
   onDelete,
 }: {
-  board: SavedBoard;
+  board: LibraryBoard;
   onOpen: () => void;
   onDelete: () => void;
 }) {
-  const date = board.createdAt ? new Date(board.createdAt) : null;
+  const date = board.modified ? new Date(board.modified) : null;
   const dateLabel =
     date && !isNaN(date.getTime())
       ? date.toLocaleDateString(undefined, {
@@ -248,10 +253,14 @@ export default function MobileHub({
   onBoardLoaded: () => void;
 }) {
   const boardContext = useBoardContext();
-  const [saved, setSaved] = useState<SavedBoard[]>([]);
+  const [saved, setSaved] = useState<LibraryBoard[]>([]);
   const [sheet, setSheet] = useState<null | "runtimes" | "coordinators">(null);
 
-  const refresh = () => setSaved(getLocalBoards());
+  const refresh = () => {
+    void listLibraryBoards()
+      .then(setSaved)
+      .catch(() => setSaved([]));
+  };
   useEffect(refresh, []);
 
   if (!boardContext) {
@@ -268,8 +277,8 @@ export default function MobileHub({
     onBoardLoaded();
   };
 
-  const onLoad = async (board: SavedBoard) => {
-    const descriptor = getLocalBoard(board.name);
+  const onLoad = async (board: LibraryBoard) => {
+    const descriptor = await loadLibraryBoard(board.name).catch(() => null);
     if (!descriptor) {
       toast.error(`Could not load “${board.name}”`);
       return;
@@ -277,10 +286,16 @@ export default function MobileHub({
     await loadDescriptor(descriptor, board.name);
   };
 
-  const onDelete = (board: SavedBoard) => {
-    removeLocalBoard(board);
+  const onDelete = async (board: LibraryBoard) => {
+    try {
+      await deleteLibraryBoard(board.name);
+      toast.success(`Deleted “${board.name}”`);
+    } catch (err) {
+      toast.error(`Could not delete “${board.name}”`, {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
     refresh();
-    toast.success(`Deleted “${board.name}”`);
   };
 
   return (
@@ -379,10 +394,10 @@ export default function MobileHub({
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {saved.map((board) => (
               <SavedBoardRow
-                key={board.id}
+                key={board.name}
                 board={board}
                 onOpen={() => onLoad(board)}
-                onDelete={() => onDelete(board)}
+                onDelete={() => void onDelete(board)}
               />
             ))}
           </div>

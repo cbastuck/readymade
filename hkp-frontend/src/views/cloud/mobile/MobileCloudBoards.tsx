@@ -31,7 +31,13 @@ import {
   registerCoordinatorBoard,
   stopCoordinatorBoard,
   deleteCoordinatorBoard,
+  setCoordinatorBoardCapture,
 } from "../coordinatorClient";
+import { setCapturing } from "../../../runtime/captureMode";
+import {
+  CaptureButton,
+  type CaptureControl,
+} from "../../playground/mobile/capture";
 import { useCoordinatorBridge } from "../useCoordinatorBridge";
 import MembersDialog from "../MembersDialog";
 import SharedBoard from "../SharedBoard";
@@ -513,12 +519,15 @@ function MobileCloudBoardCanvas({
   userId,
   idToken,
   errors,
+  capture,
 }: {
   board: CoordinatorBoardInfo;
   coordinator: CoordinatorDescriptor;
   userId: string | null;
   idToken: string | null;
   errors: string[];
+  /** The board's Capture mode, which its coordinator holds. */
+  capture: CaptureControl;
 }) {
   const boardContext = useBoardContext();
   const { ws: bridgeWs } = useCoordinatorBridge(
@@ -563,7 +572,7 @@ function MobileCloudBoardCanvas({
           </ul>
         </div>
       )}
-      <MobileBoardCanvas bridge={{ ws: bridgeWs }} />
+      <MobileBoardCanvas bridge={{ ws: bridgeWs }} capture={capture} />
     </div>
   );
 }
@@ -582,6 +591,7 @@ function CloudTopBar({
   onRefresh,
   runState,
   onMembers,
+  capture,
 }: {
   title: string;
   /** Where the board lives, e.g. "Deployed to node1"; absent on the overview. */
@@ -597,6 +607,8 @@ function CloudTopBar({
   };
   /** Opens who the open board is shared with; its owner's to see. */
   onMembers?: () => void;
+  /** The open board's Capture mode; absent on the overview. */
+  capture?: CaptureControl;
 }) {
   return (
     <div
@@ -671,6 +683,7 @@ function CloudTopBar({
           </div>
         )}
       </div>
+      {capture && <CaptureButton control={capture} />}
       {runState && (
         <button
           onClick={runState.onToggle}
@@ -1079,6 +1092,56 @@ export default function MobileCloudBoards({
   const openBoardErrors =
     openBoardLive?.status === "error" ? (openBoardLive.errors ?? []) : [];
 
+  // ── Capture mode ──────────────────────────────────────────────────────────────
+
+  /**
+   * Whether the open board's runtimes send what each service received and
+   * passed on — as its coordinator holds it, never in the config: it lasts
+   * while the owner is attached. The same switch as the desktop's Cloud Boards
+   * view.
+   */
+  const captureOn = openBoardLive?.capture === true;
+  const [captureBusy, setCaptureBusy] = useState(false);
+
+  // The browser runtimes this view hosts for the board follow it too.
+  useEffect(() => {
+    setCapturing(captureOn);
+  }, [captureOn]);
+  useEffect(() => () => setCapturing(false), []);
+
+  const applyCapture = async (enabled: boolean) => {
+    const coordinator = selectedCoordinator;
+    const board = openBoardLive;
+    if (!board || !coordinator || !user || captureBusy) {
+      return;
+    }
+    setCaptureBusy(true);
+    try {
+      const result = await setCoordinatorBoardCapture(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        board.boardName,
+        enabled,
+      );
+      if (result.unreachable.length > 0) {
+        toast.error(`Not applied to: ${result.unreachable.join(", ")}`);
+      }
+      await reloadAllBoards();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to change Capture mode",
+      );
+    } finally {
+      setCaptureBusy(false);
+    }
+  };
+  const capture: CaptureControl = {
+    on: captureOn,
+    busy: captureBusy,
+    set: (on) => void applyCapture(on),
+  };
+
   // ── Start / stop the open board ───────────────────────────────────────────────
 
   /**
@@ -1220,6 +1283,7 @@ export default function MobileCloudBoards({
               : undefined
           }
           onMembers={boardIsOpen ? () => setIsMembersOpen(true) : undefined}
+          capture={boardIsOpen ? capture : undefined}
         />
 
         {/* Keep the board mounted in the background while browsing the overview
@@ -1239,6 +1303,7 @@ export default function MobileCloudBoards({
               userId={user.userId}
               idToken={user.idToken}
               errors={openBoardErrors}
+              capture={capture}
             />
           </div>
         )}

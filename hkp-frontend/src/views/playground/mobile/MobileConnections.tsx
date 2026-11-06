@@ -2,12 +2,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 
 import {
+  COORDINATORS_CHANGED,
   CoordinatorDescriptor,
   restoreCoordinators,
   storeCoordinators,
@@ -55,6 +57,13 @@ export function MobileConnectionsProvider({
   const [runtimeEngines, setRuntimeEngines] = useState<RuntimeClass[]>(() =>
     restoreAvailableRuntimeEngines(),
   );
+
+  // The host's settings can change the stored list while a board is open.
+  useEffect(() => {
+    const reread = () => setCoordinators(restoreCoordinators());
+    window.addEventListener(COORDINATORS_CHANGED, reread);
+    return () => window.removeEventListener(COORDINATORS_CHANGED, reread);
+  }, []);
 
   const addCoordinator = useCallback((c: CoordinatorDescriptor) => {
     setCoordinators((prev) => {

@@ -13,16 +13,14 @@ import {
 import { useBoardContext } from "../../BoardContext";
 import {
   RuntimeClass,
-  RuntimeClassType,
+  ServiceClass,
   ServiceClassWithPreset,
   toCanonicalRuntimeClassType,
-  toCanonicalServiceId,
   isRuntimeGraphQLClassType,
   isRuntimeRestClassType,
 } from "../../types";
 import { usePresetsForService } from "../../ui-components/service/usePresetsForService";
-import { isUsableAsBlock, parseBlockDefinition } from "../../core/presets";
-import { BlockDefinition, findSameDefinition } from "../../runtime/board/blocks";
+import { SUB_SERVICE_ID, paletteFor, paletteKey } from "../../core/palette";
 import {
   HKP_DND_RUNTIME_CLASS_TYPE,
   HKP_DND_SERVICE_CLASS_TYPE,
@@ -31,17 +29,6 @@ import ManageRuntimesDialog from "../../ui-components/toolbar/ManageRuntimesDial
 import { useRemoteRuntimeEditing } from "../../ui-components/toolbar/useRemoteRuntimeEditing";
 import { boardHasFacade, useFacadeView } from "../../facade/FacadeViewContext";
 import { useSelection } from "../../selection/SelectionContext";
-
-/** The service a composed preset is a preset *of*, canonically. */
-const SUB_SERVICE_ID = "sub-service";
-
-/** Distinct per card: one service can appear once plus once per preset of it. */
-function paletteKey(svc: ServiceClassWithPreset): string {
-  if (svc.block) {
-    return `block:${svc.block.id}`;
-  }
-  return svc.preset ? `${svc.serviceId}:${svc.preset.id}` : svc.serviceId;
-}
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -425,108 +412,20 @@ export default function Sidebar() {
     if (!boardContext) {
       return [];
     }
-    const typeMap = new Map<string, ServiceClassWithPreset[]>();
-    const boardBlocks = boardContext.linkage?.blocks?.definitions[""] ?? [];
-    /** Per runtime class, the library blocks offered as cards. */
-    const offeredFromLibrary = new Map<string, BlockDefinition[]>();
+    // One group per class of runtime on the board, offering what all of its
+    // runtimes of that class can run.
+    const typeMap = new Map<string, ServiceClass[]>();
     for (const runtime of boardContext.runtimes) {
       const canonical = toCanonicalRuntimeClassType(runtime.type);
-      const services = boardContext.registry[runtime.id] ?? [];
-      if (!typeMap.has(canonical)) {
-        typeMap.set(canonical, []);
-      }
-      const group = typeMap.get(canonical)!;
-      for (const svc of services) {
-        if (!group.some((s) => s.serviceId === svc.serviceId)) {
-          group.push(svc);
-        }
-      }
+      typeMap.set(canonical, [
+        ...(typeMap.get(canonical) ?? []),
+        ...(boardContext.registry[runtime.id] ?? []),
+      ]);
     }
-
-    // A sub-service preset is a pipeline someone built and kept, which is a
-    // building block in exactly the way a primitive is: it belongs in the
-    // palette rather than behind a menu on a service you have to add first.
-    // Offered only where the runtime has a sub-service to put it in, and only
-    // where the preset says it belongs — its nested services are named by ids
-    // that one runtime's registry has and another's may not.
-    for (const [type, group] of typeMap.entries()) {
-      const host = group.find(
-        (svc) => toCanonicalServiceId(svc.serviceId) === SUB_SERVICE_ID,
-      );
-      if (!host) {
-        continue;
-      }
-      for (const preset of subServicePresets) {
-        const use = isUsableAsBlock(preset);
-        if (
-          preset.runtimes?.length &&
-          !preset.runtimes.some(
-            (rt) =>
-              toCanonicalRuntimeClassType(rt as RuntimeClassType) === type,
-          )
-        ) {
-          continue;
-        }
-        group.push({
-          // The card is the preset, so it is called what the preset is called.
-          // `serviceName` is the name a preset gives a service it is *applied*
-          // to, and one captured from a service carries whatever that service
-          // was called — "SubService", beside the SubService primitive.
-          serviceId: host.serviceId,
-          serviceName: preset.name,
-          description: preset.description,
-          version: host.version,
-          capabilities: host.capabilities,
-          preset: {
-            id: preset.id,
-            serviceId: preset.serviceId,
-            ...(use ? { use: true } : {}),
-          },
-        });
-        if (use) {
-          offeredFromLibrary.set(type, [
-            ...(offeredFromLibrary.get(type) ?? []),
-            parseBlockDefinition(preset),
-          ]);
-        }
-      }
-    }
-
-    // The board's own blocks, where the runtime has the service each one is
-    // made of. Those of the board being opened: a unit's blocks are for its
-    // own runtimes.
-    for (const [type, group] of typeMap.entries()) {
-      for (const definition of boardBlocks) {
-        // A copy of a library block the palette already offers stays behind
-        // the library's card, where it was dropped from — a drop of that card
-        // uses the board's copy. It gets a card of its own once it differs.
-        if (findSameDefinition(offeredFromLibrary.get(type), definition)) {
-          continue;
-        }
-        const host = group.find(
-          (svc) =>
-            !svc.preset &&
-            !svc.block &&
-            toCanonicalServiceId(svc.serviceId) ===
-              toCanonicalServiceId(definition.serviceId),
-        );
-        if (!host) {
-          continue;
-        }
-        group.unshift({
-          serviceId: host.serviceId,
-          serviceName: definition.name,
-          description: definition.description,
-          version: host.version,
-          capabilities: host.capabilities,
-          block: { id: definition.id },
-        });
-      }
-    }
-
+    const boardBlocks = boardContext.linkage?.blocks?.definitions[""] ?? [];
     return Array.from(typeMap.entries()).map(([type, services]) => ({
       type,
-      services,
+      services: paletteFor(services, type, subServicePresets, boardBlocks),
     }));
   }, [
     boardContext?.runtimes,

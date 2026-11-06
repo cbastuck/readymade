@@ -67,7 +67,7 @@ available:
 
  window.saucer.exposed.pickFile()          desktop   a bound C++ function
    direct calls into the backend:          elsewhere absent — code checks first
-   file dialogs, the secret vault
+   file dialogs, the desktop's vault
 ```
 
 **`hkp://` is a protocol, not a file path.** It looks like an HTTP request and
@@ -276,8 +276,9 @@ Beyond the platform seam, each shell brings things a browser cannot:
 | Boards on disk (`hkp://boards/`) | — | yes | yes | yes |
 | Embedded `hkp-rt` | — | yes | yes | yes |
 | Local model backends | — | yes | — | — |
-| Secret store, with a consent prompt | — | yes | — | — |
+| Secret store, with a consent prompt | — | yes | yes | yes |
 | Share into the app | — | yes | yes | — |
+| Pin a board to the Home Screen | — | — | yes | yes |
 | LAN discovery (`_readymade._tcp`) | — | yes | yes | yes |
 
 The pattern in that table is worth reading. What lives *in the runtime* reaches
@@ -285,12 +286,105 @@ every target that embeds it: discovery is one implementation
 (`hkp-rt/lib/src/discovery/discovery.cpp`) and needs only a platform
 declaration per shell — iOS names the service in `Info.plist`, which the OS
 requires before a process may browse for it. What lives *in a shell* reaches
-only that shell: the secret vault is the desktop backend's
-(`meander/backend/vault.h`), behind `saucer.exposed`, so it stops at the
-desktop. And what the platform defines itself has to be written per platform —
+only that shell, and has to be written again for the next: the secret vault
+is the desktop backend's (`meander/backend/vault.h`), behind `saucer.exposed`,
+and each phone shell keeps its own behind `hkp://secrets` (below). And what
+the platform defines itself has to be written per platform —
 sharing is a macOS app extension (`meander/backend/shareRouter.cpp`) and an iOS
 Share Extension (`meander-ios/ReadymadeIOS/ShareExtension/`), which is why it
 exists on two targets rather than four.
+
+### Where boards live
+
+Every host keeps its saved boards behind `hkp://boards/`, as one file per
+board named by the desktop's rule (`meander/backend/boardName.h`):
+`<encoded name>.hkpp`, where the encoding keeps letters, digits, `-`, `_` and
+spaces and writes every other UTF-8 byte as `%XX`. The same board is therefore
+the same file on every host, which is what lets two of them share a folder.
+
+| Host | Boards | History, folder tree |
+|---|---|---|
+| Web | the page's local storage | the page's local storage |
+| Desktop | `~/.hkp/meanders/` | beside the boards |
+| iOS | iCloud Drive (`iCloud.com.readymadeit.readymade`, shown as "Readymade" in Files and Finder) when it is on, the app's Documents otherwise | the app's Application Support, on this device only |
+| Android | the app's files | the app's files |
+
+On iOS the board library (`meander-ios/ReadymadeIOS/Features/Boards/BoardLibrary.swift`)
+does all its file work on one queue, answers `hkp://boards/` from it, and
+coordinates every read and write, which is also what downloads a board iCloud
+has not brought to the phone yet. History stays on the device on purpose: it is
+rewritten at every pause in editing, which would be constant traffic for iCloud
+and a conflict whenever two devices edit at once.
+
+A Mac signed in to the same iCloud account gets the iOS app's folder through
+iCloud Drive, and the desktop app — not sandboxed — reads it as a path
+(`meander/backend/sharedBoards.h`, `hkp://shared-boards/`). It appears as an
+**iCloud** source in the desktop's board finder; a board opened from there is
+saved back there, and `~/.hkp` stays where new boards go.
+
+Pinning shows the same split from the other side. The web app asks once —
+Pin in a board's details on the mobile start page, through
+`hkp://home-screen/` — and each shell turns the pinned list into what its
+platform launches from. Android lets an app ask for a launcher icon
+(`requestPinShortcut`), so a pin is an icon after one confirmation. iOS does
+not let an app place anything on the Home Screen, so there a pin becomes a
+quick action on the Readymade icon, a board for the Readymade widget and the
+Open Board shortcut action, and the person places it
+(`meander-ios/ReadymadeIOS/Features/HomeScreen/`, `Widget/`). Every way in
+arrives as one link, `readymade://board?saved=<name>` or `?demo=<slug>`; the
+shell keeps the board and the app takes it from `hkp://home-screen/launch`
+as it mounts, which is what makes a cold start the same as a warm one.
+
+### Where secrets live
+
+A board refers to a credential as `{{secret.<alias>}}` and never holds the
+value (`docs/content/concepts/service.md`); the host that opens it supplies
+the value from its own vault, asks before handing one to a runtime, and
+remembers the answer as a grant (`hkp-frontend/src/core/secretConsent.ts`).
+Each host keeps its own vault and nothing syncs them: the alias is the
+interface between them.
+
+| Host | Values | Grants |
+|---|---|---|
+| Desktop | `~/.hkp/vault.json`, owner-only, not encrypted | `~/.hkp/grants.json` |
+| iOS | the Keychain, one item per alias, this device only (`…AfterFirstUnlockThisDeviceOnly`): not in iCloud Keychain, not restored onto another phone | the app's Application Support |
+| Android | the app's private preferences, each entry sealed with an AES key that never leaves the Android Keystore, so a backup restored elsewhere reads as empty | the app's files |
+
+Every host gives the app's own page the vault and the grants **at creation**,
+before any board loads, because provisioning starts as soon as one does: the
+desktop injects them for its own pages only, iOS with a `WKUserScript` guarded
+the same way and replaced after every change (iOS reloads a page whose content
+process it reclaimed), and Android writes them into `index.html` as it serves
+it, which is never cached. Changes go back through the desktop's
+`saucer.exposed` calls, or through `hkp://secrets` on a phone
+(`meander-ios/ReadymadeIOS/Features/Secrets/DeviceVault.swift`,
+`meander-android/…/bridge/DeviceVault.kt`):
+
+```
+GET    hkp://secrets/values           alias -> hosts it may be sent to; never a value
+POST   hkp://secrets/values/<alias>   { value?, audience? }: whichever is given is set
+DELETE hkp://secrets/values/<alias>
+POST   hkp://secrets/grants           { key, aliases }: merged into what was granted
+DELETE hkp://secrets/grants           { key }
+```
+
+Unlike every other `hkp://` route, this one answers only the app's own page.
+A frame inside it — a service's own UI, an embedded site — shares the scheme
+on iOS and the bridge object on Android, so each request carries a token
+drawn once per launch and handed out with the vault
+(`X-Hkp-Secrets-Token`); without it the answer is 403.
+
+The secrets themselves are managed in Settings → Secrets on every app: a tab of
+the desktop dialog, a page of the phones' Settings (opened from the gear on the
+start page and from a board's menu). Both are one model
+(`hkp-frontend/src/views/secrets/secretsModel.ts`) in two layouts.
+
+Board Assist's provider tokens are kept here too, as
+`readymade.assist.anthropic` and `readymade.assist.openai-compatible`, each
+allowed only to its provider's host. The app registers the vault as their
+store at start-up (`setAssistTokenStore`, `meander/frontend/src/main.tsx`) when
+the host injected one; the web, which has none, keeps them in local storage
+(`docs/content/concepts/board-assistant.md`).
 
 The code is the authority on this table. It is a summary of what is built today,
 and the flags above move faster than prose.

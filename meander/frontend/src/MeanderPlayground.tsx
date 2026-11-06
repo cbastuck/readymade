@@ -14,8 +14,12 @@ import {
   deleteRemote,
   saveRemote,
 } from "./actions";
+import {
+  recordSnapshot,
+  rememberLastBoard,
+  type BoardLibraryKind,
+} from "./library/boardHistory";
 import { getBackend } from "./backend";
-import { BoardHistoryEntry } from "./backend/types";
 import { BoardSnapshot } from "hkp-frontend/src/core/boardSnapshots";
 import Board from "./Board";
 import { SharePayload } from "./share/shareInbox";
@@ -36,6 +40,8 @@ type Props = {
    * has instead.
    */
   unitDocuments?: Record<string, BoardDescriptor>;
+  /** The library the board is kept in: saving writes back there. */
+  library?: BoardLibraryKind;
   onLogo: () => void;
   /** A captured share to inject at the board's pipeline head (run once). */
   shareToInject?: SharePayload | null;
@@ -46,6 +52,7 @@ export default function MeanderPlayground({
   initialBoard = null,
   boardFilePath,
   unitDocuments,
+  library = "local",
   onLogo,
   shareToInject = null,
   onShareConsumed,
@@ -152,41 +159,29 @@ export default function MeanderPlayground({
   };
 
   const onSaveBoard = async (name: string, payload: BoardDescriptor) => {
-    saveBoard(name, payload);
+    if (library === "icloud") {
+      // Back where it came from, the iOS app's iCloud Drive folder — so the
+      // phone sees the change.
+      const backend = await getBackend();
+      try {
+        await backend.saveSharedBoard?.(name, payload);
+      } catch (err) {
+        window.alert(
+          `Could not save "${name}" to iCloud Drive: ${err instanceof Error ? err.message : err}`,
+        );
+      }
+    } else {
+      saveBoard(name, payload);
+    }
     setBoardName(name);
   };
 
-  const onBoardSnapshot = async (snapshot: BoardSnapshot) => {
-    const { documents, reason } = snapshot;
-    const name = snapshot.boardName || boardName;
-    if (!name) {
-      return;
-    }
-    localStorage.setItem("lastActiveBoardName", name);
-    // The documents, not the projection: a board is resumed by being opened,
-    // and what is opened has to be a document. Stored flat, a composition comes
-    // back declaring no units, so there is nothing left to link and the facades
-    // its units contribute are gone — the board is there, its faces are not.
-    //
-    // A configuration snapshot is labelled apart so the history keeps one of
-    // them in a row rather than fifty: the backend replaces a "config" entry at
-    // the head with the next one, and a structural change starts a new entry.
-    const entry: BoardHistoryEntry = {
-      timestamp: new Date().toISOString(),
-      label: reason === "configuration" ? "config" : "auto",
-      snapshot: { ...documents.composition, boardName: name },
-      ...(documents.units.length ? { units: documents.units } : {}),
-    };
-    try {
-      await (await getBackend()).pushBoardSnapshot(name, entry);
-    } catch {
-      // Non-critical: history push failures are silently ignored.
-    }
-  };
+  const onBoardSnapshot = (snapshot: BoardSnapshot) =>
+    recordSnapshot(snapshot, boardName, library);
 
   const onBoardLoaded = (board: BoardDescriptor) => {
     if (board.boardName) {
-      localStorage.setItem("lastActiveBoardName", board.boardName);
+      rememberLastBoard(board.boardName, library);
     }
   };
 

@@ -22,6 +22,8 @@ import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
 import { useUserProfile } from "hkp-frontend/src/core/userProfile";
 import { AccountDialog } from "hkp-frontend/src/views/profile";
 import { getBackend } from "./backend";
+import { useICloudSource } from "./library/useICloudSource";
+import type { BoardLibraryKind } from "./library/boardHistory";
 import { isMeanderApp } from "./isMeanderApp";
 import { useBackendRemotes } from "./useBackendRemotes";
 import MeanderAppMenu from "./MeanderAppMenu";
@@ -29,11 +31,14 @@ import MeanderAppMenu from "./MeanderAppMenu";
 type Props = {
   /**
    * Opens a board. `source` says where it was read from, when it came from a
-   * file — a composition resolves the units beside it against that.
+   * file — a composition resolves the units beside it against that. `library`
+   * is where saving writes it back: the iOS app's iCloud Drive folder for a
+   * board opened from there.
    */
   onRestoreBoard: (
     board: BoardDescriptor | null | undefined,
     source?: string,
+    library?: BoardLibraryKind,
   ) => void;
 };
 
@@ -77,6 +82,8 @@ export default function StartPage({ onRestoreBoard }: Props) {
     onDeleteCloudBoard,
     openCloudStored,
   } = useCloudBoardSources({ loadBoard: loadBoardForUpload });
+  // The iOS app's boards in iCloud Drive, where this Mac has that folder.
+  const iCloudSource = useICloudSource();
 
   // Persisted via hkp://startpage in the desktop app (startpage.json next to
   // the saved boards), localStorage in a plain browser.
@@ -270,6 +277,20 @@ export default function StartPage({ onRestoreBoard }: Props) {
       case "saved":
         void openSavedBoard(action.name);
         break;
+      case "icloud":
+        void getBackend()
+          .then(async (backend) => {
+            if (!backend.loadSharedBoard) {
+              return;
+            }
+            onRestoreBoard(await backend.loadSharedBoard(action.name), undefined, "icloud");
+          })
+          .catch((err: unknown) => {
+            window.alert(
+              `Could not open "${action.name}" from iCloud Drive: ${err instanceof Error ? err.message : err}`,
+            );
+          });
+        break;
       case "demo": {
         const board = findDemoBoard(action.slug);
         if (board) {
@@ -352,7 +373,7 @@ export default function StartPage({ onRestoreBoard }: Props) {
         loadBoardSource={loadBoardSource}
         saveBoardSource={saveBoardSource}
         uploadBoardToCloud={uploadBoardToCloud}
-        extraSources={[sharedSource]}
+        extraSources={iCloudSource ? [sharedSource, iCloudSource] : [sharedSource]}
         myBoardsExtraFolders={uploadedFolders}
         onRevokeShare={onRevokeShare}
         onLeaveShare={onLeaveShare}

@@ -2,13 +2,21 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { setSecretStore } from "hkp-frontend/src/core/secrets";
-import { setVaultPersist, vaultSecretStore } from "hkp-frontend/src/vault";
+import {
+  hostKeepsVault,
+  setVaultPersist,
+  vaultDelete,
+  vaultGet,
+  vaultSet,
+  vaultSecretStore,
+} from "hkp-frontend/src/vault";
 import {
   hostGrantStore,
   hostKeepsGrants,
   setGrantPersist,
 } from "hkp-frontend/src/grants";
 import { setSecretConsent } from "hkp-frontend/src/core/secretConsent";
+import { setAssistTokenStore } from "hkp-frontend/src/assist/settings";
 
 import { getBackend } from "./backend";
 
@@ -72,6 +80,34 @@ setVaultPersist({
       });
   },
 });
+
+// Board Assist's provider tokens are credentials like any other: kept with
+// the host's secrets, where they can be seen and removed, rather than in
+// browser storage. Those already in browser storage move on the first launch.
+if (hostKeepsVault()) {
+  setAssistTokenStore({
+    read: vaultGet,
+    write: async (alias, value, audience) => {
+      const backend = await getBackend();
+      if (!backend.setSecret) {
+        throw new Error("This build cannot store secrets");
+      }
+      await backend.setSecret(alias, value);
+      // The host injects the vault only when a page opens. Keep this copy in
+      // step after an Assist write so the saved password is immediately
+      // readable as well as present after the next reload.
+      vaultSet(alias, value);
+      await backend.setSecretAudience?.(alias, audience);
+    },
+    remove: async (alias) => {
+      await (await getBackend()).deleteSecret?.(alias);
+      vaultDelete(alias);
+    },
+    setAudience: async (alias, audience) => {
+      await (await getBackend()).setSecretAudience?.(alias, audience);
+    },
+  });
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

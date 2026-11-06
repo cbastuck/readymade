@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useBoardContext } from "../../../BoardContext";
 import { MobileHostContext } from "../../../MobileHostContext";
 import { withCoordinatorEngines } from "../../../common";
-import { storeBoardToLocalStorage } from "../common";
+import { isHostLibrary, saveLibraryBoard } from "../../../core/boardLibrary";
+import { PlayProvider, canPlay, play, useRunParams } from "../../../core/play";
 import { createBoardLink } from "../BoardLink";
 import { M } from "./tokens";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
@@ -20,12 +21,20 @@ import {
 import BoardMenuSheet from "./BoardMenuSheet";
 import DeployBoardSheet from "./DeployBoardSheet";
 import SaveBoardSheet from "./SaveBoardSheet";
+import RunSheet from "./RunSheet";
+import { CaptureButton, useCaptureControl } from "./capture";
 import RuntimeUnreachableDialog from "../../../ui-components/RuntimeUnreachableDialog";
 import UnknownRemoteDialog from "../../../ui-components/UnknownRemoteDialog";
 import {
   RemoteRuntimeStore,
   RemoteRuntimeStoreCtx,
 } from "../../../ui-components/toolbar/useRemoteRuntimeEditing";
+import type { AssistFocus } from "../../../assist/useBoardAssist";
+import { ASSIST_SETTINGS_SECTION } from "../../../assist/settings";
+
+// Loaded on first use, as the desktop panel is: the providers' clients are
+// not small, and most sessions never ask.
+const MobileAssistPage = lazy(() => import("../../assist/MobileAssistPage"));
 
 type Tab = "board" | "cloud" | "hub";
 
@@ -33,6 +42,9 @@ type MobilePlaygroundInnerProps = {
   suggestedName?: string;
   /** Navigates back to the host's start page; renders a home button when set. */
   onHome?: () => void;
+  /** Opens the host's settings, at one section when it is named; the board
+   *  menu offers it when set. */
+  onOpenSettings?: (section?: string) => void;
   /** Cloud board to open: lands on the Cloud tab with that board hydrated,
    *  which is how a host opens one from outside the playground. */
   openCloudBoard?: OpenCloudBoardSignal;
@@ -85,19 +97,76 @@ function TabButton({
 }
 
 // ── Top bar ────────────────────────────────────────────────────
+/** A square control of the top bar, the size of the menu button beside it. */
+function BarButton({
+  icon,
+  label,
+  onClick,
+  disabled = false,
+  lit = false,
+}: {
+  icon: MobileIconName;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  /** Marks a press that does more than the plain one — Play carrying an input. */
+  lit?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      style={{
+        width: 34,
+        height: 34,
+        border: "none",
+        background: lit ? M.tealLight : "rgba(0,0,0,0.06)",
+        borderRadius: 9,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.4 : 1,
+        flexShrink: 0,
+      }}
+    >
+      <MobileIcon
+        name={icon}
+        size={16}
+        color={lit ? M.tealDark : M.textSecondary}
+      />
+    </button>
+  );
+}
+
 function TopBar({
   boardName,
   runtimeCount,
   serviceCount,
   onMenu,
   onHome,
+  playable,
+  armed,
+  onPlay,
+  onPlayWith,
+  onAssist,
 }: {
   boardName: string;
   runtimeCount: number;
   serviceCount: number;
   onMenu: () => void;
   onHome?: () => void;
+  /** Whether there is a runtime to start the board at (`core/play`). */
+  playable: boolean;
+  /** Whether Play sends the input written last time rather than nothing. */
+  armed: boolean;
+  onPlay: () => void;
+  onPlayWith: () => void;
+  onAssist: () => void;
 }) {
+  const capture = useCaptureControl();
   return (
     <div
       style={{
@@ -134,7 +203,11 @@ function TopBar({
           <MobileIcon name="chevronLeft" size={17} color={M.textSecondary} />
         </button>
       )}
+      {/* Decoration, given up on the smallest phones for the board's name:
+          five controls share the bar with it. */}
+      <style>{`@media (max-width: 400px) { .hkp-mobile-bar-mark { display: none !important; } }`}</style>
       <div
+        className="hkp-mobile-bar-mark"
         style={{
           width: 32,
           height: 32,
@@ -148,39 +221,75 @@ function TopBar({
       >
         <MobileIcon name="layers" size={16} color="#fff" strokeWidth={1.8} />
       </div>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
             fontSize: 15,
             fontWeight: 700,
             color: M.textPrimary,
             lineHeight: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {boardName || "Untitled Board"}
         </div>
-        <div style={{ fontSize: 11, color: M.textMuted, marginTop: 2 }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: M.textMuted,
+            marginTop: 2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
           {runtimeCount} runtime{runtimeCount !== 1 ? "s" : ""} · {serviceCount}{" "}
           service{serviceCount !== 1 ? "s" : ""}
         </div>
       </div>
-      <button
-        onClick={onMenu}
-        aria-label="Board menu"
-        style={{
-          width: 34,
-          height: 34,
-          border: "none",
-          background: "rgba(0,0,0,0.06)",
-          borderRadius: 9,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-        }}
-      >
-        <MobileIcon name="more" size={16} color={M.textSecondary} />
-      </button>
+      {/* Closer together than the rest of the bar: five controls and a
+          board's name share the width of the smallest phones. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        {/* Starting the board where a board starts: a board driven by
+            something that has not happened yet is otherwise watched doing
+            nothing. */}
+        <BarButton
+          icon="play"
+          label={armed ? "Run the board again" : "Run the board"}
+          onClick={onPlay}
+          disabled={!playable}
+          lit={armed}
+        />
+        <BarButton
+          icon="playWith"
+          label="Run the board with parameters"
+          onClick={onPlayWith}
+          disabled={!playable}
+        />
+        {/* Beside the two Play buttons, as on the desktop: whether a run
+            shows what it carried. */}
+        <CaptureButton control={capture} />
+        <BarButton icon="sparkles" label="Board Assist" onClick={onAssist} />
+        <button
+          onClick={onMenu}
+          aria-label="Board menu"
+          style={{
+            width: 34,
+            height: 34,
+            border: "none",
+            background: "rgba(0,0,0,0.06)",
+            borderRadius: 9,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <MobileIcon name="more" size={16} color={M.textSecondary} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -189,6 +298,7 @@ function TopBar({
 function PlaygroundShell({
   suggestedName,
   onHome,
+  onOpenSettings,
   openCloudBoard,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -211,6 +321,18 @@ function PlaygroundShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
+  const [playWithOpen, setPlayWithOpen] = useState(false);
+  // Board Assist stays mounted once opened, so its conversation outlives a
+  // look at the board, as the desktop panel's does.
+  const [assistOpen, setAssistOpen] = useState(false);
+  const [assistOpened, setAssistOpened] = useState(false);
+  // What the person opened last, standing in for the desktop's selection.
+  const [focus, setFocus] = useState<AssistFocus>({
+    runtimeId: null,
+    serviceUuids: [],
+  });
+  // What the board was last run with: what the plain Play sends again.
+  const [lastParams, setLastParams] = useRunParams();
 
   // Surface Hub-managed external runtimes — and the hosts behind the Hub's
   // coordinators, which serve runtimes from the same address — in the local
@@ -266,6 +388,7 @@ function PlaygroundShell({
   const displayName = boardName || suggestedName || "Untitled Board";
   const rtCount = runtimes.length;
   const svcCount = Object.values(services).flat().length;
+  const playable = canPlay(boardContext);
 
   const onSave = async (name: string) => {
     const finalName = name.trim() || "Untitled";
@@ -274,13 +397,19 @@ function PlaygroundShell({
       toast.error("Could not read the current board");
       return;
     }
-    // Persist boardName alongside the source so loading restores the name.
-    storeBoardToLocalStorage(
-      finalName,
-      JSON.stringify({ ...data, boardName: finalName, name: finalName }),
-      data.description,
+    try {
+      await saveLibraryBoard(finalName, data);
+    } catch (err) {
+      toast.error(`Could not save “${finalName}”`, {
+        description: err instanceof Error ? err.message : undefined,
+      });
+      return;
+    }
+    toast.success(
+      isHostLibrary()
+        ? `Saved “${finalName}”`
+        : `Saved “${finalName}” to this device`,
     );
-    toast.success(`Saved “${finalName}” to this device`);
   };
 
   const onShare = async () => {
@@ -327,6 +456,18 @@ function PlaygroundShell({
           serviceCount={svcCount}
           onMenu={() => setMenuOpen(true)}
           onHome={onHome}
+          playable={playable}
+          armed={playable && lastParams !== undefined}
+          onPlay={() => {
+            if (play(boardContext, lastParams)) {
+              toast.success(`Running “${displayName}”`);
+            }
+          }}
+          onPlayWith={() => setPlayWithOpen(true)}
+          onAssist={() => {
+            setAssistOpened(true);
+            setAssistOpen(true);
+          }}
         />
       )}
 
@@ -338,7 +479,7 @@ function PlaygroundShell({
           flexDirection: "column",
         }}
       >
-        {tab === "board" && <MobileBoardCanvas />}
+        {tab === "board" && <MobileBoardCanvas onFocus={setFocus} />}
         {tab === "cloud" && <MobileCloudBoards openBoard={cloudTarget} />}
         {tab === "hub" && (
           <MobileHub
@@ -390,6 +531,7 @@ function PlaygroundShell({
         onShare={onShare}
         onNew={onNew}
         onDeploy={() => setDeployOpen(true)}
+        onOpenSettings={onOpenSettings}
       />
       <DeployBoardSheet
         open={deployOpen}
@@ -406,6 +548,28 @@ function PlaygroundShell({
         }}
         onManageCoordinators={() => setTab("cloud")}
       />
+      <RunSheet
+        open={playWithOpen}
+        onClose={() => setPlayWithOpen(false)}
+        target="the first service of the first runtime"
+        onRun={(params) => {
+          setPlayWithOpen(false);
+          setLastParams(params);
+          play(boardContext, params);
+        }}
+      />
+      {assistOpened && (
+        <Suspense fallback={null}>
+          <MobileAssistPage
+            open={assistOpen}
+            onBack={() => setAssistOpen(false)}
+            focus={focus}
+            onOpenSettings={
+              onOpenSettings && (() => onOpenSettings(ASSIST_SETTINGS_SECTION))
+            }
+          />
+        </Suspense>
+      )}
       <SaveBoardSheet
         open={saveOpen}
         initialName={displayName}
@@ -449,6 +613,7 @@ function HubUnknownRemoteDialog() {
 export default function MobilePlaygroundInner({
   suggestedName,
   onHome,
+  onOpenSettings,
   openCloudBoard,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
@@ -460,11 +625,14 @@ export default function MobilePlaygroundInner({
   return (
     <MobileHostContext.Provider value={true}>
       <MobileConnectionsProvider>
-        <PlaygroundShell
-          suggestedName={suggestedName}
-          onHome={onHome}
-          openCloudBoard={openCloudBoard}
-        />
+        <PlayProvider>
+          <PlaygroundShell
+            suggestedName={suggestedName}
+            onHome={onHome}
+            onOpenSettings={onOpenSettings}
+            openCloudBoard={openCloudBoard}
+          />
+        </PlayProvider>
         <RuntimeUnreachableDialog />
         <HubUnknownRemoteDialog />
       </MobileConnectionsProvider>

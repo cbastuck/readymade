@@ -5,7 +5,13 @@ import { useAppContext } from "../../../AppContext";
 import { useBoardContext } from "../../../BoardContext";
 import { useCloudLogin } from "../../../auth/useCloudLogin";
 import { CoordinatorDescriptor } from "../../../common";
-import { deployBoard, describeDeploy } from "../../../core/deploy";
+import { checkDeploy, deployBoard, describeDeploy } from "../../../core/deploy";
+import {
+  DeployPreflightError,
+  RuntimePreflight,
+  blocksDeploy,
+  describePreflight,
+} from "../../../core/deployPreflight";
 import { listCoordinatorBoards } from "../../cloud/coordinatorClient";
 import BottomSheet from "./BottomSheet";
 import MobileIcon from "./MobileIcon";
@@ -21,7 +27,12 @@ import { M } from "./tokens";
  * watching; from then on this app attaches to the board (the Cloud tab) rather
  * than owning it, which is where the caller sends the user next.
  *
- * The mobile counterpart of the toolbar's DeployMenu.
+ * The mobile counterpart of the toolbar's DeployMenu and DeployDialog. Before
+ * anything is handed over it shows what deploying would find, runtime by
+ * runtime (`core/deployPreflight`): deploying gives the board's runtimes up, so
+ * a problem is shown while the board is still this app's and it can be fixed
+ * from here. The findings do not depend on the coordinator, so they are asked
+ * once, when the sheet opens, and a coordinator is chosen below them.
  */
 export default function DeployBoardSheet({
   open,
@@ -47,6 +58,46 @@ export default function DeployBoardSheet({
   const [replacing, setReplacing] = useState<Set<string>>(new Set());
 
   const boardName = boardContext?.boardName || "Untitled board";
+
+  const [findings, setFindings] = useState<RuntimePreflight[] | null>(null);
+  const [checkError, setCheckError] = useState<string>();
+  /** Bumped to ask again; the check is otherwise made once per opening. */
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (!open || !user || !boardContext) {
+      return;
+    }
+    let cancelled = false;
+    setFindings(null);
+    setCheckError(undefined);
+    checkDeploy(boardContext, user)
+      .then((result) => {
+        if (!cancelled) {
+          setFindings(result);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setCheckError(
+            err instanceof Error && err.message
+              ? err.message
+              : "Could not check the board",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+    // The board is read when the sheet opens or is asked to check again;
+    // re-running on every change of the board would re-ask each runtime
+    // server continuously.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user, attempt]);
+
+  const blocked = !!findings?.some(blocksDeploy);
+  const checking = !!user && !findings && !checkError;
+  const canDeploy = !!findings && !blocked && !busy;
 
   useEffect(() => {
     if (!open || !user || coordinators.length === 0) {
@@ -95,6 +146,12 @@ export default function DeployBoardSheet({
       onClose();
       onDeployed(coordinator, result.boardName);
     } catch (err) {
+      // What changed since the sheet checked: shown where the findings are,
+      // and nothing was handed over.
+      if (err instanceof DeployPreflightError) {
+        setFindings(err.findings);
+        return;
+      }
       toast.error(
         err instanceof Error && err.message
           ? `Deploy failed — ${err.message}`
@@ -157,16 +214,98 @@ export default function DeployBoardSheet({
           </button>
         )}
 
+        {user && (
+          <div
+            data-testid="deploy-findings"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              padding: "12px 14px",
+              background: M.card,
+              border: `1px solid ${blocked || checkError ? M.danger : M.border}`,
+              borderRadius: 12,
+            }}
+          >
+            <div style={sectionLabelStyle}>Runtimes</div>
+            {checking && (
+              <div style={{ fontSize: 13, color: M.textMuted }}>
+                Checking the board’s runtimes…
+              </div>
+            )}
+            {checkError && (
+              <div style={{ fontSize: 13, color: M.danger }}>{checkError}</div>
+            )}
+            {findings?.map((finding) => (
+              <div
+                key={finding.runtimeId}
+                data-testid={`deploy-finding-${finding.runtimeId}`}
+                data-status={finding.status}
+                style={{ display: "flex", alignItems: "baseline", gap: 8 }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    flexShrink: 0,
+                    background: toneOf(finding),
+                    transform: "translateY(-1px)",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                    color: blocksDeploy(finding) ? M.danger : M.textPrimary,
+                  }}
+                >
+                  {describePreflight(finding)}
+                </span>
+              </div>
+            ))}
+            {(blocked || checkError) && (
+              <button
+                onClick={() => setAttempt((n) => n + 1)}
+                disabled={busy}
+                style={{
+                  alignSelf: "flex-start",
+                  marginTop: 2,
+                  height: 34,
+                  padding: "0 12px",
+                  border: `1px solid ${M.border}`,
+                  borderRadius: 9,
+                  background: M.card,
+                  color: M.textSecondary,
+                  fontFamily: "inherit",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Check again
+              </button>
+            )}
+          </div>
+        )}
+
+        {user && blocked && coordinators.length > 0 && (
+          <div style={{ fontSize: 12, color: M.textMuted, padding: "0 4px" }}>
+            Fix what is marked above, then check again, before deploying.
+          </div>
+        )}
+
         {user &&
           coordinators.map((coordinator) => (
             <button
               key={coordinator.url}
               onClick={() => void deploy(coordinator)}
-              disabled={busy}
+              disabled={!canDeploy}
               style={{
                 ...rowStyle,
-                cursor: busy ? "default" : "pointer",
-                opacity: busy ? 0.5 : 1,
+                cursor: canDeploy ? "pointer" : "default",
+                opacity: canDeploy ? 1 : 0.5,
               }}
             >
               <RowIcon name="cloud" color={M.tealDark} />
@@ -189,6 +328,23 @@ export default function DeployBoardSheet({
     </BottomSheet>
   );
 }
+
+// Ready is green, a browser runtime that runs only while the board is open is
+// neither, and anything that stops the deploy is red — as on the desktop.
+const toneOf = (finding: RuntimePreflight): string =>
+  blocksDeploy(finding)
+    ? M.danger
+    : finding.status === "ready"
+      ? M.green
+      : M.borderStrong;
+
+const sectionLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: "0.08em",
+  color: M.textMuted,
+  textTransform: "uppercase",
+};
 
 const rowStyle: React.CSSProperties = {
   display: "flex",

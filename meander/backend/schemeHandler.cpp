@@ -149,6 +149,27 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
       "/local-image/:path",
       std::bind(&SchemeHandler::handleGetLocalImage, this, std::placeholders::_1, std::placeholders::_2));
 
+  // The boards the iOS app keeps in iCloud Drive (sharedBoards.h).
+  m_router.register_route(
+      "GET",
+      "/shared-boards",
+      std::bind(&SchemeHandler::handleListSharedBoards, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "GET",
+      "/shared-boards/:board",
+      std::bind(&SchemeHandler::handleLoadSharedBoard, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "POST",
+      "/shared-boards/:board",
+      std::bind(&SchemeHandler::handleSaveSharedBoard, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "DELETE",
+      "/shared-boards/:board",
+      std::bind(&SchemeHandler::handleDeleteSharedBoard, this, std::placeholders::_1, std::placeholders::_2));
+
 #ifdef __APPLE__
   // "Share to Readymade" routes live in their own router (shareRouter.cpp).
   registerShareRoutes(*this, m_defaultHeaders);
@@ -1519,5 +1540,113 @@ saucer::scheme::response SchemeHandler::handleMintProcessRuntimeToken(const Rout
       .data = saucer::stash::from_str(json{{"token", token}}.dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// hkp://shared-boards/ — the boards the iOS app keeps in iCloud Drive. A 404
+// on the listing says there is no such folder on this Mac (iCloud Drive off,
+// or the iOS app never wrote to it), which the start page reads as "no iCloud
+// source" rather than as an error.
+// ──────────────────────────────────────────────────────────────────────────────
+
+saucer::scheme::response SchemeHandler::handleListSharedBoards(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto shared = m_settings.getSharedBoards();
+  if (!shared.available())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str(json{{"error", "No iCloud Drive folder for Readymade on this Mac"}}.dump()),
+        .mime = "application/json",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+  json boards = json::array();
+  for (const auto &entry : shared.list())
+  {
+    json item{{"name", entry.name}};
+    if (!entry.modified.empty())
+    {
+      item["modified"] = entry.modified;
+    }
+    boards.push_back(std::move(item));
+  }
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(boards.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleLoadSharedBoard(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto content = m_settings.getSharedBoards().load(p.at("board"));
+  if (!content)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Board not found"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(*content),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleSaveSharedBoard(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto boardName = p.at("board");
+  const auto content = req.content();
+  if (content.size() == 0)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("No content provided"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+  const std::string body(reinterpret_cast<const char *>(content.data()), content.size());
+  if (!m_settings.getSharedBoards().save(boardName, body))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Could not save the board to iCloud Drive"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"saved", boardName}}.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 201,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleDeleteSharedBoard(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto boardName = p.at("board");
+  if (!m_settings.getSharedBoards().remove(boardName))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Could not delete the board from iCloud Drive"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"deleted", boardName}}.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
   };
 }

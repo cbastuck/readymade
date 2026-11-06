@@ -99,6 +99,13 @@ export interface BackendAdapter {
   // capability: add a sibling method when a new mint-token action is needed.
   mintProcessRuntimeToken?(runtimeId: string): Promise<string | null>;
 
+  // The boards the iOS app keeps in iCloud Drive (hkp://shared-boards/), on a
+  // Mac that iCloud Drive brings the folder to. The listing is null where there
+  // is no such folder. Optional: only the desktop backend has them.
+  listSharedBoards?(): Promise<Array<SavedBoardEntry> | null>;
+  loadSharedBoard?(name: string): Promise<BoardDescriptor>;
+  saveSharedBoard?(name: string, payload: BoardDescriptor): Promise<void>;
+
   // Start page folder tree (startpage.json next to the saved boards)
   loadStartPageTree(): Promise<StartPageTree | null>;
   saveStartPageTree(tree: StartPageTree): Promise<void>;

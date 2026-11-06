@@ -30,8 +30,10 @@ import {
   CoordinatorsController,
   FolderNode,
   NewsItem,
+  PinnableAction,
   PresetNode,
   RuntimeNode,
+  isPinnable,
 } from "../types";
 import { BoardRow, FolderRow, PresetRow, RuntimeRow } from "./MobileRows";
 import MobileBoardDetails from "./MobileBoardDetails";
@@ -265,6 +267,7 @@ export default function MobileStartPage(props: StartPageProps) {
     withCloud,
     withCloudBoards,
     manageCoordinators,
+    pins,
     canOpen,
     extraSources,
     myBoardsExtraFolders,
@@ -278,6 +281,7 @@ export default function MobileStartPage(props: StartPageProps) {
     initials,
     onAvatarClick,
     avatarTitle,
+    onOpenSettings,
     menuSlot,
   } = props;
 
@@ -589,6 +593,16 @@ export default function MobileStartPage(props: StartPageProps) {
                 <MobileIcon name="server" size={16} color={M.textSecondary} />
               </button>
             )}
+            {onOpenSettings && (
+              <button
+                title="Settings"
+                aria-label="Settings"
+                onClick={onOpenSettings}
+                style={iconButtonStyle}
+              >
+                <MobileIcon name="settings" size={16} color={M.textSecondary} />
+              </button>
+            )}
             {(initials || onAvatarClick) && (
               <button
                 title={avatarTitle}
@@ -707,6 +721,21 @@ export default function MobileStartPage(props: StartPageProps) {
               onOpen={
                 detail.board.action && canOpenAction(detail.board.action)
                   ? () => onOpen(detail.board.action!)
+                  : undefined
+              }
+              pinned={
+                pins && isPinnable(detail.board.action)
+                  ? pins.isPinned(detail.board.action)
+                  : undefined
+              }
+              onTogglePin={
+                pins && isPinnable(detail.board.action)
+                  ? () => {
+                      const action = detail.board.action as PinnableAction;
+                      return pins.isPinned(action)
+                        ? pins.unpin(action)
+                        : pins.pin(action, detail.board.name);
+                    }
                   : undefined
               }
               onUploadToCloud={

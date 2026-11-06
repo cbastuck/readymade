@@ -77,6 +77,15 @@ export interface PlatformCapabilities {
    */
   saveSavedBoard?: (name: string, board: BoardDescriptor) => Promise<void>;
   /**
+   * The boards in the host's library, by name, with when each was last
+   * written where the host knows. With `loadSavedBoard` and `saveSavedBoard`
+   * it is the whole library, so a view listing saved boards lists the ones the
+   * host keeps rather than whatever local storage happens to hold.
+   */
+  listSavedBoards?: () => Promise<Array<{ name: string; modified?: string }>>;
+  /** Removes a board from the host's library. */
+  deleteSavedBoard?: (name: string) => Promise<void>;
+  /**
    * Where the presets this device keeps are stored — the preset library, which
    * holds the blocks a board can use as well. The native app keeps them as
    * files in a folder, so a file put there is in the library the next time the
@@ -186,6 +195,23 @@ export function loadSavedBoardViaPlatform(
   return activeCapabilities.loadSavedBoard
     ? activeCapabilities.loadSavedBoard(name)
     : Promise.resolve(null);
+}
+
+/**
+ * The host's library as a whole, for code that lists or removes boards
+ * (core/boardLibrary). Null when the host keeps none.
+ */
+export function hostBoardLibrary(): Required<
+  Pick<
+    PlatformCapabilities,
+    "listSavedBoards" | "loadSavedBoard" | "saveSavedBoard" | "deleteSavedBoard"
+  >
+> | null {
+  const { listSavedBoards, loadSavedBoard, saveSavedBoard, deleteSavedBoard } =
+    activeCapabilities;
+  return listSavedBoards && loadSavedBoard && saveSavedBoard && deleteSavedBoard
+    ? { listSavedBoards, loadSavedBoard, saveSavedBoard, deleteSavedBoard }
+    : null;
 }
 
 /** Non-React accessor for `readFile`; null-free callers get an empty string. */
