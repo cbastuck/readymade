@@ -327,6 +327,10 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       href: "/documentation/boards/hacker-news-board/",
     },
     opens: "browser",
+    media: {
+      image: "/images/pitch/hacker-news.jpg",
+      alt: "HN Reader: the front page beside the discussion of its busiest story, every reply under the comment it answers, one branch folded.",
+    },
   },
   {
     slug: "health-log-browser",
@@ -343,6 +347,11 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       href: "/documentation/boards/health-log-browser-demo-board/",
     },
     opens: "browser",
+    media: {
+      video: "/images/pitch/health-log.mp4",
+      poster: "/images/pitch/health-log.jpg",
+      alt: "Health Log in the browser: a glucose value logged, six months of fictional history charted with a day's journal beside its value, and the history exported as a .sqlite file.",
+    },
     deployed:
       "Deployed, the history lives on a runtime you choose, and you open the same log from your phone and your laptop.",
   },

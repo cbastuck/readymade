@@ -128,8 +128,8 @@ range; the cards behind them show depth.
 
 | Shelf | Pick | Opens | Media | Work |
 | --- | --- | --- | --- | --- |
-| **For yourself** | **Health Log** (hero) | browser (`health-log-browser`) | still or short video | *variant and `.sqlite` export done 2026-11-06* (the SQL service's `export` takes `format: "sqlite"` on both runtimes; the board's button sits first in its pipeline and stops there); keep the not-a-medical-device wording |
-| | HN Reader | browser | still | *done 2026-11-06:* rebased, registered as `hacker-news`, card written; still to take |
+| **For yourself** | **Health Log** (hero) | browser (`health-log-browser`) | video (`health-log.mp4`, 29 s, *shot 2026-11-06*) | *variant and `.sqlite` export done 2026-11-06* (the SQL service's `export` takes `format: "sqlite"` on both runtimes; the board's button sits first in its pipeline and stops there); keep the not-a-medical-device wording |
+| | HN Reader | browser | still (`hacker-news.jpg`) | *done 2026-11-06:* rebased, registered as `hacker-news`, card written, still taken |
 | | RSS Radio | video · run it yourself (node, python) | collage exists (`reading-radio-*.png`); video | *registered and card written 2026-11-06;* finish the editor unit drafted in `6096cec8`, shoot — **last**, after the demos that work (the editor is what needs the Anthropic key, or a local OpenAI-compatible model) |
 | | Live Radio | in the Readymade app | video: a phone scans the QR code and plays the mic | register, shoot |
 | **For your club, team and customers** | **Court Booking** (hero) | browser (`court-booking-browser`) | video: two members, one slot, the second refused | *shot 2026-11-06* (`court-booking.mp4`, 28 s; see "The shoots") |
@@ -280,6 +280,15 @@ person to the same coordinator collide (the second finds Sam already listed).
       her day closes; she and Sam confirm one hour at once, one gets it, the
       other is told. Its booking and race beats moved into `e2e/film/court.ts`,
       shared with the Golden Path take, which still passes on its tape.
+- [x] **HN Reader.** *Still taken 2026-11-06* (`hacker-news.film.ts`): the
+      front page beside the busiest of its first eight stories' thread, the
+      first branch with replies folded. A take never reaches the internet, so
+      Hacker News is a recording: `httpTape.ts` records a board's calls to the
+      origins named once (`FILM_HTTP=record FILM_STORY=hacker-news`) and replays
+      them by address, with the page's clock set to the recording's time so
+      "9 hours ago" stays true. Real stories, usernames and comments (decided
+      2026-11-06); the recorded thread is whatever was busiest then — re-record
+      for another.
 - [x] **Meeting Poll.** *Shot 2026-11-06* (`meeting-poll.film.ts`, cut
       `MeetingPoll`): Sam calls a team dinner and puts up three evenings; Ana
       and Ben answer on their phones; Sam sees who can make which and the best
@@ -291,9 +300,19 @@ person to the same coordinator collide (the second finds Sam already listed).
       threw in `raiseError` (the coordinator's runtime scope had no
       `services`), showing a TypeError toast over the reason. Fixed in
       `bridgeRuntimeApi.ts`, with a test.
-- [ ] **Health Log.** The browser version, no server: Generate fake data,
-      Trends, a point's journal beside it. Needs a take without the film
-      config's node and sign-in, or one that simply doesn't use them.
+- [x] **Health Log.** *Shot 2026-11-06* (`health-log.film.ts`, cut
+      `HealthLog`): the browser version, nobody signed in. A glucose value
+      logged; Generate fake data; Trends with a day's journal in the hovered
+      point's tooltip; Export as .sqlite, asserted to be an SQLite file. The
+      export changes nothing on screen, so the cut labels it with the file the
+      take downloaded (name and size, from `shots.json`). Its narration closes
+      on the card's wording: a record of what you enter, not a medical device.
+      The desktop frame's title is now the manifest's `desktopTitle` (default
+      "Readymade · Sam"), since this screen is nobody's.
+- [ ] One take failed once before the board opened with `SyntaxError:
+      Unexpected end of JSON input`, and passed unchanged on the next run —
+      likely the identities' keys file read while the JWKS server writes it.
+      Not investigated.
 - [ ] **Live Radio.** Not a Playwright take: it needs the Readymade app's
       hkp-rt, a microphone and a real phone scanning the code. Recorded by
       hand, then cut the same way.
