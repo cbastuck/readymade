@@ -12,6 +12,40 @@ export type DemoCatalogEntry = {
   description: string;
   icon: string;
   tags: string[];
+} & DemoSpotlight;
+
+/** How a pick opens, and the only way its card leads: one click in the
+ *  browser, the Readymade app (a board on `remote: embedded`), or a video for
+ *  anything that needs a runtime server a visitor does not have. */
+export type DemoOpens = "browser" | "app" | "video";
+
+export type DemoMedia =
+  | { video: string; poster: string; alt: string }
+  | { image: string; alt: string };
+
+/**
+ * What the pitch's gallery says about a pick (see demoShelves.ts). All of it
+ * optional, so an entry nobody spotlights is unaffected, and the start page
+ * and the board hub keep reading the same entries.
+ */
+export type DemoSpotlight = {
+  /** What you get, not what it shows: "Your club's courts, bookable from a
+   *  phone, never double-booked." */
+  outcome?: string;
+  /** What to do once it is open, and what you will see happen. */
+  expect?: string;
+  /** The concept it shows, linked to the page that explains it. */
+  underTheHood?: { text: string; href: string };
+  opens?: DemoOpens;
+  /** For a video pick: the board itself, for people who run their own
+   *  runtime servers, and which ones it needs. */
+  runItYourself?: { href: string; needs: string };
+  /** For a browser version: what deploying the board changes. Its data
+   *  lives in this browser, for one person, until then. */
+  deployed?: string;
+  media?: DemoMedia;
+  /** Further boards shown with this one as a group pick, by slug. */
+  members?: string[];
 };
 
 export const DEMO_CATALOG: DemoCatalogEntry[] = [
@@ -230,6 +264,16 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       "The same court timetable with nothing to install: SQLite runs in the browser and keeps the bookings between visits. The club rules are still unique indexes — what it gives up is the club, since the tables belong to this browser alone.",
     icon: "🎾",
     tags: ["SQL"],
+    outcome: "Your club's courts, bookable from a phone, never double-booked.",
+    expect:
+      "Tap a free hour to take it, tap yours to give it back. Try a second hour on the same day: the database turns it down.",
+    underTheHood: {
+      text: "Club rules as unique indexes, not checks in the page",
+      href: "/documentation/boards/court-booking-browser-demo-board/",
+    },
+    opens: "browser",
+    deployed:
+      "Deployed, the club shares one database, kept while nobody is watching, and every booking is in the name of the member who signed in.",
   },
   {
     slug: "sql-explorer",
@@ -278,6 +322,76 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       "A drum groove timed by nothing but nesting: four patterns — Straight, Shuffle, Four on the floor, Funk — each a bar built from small blocks like a Beat of two hi-hats. Every wait is in beats; tempo and pattern are slots in the outermost scope that every level inherits. Switch patterns and watch the playhead move down through the levels.",
     icon: "🥁",
     tags: ["Audio"],
+    outcome:
+      "Four drum grooves, switched at the bar line, timed by nothing but nesting.",
+    expect:
+      "Press Play, pick a pattern, turn the tempo. Open the board to watch the playhead move down through the levels.",
+    underTheHood: {
+      text: "Nested sub-services and the scope they share",
+      href: "/documentation/boards/nested-rhythm-demo-board/",
+    },
+    opens: "browser",
+    media: {
+      video: "/images/pitch/NestingBeatsHi.mp4",
+      poster: "/images/pitch/NestingBeatsHi-poster.jpg",
+      alt: "The Nested Rhythm board, its playhead moving down through nested services.",
+    },
+    members: ["timeline"],
+  },
+  {
+    slug: "timeline",
+    label: "Timeline",
+    description:
+      "A night sky that plays for eight seconds and loops: stars pop up, a planet appears, a rocket and a comet fly across. No animation code — every image is keyframed on a timeline of its own, and one outer timeline arranges them all.",
+    icon: "🌠",
+    tags: ["Canvas", "Animation"],
+    outcome: "An animated scene made of keyframes, without animation code.",
+    underTheHood: {
+      text: "Timelines inside a timeline, motions written once as blocks",
+      href: "/documentation/boards/timeline-demo-board/",
+    },
+    opens: "browser",
+  },
+  {
+    slug: "live-radio",
+    label: "Live Radio",
+    description:
+      "Your microphone as a radio station: hkp-rt captures it, encodes it to MP3 as it arrives and streams it to anyone who opens the URL or scans the QR code. Runs in the Readymade app, which carries hkp-rt.",
+    icon: "📻",
+    tags: ["Audio", "Needs app"],
+    outcome: "Your microphone on air, for any phone that scans the code.",
+    expect:
+      "Press Start, then scan the QR code with a phone on the same network: it plays what the microphone hears, a fraction of a second later.",
+    underTheHood: {
+      text: "A C++ runtime streaming from the realtime audio thread",
+      href: "/documentation/boards/live-radio-demo-board/",
+    },
+    opens: "app",
+  },
+  {
+    slug: "shared-costs",
+    label: "Shared Costs",
+    description:
+      "Shared costs for a flat: whoever paid adds what it was for and how much, it is split evenly between everyone in the flat at that moment, and each person sees what they owe or are owed. Board Assist composed it from one description — six SQL statements of its own on services other boards already use — and every expense is recorded for the signed-in caller the server verified.",
+    icon: "💶",
+    tags: ["Needs Node", "SQL"],
+    outcome: "Who paid, who owes, and nobody doing the sums.",
+    expect:
+      "Watch the assistant compose it from one description, then one flatmate add the groceries and the other open the board to see what they owe.",
+    underTheHood: {
+      text: "Six new SQL statements on services other boards already use",
+      href: "/documentation/boards/shared-costs-demo-board/",
+    },
+    opens: "video",
+    runItYourself: {
+      href: "/playground?demo=shared-costs",
+      needs: "an hkp-node kept under the name node",
+    },
+    media: {
+      video: "/images/pitch/shared-costs.mp4",
+      poster: "/images/pitch/shared-costs.jpg",
+      alt: "Board Assist composing the Shared Costs board from one description, then two flatmates using it on their phones.",
+    },
   },
 ];
 
