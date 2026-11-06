@@ -47,7 +47,8 @@ visitors should count **shelves**, not demos.
 - **The commercial track is part of this deck**, right after Try it, and
   built in this round. It follows the Oct 19 frame: Cloud and Partner, the
   offer table *for whom × who runs it*, the licence as the contract inside
-  Partner, pay-what-you-want builds. The Oct 11 licence-first drafts are
+  Partner, the builds at a fixed price (pay what you want was dropped on
+  2026-11-06). The Oct 11 licence-first drafts are
   rewritten, not appended.
 - **HN Reader is in** and comes from `hacker_news_board`.
 - **OpenCode is in**, ported from `ios_feature_add`. Both source branches stay
@@ -119,8 +120,8 @@ browser, for you") and what deploying the board changes.
 - [x] Rewrite the slides around the offer table (*yourself / your customers* ×
       *you run it / we run it*). Cloud and Partner are where the money comes
       from; the commercial licence is the contract under Partner;
-      pay-what-you-want builds sit inside Community and are never called a
-      donation. *Done 2026-11-06:* `COMMERCIAL_SLIDES` in
+      the builds sit inside Community (now a fixed €4.99, not pay what you
+      want). *Done 2026-11-06:* `COMMERCIAL_SLIDES` in
       `hkp-website/src/pages/Pitch.tsx`, after Try it and shown only with
       `SHOW_COMMERCIAL_DRAFT` — the offer table (`OfferTable`), then
       Community, Cloud (badged *not open yet*), Partner (Court Booking),
@@ -139,7 +140,7 @@ browser, for you") and what deploying the board changes.
 - [x] Get `hkp-website/astro/pages/pricing.astro` into shape, still behind
       `SHOW_COMMERCIAL_DRAFT`; the pitch covers the offer, the page covers the
       detail. *Done 2026-11-06:* laid out by the offer table — Community (AGPL,
-      pay-what-you-want builds), Cloud (not open yet, no price), Partner
+      builds at €4.99), Cloud (not open yet, no price), Partner
       (Embedded and Hosted, the revenue-share option, Partner on Cloud later);
       the development commitment removed. The table is drawn like slide 08's
       and is the page's navigation: a chosen cell (kept in the address,

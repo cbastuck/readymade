@@ -27,9 +27,13 @@ app is for, and who runs it.
   is not an offer of its own: it is the contract under Partner. Nobody is sold
   "an engine licence".
 - **Community** is the AGPL, free, with nothing withheld. The prebuilt apps
-  (desktop, iOS, Android) are **pay what you want**, €0 included: a
-  convenience inside Community, not a revenue line, and never called a
-  donation.
+  (desktop, iOS, Android) cost a fixed **€4.99 once** each: a convenience
+  inside Community, not a revenue line. Building from source stays free.
+  (Pay what you want was dropped on 2026-11-06: the App Store has no such
+  model, and one fixed price on every platform is simpler.) The Mac build
+  is downloaded from the website, not the Mac App Store: espeak-ng (GPL) is
+  linked into it, and the GPL conflicts with the App Store terms. The iOS
+  and Android builds link no GPL code.
 - **Cloud** is us running a deployed board for the people its owner adds. It
   is not open yet; public material says so and never claims there is nothing
   to host.
@@ -276,10 +280,6 @@ prioritised — none of it binding. Belongs in §7 or the Order Form.
       way it needs terms for content we host on someone else's behalf:
       acceptable use, who answers a takedown notice, who the end users' data
       belongs to.
-- [ ] **Pay what you want in the stores.** The pricing page now offers the
-      builds as pay what you want, €0 included. How that works on the App
-      Store (a free app with an optional in-app payment?) and for the desktop
-      download is not decided.
 
 - [ ] **Prices.** Nothing below is decided. Indicative only, for a solo
       maintainer: Embedded €2–8k/yr, Hosted €5–20k/yr, with a small-company band
