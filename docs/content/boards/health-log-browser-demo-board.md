@@ -12,10 +12,10 @@ official device application.
 
 The **Log** tab takes blood glucose, blood pressure, weight and a daily
 journal; **Trends** draws them as time-series charts; **Your data** shows the
-rows themselves and deletes the ones you select. **Generate fake data** there
-writes six months of fictional history to look at, and **Export as .sqlite**
-saves the whole database as a file. Everything you enter is still there the
-next time you open the board.
+rows themselves and deletes the ones you select, or all of them. **Generate
+fake data** there writes six months of fictional history to look at, and
+**Export as .sqlite** saves the whole database as a file. Everything you enter
+is still there the next time you open the board.
 
 ## How it works
 
