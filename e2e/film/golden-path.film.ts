@@ -1,10 +1,9 @@
 import { readFileSync } from "node:fs";
 
-import type { Page } from "@playwright/test";
-
 import { expect, test } from "../support/test";
 import { anaOpensIt, askTheAssistant, cast, deployAndShare, NODE, signIn, watchTheRun } from "./beats";
-import { saveTake, shot, startTake } from "./shots";
+import { bookTomorrowAtSix, raceForOneHour } from "./court";
+import { saveTake, startTake } from "./shots";
 
 /**
  * The golden path, filmed: Sam deploys the club's booking board and adds Ana
@@ -18,7 +17,7 @@ import { saveTake, shot, startTake } from "./shots";
  */
 
 const PEOPLE = cast("club.example", "Club cloud");
-const { sam: SAM, ana: ANA } = PEOPLE;
+const { sam: SAM } = PEOPLE;
 
 const BOARD = JSON.parse(
   readFileSync("../boards/court-booking-demo-board.json", "utf8"),
@@ -63,94 +62,13 @@ test("from a deployed board to a member's phone", async ({
   // ── 5 · Ana, on her phone ────────────────────────────────────────────────
   const { ana, close } = await anaOpensIt(browser, baseURL, take, PEOPLE, "Court Booking");
 
-  // Tomorrow, court 2, six o'clock.
-  const tomorrow = ana.getByRole("button", { name: "+1", exact: true });
-  await expect(tomorrow).toBeVisible();
-  await tomorrow.tap();
-  const six = ana.getByRole("button", { name: "18:00, free — tap to book" }).nth(1);
-  await expect(six).toBeVisible();
-  await six.scrollIntoViewIfNeeded();
-  await shot(take, ana, {
-    id: "5-calendar",
-    beat: "5",
-    screen: "member",
-    named: { tomorrow, six },
-  });
-  await six.tap();
-  const yes = ana.getByRole("button", { name: "Yes, do it" });
-  await shot(take, ana, {
-    id: "5-confirm",
-    beat: "5",
-    screen: "member",
-    named: { yes },
-  });
-  await yes.tap();
-  const mine = ana.getByRole("button", { name: "18:00, booked by you — tap to give it back" });
-  await expect(mine).toBeVisible();
-  // One hour a day: every other hour of hers is closed now.
-  await expect(ana.getByRole("button", { name: /free — tap to book/ })).toHaveCount(0);
-  await shot(take, ana, {
-    id: "5-booked",
-    beat: "5",
-    screen: "member",
-    named: { mine },
-  });
+  await bookTomorrowAtSix(ana, take);
 
   // ── 6 · On the board, the booking arrives in the service that stored it ──
   await watchTheRun(page, take, PEOPLE);
 
   // ── 5b · The race: one hour, two people, the same moment ───────────────
-  const free = (who: Page) =>
-    who.getByRole("button", { name: "19:00, free — tap to book" }).first();
-  for (const who of [page, ana]) {
-    const press = who === ana ? (l: ReturnType<Page["getByRole"]>) => l.tap() : (l: ReturnType<Page["getByRole"]>) => l.click();
-    await press(who.getByRole("button", { name: "+2", exact: true }));
-    await expect(free(who)).toBeVisible();
-    await free(who).scrollIntoViewIfNeeded();
-    await press(free(who));
-    await expect(who.getByRole("button", { name: "Yes, do it" })).toBeVisible();
-  }
-  await shot(take, page, {
-    id: "5b-race-owner",
-    beat: "5b",
-    screen: "owner",
-    named: { yes: page.getByRole("button", { name: "Yes, do it" }) },
-  });
-  await shot(take, ana, {
-    id: "5b-race-member",
-    beat: "5b",
-    screen: "member",
-    named: { yes: ana.getByRole("button", { name: "Yes, do it" }) },
-  });
-  await Promise.all([
-    page.getByRole("button", { name: "Yes, do it" }).click(),
-    ana.getByRole("button", { name: "Yes, do it" }).tap(),
-  ]);
-  const lost = "Court 1 at 19:00 was just taken by someone else.";
-  const won = (who: Page) =>
-    who.getByRole("button", { name: "19:00, booked by you — tap to give it back" });
-  await expect
-    .poll(async () => (await won(page).isVisible()) || (await won(ana).isVisible()))
-    .toBe(true);
-  const samWon = await won(page).isVisible();
-  const [winner, loser] = samWon ? [page, ana] : [ana, page];
-  await expect(won(winner)).toBeVisible();
-  // The one who lost is told, and only they are.
-  await expect(loser.getByText(lost)).toBeVisible();
-  await expect(winner.getByText(lost)).toHaveCount(0);
-  await shot(take, loser, {
-    id: "5b-lost",
-    beat: "5b",
-    screen: loser === ana ? "member" : "owner",
-    named: { notice: loser.getByText(lost) },
-  });
-  await shot(take, winner, {
-    id: "5b-won",
-    beat: "5b",
-    screen: winner === ana ? "member" : "owner",
-    named: { mine: won(winner) },
-  });
-  take.figures.raceWinner = samWon ? SAM.name : ANA.name;
+  await raceForOneHour(page, ana, take, PEOPLE);
 
   saveTake(take);
   await close();

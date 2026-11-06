@@ -108,7 +108,9 @@ services, examples, `validate_board`, usable by any MCP client); the Shared
 Costs run (five requests, about $0.99, 11,504 tokens written, 138 lines to
 review). The video links to the Board Assist concept page.
 
-- [ ] OpenCode is not named until it is ported (below).
+- [ ] OpenCode is not named until it is on this branch (below). The
+      provider bullet in `Pitch.tsx` already names an OpenCode server, ahead
+      of the rebase that brings it.
 - [x] The Shared Costs video is this slide's, not the gallery's. *Decided
       2026-11-06:* it shows an app being built, so it belongs with building
       with AI; the Shared Costs pick left the gallery's shelf. Its catalog
@@ -130,7 +132,7 @@ range; the cards behind them show depth.
 | | HN Reader | browser | still | *done 2026-11-06:* rebased, registered as `hacker-news`, card written; still to take |
 | | RSS Radio | video · run it yourself (node, python) | collage exists (`reading-radio-*.png`); video | *registered and card written 2026-11-06;* finish the editor unit drafted in `6096cec8`, shoot — **last**, after the demos that work (the editor is what needs the Anthropic key, or a local OpenAI-compatible model) |
 | | Live Radio | in the Readymade app | video: a phone scans the QR code and plays the mic | register, shoot |
-| **For your club, team and customers** | **Court Booking** (hero) | browser (`court-booking-browser`) | video: two members, one slot, the second refused | shoot |
+| **For your club, team and customers** | **Court Booking** (hero) | browser (`court-booking-browser`) | video: two members, one slot, the second refused | *shot 2026-11-06* (`court-booking.mp4`, 28 s; see "The shoots") |
 | | Meeting Poll | browser (`meeting-poll-browser`) | video: deployed, several members answering | *variant done 2026-11-06;* shoot |
 | | **AI Collaboration** (SYN Mail Desk) | video · run it yourself (node, IMAP, SMTP, model) | video | *registered 2026-11-06, the card titled AI Collaboration (the board keeps its name);* shoot |
 
@@ -246,6 +248,52 @@ browser, for you") and what deploying the board changes.
 
 ---
 
+## The shoots
+
+A gallery video is made the way the Golden Path video is
+(`TODO-GOLDEN-PATH-VIDEO.md`, "Rules for the shoot"): real pixels from a take
+in `e2e/film/<slug>.film.ts`, framed by a Remotion cut in
+`hkp-website/media/readymade-explainer/remotion/videos/<slug>/`. What differs:
+
+- **The app in use, not being built.** A take starts from the board the
+  repository ships, with no assistant beats; building belongs to slide 07.
+- **Short and captioned.** About 30 s. The gallery plays it muted beside the
+  card, so the captions carry it. It is narrated anyway, for the enlarged view
+  with controls. Captions are the narration's words, as in every explainer.
+- **Shipped as** `hkp-website/public/images/pitch/<slug>.mp4` (the narrated
+  render) and `<slug>.jpg` (a frame of the beat that proves the outcome), named
+  in the catalog entry's `media`.
+
+```sh
+cd e2e && npm run film -- <slug>               # the take: stills + shots.json
+cd hkp-website/media/readymade-explainer
+python3 tools/generate.py remotion/videos/<slug>   # narration, storyboard, video
+```
+
+The render's mux needs `ffmpeg` on the PATH (`/opt/homebrew/bin`), and the
+take needs `npm ci` in hkp-node.
+
+- [x] **Court Booking.** *Shot 2026-11-06* (`court-booking.film.ts`, cut
+      `CourtBooking`): the timetable; Ana takes tomorrow at six and the rest of
+      her day closes; she and Sam confirm one hour at once, one gets it, the
+      other is told. Its booking and race beats moved into `e2e/film/court.ts`,
+      shared with the Golden Path take, which still passes on its tape.
+- [ ] **Meeting Poll.** Same harness; needs a cast of three (`cast` makes two)
+      and the deployed meeting-poll board: Sam calls it, two members answer on
+      their phones, the closed poll turns a late answer down.
+- [ ] **Health Log.** The browser version, no server: Generate fake data,
+      Trends, a point's journal beside it. Needs a take without the film
+      config's node and sign-in, or one that simply doesn't use them.
+- [ ] **Live Radio.** Not a Playwright take: it needs the Readymade app's
+      hkp-rt, a microphone and a real phone scanning the code. Recorded by
+      hand, then cut the same way.
+- [ ] **AI Collaboration.** The model is called from hkp-node, not the browser,
+      so the assistant tape does not reach it. Needs a stand-in IMAP/SMTP
+      server and a recorded or local model before a take can run.
+- [ ] **RSS Radio.** Last, once its editor unit works.
+
+---
+
 ## Branches
 
 Read from `hacker_news_board` and `ios_feature_add`, never written to.
@@ -266,22 +314,30 @@ identical on both. So the **root** `commercial_case` is rebased onto it, and
 
 **OpenCode.** `b2ec508a` builds on M6 (`9042e921`), which moved Board Assist
 into `useBoardAssist.ts` and added a token store, neither of which exists
-here. So it is a **port, not a cherry-pick**:
-- [ ] take `openCode.ts` and `openCode.test.ts` as they are (they import only
-      `documentation`, `knowledge`, `openAICompatible`, `scope` and `types`,
-      all present here);
-- [ ] redo the provider wiring against this branch's `settings.ts`,
-      `AssistSettings.tsx` and `BoardAssistPanel.tsx`;
-- [ ] leave out `MobileAssistPage.tsx`, which comes from M6.
+here. *Decided 2026-11-06:* **`ios_feature_add` merges into `main` first**,
+and `commercial_case` is rebased onto it, instead of porting OpenCode here.
+A port was built and dropped the same day: a trial merge showed the conflict
+that costs work is the same in either order, and the original is the fuller
+version (token store and vault sync, drafts kept on `pagehide`, the mobile
+Assist page). `ios_feature_add` sits on the current `main` and merges
+without conflicts.
 
-When `ios_feature_add` merges later, its version of those files wins.
+The rebase, once it has merged:
+- [ ] carry `e145fcab`'s Board Assist changes (usage counting, the review
+      summary) from `BoardAssistPanel.tsx` into `useBoardAssist.ts`; the
+      other conflicts are `BoardAssistPreview.tsx`, `ServiceFrame.tsx` and
+      `plans/README.md`;
+- [ ] have the OpenCode turn report usage like the other providers: one
+      request, no tokens, since its stateless API returns none;
+- [ ] typecheck and the frontend suite.
 
 ---
 
 ## Milestones
 
 1. **Mergeable `commercial_case`.**
-   - root rebased onto `hacker_news_board` (done); OpenCode ported
+   - root rebased onto `hacker_news_board` (done); `ios_feature_add` merged
+     into `main` and `commercial_case` rebased onto it (brings OpenCode)
    - gallery component, with the browser and app picks registered
    - browser variants of Meeting Poll and Health Log (done; the Health Log export is not)
    - slide 07 with the existing videos

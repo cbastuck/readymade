@@ -272,6 +272,11 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       href: "/documentation/boards/court-booking-browser-demo-board/",
     },
     opens: "browser",
+    media: {
+      video: "/images/pitch/court-booking.mp4",
+      poster: "/images/pitch/court-booking.jpg",
+      alt: "Court Booking deployed: a member takes an hour on her phone, then two people confirm the same hour and the one who loses is told.",
+    },
     deployed:
       "Deployed, the club shares one database, kept while nobody is watching, and every booking is in the name of the member who signed in.",
   },
