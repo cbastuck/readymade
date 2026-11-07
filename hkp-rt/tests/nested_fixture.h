@@ -64,10 +64,19 @@ public:
   std::vector<std::string> logged;   // "<level> <event>"
   std::vector<json> logData;
   std::vector<json> notifications;
+  // Set, the host serves mounts: a mount's address is this, then
+  // `/hosted/<name>`, as a runtime server gives one. Empty, it serves none.
+  std::string mountBase;
 
   void addService(std::shared_ptr<Service> svc) {
     svc->setParentHost(*this);
     services.push_back(std::move(svc));
+  }
+
+  MountHandle mountEndpoint(const std::string& name, MountAdopter) override {
+    if (mountBase.empty())
+      return {};
+    return MountHandle(name, mountBase + MOUNT_PREFIX + "/" + name, [] {});
   }
 
   Data processFrom(const Service& svc, Data data, bool advanceBefore,

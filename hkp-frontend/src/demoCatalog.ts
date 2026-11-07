@@ -502,6 +502,11 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       href: "/documentation/boards/live-radio-demo-board/",
     },
     opens: "app",
+    media: {
+      video: "/images/pitch/live-radio.mp4",
+      poster: "/images/pitch/live-radio.jpg",
+      alt: "Live Radio on air: the station's code to scan and its one listener, beside the phone playing what the microphone hears.",
+    },
   },
   {
     slug: "shared-costs",

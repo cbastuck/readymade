@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,6 +35,19 @@ export const FILM_NODE_PORT = 18180;
 export const FILM_NODE_URL = `http://127.0.0.1:${FILM_NODE_PORT}`;
 export const FILM_PYTHON_PORT = 18190;
 export const FILM_PYTHON_URL = `http://127.0.0.1:${FILM_PYTHON_PORT}`;
+export const FILM_RT_PORT = 18200;
+export const FILM_RT_URL = `http://127.0.0.1:${FILM_RT_PORT}`;
+/**
+ * For the stories on the app's own runtime (Live Radio): a standalone hkp-rt,
+ * kept under the name the app gives its embedded one. Joins where it has been
+ * built (`hkp-rt/run-tests.sh` builds it); the stories that need it skip
+ * without it.
+ */
+export const FILM_RT_BIN = [
+  process.env.HKP_RT_BIN,
+  path.resolve(HERE, "../hkp-rt/build-tests/exe/hkp-rt"),
+  path.resolve(HERE, "../hkp-rt/build/exe/hkp-rt"),
+].find((candidate) => !!candidate && fs.existsSync(candidate));
 const ANTHROPIC = "https://api.anthropic.com";
 
 export default defineConfig<HostOptions>({
@@ -53,6 +67,7 @@ export default defineConfig<HostOptions>({
     serverOrigins: [
       FILM_NODE_URL,
       FILM_PYTHON_URL,
+      ...(FILM_RT_BIN ? [FILM_RT_URL] : []),
       ...(process.env.FILM_ASSIST === "record" ? [ANTHROPIC] : []),
     ],
     trace: "retain-on-failure",
@@ -144,5 +159,31 @@ export default defineConfig<HostOptions>({
         HKP_MOUNT_SECRET: "film",
       },
     },
+    ...(FILM_RT_BIN
+      ? [
+          {
+            // Loopback and no Auth0 settings, like the Python one. It mounts a
+            // board's endpoints on its own port, where the app's binds the
+            // port the board names; the board reads either from `__hkpMount`.
+            command: `"${process.execPath}" support/runtime-server.mjs rt "${FILM_RT_BIN}" ${FILM_RT_PORT}`,
+            url: `${FILM_RT_URL}/runtimes`,
+            reuseExistingServer: false,
+            timeout: 60_000,
+            gracefulShutdown: { signal: "SIGTERM" as const, timeout: 5_000 },
+            env: {
+              HKP_E2E_LOG_DIR: path.join(HERE, "test-results", "film-servers"),
+              ALLOWED_ORIGINS: `http://localhost:${MEANDER_PORT}`,
+              HOST: "127.0.0.1",
+              AUTH0_DOMAIN: "",
+              AUTH0_AUDIENCE: "",
+              ALLOWED_EMAILS: "",
+              HKP_COORDINATOR_LINKS_FILE: "",
+              HKP_MOUNT_SECRET: "film",
+              HKP_EXTERNAL_URL: "",
+              HKP_FILES_DIR: "",
+            },
+          },
+        ]
+      : []),
   ],
 });

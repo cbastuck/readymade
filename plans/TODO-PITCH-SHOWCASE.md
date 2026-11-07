@@ -131,7 +131,7 @@ range; the cards behind them show depth.
 | **For yourself** | **Health Log** (hero) | browser (`health-log-browser`) | video (`health-log.mp4`, 29 s, *shot 2026-11-06*) | *variant and `.sqlite` export done 2026-11-06* (the SQL service's `export` takes `format: "sqlite"` on both runtimes; the board's button sits first in its pipeline and stops there); keep the not-a-medical-device wording |
 | | HN Reader | browser | still (`hacker-news.jpg`) | *done 2026-11-06:* rebased, registered as `hacker-news`, card written, still taken |
 | | RSS Radio | video · run it yourself (node, python) | video (`rss-radio.mp4`, 32 s, *shot 2026-11-07*) | *registered and card written 2026-11-06; shot on the lanes 2026-11-07* (see "The shoots") |
-| | Live Radio | in the Readymade app | video: a phone scans the QR code and plays the mic | register, shoot |
+| | Live Radio | in the Readymade app | video (`live-radio.mp4`, 31 s, *shot 2026-11-07*) | *registered; shot on hkp-rt 2026-11-07* (see "The shoots") |
 | **For your club, team and customers** | **Court Booking** (hero) | browser (`court-booking-browser`) | video: two members, one slot, the second refused | *shot 2026-11-06* (`court-booking.mp4`, 28 s; see "The shoots") |
 | | Meeting Poll | browser (`meeting-poll-browser`) | video: deployed, several members answering | *variant done 2026-11-06; shot 2026-11-06* (`meeting-poll.mp4`, 29 s) |
 | | **AI Collaboration** (SYN Mail Desk) | video · run it yourself (node, IMAP, SMTP, model) | video | *registered 2026-11-06, the card titled AI Collaboration (the board keeps its name);* shoot |
@@ -313,9 +313,25 @@ person to the same coordinator collide (the second finds Sam already listed).
       Unexpected end of JSON input`, and passed unchanged on the next run —
       likely the identities' keys file read while the JWKS server writes it.
       Not investigated.
-- [ ] **Live Radio.** Not a Playwright take: it needs the Readymade app's
-      hkp-rt, a microphone and a real phone scanning the code. Recorded by
-      hand, then cut the same way.
+- [x] **Live Radio.** *Shot 2026-11-07* (`live-radio.film.ts`, cut
+      `LiveRadio`), a Playwright take after all: the board only names
+      `embedded`, so the film config starts a standalone hkp-rt where one is
+      built and keeps it under that name. The microphone is BlackHole 2ch (the
+      take points `core-input` at it and the encoder at two channels), and
+      `say -a "BlackHole 2ch" -v Daniel` speaks one line into it. Start; a
+      phone-sized page opens the player and taps Listen; the station counts
+      one; and what the stream carried while the voice spoke is recorded, then
+      decoded in the phone's browser and measured — so a take with the
+      microphone refused (macOS asks once) fails instead of filming silence.
+      The cut plays that recording through `clips`. The scan itself is not
+      filmed: a light on the code, then the phone.
+  - [x] On a standalone hkp-rt the facade's "Stream (VLC)" stayed empty: a
+        mounted endpoint's "online" notification carried no `streamUrl`, and
+        its state appended the path to a mount address that has no trailing
+        slash (`…/hosted/<id>live.mp3`). Joined now, in both places
+        (`http_stream.test.cpp`).
+  - [ ] The addresses on screen are `127.0.0.1:18200/hosted/…`, where the app
+        shows its LAN address and port 8890. Legible only in the wide shots.
 - [ ] **AI Collaboration.** The model is called from hkp-node, not the browser,
       so the assistant tape does not reach it. Needs a stand-in IMAP/SMTP
       server and a recorded or local model before a take can run.
