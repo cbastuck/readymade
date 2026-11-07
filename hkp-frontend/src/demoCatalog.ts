@@ -387,12 +387,17 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "Needs Python", "Audio"],
     outcome: "The articles you meant to read, as a podcast for the way to work.",
     expect:
-      "Watch a feed become a reading list, the editor write a brief of each article, and a podcast player pick up the episodes.",
+      "Watch articles dragged onto the reading list be briefed by a model, voiced, and land on air with a player on their card — and hear the radio read one.",
     underTheHood: {
       text: "Five units joined by feeds and mount references, not wires",
       href: "/documentation/boards/rss-radio-board/",
     },
     opens: "video",
+    media: {
+      video: "/images/pitch/rss-radio.mp4",
+      poster: "/images/pitch/rss-radio.jpg",
+      alt: "Reading Radio's five lanes: three Hacker News articles dragged onto the reading list, briefed by a model, voiced, and on air with a player on each card.",
+    },
     runItYourself: {
       href: "/playground?demo=rss-radio",
       needs:

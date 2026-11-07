@@ -130,7 +130,7 @@ range; the cards behind them show depth.
 | --- | --- | --- | --- | --- |
 | **For yourself** | **Health Log** (hero) | browser (`health-log-browser`) | video (`health-log.mp4`, 29 s, *shot 2026-11-06*) | *variant and `.sqlite` export done 2026-11-06* (the SQL service's `export` takes `format: "sqlite"` on both runtimes; the board's button sits first in its pipeline and stops there); keep the not-a-medical-device wording |
 | | HN Reader | browser | still (`hacker-news.jpg`) | *done 2026-11-06:* rebased, registered as `hacker-news`, card written, still taken |
-| | RSS Radio | video · run it yourself (node, python) | collage exists (`reading-radio-*.png`); video | *registered and card written 2026-11-06;* finish the editor unit drafted in `6096cec8`, shoot — **last**, after the demos that work (the editor is what needs the Anthropic key, or a local OpenAI-compatible model) |
+| | RSS Radio | video · run it yourself (node, python) | video (`rss-radio.mp4`, 32 s, *shot 2026-11-07*) | *registered and card written 2026-11-06; shot on the lanes 2026-11-07* (see "The shoots") |
 | | Live Radio | in the Readymade app | video: a phone scans the QR code and plays the mic | register, shoot |
 | **For your club, team and customers** | **Court Booking** (hero) | browser (`court-booking-browser`) | video: two members, one slot, the second refused | *shot 2026-11-06* (`court-booking.mp4`, 28 s; see "The shoots") |
 | | Meeting Poll | browser (`meeting-poll-browser`) | video: deployed, several members answering | *variant done 2026-11-06; shot 2026-11-06* (`meeting-poll.mp4`, 29 s) |
@@ -319,8 +319,26 @@ person to the same coordinator collide (the second finds Sam already listed).
 - [ ] **AI Collaboration.** The model is called from hkp-node, not the browser,
       so the assistant tape does not reach it. Needs a stand-in IMAP/SMTP
       server and a recorded or local model before a take can run.
-- [ ] **RSS Radio.** *First real run 2026-11-07* (`rss-radio.film.ts`, a
-      rehearsal for now): the composition opened from `?demo=rss-radio`
+- [x] **RSS Radio.** *Shot 2026-11-07* (`rss-radio.film.ts`, cut
+      `RssRadio`), on the five lanes (`TODO-RADIO-LANES.md`): BBC World
+      unsubscribed first (a pitch reads no world news aloud), three Hacker
+      News articles dragged onto the reading list, each briefed by the model,
+      voiced on hkp-python and on air with a player, in about 90 s. The take
+      keeps the episode with the longest brief (a page the editor could not
+      read is briefed from its title), and the cut plays four seconds of it —
+      the radio's own voice — through `clips` in `video.json`, a field
+      `tools/generate.py` gained for it. A failed card ends the take with its
+      reason. The model key is the Board Assist entry of the vault
+      (`readymade.assist.anthropic`); `anthropic.key` there is the old,
+      refused one.
+  - [x] Unsubscribing during the board's first fetch brought the feed's
+        articles back: the older round finished last and overwrote the newer
+        list. The RSS service now drops a round a newer one has overtaken
+        (`rss.test.ts`).
+  - [ ] Card times are UTC under a local-looking label ("On air since
+        18:41" at 19:41 Berlin): the tables stamp `datetime('now')`. Say UTC,
+        or convert for display.
+  - *First real run 2026-11-07*, a rehearsal: the composition opened from `?demo=rss-radio`
       against the film's hkp-node and a new hkp-python beside it (loopback, no
       sign-in, the real home for the cached Kokoro model), real feeds, the
       model key as the secret `anthropic.key` in the page's vault (read from
@@ -339,8 +357,8 @@ person to the same coordinator collide (the second finds Sam already listed).
         published: a nested service on a remote runtime got no state until it
         reported, and a mount's address is never reported. `findService` now
         reads it from the scope's own state, by uuid (`scopedAddress.test.ts`).
-  - [ ] The model key given was refused by Anthropic itself (401 on
-        `/v1/models`), so no brief has been written yet. Needs a working key.
+  - [x] The model key given was refused by Anthropic itself (401 on
+        `/v1/models`). *Shot with a working key 2026-11-07.*
   - [ ] `apiKey` defaults to `{{secret.anthropic.key}}`, and hkp-node fails a
         named secret it cannot find before it looks at `ANTHROPIC_API_KEY` —
         the fallback the board's docs promise does not happen. Decide: fall

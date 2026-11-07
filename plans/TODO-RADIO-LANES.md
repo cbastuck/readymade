@@ -248,7 +248,7 @@ started this — *what is going on with this article* — before any lane exists
 | 4. One shared database | **built 2026-11-07**: `reading-radio` for reader, editor and radio in `rss-radio-board.json` |
 | 5. The lanes facade | **built 2026-11-07**, all five lanes |
 | 6. The radio's turn | **built 2026-11-07**: failures recorded in a `voicing` table, no automatic retry, Retry on the radio's own facade and on Briefed cards, a player and Forget on On air cards (`boards/rss-radio-unit-board.json`, `hkp-node/tests/rss-radio-board.test.ts`) |
-| 7. Retire what the lanes replace | **built 2026-11-07** except the film: the units contribute no tabs (`"view": false`), the radio's refresh button is gone, docs updated. **The film is not re-shot**, and `e2e/film/rss-radio.film.ts` still saves articles on the reader's tab, which the composition no longer shows |
+| 7. Retire what the lanes replace | **built 2026-11-07**: the units contribute no tabs (`"view": false`), the radio's refresh button is gone, docs updated. The film is re-shot on the lanes (`e2e/film/rss-radio.film.ts`, the pitch's `rss-radio.mp4`) |
 | 8. hkp-python's Join | **built 2026-11-07** (`hkp-python/src/hkp/services/join.py`, `tests/test_join.py`) |
 
 What step 2 did differently from the plan above:
