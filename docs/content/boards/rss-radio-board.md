@@ -15,7 +15,8 @@ served at an address you can point a player at.
 
 ## The five units
 
-This board declares no runtimes. It is a [composition](../concepts/units.md):
+It is a [composition](../concepts/units.md) of five units, and declares one
+runtime of its own — the desk the lanes below read:
 
 | As | Unit | What it is |
 |---|---|---|
@@ -42,6 +43,43 @@ the same to a server as a unit opened alone — the same endpoints, the same
 tables. What the composition qualifies is the runtime id, which is why the voice
 is addressed as `voice.speech` here and as `speech` when it runs by itself.
 
+## The lanes
+
+The lanes are the board's only face: the units' own facades are for opening
+each unit alone, and a composition shows none of them (`"view": false`). The
+board's face follows one article from the feed it came from to the
+audio it became, in five [swimlanes](./swimlanes-demo-board.md):
+
+| Lane | A card here is | What you can do |
+|---|---|---|
+| **Sources** | a feed the reader subscribes to | add one, unsubscribe |
+| **Items** | an article in a feed, not yet kept | drag it onto the reading list |
+| **Reading list** | a kept article, waiting for the editor, being briefed, or failed | Retry or Use the feed's line on a failed one; drag it back to drop it |
+| **Briefed** | an article with its brief, waiting for the radio, being voiced, or whose audio failed | read the brief; Retry failed audio |
+| **On air** | an article the radio has read aloud | play it on the card; Forget it |
+
+Under the lanes are the two addresses the board publishes for use elsewhere:
+**the reading list as a feed**, for any RSS reader, and **On air as a
+playlist**, an M3U of everything voiced, newest first, for VLC, Music or any
+desktop player.
+
+The lane *is* the state: done is the next lane, and a card says only what is
+happening to it where it is — *waiting*, *briefing*, *failed* and why. Moving a
+card is the system's everywhere except onto the reading list and back off it.
+
+What makes that possible without merging the units is that **the reader, the
+editor and the radio share one database here** — `reading-radio`, set as each
+unit's `database` param. Each keeps its own table, `article`, `brief` and
+`episode`, and its own contract: opened alone, each unit uses a database of its
+own and works on any feed it is given. Composed, the three tables sit side by
+side, and one query in the board's `desk` runtime joins them on the article's
+link and says for every article which lane it is in. It is re-read every five
+seconds and after every action a card offers, so nothing needs refreshing.
+
+That query declares the three tables itself, copied from the units, so the lanes
+work before any unit has created its table. A unit changing its table changes
+the copy here too.
+
 ## Radio
 
 *A feed, read aloud.* Every minute it reads the feed it was given; anything it
@@ -56,11 +94,18 @@ already spoken or is being spoken right now — and returning nothing
 [stops that pass](../concepts/runtime.md#control-flow), which is how work is
 skipped without a conditional. It also gives back the path the episode is to be
 kept at, built from the item's identity rather than from a counter that would
-drift. An item claimed but never finished is offered again once its claim goes
-stale, so a voice that was down for an hour costs a delay rather than a silence
-nobody notices. A voice that answers without audio counts as down: only a `200`
-carrying bytes goes on to be kept, so a failed rendering is not stored as an
-episode — it is left claimed, and offered again.
+drift. Nothing is taken again by itself.
+
+**A voice that fails is recorded, not retried.** The call to the voice is a
+[Join](../services/join.md) that reports a failure beside the article
+([`onFailure: "merge"`](../services/join.md#when-the-detour-fails)), and a
+[Tracks](../services/tracks.md) branches on what came back: one track keeps the
+audio — only a `200` carrying bytes — and the other writes down why there is
+none, in a `voicing` table beside the ledger: the voice's error, *the voice
+answered HTTP 503*, *the voice answered without audio*. Each track stops itself
+when it is not the one that applies. A failed article waits under **Being
+read**, and in the lanes, until somebody presses Retry; one that started and
+never finished counts as failed after `stuckAfter` (fifteen minutes).
 
 **The path comes back with the audio**, in a header the voice sets, because an
 answer arriving later than the pass that asked for it has to say what it is an
@@ -93,9 +138,9 @@ text the radio speaks after the title.
 is the whole of its contract with the radio: the radio never sees an article
 before the editor has read it, so it never speaks one without its brief.
 
-**The claim** is the radio's, a second time: one SQL statement that takes the
-article or hands back nothing, so an article already briefed — or being briefed
-right now — stops its own pass.
+**The claim** is one SQL statement that takes an article the editor has not
+seen or hands back nothing, so an article already briefed, being briefed, or
+failed stops its own pass. Nothing is taken again by itself.
 
 **Two detours, one after the other.** The page is fetched and its text taken out
 of the HTML; then the title, the feed's line and that text go to the model. Each
@@ -105,16 +150,27 @@ belongs to when it is filed. The fetch names its address in the request
 ([`meta.url`](../services/http.md#a-request-that-says-where-it-is-going)),
 because every article lives somewhere else.
 
-**A page that cannot be read is not a failure.** A 404, a paywall, a PDF: the
-model is told the article could not be read, and briefs from the title and the
-feed's line alone — saying less rather than guessing. Only a fetch that gets no
-answer at all is tried again, after the claim goes stale, and after the third
-try the article is published with the line its feed gave it, so a dead link
-costs a brief rather than an episode.
+**A page that cannot be read is not a failure.** A 404, a paywall, a PDF, a
+site that never answers: the model is told the article could not be read, and
+briefs from the title and the feed's line alone — saying less rather than
+guessing. The desk says so beside the brief, with what happened to the page.
+
+**A brief that fails is recorded, not retried.** The second detour reports a
+failure beside the article instead of stopping
+([`onFailure: "merge"`](../services/join.md#when-the-detour-fails)), and the
+last step files either the brief or the reason it is missing. A failed article
+stays on the desk with that reason — *Failed: API returned HTTP 401*, *Failed:
+the model used all 2000 tokens without answering* — and waits for a person:
+**Retry** runs that one article through the pipeline again, and **Use the feed's
+line** publishes it with the line its feed gave it, which the radio then reads
+like any brief. A brief that started and never finished — a runtime restarted
+mid-way — counts as failed after `stuckAfter` (ten minutes), so nothing says
+"briefing" forever.
 
 The model is Claude on hkp-node's `anthropic`
 [backend](../services/text-generation.md), with the key from the secret
-`anthropic.key`. Setting the unit's `backend` param to `server`, `serverUrl` to
+`anthropic.key`; with `apiKey` set to empty it uses `ANTHROPIC_API_KEY` from
+the runtime's environment instead. Setting the unit's `backend` param to `server`, `serverUrl` to
 an OpenAI-compatible server and `apiKey` to empty briefs with a local model
 instead, and nothing else in the board changes.
 
@@ -161,7 +217,6 @@ speaking S3 changes nothing outside the service.
 Needs an hkp-node and an hkp-python, kept under the names `node` and `python`
 in *Manage runtime servers* — both default to port 8080, so start one of them
 on another (`PORT=9000 hkp-python`). The editor needs an Anthropic API key,
-under **Settings → Secrets** as `anthropic.key` or as `ANTHROPIC_API_KEY` in
-the environment hkp-node starts in. hkp-python needs the
+under **Settings → Secrets** as `anthropic.key`. hkp-python needs the
 speech and mp3 extras, which a plain `uv sync` in hkp-python installs. The first call
 downloads the Kokoro model (~310 MB) and takes a while; later ones do not.

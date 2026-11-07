@@ -108,6 +108,34 @@ of this board, which all name `selectedCard`, hold one selection between them,
 and a button can act on it with `{ "$state": "selectedCard" }`. A selected card
 stays selected when it is moved and is let go when it is deleted.
 
+A lane can also be a **stage of work** rather than a pile of cards — the card's
+lane says how far it has got, and the card says what is happening to it there.
+`statusField` names the row's state (`working`, `failed`) and shows it as a chip
+in the colour `statusColors` gives it; `detailField` adds a line saying more,
+such as the reason a step failed or since when it has been running.
+`cardActions` puts buttons on the card for what a person does to that one card
+where it is, each with `{{item.*}}` templates like the lane's other actions and
+an optional `visibleWhen: { field, equals? }`, so a **Retry** appears on the
+failed cards and nowhere else:
+
+```json
+"cardActions": [{
+  "label": "Retry",
+  "visibleWhen": { "field": "status", "equals": "failed" },
+  "actions": [{ "type": "process", "serviceUuid": "each.name",
+                "payload": { "id": "{{item.cardId}}", "retry": 1 } }]
+}]
+```
+
+A lane need not share its source with the others. `allRows` makes every row
+of its source the lane's, for a source whose rows know nothing of lanes — a
+list of subscribed feeds. `except: { source, idField? }` leaves out the cards
+another source already holds, compared by card id: a feed's articles, less the
+ones already on the reading list, so a card is in one lane and not two.
+
+`audioField` names an address to play, and gives each card that has one a
+player; starting one card stops whichever card on the page was playing.
+
 The generic editor wording can also be adapted without introducing a new
 widget. `editorTitle`, `titleLabel`, `descriptionLabel` and `saveLabel` let a
 mail board call a card's fields **Subject** and **Body**, for example.

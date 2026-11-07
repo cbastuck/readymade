@@ -107,13 +107,18 @@ function nestedState(rootState: unknown, address: string): unknown {
     if (!state || typeof state !== "object") {
       return undefined;
     }
+    // Named `instanceId` by the runtimes and in a board's nested pipelines,
+    // `uuid` where a list holds top-level descriptors; either names it.
     const entry = Object.values(state as Record<string, unknown>)
       .filter(Array.isArray)
       .flat()
-      .find(
-        (item): item is { uuid: string; state?: unknown } =>
-          !!item && typeof item === "object" && (item as { uuid?: unknown }).uuid === uuid,
-      );
+      .find((item): item is { state?: unknown } => {
+        if (!item || typeof item !== "object") {
+          return false;
+        }
+        const named = item as { uuid?: unknown; instanceId?: unknown };
+        return (named.instanceId ?? named.uuid) === uuid;
+      });
     if (!entry) {
       return undefined;
     }

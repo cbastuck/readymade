@@ -54,6 +54,8 @@ test("a reading list, read aloud", async ({ page }) => {
   }
 
   // Three articles onto the reading list: what the editor is given to read.
+  // The board opens on its lanes; saving is done on the reader's own face.
+  await page.getByText("RSS Aggregator", { exact: true }).first().click();
   const save = page.getByRole("button", { name: "Save", exact: true });
   await expect(save.first()).toBeVisible({ timeout: 60_000 });
   // Saved, an article stays where it is in the list: three different ones.

@@ -647,6 +647,15 @@ export type SwimlaneWidget = {
   maxHeight?: number;
   cardIdField?: string;
   laneIdField?: string;
+  // Every row of the source is this lane's, whatever it says about lanes — for
+  // a lane reading a source of its own, such as a list of subscribed feeds,
+  // whose rows know nothing of lanes.
+  allRows?: boolean;
+  // Cards another source already holds are left out of this one: the articles
+  // of a feed that have not been kept yet are the feed's articles except those
+  // the reading list has. Compared by card id, read from `idField` of each of
+  // that source's rows (`cardId` by default).
+  except?: { source: FacadeWidgetSource; idField?: string };
   titleField?: string;
   descriptionField?: string;
   positionField?: string;
@@ -665,6 +674,32 @@ export type SwimlaneWidget = {
   deleteActions?: WidgetAction[];
   moveActions?: WidgetAction[];
   deleteConfirm?: string;
+  // What is happening to a card in its lane, for a lane that is a stage rather
+  // than a pile: "working", "failed". Read from the row, shown as a chip on the
+  // card in the colour `statusColors` gives it (muted where it gives none).
+  statusField?: string;
+  statusColors?: Record<string, string>;
+  // A line under the description saying more about that status — the reason it
+  // failed, since when it has been working. Empty values show nothing.
+  detailField?: string;
+  // Buttons on the card itself, for what a person does to one card where it
+  // is: retry it, publish it as it is. Each may be shown only when the row
+  // says so, so a Retry is on the failed cards and nowhere else.
+  cardActions?: SwimlaneCardAction[];
+  // An address to play, read from the row: the card gets a player. One card
+  // plays at a time — starting one stops whichever was playing.
+  audioField?: string;
+};
+
+export type SwimlaneCardAction = {
+  label: string;
+  // Interpolated against the same operation object as the lane's other action
+  // lists: {{item.cardId}}, {{item.laneId}}, and the whole row as {{item.card}}.
+  actions: WidgetAction[];
+  confirm?: string;
+  // Shown only when this field of the row is truthy, or — with `equals` — when
+  // it is that value. Absent, the button is on every card.
+  visibleWhen?: { field: string; equals?: string | number | boolean };
 };
 
 // A set of audio files played as one sitting — the widget for a board whose

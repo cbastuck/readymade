@@ -132,7 +132,7 @@
         "state": {}
       },
       {
-        "uuid": "m3u-doc",
+        "uuid": "volume-m3u-doc",
         "serviceId": "sql",
         "serviceName": "The volume as a playlist",
         "state": {
@@ -141,7 +141,7 @@
         }
       },
       {
-        "uuid": "m3u-wrap",
+        "uuid": "volume-m3u-wrap",
         "serviceId": "map",
         "serviceName": "As a playlist file",
         "state": {
@@ -155,7 +155,7 @@
         }
       },
       {
-        "uuid": "m3u-serve",
+        "uuid": "volume-m3u-serve",
         "serviceId": "http-server-subservices",
         "serviceName": "Serve the playlist",
         "state": {
@@ -228,7 +228,7 @@
                   "type": "text",
                   "label": "Playlist",
                   "source": {
-                    "serviceUuid": "m3u-serve",
+                    "serviceUuid": "volume-m3u-serve",
                     "path": "__hkpMount"
                   },
                   "placeholder": "not published yet",
@@ -272,7 +272,7 @@
               "type": "qr-code",
               "caption": "Scan to open the playlist",
               "source": {
-                "serviceUuid": "m3u-serve",
+                "serviceUuid": "volume-m3u-serve",
                 "path": "__hkpMount"
               }
             }

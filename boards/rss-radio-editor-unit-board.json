@@ -1,14 +1,13 @@
 {
   "boardName": "Radio Editor",
-  "description": "A feed, briefed. Every minute it reads the feed it was given; any article it has not read before is fetched, read by a language model, and given a short brief written to be heard rather than read. What it publishes is the same feed again, with the brief where the feed's own line was.\n\nAn article appears in what it publishes **only once its brief is written**, so whatever reads that feed never sees an article before the editor has. That is the whole of its contract with the radio: the radio reads a feed, as it always did, and this one happens to say something worth hearing.\n\nThree things in its pipeline are worth reading closely. **The claim** is the radio's, a second time: one SQL statement that takes an article or hands back nothing, so an article already briefed stops its own pass. **Two detours** \u2014 the page, then the brief \u2014 each go off and come back *beside* the article rather than instead of it, which is how the brief still knows which article it belongs to. And **a page that cannot be read is not a failure**: the model is told so, and briefs from the title and the feed's line alone. Only a fetch that gets no answer at all is tried again, three times, after which the article is published with the line its feed gave it.\n\nThe model is Claude on hkp-node's `anthropic` backend, with the key from `{{secret.anthropic.key}}` in Settings \u2192 Secrets or `ANTHROPIC_API_KEY` in the runtime's environment. To brief with a local model instead, set the `backend` param to `server`, `serverUrl` to an OpenAI-compatible server, and `apiKey` to empty (or to the token that server wants).\n\nNeeds hkp-node, kept as the remote `node`.",
+  "description": "A feed, briefed. Every minute it reads the feed it was given; any article it has not read before is fetched, read by a language model, and given a short brief written to be heard rather than read. What it publishes is the same feed again, with the brief where the feed's own line was.\n\nAn article appears in what it publishes **only once its brief is written**, so whatever reads that feed never sees an article before the editor has. That is the whole of its contract with the radio: the radio reads a feed, as it always did, and this one happens to say something worth hearing.\n\nThree things in its pipeline are worth reading closely. **The claim** is one SQL statement that takes an article it has not seen or hands back nothing, so an article already taken stops its own pass. **Two detours** \u2014 the page, then the brief \u2014 each go off and come back *beside* the article rather than instead of it, which is how the brief still knows which article it belongs to. And **a failure is recorded, not retried**: a page that cannot be read or fetched is noted, and the model briefs from the title and the feed's line alone; a brief that fails is kept on the desk with the reason the model or the API gave, and waits for a person \u2014 **Retry** runs that one article again, **Use the feed's line** publishes it with the line its feed gave it. A brief that started and never finished counts as failed after `stuckAfter`.\n\nThe model is Claude on hkp-node's `anthropic` backend, with the key from `{{secret.anthropic.key}}` in Settings \u2192 Secrets. To use `ANTHROPIC_API_KEY` from the runtime's environment instead, set the `apiKey` param to empty: a key that names a secret is that secret or nothing. To brief with a local model instead, set the `backend` param to `server`, `serverUrl` to an OpenAI-compatible server, and `apiKey` to empty (or to the token that server wants).\n\nNeeds hkp-node, kept as the remote `node`.",
   "unit": {
     "name": "editor",
     "params": {
       "feedUrl": "https://hnrss.org/frontpage",
       "feedName": "Hacker News",
       "database": "rss-editor",
-      "retryAfter": "-15 minutes",
-      "tries": "3",
+      "stuckAfter": "-10 minutes",
       "backend": "anthropic",
       "model": "claude-haiku-5-5",
       "serverUrl": "",
@@ -35,12 +34,21 @@
       "state": {
         "wrapServices": false
       }
+    },
+    {
+      "id": "fallback",
+      "name": "The feed's line",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
     }
   ],
   "services": {
     "edit": [
       {
-        "uuid": "tick",
+        "uuid": "edit-tick",
         "serviceId": "timer",
         "serviceName": "Every minute",
         "state": {
@@ -51,7 +59,7 @@
         }
       },
       {
-        "uuid": "feed",
+        "uuid": "edit-feed",
         "serviceId": "rss",
         "serviceName": "The feed",
         "state": {
@@ -66,7 +74,7 @@
         }
       },
       {
-        "uuid": "each",
+        "uuid": "edit-each",
         "serviceId": "iterator",
         "serviceName": "Each article",
         "state": {
@@ -78,9 +86,7 @@
               "state": {
                 "mode": "add",
                 "template": {
-                  "guid=": "params.id || params.link",
-                  "retryAfter": "{{param.retryAfter}}",
-                  "tries": "{{param.tries}}"
+                  "guid=": "params.id || params.link"
                 }
               }
             },
@@ -91,8 +97,8 @@
               "state": {
                 "mode": "query",
                 "database": "{{param.database}}",
-                "schema": "CREATE TABLE IF NOT EXISTS article (\n  guid      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL DEFAULT '',\n  link      TEXT NOT NULL DEFAULT '',\n  blurb     TEXT NOT NULL DEFAULT '',\n  feed      TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  seen      TEXT NOT NULL DEFAULT (datetime('now')),\n  claimed   TEXT NOT NULL DEFAULT (datetime('now')),\n  tries     INTEGER NOT NULL DEFAULT 1,\n  brief     TEXT,\n  written   TEXT\n);",
-                "statement": "INSERT INTO article (guid, title, link, blurb, feed, published)\nVALUES ($guid, $title, $link, $summary, $feed, $published)\nON CONFLICT(guid) DO UPDATE SET claimed = datetime('now'), tries = article.tries + 1\n  WHERE article.written IS NULL\n    AND article.tries < CAST($tries AS INTEGER)\n    AND article.claimed < datetime('now', $retryAfter)\nRETURNING guid, title, link, blurb"
+                "schema": "CREATE TABLE IF NOT EXISTS brief (\n  guid       TEXT PRIMARY KEY,\n  link       TEXT NOT NULL DEFAULT '',\n  title      TEXT NOT NULL DEFAULT '',\n  blurb      TEXT NOT NULL DEFAULT '',\n  feed       TEXT NOT NULL DEFAULT '',\n  published  TEXT NOT NULL DEFAULT '',\n  seen       TEXT NOT NULL DEFAULT (datetime('now')),\n  started    TEXT,\n  failed     TEXT,\n  error      TEXT,\n  page_error TEXT,\n  brief      TEXT,\n  source     TEXT,\n  written    TEXT\n);\nCREATE INDEX IF NOT EXISTS brief_link ON brief(link);",
+                "statement": "INSERT INTO brief (guid, link, title, blurb, feed, published, started)\nVALUES ($guid, IFNULL($link, ''), IFNULL($title, ''), IFNULL($summary, ''),\n        IFNULL($feed, ''), IFNULL($published, ''), datetime('now'))\nON CONFLICT(guid) DO UPDATE\n   SET started = datetime('now'), failed = NULL, error = NULL, page_error = NULL\n WHERE $retry = 1 AND brief.written IS NULL\nRETURNING guid, title, link, blurb"
               }
             },
             {
@@ -157,7 +163,8 @@
                       "maxChars": 16000
                     }
                   }
-                ]
+                ],
+                "onFailure": "merge"
               }
             },
             {
@@ -174,7 +181,7 @@
                     "state": {
                       "mode": "replace",
                       "template": {
-                        "prompt=": "'Title: ' + params.title + '\\n\\nThe feed says: ' + withoutUrls(params.blurb) + '\\n\\nThe article:\\n' + params.page.text"
+                        "prompt=": "'Title: ' + params.title + '\\n\\nThe feed says: ' + withoutUrls(params.blurb) + '\\n\\nThe article:\\n' + (params.page.text || 'The article could not be read.')"
                       }
                     }
                   },
@@ -193,36 +200,40 @@
                       "stream": false
                     }
                   }
-                ]
+                ],
+                "onFailure": "merge"
               }
             },
             {
               "instanceId": "keep",
               "serviceId": "map",
-              "serviceName": "What to keep",
+              "serviceName": "What happened",
               "state": {
                 "mode": "replace",
                 "template": {
                   "guid=": "params.guid",
-                  "brief=": "params.brief.text"
+                  "brief=": "params.brief.text || null",
+                  "error=": "params.brief.error || null",
+                  "pageError=": "params.page.error || null"
                 }
               }
             },
             {
               "instanceId": "note",
               "serviceId": "sql",
-              "serviceName": "Keep the brief",
+              "serviceName": "Record it",
               "state": {
                 "mode": "run",
                 "database": "{{param.database}}",
-                "statement": "UPDATE article\n   SET brief = $brief, written = datetime('now')\n WHERE guid = $guid"
+                "schema": "CREATE TABLE IF NOT EXISTS brief (\n  guid       TEXT PRIMARY KEY,\n  link       TEXT NOT NULL DEFAULT '',\n  title      TEXT NOT NULL DEFAULT '',\n  blurb      TEXT NOT NULL DEFAULT '',\n  feed       TEXT NOT NULL DEFAULT '',\n  published  TEXT NOT NULL DEFAULT '',\n  seen       TEXT NOT NULL DEFAULT (datetime('now')),\n  started    TEXT,\n  failed     TEXT,\n  error      TEXT,\n  page_error TEXT,\n  brief      TEXT,\n  source     TEXT,\n  written    TEXT\n);\nCREATE INDEX IF NOT EXISTS brief_link ON brief(link);",
+                "statement": "UPDATE brief\n   SET brief      = $brief,\n       source     = CASE WHEN $brief IS NOT NULL THEN 'model' END,\n       written    = CASE WHEN $brief IS NOT NULL THEN datetime('now') END,\n       failed     = CASE WHEN $brief IS NULL THEN datetime('now') END,\n       error      = CASE WHEN $brief IS NULL THEN IFNULL($error, 'the brief came back empty') END,\n       page_error = $pageError\n WHERE guid = $guid"
               }
             }
           ]
         }
       },
       {
-        "uuid": "end",
+        "uuid": "edit-end",
         "serviceId": "stopper",
         "serviceName": "End of the round",
         "state": {}
@@ -230,12 +241,12 @@
     ],
     "briefs": [
       {
-        "uuid": "pub-tick",
+        "uuid": "briefs-tick",
         "serviceId": "timer",
-        "serviceName": "Every minute",
+        "serviceName": "Every ten seconds",
         "state": {
           "periodic": true,
-          "periodicValue": 60,
+          "periodicValue": 10,
           "periodicUnit": "s",
           "running": true
         }
@@ -247,18 +258,18 @@
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
-          "schema": "CREATE TABLE IF NOT EXISTS article (\n  guid      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL DEFAULT '',\n  link      TEXT NOT NULL DEFAULT '',\n  blurb     TEXT NOT NULL DEFAULT '',\n  feed      TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  seen      TEXT NOT NULL DEFAULT (datetime('now')),\n  claimed   TEXT NOT NULL DEFAULT (datetime('now')),\n  tries     INTEGER NOT NULL DEFAULT 1,\n  brief     TEXT,\n  written   TEXT\n);",
-          "statement": "SELECT guid, title, link, feed, IFNULL(brief, '') AS brief,\n       CASE WHEN written IS NOT NULL THEN 'Briefed ' || written\n            WHEN claimed >= datetime('now', '{{param.retryAfter}}') THEN 'Reading\u2026 (try ' || tries || ' of {{param.tries}})'\n            WHEN tries >= {{param.tries}}\n              THEN 'Not briefed after ' || tries || ' tries \u2014 the feed''s own line is used'\n            ELSE 'Not briefed yet \u2014 tried again when the feed next has it' END AS status\n  FROM article\n ORDER BY seen DESC\n LIMIT 50"
+          "schema": "CREATE TABLE IF NOT EXISTS brief (\n  guid       TEXT PRIMARY KEY,\n  link       TEXT NOT NULL DEFAULT '',\n  title      TEXT NOT NULL DEFAULT '',\n  blurb      TEXT NOT NULL DEFAULT '',\n  feed       TEXT NOT NULL DEFAULT '',\n  published  TEXT NOT NULL DEFAULT '',\n  seen       TEXT NOT NULL DEFAULT (datetime('now')),\n  started    TEXT,\n  failed     TEXT,\n  error      TEXT,\n  page_error TEXT,\n  brief      TEXT,\n  source     TEXT,\n  written    TEXT\n);\nCREATE INDEX IF NOT EXISTS brief_link ON brief(link);",
+          "statement": "SELECT guid, title, link, feed, blurb, published,\n       IFNULL(brief, '') AS brief,\n       CASE\n         WHEN written IS NOT NULL AND source = 'feed'\n           THEN 'The feed''s own line, chosen ' || written\n         WHEN written IS NOT NULL AND page_error IS NOT NULL\n           THEN 'Briefed ' || written || ' from the title and the feed''s line \u2014 the page: ' || page_error\n         WHEN written IS NOT NULL THEN 'Briefed ' || written\n         WHEN failed IS NOT NULL THEN 'Failed: ' || IFNULL(error, 'no reason given')\n         WHEN started < datetime('now', '{{param.stuckAfter}}')\n           THEN 'Failed: no answer since ' || started\n         ELSE 'Briefing\u2026 since ' || started\n       END AS status,\n       CASE WHEN written IS NULL\n             AND (failed IS NOT NULL OR started < datetime('now', '{{param.stuckAfter}}'))\n            THEN 0 ELSE 1 END AS settled\n  FROM brief\n ORDER BY seen DESC\n LIMIT 50"
         }
       },
       {
-        "uuid": "seen",
+        "uuid": "briefs-seen",
         "serviceId": "monitor",
         "serviceName": "The desk",
         "state": {}
       },
       {
-        "uuid": "pub-about",
+        "uuid": "briefs-about",
         "serviceId": "map",
         "serviceName": "What the feed is called",
         "state": {
@@ -266,23 +277,23 @@
           "template": {
             "channelTitle": "{{param.feedTitle}}",
             "channelDescription": "{{param.feedDescription}}",
-            "channelLink": "hkp-mount://briefs/pub-serve"
+            "channelLink": "hkp-mount://briefs/briefs-serve"
           }
         }
       },
       {
-        "uuid": "pub-doc",
+        "uuid": "briefs-doc",
         "serviceId": "sql",
         "serviceName": "The briefed articles as a feed",
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
-          "schema": "CREATE TABLE IF NOT EXISTS article (\n  guid      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL DEFAULT '',\n  link      TEXT NOT NULL DEFAULT '',\n  blurb     TEXT NOT NULL DEFAULT '',\n  feed      TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  seen      TEXT NOT NULL DEFAULT (datetime('now')),\n  claimed   TEXT NOT NULL DEFAULT (datetime('now')),\n  tries     INTEGER NOT NULL DEFAULT 1,\n  brief     TEXT,\n  written   TEXT\n);",
-          "statement": "SELECT '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'\n    || '<rss version=\"2.0\"><channel>'\n    || '<title><![CDATA[' || replace(IFNULL($channelTitle, ''), ']]>', ']]&gt;') || ']]></title>'\n    || '<link>' || replace(replace(replace(IFNULL($channelLink, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n    || '<description><![CDATA[' || replace(IFNULL($channelDescription, ''), ']]>', ']]&gt;') || ']]></description>'\n    || IFNULL(group_concat(item, '' ORDER BY sortKey DESC), '')\n    || '</channel></rss>' AS feed\n  FROM (\n    SELECT '<item>'\n        || '<title><![CDATA[' || replace(IFNULL(title, ''), ']]>', ']]&gt;') || ']]></title>'\n        || '<link>' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n        || '<guid isPermaLink=\"false\">' || replace(replace(replace(guid, '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</guid>'\n        || '<pubDate>' || IFNULL(published, '') || '</pubDate>'\n        || '<category><![CDATA[' || replace(IFNULL(feed, ''), ']]>', ']]&gt;') || ']]></category>'\n        || '<description><![CDATA[' || replace(COALESCE(NULLIF(brief, ''), blurb, ''), ']]>', ']]&gt;') || ']]></description>'\n        || '</item>' AS item,\n           seen AS sortKey\n      FROM article\n     WHERE written IS NOT NULL\n        OR (tries >= {{param.tries}} AND claimed < datetime('now', '{{param.retryAfter}}'))\n     ORDER BY seen DESC\n     LIMIT 100\n  )"
+          "schema": "CREATE TABLE IF NOT EXISTS brief (\n  guid       TEXT PRIMARY KEY,\n  link       TEXT NOT NULL DEFAULT '',\n  title      TEXT NOT NULL DEFAULT '',\n  blurb      TEXT NOT NULL DEFAULT '',\n  feed       TEXT NOT NULL DEFAULT '',\n  published  TEXT NOT NULL DEFAULT '',\n  seen       TEXT NOT NULL DEFAULT (datetime('now')),\n  started    TEXT,\n  failed     TEXT,\n  error      TEXT,\n  page_error TEXT,\n  brief      TEXT,\n  source     TEXT,\n  written    TEXT\n);\nCREATE INDEX IF NOT EXISTS brief_link ON brief(link);",
+          "statement": "SELECT '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'\n    || '<rss version=\"2.0\"><channel>'\n    || '<title><![CDATA[' || replace(IFNULL($channelTitle, ''), ']]>', ']]&gt;') || ']]></title>'\n    || '<link>' || replace(replace(replace(IFNULL($channelLink, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n    || '<description><![CDATA[' || replace(IFNULL($channelDescription, ''), ']]>', ']]&gt;') || ']]></description>'\n    || IFNULL(group_concat(item, '' ORDER BY sortKey DESC), '')\n    || '</channel></rss>' AS feed\n  FROM (\n    SELECT '<item>'\n        || '<title><![CDATA[' || replace(IFNULL(title, ''), ']]>', ']]&gt;') || ']]></title>'\n        || '<link>' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n        || '<guid isPermaLink=\"false\">' || replace(replace(replace(guid, '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</guid>'\n        || '<pubDate>' || IFNULL(published, '') || '</pubDate>'\n        || '<category><![CDATA[' || replace(IFNULL(feed, ''), ']]>', ']]&gt;') || ']]></category>'\n        || '<description><![CDATA[' || replace(COALESCE(NULLIF(brief, ''), blurb, ''), ']]>', ']]&gt;') || ']]></description>'\n        || '</item>' AS item,\n           seen AS sortKey\n      FROM brief\n     WHERE written IS NOT NULL\n     ORDER BY seen DESC\n     LIMIT 100\n  )"
         }
       },
       {
-        "uuid": "pub-wrap",
+        "uuid": "briefs-wrap",
         "serviceId": "map",
         "serviceName": "As a document",
         "state": {
@@ -295,7 +306,7 @@
         }
       },
       {
-        "uuid": "pub-serve",
+        "uuid": "briefs-serve",
         "serviceId": "http-server-subservices",
         "serviceName": "Serve the feed",
         "state": {
@@ -325,6 +336,30 @@
           ]
         }
       }
+    ],
+    "fallback": [
+      {
+        "uuid": "fb-which",
+        "serviceId": "map",
+        "serviceName": "Only a request naming an article",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "=": "params.useFeedLine && params.guid ? params : null"
+          }
+        }
+      },
+      {
+        "uuid": "fb-row",
+        "serviceId": "sql",
+        "serviceName": "The feed's line as its brief",
+        "state": {
+          "mode": "run",
+          "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS brief (\n  guid       TEXT PRIMARY KEY,\n  link       TEXT NOT NULL DEFAULT '',\n  title      TEXT NOT NULL DEFAULT '',\n  blurb      TEXT NOT NULL DEFAULT '',\n  feed       TEXT NOT NULL DEFAULT '',\n  published  TEXT NOT NULL DEFAULT '',\n  seen       TEXT NOT NULL DEFAULT (datetime('now')),\n  started    TEXT,\n  failed     TEXT,\n  error      TEXT,\n  page_error TEXT,\n  brief      TEXT,\n  source     TEXT,\n  written    TEXT\n);\nCREATE INDEX IF NOT EXISTS brief_link ON brief(link);",
+          "statement": "UPDATE brief\n   SET brief = blurb, source = 'feed', written = datetime('now'),\n       failed = NULL, error = NULL\n WHERE guid = $guid AND written IS NULL"
+        }
+      }
     ]
   },
   "facade": {
@@ -346,17 +381,17 @@
               "items": [
                 {
                   "type": "button",
-                  "label": "Read now",
+                  "label": "Check the feed now",
                   "actions": [
                     {
                       "type": "process",
-                      "serviceUuid": "feed",
+                      "serviceUuid": "edit-feed",
                       "payload": {}
                     }
                   ],
                   "indicator": {
                     "source": {
-                      "serviceUuid": "feed",
+                      "serviceUuid": "edit-feed",
                       "path": "fetching"
                     },
                     "statusColors": {
@@ -369,35 +404,24 @@
                   "type": "text",
                   "label": "Articles in the feed",
                   "source": {
-                    "serviceUuid": "feed",
+                    "serviceUuid": "edit-feed",
                     "path": "count"
                   },
                   "placeholder": "\u2014",
                   "grow": true
-                },
-                {
-                  "type": "button",
-                  "label": "Refresh the desk",
-                  "actions": [
-                    {
-                      "type": "process",
-                      "serviceUuid": "rows",
-                      "payload": {}
-                    }
-                  ]
                 }
               ]
             },
             {
               "type": "text",
-              "placeholder": "Every article the editor has seen, newest first, with the brief the radio will read after its title. An article reaches the published feed only once its brief is written.",
+              "placeholder": "Every article the editor has taken from its feed, newest first, and where it is: being briefed, briefed, or failed \u2014 with the reason. It checks the feed every minute by itself. A failed brief waits for you: try it again, or publish it with the line its feed gave it.",
               "tone": "muted",
               "fontSize": 12
             },
             {
               "type": "repeat",
               "source": {
-                "serviceUuid": "seen",
+                "serviceUuid": "briefs-seen",
                 "path": "rows"
               },
               "gap": 0,
@@ -421,6 +445,57 @@
                     "type": "text",
                     "placeholder": "{{item.brief}}",
                     "fontSize": 13
+                  },
+                  {
+                    "direction": "row",
+                    "gap": 8,
+                    "items": [
+                      {
+                        "type": "button",
+                        "label": "Retry",
+                        "disabled": "{{item.settled}}",
+                        "actions": [
+                          {
+                            "type": "process",
+                            "serviceUuid": "edit-each.name",
+                            "payload": {
+                              "id": "{{item.guid}}",
+                              "link": "{{item.link}}",
+                              "title": "{{item.title}}",
+                              "summary": "{{item.blurb}}",
+                              "feed": "{{item.feed}}",
+                              "published": "{{item.published}}",
+                              "retry": 1
+                            }
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "rows",
+                            "payload": {}
+                          }
+                        ]
+                      },
+                      {
+                        "type": "button",
+                        "label": "Use the feed's line",
+                        "disabled": "{{item.settled}}",
+                        "actions": [
+                          {
+                            "type": "process",
+                            "serviceUuid": "fb-which",
+                            "payload": {
+                              "guid": "{{item.guid}}",
+                              "useFeedLine": true
+                            }
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "rows",
+                            "payload": {}
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]
               },
@@ -435,7 +510,7 @@
               "type": "text",
               "label": "Feed",
               "source": {
-                "serviceUuid": "pub-serve",
+                "serviceUuid": "briefs-serve",
                 "path": "__hkpMount"
               },
               "placeholder": "not published yet",
@@ -451,19 +526,19 @@
     "notices": [
       {
         "source": {
-          "serviceUuid": "feed",
+          "serviceUuid": "edit-feed",
           "path": "error"
         }
       },
       {
         "source": {
-          "serviceUuid": "each",
+          "serviceUuid": "edit-each",
           "path": "error"
         }
       },
       {
         "source": {
-          "serviceUuid": "each.brief.write",
+          "serviceUuid": "edit-each.brief.write",
           "path": "error"
         },
         "tone": "error"

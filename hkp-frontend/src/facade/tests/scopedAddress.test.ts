@@ -72,6 +72,26 @@ describe("a facade addressing a service inside a scope", () => {
     expect(findService(context, "read.absent")?.state).toBeUndefined();
   });
 
+  it("finds it by the instanceId a runtime reports it under", () => {
+    // What hkp-node and hkp-python actually send for a scope's pipeline, and
+    // what a board writes for one: the nested entry is an instanceId.
+    const context = contextWithScope();
+    context.services.node[0].state = {
+      pipeline: [
+        { serviceId: "sql", instanceId: "kept-articles", state: { count: 3 } },
+        {
+          serviceId: "http-server-subservices",
+          instanceId: "feed-serve",
+          state: { __hkpMount: "http://127.0.0.1:8080/hosted/abc" },
+        },
+      ],
+    };
+
+    expect(findService(context, "read.feed-serve")?.state).toEqual({
+      __hkpMount: "http://127.0.0.1:8080/hosted/abc",
+    });
+  });
+
   it("does not resolve an address whose root is not on the board", () => {
     expect(findService(contextWithScope(), "absent.kept-articles")).toBeNull();
   });

@@ -872,6 +872,46 @@ drawn beside it repeating every title:
 ]
 ```
 
+**swimlane** — one ordered lane of cards; several lanes sharing a `dragGroup` make a board.
+Every lane usually reads the same query and shows the rows carrying its `laneId`, so an empty lane
+still exists. What a person does — create, edit, delete, move — is an action list the lane runs
+with the operation (`{{item.cardId}}`, `{{item.toLaneId}}`, the whole row as `{{item.card}}`);
+the query at the end of that pipeline redraws every lane:
+
+```json
+{
+  "type": "swimlane",
+  "laneId": "ready",
+  "title": "Ready",
+  "dragGroup": "work",
+  "source": { "serviceUuid": "read-board", "path": "rows" },
+  "allowCreate": true,
+  "createActions": [{ "type": "process", "serviceUuid": "create-card", "payload": "{{item}}" }],
+  "moveActions": [{ "type": "process", "serviceUuid": "move-card", "payload": "{{item}}" }]
+}
+```
+
+Rows carry `cardId`, `laneId`, `title`, `description` and `position` unless `cardIdField` and
+friends name others. `allowDrag` / `acceptDrops` separate giving a card from taking one, for a
+lane whose drop is a command rather than a free move. `allRows` takes every row of a source whose rows
+name no lane (a list of feeds); `except: { source, idField? }` leaves out cards another source
+already holds (a feed's items, less those already kept). For a lane that is a **stage of work** —
+the lane says how far a card has got, the card says what is happening to it — `statusField` and
+`statusColors` put a coloured status on the card, `detailField` a line saying why or since when,
+`cardActions` buttons for that one card (`visibleWhen: { field, equals? }` keeps a Retry on the
+failed cards only), and `audioField` a player, one card playing at a time:
+
+```json
+"statusField": "state",
+"statusColors": { "working": "#f59e0b", "failed": "#ef4444" },
+"detailField": "detail",
+"cardActions": [{
+  "label": "Retry",
+  "visibleWhen": { "field": "state", "equals": "failed" },
+  "actions": [{ "type": "process", "serviceUuid": "each.name", "payload": { "id": "{{item.cardId}}", "retry": 1 } }]
+}]
+```
+
 **file-pick** — file chooser that sends the file to a service:
 
 ```json
