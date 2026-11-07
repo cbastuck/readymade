@@ -23,6 +23,7 @@ import { useUserProfile } from "hkp-frontend/src/core/userProfile";
 import { AccountDialog } from "hkp-frontend/src/views/profile";
 import { getBackend } from "./backend";
 import { useICloudSource } from "./library/useICloudSource";
+import { deleteSavedBoard } from "./library/deleteBoard";
 import {
   lastBoardLibrary,
   lastBoardName,
@@ -130,8 +131,12 @@ export default function StartPage({ onRestoreBoard }: Props) {
     }
   }, []);
 
+  // With its history, and no longer the board to continue: Continue would
+  // otherwise bring a deleted board back from its last snapshot.
   const deleteBoard = useCallback(async (name: string) => {
-    await (await getBackend()).deleteBoard(name);
+    await deleteSavedBoard(name);
+    setLastSessionName(lastBoardName());
+    setLastSessionLibrary(lastBoardLibrary());
   }, []);
 
   // The board file's own text where the backend can hand it over — a board

@@ -32,7 +32,11 @@ record of where that work stands: a session picks up the first row that is not
 | 8 | An event fired inside a state updater | no | done | The write and the event moved out of the updater |
 | 9 | OpenCode duplicates the OpenAI-compatible prompt building | no | done | Both providers call `prepareTextTurn` and `parseTextProposal` |
 | 10 | A redundant vault write in the Assist token store | no | done | The backend alone keeps the page's copy |
-| M1 | Submodule pointers not bumped | yes | open | The submodule branches now carry fixes 1, 3, 5 and M9 |
+| 11 | Android shares can copy the app's own files | yes | in progress | Only another app's content URIs are read; uncommitted in meander-android, the device check remains |
+| 12 | The desktop's deletes disagree | should | in progress | The start page and Load Board delete through `deleteSavedBoard`; a check in the desktop app remains |
+| 13 | Forgetting the board to continue ignores the library | no | done | `forgetLastBoard` takes the library |
+| 14 | Android frames can call the native bridges | should | in progress | Every bridge call needs the page's token; uncommitted in meander-android, the device check remains |
+| M1 | Submodule branches not pushed or merged | yes | open | Pointers are at the tips; the branches are unpushed, and 11 and 14 move Android's again |
 | M2 | Signing and App Store validation | before shipping | open | |
 | M3 | The pass on devices | before shipping | open | |
 
@@ -153,15 +157,64 @@ in step, and the comment now says that's where it is kept.
 
 ---
 
+## Second round
+
+Reviewed 2026-11-07 against the branch tips above, M9 included. Compiled: the
+Android Kotlin, the iOS app and share extension (typecheck), the desktop app.
+Both frontends typecheck, and the hkp-frontend suite passes.
+
+### 11. Android shares can copy the app's own files
+
+Any app may send a share, and the shared stream is read with Readymade's own
+rights. A share naming `file:///data/data/<package>/files/…` would have copied
+the board library, the history or the grants into a board. `ShareInbox.streamsOf`
+now keeps only content URIs of a provider that is not this app's (`isForeign`);
+anything else is dropped like an unreadable stream.
+
+Remaining: on a device, a share from the Photos app and from Files still arrives.
+
+### 12. The desktop's deletes disagree
+
+The Hub deleted through `deleteSavedBoard`, while the desktop start page and the
+Load Board dialog deleted the board alone, so Continue could bring a deleted
+board back from its history. Both now call `deleteSavedBoard` (the dialog
+through `actions.deleteBoard`), and the start page reads the board to continue
+again afterwards.
+
+Remaining: in the desktop app, delete the board offered to continue from the
+start page and from Load Board.
+
+### 13. Forgetting the board to continue ignores the library
+
+`forgetLastBoard(name, library)` forgets only when the board last worked on is
+that library's, so deleting a local `Radio` keeps an iCloud `Radio` offered.
+
+### 14. Android frames can call the native bridges
+
+`addJavascriptInterface` puts `AndroidHkpBridge` and the two auth bridges into
+every frame, so a cross-origin frame could read and write boards, settings and
+pins, or start a login. Every bridge method now takes a token first
+(`BridgeToken`, drawn once per process), which `bridgeScript` writes only into
+the top-level page, inside the script's closure. A frame's shims pass an empty
+token, and the bridges refuse it. No frame of the app's own pages uses the
+bridges.
+
+Remaining: on a device, a cross-origin frame's `AndroidHkpBridge.fetch` is
+refused, and the app (boards, login, the embedded runtime's login users) works
+as before.
+
+---
+
 ## Outside the code
 
-### M1. Submodule pointers not bumped
+### M1. Submodule branches not pushed or merged
 
-The superproject's `ios_feature_add` still points `meander-ios` at `0f40aa3` and
-`meander-android` at `f4b0834`, their `main` commits, not at the branch tips
-(now `5e0f15f` and `e50e351`, carrying fixes 1, 3 and 5 and M9). Merge the two
-submodule PRs first, then bump both pointers on the superproject branch, to the
-merged commits, before merging it.
+The superproject's `ios_feature_add` points at the submodule branch tips
+(`5e0f15f`, `e50e351`), but none of the three branches is pushed past
+`origin/ios_feature_add`. Fixes 11 and 14 add a commit to meander-android, so
+its pointer moves again. Push all three, merge the two submodule PRs first, by
+merge commit or fast-forward (a squash or rebase leaves the pointers naming
+commits no branch holds), then merge the superproject.
 
 ### M2. Signing and App Store validation
 

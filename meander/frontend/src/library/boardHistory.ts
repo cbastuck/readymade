@@ -33,9 +33,15 @@ export function rememberLastBoard(
   localStorage.setItem(LAST_LIBRARY_KEY, library);
 }
 
-/** Stops offering `name` to continue, when it is the board last worked on. */
-export function forgetLastBoard(name: string): void {
-  if (lastBoardName() === name) {
+/**
+ * Stops offering `name` to continue, when it is the board last worked on in
+ * `library`: a local board and an iCloud Drive board may share the name.
+ */
+export function forgetLastBoard(
+  name: string,
+  library: BoardLibraryKind = "local",
+): void {
+  if (lastBoardName() === name && lastBoardLibrary() === library) {
     localStorage.removeItem(LAST_BOARD_KEY);
     localStorage.removeItem(LAST_LIBRARY_KEY);
   }

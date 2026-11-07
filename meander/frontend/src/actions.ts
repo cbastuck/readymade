@@ -10,12 +10,13 @@ import { saveBoardInCloudMenuItem } from "hkp-frontend/src/cloud/saveBoard";
 import { serializeBoardSource } from "hkp-frontend/src/core/linkBlocks";
 import { Remote } from "./types";
 import { getBackend } from "./backend";
+import { deleteSavedBoard } from "./library/deleteBoard";
 
 export const loadBoard = async (boardName: string): Promise<BoardDescriptor> =>
   (await getBackend()).loadBoard(boardName);
 
-export const deleteBoard = async (name: string): Promise<void> =>
-  (await getBackend()).deleteBoard(name);
+/** With its history and pin, as every view deletes a board (library/deleteBoard). */
+export const deleteBoard = deleteSavedBoard;
 
 export const saveBoard = async (name: string, payload: BoardDescriptor): Promise<void> =>
   (await getBackend()).saveBoard(name, payload);
