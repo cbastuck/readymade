@@ -54,6 +54,24 @@ describe("a facade addressing a service inside a scope", () => {
     expect(scope?.state).toEqual({ pipeline: [] });
   });
 
+  it("reads one's own state where the scope's state lists it", () => {
+    // A remote sub-service reports the services inside it, each with its own
+    // state. A mount's address is held there and never reported, so without
+    // this a widget reading it waits forever.
+    const context = contextWithScope();
+    context.services.node[0].state = {
+      pipeline: [
+        { uuid: "kept-articles", state: { count: 3 } },
+        { uuid: "feed-serve", state: { __hkpMount: "http://127.0.0.1:8080/hosted/abc" } },
+      ],
+    };
+
+    expect(findService(context, "read.feed-serve")?.state).toEqual({
+      __hkpMount: "http://127.0.0.1:8080/hosted/abc",
+    });
+    expect(findService(context, "read.absent")?.state).toBeUndefined();
+  });
+
   it("does not resolve an address whose root is not on the board", () => {
     expect(findService(contextWithScope(), "absent.kept-articles")).toBeNull();
   });

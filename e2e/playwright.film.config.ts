@@ -32,6 +32,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MEANDER_PORT = 8599;
 export const FILM_NODE_PORT = 18180;
 export const FILM_NODE_URL = `http://127.0.0.1:${FILM_NODE_PORT}`;
+export const FILM_PYTHON_PORT = 18190;
+export const FILM_PYTHON_URL = `http://127.0.0.1:${FILM_PYTHON_PORT}`;
 const ANTHROPIC = "https://api.anthropic.com";
 
 export default defineConfig<HostOptions>({
@@ -50,6 +52,7 @@ export default defineConfig<HostOptions>({
     // A real assistant run needs the API; a replayed one never reaches it.
     serverOrigins: [
       FILM_NODE_URL,
+      FILM_PYTHON_URL,
       ...(process.env.FILM_ASSIST === "record" ? [ANTHROPIC] : []),
     ],
     trace: "retain-on-failure",
@@ -115,6 +118,30 @@ export default defineConfig<HostOptions>({
         // The board draws days from this clock; a fixed zone keeps "tomorrow
         // at six" the same hour whoever runs the shoot.
         TZ: "Europe/Berlin",
+      },
+    },
+    {
+      // For the stories with a Python runtime (Reading Radio's voice). Bound to
+      // loopback with no Auth0 settings it takes no sign-in, so the browser
+      // drives it as anybody. Its own environment, as `uv sync` makes it; HOME
+      // is the real one, where the speech model is cached.
+      command: `"${process.execPath}" ../e2e/support/runtime-server.mjs python .venv/bin/python -m hkp`,
+      cwd: "../hkp-python",
+      url: `${FILM_PYTHON_URL}/runtimes`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 5_000 },
+      env: {
+        HKP_E2E_LOG_DIR: path.join(HERE, "test-results", "film-servers"),
+        ALLOWED_ORIGINS: `http://localhost:${MEANDER_PORT}`,
+        SKIP_LOADING_ENV: "true",
+        HOST: "127.0.0.1",
+        EXTERNAL_HOST: "127.0.0.1",
+        PORT: String(FILM_PYTHON_PORT),
+        AUTH0_DOMAIN: "",
+        AUTH0_AUDIENCE: "",
+        ALLOWED_EMAILS: "",
+        HKP_MOUNT_SECRET: "film",
       },
     },
   ],

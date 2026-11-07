@@ -3,7 +3,8 @@
 Decisions were taken 2026-09-04 and supersede the options listed under **G12b**
 in TODO-WORKFLOW-PLATFORM.md. Prio A is implemented across all four runtimes as
 of 2026-09-06; the work table at the end says what each item covers. Prio B —
-the website store and the coordinator's vault — is not started.
+the website store and the coordinator's vault — is not started, but the
+website has an interim store held in page memory (B0, 2026-11-07).
 
 Backwards compatibility is deliberately broken. It is cheap now — the framework
 has one maintainer and the demo boards are ours — and it stops being fixable
@@ -258,6 +259,16 @@ destination? An explicit per-alias "copy to cloud" if it is ever wanted.
 
 ### B-a. The website store
 
+**Interim, built 2026-11-07 (B0): page memory, and nothing else.** The website
+registers the vault cache (`vault.ts`) as its store, Settings → Secrets fills
+it through `sessionSecrets` (`hkp-frontend/src/secretsBackend.ts`), and the
+consent prompt is mounted, since without one every runtime a board names
+would be handed every secret it names. A value lasts as long as the tab, which
+is why storing one also hands it to the open board's remote runtimes that refer
+to it (`runtime/rest/pushSecretToBoard.ts`) — reopening by reload would forget
+it. `SecretsBackend` is the seam where a person's chosen persistence plugs in
+later; the server-side store below is one candidate, not the only one.
+
 One bound first, because the alternative is easy to oversell: for a
 **browser-runtime** service, plaintext must exist in the tab at point of use.
 Any XSS in the app defeats any client-side vault, encrypted or not — the
@@ -391,6 +402,7 @@ Status as of 2026-09-04: ✅ done, ◐ partly done, ☐ not started.
 | 7 | Audience on vault entries + learning on first use | `meander/backend/vault.h`, `hkp-frontend/src/vault.ts`, `SecretsTab` | M | ✅ |
 | 8 | Provisioning consent + grant store, keyed (board, runtime, url, alias set) | `core/secretConsent.ts`, `SecretConsentDialog` | M | ✅ |
 | 9 | Fold `SecretField`'s ad-hoc `uservault.<uuid>.<key>` keys into the same aliases | done — `SecretField` writes the vault and emits a reference; `getVault`/`secretId` deleted with their last caller | S | ✅ |
+| B0 | Interim website store in page memory; Secrets tab and consent prompt shared with the desktop app | `secretsBackend.ts`, `ui-components/settings/SecretsTab.tsx`, `ui-components/SecretConsentDialog.tsx`, `runtime/rest/pushSecretToBoard.ts` | S | ✅ |
 | B1 | `secrets.php` — per-tenant server-side store, write-only reads, board-scoped short-lived release (B-a) | hkp-website | M |
 | B2 | Coordinator vault + encryption at rest; push into coordinator-provisioned runtimes (B-b) | hkp-node coordinator | M |
 | B3 | Cloud-board secret form driven by `referencedSecrets`; "needs configuration" board state (B-b) | frontend + coordinator | S–M |

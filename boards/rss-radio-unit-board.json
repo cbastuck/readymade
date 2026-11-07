@@ -251,6 +251,7 @@
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);",
           "statement": "SELECT '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'\n    || '<rss version=\"2.0\"><channel>'\n    || '<title><![CDATA[' || replace(IFNULL($channelTitle, ''), ']]>', ']]&gt;') || ']]></title>'\n    || '<link>' || replace(replace(replace(IFNULL($channelLink, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n    || '<description><![CDATA[' || replace(IFNULL($channelDescription, ''), ']]>', ']]&gt;') || ']]></description>'\n    || IFNULL(group_concat(item, '' ORDER BY sortKey DESC), '')\n    || '</channel></rss>' AS feed\n  FROM (\n    SELECT '<item>'\n        || '<title><![CDATA[' || replace(IFNULL(title, ''), ']]>', ']]&gt;') || ']]></title>'\n        || '<link>' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n        || '<guid isPermaLink=\"false\">' || replace(replace(replace(slug, '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</guid>'\n        || '<pubDate>' || IFNULL(published, '') || '</pubDate>'\n        || '<description><![CDATA[' || replace(IFNULL(summary, ''), ']]>', ']]&gt;') || ']]></description>'\n        || '<enclosure url=\"' || replace(replace(replace(IFNULL($audioBase, '') || '/' || slug || '.mp3', '&', '&amp;'), '<', '&lt;'), '>', '&gt;')\n        || '\" type=\"audio/mpeg\" length=\"' || IFNULL(bytes, 0) || '\"/>'\n        || '</item>' AS item,\n           rendered AS sortKey\n      FROM episode\n     WHERE rendered IS NOT NULL\n     ORDER BY rendered DESC\n     LIMIT 100\n  )"
         }
       },
@@ -318,6 +319,7 @@
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);",
           "statement": "DELETE FROM episode\n WHERE slug = $slug\nRETURNING 'episodes/' || slug || '.mp3' AS path"
         }
       },
@@ -390,6 +392,7 @@
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);",
           "statement": "SELECT slug,\n       title,\n       IFNULL($base, '') || '/' || slug || '.mp3' AS url,\n       IFNULL(published, '') AS published\n  FROM episode\n WHERE rendered IS NOT NULL\n ORDER BY rendered DESC\n LIMIT 100"
         }
       },

@@ -434,7 +434,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "A drum groove timed by nothing but nesting: four patterns — Straight, Shuffle, Four on the floor, Funk — each a bar built from small blocks like a Beat of two hi-hats. Every wait is in beats; tempo and pattern are slots in the outermost scope that every level inherits. Switch patterns and watch the playhead move down through the levels.",
     icon: "🥁",
-    tags: ["Audio"],
+    tags: ["Audio", "Sequencing"],
     outcome:
       "Four drum grooves, switched at the bar line, timed by nothing but nesting.",
     expect:
@@ -449,7 +449,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       poster: "/images/pitch/NestingBeatsHi-poster.jpg",
       alt: "The Nested Rhythm board, its playhead moving down through nested services.",
     },
-    members: ["timeline"],
+    members: ["timeline", "night-groove"],
   },
   {
     slug: "timeline",
@@ -457,11 +457,28 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "A night sky that plays for eight seconds and loops: stars pop up, a planet appears, a rocket and a comet fly across. No animation code — every image is keyframed on a timeline of its own, and one outer timeline arranges them all.",
     icon: "🌠",
-    tags: ["Canvas", "Animation"],
+    tags: ["Canvas", "Animation", "Sequencing"],
     outcome: "An animated scene made of keyframes, without animation code.",
     underTheHood: {
       text: "Timelines inside a timeline, motions written once as blocks",
       href: "/documentation/boards/timeline-demo-board/",
+    },
+    opens: "browser",
+  },
+  {
+    slug: "night-groove",
+    label: "Night Groove",
+    description:
+      "The Timeline demo's night sky with a drum groove under it, both played by one clock counting in beats. Hi-hats, kick, snare and a fill come in bar by bar while the stars, rocket, planet and comet arrive with them, and a moon beats with every kick. Pause silences the band and holds the picture together; the tempo knob speeds up both.",
+    icon: "🌙",
+    tags: ["Audio", "Animation", "Sequencing"],
+    outcome:
+      "Sound and picture on one clock, in time without scheduling anything.",
+    expect:
+      "Press Play and watch the moon beat with the kick. Turn the tempo and the band and the sky follow together.",
+    underTheHood: {
+      text: "One timeline arranging drums and images alike",
+      href: "/documentation/boards/night-groove-demo-board/",
     },
     opens: "browser",
   },

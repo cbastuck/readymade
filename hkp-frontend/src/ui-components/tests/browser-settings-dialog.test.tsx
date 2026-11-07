@@ -52,7 +52,13 @@ describe("BrowserSettingsDialog", () => {
   });
 
   it("offers the same tabs with and without a view's own controllers", () => {
-    const expected = ["Appearance", "Board Assist", "Connections", "Licences"];
+    const expected = [
+      "Appearance",
+      "Board Assist",
+      "Connections",
+      "Secrets",
+      "Licences",
+    ];
 
     const { unmount } = renderDialog();
     expect(

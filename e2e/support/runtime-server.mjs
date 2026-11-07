@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 const [kind, ...args] = process.argv.slice(2);
-if (!["node", "rt"].includes(kind) || !args.length || !process.env.HKP_E2E_LOG_DIR) {
+if (!["node", "rt", "python"].includes(kind) || !args.length || !process.env.HKP_E2E_LOG_DIR) {
   throw new Error("runtime-server needs a runtime kind, command arguments and HKP_E2E_LOG_DIR");
 }
 const directory = mkdtempSync(path.join(tmpdir(), `readymade-e2e-${kind}-`));

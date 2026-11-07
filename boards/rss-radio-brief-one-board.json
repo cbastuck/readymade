@@ -1,0 +1,237 @@
+{
+  "boardName": "Brief One Article",
+  "description": "The Radio Editor's fetch, read and brief steps, for one article at a time. Paste an address and press **Fetch, read and brief**: hkp-node fetches the page, extracts its text, and hands it to the language model with the editor's own system prompt. Each step says how it went, so a brief that does not appear says where it stopped.\n\nThe services and their settings are the editor's (`rss-radio-editor-unit-board.json`), laid out in a line rather than inside the editor's iterator and its two detours, and with no database: nothing is claimed, kept, or skipped next time, and every press briefs the article again. The model is told only what the page says, without the feed's title and line the editor adds.\n\nThe model is Claude on hkp-node's `anthropic` backend, with the key from `{{secret.anthropic.key}}` in Settings → Secrets. Needs hkp-node, kept as the remote `node`.",
+  "runtimes": [
+    {
+      "id": "brief-one",
+      "name": "Brief one",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "brief-one": [
+      {
+        "uuid": "address",
+        "serviceId": "map",
+        "serviceName": "Its address",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "meta.method": "get",
+            "meta.url=": "params.link"
+          }
+        }
+      },
+      {
+        "uuid": "fetch",
+        "serviceId": "http-client",
+        "serviceName": "Fetch it",
+        "state": {
+          "url": "",
+          "method": "get",
+          "userAgent": "Mozilla/5.0 (compatible; ReadymadeRadioEditor/1.0)",
+          "timeoutMs": 20000
+        }
+      },
+      {
+        "uuid": "page",
+        "serviceId": "map",
+        "serviceName": "Only a page",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "=": "params.meta.status === 200 && params.body ? params : 'The article could not be read.'"
+          }
+        }
+      },
+      {
+        "uuid": "extract",
+        "serviceId": "document-extract",
+        "serviceName": "Its text",
+        "state": {
+          "backend": "builtin",
+          "ocr": "off",
+          "maxChars": 16000
+        }
+      },
+      {
+        "uuid": "prompt",
+        "serviceId": "map",
+        "serviceName": "What to read",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "prompt=": "'The article:\\n' + params.text"
+          }
+        }
+      },
+      {
+        "uuid": "brief",
+        "serviceId": "text-generation",
+        "serviceName": "Write the brief",
+        "state": {
+          "backend": "anthropic",
+          "model": "claude-haiku-5-5",
+          "serverUrl": "",
+          "apiKey": "{{secret.anthropic.key}}",
+          "systemPrompt": "You write the brief a radio presenter reads after an article's title. Say what the article reports or argues and why it matters, in two to four plain sentences and at most 80 words. It will be heard, not read: no markdown, lists, headings, links or quotation marks, and do not open with the title or with phrases like 'This article'. Use only what the text gives you. When the article text is missing or is not the article (an error page, a paywall, a cookie notice), work from the title and the feed's line alone and say less rather than guess.",
+          "maxTokens": 2000,
+          "temperature": 0.3,
+          "stream": false
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "tabs": [
+      {
+        "id": "brief",
+        "title": "Brief",
+        "panels": [
+          "try"
+        ]
+      },
+      {
+        "id": "read",
+        "title": "What the model read",
+        "panels": [
+          "read"
+        ]
+      }
+    ],
+    "defaultTab": "brief",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "fetch",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "extract",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "brief",
+          "path": "error"
+        },
+        "tone": "error"
+      }
+    ],
+    "panels": [
+      {
+        "id": "try",
+        "title": "Brief one article",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text-input",
+              "label": "Article address",
+              "placeholder": "https://…",
+              "submitLabel": "Fetch, read and brief",
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "address",
+                  "payload": {
+                    "link": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Page status",
+                  "source": {
+                    "serviceUuid": "fetch",
+                    "path": "status"
+                  },
+                  "placeholder": "—",
+                  "grow": true
+                },
+                {
+                  "type": "text",
+                  "label": "Characters read",
+                  "source": {
+                    "serviceUuid": "extract",
+                    "path": "chars"
+                  },
+                  "placeholder": "—",
+                  "grow": true
+                },
+                {
+                  "type": "text",
+                  "label": "Model",
+                  "source": {
+                    "serviceUuid": "brief",
+                    "path": "status"
+                  },
+                  "placeholder": "—",
+                  "grow": true
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "Brief",
+              "source": {
+                "serviceUuid": "brief",
+                "path": "text"
+              },
+              "placeholder": "The brief appears here.",
+              "fontSize": 15,
+              "wrap": true
+            }
+          ]
+        }
+      },
+      {
+        "id": "read",
+        "title": "What the model read",
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "The page's text as extracted, up to the 16,000 characters the model is given.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "text",
+              "source": {
+                "serviceUuid": "extract",
+                "path": "text"
+              },
+              "placeholder": "Nothing read yet.",
+              "fontSize": 12,
+              "wrap": true
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

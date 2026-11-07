@@ -157,7 +157,9 @@ local mode, add `/no_think` to the system prompt to suppress reasoning
 ### hkp-node
 
 Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
-`timeoutSec` and `stream`, which mean what they mean everywhere else:
+`timeoutSec` and `stream`, which mean what they mean everywhere else — except
+that the `anthropic` backend sends none of the three sampling settings (see
+below):
 
 | Property | Type | Default | Description |
 |---|---|---|---|
@@ -167,8 +169,9 @@ Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
 | `serverUrl` | `string` | `""` | Empty means the backend's own address; set it for a proxy, or for a hosted OpenAI-compatible endpoint |
 | `endpoint` | `string` | — | Read-only: the URL this configuration actually reaches |
 | `model` | `string` | `"claude-sonnet-5"` | Any model the API accepts |
-| `thinking` | `bool\|null` | `null` | `true` turns on extended reasoning, reported in `thinking` |
-| `thinkingBudgetTokens` | `number` | `1024` | Tokens reasoning may use; `maxTokens` is lifted above it when it is not already |
+| `thinking` | `bool\|null` | `null` | `true` asks for reasoning, `false` for none, `null` leaves the model to its default; reasoning is reported in `thinking` |
+| `thinkingBudgetTokens` | `number` | `1024` | Tokens reasoning may use, for a Claude model that thinks on a budget; `maxTokens` is lifted above it when it is not already |
+| `effort` | `string` | `""` | Claude only: `low`, `medium`, `high`, `xhigh` or `max` — how much the model reasons and writes. Empty is the model's own default |
 | `jsonSchema` | `object\|string\|null` | `null` | Constrains the answer to a shape — see below |
 
 **One address field, for both backends.** `serverUrl` left empty means "wherever
@@ -206,11 +209,42 @@ item done having produced nothing.
 
 Two behaviours worth knowing:
 
-- **`thinking: true` fixes sampling.** `temperature`, `topP` and `topK` are not
-  sent while reasoning, because the API rejects a request that carries them.
+- **No sampling on `anthropic`.** `temperature`, `topP` and `topK` are kept for
+  the `server` backend and not sent to Claude: current Claude models refuse any
+  value but their own, and API version 2026-10-21 refuses the fields on every
+  model.
 - **`jsonSchema` turns streaming off** for that call. A constrained answer
   arrives as arguments rather than prose, and half of a JSON object is of no
   use to anything.
+
+### One board, many Claude models
+
+The Claude models disagree on how reasoning and shape are asked for, and a
+request one accepts another refuses. A board states what it wants — `thinking`,
+`effort`, `jsonSchema` — and the request is built from what the configured
+model accepts, so a board keeps working when its `model` changes. Nothing here
+applies to the `server` backend, whose request is built as it always was.
+
+| The board says | A current model (Haiku 5.5, Sonnet 5.5, Opus 5.5, …) | An older model (Haiku 4.5, …) |
+|---|---|---|
+| `thinking: true` | `thinking: {type: "adaptive"}`; effort sets how much | `thinking: {type: "enabled", budget_tokens}` |
+| `thinking: null` | nothing — current models think by default | nothing — no reasoning |
+| `thinking: false` | `{type: "disabled"}`, or `{type: "between_tools"}` on Sonnet 5.5; not sent to a model that always thinks (Opus 5.5, Fable) or at an effort it is refused at | nothing |
+| `effort` | `output_config: {effort}`, at the levels the model takes | not sent |
+| `jsonSchema` | a forced tool, or structured outputs on the models that refuse one (Opus 5.5, Sonnet 5.5, Fable 5.1) | a forced tool |
+
+What a model accepts comes from the Models API (`GET /v1/models/{id}`), asked
+once per model and address, where it reports it — which thinking a model takes,
+which effort levels, and whether it has structured outputs. What it does not
+report, how "do not think" is said and whether a forced tool is accepted, comes
+from a table in `hkp-node/src/services/claudeModels.ts`, which also stands in
+when the API cannot be asked. A model in neither gets the oldest form of each.
+
+**A current model's thinking counts against `maxTokens`.** It thinks before it
+answers whatever the board says, and a ceiling sized for the answer alone can
+go entirely on thinking. Such a call fails with *the model used all N tokens
+without answering*; raise `maxTokens`, or lower `effort`. A setting the model
+does not use is marked in the service's state (`__meta__`), with the reason.
 
 ---
 
@@ -246,8 +280,13 @@ guarantees:
 
 | Backend | Sent as | Guarantee |
 |---|---|---|
-| `anthropic` | a single tool the model is required to call | the shape is enforced by the API |
+| `anthropic` | a single tool the model is required to call, or structured outputs (`output_config.format`) on the models that refuse a forced tool | the shape is enforced by the API |
 | `server` | `response_format: { type: "json_schema" }` | enforced by servers that implement it — llama.cpp compiles the schema to a grammar |
+
+Structured outputs take a stricter schema than a tool does: every object is
+sent closed (`additionalProperties: false`), and numeric and length bounds
+(`minimum`, `maxLength`, …) are left out. The shape is enforced; those bounds
+are not. The board's schema itself is never changed.
 
 Not every OpenAI-compatible server implements `response_format`, and one that
 does not answers in prose while reporting nothing unusual. When that happens

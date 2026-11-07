@@ -93,6 +93,36 @@ function findNestedInScope(
 }
 
 /**
+ * What a remote scope's own state says of a service inside it: the entry its
+ * address names, walked by uuid through the lists the scope's state holds its
+ * services in (a sub-service's `pipeline`, a server's `onRequest`, …). Only
+ * that service's own state, never the scope's — and nothing when the scope
+ * lists no such entry, in which case what it reports arrives when it speaks.
+ * A value a service only holds and never reports, such as the address a
+ * mount was given, is otherwise never seen.
+ */
+function nestedState(rootState: unknown, address: string): unknown {
+  let state = rootState;
+  for (const uuid of splitAddress(address).slice(1)) {
+    if (!state || typeof state !== "object") {
+      return undefined;
+    }
+    const entry = Object.values(state as Record<string, unknown>)
+      .filter(Array.isArray)
+      .flat()
+      .find(
+        (item): item is { uuid: string; state?: unknown } =>
+          !!item && typeof item === "object" && (item as { uuid?: unknown }).uuid === uuid,
+      );
+    if (!entry) {
+      return undefined;
+    }
+    state = entry.state;
+  }
+  return state;
+}
+
+/**
  * Whether an address reaches inside a use of a block, which the board refuses:
  * a use's inside belongs to its definition, and what varies per use is its
  * params. Said once per address, not on every render that asks.
@@ -177,7 +207,8 @@ export function findService(
   // at the top, and everything the address names after that is inside it. So
   // the root says which runtime to dial, and the whole address is what gets
   // dialled — the runtime walks the rest of it. The state a board holds is the
-  // root's; a nested service's arrives when it first reports.
+  // root's; a nested service's is what the root's state says of it, and
+  // otherwise arrives when it first reports.
   const root = addressRoot(uuid);
   for (const [holderId, svcs] of Object.entries(boardContext.services)) {
     if (runtimeId && holderId !== runtimeId) {
@@ -194,7 +225,7 @@ export function findService(
       continue;
     }
     const app = (scope as any).app;
-    const state = root === uuid ? desc.state : undefined;
+    const state = root === uuid ? desc.state : nestedState(desc.state, uuid);
     const known = remoteProxies.get(scope)?.get(uuid);
     if (
       known &&

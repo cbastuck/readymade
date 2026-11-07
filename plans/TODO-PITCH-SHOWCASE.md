@@ -319,7 +319,33 @@ person to the same coordinator collide (the second finds Sam already listed).
 - [ ] **AI Collaboration.** The model is called from hkp-node, not the browser,
       so the assistant tape does not reach it. Needs a stand-in IMAP/SMTP
       server and a recorded or local model before a take can run.
-- [ ] **RSS Radio.** Last, once its editor unit works.
+- [ ] **RSS Radio.** *First real run 2026-11-07* (`rss-radio.film.ts`, a
+      rehearsal for now): the composition opened from `?demo=rss-radio`
+      against the film's hkp-node and a new hkp-python beside it (loopback, no
+      sign-in, the real home for the cached Kokoro model), real feeds, the
+      model key as the secret `anthropic.key` in the page's vault (read from
+      `ANTHROPIC_API_KEY`, consent answered, no trace written). Three
+      articles saved reach the editor; every runtime's service states are
+      dumped to `test-results/film/rss-radio/states.json`. What it found:
+  - [x] A composed demo opened in the Readymade app lost its units: App's
+        `?demo=`, the desktop start page and the mobile start screen handed
+        over the board alone (and the start page's history entries dropped the
+        units they were kept with). Fixed in `meander/frontend/src`.
+  - [x] The radio's feed and playlist, and the editor's desk and feed, failed
+        with "no such table" until the first article was claimed — only the
+        claim declared the schema. Each reading service now declares it too;
+        tests in `rss-radio-board.test.ts` and `rss-radio-editor-board.test.ts`.
+  - [x] The reader's "As a feed" said "not published yet" while the feed was
+        published: a nested service on a remote runtime got no state until it
+        reported, and a mount's address is never reported. `findService` now
+        reads it from the scope's own state, by uuid (`scopedAddress.test.ts`).
+  - [ ] The model key given was refused by Anthropic itself (401 on
+        `/v1/models`), so no brief has been written yet. Needs a working key.
+  - [ ] `apiKey` defaults to `{{secret.anthropic.key}}`, and hkp-node fails a
+        named secret it cannot find before it looks at `ANTHROPIC_API_KEY` —
+        the fallback the board's docs promise does not happen. Decide: fall
+        back for the `anthropic` backend, or change the docs.
+  - [ ] Then: the voice and the library for real, and the story.
 
 ---
 
