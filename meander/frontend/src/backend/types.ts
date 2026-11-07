@@ -2,6 +2,14 @@ import { BoardDescriptor } from "hkp-frontend/src/types";
 import { SavedBoardEntry, StartPageTree } from "hkp-frontend/src/views/start";
 import { Remote } from "../types";
 
+/**
+ * Which library a board is kept in: the host's own, or — on a Mac — the iOS
+ * app's iCloud Drive folder (hkp://shared-boards/). It decides where the board
+ * is read from when it is continued, where saving writes it, and which history
+ * is its own: two libraries may each hold a board of the same name.
+ */
+export type BoardLibraryKind = "local" | "icloud";
+
 export type BoardHistoryEntry = {
   timestamp: string; // ISO 8601
   /**
@@ -99,6 +107,13 @@ export interface BackendAdapter {
   // capability: add a sibling method when a new mint-token action is needed.
   mintProcessRuntimeToken?(runtimeId: string): Promise<string | null>;
 
+  // The boards the iOS app keeps in iCloud Drive (hkp://shared-boards/), on a
+  // Mac that iCloud Drive brings the folder to. The listing is null where there
+  // is no such folder. Optional: only the desktop backend has them.
+  listSharedBoards?(): Promise<Array<SavedBoardEntry> | null>;
+  loadSharedBoard?(name: string): Promise<BoardDescriptor>;
+  saveSharedBoard?(name: string, payload: BoardDescriptor): Promise<void>;
+
   // Start page folder tree (startpage.json next to the saved boards)
   loadStartPageTree(): Promise<StartPageTree | null>;
   saveStartPageTree(tree: StartPageTree): Promise<void>;
@@ -115,11 +130,19 @@ export interface BackendAdapter {
   // render the image from.
   uploadBoardArt(boardName: string, image: Blob): Promise<string>;
 
-  // Board history
+  // Board history, a board's per library. The listing is of the host's own
+  // library's histories.
   fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>>;
-  pushBoardSnapshot(boardName: string, entry: BoardHistoryEntry): Promise<void>;
-  loadBoardHistory(boardName: string): Promise<Array<BoardHistoryEntry>>;
-  clearBoardHistory(boardName: string): Promise<void>;
+  pushBoardSnapshot(
+    boardName: string,
+    entry: BoardHistoryEntry,
+    library?: BoardLibraryKind,
+  ): Promise<void>;
+  loadBoardHistory(
+    boardName: string,
+    library?: BoardLibraryKind,
+  ): Promise<Array<BoardHistoryEntry>>;
+  clearBoardHistory(boardName: string, library?: BoardLibraryKind): Promise<void>;
 
 
   // File picker (native desktop only; returns null in browser or when cancelled)

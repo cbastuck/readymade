@@ -116,8 +116,17 @@ export function restoreCoordinators(): CoordinatorDescriptor[] {
   return JSON.parse(localStorage.getItem("hkp-coordinators") || "[]");
 }
 
+/**
+ * Raised on `window` whenever the stored coordinators change. Several surfaces
+ * hold a copy of the list while they are on screen — a board's connections
+ * and the settings opened over it, on a phone — and each reads it again on
+ * this rather than keeping what it read when it mounted.
+ */
+export const COORDINATORS_CHANGED = "hkp-coordinators-changed";
+
 export function storeCoordinators(coordinators: CoordinatorDescriptor[]): void {
   localStorage.setItem("hkp-coordinators", JSON.stringify(coordinators));
+  window.dispatchEvent(new Event(COORDINATORS_CHANGED));
 }
 
 /**

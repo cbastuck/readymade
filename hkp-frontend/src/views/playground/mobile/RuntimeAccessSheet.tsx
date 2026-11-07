@@ -14,13 +14,29 @@ type Props = {
 };
 
 export default function RuntimeAccessSheet({ open, onClose }: Props) {
+  // The sheet mounts its content only while it shows, so the settings are
+  // read afresh each time it opens.
+  return (
+    <BottomSheet open={open} onClose={onClose} title="Runtime access" height="auto">
+      <RuntimeAccessContent />
+    </BottomSheet>
+  );
+}
+
+/**
+ * Who may reach the runtime this app embeds: whether it listens on the local
+ * network, and the emails allowed to drive it from another device. The sheet
+ * above and the Settings page's Access section both show it.
+ */
+export function RuntimeAccessContent() {
   const platform = usePlatform();
   const [settings, setSettings] = useState<RuntimeAccessSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState("");
 
   useEffect(() => {
-    if (!open || !platform.getRuntimeSettings) {
+    if (!platform.getRuntimeSettings) {
+      setLoading(false);
       return;
     }
     let cancelled = false;
@@ -40,7 +56,7 @@ export default function RuntimeAccessSheet({ open, onClose }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [open, platform]);
+  }, [platform]);
 
   const persist = async (patch: Partial<RuntimeAccessSettings>) => {
     if (!platform.setRuntimeSettings) {
@@ -69,7 +85,7 @@ export default function RuntimeAccessSheet({ open, onClose }: Props) {
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Runtime access" height="auto">
+    <>
       {loading || !settings ? (
         <div style={{ fontSize: 13, color: M.textMuted, padding: "8px 4px" }}>
           {loading ? "Loading…" : "Runtime settings are not available here."}
@@ -240,6 +256,6 @@ export default function RuntimeAccessSheet({ open, onClose }: Props) {
           </div>
         </div>
       )}
-    </BottomSheet>
+    </>
   );
 }

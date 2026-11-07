@@ -1,7 +1,12 @@
-import { renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppCtx, AppContextState } from "../../../AppContext";
+import {
+  PlatformCapabilities,
+  PlatformProvider,
+} from "../../../platform/PlatformContext";
+import { BoardDescriptor } from "../../../types";
 import { User } from "../../../types";
 import { localStoragePrefix } from "../../playground/common";
 import { useCloudBoardSources } from "../useCloudBoardSources";
@@ -53,6 +58,14 @@ const SUMMARY = {
 
 type Call = [string, RequestInit | undefined];
 
+function withCapabilities(capabilities: PlatformCapabilities) {
+  render(
+    <PlatformProvider value={capabilities}>
+      <div />
+    </PlatformProvider>,
+  );
+}
+
 describe("cloud board identity", () => {
   let calls: Call[];
   /** What GET ?id=… answers with; set per test. */
@@ -77,6 +90,8 @@ describe("cloud board identity", () => {
       }),
     );
   });
+
+  afterEach(() => withCapabilities({}));
 
   const callsOf = (method: string) =>
     calls.filter(([, init]) => (init?.method ?? "GET") === method);
@@ -111,6 +126,36 @@ describe("cloud board identity", () => {
     // The board itself, not the envelope around it.
     expect(sent.data.runtimes).toHaveLength(1);
     expect(sent.data.boardName).toBe("Dummy");
+    expect(sent.metadata?.description).toBe("A board");
+  });
+
+  it("uploads from the host's library, where the mobile apps keep boards", async () => {
+    // Nothing in local storage: the mobile apps moved every board out of it.
+    const board = {
+      boardName: "Dummy",
+      runtimes: [{ id: "ui", name: "Browser", type: "browser" }],
+      services: { ui: [] },
+      description: "A board",
+    } as unknown as BoardDescriptor;
+    withCapabilities({
+      listSavedBoards: async () => [{ name: "Dummy" }],
+      loadSavedBoard: async (name) => (name === "Dummy" ? board : null),
+      saveSavedBoard: async () => {},
+      deleteSavedBoard: async () => {},
+    });
+
+    const { result } = renderHook(() => useCloudBoardSources(), { wrapper });
+    await waitFor(() => expect(result.current.uploadBoardToCloud).toBeTruthy());
+    await result.current.uploadBoardToCloud!("Dummy");
+
+    const [, init] = callsOf("PUT")[0];
+    const sent = JSON.parse(init!.body as string) as {
+      name: string;
+      data: { runtimes?: unknown[] };
+      metadata?: { description?: string };
+    };
+    expect(sent.name).toBe("Dummy");
+    expect(sent.data.runtimes).toHaveLength(1);
     expect(sent.metadata?.description).toBe("A board");
   });
 

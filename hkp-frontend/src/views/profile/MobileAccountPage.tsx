@@ -1,6 +1,4 @@
-import { ChevronLeft } from "lucide-react";
-
-import { M } from "../playground/mobile/tokens";
+import MobilePage from "../playground/mobile/MobilePage";
 import AccountPage from "./AccountPage";
 
 type Props = {
@@ -16,71 +14,8 @@ type Props = {
  */
 export default function MobileAccountPage({ onBack }: Props) {
   return (
-    <div
-      style={{
-        // Fixed and above the host: this is raised over whatever is showing —
-        // a start page, a running board — and must cover it whole without
-        // depending on an ancestor to position against.
-        position: "fixed",
-        inset: 0,
-        zIndex: 60,
-        display: "flex",
-        flexDirection: "column",
-        background: M.bg,
-        color: M.textPrimary,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          background: "rgba(242,237,232,0.92)",
-          backdropFilter: "blur(12px)",
-          paddingTop: "max(10px, env(safe-area-inset-top))",
-          paddingBottom: 10,
-          paddingLeft: 8,
-          paddingRight: 16,
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          borderBottom: `1px solid ${M.border}`,
-          flexShrink: 0,
-          minHeight: 44,
-          boxSizing: "content-box",
-        }}
-      >
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Back"
-          style={{
-            border: "none",
-            background: "none",
-            padding: 8,
-            display: "flex",
-            alignItems: "center",
-            color: M.textPrimary,
-            cursor: "pointer",
-          }}
-        >
-          <ChevronLeft size={22} strokeWidth={2} />
-        </button>
-        <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }}>
-          Account
-        </span>
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          WebkitOverflowScrolling: "touch",
-          padding: 16,
-          paddingBottom: "max(24px, env(safe-area-inset-bottom))",
-        }}
-      >
-        <AccountPage />
-      </div>
-    </div>
+    <MobilePage title="Account" onBack={onBack}>
+      <AccountPage />
+    </MobilePage>
   );
 }

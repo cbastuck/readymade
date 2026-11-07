@@ -329,6 +329,13 @@ same submenu, and what it produces is an ordinary preset on this device — in t
 Presets source, in every menu for that service, and exportable as a file, which
 is the only form in which it reaches anybody else.
 
+On a phone both are one row of a service's sheet, **Presets**, which opens the
+list and the saving in one sheet; the add-service sheet offers composed presets
+and blocks behind its Building Blocks tab, from the same list the sidebar draws
+(`core/palette.ts`). The iOS and Android apps keep presets as files in their
+presets folder (`hkp://presets`), as the desktop does. A deployed board can be
+saved from but not applied to: applying recreates the service.
+
 The two surfaces read one list. The store says when it changes, because
 `localStorage` reports nothing to the tab that wrote it, a native host's folder
 is read after the app has started, and a preset imported on the start page has

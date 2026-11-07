@@ -127,8 +127,11 @@ Every server answer comes from one `GET <server>/runtimes`, which already
 returns the server's kind, registry and whether it can join. Only a runtime's
 own pipeline is compared; what a service nests in its state is not walked. The
 desktop dialog shows each finding before anything is deployed, names the
-remote a name resolved to, and offers **Check again**; the
-mobile sheet reports what stopped a deploy as a toast.
+remote a name resolved to, and offers **Check again**. The mobile deploy sheet
+shows the same findings above the coordinators, as soon as it opens — they do
+not depend on which coordinator is chosen — and keeps every coordinator out of
+reach while one of them stops the deploy. A deploy that preflight stops after
+all (something changed since the check) puts its findings there too.
 
 ### The introduction
 
@@ -644,6 +647,9 @@ into and out of each service, or only that a call happened
 - It is held by the session and written nowhere. A restart or a redeploy turns
   it off, and so does the owner's last bridge to the board closing.
 - The board list reports it as `capture`.
+- The owner switches it in the Cloud Boards view, beside Logging, and on a
+  phone with the round button in the open board's top bar. Turning it on from
+  a service's Flow on a phone asks the coordinator too, never only the phone.
 
 ---
 
@@ -781,8 +787,8 @@ registers only when asked.
   which are missing, and deploying again supplies them.
 - **No lock on the data directory** (see above).
 - **The part of a board downstream of a browser runtime does not run headless.**
-- **The mobile deploy sheet has no per-runtime dialog**, and the mobile cloud
-  view reads a board's reasons from the listing rather than live.
+- **The mobile cloud view reads a board's reasons from the listing** rather
+  than live.
 - **Deploy is one-way per board**: the way back is a fork, which is a *copy* —
   the deployed board keeps running until someone stops it.
 

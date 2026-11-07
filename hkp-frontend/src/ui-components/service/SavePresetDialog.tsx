@@ -14,13 +14,40 @@ import { toast } from "sonner";
 import CustomDialog from "../CustomDialog";
 import { Button } from "../primitives/button";
 import { Input } from "../primitives/input";
-import { ServiceDescriptor } from "hkp-frontend/src/types";
-import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import { RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
+import {
+  BoardContextState,
+  useBoardContext,
+} from "hkp-frontend/src/BoardContext";
 import {
   normalizeTags,
   presetFromService,
   savePreset,
 } from "hkp-frontend/src/core/presets";
+
+/**
+ * Keeps the configuration `service` has now as a preset named `name`, filed
+ * under the comma-separated `tags`. Throws what went wrong, for the caller to
+ * show where the name was typed.
+ */
+export async function savePresetFrom(
+  boardContext: BoardContextState,
+  runtime: RuntimeDescriptor,
+  service: ServiceDescriptor,
+  name: string,
+  tags: string,
+): Promise<void> {
+  const state = await boardContext.readServiceState(runtime, {
+    uuid: service.uuid,
+  });
+  const preset = presetFromService(service, state, name.trim(), {
+    tags: normalizeTags(tags.split(",")),
+  });
+  savePreset(preset);
+  toast.success(
+    `Saved “${preset.name}”. It is in the Presets source on the start page.`,
+  );
+}
 
 export default function SavePresetDialog({
   service,
@@ -50,17 +77,8 @@ export default function SavePresetDialog({
     setBusy(true);
     setError("");
     try {
-      const state = await boardContext.readServiceState(runtime, {
-        uuid: service.uuid,
-      });
-      const preset = presetFromService(service, state, name.trim(), {
-        tags: normalizeTags(tags.split(",")),
-      });
-      savePreset(preset);
+      await savePresetFrom(boardContext, runtime, service, name, tags);
       onOpenChange(false);
-      toast.success(
-        `Saved “${preset.name}”. It is in the Presets source on the start page.`,
-      );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

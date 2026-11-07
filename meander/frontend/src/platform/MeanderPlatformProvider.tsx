@@ -9,6 +9,7 @@ import {
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import type { PresetStorage } from "hkp-frontend/src/core/presets";
 import { getBackend } from "../backend";
+import { deleteSavedBoard } from "../library/deleteBoard";
 import { meanderLogin, type NativeLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
 import { saveSession } from "../auth/session";
@@ -144,6 +145,13 @@ const saveSavedBoardNative = async (name: string, board: BoardDescriptor) => {
   await backend.saveBoard(name, board);
 };
 
+/** The boards in the host's library, with when each was last written. */
+const listSavedBoardsNative = async () =>
+  (await getBackend()).fetchSavedBoardEntries();
+
+/** Deletes a board with its history and pin, as the start page does. */
+const deleteSavedBoardNative = deleteSavedBoard;
+
 /**
  * The preset library as files in the host's presets folder. Every native host
  * serves hkp://presets; one that does not answers the listing with an error,
@@ -181,6 +189,10 @@ const capabilities: PlatformCapabilities = isNative
     ? {
         loadSavedBoard: loadSavedBoardNative,
         saveSavedBoard: saveSavedBoardNative,
+        // The whole library, so the mobile views list and remove the boards
+        // the app keeps. The desktop's views go through the backend directly.
+        listSavedBoards: listSavedBoardsNative,
+        deleteSavedBoard: deleteSavedBoardNative,
         presetStorage: presetStorageNative,
         setRuntimeAllowedUser: setRuntimeAllowedUserNative,
         // Native Auth0 login via ASWebAuthenticationSession on iOS and browser

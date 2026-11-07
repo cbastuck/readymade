@@ -17,6 +17,11 @@ type Props = {
   onNew: () => void;
   /** Opens the deploy chooser — hands the board to a coordinator. */
   onDeploy: () => void;
+  /**
+   * Opens the host's settings. Where there are settings, runtime access is
+   * one of their sections rather than a row of its own here.
+   */
+  onOpenSettings?: () => void;
 };
 
 function MenuRow({
@@ -85,6 +90,7 @@ export default function BoardMenuSheet({
   onShare,
   onNew,
   onDeploy,
+  onOpenSettings,
 }: Props) {
   const [confirmNew, setConfirmNew] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
@@ -202,7 +208,20 @@ export default function BoardMenuSheet({
           />
         )}
 
-        {canEditAccess && (
+        {onOpenSettings && (
+          <MenuRow
+            icon="settings"
+            iconColor={M.textSecondary}
+            label="Settings"
+            sublabel="Connections, secrets, runtime access, appearance"
+            onClick={() => {
+              onClose();
+              onOpenSettings();
+            }}
+          />
+        )}
+
+        {canEditAccess && !onOpenSettings && (
           <MenuRow
             icon="lock"
             iconColor={M.textSecondary}

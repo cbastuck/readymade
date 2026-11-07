@@ -14,8 +14,16 @@ import {
   SettingsButton,
   SettingsSection,
 } from "hkp-frontend/src/ui-components/settings/kit";
-import { isTooLarge, TooLarge } from "hkp-frontend/src/runtime/callReport";
-import type { FlowRecord, FlowSide } from "./ServiceOutputPlug";
+import { isTooLarge } from "hkp-frontend/src/runtime/callReport";
+import {
+  editedValue,
+  flowText,
+  previewFlow,
+  timeOf,
+  tooLargeNote,
+  type FlowRecord,
+  type FlowSide,
+} from "./flowRecords";
 import "./flow-inspector.css";
 
 type Props = {
@@ -65,15 +73,9 @@ export default function FlowInspectorPopup({
   // Nothing selected — a cleared or empty history — is an empty editor: the
   // editor keeps its text when handed no value, which would leave the last
   // one standing with nothing left to inject.
-  const dataAsString = useMemo(
-    () =>
-      tooLarge
-        ? (tooLarge.preview ?? "")
-        : (JSON.stringify(selectedData, null, 2) ?? ""),
-    [selectedData, tooLarge],
-  );
+  const dataAsString = useMemo(() => flowText(selectedData), [selectedData]);
   const previews = useMemo(
-    () => history.map((record) => preview(record.data)),
+    () => history.map((record) => previewFlow(record.data)),
     [history],
   );
 
@@ -117,13 +119,7 @@ export default function FlowInspectorPopup({
     if (!isDirty) {
       onRun(selectedData);
     } else {
-      const buffer = editor.current.getValue();
-      try {
-        onRun(JSON.parse(buffer));
-      } catch (err) {
-        console.error("FlowInspectorPopup.onRunInternal", err);
-        onRun(buffer);
-      }
+      onRun(editedValue(editor.current.getValue()));
     }
   };
 
@@ -253,58 +249,4 @@ export default function FlowInspectorPopup({
       </div>
     </>
   );
-}
-
-/** When an output arrived, to the millisecond: a burst's items differ there. */
-function timeOf(at: number): string {
-  const date = new Date(at);
-  const two = (n: number) => String(n).padStart(2, "0");
-  return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}.${String(date.getMilliseconds()).padStart(3, "0")}`;
-}
-
-/** What a value too large to keep is, e.g. "Text of 12.3 MiB". */
-function describeTooLarge({ type, bytes, exact }: TooLarge["__hkpTooLarge"]): string {
-  const kind = type === "string" ? "Text" : type === "binary" ? "Binary data" : "JSON";
-  return `${kind} of ${exact ? "" : "more than "}${sizeOf(bytes)}`;
-}
-
-/** Why the inspector shows only part of a value, and what it cannot do. */
-function tooLargeNote(tooLarge: TooLarge["__hkpTooLarge"], side: FlowSide): string {
-  const shown =
-    tooLarge.preview !== undefined
-      ? "Only how it begins is shown"
-      : "None of it is shown";
-  const run = side === "input" ? "run again" : "carried on";
-  return `${describeTooLarge(tooLarge)}: too large to keep whole. ${shown}, and it cannot be ${run} from here.`;
-}
-
-/** A size in bytes the way a person reads one. */
-function sizeOf(bytes: number): string {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-  if (bytes < 1024 * 1024) {
-    return `${Math.round((bytes / 1024) * 10) / 10} KiB`;
-  }
-  return `${Math.round((bytes / (1024 * 1024)) * 10) / 10} MiB`;
-}
-
-/** One line of what an output is; the editor shows the whole of it. */
-function preview(data: any): string {
-  if (isTooLarge(data)) {
-    return `${describeTooLarge(data.__hkpTooLarge)}, too large to keep`;
-  }
-  let text: string | undefined;
-  try {
-    // A sample buffer is named by its size rather than spelled out.
-    text = JSON.stringify(data, (_key, value) =>
-      ArrayBuffer.isView(value)
-        ? `${value.constructor.name}(${(value as unknown as ArrayLike<unknown>).length ?? value.byteLength})`
-        : value,
-    );
-  } catch {
-    // Not serialisable; its plain text below says what it is.
-  }
-  text ??= String(data);
-  return text.length > 160 ? `${text.slice(0, 160)}…` : text;
 }

@@ -407,7 +407,13 @@ them:
 
 - **The switch** is the Capture button beside the toolbar's Play buttons, or
   for a deployed board its owner's in the Cloud Boards view. Opening the
-  inspector while it is off asks whether to turn it on.
+  inspector while it is off asks whether to turn it on. On a phone it is the
+  round button beside Play in the top bar, and in a deployed board's top bar
+  on the Cloud tab. A service's card, tapped, expands to show what it passed on
+  last, with its own panel a tap further (**UI**), and its **Inspect** opens
+  the inspector, which is also **Flow** in the
+  service's sheet; both ask the same question in place
+  (`views/playground/mobile/capture.tsx`, `MobileFlowInspector.tsx`).
 - **It is never saved.** It is not in the board document or a runtime's
   configuration (`PATCH /runtimes/:id/state` sets it on a running runtime and
   answers it, and nothing builds a runtime with it). A board always opens with
@@ -429,6 +435,15 @@ needs to leave its runtime would leave it anyway, once for every service it
 passes through. On a deployed board that is past the coordinator's frame limit,
 and enough to close the runtime's connection. The rule is the same in every
 runtime (`callReport.ts`, `call_report.py`, `call_report.h`).
+
+A phone keeps what the inspector shows for the **whole board** rather than per
+service frame: it opens a service only when asked, so a history begun then
+would miss everything before it. The mobile canvas listens to every service a
+runtime holds from the moment the board is shown (`boardFlow.tsx`), and the
+same listening lights a service's card while it runs. Both read a report with
+the desktop's rule (`readCallReport` in
+`ui-components/service/flowRecords.ts`). A service nested inside another is
+not listened to there yet.
 
 When nothing is attached, nothing is sent at all. This is not a filter applied
 afterwards: the browser drops a notification with no target (`hasCallbacks`),

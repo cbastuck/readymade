@@ -5,7 +5,9 @@ export type MobileIconName =
   | "chevronRight" | "chevronLeft" | "x" | "share" | "cpu" | "timer" | "trash" | "home"
   | "layers" | "check" | "monitor" | "server" | "package" | "gitBranch"
   | "maximize2" | "minimize2" | "cloud" | "refresh" | "search" | "lock" | "user"
-  | "moveVertical" | "folder" | "copy";
+  | "moveVertical" | "folder" | "copy" | "play" | "playWith" | "pencil" | "boxes"
+  | "bookmark" | "unlink" | "info" | "eraser" | "square" | "checkSquare"
+  | "record" | "activity" | "rotateCcw" | "send" | "sparkles";
 
 const paths: Record<MobileIconName, ReactNode> = {
   list: <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>,
@@ -38,6 +40,25 @@ const paths: Record<MobileIconName, ReactNode> = {
   moveVertical: <><polyline points="8 18 12 22 16 18"/><polyline points="8 6 12 2 16 6"/><line x1="12" y1="2" x2="12" y2="22"/></>,
   folder: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>,
   copy: <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>,
+  play: <polygon points="6 3 20 12 6 21 6 3"/>,
+  // The desktop toolbar's play-with-input: the triangle opened at the corner
+  // the pencil sits in (PlayBoardControls).
+  playWith: <><path d="M3 4.6a1.6 1.6 0 0 1 2.4-1.38l10.3 6a1.6 1.6 0 0 1 0 2.76L11 14.7"/><path d="M3 4.6V17.4a1.6 1.6 0 0 0 2.4 1.38L8 17.3"/><path d="M19.4 13.3a1.56 1.56 0 0 1 2.2 2.2L15.4 21.7l-3 .8.8-3z"/></>,
+  pencil: <><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></>,
+  boxes: <><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></>,
+  bookmark: <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>,
+  unlink: <><path d="m18.84 12.25 1.72-1.71h-.02a5.004 5.004 0 0 0-.12-7.07 5.006 5.006 0 0 0-6.95 0l-1.72 1.71"/><path d="m5.17 11.75-1.71 1.71a5.004 5.004 0 0 0 .12 7.07 5.006 5.006 0 0 0 6.95 0l1.71-1.71"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="2" y1="8" x2="5" y2="8"/><line x1="16" y1="19" x2="16" y2="22"/><line x1="19" y1="16" x2="22" y2="16"/></>,
+  info: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></>,
+  eraser: <><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></>,
+  square: <rect x="3" y="3" width="18" height="18" rx="4"/>,
+  checkSquare: <><rect x="3" y="3" width="18" height="18" rx="4"/><polyline points="8 12 11 15 16 9"/></>,
+  // Capture mode: filled while it is on (capture.tsx).
+  record: <circle cx="12" cy="12" r="7"/>,
+  activity: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>,
+  rotateCcw: <><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></>,
+  send: <><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>,
+  // Board Assist, as the desktop's toolbar marks it.
+  sparkles: <><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0L14.06 8.5A2 2 0 0 0 15.5 9.94l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></>,
 };
 
 type Props = {

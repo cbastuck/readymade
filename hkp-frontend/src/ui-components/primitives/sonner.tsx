@@ -39,4 +39,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
+// `toast` from here rather than from "sonner" for code outside this package
+// (the native hosts' frontends), which does not depend on sonner itself and
+// must reach the same instance the mounted Toaster listens to.
+export { toast } from "sonner";
 export { Toaster };

@@ -1,5 +1,6 @@
 import { ReactNode, useState } from "react";
 import { validateAssistBoard } from "./validation";
+import { sortedJSON } from "./proposalDiff";
 import { BoardDescriptor } from "../types";
 import { DiffEditor } from "../components/shared/Editor";
 import {
@@ -8,20 +9,6 @@ import {
   DialogDescription,
   DialogTitle,
 } from "../ui-components/primitives/dialog";
-
-// Object property order has no meaning in board JSON; array order is wiring.
-// Keep the real values (including runtime state) while avoiding noisy diffs
-// caused by the model writing the same properties in a different order.
-function sortedJSON(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortedJSON);
-  if (!value || typeof value !== "object") return value;
-  const record = value as Record<string, unknown>;
-  return Object.fromEntries(
-    Object.keys(record)
-      .sort()
-      .map((key) => [key, sortedJSON(record[key])]),
-  );
-}
 
 export default function BoardAssistPreview({
   current,

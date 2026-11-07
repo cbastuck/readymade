@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
+  COORDINATORS_CHANGED,
   CoordinatorDescriptor,
   restoreCoordinators,
   storeCoordinators,
@@ -28,6 +29,13 @@ export function useLocalStorageCoordinators(
   const mutate = useCallback((next: CoordinatorDescriptor[]) => {
     storeCoordinators(next);
     setCoordinators(next);
+  }, []);
+
+  // Another surface holding the list may change it while this one is shown.
+  useEffect(() => {
+    const reread = () => setCoordinators(restoreCoordinators());
+    window.addEventListener(COORDINATORS_CHANGED, reread);
+    return () => window.removeEventListener(COORDINATORS_CHANGED, reread);
   }, []);
 
   // The sources rebuild their folders whenever the controller changes, so it
