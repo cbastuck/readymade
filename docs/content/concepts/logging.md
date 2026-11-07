@@ -252,9 +252,13 @@ cannot make it — the coordinator is the caller this route exists for.
 
 ## Known gaps
 
-- **There is no log viewer.** The Cloud Boards view can turn logging on and
-  choose a level; nothing yet reads `/runs` and shows the entries, so today they
-  are read over HTTP directly.
+- **There is no log viewer for history.** What arrives while the owner has a
+  deployed board open is shown — each service's panel lists its recent runs
+  (*Runs*: when, who, what it did, how long; `runtime/ui/ServiceRuns.tsx`), fed
+  by the entries the coordinator sends the owner as it writes them, each with
+  its caller named the way the board's list names them. Nothing yet reads
+  `/runs` for what happened before the view opened; that is read over HTTP
+  directly.
 - **A playground board records nothing.** Log targets are registered by the
   bridge, so a board that no coordinator holds has nowhere to put an entry.
   Logging is presently a property of a deployed board.

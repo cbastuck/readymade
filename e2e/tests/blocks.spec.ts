@@ -137,7 +137,9 @@ test.describe("a use on the running board", () => {
     // Its panel is not shown, and out of reach should it be. Not by one
     // `inert` over the whole panel: the frame inside takes the lock over, so
     // what only reads (its configuration) stays reachable — every control that
-    // writes is then inert where it sits, or disabled.
+    // writes is then inert where it sits, or disabled. A nested pipeline is
+    // something to look into, so its folds and its way onto a level of its
+    // own stay in reach: they only read.
     const panel = first.locator(".hkp-block-locked").first();
     await expect(panel).toBeHidden();
     const controls = await panel.evaluate(
@@ -150,7 +152,11 @@ test.describe("a use on the running board", () => {
           (control) =>
             !control.closest("[inert]") &&
             !(control as HTMLInputElement).disabled &&
-            !control.closest("[data-service-header]"),
+            !control.closest("[data-service-header]") &&
+            !control.hasAttribute("aria-expanded") &&
+            !/^(Show content inline|Hide inline content|Open .+ as its own level)$/.test(
+              control.getAttribute("aria-label") ?? "",
+            ),
         )
         .map((control) => control.outerHTML.slice(0, 80)),
     );

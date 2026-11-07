@@ -1,6 +1,7 @@
 import type { AssistModel, Conversation } from "./anthropic";
 import { bundledKnowledgeProvider } from "./documentation";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
+import { AssistUsage, fromOpenAIUsage } from "./usage";
 import { BoardDescriptor, toCanonicalServiceId } from "../types";
 import {
   AssistScope,
@@ -96,6 +97,7 @@ async function requestCompletion(
   let finishReason: string | null = null;
   let explanation = "";
   let reasoningCharacters = 0;
+  let usage: unknown;
   const event = (payload: string) => {
     signal.throwIfAborted();
     if (!payload.trim()) return;
@@ -127,6 +129,8 @@ async function requestCompletion(
       }
     }
     if (choice?.finish_reason) finishReason = choice.finish_reason;
+    // Servers that report usage send it on the last chunk.
+    if (chunk.usage) usage = chunk.usage;
   };
   const consume = (block: string) => {
     const payload = block
@@ -170,7 +174,10 @@ async function requestCompletion(
     throw new Error(
       "The server connection ended before generation completed. Your board has not been changed.",
     );
-  return { choices: [{ message: { content }, finish_reason: finishReason }] };
+  return {
+    choices: [{ message: { content }, finish_reason: finishReason }],
+    ...(usage ? { usage } : {}),
+  };
 }
 export async function listOpenAIModels(
   base: string,
@@ -215,6 +222,8 @@ export async function runOpenAICompatibleTurn(options: {
   onText: (text: string) => void;
   onStatus: (status: string) => void;
   onRawResponse?: (text: string) => void;
+  /** The turn's usage, once the server has answered. */
+  onUsage?: (usage: AssistUsage) => void;
   knowledgeProvider?: ReadymadeKnowledgeProvider;
 }) {
   options.signal.throwIfAborted();
@@ -295,6 +304,8 @@ export async function runOpenAICompatibleTurn(options: {
     options.onText,
   );
   options.signal.throwIfAborted();
+  const usage = fromOpenAIUsage(data.usage);
+  options.onUsage?.(usage);
   const choice = data.choices?.[0];
   const content = choice?.message?.content;
   if (typeof content === "string") options.onRawResponse?.(content);
@@ -341,5 +352,5 @@ export async function runOpenAICompatibleTurn(options: {
     { role: "user", content: options.prompt },
     { role: "assistant", content },
   ];
-  return { conversation, text: result.explanation, board };
+  return { conversation, text: result.explanation, board, usage };
 }

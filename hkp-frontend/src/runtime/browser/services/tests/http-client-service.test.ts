@@ -197,6 +197,95 @@ describe("the address it calls", () => {
   });
 });
 
+describe("a request that says where it is going", () => {
+  // The envelope hkp-node's client reads, so a board calling a different
+  // address per item moves between the runtimes unchanged.
+
+  it("calls the url the input names, with the configured parameters", async () => {
+    const { svc } = createService();
+    fetchMock.mockResolvedValue(textResponse("one"));
+    svc.configure({ url: "https://api.example.com/default", query: { a: "1" } });
+
+    svc.process({ meta: { url: "https://api.example.com/items/42" } });
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.com/items/42?a=1");
+  });
+
+  it("calls the configured url when the input names none", async () => {
+    const { svc } = createService();
+    fetchMock.mockResolvedValue(textResponse("one"));
+    svc.configure({ url: "https://api.example.com/default" });
+
+    svc.process({ meta: { contentType: "text/plain" }, body: "x" });
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.com/default");
+  });
+
+  it("takes the url from the input even when none is configured", async () => {
+    const { svc, app } = createService();
+    fetchMock.mockResolvedValue(textResponse("one"));
+
+    svc.process({ meta: { url: "https://api.example.com/items/7" } });
+
+    await vi.waitFor(() => expect(app.next).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.com/items/7");
+    expect(app.next.mock.calls[0][1].meta.url).toBe("https://api.example.com/items/7");
+  });
+
+  it("still prefers a resolved mount, and joins the path the input names", async () => {
+    const { svc } = createService();
+    fetchMock.mockResolvedValue(textResponse("ok"));
+    svc.configure({ __hkpMount: "http://127.0.0.1:8080/hosted/abc", path: "/configured" });
+
+    svc.process({ meta: { url: "https://elsewhere.example.com/", path: "/episodes/one" } });
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "http://127.0.0.1:8080/hosted/abc/episodes/one",
+    );
+  });
+
+  it("uses the method the input names, and sends a body for it", async () => {
+    const { svc, app } = createService();
+    fetchMock.mockResolvedValue(textResponse("ok"));
+    svc.configure({ url: "https://api.example.com/things" });
+
+    svc.process({ meta: { method: "PUT", contentType: "text/plain" }, body: "hello" });
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.method).toBe("PUT");
+    expect(init.body).toBe("hello");
+    await vi.waitFor(() =>
+      expect(lastNotificationWith(app, "method").method).toBe("put"),
+    );
+    expect((await svc.getConfiguration()).method).toBe("get");
+  });
+
+  it("ignores a method no client implements", async () => {
+    const { svc } = createService();
+    fetchMock.mockResolvedValue(textResponse("ok"));
+    svc.configure({ url: "https://api.example.com/things" });
+
+    svc.process({ meta: { method: "brew" } });
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][1].method).toBe("GET");
+  });
+
+  it("waits rather than dialling an unresolved reference the input names", () => {
+    const { svc, app } = createService();
+
+    expect(svc.process({ meta: { url: "hkp-mount://node/echo" } })).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(lastNotificationWith(app, "error").error).toContain(
+      "hkp-mount://node/echo",
+    );
+  });
+});
+
 describe("the request body", () => {
   it("is nothing on a GET, whatever came down the pipeline", async () => {
     const { svc } = createService();

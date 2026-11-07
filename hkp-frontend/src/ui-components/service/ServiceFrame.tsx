@@ -20,6 +20,7 @@ import {
   useThemeControl,
 } from "hkp-frontend/src/ui-components/ThemeContext";
 import ServiceOutputPlug, { FlowRecord, rememberFlow } from "./ServiceOutputPlug";
+import ServiceRuns from "hkp-frontend/src/runtime/ui/ServiceRuns";
 
 import DragSource from "hkp-frontend/src/components/DragSource";
 import {
@@ -488,6 +489,7 @@ export default function ServiceFrame({
               >
                 {body}
               </div>
+              {!frameCollapsed && <ServiceRuns serviceUuid={uuid} />}
             </div>
 
             <EditorDialog
@@ -570,6 +572,7 @@ export default function ServiceFrame({
           >
             {body}
           </div>
+          {!frameCollapsed && <ServiceRuns serviceUuid={uuid} />}
         </div>
         {!isTouch && outputPlug}
       </div>

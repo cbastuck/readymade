@@ -356,6 +356,18 @@ export class BrowserSubService extends ServiceBase<State> {
     this._scope?.cancelInFlight();
   }
 
+  /**
+   * Whether the pipeline this service holds has been built, so that what runs
+   * inside it can be found — and listened to — by its scoped address.
+   */
+  isScopeBuilt(): boolean {
+    return (
+      this.state.mode === "source" ||
+      this.state.pipeline.length === 0 ||
+      this._scope !== null
+    );
+  }
+
   /** Returns the real inner ServiceInstance for a given instanceId, once built. */
   getInnerInstance(instanceId: string): ServiceInstance | null {
     return this._scope?.findServiceInstance(instanceId)[0] ?? null;

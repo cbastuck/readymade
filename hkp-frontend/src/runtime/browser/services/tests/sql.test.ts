@@ -302,6 +302,7 @@ describe("the browser SQL service", () => {
     expect(await svc.getConfiguration()).toEqual({
       mode: "run",
       emit: "input",
+      format: "sql",
       database: "tennis",
       statement: "SELECT 1",
       schema: "",

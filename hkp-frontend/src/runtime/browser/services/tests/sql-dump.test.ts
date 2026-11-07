@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { createRequire } from "node:module";
 
 import SqlDescriptor from "../Sql";
@@ -72,6 +74,7 @@ describe("the browser SQL service's export and import", () => {
     expect(typeof dump).toBe("string");
     expect(app.notify).toHaveBeenCalledWith(exporter, {
       exported: database,
+      format: "sql",
       bytes: dump.length,
     });
 
@@ -80,6 +83,33 @@ describe("the browser SQL service's export and import", () => {
     expect(await importer.process(dump)).toEqual({ executed: true });
     const { svc: reader } = create({ database: copy, statement: READ_BACK });
     expect((await reader.process({})).rows).toEqual(EXPECTED);
+  });
+
+  it("exports the database as an SQLite file any SQLite opens", async () => {
+    const database = await browserDatabaseWith(SOURCE);
+    const { svc, app } = create({ mode: "export", format: "sqlite", database });
+    const file = await svc.process({});
+    expect(file).toBeInstanceOf(Uint8Array);
+    expect(new TextDecoder().decode(file.slice(0, 15))).toBe("SQLite format 3");
+    expect(app.notify).toHaveBeenCalledWith(svc, {
+      exported: database,
+      format: "sqlite",
+      bytes: file.length,
+    });
+
+    // Opened by hkp-node's engine from disk, as a person's own tool would.
+    const dir = mkdtempSync(path.join(tmpdir(), "sql-file-"));
+    try {
+      const target = path.join(dir, "export.sqlite");
+      writeFileSync(target, file);
+      const node = new DatabaseSync(target);
+      expect(node.prepare(READ_BACK).all().map((row) => ({ ...row }))).toEqual(
+        EXPECTED,
+      );
+      node.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("lists the databases there are", async () => {

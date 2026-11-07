@@ -1,0 +1,361 @@
+{
+  "boardName": "Flat Costs",
+  "description": "Shared costs for a flat, Splitwise-style. Whoever paid adds what it was for and how much. The cost is split evenly between everyone in the flat at that moment, and each person sees what they owe or are owed. Everyone who opens the board joins the flat. Each expense is recorded for the signed-in caller the server verified, never for a name in the request. Runs on an hkp-node kept under the name `node`.",
+  "acceptedSyncSenders": [],
+  "rejectedSyncSenders": [],
+  "runtimes": [
+    {
+      "id": "flat",
+      "name": "Flat",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "flat": [
+      {
+        "uuid": "join-flat",
+        "serviceId": "sql",
+        "serviceName": "Join the flat",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "flat-costs",
+          "schema": "-- Everybody who has opened the board: their verified address, and the name\n-- the board's member list gives them. Others are shown the name, never the address.\nCREATE TABLE IF NOT EXISTS flatmate (\n  email  TEXT PRIMARY KEY,\n  name   TEXT,\n  joined TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE TABLE IF NOT EXISTS expense (\n  id      INTEGER PRIMARY KEY,\n  -- Who paid: the signed-in caller, as the server that verified them said.\n  paid_by TEXT,\n  what    TEXT,\n  -- Money is kept in cents so an even split never loses a fraction.\n  cents   INTEGER,\n  created TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE TABLE IF NOT EXISTS share (\n  expense INTEGER NOT NULL REFERENCES expense (id) ON DELETE CASCADE,\n  person  TEXT NOT NULL,\n  cents   INTEGER NOT NULL,\n  PRIMARY KEY (expense, person)\n);\nCREATE TRIGGER IF NOT EXISTS an_expense_needs_a_payer\nBEFORE INSERT ON expense\nWHEN coalesce(NEW.paid_by, '') = ''\nBEGIN\n  SELECT RAISE(ABORT, 'sign in to add an expense');\nEND;\nCREATE TRIGGER IF NOT EXISTS the_payer_is_in_the_flat\nBEFORE INSERT ON expense\nWHEN NOT EXISTS (SELECT 1 FROM flatmate WHERE email = NEW.paid_by)\nBEGIN\n  SELECT RAISE(ABORT, 'only someone in the flat can add an expense');\nEND;\nCREATE TRIGGER IF NOT EXISTS an_expense_says_what_it_was\nBEFORE INSERT ON expense\nWHEN coalesce(NEW.what, '') = ''\nBEGIN\n  SELECT RAISE(ABORT, 'say what it was for, e.g. Groceries 42.50');\nEND;\nCREATE TRIGGER IF NOT EXISTS an_expense_has_an_amount\nBEFORE INSERT ON expense\nWHEN NEW.cents IS NULL OR NEW.cents <= 0\nBEGIN\n  SELECT RAISE(ABORT, 'end with how much it was, e.g. Groceries 42.50');\nEND;\n-- The even split: one share per flatmate in the flat when the expense is\n-- added. A leftover cent or two goes to whoever joined first.\nCREATE TRIGGER IF NOT EXISTS split_evenly\nAFTER INSERT ON expense\nBEGIN\n  INSERT INTO share (expense, person, cents)\n  SELECT NEW.id, f.email,\n         NEW.cents / n.c + CASE WHEN f.rk <= NEW.cents % n.c THEN 1 ELSE 0 END\n    FROM (SELECT email, row_number() OVER (ORDER BY joined, email) AS rk FROM flatmate) f,\n         (SELECT count(*) AS c FROM flatmate) n;\nEND;",
+          "statement": "INSERT INTO flatmate (email, name)\nSELECT $caller_email, $caller_name\n WHERE coalesce($caller_email, '') <> ''\n-- The member list only names people on a shared board: anywhere else, the\n-- name it gave last time stands.\nON CONFLICT (email) DO UPDATE SET name = coalesce(excluded.name, flatmate.name)"
+        }
+      },
+      {
+        "uuid": "add-expense",
+        "serviceId": "sql",
+        "serviceName": "Add an expense",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "flat-costs",
+          "statement": "-- 'Groceries 42.50' -> what = 'Groceries', cents = 4250. The amount is the\n-- number at the end; a comma works as the decimal point too.\nWITH e(entry) AS (SELECT trim(coalesce($entry, ''))),\n     p(head, amt) AS (\n       SELECT rtrim(entry, '0123456789.,'),\n              substr(entry, length(rtrim(entry, '0123456789.,')) + 1)\n         FROM e\n     )\nINSERT INTO expense (paid_by, what, cents)\nSELECT $caller_email,\n       trim(rtrim(head, ' €$£')),\n       CAST(round(CAST(replace(amt, ',', '.') AS REAL) * 100) AS INTEGER)\n  FROM p\n WHERE $intent = 'add'"
+        }
+      },
+      {
+        "uuid": "remove-expense",
+        "serviceId": "sql",
+        "serviceName": "Remove an expense",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "flat-costs",
+          "statement": "-- Only whoever paid may take an expense back; its shares go with it.\nDELETE FROM expense\n WHERE $intent = 'remove'\n   AND id = $expense\n   AND paid_by = $caller_email"
+        }
+      },
+      {
+        "uuid": "my-balance",
+        "serviceId": "sql",
+        "serviceName": "My balance",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "flat-costs",
+          "statement": "WITH me(email) AS (SELECT coalesce($caller_email, '')),\n     b AS (\n       SELECT me.email AS email,\n              (SELECT coalesce(sum(cents), 0) FROM expense WHERE paid_by = me.email)\n            - (SELECT coalesce(sum(cents), 0) FROM share WHERE person = me.email) AS c\n         FROM me\n     )\nSELECT\n  CASE\n    WHEN b.email = '' THEN 'Sign in to join the flat and add expenses.'\n    WHEN b.c > 0 THEN 'You are owed ' || printf('%.2f', b.c / 100.0) || ' in total.'\n    WHEN b.c < 0 THEN 'You owe ' || printf('%.2f', -b.c / 100.0) || ' in total.'\n    ELSE 'You are all square.'\n  END AS headline,\n  (SELECT count(*) FROM flatmate) || ' in the flat · '\n    || (SELECT count(*) FROM expense) || ' expenses' AS summary\nFROM b"
+        }
+      },
+      {
+        "uuid": "balances",
+        "serviceId": "sql",
+        "serviceName": "Everyone's balance",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "flat-costs",
+          "statement": "WITH me(email) AS (SELECT coalesce($caller_email, '')),\n     t AS (\n       SELECT f.email = me.email AS mine,\n              coalesce(nullif(f.name, ''), 'A flatmate') AS name,\n              (SELECT coalesce(sum(cents), 0) FROM expense WHERE paid_by = f.email) AS paid,\n              (SELECT coalesce(sum(cents), 0) FROM share WHERE person = f.email) AS owed,\n              f.joined AS joined\n         FROM flatmate f CROSS JOIN me\n     )\nSELECT\n  CASE WHEN mine THEN 'You' ELSE name END AS who,\n  CASE\n    WHEN paid - owed > 0 THEN (CASE WHEN mine THEN 'are owed ' ELSE 'is owed ' END) || printf('%.2f', (paid - owed) / 100.0)\n    WHEN paid - owed < 0 THEN (CASE WHEN mine THEN 'owe ' ELSE 'owes ' END) || printf('%.2f', (owed - paid) / 100.0)\n    ELSE (CASE WHEN mine THEN 'are settled up' ELSE 'is settled up' END)\n  END AS status,\n  'paid ' || printf('%.2f', paid / 100.0) || ' · their share ' || printf('%.2f', owed / 100.0) AS detail\nFROM t\nORDER BY paid - owed DESC, joined"
+        }
+      },
+      {
+        "uuid": "expenses",
+        "serviceId": "sql",
+        "serviceName": "The expenses",
+        "state": {
+          "mode": "query",
+          "emit": "result",
+          "database": "flat-costs",
+          "statement": "WITH me(email) AS (SELECT coalesce($caller_email, ''))\nSELECT\n  e.id AS id,\n  e.what AS what,\n  printf('%.2f', e.cents / 100.0) AS amount,\n  'Paid by ' || CASE WHEN e.paid_by = me.email THEN 'you' ELSE coalesce(nullif(f.name, ''), 'a flatmate') END\n    || ' on ' || date(e.created)\n    || ' · split ' || (SELECT count(*) FROM share s WHERE s.expense = e.id) || ' ways' AS detail,\n  CASE\n    WHEN EXISTS (SELECT 1 FROM share s WHERE s.expense = e.id AND s.person = me.email)\n      THEN 'your share ' || printf('%.2f', (SELECT s.cents FROM share s WHERE s.expense = e.id AND s.person = me.email) / 100.0)\n    ELSE 'not split with you'\n  END AS yours,\n  CASE WHEN e.paid_by = me.email THEN 0 ELSE 1 END AS locked,\n  'Remove \"' || e.what || '\" (' || printf('%.2f', e.cents / 100.0) || ') for everyone?' AS removePrompt\nFROM expense e\nCROSS JOIN me\nLEFT JOIN flatmate f ON f.email = e.paid_by\nORDER BY e.created DESC, e.id DESC\nLIMIT 200"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "state": {},
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "join-flat",
+        "payload": {
+          "intent": "none"
+        }
+      }
+    ],
+    "panels": [
+      {
+        "id": "flat",
+        "title": "Who owes what",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "label": "Signed in as",
+              "value": {
+                "$user": "name"
+              },
+              "placeholder": "nobody, so sign in to join the flat"
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "my-balance",
+                "path": "rows"
+              },
+              "template": {
+                "direction": "column",
+                "gap": 4,
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.headline}}",
+                    "fontSize": 18
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.summary}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  }
+                ]
+              }
+            },
+            {
+              "type": "text-input",
+              "label": "You paid for something",
+              "placeholder": "What and how much, e.g. Groceries 42.50",
+              "submitLabel": "Add",
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "join-flat",
+                  "payload": {
+                    "intent": "add",
+                    "entry": "$$input"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "It is split evenly between everyone in the flat right now, and recorded as paid by you.",
+              "tone": "muted",
+              "fontSize": 11
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "balances",
+                "path": "rows"
+              },
+              "frame": {
+                "padding": 6,
+                "radius": 8,
+                "maxWidth": 520
+              },
+              "stripe": {
+                "odd": "rgba(127,127,127,0.07)",
+                "padding": 8,
+                "radius": 6
+              },
+              "gap": 0,
+              "template": {
+                "direction": "row",
+                "gap": 10,
+                "align": "center",
+                "items": [
+                  {
+                    "direction": "column",
+                    "gap": 2,
+                    "grow": true,
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.who}} {{item.status}}",
+                        "fontSize": 14
+                      },
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.detail}}",
+                        "tone": "muted",
+                        "fontSize": 11
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "history",
+        "title": "Expenses",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text",
+              "placeholder": "Everything the flat has paid for, newest first. Only the person who paid can remove an expense.",
+              "tone": "muted",
+              "fontSize": 12
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "expenses",
+                "path": "rows"
+              },
+              "frame": {
+                "padding": 6,
+                "radius": 8,
+                "maxWidth": 560
+              },
+              "stripe": {
+                "odd": "rgba(127,127,127,0.07)",
+                "padding": 8,
+                "radius": 6
+              },
+              "gap": 0,
+              "template": {
+                "direction": "row",
+                "gap": 10,
+                "align": "center",
+                "items": [
+                  {
+                    "direction": "column",
+                    "gap": 2,
+                    "grow": true,
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.what}}",
+                        "fontSize": 14
+                      },
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.detail}}",
+                        "tone": "muted",
+                        "fontSize": 11
+                      }
+                    ]
+                  },
+                  {
+                    "direction": "column",
+                    "gap": 2,
+                    "items": [
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.amount}}",
+                        "fontSize": 14
+                      },
+                      {
+                        "type": "text",
+                        "placeholder": "{{item.yours}}",
+                        "tone": "muted",
+                        "fontSize": 11
+                      }
+                    ]
+                  },
+                  {
+                    "type": "button",
+                    "label": "Remove",
+                    "disabled": "{{item.locked}}",
+                    "confirm": "{{item.removePrompt}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "join-flat",
+                        "payload": {
+                          "intent": "remove",
+                          "expense": "{{item.id}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "tabs": [
+      {
+        "id": "balances",
+        "title": "Balances",
+        "panels": [
+          "flat"
+        ]
+      },
+      {
+        "id": "expenses",
+        "title": "Expenses",
+        "panels": [
+          "history"
+        ]
+      }
+    ],
+    "defaultTab": "balances",
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "join-flat",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "add-expense",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "remove-expense",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "my-balance",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "balances",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "expenses",
+          "path": "error"
+        }
+      }
+    ]
+  }
+}

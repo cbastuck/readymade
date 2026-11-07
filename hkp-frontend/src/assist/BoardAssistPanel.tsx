@@ -19,6 +19,17 @@ import { listOpenAIModels, runOpenAICompatibleTurn } from "./openAICompatible";
 import { Effort, saveAssistSettings, useAssistSettings } from "./settings";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
+import {
+  addUsage,
+  AssistUsage,
+  describeUsage,
+  formatPrice,
+  formatTokens,
+  noUsage,
+  priceOf,
+  PRICES_AS_OF,
+  tokenTotal,
+} from "./usage";
 import { captureBoardRenderFailures } from "../core/renderFailures";
 import BoardAssistPrompt from "./BoardAssistPrompt";
 import BoardAssistPromptResizer, {
@@ -58,7 +69,28 @@ type Entry = {
   rawResponse?: string;
   preflightError?: string;
   preflightPassed?: boolean;
+  /** Every request the turn made, and the model it was priced for. */
+  usage?: AssistUsage;
+  modelId?: string;
 };
+
+/**
+ * The conversation so far, every turn's requests together — the figure a
+ * price beside a conversation has to be, since most of what a turn reads is
+ * documentation it looked up on the way. Priced per turn, because the model
+ * can change between turns; unpriced when any turn's model has no price.
+ */
+function conversationUsage(entries: Entry[]) {
+  let usage = noUsage;
+  let price: number | undefined = 0;
+  for (const entry of entries) {
+    if (!entry.usage) continue;
+    usage = addUsage(usage, entry.usage);
+    const turn = priceOf(entry.modelId ?? "", entry.usage);
+    price = price === undefined || turn === undefined ? undefined : price + turn;
+  }
+  return { usage, price };
+}
 export default function BoardAssistPanel({
   visible,
   onClose,
@@ -194,6 +226,7 @@ export default function BoardAssistPanel({
   }, [entries, status, visible]);
 
   const model = models.find((item) => item.id === settings.model) ?? models[0];
+  const total = conversationUsage(entries);
   const efforts = modelEfforts(model);
   const effort = efforts.includes(settings.effort)
     ? settings.effort
@@ -305,6 +338,12 @@ export default function BoardAssistPanel({
         onRawResponse: (output: string) => {
           rawResponse = output;
         },
+        onUsage: (usage: AssistUsage) =>
+          setEntries((list) =>
+            list.map((entry, i) =>
+              i === index ? { ...entry, usage, modelId: model.id } : entry,
+            ),
+          ),
         onText: (generated: string) =>
           setEntries((list) =>
             list.map((entry, i) =>
@@ -355,6 +394,8 @@ export default function BoardAssistPanel({
         base: JSON.stringify(captured),
         preflightError,
         preflightPassed: !!proposal && !preflightError,
+        usage: result.usage,
+        modelId: model.id,
       };
       setEntries((list) =>
         list.map((entry, i) =>
@@ -371,8 +412,15 @@ export default function BoardAssistPanel({
       setError(message);
       setEntries((list) =>
         list.map((entry, i) =>
+          // What a failed turn already spent is still spent.
           i === index
-            ? { role: "assistant", text: message, rawResponse }
+            ? {
+                role: "assistant",
+                text: message,
+                rawResponse,
+                usage: entry.usage,
+                modelId: entry.modelId,
+              }
             : entry,
         ),
       );
@@ -755,6 +803,11 @@ export default function BoardAssistPanel({
             >
               <strong>{entry.role === "user" ? "You" : "Assistant"}</strong>
               <p>{entry.text}</p>
+              {entry.usage && (
+                <p className="hkp-assist-hint hkp-assist-usage">
+                  {describeUsage(entry.usage, entry.modelId ?? "")}
+                </p>
+              )}
               {entry.rawResponse !== undefined && (
                 <details>
                   <summary>Show raw model response</summary>
@@ -844,6 +897,22 @@ export default function BoardAssistPanel({
               )}
             </article>
           ))}
+          {total.usage.requests > 0 && (
+            <p
+              className="hkp-assist-hint hkp-assist-usage-total"
+              aria-label="Conversation usage"
+              title={
+                total.price === undefined
+                  ? "No price: a model in this conversation has no list price here."
+                  : `Anthropic API list prices as of ${PRICES_AS_OF}; every request counted, documentation lookups included.`
+              }
+            >
+              This conversation: {formatTokens(tokenTotal(total.usage))} tokens
+              in {total.usage.requests} request
+              {total.usage.requests === 1 ? "" : "s"}
+              {total.price !== undefined && <> · ≈ {formatPrice(total.price)}</>}
+            </p>
+          )}
           {status && (
             <p role="status" className="hkp-assist-hint">
               {status}

@@ -12,6 +12,40 @@ export type DemoCatalogEntry = {
   description: string;
   icon: string;
   tags: string[];
+} & DemoSpotlight;
+
+/** How a pick opens, and the only way its card leads: one click in the
+ *  browser, the Readymade app (a board on `remote: embedded`), or a video for
+ *  anything that needs a runtime server a visitor does not have. */
+export type DemoOpens = "browser" | "app" | "video";
+
+export type DemoMedia =
+  | { video: string; poster: string; alt: string }
+  | { image: string; alt: string };
+
+/**
+ * What the pitch's gallery says about a pick (see demoShelves.ts). All of it
+ * optional, so an entry nobody spotlights is unaffected, and the start page
+ * and the board hub keep reading the same entries.
+ */
+export type DemoSpotlight = {
+  /** What you get, not what it shows: "Your club's courts, bookable from a
+   *  phone, never double-booked." */
+  outcome?: string;
+  /** What to do once it is open, and what you will see happen. */
+  expect?: string;
+  /** The concept it shows, linked to the page that explains it. */
+  underTheHood?: { text: string; href: string };
+  opens?: DemoOpens;
+  /** For a video pick: the board itself, for people who run their own
+   *  runtime servers, and which ones it needs. */
+  runItYourself?: { href: string; needs: string };
+  /** For a browser version: what deploying the board changes. Its data
+   *  lives in this browser, for one person, until then. */
+  deployed?: string;
+  media?: DemoMedia;
+  /** Further boards shown with this one as a group pick, by slug. */
+  members?: string[];
 };
 
 export const DEMO_CATALOG: DemoCatalogEntry[] = [
@@ -230,6 +264,21 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       "The same court timetable with nothing to install: SQLite runs in the browser and keeps the bookings between visits. The club rules are still unique indexes — what it gives up is the club, since the tables belong to this browser alone.",
     icon: "🎾",
     tags: ["SQL"],
+    outcome: "Your club's courts, bookable from a phone, never double-booked.",
+    expect:
+      "Tap a free hour to take it, tap yours to give it back. Try a second hour on the same day: the database turns it down.",
+    underTheHood: {
+      text: "Club rules as unique indexes, not checks in the page",
+      href: "/documentation/boards/court-booking-browser-demo-board/",
+    },
+    opens: "browser",
+    media: {
+      video: "/images/pitch/court-booking.mp4",
+      poster: "/images/pitch/court-booking.jpg",
+      alt: "Court Booking deployed: a member takes an hour on her phone, then two people confirm the same hour and the one who loses is told.",
+    },
+    deployed:
+      "Deployed, the club shares one database, kept while nobody is watching, and every booking is in the name of the member who signed in.",
   },
   {
     slug: "sql-explorer",
@@ -264,6 +313,114 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "SQL"],
   },
   {
+    slug: "hacker-news",
+    label: "Hacker News Reader",
+    description:
+      "Hacker News as an app: the front page, New, Best, Ask and Show, and a search over every story ever posted. Open a story's comments beside the list, every reply under the comment it answers; fold a branch to skip it, and it is still folded next time. Everything runs in the browser.",
+    icon: "🗞️",
+    tags: ["Live data", "SQL"],
+    outcome: "Hacker News to read, not to scroll: whole threads, folded where you left them.",
+    expect:
+      "Pick a list or search, then open a story's comments: the thread appears beside the list. Fold a branch with [–], or Collapse all and open the ones worth reading.",
+    underTheHood: {
+      text: "Two APIs' answers joined by SQL in the browser",
+      href: "/documentation/boards/hacker-news-board/",
+    },
+    opens: "browser",
+    media: {
+      image: "/images/pitch/hacker-news.jpg",
+      alt: "HN Reader: the front page beside the discussion of its busiest story, every reply under the comment it answers, one branch folded.",
+    },
+  },
+  {
+    slug: "health-log-browser",
+    label: "Private Health Log (Browser)",
+    description:
+      "The same personal health log with nothing to install: SQLite runs in the browser and keeps the history between visits. Blood glucose, blood pressure, weight and a daily journal, as tables and time-series charts — a record of what you enter, not a medical device. What it gives up is reach: the history belongs to this browser on this device alone, and leaves it as a .sqlite file any SQLite tool opens.",
+    icon: "🩺",
+    tags: ["SQL", "Personal Data"],
+    outcome: "Your glucose, blood pressure and weight, charted, in a record that is yours.",
+    expect:
+      "Log a value, or Generate fake data under Your data for six months of history. Then open Trends and hover a point: that day's journal is beside it.",
+    underTheHood: {
+      text: "One SQL query feeding a table and three charts",
+      href: "/documentation/boards/health-log-browser-demo-board/",
+    },
+    opens: "browser",
+    media: {
+      video: "/images/pitch/health-log.mp4",
+      poster: "/images/pitch/health-log.jpg",
+      alt: "Health Log in the browser: a glucose value logged, six months of fictional history charted with a day's journal beside its value, and the history exported as a .sqlite file.",
+    },
+    deployed:
+      "Deployed, the history lives on a runtime you choose, and you open the same log from your phone and your laptop.",
+  },
+  {
+    slug: "meeting-poll-browser",
+    label: "Meeting Poll (Browser)",
+    description:
+      "The same meeting poll with nothing to install: SQLite runs in the browser and keeps the polls between visits. Whoever is signed in is the owner here — calls the meeting, puts up the dates and answers them — and the database still turns down what the page would not offer. What it gives up is the team, since the tables belong to this browser alone.",
+    icon: "🗳️",
+    tags: ["SQL"],
+    outcome: "A date everybody can make, without the email thread.",
+    expect:
+      "Signed in, call a meeting, put up two or three dates and say which ones work. Close the poll and try to answer again: the database turns it down.",
+    underTheHood: {
+      text: "Who may do what as triggers and indexes in the schema",
+      href: "/documentation/boards/meeting-poll-browser-demo-board/",
+    },
+    opens: "browser",
+    media: {
+      video: "/images/pitch/meeting-poll.mp4",
+      poster: "/images/pitch/meeting-poll.jpg",
+      alt: "Meeting Poll deployed: two members answer on their phones, the owner sees the best date, closes the poll, and a late answer is turned down.",
+    },
+    deployed:
+      "Deployed and shared, the team answers one poll, each member as themselves, and only the owner sets it up.",
+  },
+  {
+    slug: "rss-radio",
+    label: "Reading Radio",
+    description:
+      "Anything that publishes RSS or Atom, as a podcast: a reading list, a brief of each article written by a model, read aloud and served at an address any podcast player can follow. Five units, each of which runs on its own.",
+    icon: "🎧",
+    tags: ["Needs Node", "Needs Python", "Audio"],
+    outcome: "The articles you meant to read, as a podcast for the way to work.",
+    expect:
+      "Watch a feed become a reading list, the editor write a brief of each article, and a podcast player pick up the episodes.",
+    underTheHood: {
+      text: "Five units joined by feeds and mount references, not wires",
+      href: "/documentation/boards/rss-radio-board/",
+    },
+    opens: "video",
+    runItYourself: {
+      href: "/playground?demo=rss-radio",
+      needs:
+        "an hkp-node and an hkp-python kept under the names node and python, and an Anthropic key",
+    },
+  },
+  {
+    slug: "syn-mail-desk",
+    label: "AI Collaboration",
+    description:
+      "Enquiries arrive by email, a model drafts each reply, and a person decides. Three lanes — incoming, needs review, waiting for the customer: drag a draft across to approve it and it goes out over SMTP, or edit it first.",
+    icon: "📬",
+    tags: ["Needs Node", "Integration"],
+    outcome: "Every enquiry answered, and every reply read by a person before it goes.",
+    expect:
+      "Watch mail arrive in the first lane, a drafted reply appear for review, and an approved one leave for the customer as it is dragged across.",
+    underTheHood: {
+      text: "A review facade on an existing app, its units included unchanged",
+      href: "/documentation/boards/syn-mail-desk-board/",
+    },
+    opens: "video",
+    runItYourself: {
+      href: "/playground?demo=syn-mail-desk",
+      needs:
+        "an hkp-node kept under the name node, an IMAP and SMTP mailbox, and an Anthropic key",
+    },
+  },
+  {
     slug: "meeting-poll",
     label: "Meeting Poll",
     description:
@@ -278,6 +435,76 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
       "A drum groove timed by nothing but nesting: four patterns — Straight, Shuffle, Four on the floor, Funk — each a bar built from small blocks like a Beat of two hi-hats. Every wait is in beats; tempo and pattern are slots in the outermost scope that every level inherits. Switch patterns and watch the playhead move down through the levels.",
     icon: "🥁",
     tags: ["Audio"],
+    outcome:
+      "Four drum grooves, switched at the bar line, timed by nothing but nesting.",
+    expect:
+      "Press Play, pick a pattern, turn the tempo. Open the board to watch the playhead move down through the levels.",
+    underTheHood: {
+      text: "Nested sub-services and the scope they share",
+      href: "/documentation/boards/nested-rhythm-demo-board/",
+    },
+    opens: "browser",
+    media: {
+      video: "/images/pitch/NestingBeatsHi.mp4",
+      poster: "/images/pitch/NestingBeatsHi-poster.jpg",
+      alt: "The Nested Rhythm board, its playhead moving down through nested services.",
+    },
+    members: ["timeline"],
+  },
+  {
+    slug: "timeline",
+    label: "Timeline",
+    description:
+      "A night sky that plays for eight seconds and loops: stars pop up, a planet appears, a rocket and a comet fly across. No animation code — every image is keyframed on a timeline of its own, and one outer timeline arranges them all.",
+    icon: "🌠",
+    tags: ["Canvas", "Animation"],
+    outcome: "An animated scene made of keyframes, without animation code.",
+    underTheHood: {
+      text: "Timelines inside a timeline, motions written once as blocks",
+      href: "/documentation/boards/timeline-demo-board/",
+    },
+    opens: "browser",
+  },
+  {
+    slug: "live-radio",
+    label: "Live Radio",
+    description:
+      "Your microphone as a radio station: hkp-rt captures it, encodes it to MP3 as it arrives and streams it to anyone who opens the URL or scans the QR code. Runs in the Readymade app, which carries hkp-rt.",
+    icon: "📻",
+    tags: ["Audio", "Needs app"],
+    outcome: "Your microphone on air, for any phone that scans the code.",
+    expect:
+      "Press Start, then scan the QR code with a phone on the same network: it plays what the microphone hears, a fraction of a second later.",
+    underTheHood: {
+      text: "A C++ runtime streaming from the realtime audio thread",
+      href: "/documentation/boards/live-radio-demo-board/",
+    },
+    opens: "app",
+  },
+  {
+    slug: "shared-costs",
+    label: "Shared Costs",
+    description:
+      "Shared costs for a flat: whoever paid adds what it was for and how much, it is split evenly between everyone in the flat at that moment, and each person sees what they owe or are owed. Board Assist composed it from one description — six SQL statements of its own on services other boards already use — and every expense is recorded for the signed-in caller the server verified.",
+    icon: "💶",
+    tags: ["Needs Node", "SQL"],
+    outcome: "Who paid, who owes, and nobody doing the sums.",
+    expect:
+      "Watch the assistant compose it from one description, then one flatmate add the groceries and the other open the board to see what they owe.",
+    underTheHood: {
+      text: "Six new SQL statements on services other boards already use",
+      href: "/documentation/boards/shared-costs-demo-board/",
+    },
+    opens: "video",
+    runItYourself: {
+      href: "/playground?demo=shared-costs",
+      needs: "an hkp-node kept under the name node",
+    },
+    media: {
+      video: "/images/pitch/shared-costs.mp4",
+      poster: "/images/pitch/shared-costs.jpg",
+      alt: "Board Assist composing the Shared Costs board from one description, then two flatmates using it on their phones.",
+    },
   },
 ];
 
