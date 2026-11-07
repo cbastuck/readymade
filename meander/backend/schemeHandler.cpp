@@ -730,6 +730,25 @@ saucer::scheme::response SchemeHandler::handleDeleteBoard(const Router::Params &
   };
 }
 
+// True for "?library=icloud" — the history of a board in the iOS app's iCloud
+// Drive folder rather than of the one kept here (Settings::getHistoryPath).
+static bool isICloudHistory(const saucer::scheme::request &req)
+{
+  auto parsed = boost::urls::parse_uri_reference(req.url().string());
+  if (!parsed)
+  {
+    return false;
+  }
+  for (const auto &param : parsed->params())
+  {
+    if (param.key == "library" && param.value == "icloud")
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 saucer::scheme::response SchemeHandler::handleListBoardHistories(const Router::Params &p, const saucer::scheme::request &req) const
 {
   namespace fs = std::filesystem;
@@ -831,7 +850,7 @@ saucer::scheme::response SchemeHandler::handlePushBoardSnapshot(const Router::Pa
     };
   }
 
-  auto histPath = m_settings.getHistoryPath(boardName);
+  auto histPath = m_settings.getHistoryPath(boardName, isICloudHistory(req));
   if (histPath.empty())
   {
     return saucer::scheme::response{
@@ -879,6 +898,8 @@ saucer::scheme::response SchemeHandler::handlePushBoardSnapshot(const Router::Pa
     history.erase(history.begin() + MAX_HISTORY_DEPTH, history.end());
   }
 
+  std::error_code dirError;
+  std::filesystem::create_directories(std::filesystem::path(histPath).parent_path(), dirError);
   std::ofstream out(histPath);
   if (!out.is_open())
   {
@@ -912,7 +933,7 @@ saucer::scheme::response SchemeHandler::handleLoadBoardHistory(const Router::Par
     };
   }
 
-  auto histPath = m_settings.getHistoryPath(boardName);
+  auto histPath = m_settings.getHistoryPath(boardName, isICloudHistory(req));
   if (histPath.empty())
   {
     return saucer::scheme::response{
@@ -966,7 +987,7 @@ saucer::scheme::response SchemeHandler::handleClearBoardHistory(const Router::Pa
     };
   }
 
-  auto histPath = m_settings.getHistoryPath(boardName);
+  auto histPath = m_settings.getHistoryPath(boardName, isICloudHistory(req));
   if (histPath.empty())
   {
     return saucer::scheme::response{

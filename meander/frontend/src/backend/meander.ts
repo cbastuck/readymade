@@ -8,6 +8,7 @@ import { Remote } from "../types";
 import {
   BackendAdapter,
   BoardHistoryEntry,
+  BoardLibraryKind,
   HistoryBoardSummary,
   PickerOptions,
   RuntimeSettings,
@@ -21,6 +22,11 @@ import {
 import { forgetGrant } from "hkp-frontend/src/grants";
 
 const encodePathSegment = (value: string) => encodeURIComponent(value);
+
+// A board's history: an iCloud Drive board's is kept apart from a local one's
+// of the same name (Settings::getHistoryPath in the backend).
+const historyUrl = (boardName: string, library?: BoardLibraryKind) =>
+  `hkp://history/${encodePathSegment(boardName)}${library === "icloud" ? "?library=icloud" : ""}`;
 
 declare global {
   interface Window {
@@ -408,8 +414,9 @@ export const meanderBackend: BackendAdapter = {
   async pushBoardSnapshot(
     boardName: string,
     entry: BoardHistoryEntry,
+    library?: BoardLibraryKind,
   ): Promise<void> {
-    const res = await fetch(`hkp://history/${encodePathSegment(boardName)}`, {
+    const res = await fetch(historyUrl(boardName, library), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(entry),
@@ -419,18 +426,22 @@ export const meanderBackend: BackendAdapter = {
     }
   },
 
-  async loadBoardHistory(boardName: string): Promise<Array<BoardHistoryEntry>> {
-    const res = await fetch(`hkp://history/${encodePathSegment(boardName)}`);
+  async loadBoardHistory(
+    boardName: string,
+    library?: BoardLibraryKind,
+  ): Promise<Array<BoardHistoryEntry>> {
+    const res = await fetch(historyUrl(boardName, library));
     if (!res.ok) {
       return [];
     }
     return res.json();
   },
 
-  async clearBoardHistory(boardName: string): Promise<void> {
-    await fetch(`hkp://history/${encodePathSegment(boardName)}`, {
-      method: "DELETE",
-    });
+  async clearBoardHistory(
+    boardName: string,
+    library?: BoardLibraryKind,
+  ): Promise<void> {
+    await fetch(historyUrl(boardName, library), { method: "DELETE" });
   },
 
   async pickFile(options?: PickerOptions): Promise<string | null> {

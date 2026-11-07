@@ -42,6 +42,7 @@ import { usePins } from "./homeScreen/usePins";
 import HomeScreenSheet from "./homeScreen/HomeScreenSheet";
 import { getBackend } from "./backend";
 import { migrateLocalBoards } from "./library/migrateLocalBoards";
+import { deleteSavedBoard } from "./library/deleteBoard";
 import {
   lastBoardName,
   recordSnapshot,
@@ -103,7 +104,8 @@ function StartScreen({
   onOpenSettings: (section?: string) => void;
   remotes: RemotesController;
   pins: PinsController;
-  /** A deleted board cannot be launched any more: the host unpins it. */
+  /** A deleted board may have been the one to continue: the host reads that
+   *  again. */
   onBoardDeleted: (name: string) => void;
   /** The board last worked on, offered to continue. */
   recentBoardName: string | null;
@@ -144,9 +146,7 @@ function StartScreen({
 
   const deleteBoard = useCallback(
     async (name: string) => {
-      const backend = await getBackend();
-      await backend.deleteBoard(name);
-      await backend.clearBoardHistory(name);
+      await deleteSavedBoard(name);
       onBoardDeleted(name);
     },
     [onBoardDeleted],
@@ -305,7 +305,7 @@ export default function MobileApp() {
     null,
   );
   const remotes = useBackendRemotes();
-  const { pins, unpinIfPinned, pinnedTitle, dismissPinned } = usePins();
+  const { pins, pinnedTitle, dismissPinned } = usePins();
   // Read again each time the start page shows: working on a board makes it
   // the one to continue.
   const [recentBoardName, setRecentBoardName] = useState<string | null>(null);
@@ -402,14 +402,11 @@ export default function MobileApp() {
     };
   }, [openLaunch]);
 
-  const handleBoardDeleted = useCallback(
-    (name: string) => {
-      void unpinIfPinned({ kind: "saved", name }).catch(() => {
-        // The pin outlives the board; launching it says the board is gone.
-      });
-    },
-    [unpinIfPinned],
-  );
+  // Deleting unpins the board itself (library/deleteBoard); what is left to
+  // the host is not offering it to continue.
+  const handleBoardDeleted = useCallback(() => {
+    setRecentBoardName(lastBoardName());
+  }, []);
 
   // Share feature: a share captured by the iOS share extension is delivered by
   // the native bridge, previewed in a picker, then injected into the board the

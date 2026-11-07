@@ -10,7 +10,8 @@ import {
   unshareCloudBoard,
   upsertCloudBoard,
 } from "../../cloud/boardStorage";
-import { getLocalBoard, localStoragePrefix } from "../playground/common";
+import { isHostLibrary, loadLibraryBoard } from "../../core/boardLibrary";
+import { localStoragePrefix } from "../playground/common";
 import { BoardNode, FolderNode } from "./types";
 
 /**
@@ -75,14 +76,16 @@ function boardDocument(board: CloudBoard): Record<string, unknown> {
 }
 
 /**
- * The default board reader: the localStorage store the browser hosts save to.
- * Boards are stored there wrapped ({source, createdAt, description}); what
- * belongs in the cloud is the board inside, not the envelope around it.
+ * The default board reader: the saved boards wherever this host keeps them
+ * (core/boardLibrary) — the host's own library in the mobile apps, local
+ * storage on the web. Local storage keeps boards wrapped ({source, createdAt,
+ * description}); what belongs in the cloud is the board inside, not the
+ * envelope around it.
  */
-async function readLocalBoard(
+async function readLibraryBoard(
   name: string,
 ): Promise<Record<string, unknown> | null> {
-  return (getLocalBoard(name) as Record<string, unknown> | undefined) ?? null;
+  return (await loadLibraryBoard(name)) as Record<string, unknown> | null;
 }
 
 /** The description a locally saved board's envelope carries, if any. */
@@ -95,9 +98,10 @@ function localBoardDescription(name: string): string | undefined {
 
 export interface CloudBoardSourcesOptions {
   /** Reads a saved board by name, for the upload action. Defaults to the
-   *  localStorage board store, which is where the browser hosts keep boards;
-   *  a host with storage of its own (the Readymade app's board files) passes
-   *  its own reader. Resolving null means "no such board here". */
+   *  board library (core/boardLibrary), which is the host's own library where
+   *  it has one and local storage otherwise; a host that reads its boards
+   *  some other way (the desktop app's backend) passes its own reader.
+   *  Resolving null means "no such board here". */
   loadBoard?: (name: string) => Promise<Record<string, unknown> | null>;
 }
 
@@ -151,15 +155,15 @@ export function useCloudBoardSources(
     () =>
       user
         ? async (name: string) => {
-            const board = await (loadBoard ?? readLocalBoard)(name);
+            const board = await (loadBoard ?? readLibraryBoard)(name);
             if (!board) {
               throw new Error("Board not found on this device");
             }
-            // The local store keeps the description in the envelope around
+            // Local storage keeps the description in the envelope around
             // the board; a host with a store of its own has it on the
             // document itself.
             let description: string | undefined;
-            if (loadBoard) {
+            if (loadBoard || isHostLibrary()) {
               description =
                 typeof board.description === "string"
                   ? board.description

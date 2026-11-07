@@ -277,7 +277,7 @@ Beyond the platform seam, each shell brings things a browser cannot:
 | Embedded `hkp-rt` | — | yes | yes | yes |
 | Local model backends | — | yes | — | — |
 | Secret store, with a consent prompt | — | yes | yes | yes |
-| Share into the app | — | yes | yes | — |
+| Share into the app | — | yes | yes | yes |
 | Pin a board to the Home Screen | — | — | yes | yes |
 | LAN discovery (`_readymade._tcp`) | — | yes | yes | yes |
 
@@ -290,9 +290,13 @@ only that shell, and has to be written again for the next: the secret vault
 is the desktop backend's (`meander/backend/vault.h`), behind `saucer.exposed`,
 and each phone shell keeps its own behind `hkp://secrets` (below). And what
 the platform defines itself has to be written per platform —
-sharing is a macOS app extension (`meander/backend/shareRouter.cpp`) and an iOS
-Share Extension (`meander-ios/ReadymadeIOS/ShareExtension/`), which is why it
-exists on two targets rather than four.
+sharing is a macOS app extension (`meander/backend/shareRouter.cpp`), an iOS
+Share Extension (`meander-ios/ReadymadeIOS/ShareExtension/`) with document
+types for "Open in Readymade", and an Android share target
+(`meander-android/app/src/main/java/com/readymadeit/meander/bridge/ShareInbox.kt`),
+three implementations of one idea. What they share is what the page sees: the
+same envelope for each item, and a shared file's bytes on
+`hkp://share-files/<id>`.
 
 ### Where boards live
 

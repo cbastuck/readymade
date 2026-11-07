@@ -23,7 +23,12 @@ import { useUserProfile } from "hkp-frontend/src/core/userProfile";
 import { AccountDialog } from "hkp-frontend/src/views/profile";
 import { getBackend } from "./backend";
 import { useICloudSource } from "./library/useICloudSource";
-import type { BoardLibraryKind } from "./library/boardHistory";
+import {
+  lastBoardLibrary,
+  lastBoardName,
+  resumeBoard,
+  type BoardLibraryKind,
+} from "./library/boardHistory";
 import { isMeanderApp } from "./isMeanderApp";
 import { useBackendRemotes } from "./useBackendRemotes";
 import MeanderAppMenu from "./MeanderAppMenu";
@@ -55,10 +60,13 @@ export default function StartPage({ onRestoreBoard }: Props) {
   const [isAccountOpen, setAccountOpen] = useState(false);
   const remotes = useBackendRemotes();
   const [lastSessionName, setLastSessionName] = useState<string | null>(null);
+  const [lastSessionLibrary, setLastSessionLibrary] =
+    useState<BoardLibraryKind>("local");
   const [inApp, setInApp] = useState(false);
 
   useEffect(() => {
-    setLastSessionName(localStorage.getItem("lastActiveBoardName"));
+    setLastSessionName(lastBoardName());
+    setLastSessionLibrary(lastBoardLibrary());
     void isMeanderApp().then(setInApp);
   }, []);
 
@@ -185,13 +193,10 @@ export default function StartPage({ onRestoreBoard }: Props) {
     if (!lastSessionName) {
       return;
     }
-    const backend = await getBackend();
-    const history = await backend.loadBoardHistory(lastSessionName);
-    if (history.length > 0) {
-      onRestoreBoard(history[0].snapshot);
-      return;
-    }
-    await openSavedBoard(lastSessionName);
+    // From the library it was last worked on in: a local board and an
+    // iCloud Drive board may share the name, and each has its own history.
+    const resumed = await resumeBoard(lastSessionName, lastSessionLibrary);
+    onRestoreBoard(resumed?.board ?? null, undefined, lastSessionLibrary);
   };
 
   /**
@@ -347,8 +352,13 @@ export default function StartPage({ onRestoreBoard }: Props) {
   };
 
   const boardStates = useMemo<Record<string, BoardState>>(
-    () => (lastSessionName ? { [lastSessionName]: "recent" } : {}),
-    [lastSessionName],
+    // Saved boards are the local library's: an iCloud Drive board last worked
+    // on is not the local board of the same name.
+    () =>
+      lastSessionName && lastSessionLibrary === "local"
+        ? { [lastSessionName]: "recent" }
+        : {},
+    [lastSessionName, lastSessionLibrary],
   );
 
   const currentVersion = splitBuildVersion(__READYMADE_BUILD_VERSION__);

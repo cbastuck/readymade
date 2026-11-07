@@ -9,6 +9,7 @@ import {
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import type { PresetStorage } from "hkp-frontend/src/core/presets";
 import { getBackend } from "../backend";
+import { deleteSavedBoard } from "../library/deleteBoard";
 import { meanderLogin, type NativeLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
 import { saveSession } from "../auth/session";
@@ -148,9 +149,8 @@ const saveSavedBoardNative = async (name: string, board: BoardDescriptor) => {
 const listSavedBoardsNative = async () =>
   (await getBackend()).fetchSavedBoardEntries();
 
-const deleteSavedBoardNative = async (name: string) => {
-  await (await getBackend()).deleteBoard(name);
-};
+/** Deletes a board with its history and pin, as the start page does. */
+const deleteSavedBoardNative = deleteSavedBoard;
 
 /**
  * The preset library as files in the host's presets folder. Every native host

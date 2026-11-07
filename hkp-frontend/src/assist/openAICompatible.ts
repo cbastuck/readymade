@@ -200,6 +200,113 @@ export function serviceNames(value: unknown, names = new Set<string>()) {
   }
   return [...names];
 }
+/**
+ * What a turn asks a model given the board as text — the OpenAI-compatible
+ * servers and OpenCode alike: the request with the board and its scope, the
+ * documentation that fits beside it, and as much recent conversation as is
+ * left room for. The budget is in characters, conservatively: tokenization
+ * differs between models, and the response needs its share. The current board
+ * and request are never truncated; a board that does not fit is refused with
+ * `tooLarge`, and old proposals give way to it.
+ */
+export async function prepareTextTurn(options: {
+  contextTokens: number;
+  conversation: Conversation;
+  prompt: string;
+  context: unknown;
+  scope: AssistScope;
+  onStatus: (status: string) => void;
+  knowledgeProvider?: ReadymadeKnowledgeProvider;
+  tooLarge: string;
+}) {
+  const limit = Math.max(4096, options.contextTokens || 8192);
+  const maxTokens = Math.min(4096, Math.floor(limit / 4));
+  const budget = (limit - maxTokens - 512) * 2;
+  const promptContext =
+    options.context && typeof options.context === "object"
+      ? Object.fromEntries(
+          Object.entries(options.context).filter(
+            ([key]) => key !== "serviceCatalog",
+          ),
+        )
+      : options.context;
+  const context = JSON.stringify(promptContext);
+  const user = `Request: ${options.prompt}\n${scopeInstruction(options.scope)}\nCurrent board and editing context: ${context}`;
+  if (openAICompatibleSystem.length + user.length > budget)
+    throw new Error(options.tooLarge);
+  options.onStatus("Finding relevant board documentation…");
+  const knowledge = options.knowledgeProvider ?? bundledKnowledgeProvider;
+  const hits = await knowledge.searchKnowledge({
+    query: `${options.prompt} ${serviceNames(promptContext).join(" ")}`,
+  });
+  const pages = await knowledge.readDocuments(
+    hits.slice(0, 8).map((hit) => hit.path),
+  );
+  let room = budget - openAICompatibleSystem.length - user.length;
+  let fitted = "";
+  for (const page of pages) {
+    const text = `\n${page.path}\n${page.content}`;
+    if (text.length <= room) {
+      fitted += text;
+      room -= text.length;
+    }
+  }
+  const documentation = `Relevant repository documentation:${fitted || " No complete service page fits; ask a clarification if necessary."}`;
+  // Keep only recent plain-text conversation that fits; the complete current
+  // board always wins over old proposals and tool transcripts.
+  const recent: { role: "system" | "user" | "assistant"; content: string }[] =
+    [];
+  for (const message of [...options.conversation].reverse()) {
+    if (typeof message.content !== "string" || message.content.length > room)
+      break;
+    recent.unshift({ role: message.role, content: message.content });
+    room -= message.content.length;
+    if (recent.length >= 4) break;
+  }
+  return { maxTokens, user, documentation, recent };
+}
+
+/**
+ * The proposal in a model's answer to a turn prepared by `prepareTextTurn`: its
+ * explanation, and the board it proposes resolved against `base`, if any.
+ * `invalidJSON` is what to say when the answer is not JSON at all.
+ */
+export function parseTextProposal(
+  content: string,
+  scope: AssistScope,
+  base: BoardDescriptor,
+  invalidJSON: string,
+) {
+  let result: {
+    explanation?: string;
+    board?: unknown;
+    runtime?: unknown;
+    services?: unknown;
+  };
+  try {
+    result = JSON.parse(
+      content.replace(/^\s*```(?:json)?\s*/, "").replace(/\s*```\s*$/, ""),
+    );
+  } catch {
+    throw new Error(invalidJSON);
+  }
+  if (!result || typeof result.explanation !== "string")
+    throw new Error(
+      scope.kind === "board"
+        ? "The response needs an explanation and a board (or null)."
+        : "The response needs an explanation and a runtime (or null).",
+    );
+  const proposed =
+    scope.kind === "board"
+      ? result.board
+      : result.runtime == null
+        ? null
+        : { runtime: result.runtime, services: result.services };
+  const board =
+    proposed == null ? undefined : resolveAssistProposal(scope, base, proposed);
+  return { explanation: result.explanation, board };
+}
+
 export async function runOpenAICompatibleTurn(options: {
   baseURL: string;
   token: string;
@@ -218,60 +325,17 @@ export async function runOpenAICompatibleTurn(options: {
   knowledgeProvider?: ReadymadeKnowledgeProvider;
 }) {
   options.signal.throwIfAborted();
-  const limit = Math.max(4096, options.contextTokens || 8192);
-  const maxTokens = Math.min(4096, Math.floor(limit / 4));
-  // Conservative character budget leaves space for tokenization differences
-  // and the response. Never truncate the user's current board or request.
-  const budget = (limit - maxTokens - 512) * 2;
-  const promptContext =
-    options.context && typeof options.context === "object"
-      ? Object.fromEntries(
-          Object.entries(options.context).filter(
-            ([key]) => key !== "serviceCatalog",
-          ),
-        )
-      : options.context;
-  const context = JSON.stringify(promptContext);
-  const user = `Request: ${options.prompt}\n${scopeInstruction(options.scope)}\nCurrent board and editing context: ${context}`;
-  if (openAICompatibleSystem.length + user.length > budget)
-    throw new Error(
+  const { maxTokens, user, documentation, recent } = await prepareTextTurn({
+    ...options,
+    tooLarge:
       "This board is too large for the configured server context size. Increase the context limit in the server and AI settings, or edit a smaller board.",
-    );
-  options.onStatus("Finding relevant board documentation…");
-  const knowledge = options.knowledgeProvider ?? bundledKnowledgeProvider;
-  const hits = await knowledge.searchKnowledge({
-    query: `${options.prompt} ${serviceNames(promptContext).join(" ")}`,
   });
-  const pages = await knowledge.readDocuments(
-    hits.slice(0, 8).map((hit) => hit.path),
-  );
-  let room = budget - openAICompatibleSystem.length - user.length;
-  let documentation = "";
-  for (const page of pages) {
-    const text = `\n${page.path}\n${page.content}`;
-    if (text.length <= room) {
-      documentation += text;
-      room -= text.length;
-    }
-  }
   const messages: { role: "system" | "user" | "assistant"; content: string }[] =
     [
-      {
-        role: "system",
-        content: `${openAICompatibleSystem}\nRelevant repository documentation:${documentation || " No complete service page fits; ask a clarification if necessary."}`,
-      },
+      { role: "system", content: `${openAICompatibleSystem}\n${documentation}` },
+      ...recent,
+      { role: "user", content: user },
     ];
-  // Keep only recent plain-text conversation that fits; the complete current
-  // board always wins over old proposals and tool transcripts.
-  const recent: typeof messages = [];
-  for (const message of [...options.conversation].reverse()) {
-    if (typeof message.content !== "string" || message.content.length > room)
-      break;
-    recent.unshift({ role: message.role, content: message.content });
-    room -= message.content.length;
-    if (recent.length >= 4) break;
-  }
-  messages.push(...recent, { role: "user", content: user });
   options.onStatus("Generating with the selected server…");
   const data = await requestCompletion(
     options.baseURL,
@@ -304,42 +368,17 @@ export async function runOpenAICompatibleTurn(options: {
     );
   if (typeof content !== "string")
     throw new Error("The server returned no assistant message.");
-  let result: {
-    explanation?: string;
-    board?: unknown;
-    runtime?: unknown;
-    services?: unknown;
-  };
-  try {
-    result = JSON.parse(
-      content.replace(/^\s*```(?:json)?\s*/, "").replace(/\s*```\s*$/, ""),
-    );
-  } catch {
-    throw new Error(
-      "The model did not return valid JSON. Use a model/chat template that supports JSON output, or try a simpler request.",
-    );
-  }
-  if (!result || typeof result.explanation !== "string")
-    throw new Error(
-      options.scope.kind === "board"
-        ? "The response needs an explanation and a board (or null)."
-        : "The response needs an explanation and a runtime (or null).",
-    );
-  const proposed =
-    options.scope.kind === "board"
-      ? result.board
-      : result.runtime == null
-        ? null
-        : { runtime: result.runtime, services: result.services };
-  const board =
-    proposed == null
-      ? undefined
-      : resolveAssistProposal(options.scope, options.base, proposed);
-  options.onText(result.explanation);
+  const { explanation, board } = parseTextProposal(
+    content,
+    options.scope,
+    options.base,
+    "The model did not return valid JSON. Use a model/chat template that supports JSON output, or try a simpler request.",
+  );
+  options.onText(explanation);
   const conversation: Conversation = [
     ...options.conversation,
     { role: "user", content: options.prompt },
     { role: "assistant", content },
   ];
-  return { conversation, text: result.explanation, board };
+  return { conversation, text: explanation, board };
 }

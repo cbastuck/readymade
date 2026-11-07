@@ -28,6 +28,18 @@ export type Pin = {
  */
 export type HomeScreenPlacement = "requested" | "manual";
 
+/**
+ * Raised with the new list whenever this page changes the pins, so a list
+ * shown elsewhere (usePins) follows a change it did not make — a board
+ * deleted from the playground's Hub is unpinned there.
+ */
+export const PINS_CHANGED = "readymade:pins-changed";
+
+function announced(pins: Pin[]): Pin[] {
+  window.dispatchEvent(new CustomEvent<Pin[]>(PINS_CHANGED, { detail: pins }));
+  return pins;
+}
+
 declare global {
   interface Window {
     /** Set by the app; the shell calls it after it was asked to open a board. */
@@ -90,14 +102,19 @@ export async function addPin(
     pins?: Pin[];
     homeScreen?: HomeScreenPlacement;
   };
-  return { pins: body.pins ?? [], placement: body.homeScreen ?? "manual" };
+  return {
+    pins: announced(body.pins ?? []),
+    placement: body.homeScreen ?? "manual",
+  };
 }
 
 export async function removePin(pin: Pick<Pin, "kind" | "id">): Promise<Pin[]> {
-  return readPins(
-    await fetch(
-      `hkp://home-screen/pins/${pin.kind}/${encodeURIComponent(pin.id)}`,
-      { method: "DELETE" },
+  return announced(
+    await readPins(
+      await fetch(
+        `hkp://home-screen/pins/${pin.kind}/${encodeURIComponent(pin.id)}`,
+        { method: "DELETE" },
+      ),
     ),
   );
 }

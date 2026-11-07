@@ -2,7 +2,9 @@ import { BoardSnapshot } from "hkp-frontend/src/core/boardSnapshots";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 
 import { getBackend } from "../backend";
-import { BoardHistoryEntry } from "../backend/types";
+import { BoardHistoryEntry, BoardLibraryKind } from "../backend/types";
+
+export type { BoardLibraryKind };
 
 /**
  * A board's history, as every native host keeps it: the snapshots taken as the
@@ -12,13 +14,6 @@ import { BoardHistoryEntry } from "../backend/types";
 
 const LAST_BOARD_KEY = "lastActiveBoardName";
 const LAST_LIBRARY_KEY = "lastActiveBoardLibrary";
-
-/**
- * Which library a board is kept in: the host's own, or — on a Mac — the iOS
- * app's iCloud Drive folder (hkp://shared-boards/). It decides where the board
- * is read from when it is continued, and where saving writes it.
- */
-export type BoardLibraryKind = "local" | "icloud";
 
 /** The board last worked on, if any. */
 export function lastBoardName(): string | null {
@@ -36,6 +31,14 @@ export function rememberLastBoard(
 ): void {
   localStorage.setItem(LAST_BOARD_KEY, name);
   localStorage.setItem(LAST_LIBRARY_KEY, library);
+}
+
+/** Stops offering `name` to continue, when it is the board last worked on. */
+export function forgetLastBoard(name: string): void {
+  if (lastBoardName() === name) {
+    localStorage.removeItem(LAST_BOARD_KEY);
+    localStorage.removeItem(LAST_LIBRARY_KEY);
+  }
 }
 
 /**
@@ -68,7 +71,7 @@ export async function recordSnapshot(
     ...(documents.units.length ? { units: documents.units } : {}),
   };
   try {
-    await (await getBackend()).pushBoardSnapshot(name, entry);
+    await (await getBackend()).pushBoardSnapshot(name, entry, library);
   } catch {
     // Non-critical: history push failures are silently ignored.
   }
@@ -98,7 +101,7 @@ export async function resumeBoard(
 ): Promise<ResumedBoard | undefined> {
   const backend = await getBackend();
   try {
-    const history = await backend.loadBoardHistory(name);
+    const history = await backend.loadBoardHistory(name, library);
     if (history.length > 0) {
       return resumedFrom(history[0]);
     }

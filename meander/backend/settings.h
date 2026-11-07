@@ -247,11 +247,16 @@ public:
     return artPath.string();
   }
 
-  std::string getHistoryPath(const std::string& boardName) const
+  // A board's history. A board in the iOS app's iCloud Drive folder
+  // (hkp://shared-boards/) keeps its own, in a folder of its own: it may have
+  // the name of a board kept here, and continuing one must not resume the
+  // other. The listing of histories (hkp://history/) is of this folder alone.
+  std::string getHistoryPath(const std::string& boardName, bool iCloud = false) const
   {
     namespace fs = std::filesystem;
     const std::string storageName = encodeBoardNameForStorage(boardName);
-    fs::path histPath = getMeandersDirPath() / (storageName + ".history");
+    const fs::path dir = iCloud ? getMeandersDirPath() / "icloud-history" : getMeandersDirPath();
+    fs::path histPath = dir / (storageName + ".history");
     fs::path canonical = fs::weakly_canonical(histPath);
     if (canonical.string().find(m_hkpDirPath.string()) != 0)
     {

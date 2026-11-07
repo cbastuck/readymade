@@ -5,7 +5,15 @@ import type {
   PinsController,
 } from "hkp-frontend/src/views/start";
 
-import { addPin, listPins, Pin, pinOf, removePin, samePin } from "./homeScreen";
+import {
+  addPin,
+  listPins,
+  Pin,
+  pinOf,
+  PINS_CHANGED,
+  removePin,
+  samePin,
+} from "./homeScreen";
 
 /**
  * The pinned boards as the shell keeps them, and the controller the start page
@@ -14,7 +22,6 @@ import { addPin, listPins, Pin, pinOf, removePin, samePin } from "./homeScreen";
  */
 export function usePins(): {
   pins: PinsController;
-  unpinIfPinned: (action: PinnableAction) => Promise<void>;
   pinnedTitle: string | null;
   dismissPinned: () => void;
 } {
@@ -27,6 +34,12 @@ export function usePins(): {
     void listPins()
       .then(setList)
       .catch(() => {});
+    // A change made elsewhere: a board deleted from the Hub is unpinned
+    // there (library/deleteBoard).
+    const onChanged = (event: Event) =>
+      setList((event as CustomEvent<Pin[]>).detail);
+    window.addEventListener(PINS_CHANGED, onChanged);
+    return () => window.removeEventListener(PINS_CHANGED, onChanged);
   }, []);
 
   const isPinned = useCallback(
@@ -51,18 +64,8 @@ export function usePins(): {
     [isPinned],
   );
 
-  const unpinIfPinned = useCallback(
-    async (action: PinnableAction) => {
-      if (isPinned(action)) {
-        setList(await removePin(pinOf(action, "")));
-      }
-    },
-    [isPinned],
-  );
-
   return {
     pins,
-    unpinIfPinned,
     pinnedTitle,
     dismissPinned: () => setPinnedTitle(null),
   };

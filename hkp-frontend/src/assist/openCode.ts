@@ -1,16 +1,12 @@
 import type { AssistModel, Conversation } from "./anthropic";
-import { bundledKnowledgeProvider } from "./documentation";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import {
   openAICompatibleSystem,
-  serviceNames,
+  parseTextProposal,
+  prepareTextTurn,
 } from "./openAICompatible";
 import { BoardDescriptor } from "../types";
-import {
-  AssistScope,
-  resolveAssistProposal,
-  scopeInstruction,
-} from "./scope";
+import { AssistScope } from "./scope";
 
 /** A base URL for OpenCode's own HTTP API, which has no /v1 suffix. */
 export function openCodeBaseURL(base: string) {
@@ -146,54 +142,22 @@ export async function runOpenCodeTurn(options: {
   knowledgeProvider?: ReadymadeKnowledgeProvider;
 }) {
   options.signal.throwIfAborted();
-  const limit = Math.max(4096, options.contextTokens || 8192);
-  const maxTokens = Math.min(4096, Math.floor(limit / 4));
-  const budget = (limit - maxTokens - 512) * 2;
-  const promptContext =
-    options.context && typeof options.context === "object"
-      ? Object.fromEntries(
-          Object.entries(options.context).filter(
-            ([key]) => key !== "serviceCatalog",
-          ),
-        )
-      : options.context;
-  const context = JSON.stringify(promptContext);
-  const user = `Request: ${options.prompt}\n${scopeInstruction(options.scope)}\nCurrent board and editing context: ${context}`;
-  if (openAICompatibleSystem.length + user.length > budget)
-    throw new Error(
+  const { user, documentation, recent } = await prepareTextTurn({
+    ...options,
+    tooLarge:
       "This board is too large for the configured OpenCode model context size. Increase its context limit in OpenCode and Board Assist, or edit a smaller board.",
-    );
-  options.onStatus("Finding relevant board documentation…");
-  const knowledge = options.knowledgeProvider ?? bundledKnowledgeProvider;
-  const hits = await knowledge.searchKnowledge({
-    query: `${options.prompt} ${serviceNames(promptContext).join(" ")}`,
   });
-  const pages = await knowledge.readDocuments(
-    hits.slice(0, 8).map((hit) => hit.path),
-  );
-  let room = budget - openAICompatibleSystem.length - user.length;
-  let documentation = "";
-  for (const page of pages) {
-    const text = `\n${page.path}\n${page.content}`;
-    if (text.length <= room) {
-      documentation += text;
-      room -= text.length;
-    }
-  }
-  const recent: string[] = [];
-  for (const message of [...options.conversation].reverse()) {
-    if (typeof message.content !== "string" || message.content.length > room)
-      break;
-    recent.unshift(
-      `${message.role === "assistant" ? "Assistant" : "User"}: ${message.content}`,
-    );
-    room -= message.content.length;
-    if (recent.length >= 4) break;
-  }
-  const previous = recent.join("\n\n");
+  // OpenCode's stateless API takes one prompt, so the conversation is
+  // written into it rather than sent as messages.
+  const previous = recent
+    .map(
+      (message) =>
+        `${message.role === "assistant" ? "Assistant" : "User"}: ${message.content}`,
+    )
+    .join("\n\n");
   const prompt = [
     openAICompatibleSystem,
-    `Relevant repository documentation:${documentation || " No complete service page fits; ask a clarification if necessary."}`,
+    documentation,
     previous && `Previous conversation:\n${previous}`,
     user,
   ]
@@ -231,45 +195,20 @@ export async function runOpenCodeTurn(options: {
   if (typeof content !== "string")
     throw new Error("The OpenCode server returned no assistant message.");
   options.onRawResponse?.(content);
-  let proposal: {
-    explanation?: string;
-    board?: unknown;
-    runtime?: unknown;
-    services?: unknown;
-  };
-  try {
-    proposal = JSON.parse(
-      content.replace(/^\s*```(?:json)?\s*/, "").replace(/\s*```\s*$/, ""),
-    );
-  } catch {
-    throw new Error(
-      "The OpenCode model did not return valid JSON. Try a model that follows structured prompts, or make a smaller request.",
-    );
-  }
-  if (!proposal || typeof proposal.explanation !== "string")
-    throw new Error(
-      options.scope.kind === "board"
-        ? "The response needs an explanation and a board (or null)."
-        : "The response needs an explanation and a runtime (or null).",
-    );
-  const proposed =
-    options.scope.kind === "board"
-      ? proposal.board
-      : proposal.runtime == null
-        ? null
-        : { runtime: proposal.runtime, services: proposal.services };
-  const board =
-    proposed == null
-      ? undefined
-      : resolveAssistProposal(options.scope, options.base, proposed);
-  options.onText(proposal.explanation);
+  const { explanation, board } = parseTextProposal(
+    content,
+    options.scope,
+    options.base,
+    "The OpenCode model did not return valid JSON. Try a model that follows structured prompts, or make a smaller request.",
+  );
+  options.onText(explanation);
   return {
     conversation: [
       ...options.conversation,
       { role: "user", content: options.prompt },
       { role: "assistant", content },
     ] as Conversation,
-    text: proposal.explanation,
+    text: explanation,
     board,
   };
 }

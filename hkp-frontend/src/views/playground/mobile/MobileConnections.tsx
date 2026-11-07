@@ -65,23 +65,19 @@ export function MobileConnectionsProvider({
     return () => window.removeEventListener(COORDINATORS_CHANGED, reread);
   }, []);
 
+  // Written to the stored list, not inside a state updater: storing announces
+  // the change (COORDINATORS_CHANGED), and the listener above takes the list
+  // from there. An updater has to be pure — StrictMode runs it twice, which
+  // would announce every change twice.
   const addCoordinator = useCallback((c: CoordinatorDescriptor) => {
-    setCoordinators((prev) => {
-      if (prev.some((x) => x.url === c.url)) {
-        return prev;
-      }
-      const next = [...prev, c];
-      storeCoordinators(next);
-      return next;
-    });
+    const stored = restoreCoordinators();
+    if (!stored.some((x) => x.url === c.url)) {
+      storeCoordinators([...stored, c]);
+    }
   }, []);
 
   const removeCoordinator = useCallback((c: CoordinatorDescriptor) => {
-    setCoordinators((prev) => {
-      const next = prev.filter((x) => x.url !== c.url);
-      storeCoordinators(next);
-      return next;
-    });
+    storeCoordinators(restoreCoordinators().filter((x) => x.url !== c.url));
   }, []);
 
   const addRuntimeEngine = useCallback((rt: RuntimeClass) => {

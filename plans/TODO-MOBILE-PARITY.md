@@ -51,7 +51,7 @@ calling convention.
 | M6 | Board Assist | built 2026-10-27; the pass on devices open |
 | M7 | Assets in the board finder | open |
 | M8 | Settings: licenses and about | built 2026-10-27 with the Settings page; the pass on devices open |
-| M9 | Sharing into the app | open |
+| M9 | Sharing into the app | built 2026-11-07; the iOS pass done, the Android pass open |
 | M10 | Board finder extras: source, fork, import, QR | open |
 
 The order is the order of value, not of dependency. M8 is small and can go in
@@ -682,18 +682,44 @@ Apps that do appear to "continue in the app" usually do one of three things:
 **Which apps did you have in mind?** Checking one or two of them would tell us
 which of these it is.
 
-### Work
+### Built (2026-11-07)
 
-- [ ] **iOS: Open in Readymade for files.** Declare document types for the media
-  boards consume (images, audio, PDF, JSON, `.hkpp` from M2). A file then launches
-  the app, and the in-app picker (`ShareBoardPicker`) chooses the board. This is
-  the "launch and continue in the app" path, for files.
-- [ ] **iOS: links and text** stay with the extension and its mailbox. After
-  saving, it posts a local notification ("Open in Readymade"), which Apple
-  recommends, so one tap brings the app up with the share waiting.
-- [ ] **Android: share target.** An `ACTION_SEND` / `ACTION_SEND_MULTIPLE` intent
-  filter on `MainActivity`. On Android sharing *does* launch the app, so the
-  in-app picker is used directly, with no mailbox. Android has no sharing yet.
+Both shells hand the page the same share envelope, `{ id, receivedAt, url?,
+title?, text?, boardName?, file? }`, through the same sink
+(`window.__READYMADE_SHARES__`, `__readymadeDeliverShare`), and serve a shared
+file's bytes on `hkp://share-files/<id>` (GET to read, DELETE to release). The
+web app's share flow did not change: it was never iOS-only, and the in-app
+picker (`ShareBoardPicker`) chooses the board on both.
+
+- [x] **iOS: Open in Readymade for files.** `CFBundleDocumentTypes` declares
+  images, audio, PDF and JSON, ranked `Alternate`, so Readymade is offered and
+  never the default. An opened file arrives in `onOpenURL` as a file URL;
+  `ShareRouter.handleOpenedFile` reads it under security-scoped access and a
+  file coordinator, writes it into the App Group inbox as the extension would,
+  and removes the copy iOS put in `Documents/Inbox`. Files over 100 MB, or
+  unreadable ones, raise an alert. `.hkpp` is not declared: it has no UTI yet.
+- [x] **iOS: links and text** stay with the extension and its mailbox. After
+  saving, the extension posts a local notification ("Open in Readymade"), when
+  the app has been allowed to, and completes only once it is posted. The app asks
+  for that permission the first time it delivers a share, and clears delivered
+  notifications when it becomes active.
+- [x] **Android: share target.** `ACTION_SEND` / `ACTION_SEND_MULTIPLE` intent
+  filters (`*/*`) on `MainActivity`. A share is copied into an inbox in the app's
+  files (`bridge/ShareInbox.kt`), one item per file with the text, link and
+  subject on the first, and handed to the page once it has loaded
+  (`onPageFinished`); an item is removed only once the page took it. A text that
+  is nothing but a link becomes `url`. Files are capped at 25 MB, below iOS,
+  because the bytes reach the page as base64 through the JavaScript bridge; a
+  larger one raises a toast. A relaunch from history does not deliver the share
+  again.
+
+### Still open
+
+- [ ] **The Android pass on devices**: a link from Chrome, text, one image and
+  several from Photos, a file over 25 MB, a share while the app is running and
+  from a cold start, and rotating while the picker is open.
+- [ ] `.hkpp` as an Open in type on iOS, once it has a declared UTI
+  (`UTExportedTypeDeclarations`).
 
 ---
 
