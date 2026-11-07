@@ -17,6 +17,7 @@ import OverviewView from "../../overview/OverviewView";
 import { useAssetView } from "../../assets/AssetViewContext";
 import AssetView from "../../assets/AssetView";
 import { FacadeDescriptor } from "../../facade/types";
+import { useRuntimeZoom } from "./RuntimeZoom";
 
 /** What the editor starts from on a board that declares no facade yet. */
 const EMPTY_FACADE: FacadeDescriptor = { layout: "single", panels: [] };
@@ -49,6 +50,7 @@ export default function BoardEntryPoint({
   // composition has the single facade it always had.
   const views = boardContext.linkage?.views ?? [];
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const runtimeZoom = useRuntimeZoom()?.zoom ?? 100;
   // The tabs switch between facades, so they belong to the facade half and go
   // with it. The choice is kept rather than reset: the tab comes back on the
   // view it was left on.
@@ -139,11 +141,18 @@ export default function BoardEntryPoint({
         inert={showOverview}
         style={showOverview ? { visibility: "hidden" } : undefined}
       >
-        <Board
-          boardContext={boardContext}
-          description={description}
-          boardName={boardName}
-        />
+        <div
+          style={{
+            zoom: `${runtimeZoom}%`,
+            visibility: showOverview ? "hidden" : undefined,
+          }}
+        >
+          <Board
+            boardContext={boardContext}
+            description={description}
+            boardName={boardName}
+          />
+        </div>
       </div>
       {showOverview && (showAssets ? <AssetView /> : <OverviewView />)}
     </div>
