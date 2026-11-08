@@ -1,6 +1,6 @@
 {
   "boardName": "Hacker News Reader",
-  "description": "Hacker News as an app: the front page, the newest stories, the best of recent days, Ask HN and Show HN, and a search over every story ever posted. Pick a story to open it; pick its comments to read the whole discussion beside the list, every reply under the comment it answers and the top-level comments in the order Hacker News ranks them. Fold a comment to skip to the next one, or collapse the whole thread to its top-level comments and open the ones worth reading.\n\nEverything runs in the browser — no runtime to install. The stories come from the Hacker News search API Algolia hosts, which answers any origin. A thread is asked for twice at once: Algolia sends every comment in one document, oldest first and written in HTML, and Hacker News's own API sends the order it ranks them in. The browser's SQL service puts the two together — plain paragraphs, nested as the thread is. The one thing the board keeps is which comments were folded, in a small SQL database in this browser, so a folded thread is still folded when it is opened again.",
+  "description": "Hacker News as an app: the front page, the newest stories, the best of recent days, Ask HN and Show HN, and a search over every story ever posted. Pick a story to open it; pick its comments to read the whole discussion beside the list (on a phone, in place of it), every reply under the comment it answers and the top-level comments in the order Hacker News ranks them. Fold a comment to skip to the next one, or collapse the whole thread to its top-level comments and open the ones worth reading.\n\nEverything runs in the browser — no runtime to install. The stories come from the Hacker News search API Algolia hosts, which answers any origin. A thread is asked for twice at once: Algolia sends every comment in one document, oldest first and written in HTML, and Hacker News's own API sends the order it ranks them in. The browser's SQL service puts the two together — plain paragraphs, nested as the thread is. The one thing the board keeps is which comments were folded, in a small SQL database in this browser, so a folded thread is still folded when it is opened again.",
   "runtimes": [
     {
       "id": "ui",
@@ -513,6 +513,10 @@
                             "payload": {
                               "id": "{{item.id}}"
                             }
+                          },
+                          {
+                            "type": "show-panel",
+                            "panel": "discussion"
                           }
                         ]
                       }
@@ -528,6 +532,7 @@
         "id": "discussion",
         "title": "Discussion",
         "width": "45%",
+        "detailOf": "stories",
         "layout": {
           "direction": "column",
           "gap": 10,

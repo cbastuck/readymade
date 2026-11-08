@@ -200,7 +200,10 @@ controls rarely all belong to the same person or the same moment — a feed is
 subscribed to once and read every day. They are a view over the panels the
 facade already has: a tab names panel ids, a panel no tab names stays on screen
 above the bar, and `defaultTab` — which is not remembered between visits — is
-what everybody gets. **Notices** are what a board says without being looked at: a
+what everybody gets. A panel can also be another's **detail** (`detailOf`) — a
+story's discussion beside the list of stories. Where they fit side by side they
+are; on a phone the detail opens in place of its master, from a `show-panel`
+action, with a way back to the list as it was left. **Notices** are what a board says without being looked at: a
 toast raised from what a service reports, instead of a row kept free for a
 problem that is usually not there.
 

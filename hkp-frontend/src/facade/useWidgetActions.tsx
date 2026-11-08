@@ -17,6 +17,7 @@ import { useFacadeState } from "./FacadeStateContext";
 import { useFacadeIdentity } from "./FacadeIdentity";
 import { executeActions } from "./executeActions";
 import { useFacadeBoardActions } from "./FacadeBoardActions";
+import { useFacadePanelNavigation } from "./FacadePanelNavigation";
 
 /** A value as the text a field starts with. */
 function asText(value: unknown): string {
@@ -168,6 +169,7 @@ export function useWidgetActions(boardContext: BoardContextState): {
   const { state, setState } = useFacadeState();
   const identity = useFacadeIdentity(boardContext);
   const boardActions = useFacadeBoardActions();
+  const navigation = useFacadePanelNavigation();
   const [pending, setPending] = useState<Pending | null>(null);
   // The question on screen, read when a new one arrives: only one is shown at
   // a time, and one that is replaced before it is answered counts as declined.
@@ -222,6 +224,7 @@ export function useWidgetActions(boardContext: BoardContextState): {
       boardContext,
       setState,
       boardActions,
+      navigation,
       // Without this a { "$state": … } reference in the payload travels as
       // the reference object itself, and the service receives a shape it
       // cannot read rather than the value a widget published.

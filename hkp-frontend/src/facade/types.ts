@@ -137,13 +137,28 @@ export type PromptAction = {
   decline?: string;
 };
 
+// Brings a panel on screen: chooses the tab that holds it, and opens it over
+// its master where it is a detail (`FacadePanel.detailOf`) the screen has no
+// room to show beside it. Where the panel is already on screen it does
+// nothing, which is what a "Comments" button means on a screen wide enough to
+// show the comments already.
+//
+// It moves nothing but what is looked at, so it goes after the steps that fill
+// the panel: by the time it opens, it is showing what it was opened for.
+export type ShowPanelAction = {
+  type: "show-panel";
+  // The panel's id, as declared in `panels`.
+  panel: string;
+};
+
 export type WidgetAction =
   | ConfigureAction
   | SetStateAction
   | ProcessAction
   | BoardAction
   | ConfirmAction
-  | PromptAction;
+  | PromptAction
+  | ShowPanelAction;
 
 export type MessageListWidget = {
   type: "message-list";
@@ -886,6 +901,21 @@ export type FacadePanel = {
   // opens as next time. Ignored where the panels do not share a row at all —
   // the mobile view stacks them.
   width?: number | string;
+  // The panel this one is the detail of, by id: a story's discussion is the
+  // detail of the list of stories, a message of the inbox it was picked from.
+  //
+  // A relation rather than a layout, so each host can show it the way its
+  // screen allows. Where the panels fit side by side they are, exactly as
+  // without it. Where they do not — the mobile view — the detail is not
+  // stacked under its master, where a reader would have to scroll past the
+  // whole list to reach it, but opened over it by a `show-panel` action, with
+  // a way back to the master as it was left.
+  //
+  // A master that is not one of the facade's panels makes this an ordinary
+  // panel again, for the same reason a tab's unknown panel id shows too much:
+  // a board edited since, or a member sent only part of the facade, should
+  // lose an arrangement rather than a panel.
+  detailOf?: string;
 } & FacadeAudience;
 
 // One face of a facade: the panels a person sees while it is chosen.

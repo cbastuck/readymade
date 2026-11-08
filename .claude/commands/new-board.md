@@ -368,6 +368,37 @@ panels stack.
 - Switching tabs hides a panel rather than discarding it: a half-typed field and a table's
   rows are still there when it comes back.
 
+### Master and detail — `detailOf`
+
+A list and the one item picked from it — stories and a story's discussion, an inbox and a
+message — belong side by side on a desktop and cannot be on a phone, where a detail
+stacked under its master is a whole list's scroll away. Say which panel is the detail, and
+open it from the button that picks the item:
+
+```json
+{ "id": "discussion", "title": "Discussion", "detailOf": "stories", "layout": { ...LayoutItem } }
+```
+
+```json
+"actions": [
+  { "type": "process", "serviceUuid": "thread", "payload": { "id": "{{item.id}}" } },
+  { "type": "show-panel", "panel": "discussion" }
+]
+```
+
+Where the panels fit side by side nothing changes: the detail is a column beside its master
+and `show-panel` does nothing. On a phone the detail is not stacked: `show-panel` opens it
+in place of its master, under a bar naming the way back (the master's `title`), and the
+system's back gesture closes it too. The master stays mounted underneath, scrolled where it
+was left.
+
+- **`show-panel` goes last**, after the steps that fill the detail, so it opens on what it
+  was opened for.
+- A detail may have a detail of its own; back steps through them one at a time.
+- `show-panel` also works on a panel that is no detail: it chooses the tab that holds it.
+- A `detailOf` naming a panel the facade does not have is ignored, and the panel is an
+  ordinary one again.
+
 ### Kept for the owner — `visibleTo`
 
 A board meant to be deployed and shared has controls only its owner should have — going on
@@ -1109,4 +1140,5 @@ import myBoard from "../../../boards/my-board.json";
 - [ ] The board does something useful with a fresh load (no manual steps required to see it work, or clear first-run instructions in the facade)
 - [ ] Controls for setting the board up are behind their own tab, and `defaultTab` names the one people use
 - [ ] Panels sharing a row declare a `width` share where one of them plainly matters more
+- [ ] A panel showing the item picked from another panel is that panel's `detailOf`, and the button that picks it ends with `show-panel`
 - [ ] Every service that can refuse a request has a notice on it, and no panel keeps a row free for an error

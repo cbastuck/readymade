@@ -7,6 +7,7 @@ import {
 import { serviceForUserInterface } from "../types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeBoardActions } from "./FacadeBoardActions";
+import { FacadePanelNavigation } from "./FacadePanelNavigation";
 import { findService, processService } from "./boardServices";
 import { applyInput } from "./applyInput";
 import { FacadeIdentity, isUserRef, resolveUserRef } from "./FacadeIdentity";
@@ -87,6 +88,7 @@ export async function executeActions({
   state,
   identity,
   boardActions,
+  navigation,
   byPerson = false,
   ask,
   askValue,
@@ -101,6 +103,9 @@ export async function executeActions({
   // What the host showing this facade can do with the board itself. Absent for
   // a host that offers none of it, which makes a board action do nothing.
   boardActions?: FacadeBoardActions;
+  // How the host brings a panel on screen. Absent, a show-panel step does
+  // nothing: the panels are wherever that host already put them.
+  navigation?: FacadePanelNavigation;
   // When provided, { "$state": "key" } references in configure payloads are
   // resolved against these values before $$input substitution runs.
   state?: Record<string, unknown>;
@@ -171,6 +176,8 @@ export async function executeActions({
       if (act.action === "partner-board-qr") {
         boardActions?.showPartnerBoardQr();
       }
+    } else if (act.type === "show-panel") {
+      navigation?.showPanel(act.panel);
     } else if (act.type === "confirm") {
       const withState = resolveActionRefs(act.question, state ?? {}, identity);
       const question = applyInput(withState, input);

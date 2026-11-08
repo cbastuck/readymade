@@ -12,7 +12,9 @@ opens the story; a story without a link of its own (an Ask HN, say) opens its
 page on Hacker News instead.
 
 **N comments** under a story reads its discussion in the right-hand column:
-the post itself where it has text, then the whole thread. Every reply sits
+the post itself where it has text, then the whole thread. On a phone the
+discussion takes the place of the list instead, and back returns to the list
+where you left it. Every reply sits
 under the comment it answers, indented one step further; the top-level comments
 come in the order Hacker News ranks them, and the replies under each in the
 order they were written. A deleted comment keeps its place when it has

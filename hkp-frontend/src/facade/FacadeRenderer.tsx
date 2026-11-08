@@ -12,6 +12,7 @@ import { currentFace, defaultFaceId, resolveFaces } from "./tabs";
 import { useFacadeView } from "./FacadeViewContext";
 import { useChromeRetracted } from "./FacadeChrome";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
+import { FacadePanelNavigationContext } from "./FacadePanelNavigation";
 import { SwimlaneDragProvider } from "./SwimlaneDragContext";
 
 type FacadeRendererProps = {
@@ -94,6 +95,18 @@ export default function FacadeRenderer({
     setChosenTab(defaultFaceId(facade));
   }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
   const shownFace = currentFace(faces, chosenTab);
+
+  // Panels sit side by side here, details beside their masters, so bringing
+  // one on screen is choosing the tab it is on — and nothing, for a panel
+  // that is on screen whichever tab is chosen.
+  const navigation = {
+    showPanel: (id: string) => {
+      const face = faces.find((f) => f.panels.some((p) => p.id === id));
+      if (face) {
+        setChosenTab(face.tab.id);
+      }
+    },
+  };
 
   // ── vertical (runtime) splitter ──────────────────────────────────────────
   const DEFAULT_RUNTIME_HEIGHT = Math.round(window.innerHeight * 0.4);
@@ -189,6 +202,7 @@ export default function FacadeRenderer({
       value={{ state: facadeState, setState: setFacadeStateEntry }}
     >
       <SwimlaneDragProvider>
+        <FacadePanelNavigationContext.Provider value={navigation}>
         <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}
         <FacadeNotices
@@ -330,6 +344,7 @@ export default function FacadeRenderer({
           </div>
         </div>
         </FacadeBoardActionsProvider>
+        </FacadePanelNavigationContext.Provider>
       </SwimlaneDragProvider>
     </FacadeStateContext.Provider>
   );

@@ -368,6 +368,12 @@ reports something, instead of a row kept free for a problem that is usually not 
 notice reads a service the way a widget's `source` does, fires when that value arrives with
 something in it, and never seeds from the state a service was already in.
 
+A panel may be another's **detail** — `"detailOf": "<panel id>"`, a story's discussion
+beside the list of stories. Side by side where they fit; on a phone the detail opens in
+place of its master, from a `{ "type": "show-panel", "panel": "<id>" }` action, with a
+back bar and the system back gesture to return (`facade/details.ts`,
+`views/playground/mobile/MobileFacadeView.tsx`).
+
 A widget, container, panel, tab or notice marked **`"visibleTo": "owner"`** is kept for the
 board's owner: a deployed board's coordinator leaves it out of the facade a member is sent,
 so it is neither drawn, nor callable, nor projected (`facadeForMembers` in
