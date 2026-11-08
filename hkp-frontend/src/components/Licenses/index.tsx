@@ -272,7 +272,7 @@ function ComponentRow({
 
 // The literal is hkp-frontend's own --hkp-accent, repeated so the view looks the same
 // in hosts that define none of the tokens — the website is one.
-const accent = "var(--hkp-accent, oklch(0.6 0.17 195))";
+const accent = "var(--hkp-accent, oklch(0.6 0.15 250))";
 const hairline = "var(--hkp-border, rgba(100, 116, 139, 0.28))";
 
 const styles: Record<string, React.CSSProperties> = {

@@ -180,8 +180,9 @@ browser, for you") and what deploying the board changes.
       `/pricing/#cloud`) shows only its own text. *Made public 2026-11-08:*
       the draft flag is gone; Partner is "talk to us" with indicative figures,
       the not-yet-open offers ask early adopters to say hello
-      (`TODO-EARLY-ADOPTERS.md`), and every price says no VAT is charged
-      (§19 UStG).
+      (`TODO-EARLY-ADOPTERS.md`), and Community's prices say no VAT is
+      charged (§19 UStG). Partner's carry no tax line: what applies there is
+      a commercial question, kept in `private-plans/`.
 - [x] Keep to the vocabulary rule: no *fund*, *invest*, *shares*, *stake*,
       *equity*, *returns*. And no "there is nothing to host" while Cloud is
       not an offer yet. *Checked 2026-11-06:* `COMMERCIAL_SLIDES` and
