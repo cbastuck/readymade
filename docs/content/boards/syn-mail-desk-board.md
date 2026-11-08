@@ -5,6 +5,10 @@ facade in front of it. The booking and hotels units are included unchanged;
 their original facades are hidden in this composition, and remain available in
 the original `syn-board.json`.
 
+This is the first stage: the desk drafts follow-ups and the human in the loop
+reviews them. Handing enquiries that are ready for an offer on to the next
+board comes next.
+
 ## The three lanes
 
 - **Incoming mail** shows active enquiries received and filed by the booking

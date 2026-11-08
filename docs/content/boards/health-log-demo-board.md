@@ -35,7 +35,8 @@ day. The journal is joined onto the query result, so the reusable chart only
 needs its generic `contextField` setting and has no health-specific behavior.
 The **Your data** tab shows the underlying records and can delete selected
 events. Selecting one blood-pressure event removes both its systolic and
-diastolic rows.
+diastolic rows. **Delete all entries** empties the log after asking:
+every measurement and every journal entry.
 
 ## The services
 
@@ -49,10 +50,13 @@ One REST runtime on hkp-node contains:
    current day.
 4. **After a new entry** — a SubService whose **Entry event** Monitor shows the
    event available for downstream work.
-5. **Delete selected entries** — removes events selected in the data table.
-6. **Generate fake measurements** and **Generate fake journal** — write six
+5. **Delete selected entries** — removes events selected in the data table, or
+   every measurement when asked to delete all.
+6. **Delete the journal** — removes every journal entry, only when asked to
+   delete all: a selection names measurements, not days.
+7. **Generate fake measurements** and **Generate fake journal** — write six
    months of fictional history when asked, and nothing otherwise.
-7. **Read personal history** — joins the daily journal onto each measurement
+8. **Read personal history** — joins the daily journal onto each measurement
    and returns the history used by both table and
    charts.
 
@@ -108,9 +112,11 @@ keeps its own. Like deleting, generating enters the pipeline after **After a
 new entry**, so several hundred invented rows are not announced downstream as
 measurements somebody took.
 
-There is no button that removes them again. They are ordinary rows, removable
-from the table like any other, which is the reason to try this on a log that
-does not hold measurements of your own.
+There is no button that removes only them. They are ordinary rows, removable
+from the table like any other or with everything else by **Delete all
+entries**, which is the reason to try this on a log that does not hold
+measurements of your own. The starter rows do not come back after deleting
+all: the marker that seeded them stays.
 
 ## A query-backed line chart
 

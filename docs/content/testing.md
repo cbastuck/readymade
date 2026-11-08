@@ -180,6 +180,24 @@ where it is absent), and also calls an endpoint mounted on it. Both pass bytes,
 bytes with JSON beside them and a ring buffer through the other server and
 compare what comes back.
 
+### People who sign in
+
+The cloud specs run hkp-node without authentication, so everybody is the one
+anonymous tenant and there is nobody to share a board with. Journeys that need
+two people use real verification instead: `e2e/support/jwks-server.mjs` makes a
+key pair per start and serves its public half, hkp-node is pointed at it with
+`HKP_TEST_JWKS_URI` (honoured only from a checkout and only on loopback), and
+`e2e/support/identities.ts` signs id tokens for whoever a spec names —
+signature, audience and verified email all checked as Auth0's are. A second
+person gets a context of their own through `prepareContext`
+(`support/test.ts`), held to the same network rules as the first.
+
+`e2e/playwright.film.config.ts` is the first user: the golden-path shoot
+(`npm run film`), which deploys the court booking board as one person, books on
+a phone as another and races them for the same hour. It is a filmed rehearsal
+rather than a suite — never part of `npm test` — and writes stills for the
+explainer video (`plans/TODO-GOLDEN-PATH-VIDEO.md`).
+
 ### After a failure
 
 `trace: retain-on-failure` means the failing run was already recorded:
@@ -232,6 +250,8 @@ pull request runs nothing, so two things are worth knowing before merging:
 | Blocks on the running board: the lock, params, detach, editing, making one, wrapping picked services | `e2e/tests/blocks.spec.ts` |
 | Deploying to a real coordinator, in a browser | `e2e/playwright.cloud.config.ts`, `e2e/tests/cloud/deploy.spec.ts` |
 | Runtime sockets opened with a ticket, never the token, in a browser | `e2e/tests/cloud/ws-tickets.spec.ts` |
+| Signed-in people: test signing keys and id tokens | `e2e/support/jwks-server.mjs`, `e2e/support/identities.ts` |
+| Two people on one deployed board, filmed | `e2e/playwright.film.config.ts`, `e2e/film/` |
 | A board across hkp-node and hkp-python | `hkp-node/tests/coordinator-python.test.ts` |
 | A board across hkp-node and hkp-rt; endpoints mounted on hkp-rt | `hkp-node/tests/coordinator-rt.test.ts` |
 | What CI covers | `.github/workflows/run-all-tests.yml` |

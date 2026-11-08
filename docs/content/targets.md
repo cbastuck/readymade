@@ -276,7 +276,7 @@ Beyond the platform seam, each shell brings things a browser cannot:
 | Boards on disk (`hkp://boards/`) | — | yes | yes | yes |
 | Embedded `hkp-rt` | — | yes | yes | yes |
 | Local model backends | — | yes | — | — |
-| Secret store, with a consent prompt | — | yes | yes | yes |
+| Secret store, with a consent prompt | page memory only | yes | yes | yes |
 | Share into the app | — | yes | yes | yes |
 | Pin a board to the Home Screen | — | — | yes | yes |
 | LAN discovery (`_readymade._tcp`) | — | yes | yes | yes |
@@ -288,7 +288,10 @@ declaration per shell — iOS names the service in `Info.plist`, which the OS
 requires before a process may browse for it. What lives *in a shell* reaches
 only that shell, and has to be written again for the next: the secret vault
 is the desktop backend's (`meander/backend/vault.h`), behind `saucer.exposed`,
-and each phone shell keeps its own behind `hkp://secrets` (below). And what
+and each phone shell keeps its own behind `hkp://secrets` (below). The web
+keeps secrets in the page's memory instead (`hkp-frontend/src/secretsBackend.ts`)
+— the same Settings tab and consent prompt over a store that a reload empties.
+And what
 the platform defines itself has to be written per platform —
 sharing is a macOS app extension (`meander/backend/shareRouter.cpp`), an iOS
 Share Extension (`meander-ios/ReadymadeIOS/ShareExtension/`) with document

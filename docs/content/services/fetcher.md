@@ -57,6 +57,12 @@ expressions with `params` bound to the current input:
 }
 ```
 
+A reference inside a longer URL is a part of the address — an id, a search
+term — and is encoded as one, so a value holding `&` or `/` cannot change where
+the request goes. A reference that is the whole URL (`"{{params.link}}"`) is the
+whole address and is used as it is. A path the input does not have leaves
+nothing behind.
+
 ### `body` and `bodyFormat`
 
 | Value | Behaviour |

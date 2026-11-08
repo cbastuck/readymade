@@ -13,6 +13,10 @@ function findWidgets<T extends { type: string }>(
   return "type" in item && item.type === type ? [item as T] : [];
 }
 
+/** One of the board's services, by uuid rather than by its place in line. */
+const service = (uuid: string) =>
+  board.services.health.find((svc) => svc.uuid === uuid)!;
+
 describe("the private health log demo board", () => {
   it("keeps the post-entry integration as a visible nested pipeline", () => {
     expect(board.services.health.map((service) => service.uuid)).toEqual([
@@ -21,11 +25,12 @@ describe("the private health log demo board", () => {
       "save-journal",
       "after-entry",
       "delete-entry",
+      "delete-journal",
       "fake-measurements",
       "fake-journal",
       "read-history",
     ]);
-    expect(board.services.health[3]).toMatchObject({
+    expect(service("after-entry")).toMatchObject({
       serviceId: "sub-service",
       state: {
         pipeline: [
@@ -90,10 +95,10 @@ describe("the private health log demo board", () => {
         },
       ],
     });
-    expect(board.services.health[2].state.statement).toContain(
+    expect(service("save-journal").state.statement).toContain(
       "ON CONFLICT(day) DO UPDATE",
     );
-    expect(board.services.health[7].state.statement).toContain(
+    expect(service("read-history").state.statement).toContain(
       "LEFT JOIN health_journal",
     );
   });
@@ -107,8 +112,35 @@ describe("the private health log demo board", () => {
       rowKey: "eventId",
       selectionState: "selectedEvents",
     });
-    expect(board.services.health[4].state.statement).toContain(
+    expect(service("delete-entry").state.statement).toContain(
       "event_id IN (SELECT value FROM json_each($eventIds))",
+    );
+  });
+
+  it("deletes everything at once, asked first", () => {
+    const button = findWidgets<any>(
+      board.facade.panels[2].layout as LayoutItem,
+      "button",
+    ).find((candidate) => candidate.label === "Delete all entries");
+    expect(button.confirm).toBeTruthy();
+    expect(button.actions).toEqual([
+      {
+        type: "process",
+        serviceUuid: "delete-entry",
+        payload: { operation: "delete-all" },
+      },
+    ]);
+    // Measurements and journal both, each statement answering only its own
+    // operation; a selection never reaches the journal.
+    expect(service("delete-entry").state.statement).toContain(
+      "$operation = 'delete-all'",
+    );
+    expect(service("delete-journal").state).toMatchObject({
+      mode: "run",
+      emit: "input",
+    });
+    expect(service("delete-journal").state.statement).toContain(
+      "WHERE $operation = 'delete-all'",
     );
   });
 

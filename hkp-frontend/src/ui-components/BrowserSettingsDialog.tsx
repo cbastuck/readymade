@@ -1,4 +1,4 @@
-import { Network } from "lucide-react";
+import { KeyRound, Network } from "lucide-react";
 
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import {
@@ -17,8 +17,13 @@ import ManageConnectionsContent from "./connections/ManageConnectionsContent";
 import SettingsDialog from "./SettingsDialog";
 import { licencesTab } from "./settings/licencesTab";
 import { useRemoteRuntimeEditing } from "./toolbar/useRemoteRuntimeEditing";
+import SecretsTab from "./settings/SecretsTab";
+import { SettingsNote } from "./settings/kit";
+import { sessionSecrets } from "hkp-frontend/src/secretsBackend";
+import { pushSecretToBoard } from "hkp-frontend/src/runtime/rest/pushSecretToBoard";
 
 export const CONNECTIONS_TAB = "connections";
+export const SECRETS_TAB = "secrets";
 
 /** The servers a view keeps, in both roles. */
 type Connections = {
@@ -40,8 +45,9 @@ type Props = {
 
 /**
  * The settings of a browser host, the same wherever they are opened from:
- * Appearance, the servers this browser knows, and the licences of the bundle
- * it was served — no native code, so a shorter list than any of the apps.
+ * Appearance, the servers this browser knows, the secrets this page holds, and
+ * the licences of the bundle it was served — no native code, so a shorter list
+ * than any of the apps.
  */
 export default function BrowserSettingsDialog({
   tab,
@@ -63,8 +69,33 @@ export default function BrowserSettingsDialog({
             <StoredConnections />
           ),
         },
+        {
+          id: SECRETS_TAB,
+          label: "Secrets",
+          icon: <KeyRound size={15} />,
+          content: <SessionSecrets />,
+        },
         licencesTab("website"),
       ]}
+    />
+  );
+}
+
+const sessionSecretsBackend = async () => sessionSecrets;
+
+function SessionSecrets() {
+  const boardContext = useBoardContext();
+  return (
+    <SecretsTab
+      getBackend={sessionSecretsBackend}
+      onSaved={(alias) => void pushSecretToBoard(boardContext, alias)}
+      note={
+        <SettingsNote tone="warn">
+          Kept in this page&rsquo;s memory only: closing or reloading the tab
+          forgets them. Nothing is written to the browser or sent to a server
+          until a board you allow hands one to its runtime.
+        </SettingsNote>
+      }
     />
   );
 }

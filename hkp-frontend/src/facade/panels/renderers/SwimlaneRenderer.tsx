@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
-import { SwimlaneWidget, WidgetAction } from "../../types";
+import { SwimlaneCardAction, SwimlaneWidget, WidgetAction } from "../../types";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { useNotificationValue } from "./StatusIndicatorRenderer";
 import { resolvePath } from "../../readValue";
@@ -71,7 +71,7 @@ function cardsIn(widget: SwimlaneWidget, value: unknown): Card[] {
     }
     const row = candidate as Row;
     const id = field(row, idField);
-    const laneId = field(row, laneField);
+    const laneId = widget.allRows ? widget.laneId : field(row, laneField);
     if (!isCardId(id) || !isCardId(laneId)) {
       return [];
     }
@@ -92,11 +92,56 @@ function cardsIn(widget: SwimlaneWidget, value: unknown): Card[] {
   });
 }
 
+/** The ids another source holds, for a lane that leaves those cards out. */
+function heldElsewhere(widget: SwimlaneWidget, value: unknown): Set<string> {
+  if (!widget.except || !Array.isArray(value)) {
+    return new Set();
+  }
+  const idField = widget.except.idField ?? "cardId";
+  return new Set(
+    value.flatMap((row) => {
+      const id = row && typeof row === "object" ? field(row as Row, idField) : undefined;
+      return isCardId(id) ? [String(id)] : [];
+    }),
+  );
+}
+
 /** The cards of this widget's own lane, in the order they are shown. */
-function cardsFor(widget: SwimlaneWidget, all: Card[]): Card[] {
+function cardsFor(widget: SwimlaneWidget, all: Card[], held: Set<string>): Card[] {
   return all
-    .filter((card) => same(card.laneId, widget.laneId))
+    .filter((card) => same(card.laneId, widget.laneId) && !held.has(String(card.id)))
     .sort((a, b) => a.position - b.position || String(a.id).localeCompare(String(b.id)));
+}
+
+/** Whether a card action belongs on this card, as the row says. */
+function shows(action: SwimlaneCardAction, row: Row): boolean {
+  if (!action.visibleWhen) {
+    return true;
+  }
+  const value = field(row, action.visibleWhen.field);
+  return action.visibleWhen.equals === undefined
+    ? !!value
+    : String(value) === String(action.visibleWhen.equals);
+}
+
+/** A row's value as text, or nothing when there is nothing to say. */
+function text(row: Row, name: string | undefined): string {
+  if (!name) {
+    return "";
+  }
+  const value = field(row, name);
+  return value === undefined || value === null ? "" : String(value);
+}
+
+// The player that is playing, across every lane on the page: a card starting
+// stops it, so two cards never talk over each other.
+let playing: HTMLAudioElement | null = null;
+
+function playAlone(event: { currentTarget: HTMLAudioElement }) {
+  if (playing && playing !== event.currentTarget) {
+    playing.pause();
+  }
+  playing = event.currentTarget;
 }
 
 function resolvedActions(
@@ -225,13 +270,63 @@ function CardEditor({
   );
 }
 
+/** What is happening to a card in its lane, and the line that says more. */
+function CardStatus({ widget, row }: { widget: SwimlaneWidget; row: Row }) {
+  const status = text(row, widget.statusField);
+  const detail = text(row, widget.detailField);
+  if (!status && !detail) {
+    return null;
+  }
+  const color = widget.statusColors?.[status] ?? "hsl(var(--muted-foreground))";
+  return (
+    <div style={{ marginTop: 6, display: "grid", gap: 3 }}>
+      {status ? (
+        <span
+          data-status={status}
+          style={{
+            justifySelf: "start",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            fontSize: 10,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: 0.4,
+            color,
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{ width: 7, height: 7, borderRadius: "50%", background: color }}
+          />
+          {status}
+        </span>
+      ) : null}
+      {detail ? (
+        <span
+          style={{
+            fontSize: 11,
+            lineHeight: 1.35,
+            color: status && widget.statusColors?.[status] ? color : "hsl(var(--muted-foreground))",
+            overflowWrap: "anywhere",
+          }}
+        >
+          {detail}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function SwimlaneRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<SwimlaneWidget>) {
   const value = useNotificationValue(boardContext, widget.source);
+  const exceptValue = useNotificationValue(boardContext, widget.except?.source);
   const allCards = useMemo(() => cardsIn(widget, value), [widget, value]);
-  const cards = useMemo(() => cardsFor(widget, allCards), [widget, allCards]);
+  const held = useMemo(() => heldElsewhere(widget, exceptValue), [widget, exceptValue]);
+  const cards = useMemo(() => cardsFor(widget, allCards, held), [widget, allCards, held]);
   const { run, prompt } = useWidgetActions(boardContext);
   const { dragged, setDragged, targets, addTarget } = useSwimlaneDrag();
   const [dropIndex, setDropIndex] = useState<number | null>(null);
@@ -277,7 +372,11 @@ export function SwimlaneRenderer({
   // still reports its clicks here, which is what the containment check is for.
   const onCardClick = (event: MouseEvent<HTMLElement>, card: Card) => {
     const target = event.target as HTMLElement;
-    if (!event.currentTarget.contains(target) || target.closest("button")) {
+    if (
+      !event.currentTarget.contains(target) ||
+      target.closest("button") ||
+      target.closest("audio")
+    ) {
       return;
     }
     toggleSelected(card);
@@ -607,6 +706,47 @@ export function SwimlaneRenderer({
                       }}
                     >
                       {card.description}
+                    </div>
+                  ) : null}
+                  <CardStatus widget={widget} row={card.item} />
+                  {widget.audioField && text(card.item, widget.audioField) ? (
+                    <audio
+                      controls
+                      preload="none"
+                      aria-label={`Play ${card.title}`}
+                      src={text(card.item, widget.audioField)}
+                      onPlay={playAlone}
+                      style={{ display: "block", width: "100%", height: 32, marginTop: 7 }}
+                    />
+                  ) : null}
+                  {widget.cardActions?.some((action) => shows(action, card.item)) ? (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
+                      {widget.cardActions
+                        .filter((action) => shows(action, card.item))
+                        .map((action) => (
+                          <button
+                            key={action.label}
+                            type="button"
+                            onClick={() =>
+                              void act(
+                                action.actions,
+                                {
+                                  operation: "action",
+                                  label: action.label,
+                                  cardId: card.id,
+                                  laneId: card.laneId,
+                                  title: card.title,
+                                  description: card.description,
+                                  card: card.item,
+                                },
+                                action.confirm,
+                              )
+                            }
+                            style={{ ...controlStyle, padding: "4px 9px", fontSize: 11, fontWeight: 600 }}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
                     </div>
                   ) : null}
                 </div>

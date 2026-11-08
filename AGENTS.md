@@ -173,7 +173,10 @@ boards/                Every board the repo ships — demo boards, example confi
   runtime-configs/       Example single-runtime config JSONs for hkp-rt
 
 plans/                 Working documents for multi-session changes — what was
-                       decided, why, and what is still open (see plans/README.md)
+                       decided, why, and what is still open (see plans/README.md).
+                       Public, like the rest of this repository: commercial or
+                       legal terms, security weaknesses not yet fixed, and
+                       personal data go to ../private-plans/ instead
 
 hkp-frontend/          React app — playground UI, board engine, all browser services
   src/runtime/browser/   Browser runtime and services

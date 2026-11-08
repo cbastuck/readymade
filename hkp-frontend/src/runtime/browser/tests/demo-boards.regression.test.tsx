@@ -9,6 +9,12 @@ import BoardProvider, {
 import BrowserRegistry from "hkp-frontend/src/runtime/browser/BrowserRegistry";
 import { linkBlocks } from "hkp-frontend/src/core/linkBlocks";
 import { isBlockUse } from "hkp-frontend/src/runtime/board/blocks";
+import { filesUnitOrigin, isComposition } from "hkp-frontend/src/core/linkUnits";
+import {
+  UnitBoard,
+  qualifyRuntimeId,
+  unitBaseName,
+} from "hkp-frontend/src/runtime/board/units";
 import { allowedServices } from "hkp-frontend/src/runtime/browser/BrowserRegistry";
 import {
   BoardDescriptor,
@@ -31,6 +37,44 @@ const boardEntries = Object.entries(boardModules)
     board,
   }))
   .sort((a, b) => a.fileName.localeCompare(b.fileName));
+
+/**
+ * Where a composition's units are found: the other boards beside it, as the
+ * demo registry hands them to the app.
+ */
+const repositoryUnits = filesUnitOrigin(
+  new Map(boardEntries.map(({ fileName, board }) => [fileName, board as UnitBoard])),
+  "the repository's boards",
+);
+
+/**
+ * The runtimes a board runs as, with how many services each has: its own, and
+ * for a composition each unit's under the id the projection gives it.
+ */
+function runsAs(board: BoardDescriptor): {
+  runtimes: RuntimeDescriptor[];
+  serviceCounts: Record<string, number>;
+} {
+  const runtimes = [...board.runtimes];
+  const serviceCounts: Record<string, number> = Object.fromEntries(
+    board.runtimes.map((runtime) => [runtime.id, (board.services[runtime.id] || []).length]),
+  );
+  for (const unit of (board as UnitBoard).units ?? []) {
+    const source = boardEntries.find(
+      ({ fileName }) => unitBaseName(fileName) === unitBaseName(unit.uri),
+    )?.board;
+    if (!source) {
+      continue;
+    }
+    const name = unit.as ?? unitBaseName(unit.uri);
+    for (const runtime of source.runtimes) {
+      const id = qualifyRuntimeId(name, runtime.id);
+      runtimes.push({ ...runtime, id });
+      serviceCounts[id] = (source.services[runtime.id] || []).length;
+    }
+  }
+  return { runtimes, serviceCounts };
+}
 
 function ContextProbe({
   onChange,
@@ -200,7 +244,10 @@ describe("demo boards regression", () => {
   describe("restore smoke", () => {
     for (const { fileName, board } of boardEntries) {
       it(`restores ${fileName} through BoardProvider setBoardState`, async () => {
-        const { runtimeApis, restoreSpies } = createRuntimeApis(board.runtimes);
+        // A composition is restored as the app restores it, with its units to
+        // hand, and runs as its projection: its own runtimes and its units'.
+        const expected = runsAs(board);
+        const { runtimeApis, restoreSpies } = createRuntimeApis(expected.runtimes);
         let latestCtx: BoardContextState | null = null;
 
         render(
@@ -223,22 +270,25 @@ describe("demo boards regression", () => {
         await waitFor(() => expect(latestCtx).toBeTruthy());
 
         await act(async () => {
-          await latestCtx!.setBoardState(board);
+          await latestCtx!.setBoardState(
+            board,
+            isComposition(board as UnitBoard) ? repositoryUnits : undefined,
+          );
         });
 
         await waitFor(() => {
           expect(latestCtx!.runtimes.map((runtime) => runtime.id)).toEqual(
-            board.runtimes.map((runtime) => runtime.id),
+            expected.runtimes.map((runtime) => runtime.id),
           );
         });
 
-        for (const runtime of board.runtimes) {
+        for (const runtime of expected.runtimes) {
           expect(latestCtx!.services[runtime.id]).toHaveLength(
-            (board.services[runtime.id] || []).length,
+            expected.serviceCounts[runtime.id],
           );
         }
 
-        const expectedRestoreCallsByType = board.runtimes.reduce(
+        const expectedRestoreCallsByType = expected.runtimes.reduce(
           (all, runtime) => ({
             ...all,
             [runtime.type]: (all[runtime.type] || 0) + 1,

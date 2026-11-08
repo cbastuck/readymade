@@ -80,6 +80,20 @@ std::string primaryIPv4()
   return result;
 }
 
+// Where a player connects to the stream: its path under the endpoint's
+// address. A bound server's address ends in a slash and a mount's does not, so
+// the two are joined rather than appended. Empty while there is no address.
+std::string streamUrlAt(const std::string& base, const std::string& path)
+{
+  if (base.empty())
+  {
+    return {};
+  }
+  const bool slashed = base.back() == '/';
+  const std::string relative = !path.empty() && path.front() == '/' ? path.substr(1) : path;
+  return slashed ? base + relative : base + "/" + relative;
+}
+
 } // namespace
 
 namespace hkp {
@@ -570,7 +584,7 @@ json HttpServerSubservices::getState() const
       state["listeners"] = details.size();
       state["listenerDetails"] = details;
       // Where a player connects. Empty while nothing is listening for it.
-      state["streamUrl"] = m_url.empty() ? std::string() : m_url + m_stream->path.substr(1);
+      state["streamUrl"] = streamUrlAt(m_url, m_stream->path);
     }
   }
 
@@ -732,7 +746,15 @@ bool HttpServerSubservices::start()
     m_host.clear();
     m_url = m_mount.url();
     std::cout << "HttpServerSubservices::start() mounted at " << m_url << std::endl;
-    sendNotification(json{{MOUNT_FIELD, m_url}, {"status", "online"}});
+    json online{{MOUNT_FIELD, m_url}, {"status", "online"}};
+    {
+      std::lock_guard<std::mutex> lock(m_streamMutex);
+      if (m_stream)
+      {
+        online["streamUrl"] = streamUrlAt(m_url, m_stream->path);
+      }
+    }
+    sendNotification(online);
     return true;
   }
   m_impl->stop();
@@ -757,7 +779,7 @@ bool HttpServerSubservices::start()
     std::lock_guard<std::mutex> lock(m_streamMutex);
     if (m_stream)
     {
-      online["streamUrl"] = m_url + m_stream->path.substr(1);
+      online["streamUrl"] = streamUrlAt(m_url, m_stream->path);
     }
   }
   sendNotification(online);

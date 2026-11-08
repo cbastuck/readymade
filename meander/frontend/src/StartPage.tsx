@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { useAppContext } from "hkp-frontend/src/AppContext";
 import { useNavigate } from "hkp-frontend/src/router";
-import { findDemoBoard } from "hkp-frontend/src/demoRegistry";
+import { findDemoBoard, findDemoUnits } from "hkp-frontend/src/demoRegistry";
 import {
   StartPage as SharedStartPage,
   StartPageStore,
@@ -28,6 +28,7 @@ import {
   lastBoardLibrary,
   lastBoardName,
   resumeBoard,
+  resumedFrom,
   type BoardLibraryKind,
 } from "./library/boardHistory";
 import { isMeanderApp } from "./isMeanderApp";
@@ -39,12 +40,14 @@ type Props = {
    * Opens a board. `source` says where it was read from, when it came from a
    * file — a composition resolves the units beside it against that. `library`
    * is where saving writes it back: the iOS app's iCloud Drive folder for a
-   * board opened from there.
+   * board opened from there. `units` are the documents it links against when
+   * there is no file: a composed demo's, or those a history entry was kept with.
    */
   onRestoreBoard: (
     board: BoardDescriptor | null | undefined,
     source?: string,
     library?: BoardLibraryKind,
+    units?: Record<string, BoardDescriptor>,
   ) => void;
 };
 
@@ -116,7 +119,10 @@ export default function StartPage({ onRestoreBoard }: Props) {
       return entries.map((entry) => ({
         timestamp: entry.timestamp,
         label: entry.label,
-        open: () => onRestoreBoard(entry.snapshot),
+        open: () => {
+          const { board, units } = resumedFrom(entry);
+          onRestoreBoard(board, undefined, undefined, units);
+        },
       }));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -201,7 +207,12 @@ export default function StartPage({ onRestoreBoard }: Props) {
     // From the library it was last worked on in: a local board and an
     // iCloud Drive board may share the name, and each has its own history.
     const resumed = await resumeBoard(lastSessionName, lastSessionLibrary);
-    onRestoreBoard(resumed?.board ?? null, undefined, lastSessionLibrary);
+    onRestoreBoard(
+      resumed?.board ?? null,
+      undefined,
+      lastSessionLibrary,
+      resumed?.units,
+    );
   };
 
   /**
@@ -304,7 +315,7 @@ export default function StartPage({ onRestoreBoard }: Props) {
       case "demo": {
         const board = findDemoBoard(action.slug);
         if (board) {
-          onRestoreBoard(board);
+          onRestoreBoard(board, undefined, undefined, findDemoUnits(action.slug));
         }
         break;
       }

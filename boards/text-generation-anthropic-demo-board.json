@@ -1,6 +1,6 @@
 {
   "boardName": "Text Generation (Anthropic) Demo",
-  "description": "Extracts structured data from a message with a hosted model, on the Node runtime.",
+  "description": "Extracts structured data from a message with a hosted model, on the Node runtime. The key is the secret `anthropic.key`, stored under Settings → Secrets.\n\nNeeds hkp-node, kept as the remote `node`.",
   "runtimes": [
     {
       "id": "ui",
@@ -35,6 +35,7 @@
         "state": {
           "backend": "anthropic",
           "model": "claude-sonnet-5",
+          "apiKey": "{{secret.anthropic.key}}",
           "systemPrompt": "Extract the booking request. Leave a field out when the message does not state it — never guess.",
           "maxTokens": 1024,
           "jsonSchema": {

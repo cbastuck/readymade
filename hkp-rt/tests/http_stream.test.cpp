@@ -11,6 +11,7 @@
 #include <boost/asio/write.hpp>
 
 #include <types/data.h>
+#include "nested_fixture.h"
 #include "services/http_server/http_server_subservices.h"
 #include "services/http_server/http_stream_listener.h"
 
@@ -252,6 +253,40 @@ TEST_CASE("the stream is reported, so a board saves it", "[http-server-subservic
   REQUIRE(state["stream"]["contentType"] == "audio/mpeg");
   REQUIRE(state["stream"]["burstBytes"] == 0);
   REQUIRE(state["listeners"] == 0);
+}
+
+TEST_CASE("a player is told where the stream is", "[http-server-subservices][stream]")
+{
+  HttpServerSubservices server("radio");
+  const auto port = startStreaming(server, {{"path", "/live.mp3"}});
+
+  const std::string url = server.getState().value("streamUrl", "");
+  REQUIRE(url.rfind("http://", 0) == 0);
+  REQUIRE(url.size() > 9);
+  REQUIRE(url.substr(url.size() - 9) == "/live.mp3");
+  REQUIRE(url.find(":" + std::to_string(port) + "/live.mp3") != std::string::npos);
+  server.configure(Data(json{{"bypass", true}}));
+}
+
+TEST_CASE("a mounted endpoint's stream is under its address, not beside it",
+          "[http-server-subservices][stream][mounts]")
+{
+  // A mount's address ends in its id, without a slash; the stream is a path
+  // below it, as the player page plays it.
+  nested_fixture::NestedHost host;
+  host.mountBase = "http://127.0.0.1:18200";
+  auto server = std::make_shared<HttpServerSubservices>("radio");
+  host.addService(server);
+  server->configure(Data(json{{"stream", {{"path", "/live.mp3"}}}, {"bypass", false}}));
+
+  const std::string expected = "http://127.0.0.1:18200/hosted/radio/live.mp3";
+  REQUIRE(server->getState().value("streamUrl", "") == expected);
+  // Told when it goes on air, not only when asked: a facade shows it from there.
+  const auto online = std::find_if(host.notifications.begin(), host.notifications.end(),
+    [](const json& n) { return n.value("status", "") == "online"; });
+  REQUIRE(online != host.notifications.end());
+  REQUIRE(online->value("streamUrl", "") == expected);
+  server->configure(Data(json{{"bypass", true}}));
 }
 
 TEST_CASE("a caller that stops reading stops counting as a listener",

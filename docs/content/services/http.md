@@ -42,10 +42,11 @@ equivalent of the browser's [Fetcher](./fetcher.md) service.
 
 #### A request that says where it is going
 
-`path` and `method` are configuration, which is right for a service calling one
-endpoint over and over. Where a board calls a *different* address per item — an
-episode written to its own path, a record fetched by its own id — the input may
-say so, in the same envelope the response comes back in:
+`path`, `method` and `url` are configuration, which is right for a service
+calling one endpoint over and over. Where a board calls a *different* address
+per item — an episode written to its own path, a record fetched by its own id,
+an article fetched by its own link — the input may say so, in the same envelope
+the response comes back in:
 
 ```json
 {
@@ -54,11 +55,21 @@ say so, in the same envelope the response comes back in:
 }
 ```
 
-What the input leaves unsaid stays as configured, so a board that names neither
-is unaffected. `path` is a sub-path of a mount, exactly as the configured field
-is: a typed URL carries its own path and is not rewritten from a distance.
+```json
+{ "meta": { "method": "get", "url": "https://example.com/articles/one" } }
+```
 
-On hkp-node.
+What the input leaves unsaid stays as configured, so a board that names none of
+them is unaffected. `path` is a sub-path of a mount, exactly as the configured
+field is: a typed URL carries its own path and is not rewritten from a distance.
+`url` stands in for the configured `url` and for nothing more — so a resolved
+mount still wins over it, as it wins over the field.
+
+A response says which address it came from in `meta.url` too. Handed unchanged
+to a second client, it calls that address again rather than the second client's
+own; map the request you mean in between.
+
+On hkp-node and in the browser.
 
 ### On hkp-node, hkp-python and the browser
 
@@ -80,12 +91,21 @@ remote runtimes, the same UI panel), with these differences:
   carries `status`, `statusText`, `url`, `headers` and `contentType`; the payload
   is decoded into `body` when the content type says what the bytes mean, and kept
   in `binary` when it does not.
-- A failed request pushes nothing down the pipeline, rather than a fabricated
+- A failed request passes nothing down the pipeline, rather than a fabricated
   result. A response with an error status *is* a result — the request completed,
   and what the server said is the board's business.
-- Because the runtime calls services without awaiting them, the response cannot
-  be returned from `process`; it does not exist yet. The service stops the push
-  and calls the rest of the pipeline itself when the response arrives.
+- How the response reaches the services after it differs by runtime:
+  - **hkp-node:** the response is the service's answer — the runtime awaits it
+    and goes on with it. That is what lets a [Join](./join.md) hold a request as
+    a detour and come back with the response beside what it had, and an
+    [Iterator](./iterator.md) count what each item brought back.
+  - **Browser:** the run is deferred while the request is in flight and resumes
+    after the service with the response, still as the same run.
+  - **hkp-python:** a pass runs on a worker thread and is not awaited, so the
+    service stops the push and calls the rest of the pipeline itself when the
+    response arrives. A Join holding it as a detour does not get the response
+    back as the detour's result: put the request outside the detour, or run the
+    detour on hkp-node.
 - While a request is in flight it says so (`requesting`), and every outcome names
   the `method` and the `url` actually called, the `status` (`0` when there was no
   response at all) and an `error` (empty when there was none) — so a panel shows

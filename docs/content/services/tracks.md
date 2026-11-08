@@ -174,6 +174,23 @@ Demo board: `tracks-demo-board.json`.
 
 ---
 
+## Addressing a service inside
+
+A service in a track, or in the reduce, is addressed through the Tracks holding
+it — `<tracks>.<instanceId>` — the way one inside a
+[SubService](./sub-service.md) is (see [Scopes](../concepts/scopes.md)). The
+track's name is not part of the address: an address runs through services, and
+a track is a pipeline of this one, so instance ids are unique across all of its
+tracks. A facade widget reads a request inside a track at that address, a
+notice watches it there, and a configure sent to it reaches the live service
+and is kept when the board is saved.
+
+In the browser, a facade whose `init` processes the Tracks waits until every
+track has been built, so a widget reading a service inside is listening before
+the first answer arrives.
+
+---
+
 ## Replaces Stack
 
 The browser's `Stack` service was the first go at this idea: it fanned an input

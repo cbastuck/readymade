@@ -1005,7 +1005,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
 
       const currentBoardName = boardNameRef.current;
       if (currentBoardName) {
-        document.title = currentBoardName;
+        document.title = `Readymade - ${currentBoardName}`;
       }
 
       return () => {

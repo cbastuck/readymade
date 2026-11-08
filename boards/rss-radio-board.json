@@ -1,13 +1,24 @@
 {
   "boardName": "Reading Radio",
-  "description": "A reading list, read aloud and served as audio: four units, each of which runs and can be tested on its own.\n\n**Reader** is the RSS board \u2014 feeds in, a reading list out, and that list published as a feed of its own. **Voice** is a text-to-speech endpoint and nothing else. **Radio** reads a feed, skips what it has already spoken, calls the voice, keeps the audio, and publishes what it has read. **Library** serves the audio, read-only, at an address a player can be pointed at.\n\nWhat holds them together is deliberately thin, and it is not a wire. The radio reads the reader's output **as a feed**, which is why it does not know the reading list is a SQL table \u2014 or that there is a reading list at all; give it any feed and it does the same thing. It reaches the voice and the library by *mount reference*: a board names a service, and the coordinator resolves the address when the board loads. It shares the library's bytes by **naming the same volume**, the way two boards share a database.\n\nEach unit's runtimes keep the unit's own board name, so a unit composed here is the same to a server as a unit opened alone \u2014 the same endpoints, the same tables. What the composition qualifies is the runtime id, which is why the voice is addressed as `voice.speech` here and as `speech` when it runs by itself.\n\nNeeds hkp-node and hkp-python, kept as the remotes `node` and `python`.",
+  "description": "A reading list, read aloud and served as audio: five units, each of which runs and can be tested on its own.\n\n**Reader** is the RSS board — feeds in, a reading list out, and that list published as a feed of its own. **Editor** reads that feed, reads each article, and publishes the feed again with a short brief written by a language model where the feed's own line was. **Voice** is a text-to-speech endpoint and nothing else. **Radio** reads a feed, skips what it has already spoken, calls the voice, keeps the audio, and publishes what it has read. **Library** serves the audio, read-only, at an address a player can be pointed at.\n\nWhat holds them together is deliberately thin, and it is not a wire. The radio reads the editor's output **as a feed**, and the editor reads the reader's the same way, which is why neither knows the reading list is a SQL table — or that there is a reading list at all; give either any feed and it does the same thing. It reaches the voice and the library by *mount reference*: a board names a service, and the coordinator resolves the address when the board loads. It shares the library's bytes by **naming the same volume**, the way two boards share a database.\n\nEach unit's runtimes keep the unit's own board name, so a unit composed here is the same to a server as a unit opened alone — the same endpoints, the same tables. What the composition qualifies is the runtime id, which is why the voice is addressed as `voice.speech` here and as `speech` when it runs by itself.\n\n**Its face is five lanes** — Sources, Items, Reading list, Briefed, On air — following each article from its feed to the audio it became. Drag an item onto the reading list and the rest happens by itself; a card that fails says why, and offers to try again. The lanes are one query over the reader's, editor's and radio's tables, which the composition puts in one database (`reading-radio`) while each unit keeps its own table and its own contract.\n\nNeeds hkp-node and hkp-python, kept as the remotes `node` and `python`, and an Anthropic API key as the secret `anthropic.key`.",
   "units": [
     {
       "uri": "rss-demo-board.json",
       "as": "reader",
       "params": {
-        "database": "rss-reader"
-      }
+        "database": "reading-radio"
+      },
+      "view": false
+    },
+    {
+      "uri": "rss-radio-editor-unit-board.json",
+      "as": "editor",
+      "params": {
+        "feedUrl": "hkp-mount://reader.node/list.feed-serve",
+        "feedName": "Reading list",
+        "database": "reading-radio"
+      },
+      "view": false
     },
     {
       "uri": "rss-radio-voice-unit-board.json",
@@ -21,13 +32,14 @@
       "uri": "rss-radio-unit-board.json",
       "as": "radio",
       "params": {
-        "feedUrl": "hkp-mount://reader.node/list.feed-serve",
+        "feedUrl": "hkp-mount://editor.briefs/briefs-serve",
         "feedName": "Reading list",
         "voiceMount": "hkp-mount://voice.speech/render",
         "audioBase": "hkp-mount://library.files/listen",
         "volume": "radio",
-        "database": "rss-radio"
-      }
+        "database": "reading-radio"
+      },
+      "view": false
     },
     {
       "uri": "rss-radio-library-unit-board.json",
@@ -38,6 +50,466 @@
       "view": false
     }
   ],
-  "runtimes": [],
-  "services": {}
+  "runtimes": [
+    {
+      "id": "desk",
+      "name": "Desk",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "desk": [
+      {
+        "uuid": "desk-tick",
+        "serviceId": "timer",
+        "serviceName": "Every five seconds",
+        "state": {
+          "periodic": true,
+          "periodicValue": 5,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "desk-base",
+        "serviceId": "map",
+        "serviceName": "Where the audio lives",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "base": "hkp-mount://library.files/listen"
+          }
+        }
+      },
+      {
+        "uuid": "lane-rows",
+        "serviceId": "sql",
+        "serviceName": "Where every article is",
+        "state": {
+          "mode": "query",
+          "database": "reading-radio",
+          "schema": "CREATE TABLE IF NOT EXISTS article (\n  link      TEXT PRIMARY KEY,\n  title     TEXT NOT NULL,\n  feed      TEXT NOT NULL DEFAULT '',\n  author    TEXT NOT NULL DEFAULT '',\n  summary   TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  saved     TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE TABLE IF NOT EXISTS brief (\n  guid       TEXT PRIMARY KEY,\n  link       TEXT NOT NULL DEFAULT '',\n  title      TEXT NOT NULL DEFAULT '',\n  blurb      TEXT NOT NULL DEFAULT '',\n  feed       TEXT NOT NULL DEFAULT '',\n  published  TEXT NOT NULL DEFAULT '',\n  seen       TEXT NOT NULL DEFAULT (datetime('now')),\n  started    TEXT,\n  failed     TEXT,\n  error      TEXT,\n  page_error TEXT,\n  brief      TEXT,\n  source     TEXT,\n  written    TEXT\n);\nCREATE INDEX IF NOT EXISTS brief_link ON brief(link);\nCREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);\nCREATE TABLE IF NOT EXISTS voicing (\n  slug   TEXT PRIMARY KEY,\n  failed TEXT NOT NULL DEFAULT (datetime('now')),\n  error  TEXT NOT NULL DEFAULT ''\n);\nCREATE INDEX IF NOT EXISTS episode_link ON episode(link);",
+          "statement": "SELECT a.link AS cardId,\n       CASE\n         WHEN e.rendered IS NOT NULL THEN 'on-air'\n         WHEN b.written IS NOT NULL THEN 'briefed'\n         ELSE 'reading'\n       END AS laneId,\n       a.title AS title,\n       CASE WHEN b.written IS NOT NULL THEN b.brief ELSE a.feed END AS description,\n       CASE\n         WHEN e.rendered IS NOT NULL THEN ''\n         WHEN b.written IS NOT NULL AND e.slug IS NULL THEN 'waiting'\n         WHEN b.written IS NOT NULL AND (v.slug IS NOT NULL OR e.claimed < datetime('now', '-15 minutes'))\n           THEN 'failed'\n         WHEN b.written IS NOT NULL THEN 'voicing'\n         WHEN b.guid IS NULL THEN 'waiting'\n         WHEN b.failed IS NOT NULL OR b.started < datetime('now', '-10 minutes') THEN 'failed'\n         ELSE 'briefing'\n       END AS status,\n       CASE\n         WHEN e.rendered IS NOT NULL THEN 'On air since ' || e.rendered\n         WHEN b.written IS NOT NULL AND e.slug IS NULL\n           THEN 'For the radio''s next round'\n                || CASE WHEN b.source = 'feed' THEN ' · the feed''s own line' ELSE '' END\n         WHEN b.written IS NOT NULL AND v.slug IS NOT NULL THEN v.error\n         WHEN b.written IS NOT NULL AND e.claimed < datetime('now', '-15 minutes')\n           THEN 'No answer from the voice since ' || e.claimed\n         WHEN b.written IS NOT NULL THEN 'Being voiced since ' || e.claimed\n         WHEN b.guid IS NULL THEN 'For the editor''s next round'\n         WHEN b.failed IS NOT NULL THEN IFNULL(b.error, 'no reason given')\n         WHEN b.started < datetime('now', '-10 minutes') THEN 'No answer since ' || b.started\n         ELSE 'Since ' || b.started\n       END AS detail,\n       CASE\n         WHEN e.rendered IS NOT NULL THEN 0\n         WHEN b.written IS NOT NULL\n           THEN CASE WHEN e.slug IS NOT NULL\n                      AND (v.slug IS NOT NULL OR e.claimed < datetime('now', '-15 minutes'))\n                     THEN 1 ELSE 0 END\n         WHEN b.guid IS NOT NULL\n              AND (b.failed IS NOT NULL OR b.started < datetime('now', '-10 minutes'))\n           THEN 1\n         ELSE 0\n       END AS retryable,\n       CASE WHEN e.rendered IS NOT NULL THEN IFNULL($base, '') || '/' || e.slug || '.mp3' ELSE '' END AS audio,\n       a.link AS link, a.feed AS feed, a.author AS author, a.summary AS summary,\n       a.published AS published, b.guid AS guid, b.blurb AS blurb, b.brief AS brief,\n       e.slug AS slug\n  FROM article a\n  LEFT JOIN brief b ON b.link = a.link\n  LEFT JOIN episode e ON e.link = a.link\n  LEFT JOIN voicing v ON v.slug = e.slug\n ORDER BY a.saved DESC"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "read.feeds",
+        "payload": {}
+      },
+      {
+        "type": "process",
+        "serviceUuid": "list.record-article",
+        "payload": {
+          "intent": "none",
+          "link": ""
+        }
+      },
+      {
+        "type": "process",
+        "serviceUuid": "desk-base",
+        "payload": {}
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "read.feeds",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "list.record-article",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "edit-each.brief.write",
+          "path": "error"
+        },
+        "tone": "error"
+      },
+      {
+        "source": {
+          "serviceUuid": "lane-rows",
+          "path": "error"
+        },
+        "tone": "error"
+      }
+    ],
+    "panels": [
+      {
+        "id": "lanes",
+        "title": "Reading Radio",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Check feeds now",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "read.feeds",
+                      "payload": {}
+                    }
+                  ],
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "read.feeds",
+                      "path": "fetching"
+                    },
+                    "statusColors": {
+                      "true": "#f59e0b",
+                      "false": "#22c55e"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "grow": true,
+                  "tone": "muted",
+                  "fontSize": 12,
+                  "placeholder": "Every article, from the feed it came from to the audio it became. Drag an item onto the reading list and the rest happens by itself: it is briefed, then voiced, then on air. A card that fails says why, and waits for you."
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 10,
+              "items": [
+                {
+                  "type": "swimlane",
+                  "laneId": "sources",
+                  "title": "Sources",
+                  "source": {
+                    "serviceUuid": "read.feeds",
+                    "path": "feeds"
+                  },
+                  "allRows": true,
+                  "cardIdField": "url",
+                  "titleField": "name",
+                  "descriptionField": "url",
+                  "width": 230,
+                  "maxHeight": 620,
+                  "emptyLabel": "No feeds yet — add one",
+                  "allowCreate": true,
+                  "editorTitle": "Subscribe to a feed",
+                  "titleLabel": "Feed address",
+                  "descriptionLabel": "Name (optional)",
+                  "saveLabel": "Subscribe",
+                  "createActions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "read.feeds",
+                      "configure": {
+                        "addFeed": {
+                          "url": "{{item.title}}",
+                          "name": "{{item.description}}"
+                        }
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "read.feeds",
+                      "payload": {}
+                    }
+                  ],
+                  "deleteConfirm": "Unsubscribe from “{{item.title}}”?",
+                  "deleteActions": [
+                    {
+                      "type": "configure",
+                      "serviceUuid": "read.feeds",
+                      "configure": {
+                        "removeFeed": "{{item.card.url}}"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "read.feeds",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "items",
+                  "title": "Items",
+                  "source": {
+                    "serviceUuid": "read.feeds",
+                    "path": "items"
+                  },
+                  "allRows": true,
+                  "cardIdField": "link",
+                  "titleField": "title",
+                  "descriptionField": "feed",
+                  "except": {
+                    "source": {
+                      "serviceUuid": "lane-rows",
+                      "path": "rows"
+                    }
+                  },
+                  "dragGroup": "radio",
+                  "width": 270,
+                  "maxHeight": 620,
+                  "emptyLabel": "Nothing new in the feeds",
+                  "allowDrag": true,
+                  "acceptDrops": true,
+                  "moveActions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "list.record-article",
+                      "payload": {
+                        "intent": "drop",
+                        "link": "{{item.cardId}}"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "desk-base",
+                      "payload": {}
+                    }
+                  ]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "reading",
+                  "title": "Reading list",
+                  "dragGroup": "radio",
+                  "source": {
+                    "serviceUuid": "lane-rows",
+                    "path": "rows"
+                  },
+                  "width": 250,
+                  "maxHeight": 620,
+                  "emptyLabel": "Drag an item here to have it briefed and read",
+                  "allowDrag": true,
+                  "acceptDrops": true,
+                  "moveActions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "list.record-article",
+                      "payload": {
+                        "intent": "keep",
+                        "link": "{{item.card.link}}",
+                        "title": "{{item.card.title}}",
+                        "feed": "{{item.card.feed}}",
+                        "author": "{{item.card.author}}",
+                        "summary": "{{item.card.summary}}",
+                        "published": "{{item.card.published}}"
+                      }
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "edit-feed",
+                      "payload": {}
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "desk-base",
+                      "payload": {}
+                    }
+                  ],
+                  "statusField": "status",
+                  "detailField": "detail",
+                  "statusColors": {
+                    "waiting": "#94a3b8",
+                    "briefing": "#f59e0b",
+                    "failed": "#ef4444"
+                  },
+                  "cardActions": [
+                    {
+                      "label": "Retry",
+                      "visibleWhen": {
+                        "field": "retryable"
+                      },
+                      "actions": [
+                        {
+                          "type": "process",
+                          "serviceUuid": "edit-each.name",
+                          "payload": {
+                            "id": "{{item.card.guid}}",
+                            "link": "{{item.card.cardId}}",
+                            "title": "{{item.card.title}}",
+                            "summary": "{{item.card.blurb}}",
+                            "feed": "{{item.card.feed}}",
+                            "published": "{{item.card.published}}",
+                            "retry": 1
+                          }
+                        },
+                        {
+                          "type": "process",
+                          "serviceUuid": "desk-base",
+                          "payload": {}
+                        }
+                      ]
+                    },
+                    {
+                      "label": "Use the feed's line",
+                      "visibleWhen": {
+                        "field": "retryable"
+                      },
+                      "actions": [
+                        {
+                          "type": "process",
+                          "serviceUuid": "fb-which",
+                          "payload": {
+                            "guid": "{{item.card.guid}}",
+                            "useFeedLine": true
+                          }
+                        },
+                        {
+                          "type": "process",
+                          "serviceUuid": "desk-base",
+                          "payload": {}
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "briefed",
+                  "title": "Briefed",
+                  "dragGroup": "radio",
+                  "source": {
+                    "serviceUuid": "lane-rows",
+                    "path": "rows"
+                  },
+                  "width": 250,
+                  "maxHeight": 620,
+                  "emptyLabel": "Briefs appear here once written",
+                  "allowDrag": false,
+                  "acceptDrops": false,
+                  "statusField": "status",
+                  "detailField": "detail",
+                  "statusColors": {
+                    "waiting": "#94a3b8",
+                    "voicing": "#f59e0b",
+                    "failed": "#ef4444"
+                  },
+                  "cardActions": [
+                    {
+                      "label": "Retry",
+                      "visibleWhen": {
+                        "field": "retryable"
+                      },
+                      "actions": [
+                        {
+                          "type": "process",
+                          "serviceUuid": "each.name",
+                          "payload": {
+                            "id": "{{item.card.guid}}",
+                            "link": "{{item.card.link}}",
+                            "title": "{{item.card.title}}",
+                            "summary": "{{item.card.brief}}",
+                            "retry": 1
+                          }
+                        },
+                        {
+                          "type": "process",
+                          "serviceUuid": "desk-base",
+                          "payload": {}
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "swimlane",
+                  "laneId": "on-air",
+                  "title": "On air",
+                  "dragGroup": "radio",
+                  "source": {
+                    "serviceUuid": "lane-rows",
+                    "path": "rows"
+                  },
+                  "width": 250,
+                  "maxHeight": 620,
+                  "emptyLabel": "Articles the radio has read aloud",
+                  "allowDrag": false,
+                  "acceptDrops": false,
+                  "detailField": "detail",
+                  "audioField": "audio",
+                  "cardActions": [
+                    {
+                      "label": "Forget",
+                      "confirm": "Forget “{{item.title}}”? Its audio is deleted, and while it is on the reading list the radio reads it again.",
+                      "actions": [
+                        {
+                          "type": "process",
+                          "serviceUuid": "forget-which",
+                          "payload": {
+                            "slug": "{{item.card.slug}}"
+                          }
+                        },
+                        {
+                          "type": "process",
+                          "serviceUuid": "desk-base",
+                          "payload": {}
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "direction": "column",
+              "gap": 6,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Reading list as a feed",
+                  "source": {
+                    "serviceUuid": "list.feed-serve",
+                    "path": "__hkpMount"
+                  },
+                  "placeholder": "not published yet",
+                  "tone": "muted",
+                  "fontSize": 11,
+                  "wrap": true,
+                  "copyable": true
+                },
+                {
+                  "type": "text",
+                  "label": "On air as a playlist",
+                  "source": {
+                    "serviceUuid": "m3u-serve",
+                    "path": "__hkpMount"
+                  },
+                  "placeholder": "not published yet",
+                  "tone": "muted",
+                  "fontSize": 11,
+                  "wrap": true,
+                  "copyable": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
 }

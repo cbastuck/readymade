@@ -29,11 +29,6 @@ import {
  */
 
 /**
- * The API for a runtime's class, by the same two-step lookup the board itself
- * uses: a runtime may name its class in a board-specific spelling, which falls
- * back to the canonical one the engines register under.
- */
-/**
  * Whether a remote runtime's services can be reached at all: it has an address
  * to dial, or its scope goes through the board's coordinator and needs none.
  */
@@ -47,6 +42,11 @@ function isReachable(
   );
 }
 
+/**
+ * The API for a runtime's class, by the same two-step lookup the board itself
+ * uses: a runtime may name its class in a board-specific spelling, which falls
+ * back to the canonical one the engines register under.
+ */
 function runtimeApiFor(
   boardContext: BoardContextState,
   type: RuntimeClassType | undefined,
@@ -90,6 +90,41 @@ function findNestedInScope(
     return null;
   }
   return owner.service.findNested(owner.rest) ?? null;
+}
+
+/**
+ * What a remote scope's own state says of a service inside it: the entry its
+ * address names, walked by uuid through the lists the scope's state holds its
+ * services in (a sub-service's `pipeline`, a server's `onRequest`, …). Only
+ * that service's own state, never the scope's — and nothing when the scope
+ * lists no such entry, in which case what it reports arrives when it speaks.
+ * A value a service only holds and never reports, such as the address a
+ * mount was given, is otherwise never seen.
+ */
+function nestedState(rootState: unknown, address: string): unknown {
+  let state = rootState;
+  for (const uuid of splitAddress(address).slice(1)) {
+    if (!state || typeof state !== "object") {
+      return undefined;
+    }
+    // Named `instanceId` by the runtimes and in a board's nested pipelines,
+    // `uuid` where a list holds top-level descriptors; either names it.
+    const entry = Object.values(state as Record<string, unknown>)
+      .filter(Array.isArray)
+      .flat()
+      .find((item): item is { state?: unknown } => {
+        if (!item || typeof item !== "object") {
+          return false;
+        }
+        const named = item as { uuid?: unknown; instanceId?: unknown };
+        return (named.instanceId ?? named.uuid) === uuid;
+      });
+    if (!entry) {
+      return undefined;
+    }
+    state = entry.state;
+  }
+  return state;
 }
 
 /**
@@ -177,7 +212,8 @@ export function findService(
   // at the top, and everything the address names after that is inside it. So
   // the root says which runtime to dial, and the whole address is what gets
   // dialled — the runtime walks the rest of it. The state a board holds is the
-  // root's; a nested service's arrives when it first reports.
+  // root's; a nested service's is what the root's state says of it, and
+  // otherwise arrives when it first reports.
   const root = addressRoot(uuid);
   for (const [holderId, svcs] of Object.entries(boardContext.services)) {
     if (runtimeId && holderId !== runtimeId) {
@@ -194,7 +230,7 @@ export function findService(
       continue;
     }
     const app = (scope as any).app;
-    const state = root === uuid ? desc.state : undefined;
+    const state = root === uuid ? desc.state : nestedState(desc.state, uuid);
     const known = remoteProxies.get(scope)?.get(uuid);
     if (
       known &&
@@ -226,11 +262,6 @@ export function findService(
   return null;
 }
 
-/**
- * Asks a service to do its job with a payload, running the pipeline from that
- * service onward — rather than from the one after it, which is what a service
- * handing work onward means.
- */
 /**
  * Whether a service can be reached yet, the way `processService` reaches it.
  *
@@ -272,29 +303,67 @@ export function canReachService(
 }
 
 /**
- * Whether the service a scoped address names has been built inside the
- * service holding it — what a widget showing it has to find before it can
- * listen.
+ * Whether the service an address names has been built, along with whatever
+ * pipelines it holds itself — what a widget showing a service inside has to
+ * find before it can listen.
  *
  * Reaching the holder is enough to ask it to process: it waits for its own
  * pipeline first. Hearing the answer is not: a scope builds its pipeline after
  * it is added itself, and a widget subscribes to the service inside, so an
- * answer that arrives before then is heard by nobody. Only a browser scope can
- * tell; anything else counts as built.
+ * answer that arrives before then is heard by nobody. That holds for a holder
+ * named by its own uuid as much as for a service named inside one — processing
+ * `menu` runs the Monitor in it whether or not anybody is listening yet. Only a
+ * browser scope can tell; anything else counts as built.
  */
 export function isBuiltInside(
   boardContext: BoardContextState,
   uuid: string,
 ): boolean {
   for (const scope of Object.values(boardContext.scopes)) {
+    const svc = (scope as any).findServiceInstance?.(uuid)?.[0];
+    if (svc) {
+      return holdsBuiltScope(svc);
+    }
     const owner = ownerOfNested(scope, uuid);
     if (owner && typeof owner.service.findNested === "function") {
-      return !!owner.service.findNested(owner.rest);
+      const nested = owner.service.findNested(owner.rest);
+      return !!nested && holdsBuiltScope(nested);
     }
   }
   return true;
 }
 
+/** Whether a service holding pipelines of its own has built them. One holding
+ *  none is built by being there. */
+function holdsBuiltScope(service: unknown): boolean {
+  const holder = service as { isScopeBuilt?: () => boolean };
+  return typeof holder.isScopeBuilt === "function" ? holder.isScopeBuilt() : true;
+}
+
+/**
+ * Waits until the runtime holding `uuid` can report back, where it says it
+ * cannot yet — a REST runtime whose output socket is still connecting. Any
+ * other runtime, or a service nobody holds, is ready as it is.
+ */
+export async function whenServiceConnected(
+  boardContext: BoardContextState,
+  uuid: string,
+): Promise<void> {
+  const root = addressRoot(uuid);
+  for (const [runtimeId, svcs] of Object.entries(boardContext.services)) {
+    if (!svcs.find((s) => s.uuid === root)) continue;
+    const scope = boardContext.scopes[runtimeId] as
+      | { whenConnected?: () => Promise<void> }
+      | undefined;
+    await scope?.whenConnected?.();
+  }
+}
+
+/**
+ * Asks a service to do its job with a payload, running the pipeline from that
+ * service onward — rather than from the one after it, which is what a service
+ * handing work onward means.
+ */
 export function processService(
   boardContext: BoardContextState,
   uuid: string,

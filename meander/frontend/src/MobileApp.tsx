@@ -24,7 +24,7 @@ import { commitUrl } from "hkp-frontend/src/projectMeta";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
 import { MobileAccountPage } from "hkp-frontend/src/views/profile";
 import { useUserProfile } from "hkp-frontend/src/core/userProfile";
-import { findDemoBoard } from "hkp-frontend/src/demoRegistry";
+import { findDemoBoard, findDemoUnits } from "hkp-frontend/src/demoRegistry";
 import { useAppContext } from "hkp-frontend/src/AppContext";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { BoardSnapshot } from "hkp-frontend/src/core/boardSnapshots";
@@ -83,7 +83,8 @@ const store: StartPageStore = {
 type BoardSession = {
   name?: string;
   descriptor?: BoardDescriptor;
-  /** The unit documents a session resumed from history was stored with. */
+  /** The unit documents the session links against, keyed by `uri`: a composed
+   *  demo's, or those a session resumed from history was stored with. */
   units?: Record<string, BoardDescriptor>;
   /** Set when the session was opened to run a cloud board: the playground
    *  boots into its Cloud tab with that board hydrated. */
@@ -209,6 +210,7 @@ function StartScreen({
           onOpenSession({
             name: board.boardName ?? action.slug,
             descriptor: board,
+            units: findDemoUnits(action.slug),
           });
         }
         break;

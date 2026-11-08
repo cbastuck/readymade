@@ -1,0 +1,63 @@
+// Board names are readymades: an everyday object given an unexpected title,
+// the way Duchamp named a bottle rack or a snow shovel. Words are single and
+// ASCII because a name becomes the board's URL path; they are kept lowercase
+// here and capitalised when a name is drawn ("Curious-Teapot", `core/board.ts`).
+
+export const moods = [
+  "absent", "airborne", "ambling", "amused", "ardent", "astonished",
+  "bashful", "beaming", "bewildered", "blissful", "blithe", "blushing",
+  "bold", "bouncing", "brave", "breezy", "brooding", "bubbling", "buoyant",
+  "calm", "candid", "careless", "cheerful", "chuckling", "clumsy",
+  "contented", "curious", "dainty", "dancing", "dapper", "daring",
+  "dawdling", "dazzled", "debonair", "devoted", "dizzy", "dozing",
+  "dreaming", "dreamy", "drifting", "eager", "earnest", "elated",
+  "eloquent", "enchanted", "fanciful", "fearless", "fickle", "fidgety",
+  "flustered", "fond", "frisky", "frolicking", "gallant", "gentle",
+  "giddy", "giggling", "gleeful", "glowing", "gracious", "grinning",
+  "grumbling", "hasty", "heedless", "hopeful", "humming", "hushed", "idle",
+  "impatient", "inquisitive", "jaunty", "jolly", "jovial", "jubilant",
+  "keen", "kindly", "languid", "laughing", "lazy", "lilting", "lingering",
+  "lofty", "lonesome", "loyal", "lucid", "lucky", "lunar", "marvelous",
+  "meandering", "mellow", "merry", "mischievous", "modest", "moody",
+  "musing", "nervous", "nimble", "nodding", "nostalgic", "obliging",
+  "peculiar", "pensive", "perplexed", "placid", "playful", "plucky",
+  "pondering", "precocious", "proud", "puzzled", "quiet", "quirky",
+  "radiant", "rakish", "rambling", "restless", "reverent", "roaming",
+  "ruminating", "rustling", "sauntering", "secretive", "serene", "shy",
+  "singing", "sleepy", "slumbering", "smiling", "sneezing", "solemn",
+  "spirited", "sprightly", "spry", "startled", "stately", "stubborn",
+  "sulking", "sunny", "swaying", "tender", "thoughtful", "timid",
+  "tranquil", "trembling", "tumbling", "twirling", "unhurried", "unruly",
+  "upbeat", "vagrant", "valiant", "vigilant", "wakeful", "waltzing",
+  "wandering", "wary", "wayward", "whimsical", "whistling", "winsome",
+  "wistful", "witty", "wondering", "yawning", "zealous", "zesty",
+];
+
+export const objects = [
+  // Duchamp's own readymades and what they were made of
+  "bottlerack", "snowshovel", "bicycle", "wheel", "stool", "comb",
+  "coatrack", "hatrack", "typewriter", "birdcage", "thermometer",
+  "cuttlebone", "sugarcube", "twine", "ampoule", "grinder", "window",
+  "door", "valise", "rotorelief", "chessboard", "rook", "pawn", "bishop",
+  // the rest of the household
+  "teapot", "teacup", "kettle", "spoon", "ladle", "colander", "whisk",
+  "funnel", "thimble", "spool", "button", "umbrella", "lampshade",
+  "hairbrush", "clock", "metronome", "gramophone", "radio", "telephone",
+  "lightbulb", "matchbox", "candlestick", "mirror", "hanger", "clothespin",
+  "iron", "broom", "bucket", "wateringcan", "wheelbarrow", "ladder",
+  "padlock", "keyring", "compass", "magnifier", "inkwell", "pencil",
+  "eraser", "stapler", "paperclip", "envelope", "postcard", "stamp",
+  "suitcase", "hatbox", "birdhouse", "flowerpot", "vase", "jar", "bottle",
+  "cork", "corkscrew", "sieve", "rollingpin", "saucepan", "eggcup",
+  "toaster", "faucet", "bathtub", "washbasin", "sponge", "towel",
+  "slipper", "boot", "glove", "mitten", "scarf", "bowtie", "monocle",
+  "spectacles", "pipe", "accordion", "harmonica", "trumpet", "drum",
+  "tambourine", "kazoo", "globe", "hourglass", "barometer", "weathervane",
+  "kite", "yoyo", "marble", "dice", "domino", "skittle", "rockinghorse",
+  "scissors", "needle", "pincushion", "ruler", "abacus", "tripod", "easel",
+  "palette", "frame", "pedestal", "plinth", "bellows", "lantern",
+  "birdbath", "doormat", "doorknob", "shoehorn", "nutcracker", "mousetrap",
+  "peppermill", "saltshaker", "sugarbowl", "breadbin", "grater", "mangle",
+  "thermos", "birdfeeder", "windmill", "paintbrush", "phonograph",
+  "periscope", "telescope", "zither", "banjo", "ukulele", "tuba",
+];

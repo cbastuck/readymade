@@ -92,25 +92,22 @@ Either way you also need a GGUF file on disk (e.g. `Qwen3-0.6B-Q8_0.gguf` from
 Hugging Face).
 
 **Anthropic backend (hkp-node)** — an API key, and nothing else. The service
-looks in two places: its own `apiKey`, then `ANTHROPIC_API_KEY` in the
-environment the runtime starts in.
-
-```
-ANTHROPIC_API_KEY=sk-ant-... npm start
-```
+reads it from its own `apiKey` and from nowhere else: **not from the
+environment the runtime starts in.** A server is shared — by the people who
+own boards on it, and by everyone a deployed board admits — and a key in its
+environment would be the operator's, spent by every board on it and sent
+wherever a board's `serverUrl` points.
 
 `apiKey` is write-only — the service accepts it and never gives it back, the
 same way `smtp-email` treats its password — but a key typed straight into it is
 still a credential inside the board, and a board can be downloaded, shared as a
-link, or sent through the AI Refiner. A key in the environment is in none of
-those places, which is why it is the one to prefer for anything deployed.
+link, or sent through the AI Refiner. A secret reference is in none of those
+places, which is why it is the one to use.
 
-### A secret reference, in the Readymade app
+### A secret reference
 
-Boards run in the app rarely have an environment to put anything in, and the
-app has its own store for exactly this. Add the key under **Settings →
-Secrets** with a name of your choosing, and refer to it from the board by that
-name instead of pasting the value:
+Add the key under **Settings → Secrets** with a name of your choosing, and
+refer to it from the board by that name instead of pasting the value:
 
 ```json
 { "backend": "anthropic", "model": "claude-sonnet-5", "apiKey": "{{secret.anthropic}}" }
@@ -157,18 +154,21 @@ local mode, add `/no_think` to the system prompt to suppress reasoning
 ### hkp-node
 
 Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
-`timeoutSec` and `stream`, which mean what they mean everywhere else:
+`timeoutSec` and `stream`, which mean what they mean everywhere else — except
+that the `anthropic` backend sends sampling settings only to the older Claude
+models that take them (see below):
 
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `backend` | `string` | `"anthropic"` | `anthropic` (hosted) or `server` (OpenAI-compatible HTTP) |
-| `apiKey` | `string` | `""` | Write-only; takes a `{{secret.…}}` reference, and falls back to `ANTHROPIC_API_KEY` in the runtime's environment |
-| `apiKeyConfigured` | `bool` | — | Read-only: whether a key is available, from either source |
+| `apiKey` | `string` | `""` | Write-only; takes a `{{secret.…}}` reference. The runtime's environment is never read |
+| `apiKeyConfigured` | `bool` | — | Read-only: whether a key is configured |
 | `serverUrl` | `string` | `""` | Empty means the backend's own address; set it for a proxy, or for a hosted OpenAI-compatible endpoint |
 | `endpoint` | `string` | — | Read-only: the URL this configuration actually reaches |
 | `model` | `string` | `"claude-sonnet-5"` | Any model the API accepts |
-| `thinking` | `bool\|null` | `null` | `true` turns on extended reasoning, reported in `thinking` |
-| `thinkingBudgetTokens` | `number` | `1024` | Tokens reasoning may use; `maxTokens` is lifted above it when it is not already |
+| `thinking` | `bool\|null` | `null` | `true` asks for reasoning, `false` for none, `null` leaves the model to its default; reasoning is reported in `thinking` |
+| `thinkingBudgetTokens` | `number` | `1024` | Tokens reasoning may use, for a Claude model that thinks on a budget; `maxTokens` is lifted above it when it is not already |
+| `effort` | `string` | `""` | Claude only: `low`, `medium`, `high`, `xhigh` or `max` — how much the model reasons and writes. Empty is the model's own default |
 | `jsonSchema` | `object\|string\|null` | `null` | Constrains the answer to a shape — see below |
 
 **One address field, for both backends.** `serverUrl` left empty means "wherever
@@ -187,11 +187,8 @@ question the address alone does not answer:
 A base URL already carrying a version keeps it; a bare origin gets `/v1` added,
 because that is how the two kinds of server hand their address out.
 
-One difference between the backends is deliberate and worth stating: **the
-`ANTHROPIC_API_KEY` fallback does not apply on `server`.** That key belongs to
-the hosted API, and a board naming its own address would otherwise hand the
-credential to whatever is listening at it. A server that does want a token gets
-the configured `apiKey` as a bearer.
+A server that wants a token gets the configured `apiKey` as a bearer; one that
+does not is reached with none.
 
 **A reasoning model needs `thinking: false` to answer inside a schema.** Qwen3
 and its relatives reason before answering by default, and a `jsonSchema`
@@ -206,11 +203,46 @@ item done having produced nothing.
 
 Two behaviours worth knowing:
 
-- **`thinking: true` fixes sampling.** `temperature`, `topP` and `topK` are not
-  sent while reasoning, because the API rejects a request that carries them.
+- **Little sampling on `anthropic`.** `temperature`, `topP` and `topK` are kept
+  for the `server` backend. Of Claude models, only Haiku 4.5, Sonnet 4.6 and
+  Opus 4.6 are sent `temperature` and `topK` (never `topP` beside them, and
+  neither while they think): current Claude models refuse any value but their
+  own, and API version 2026-10-21 refuses the fields on every model.
 - **`jsonSchema` turns streaming off** for that call. A constrained answer
   arrives as arguments rather than prose, and half of a JSON object is of no
   use to anything.
+
+### One board, many Claude models
+
+The Claude models disagree on how reasoning and shape are asked for, and a
+request one accepts another refuses. A board states what it wants — `thinking`,
+`effort`, `jsonSchema` — and the request is built from what the configured
+model accepts, so a board keeps working when its `model` changes. Nothing here
+applies to the `server` backend, whose request is built as it always was.
+
+| The board says | A current model (Haiku 5.5, Sonnet 5.5, Opus 5.5, …) | An older model (Haiku 4.5, …) |
+|---|---|---|
+| `thinking: true` | `thinking: {type: "adaptive"}`; effort sets how much | `thinking: {type: "enabled", budget_tokens}` |
+| `thinking: null` | nothing — current models think by default | nothing — no reasoning |
+| `thinking: false` | `{type: "disabled"}`, or `{type: "between_tools"}` on Sonnet 5.5; not sent to a model that always thinks (Opus 5.5, Fable) or at an effort it is refused at | nothing |
+| `effort` | `output_config: {effort}`, at the levels the model takes | not sent |
+| `temperature`, `topK` | not sent | sent while the model is not thinking |
+| `jsonSchema` | a forced tool, or structured outputs on the models that refuse one (Opus 5.5, Sonnet 5.5, Fable 5.1) | a forced tool |
+
+What a model accepts comes from the Models API (`GET /v1/models/{id}`), asked
+once per model and address, where it reports it — which thinking a model takes,
+which effort levels, and whether it has structured outputs. What it does not
+report, how "do not think" is said, whether a forced tool is accepted and
+whether sampling settings are, comes
+from a table in `hkp-node/src/services/claudeModels.ts`, which also stands in
+when the API cannot be asked. A model in neither gets the oldest form of each,
+and no sampling settings.
+
+**A current model's thinking counts against `maxTokens`.** It thinks before it
+answers whatever the board says, and a ceiling sized for the answer alone can
+go entirely on thinking. Such a call fails with *the model used all N tokens
+without answering*; raise `maxTokens`, or lower `effort`. A setting the model
+does not use is marked in the service's state (`__meta__`), with the reason.
 
 ---
 
@@ -246,8 +278,13 @@ guarantees:
 
 | Backend | Sent as | Guarantee |
 |---|---|---|
-| `anthropic` | a single tool the model is required to call | the shape is enforced by the API |
+| `anthropic` | a single tool the model is required to call, or structured outputs (`output_config.format`) on the models that refuse a forced tool | the shape is enforced by the API |
 | `server` | `response_format: { type: "json_schema" }` | enforced by servers that implement it — llama.cpp compiles the schema to a grammar |
+
+Structured outputs take a stricter schema than a tool does: every object is
+sent closed (`additionalProperties: false`), and numeric and length bounds
+(`minimum`, `maxLength`, …) are left out. The shape is enforced; those bounds
+are not. The board's schema itself is never changed.
 
 Not every OpenAI-compatible server implements `response_format`, and one that
 does not answers in prose while reporting nothing unusual. When that happens
@@ -275,11 +312,10 @@ widget can be asked about directly:
 
 Images are placed before the question, which is how the model reads them best.
 
-**On the node runtime the answer is pushed, not returned.** Generation takes
-seconds, and the pipeline does not wait — so the service returns nothing, stops
-the push, and calls the rest of the pipeline itself once the answer arrives (the
-inversion-of-control path `http-client` also takes). For a board this is
-invisible: the services after it run with the result, as they would anyway.
+**The answer is the service's answer, however long it takes.** Generation
+takes seconds, and the runtime awaits it, so the services after it run with the
+result — and a [Join](./join.md) around it comes back with the answer beside the
+question rather than instead of it.
 
 For thinking models the reasoning is split off into the `thinking` field;
 `text` carries only the answer. Unsupported input, an unreachable server,
@@ -346,16 +382,9 @@ curl -X POST http://127.0.0.1:5556/runtimes/text-generation-example \
 
 For the Anthropic backend, `boards/text-generation-anthropic-demo-board.json`
 turns a booking enquiry into structured fields (Injector → text-generation with
-a `jsonSchema` → monitor). Start hkp-node with a key in its environment and
-inject the message:
-
-```
-ANTHROPIC_API_KEY=sk-ant-... npm start --prefix hkp-node
-```
-
-In the Readymade app, where there is no such environment, store the key under
-Settings → Secrets and set the service's `apiKey` to `{{secret.anthropic}}`
-instead.
+a `jsonSchema` → monitor). Store the key under Settings → Secrets as
+`anthropic.key` — the name the board's `apiKey` refers to — start hkp-node and
+inject the message.
 
 The monitor shows the extracted object, not prose — which is what makes the
 next service in a board able to act on it.

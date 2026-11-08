@@ -71,7 +71,18 @@
           "mode": "run",
           "emit": "input",
           "database": "private-health-log",
-          "statement": "DELETE FROM health_measurement\n WHERE $operation = 'delete'\n   AND event_id IN (SELECT value FROM json_each($eventIds))"
+          "statement": "DELETE FROM health_measurement\n WHERE ($operation = 'delete'\n        AND event_id IN (SELECT value FROM json_each($eventIds)))\n    OR $operation = 'delete-all'"
+        }
+      },
+      {
+        "uuid": "delete-journal",
+        "serviceId": "sql",
+        "serviceName": "Delete the journal",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "private-health-log",
+          "statement": "-- Only when everything goes: a selection names measurements, not days.\nDELETE FROM health_journal\n WHERE $operation = 'delete-all'"
         }
       },
       {
@@ -383,6 +394,20 @@
                 },
                 {
                   "type": "button",
+                  "label": "Delete all entries",
+                  "confirm": "Delete every measurement and journal entry from your database? This cannot be undone.",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "delete-entry",
+                      "payload": {
+                        "operation": "delete-all"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
                   "label": "Generate fake data",
                   "confirm": "Add six months of fictional measurements and journal entries to your database?",
                   "actions": [
@@ -441,6 +466,12 @@
       {
         "source": {
           "serviceUuid": "delete-entry",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "delete-journal",
           "path": "error"
         }
       },

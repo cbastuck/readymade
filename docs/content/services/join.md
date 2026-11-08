@@ -76,6 +76,7 @@ lets the nested answer win, `add` protects what the input was carrying.
 | `pipeline` | `array` | `[]` | The detour, in order |
 | `as` | `string` | `""` | Put the result under this key. Empty merges at the top level |
 | `mode` | `string` | `"overwrite"` | Top-level merge only: `overwrite` or `add` |
+| `onFailure` | `string` | `"stop"` | A detour that failed: `stop`, or `merge` its `{ error, service }` in place of the result — under `as`, or under `failure` without one |
 | `bypass` | `boolean` | `false` | Pass the input through untouched |
 
 ---
@@ -94,6 +95,35 @@ otherwise.
 
 A scalar or array on either side has no fields to combine: with `as` the input
 is kept under `input`, and without it the half that has fields wins.
+
+---
+
+## When the detour fails
+
+A detour can end with nothing for two reasons. A service **chose to stop** — a
+filter, a claim that found nothing to take — and that is flow: the pipeline
+stops, whatever `onFailure` says. Or a service **failed**, and said why in an
+`error` notification. By default that stops the pipeline too, and the reason
+exists only in a notification nobody may have been listening to.
+
+With `onFailure: "merge"` the failure goes on instead, where the result would
+have gone, so the services after the Join can record it beside the thing it
+happened to:
+
+```
+in  { link, title }
+out { link, title, brief: { error: "no value stored for anthropic.key", service: "write" } }
+```
+
+The failure always arrives under a name: `as`, or `failure` when the Join
+merges at the top level. Spread into the input like a result, it could be
+hidden by an `error` the input already carried, or replace a field of its own.
+
+A board then routes on it — a map that sends `brief.error` one way and
+`brief.text` the other — and a card, a row or a log can say *failed, and why*
+rather than nothing at all. Only a service directly in the detour is heard; one
+inside a scope of its own reports to that scope. Two runs through one Join at
+the same time never hear each other's failures: each hears its own detour.
 
 ---
 

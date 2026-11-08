@@ -46,7 +46,7 @@ import ServiceBase from "./ServiceBase";
 import BrowserRegistry from "../BrowserRegistry";
 import BrowserRuntimeScope from "../BrowserRuntimeScope";
 import { addService, configureService } from "../BrowserRuntimeApi";
-import { joinAddress } from "../../board/address";
+import { joinAddress, splitAddress } from "../../board/address";
 
 const serviceId = "tracks";
 const serviceName = "Tracks";
@@ -180,6 +180,79 @@ export class BrowserTracks extends ServiceBase<State> {
     }
     return null;
   }
+
+  /**
+   * Whether every track and the reduce have been built, so that what runs
+   * inside them can be found — and listened to — by its scoped address.
+   */
+  isScopeBuilt(): boolean {
+    const declared = [
+      ...this.state.tracks
+        .filter((track) => track.pipeline.length > 0)
+        .map((track) => track.name),
+      ...(this.state.reduce.length > 0 ? [REDUCE] : []),
+    ];
+    return declared.every((name) => this._scopes.has(name));
+  }
+
+  /**
+   * The service a scoped address names inside one of the tracks or the
+   * reduce, however deep.
+   *
+   * The address runs through services, not tracks — `<tracks>.<instanceId>`,
+   * the same address this service's notifications are forwarded under — so a
+   * facade reading a request inside a track listens where it reports.
+   */
+  findNested(address: string): ServiceInstance | null {
+    const segments = splitAddress(address);
+    if (segments.length === 0) {
+      return null;
+    }
+    const here = this.getInnerInstance(segments[0]);
+    if (!here || segments.length === 1) {
+      return segments.length === 1 ? here : null;
+    }
+    const deeper = here as unknown as BrowserTracks;
+    return typeof deeper.findNested === "function"
+      ? deeper.findNested(segments.slice(1).join("."))
+      : null;
+  }
+
+  /**
+   * What a board keeps of the tracks: each pipeline as its services are now.
+   *
+   * A service inside can be configured by its scoped address without going
+   * through this one, so the stored pipelines alone would save what the
+   * services were built with rather than what they were changed to since.
+   * Each entry is read from its own track's scope: two tracks may hold a
+   * service under the same id, and one must not be saved with the other's.
+   */
+  getConfiguration = async (): Promise<Partial<State> & { bypass: boolean }> => {
+    const current = (scopeName: string, pipeline: PipelineEntry[]) =>
+      Promise.all(
+        pipeline.map(async (entry) => {
+          const live = this._scopes
+            .get(scopeName)
+            ?.findServiceInstance(entry.instanceId)[0] as any;
+          if (!live?.getConfiguration) {
+            return entry;
+          }
+          return { ...entry, state: await live.getConfiguration() };
+        }),
+      );
+    const tracks = await Promise.all(
+      this.state.tracks.map(async (track) => ({
+        ...track,
+        pipeline: await current(track.name, track.pipeline),
+      })),
+    );
+    return {
+      ...this.state,
+      tracks,
+      reduce: await current(REDUCE, this.state.reduce),
+      bypass: this.bypass,
+    };
+  };
 
   destroy(): void {
     // Ends what runs inside, not only the references: see dispose.

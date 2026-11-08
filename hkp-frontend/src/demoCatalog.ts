@@ -12,6 +12,40 @@ export type DemoCatalogEntry = {
   description: string;
   icon: string;
   tags: string[];
+} & DemoSpotlight;
+
+/** How a pick opens, and the only way its card leads: one click in the
+ *  browser, the Readymade app (a board on `remote: embedded`), or a video for
+ *  anything that needs a runtime server a visitor does not have. */
+export type DemoOpens = "browser" | "app" | "video";
+
+export type DemoMedia =
+  | { video: string; poster: string; alt: string }
+  | { image: string; alt: string };
+
+/**
+ * What the pitch's gallery says about a pick (see demoShelves.ts). All of it
+ * optional, so an entry nobody spotlights is unaffected, and the start page
+ * and the board hub keep reading the same entries.
+ */
+export type DemoSpotlight = {
+  /** What you get, not what it shows: "Your club's courts, bookable from a
+   *  phone, never double-booked." */
+  outcome?: string;
+  /** What to do once it is open, and what you will see happen. */
+  expect?: string;
+  /** The concept it shows, linked to the page that explains it. */
+  underTheHood?: { text: string; href: string };
+  opens?: DemoOpens;
+  /** For a video pick: the board itself, for people who run their own
+   *  runtime servers, and which ones it needs. */
+  runItYourself?: { href: string; needs: string };
+  /** For a browser version: what deploying the board changes. Its data
+   *  lives in this browser, for one person, until then. */
+  deployed?: string;
+  media?: DemoMedia;
+  /** Further boards shown with this one as a group pick, by slug. */
+  members?: string[];
 };
 
 export const DEMO_CATALOG: DemoCatalogEntry[] = [
@@ -203,9 +237,26 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     slug: "court-booking",
     label: "Court Booking",
     description:
-      "Three tennis courts as an hourly timetable: tap a free hour to take it, tap your own to give it back. Both club rules — no double booking, one hour per member per day — are unique indexes, so the database refuses what the grid would not offer.",
+      "Three tennis courts as an hourly timetable for your club. Tap a free hour to take it, tap your own to give it back — no double bookings, and one hour per member per day.",
     icon: "🎾",
     tags: ["Needs Node", "SQL"],
+    outcome: "Your club's courts, bookable from a phone, never double-booked.",
+    expect:
+      "Watch a member take an hour on their phone — then two people go for the same hour, and the one who's too late is told.",
+    underTheHood: {
+      text: "How the club rules work",
+      href: "/documentation/boards/court-booking-demo-board/",
+    },
+    opens: "video",
+    media: {
+      video: "/images/pitch/court-booking.mp4",
+      poster: "/images/pitch/court-booking.jpg",
+      alt: "Court Booking deployed: a member takes an hour on her phone, then two people confirm the same hour and the one who loses is told.",
+    },
+    runItYourself: {
+      href: "/playground?demo=court-booking",
+      needs: "an hkp-node server named “node”",
+    },
   },
   {
     slug: "swimlanes",
@@ -227,7 +278,7 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     slug: "court-booking-browser",
     label: "Court Booking (Browser)",
     description:
-      "The same court timetable with nothing to install: SQLite runs in the browser and keeps the bookings between visits. The club rules are still unique indexes — what it gives up is the club, since the tables belong to this browser alone.",
+      "A preview of the booking app: try the timetable yourself before you share it with your club.",
     icon: "🎾",
     tags: ["SQL"],
   },
@@ -264,12 +315,133 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["Needs Node", "SQL"],
   },
   {
+    slug: "hacker-news",
+    label: "Hacker News Reader",
+    description:
+      "The day's top stories, the newest ones, and a search over every story ever posted. Comments open right beside the list, each reply under the one it answers. Fold a branch to skip it — it stays folded next time.",
+    icon: "🗞️",
+    tags: ["Live data", "SQL"],
+    outcome:
+      "The classic reader demo put together from blocks that already exist.",
+    expect:
+      "Pick a list or search, then open a story's comments. Fold a branch with [–], or hit Collapse all and open just the ones worth reading.",
+    underTheHood: {
+      text: "How it's put together from existing blocks",
+      href: "/documentation/boards/hacker-news-board/",
+    },
+    opens: "browser",
+    media: {
+      image: "/images/pitch/hacker-news.jpg",
+      alt: "HN Reader: the front page beside the discussion of its busiest story, every reply under the comment it answers, one branch folded.",
+    },
+  },
+  {
+    slug: "health-log-browser",
+    label: "Private Health Log (Browser)",
+    description:
+      "Everything you log stays with you, in a file you can take anywhere. What happens to it next is your call — keep it, look for patterns, or one day train a model of your own on it.",
+    icon: "🩺",
+    tags: ["SQL", "Personal Data"],
+    outcome:
+      "Your glucose, blood pressure and weight — logged, charted and yours alone.",
+    expect:
+      "Log a value, or tap Generate fake data under Your data for six months of history. Then open Trends and hover a point to see that day's journal.",
+    underTheHood: {
+      text: "How the log and charts work",
+      href: "/documentation/boards/health-log-browser-demo-board/",
+    },
+    opens: "browser",
+    media: {
+      video: "/images/pitch/health-log.mp4",
+      poster: "/images/pitch/health-log.jpg",
+      alt: "Health Log in the browser: a glucose value logged, six months of fictional history charted with a day's journal beside its value, and the history exported as a .sqlite file.",
+    },
+    deployed:
+      "Deploy it to a server you choose, and the same log opens on your phone and your laptop.",
+  },
+  {
+    slug: "meeting-poll-browser",
+    label: "Meeting Poll (Browser)",
+    description:
+      "A preview of the poll app: call a meeting and answer it yourself before you share it with your team.",
+    icon: "🗳️",
+    tags: ["SQL"],
+  },
+  {
+    slug: "rss-radio",
+    label: "Reading Radio",
+    description:
+      "Pick what's worth reading from the news sites and blogs you follow, and your reading list becomes a feed of your own. Each article is summarised and read aloud, ready to play like a podcast. Your list is a picture of what you care about — it stays yours, and one day you can use it to train a model that helps you curate.",
+    icon: "🎧",
+    tags: ["Needs Node", "Needs Python", "Audio"],
+    outcome:
+      "The articles you picked to read, like a podcast for your way to work.",
+    expect:
+      "Drag articles onto the reading list, and the board writes a brief of each, voices it and adds it to your own playlist.",
+    underTheHood: {
+      text: "How five independent parts make one radio",
+      href: "/documentation/boards/rss-radio-board/",
+    },
+    opens: "video",
+    media: {
+      video: "/images/pitch/rss-radio.mp4",
+      poster: "/images/pitch/rss-radio.jpg",
+      alt: "Reading Radio's five lanes: three Hacker News articles dragged onto the reading list, briefed by a model, voiced, and on air with a player on each card.",
+    },
+    runItYourself: {
+      href: "/playground?demo=rss-radio",
+      needs:
+        "hkp-node and hkp-python servers named “node” and “python”, and an Anthropic key",
+    },
+  },
+  {
+    slug: "syn-mail-desk",
+    label: "Hotel Booking Mail Desk",
+    description:
+      "Emails asking a booking agency for a hotel at a certain place and time come in and are sorted. If something's missing for an offer, a model of your choice drafts a follow-up to the customer and puts it in Needs Review. A person has the final say: edit the draft, or send it as it is. Enquiries ready for an offer land in the last lane, for the next board to pick up — so your team's time goes where it counts: the offers.",
+    icon: "📬",
+    tags: ["Needs Node", "Integration"],
+    outcome:
+      "The repetitive email work many businesses do by hand, automated — a person reviews and signs off.",
+    underTheHood: {
+      text: "How the desk was added without changing the app behind it",
+      href: "/documentation/boards/syn-mail-desk-board/",
+    },
+    opens: "video",
+    media: {
+      image: "/images/pitch/mail-desk.jpg",
+      alt: "The mail desk's three lanes with sample enquiries: incoming hotel requests, drafted follow-ups waiting for review, and enquiries ready for an offer.",
+    },
+    runItYourself: {
+      href: "/playground?demo=syn-mail-desk",
+      needs:
+        "an hkp-node server named “node”, an IMAP and SMTP mailbox, and an Anthropic key",
+    },
+  },
+  {
     slug: "meeting-poll",
     label: "Meeting Poll",
     description:
-      "Dates for a meeting, answered by everyone it is put to: the board's owner calls meetings and puts times up, each member says which ones work \u2014 none, one or all of them, as themselves. Who may propose a date and who may answer at all are triggers and indexes, so the database turns down what the page would not offer, and says why.",
+      "Dates for a meeting, answered by everyone it's put to. You call the meeting and put up a few times; each member says which ones work — none, one or all of them.",
     icon: "🗳️",
     tags: ["Needs Node", "SQL"],
+    outcome: "A date everybody can make, without the email thread.",
+    expect:
+      "Watch two members answer on their phones, the owner see the best date and close the poll — and a late answer get turned down.",
+    underTheHood: {
+      text: "How the poll rules work",
+      href: "/documentation/boards/meeting-poll-demo-board/",
+    },
+    opens: "video",
+    media: {
+      video: "/images/pitch/meeting-poll.mp4",
+      poster: "/images/pitch/meeting-poll.jpg",
+      alt: "Meeting Poll deployed: two members answer on their phones, the owner sees the best date, closes the poll, and a late answer is turned down.",
+    },
+    runItYourself: {
+      href: "/playground?demo=meeting-poll",
+      needs: "an hkp-node server named “node”",
+    },
   },
   {
     slug: "nested-rhythm",
@@ -277,7 +449,99 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     description:
       "A drum groove timed by nothing but nesting: four patterns — Straight, Shuffle, Four on the floor, Funk — each a bar built from small blocks like a Beat of two hi-hats. Every wait is in beats; tempo and pattern are slots in the outermost scope that every level inherits. Switch patterns and watch the playhead move down through the levels.",
     icon: "🥁",
-    tags: ["Audio"],
+    tags: ["Audio", "Sequencing"],
+    outcome:
+      "Four drum grooves, switched at the bar line, timed by nothing but nesting.",
+    expect:
+      "Press Play, pick a pattern, turn the tempo. Open the board to watch the playhead move down through the levels.",
+    underTheHood: {
+      text: "Nested sub-services and the scope they share",
+      href: "/documentation/boards/nested-rhythm-demo-board/",
+    },
+    opens: "browser",
+    media: {
+      video: "/images/pitch/NestingBeatsHi.mp4",
+      poster: "/images/pitch/NestingBeatsHi-poster.jpg",
+      alt: "The Nested Rhythm board, its playhead moving down through nested services.",
+    },
+    members: ["timeline", "night-groove"],
+  },
+  {
+    slug: "timeline",
+    label: "Timeline",
+    description:
+      "A night sky that plays for eight seconds and loops: stars pop up, a planet appears, a rocket and a comet fly across. No animation code — every image is keyframed on a timeline of its own, and one outer timeline arranges them all.",
+    icon: "🌠",
+    tags: ["Canvas", "Animation", "Sequencing"],
+    outcome: "An animated scene made of keyframes, without animation code.",
+    underTheHood: {
+      text: "Timelines inside a timeline, motions written once as blocks",
+      href: "/documentation/boards/timeline-demo-board/",
+    },
+    opens: "browser",
+  },
+  {
+    slug: "night-groove",
+    label: "Night Groove",
+    description:
+      "The Timeline demo's night sky with a drum groove under it, both played by one clock counting in beats. Hi-hats, kick, snare and a fill come in bar by bar while the stars, rocket, planet and comet arrive with them, and a moon beats with every kick. Pause silences the band and holds the picture together; the tempo knob speeds up both.",
+    icon: "🌙",
+    tags: ["Audio", "Animation", "Sequencing"],
+    outcome:
+      "Sound and picture on one clock, in time without scheduling anything.",
+    expect:
+      "Press Play and watch the moon beat with the kick. Turn the tempo and the band and the sky follow together.",
+    underTheHood: {
+      text: "One timeline arranging drums and images alike",
+      href: "/documentation/boards/night-groove-demo-board/",
+    },
+    opens: "browser",
+  },
+  {
+    slug: "live-radio",
+    label: "Live Radio",
+    description:
+      "Readymade's realtime showcase. Its C++ runtime is built for live work like audio: it records your microphone, turns it into MP3 on the fly and streams it to every listener, less than half a second later. It runs in the Readymade app, which has that runtime built in.",
+    icon: "📻",
+    tags: ["Audio", "Needs app"],
+    outcome: "Your microphone on air, live on any phone that scans the code.",
+    expect:
+      "Press Start in the app, then scan the QR code with a phone on the same network — it plays what the app's microphone picks up, almost as you say it.",
+    underTheHood: {
+      text: "How it stays this fast",
+      href: "/documentation/boards/live-radio-demo-board/",
+    },
+    opens: "app",
+    media: {
+      video: "/images/pitch/live-radio.mp4",
+      poster: "/images/pitch/live-radio.jpg",
+      alt: "Live Radio on air: the station's code to scan and its one listener, beside the phone playing what the microphone hears.",
+    },
+  },
+  {
+    slug: "shared-costs",
+    label: "Shared Costs",
+    description:
+      "Shared costs for a flat: whoever paid adds what it was for and how much, it is split evenly between everyone in the flat at that moment, and each person sees what they owe or are owed. Board Assist composed it from one description — six SQL statements of its own on services other boards already use — and every expense is recorded for the signed-in caller the server verified.",
+    icon: "💶",
+    tags: ["Needs Node", "SQL"],
+    outcome: "Who paid, who owes, and nobody doing the sums.",
+    expect:
+      "Watch the assistant compose it from one description, then one flatmate add the groceries and the other open the board to see what they owe.",
+    underTheHood: {
+      text: "Six new SQL statements on services other boards already use",
+      href: "/documentation/boards/shared-costs-demo-board/",
+    },
+    opens: "video",
+    runItYourself: {
+      href: "/playground?demo=shared-costs",
+      needs: "an hkp-node server named “node”",
+    },
+    media: {
+      video: "/images/pitch/shared-costs.mp4",
+      poster: "/images/pitch/shared-costs.jpg",
+      alt: "Board Assist composing the Shared Costs board from one description, then two flatmates using it on their phones.",
+    },
   },
 ];
 

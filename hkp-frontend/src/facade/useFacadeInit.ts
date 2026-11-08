@@ -1,7 +1,11 @@
 import { useEffect, useReducer, useRef } from "react";
 
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import { canReachService, isBuiltInside } from "./boardServices";
+import {
+  canReachService,
+  isBuiltInside,
+  whenServiceConnected,
+} from "./boardServices";
 import { executeActions } from "./executeActions";
 import { FacadeIdentity } from "./FacadeIdentity";
 import { FacadeDescriptor } from "./types";
@@ -54,6 +58,17 @@ export function useFacadeInit({
   const built = named.every((uuid) => isBuiltInside(boardContext, uuid));
 
   const ranFor = useRef<string | null>(null);
+  // The board as it is now and whether this hook is still mounted, for an init
+  // that resumes after waiting on a runtime: by then the board this render saw
+  // may have moved on, or been closed.
+  const latest = useRef({ boardContext, boardName, mounted: true });
+  latest.current = { ...latest.current, boardContext, boardName };
+  useEffect(() => {
+    latest.current.mounted = true;
+    return () => {
+      latest.current.mounted = false;
+    };
+  }, []);
   const building = useRef<{ boardName: string; since: number } | null>(null);
   const [, recheck] = useReducer((n: number) => n + 1, 0);
 
@@ -79,13 +94,32 @@ export function useFacadeInit({
       return;
     }
     ranFor.current = boardName;
-    void executeActions({
-      actions: init,
-      value: undefined,
-      boardContext,
-      setState,
-      state: stateRef.current,
-      identity,
-    });
+    // Reachable is not yet listening: a remote runtime answers a call before
+    // its socket has opened, and the notification that would draw the first
+    // view goes nowhere. Init runs once, so it waits for the runtimes it calls.
+    void (async () => {
+      await Promise.all(
+        init.map((action) => {
+          const uuid = (action as { serviceUuid?: unknown }).serviceUuid;
+          return typeof uuid === "string"
+            ? whenServiceConnected(boardContext, uuid)
+            : undefined;
+        }),
+      );
+      const now = latest.current;
+      // Closed, or another board opened, while it waited: that board runs its
+      // own init, and this one has nobody left to draw for.
+      if (!now.mounted || now.boardName !== boardName) {
+        return;
+      }
+      await executeActions({
+        actions: init,
+        value: undefined,
+        boardContext: now.boardContext,
+        setState,
+        state: stateRef.current,
+        identity,
+      });
+    })();
   }, [boardName, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 }

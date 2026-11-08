@@ -1,6 +1,7 @@
 import boardFormat from "../../../docs/content/board-json.md?raw";
 import introduction from "../../../docs/content/introduction.md?raw";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
+import type { BoardDescriptor } from "../types";
 
 // Vite packages the repository documentation for every host, including offline
 // native builds. Individual documents are loaded only when requested.
@@ -90,3 +91,22 @@ export const bundledKnowledgeProvider: ReadymadeKnowledgeProvider = {
   searchKnowledge: ({ query }) => searchDocumentation(query),
   readDocuments: readDocumentation,
 };
+
+/**
+ * Every board the repository ships, parsed — what a review counts block use
+ * against. Loaded on demand and once; a board that does not parse is left out
+ * rather than failing the count.
+ */
+let shipped: Promise<BoardDescriptor[]> | undefined;
+export function shippedBoards(): Promise<BoardDescriptor[]> {
+  shipped ??= Promise.all(
+    Object.values(examples).map(async (load) => {
+      try {
+        return JSON.parse(await load()) as BoardDescriptor;
+      } catch {
+        return undefined;
+      }
+    }),
+  ).then((boards) => boards.filter((b): b is BoardDescriptor => !!b));
+  return shipped;
+}

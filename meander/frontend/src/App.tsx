@@ -24,6 +24,7 @@ import {
 import LoadIndicator from "./LoadIndicator";
 import { VaultProvider } from "hkp-frontend/src/VaultContext";
 import { DEMO_BOARDS } from "./demoBoards";
+import { findDemoUnits } from "hkp-frontend/src/demoRegistry";
 import { useShareFlow } from "./share/useShareFlow";
 import ShareOverlay from "./share/ShareOverlay";
 import SecretConsentDialog from "./SecretConsentDialog";
@@ -32,11 +33,16 @@ function demoSlug(label: string): string {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function findDemoBySlug(slug: string): BoardDescriptor | undefined {
+/** A demo by its slug, with the unit documents a composed one links against. */
+function findDemoBySlug(
+  slug: string,
+): { board: BoardDescriptor; units?: Record<string, BoardDescriptor> } | undefined {
   const match = DEMO_BOARDS.find(
     (e) => e.slug === slug || demoSlug(e.label) === slug,
   );
-  return match?.board as BoardDescriptor | undefined;
+  return match
+    ? { board: match.board as BoardDescriptor, units: findDemoUnits(match.slug) }
+    : undefined;
 }
 
 function shouldRenderPlaygroundFromUrl() {
@@ -178,8 +184,9 @@ function MeanderShell() {
     board: BoardDescriptor | null | undefined,
     source?: string,
     library?: BoardLibraryKind,
+    units?: Record<string, BoardDescriptor>,
   ) => {
-    setView({ type: "playground", board: board ?? null, source, library });
+    setView({ type: "playground", board: board ?? null, source, library, units });
     navigate("/playground", { replace: true });
   };
 
@@ -189,9 +196,9 @@ function MeanderShell() {
     }
     const demoParam = new URLSearchParams(window.location.search).get("demo");
     if (demoParam) {
-      const board = findDemoBySlug(demoParam);
-      if (board) {
-        setView({ type: "playground", board });
+      const demo = findDemoBySlug(demoParam);
+      if (demo) {
+        setView({ type: "playground", board: demo.board, units: demo.units });
         return;
       }
     }

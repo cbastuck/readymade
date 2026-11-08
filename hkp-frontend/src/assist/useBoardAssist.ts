@@ -18,6 +18,7 @@ import { listOpenCodeModels, runOpenCodeTurn } from "./openCode";
 import { saveAssistSettings, useAssistSettings } from "./settings";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
+import { addUsage, AssistUsage, noUsage, priceOf } from "./usage";
 import { captureBoardRenderFailures } from "../core/renderFailures";
 import { boardAssistKnowledgeProvider } from "./mcpKnowledge";
 import { assistContext, resolveAssistScope } from "./scope";
@@ -41,7 +42,28 @@ export type AssistEntry = {
   rawResponse?: string;
   preflightError?: string;
   preflightPassed?: boolean;
+  /** Every request the turn made, and the model it was priced for. */
+  usage?: AssistUsage;
+  modelId?: string;
 };
+
+/**
+ * The conversation so far, every turn's requests together — the figure a
+ * price beside a conversation has to be, since most of what a turn reads is
+ * documentation it looked up on the way. Priced per turn, because the model
+ * can change between turns; unpriced when any turn's model has no price.
+ */
+function conversationUsage(entries: AssistEntry[]) {
+  let usage = noUsage;
+  let price: number | undefined = 0;
+  for (const entry of entries) {
+    if (!entry.usage) continue;
+    usage = addUsage(usage, entry.usage);
+    const turn = priceOf(entry.modelId ?? "", entry.usage);
+    price = price === undefined || turn === undefined ? undefined : price + turn;
+  }
+  return { usage, price };
+}
 export type AssistPreview = {
   current: BoardDescriptor;
   proposed: BoardDescriptor;
@@ -301,6 +323,12 @@ export function useBoardAssist({
         onRawResponse: (output: string) => {
           rawResponse = output;
         },
+        onUsage: (usage: AssistUsage) =>
+          setEntries((list) =>
+            list.map((entry, i) =>
+              i === index ? { ...entry, usage, modelId: model.id } : entry,
+            ),
+          ),
         onText: (generated: string) =>
           setEntries((list) =>
             list.map((entry, i) =>
@@ -359,6 +387,9 @@ export function useBoardAssist({
         base: JSON.stringify(captured),
         preflightError,
         preflightPassed: !!proposal && !preflightError,
+        // OpenCode reports no usage.
+        usage: "usage" in result ? result.usage : undefined,
+        modelId: model.id,
       };
       setEntries((list) =>
         list.map((entry, i) =>
@@ -375,8 +406,15 @@ export function useBoardAssist({
       setError(message);
       setEntries((list) =>
         list.map((entry, i) =>
+          // What a failed turn already spent is still spent.
           i === index
-            ? { role: "assistant", text: message, rawResponse }
+            ? {
+                role: "assistant",
+                text: message,
+                rawResponse,
+                usage: entry.usage,
+                modelId: entry.modelId,
+              }
             : entry,
         ),
       );
@@ -596,6 +634,8 @@ export function useBoardAssist({
     effort,
     updateSettings,
     entries,
+    /** What the conversation has used so far, and its price if known. */
+    total: conversationUsage(entries),
     prompt,
     setPrompt,
     scope,

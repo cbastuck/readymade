@@ -72,7 +72,7 @@ data that looks right until the day it doesn't.
 | `run` | Runs a statement that changes rows | `{ changes, lastInsertRowid }` |
 | `exec` | Runs statements for their effect — DDL, `PRAGMA`, several at once | `{ executed: true }` |
 | `databases` | Lists the databases there are to name | `{ rows: [{ name, bytes }], count }` |
-| `export` | Writes the whole database as SQL | the dump, as text |
+| `export` | Writes the whole database as SQL, or with `format: "sqlite"` as an SQLite file | the dump, as text; or the file, as bytes |
 | `import` | Runs SQL text arriving as **input** — a dump, typically | `{ executed: true }` |
 
 `databases`, `export` and `import` need no `statement`. See
@@ -357,6 +357,23 @@ does on hkp-node.
 - The panel's **Run** button tries the statement with no parameters and shows
   what it did; it does not call the rest of the pipeline.
 
+### Inspecting the database
+
+The panel's **Inspect database** button opens what the service's database
+holds, in a dialog beside the service: its tables and views down the side, each
+with how many rows it has, and the rows of the one picked, a hundred at a time.
+The tables this service's statement names come first, marked **written here**
+(after `INSERT INTO`, `REPLACE INTO`, `UPDATE` or `DELETE FROM`) or **read
+here** — a reading of the statement's text, not a parse of it. **Definition**
+shows the `CREATE` statement SQLite keeps for the table.
+
+It only looks. It applies no schema, changes no row and tells the board
+nothing, so a database the board has not created yet shows no tables rather
+than being created by being looked at. While it is open it looks again after
+every pass the service reports, so a table being written fills in as the board
+runs. To change rows, use the [SQL Explorer](../boards/sql-explorer-board.md)
+board.
+
 ---
 
 ## Moving a database
@@ -393,9 +410,20 @@ A database with a virtual table (full-text search, say) cannot be exported:
 its rows live in tables of the module's own, and a dump that recreated both
 would load them twice.
 
-`export` reports `{ exported, bytes }` rather than the dump: the text travels
-to the next service — [Download](./download.md), in a browser — and a panel has
-no use for a second copy.
+### The file
+
+`format: "sqlite"` (the default is `"sql"`) makes `export` hand on the
+database file instead: the bytes any SQLite tool — `sqlite3`, DB Browser for
+SQLite, a script — opens as it is. That is the format for a person keeping
+their data rather than for another runtime, which reads the dump; `import`
+takes SQL text only. In a browser the bytes are the page's own copy of the
+database; on hkp-node they are a consistent copy SQLite writes (`VACUUM INTO`),
+never the board's file in the middle of a write.
+
+`export` reports `{ exported, format, bytes }` rather than the export: it
+travels to the next service — [Download](./download.md), in a browser — and a
+panel has no use for a second copy. `bytes` counts characters of a dump and
+bytes of a file.
 
 ### Importing
 

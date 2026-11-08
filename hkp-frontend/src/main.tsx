@@ -10,6 +10,9 @@
 import ReactDOM from "react-dom/client";
 
 import App from "./App.tsx";
+import { setSecretStore } from "./core/secrets";
+import { vaultSecretStore } from "./vault";
+import SecretConsentDialog from "./ui-components/SecretConsentDialog";
 
 import Routes from "./Routes";
 
@@ -23,6 +26,10 @@ import "setimmediate";
  */
 const AUTH0_CLIENT_ID = "x4iF0MBYfd25oLdJbATNe03dCDUtBs74";
 
+// Before anything can load a board: the same page-memory vault the website
+// registers, filled from Settings → Secrets.
+setSecretStore(vaultSecretStore);
+
 // The playground theme, as every host that mounts this shell asks for: the
 // website's pages, and the desktop and mobile apps. Naming it here too is what
 // makes running this app on its own the same playground the site hosts, rather
@@ -30,5 +37,6 @@ const AUTH0_CLIENT_ID = "x4iF0MBYfd25oLdJbATNe03dCDUtBs74";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <App clientId={AUTH0_CLIENT_ID} defaultThemeName="playground">
     <Routes />
+    <SecretConsentDialog />
   </App>
 );

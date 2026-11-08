@@ -170,6 +170,21 @@ class Switch extends ServiceBase<State> {
     }
   }
 
+  /**
+   * Whether the cases' pipelines have been built, so that what runs inside
+   * them can be found — and listened to — by its scoped address.
+   */
+  isScopeBuilt(): boolean {
+    const pipelines = [
+      ...this.state.cases.map((c) => c.pipeline),
+      this.state.default,
+    ];
+    return (
+      pipelines.every((pipeline) => pipeline.length === 0) ||
+      this._scopes.length === pipelines.length
+    );
+  }
+
   /** The service a scoped address names inside one of the cases, however deep. */
   findNested(address: string): any {
     const segments = splitAddress(address);

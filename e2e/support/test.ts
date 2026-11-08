@@ -1,6 +1,7 @@
 import {
   test as base,
   expect,
+  type BrowserContext,
   type Locator,
   type Page,
 } from "@playwright/test";
@@ -122,42 +123,16 @@ export const test = base.extend<HostOptions & HostFixtures>({
   // Installed on the context so it covers every page it opens. Init-script
   // ordering is unspecified; seedBoard queues native seeds when necessary.
   context: async ({ context, profile, hostConfig, baseURL, serverOrigins }, use) => {
-    const allowed = new Set([baseURL, ...serverOrigins].filter(Boolean).map((url) => new URL(url!).origin));
-    const permitted = (value: string) => {
-      const url = new URL(value);
-      if (url.protocol === "ws:") url.protocol = "http:";
-      if (url.protocol === "wss:") url.protocol = "https:";
-      return allowed.has(url.origin);
-    };
-    // Per-page fixture routes (e.g. ntfy) take precedence over this guard.
-    // Browser traffic can reach only this suite's local servers; an unmocked
-    // dependency gets an immediate deterministic response instead of a hang.
-    // The pattern itself leaves the allowed origins out: a regular expression
-    // is matched inside the browser's driver, so the hundreds of module
-    // requests a page load makes never wait on a round trip to this handler.
-    const local = [...allowed].map((origin) => origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
-    await context.route(new RegExp(`^(?!(?:${local})(?:[/?#]|$))https?://`), async (route) => {
-      await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"External dependency is not mocked in this E2E test"}' });
-    });
-    // Leave allowed sockets untouched to preserve their transport behavior.
-    await context.routeWebSocket((url) => !permitted(url.toString()), (socket) => {
-      socket.close({ code: 1008, reason: "External dependency is not mocked" });
-    });
-    if (profile !== "web") {
-      await context.addInitScript(installFakeNativeHost, {
-        shell: profile === "mobile" ? "ios" : "desktop",
-        ...hostConfig,
-      } as FakeHostConfig);
-    }
+    await prepareContext(context, { profile, hostConfig, baseURL, serverOrigins });
     await use(context);
   },
 
   seedBoard: async ({ context, profile }, use) => {
     await use(async (name: string, descriptor: unknown) => {
       // A board has to be put where the shell about to look for it will look:
-      // the web and mobile shells read a local library out of localStorage,
-      // the desktop shell asks the platform host. Seeding both keeps the specs
-      // free of that distinction. A separate marker survives deletion too:
+      // the web shell reads a local library out of localStorage, the native
+      // shells ask the platform host. Seeding both keeps the specs free of
+      // that distinction. A separate marker survives deletion too:
       // reloading must never resurrect a board the test has removed.
       await context.addInitScript(
         ([boardName, item, board, native]: [string, string, unknown, boolean]) => {
@@ -221,11 +196,17 @@ export const test = base.extend<HostOptions & HostFixtures>({
       await press(page.getByRole("button", { name: "Open board" }));
 
       if (profile === "mobile") {
-        // The mobile shell opens a board as a collapsed list of services —
-        // there is no room for a pipeline of panels on a phone. Expanding them
-        // is what puts the same service UIs on screen the other shells render
-        // directly, so specs can then say the same thing about all three.
-        await press(page.getByRole("button", { name: "Show full service UIs" }));
+        // The mobile shell opens a board as a list of collapsed service cards
+        // — there is no room for a pipeline of panels on a phone. Unfolding
+        // each card, then its UI, is what puts the same service UIs on screen
+        // the other shells render directly, so specs can then say the same
+        // thing about all three.
+        const cards = page.locator("[data-service-card]");
+        await expect(cards.first()).toBeVisible();
+        for (const card of await cards.all()) {
+          await press(card.locator(":scope > button[aria-expanded='false']"));
+          await press(card.getByRole("button", { name: "UI", exact: true }));
+        }
       }
     });
   },
@@ -243,6 +224,57 @@ export const test = base.extend<HostOptions & HostFixtures>({
     });
   },
 });
+
+
+/**
+ * What every context a spec opens gets: the network kept to this suite's own
+ * servers, and the fake native host the profile names. The `context` fixture
+ * runs it for the default context; a spec acting as a second person runs it on
+ * the context it opens for them (`secondPerson` in `film/`), so both are held
+ * to the same rules.
+ */
+export async function prepareContext(
+  context: BrowserContext,
+  {
+    profile,
+    hostConfig,
+    baseURL,
+    serverOrigins,
+  }: {
+    profile: Profile;
+    hostConfig: Partial<FakeHostConfig>;
+    baseURL?: string;
+    serverOrigins: string[];
+  },
+): Promise<void> {
+  const allowed = new Set([baseURL, ...serverOrigins].filter(Boolean).map((url) => new URL(url!).origin));
+  const permitted = (value: string) => {
+    const url = new URL(value);
+    if (url.protocol === "ws:") url.protocol = "http:";
+    if (url.protocol === "wss:") url.protocol = "https:";
+    return allowed.has(url.origin);
+  };
+  // Per-page fixture routes (e.g. ntfy) take precedence over this guard.
+  // Browser traffic can reach only this suite's local servers; an unmocked
+  // dependency gets an immediate deterministic response instead of a hang.
+  // The pattern itself leaves the allowed origins out: a regular expression
+  // is matched inside the browser's driver, so the hundreds of module
+  // requests a page load makes never wait on a round trip to this handler.
+  const local = [...allowed].map((origin) => origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  await context.route(new RegExp(`^(?!(?:${local})(?:[/?#]|$))https?://`), async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"External dependency is not mocked in this E2E test"}' });
+  });
+  // Leave allowed sockets untouched to preserve their transport behavior.
+  await context.routeWebSocket((url) => !permitted(url.toString()), (socket) => {
+    socket.close({ code: 1008, reason: "External dependency is not mocked" });
+  });
+  if (profile !== "web") {
+    await context.addInitScript(installFakeNativeHost, {
+      shell: profile === "mobile" ? "ios" : "desktop",
+      ...hostConfig,
+    } as FakeHostConfig);
+  }
+}
 
 export { expect };
 

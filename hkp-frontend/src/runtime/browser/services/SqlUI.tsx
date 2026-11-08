@@ -9,7 +9,8 @@ import Button from "hkp-frontend/src/ui-components/Button";
 import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import PillRadioGroup from "hkp-frontend/src/ui-components/PillRadioGroup";
 import Editor from "hkp-frontend/src/components/shared/Editor";
-import { EMITS, MODES } from "./sql-modes";
+import { EMITS, FORMATS, MODES } from "./sql-modes";
+import SqlInspector, { InspectableSql } from "./SqlInspector";
 
 /**
  * The browser SQL service's panel.
@@ -18,7 +19,8 @@ import { EMITS, MODES } from "./sql-modes";
  * because most services on a board leave it to one other. Run tries the
  * statement with no parameters and shows what it did — the rest of the
  * pipeline is not called, so trying a DELETE here changes the tables but
- * nothing downstream.
+ * nothing downstream. Inspect opens what the database holds, beside the
+ * service rather than in a board of its own.
  */
 
 const MODE_LABELS: Record<string, string> = {
@@ -33,6 +35,11 @@ const MODE_LABELS: Record<string, string> = {
 /** Modes that run what the panel's statement field holds. */
 const USES_STATEMENT = new Set(["query", "run", "exec"]);
 
+const FORMAT_LABELS: Record<string, string> = {
+  sql: "SQL text",
+  sqlite: "SQLite file",
+};
+
 const EMIT_LABELS: Record<string, string> = {
   result: "Result",
   input: "Input",
@@ -41,7 +48,8 @@ const EMIT_LABELS: Record<string, string> = {
 /** One line saying what the last statement did. */
 function describe(result: any): string | null {
   if (typeof result?.exported === "string") {
-    return `exported ${result.exported} (${result.bytes} characters)`;
+    const unit = result.format === "sqlite" ? "bytes" : "characters";
+    return `exported ${result.exported} (${result.bytes} ${unit})`;
   }
   if (typeof result?.count === "number") {
     return `${result.count} row${result.count === 1 ? "" : "s"}`;
@@ -58,11 +66,15 @@ function describe(result: any): string | null {
 export default function SqlUI(props: ServiceUIProps) {
   const [mode, setMode] = useState<string>("query");
   const [emit, setEmit] = useState<string>("result");
+  const [format, setFormat] = useState<string>("sql");
   const [database, setDatabase] = useState("");
   const [statement, setStatement] = useState("");
   const [schema, setSchema] = useState("");
   const [outcome, setOutcome] = useState("");
   const [error, setError] = useState("");
+  const [inspecting, setInspecting] = useState(false);
+  // Moves on every pass the service reports, so an open inspector looks again.
+  const [revision, setRevision] = useState(0);
 
   const update = (config: any) => {
     if (
@@ -76,6 +88,12 @@ export default function SqlUI(props: ServiceUIProps) {
       (EMITS as readonly string[]).includes(config.emit)
     ) {
       setEmit(config.emit);
+    }
+    if (
+      typeof config?.format === "string" &&
+      (FORMATS as readonly string[]).includes(config.format)
+    ) {
+      setFormat(config.format);
     }
     if (
       config?.database !== undefined &&
@@ -97,6 +115,7 @@ export default function SqlUI(props: ServiceUIProps) {
     if (done !== null) {
       setOutcome(done);
       setError("");
+      setRevision((n) => n + 1);
     }
     if (typeof config?.error === "string") {
       setOutcome("");
@@ -123,6 +142,15 @@ export default function SqlUI(props: ServiceUIProps) {
           value={mode}
           onChange={(value) => configure({ mode: value })}
         />
+
+        {mode === "export" ? (
+          <PillRadioGroup
+            title="Format"
+            options={FORMAT_LABELS}
+            value={format}
+            onChange={(value) => configure({ format: value })}
+          />
+        ) : null}
 
         <PillRadioGroup
           title="Passes on"
@@ -165,12 +193,20 @@ export default function SqlUI(props: ServiceUIProps) {
           </div>
         </div>
 
-        <Button
-          className="hkp-svc-btn w-full"
-          onClick={() => props.service.process({})}
-        >
-          Run
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            className="hkp-svc-btn flex-1"
+            onClick={() => props.service.process({})}
+          >
+            Run
+          </Button>
+          <Button
+            className="hkp-svc-btn flex-1"
+            onClick={() => setInspecting(true)}
+          >
+            Inspect database
+          </Button>
+        </div>
 
         {outcome || error ? (
           <div className="text-xs">
@@ -179,6 +215,12 @@ export default function SqlUI(props: ServiceUIProps) {
           </div>
         ) : null}
       </div>
+      <SqlInspector
+        service={props.service as unknown as InspectableSql}
+        isOpen={inspecting}
+        revision={revision}
+        onClose={() => setInspecting(false)}
+      />
     </ServiceUI>
   );
 }

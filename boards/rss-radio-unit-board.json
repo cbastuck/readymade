@@ -1,6 +1,6 @@
 {
   "boardName": "Radio",
-  "description": "A feed, read aloud. Every minute it reads the feed it was given, and anything it has not spoken before is sent to a voice and the audio kept in the library.\n\nThe feed is the only thing it knows about its source, which is what makes it general: a reading list, a blog, a newsroom \u2014 anything that publishes RSS or Atom becomes a podcast without this board learning where it came from.\n\nTwo things are worth reading in the pipeline. The **claim** is one SQL statement doing the work of a lease: it takes the item, hands back nothing at all when the item is already spoken or is being spoken right now \u2014 and returning nothing stops that pass, which is how work is skipped \u2014 and gives back the path the episode is to be kept at, built from its identity rather than from a counter that would drift. An item claimed but never finished is offered again once its claim goes stale, so a voice that was down for an hour costs a delay rather than a silence nobody notices. A voice that answers without audio counts as down: only a 200 carrying bytes is kept, so a failed rendering is left claimed and offered again rather than stored as an episode. And the **path comes back with the audio**, in a header the voice sets, because an answer arriving later than the pass that asked for it has to say what it is an answer to.\n\nA round asks the feed for its ten newest and lets the claim decide which of those are work; nothing limits the iteration itself, because an Iterator cuts the list before the claim sees it and an article below the cut would never get another turn. The calls of one round are in flight together and a voice renders them in order, so the first full round on an empty library takes as long as everything in it put together.\n\nNeeds hkp-node on 8080 and a voice to call. Alone it points at the public Hacker News feed; in the composition the reading list is the feed instead.\n\nWhat it has read aloud is published as a feed of its own, by the second runtime here. It has a clock rather than a trigger, for a structural reason worth knowing: an endpoint serving the last value it was handed answers with whatever its chain returns, so it has to be the last service in one \u2014 and the rendering chain above stops on the rounds where there is nothing new. A minute's staleness buys a feed that is rebuilt whatever happened.\n\nAn episode can be forgotten from the Listen panel: Remove deletes its row and its audio, in a runtime of its own whose output runs on into the playlist. The claim being the only memory of what was spoken, an article still on the reading list is read again on the next round.\n\nThe enclosure URLs point into the library, named rather than written down: the address is assigned when the board loads, and a Map is handed it the same way a client dialling it would be.",
+  "description": "A feed, read aloud. Every minute it reads the feed it was given, and anything it has not spoken before is sent to a voice and the audio kept in the library.\n\nThe feed is the only thing it knows about its source, which is what makes it general: a reading list, a blog, a newsroom \u2014 anything that publishes RSS or Atom becomes a podcast without this board learning where it came from.\n\nTwo things are worth reading in the pipeline. The **claim** is one SQL statement doing the work of a lease: it takes the item, hands back nothing at all when the item is already spoken or is being spoken right now \u2014 and returning nothing stops that pass, which is how work is skipped \u2014 and gives back the path the episode is to be kept at, built from its identity rather than from a counter that would drift. Nothing is offered again by itself. **A voice that fails is recorded**: the call to it is a detour that reports a failure beside the article rather than stopping, and only a 200 carrying bytes is kept \u2014 anything else is written down with its reason (the voice's error, *the voice answered HTTP 503*, *the voice answered without audio*) and waits under **Being read** for a person to press Retry. A rendering that started and never finished counts as failed after `stuckAfter`. The branch is a Tracks: one track keeps the audio, the other records why there is none, and each stops itself when it is not the one that applies. And the **path comes back with the audio**, in a header the voice sets, because an answer arriving later than the pass that asked for it has to say what it is an answer to.\n\nA round asks the feed for its ten newest and lets the claim decide which of those are work; nothing limits the iteration itself, because an Iterator cuts the list before the claim sees it and an article below the cut would never get another turn. The calls of one round are in flight together and a voice renders them in order, so the first full round on an empty library takes as long as everything in it put together.\n\nNeeds hkp-node, kept as the remote `node`, and a voice to call. Alone it points at the public Hacker News feed; in the composition the reading list is the feed instead.\n\nWhat it has read aloud is published as a feed of its own, by the second runtime here. It has a clock rather than a trigger, for a structural reason worth knowing: an endpoint serving the last value it was handed answers with whatever its chain returns, so it has to be the last service in one \u2014 and the rendering chain above stops on the rounds where there is nothing new. A minute's staleness buys a feed that is rebuilt whatever happened.\n\nAn episode can be forgotten from the Listen panel: Remove deletes its row and its audio, in a runtime of its own whose output runs on into the playlist. The claim being the only memory of what was spoken, an article still on the reading list is read again on the next round.\n\nThe enclosure URLs point into the library, named rather than written down: the address is assigned when the board loads, and a Map is handed it the same way a client dialling it would be.",
   "unit": {
     "name": "radio",
     "params": {
@@ -10,7 +10,7 @@
       "volume": "radio",
       "database": "rss-radio",
       "everySeconds": "60",
-      "retryAfter": "-15 minutes",
+      "stuckAfter": "-15 minutes",
       "audioBase": "hkp-mount://files/listen",
       "feedTitle": "Reading Radio",
       "feedDescription": "Everything the radio has read aloud"
@@ -52,6 +52,15 @@
       "state": {
         "wrapServices": false
       }
+    },
+    {
+      "id": "pending",
+      "name": "Being read",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
     }
   ],
   "services": {
@@ -79,7 +88,7 @@
             }
           ],
           "limit": 10,
-          "summaryChars": 400
+          "summaryChars": 1200
         }
       },
       {
@@ -95,8 +104,7 @@
               "state": {
                 "mode": "add",
                 "template": {
-                  "slug=": "slug(params.id || params.link)",
-                  "retryAfter": "{{param.retryAfter}}"
+                  "slug=": "slug(params.id || params.link)"
                 }
               }
             },
@@ -107,8 +115,8 @@
               "state": {
                 "mode": "query",
                 "database": "{{param.database}}",
-                "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);",
-                "statement": "INSERT INTO episode (slug, guid, title, summary, link, feed, published)\nVALUES (substr($slug, 1, 100), $id, $title, $summary, $link, $feed, $published)\nON CONFLICT(slug) DO UPDATE SET claimed = datetime('now')\n  WHERE episode.rendered IS NULL\n    AND episode.claimed < datetime('now', $retryAfter)\nRETURNING 'episodes/' || slug || '.mp3' AS path, title, summary"
+                "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);\nCREATE TABLE IF NOT EXISTS voicing (\n  slug   TEXT PRIMARY KEY,\n  failed TEXT NOT NULL DEFAULT (datetime('now')),\n  error  TEXT NOT NULL DEFAULT ''\n);",
+                "statement": "INSERT INTO episode (slug, guid, title, summary, link, feed, published)\nVALUES (substr($slug, 1, 100), IFNULL($id, ''), IFNULL($title, ''), IFNULL($summary, ''),\n        IFNULL($link, ''), IFNULL($feed, ''), IFNULL($published, ''))\nON CONFLICT(slug) DO UPDATE SET claimed = datetime('now')\n  WHERE $retry = 1 AND episode.rendered IS NULL\nRETURNING 'episodes/' || slug || '.mp3' AS path, slug, title, summary"
               }
             },
             {
@@ -123,89 +131,166 @@
               }
             },
             {
-              "instanceId": "ask",
-              "serviceId": "map",
-              "serviceName": "What to say",
+              "instanceId": "clear",
+              "serviceId": "sql",
+              "serviceName": "Forget a failure it is trying again",
               "state": {
-                "mode": "replace",
-                "template": {
-                  "meta.method": "post",
-                  "body.path=": "params.path",
-                  "body.text=": "params.title + '. ' + withoutUrls(params.summary)"
-                }
+                "mode": "run",
+                "emit": "input",
+                "database": "{{param.database}}",
+                "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);\nCREATE TABLE IF NOT EXISTS voicing (\n  slug   TEXT PRIMARY KEY,\n  failed TEXT NOT NULL DEFAULT (datetime('now')),\n  error  TEXT NOT NULL DEFAULT ''\n);",
+                "statement": "DELETE FROM voicing WHERE slug = $slug"
               }
             },
             {
-              "instanceId": "render",
-              "serviceId": "http-client",
+              "instanceId": "voice",
+              "serviceId": "join",
               "serviceName": "The voice",
               "state": {
-                "url": "{{param.voiceMount}}",
-                "method": "post",
-                "timeoutMs": 600000
-              }
-            },
-            {
-              "instanceId": "spoken",
-              "serviceId": "map",
-              "serviceName": "Only audio is kept",
-              "state": {
-                "mode": "replace",
-                "template": {
-                  "=": "params.meta.status === 200 && params.binary ? params : null"
-                }
-              }
-            },
-            {
-              "instanceId": "keep",
-              "serviceId": "map",
-              "serviceName": "Where it goes",
-              "state": {
-                "mode": "replace",
-                "template": {
-                  "op": "write",
-                  "path=": "params.meta.headers['x-episode-path']",
-                  "binary=": "params.binary"
-                }
-              }
-            },
-            {
-              "instanceId": "store",
-              "serviceId": "storage",
-              "serviceName": "The library",
-              "state": {
+                "as": "audio",
+                "onFailure": "merge",
                 "pipeline": [
                   {
-                    "instanceId": "files",
-                    "serviceId": "filesystem",
-                    "serviceName": "Files",
+                    "instanceId": "ask",
+                    "serviceId": "map",
+                    "serviceName": "What to say",
                     "state": {
-                      "volume": "{{param.volume}}"
+                      "mode": "replace",
+                      "template": {
+                        "meta.method": "post",
+                        "body.path=": "params.path",
+                        "body.text=": "params.title + '. ' + withoutUrls(params.summary)"
+                      }
+                    }
+                  },
+                  {
+                    "instanceId": "render",
+                    "serviceId": "http-client",
+                    "serviceName": "The voice",
+                    "state": {
+                      "url": "{{param.voiceMount}}",
+                      "method": "post",
+                      "timeoutMs": 600000
                     }
                   }
                 ]
               }
             },
             {
-              "instanceId": "kept",
-              "serviceId": "map",
-              "serviceName": "What was kept",
+              "instanceId": "outcome",
+              "serviceId": "tracks",
+              "serviceName": "Keep the audio, or say why there is none",
               "state": {
-                "mode": "replace",
-                "template": {
-                  "path=": "params.body.path",
-                  "size=": "params.body.size"
-                }
-              }
-            },
-            {
-              "instanceId": "note",
-              "serviceId": "sql",
-              "serviceName": "Mark it rendered",
-              "state": {
-                "mode": "run",
-                "database": "{{param.database}}",
-                "statement": "UPDATE episode\n   SET rendered = datetime('now'), bytes = $size\n WHERE 'episodes/' || slug || '.mp3' = $path"
+                "run": "serial",
+                "tracks": [
+                  {
+                    "name": "spoken",
+                    "pipeline": [
+                      {
+                        "instanceId": "spoken",
+                        "serviceId": "map",
+                        "serviceName": "Only audio is kept",
+                        "state": {
+                          "mode": "replace",
+                          "template": {
+                            "=": "params.audio && params.audio.meta && params.audio.meta.status === 200 && params.audio.binary ? params.audio : null"
+                          }
+                        }
+                      },
+                      {
+                        "instanceId": "keep",
+                        "serviceId": "map",
+                        "serviceName": "Where it goes",
+                        "state": {
+                          "mode": "replace",
+                          "template": {
+                            "op": "write",
+                            "path=": "params.meta.headers['x-episode-path']",
+                            "binary=": "params.binary"
+                          }
+                        }
+                      },
+                      {
+                        "instanceId": "store",
+                        "serviceId": "storage",
+                        "serviceName": "The library",
+                        "state": {
+                          "pipeline": [
+                            {
+                              "instanceId": "files",
+                              "serviceId": "filesystem",
+                              "serviceName": "Files",
+                              "state": {
+                                "volume": "{{param.volume}}"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "instanceId": "kept",
+                        "serviceId": "map",
+                        "serviceName": "What was kept",
+                        "state": {
+                          "mode": "replace",
+                          "template": {
+                            "path=": "params.body.path",
+                            "size=": "params.body.size"
+                          }
+                        }
+                      },
+                      {
+                        "instanceId": "note",
+                        "serviceId": "sql",
+                        "serviceName": "Mark it rendered",
+                        "state": {
+                          "mode": "run",
+                          "database": "{{param.database}}",
+                          "statement": "UPDATE episode\n   SET rendered = datetime('now'), bytes = $size\n WHERE 'episodes/' || slug || '.mp3' = $path"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "failed",
+                    "pipeline": [
+                      {
+                        "instanceId": "unspoken",
+                        "serviceId": "map",
+                        "serviceName": "Only what the voice did not speak",
+                        "state": {
+                          "mode": "replace",
+                          "template": {
+                            "=": "params.audio && params.audio.meta && params.audio.meta.status === 200 && params.audio.binary ? null : params"
+                          }
+                        }
+                      },
+                      {
+                        "instanceId": "why",
+                        "serviceId": "map",
+                        "serviceName": "Why",
+                        "state": {
+                          "mode": "replace",
+                          "template": {
+                            "slug=": "params.slug",
+                            "error=": "params.audio && params.audio.error ? params.audio.error : (params.audio && params.audio.meta && params.audio.meta.status !== 200 ? 'the voice answered HTTP ' + params.audio.meta.status : 'the voice answered without audio')"
+                          }
+                        }
+                      },
+                      {
+                        "instanceId": "record",
+                        "serviceId": "sql",
+                        "serviceName": "Record the failure",
+                        "state": {
+                          "mode": "run",
+                          "database": "{{param.database}}",
+                          "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);\nCREATE TABLE IF NOT EXISTS voicing (\n  slug   TEXT PRIMARY KEY,\n  failed TEXT NOT NULL DEFAULT (datetime('now')),\n  error  TEXT NOT NULL DEFAULT ''\n);",
+                          "statement": "INSERT INTO voicing (slug, failed, error) VALUES ($slug, datetime('now'), $error)\nON CONFLICT(slug) DO UPDATE SET failed = excluded.failed, error = excluded.error"
+                        }
+                      }
+                    ]
+                  }
+                ]
               }
             }
           ]
@@ -251,6 +336,7 @@
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);",
           "statement": "SELECT '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'\n    || '<rss version=\"2.0\"><channel>'\n    || '<title><![CDATA[' || replace(IFNULL($channelTitle, ''), ']]>', ']]&gt;') || ']]></title>'\n    || '<link>' || replace(replace(replace(IFNULL($channelLink, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n    || '<description><![CDATA[' || replace(IFNULL($channelDescription, ''), ']]>', ']]&gt;') || ']]></description>'\n    || IFNULL(group_concat(item, '' ORDER BY sortKey DESC), '')\n    || '</channel></rss>' AS feed\n  FROM (\n    SELECT '<item>'\n        || '<title><![CDATA[' || replace(IFNULL(title, ''), ']]>', ']]&gt;') || ']]></title>'\n        || '<link>' || replace(replace(replace(IFNULL(link, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</link>'\n        || '<guid isPermaLink=\"false\">' || replace(replace(replace(slug, '&', '&amp;'), '<', '&lt;'), '>', '&gt;') || '</guid>'\n        || '<pubDate>' || IFNULL(published, '') || '</pubDate>'\n        || '<description><![CDATA[' || replace(IFNULL(summary, ''), ']]>', ']]&gt;') || ']]></description>'\n        || '<enclosure url=\"' || replace(replace(replace(IFNULL($audioBase, '') || '/' || slug || '.mp3', '&', '&amp;'), '<', '&lt;'), '>', '&gt;')\n        || '\" type=\"audio/mpeg\" length=\"' || IFNULL(bytes, 0) || '\"/>'\n        || '</item>' AS item,\n           rendered AS sortKey\n      FROM episode\n     WHERE rendered IS NOT NULL\n     ORDER BY rendered DESC\n     LIMIT 100\n  )"
         }
       },
@@ -318,6 +404,7 @@
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);",
           "statement": "DELETE FROM episode\n WHERE slug = $slug\nRETURNING 'episodes/' || slug || '.mp3' AS path"
         }
       },
@@ -364,10 +451,10 @@
       {
         "uuid": "pl-tick",
         "serviceId": "timer",
-        "serviceName": "Every minute",
+        "serviceName": "Every ten seconds",
         "state": {
           "periodic": true,
-          "periodicValue": 60,
+          "periodicValue": 10,
           "periodicUnit": "s",
           "running": true
         }
@@ -390,6 +477,7 @@
         "state": {
           "mode": "query",
           "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);",
           "statement": "SELECT slug,\n       title,\n       IFNULL($base, '') || '/' || slug || '.mp3' AS url,\n       IFNULL(published, '') AS published\n  FROM episode\n WHERE rendered IS NOT NULL\n ORDER BY rendered DESC\n LIMIT 100"
         }
       },
@@ -453,6 +541,30 @@
           ]
         }
       }
+    ],
+    "pending": [
+      {
+        "uuid": "pending-tick",
+        "serviceId": "timer",
+        "serviceName": "Every ten seconds",
+        "state": {
+          "periodic": true,
+          "periodicValue": 10,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "pending-rows",
+        "serviceId": "sql",
+        "serviceName": "Not on air yet",
+        "state": {
+          "mode": "query",
+          "database": "{{param.database}}",
+          "schema": "CREATE TABLE IF NOT EXISTS episode (\n  slug     TEXT PRIMARY KEY,\n  guid     TEXT NOT NULL DEFAULT '',\n  title    TEXT NOT NULL DEFAULT '',\n  summary  TEXT NOT NULL DEFAULT '',\n  link     TEXT NOT NULL DEFAULT '',\n  feed     TEXT NOT NULL DEFAULT '',\n  published TEXT NOT NULL DEFAULT '',\n  claimed  TEXT NOT NULL DEFAULT (datetime('now')),\n  rendered TEXT,\n  bytes    INTEGER\n);\nCREATE TABLE IF NOT EXISTS voicing (\n  slug   TEXT PRIMARY KEY,\n  failed TEXT NOT NULL DEFAULT (datetime('now')),\n  error  TEXT NOT NULL DEFAULT ''\n);",
+          "statement": "SELECT e.slug, e.guid, e.link, e.title, e.summary, e.feed, e.published,\n       CASE\n         WHEN v.slug IS NOT NULL THEN 'Failed: ' || v.error\n         WHEN e.claimed < datetime('now', '{{param.stuckAfter}}')\n           THEN 'Failed: no answer since ' || e.claimed\n         ELSE 'Being voiced since ' || e.claimed\n       END AS status,\n       CASE WHEN v.slug IS NOT NULL OR e.claimed < datetime('now', '{{param.stuckAfter}}')\n            THEN 0 ELSE 1 END AS settled\n  FROM episode e\n  LEFT JOIN voicing v ON v.slug = e.slug\n WHERE e.rendered IS NULL\n ORDER BY e.claimed DESC\n LIMIT 50"
+        }
+      }
     ]
   },
   "facade": {
@@ -474,7 +586,7 @@
               "items": [
                 {
                   "type": "button",
-                  "label": "Read now",
+                  "label": "Check the feed now",
                   "actions": [
                     {
                       "type": "process",
@@ -518,9 +630,66 @@
             },
             {
               "type": "text",
-              "placeholder": "Nothing is spoken twice: an article already in the ledger stops its own pass. The audio is written into the library volume, which the Library unit serves.",
+              "placeholder": "Nothing is spoken twice: an article already in the ledger stops its own pass. The audio is written into the library volume, which the Library unit serves. It checks the feed every minute by itself; an article the voice could not speak waits below, with the reason, until you try it again.",
               "tone": "muted",
               "fontSize": 12
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "pending-rows",
+                "path": "rows"
+              },
+              "gap": 0,
+              "template": {
+                "direction": "column",
+                "gap": 4,
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.title}}",
+                    "href": "{{item.link}}",
+                    "fontSize": 14
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.status}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  },
+                  {
+                    "type": "button",
+                    "label": "Retry",
+                    "disabled": "{{item.settled}}",
+                    "actions": [
+                      {
+                        "type": "process",
+                        "serviceUuid": "each.name",
+                        "payload": {
+                          "id": "{{item.guid}}",
+                          "link": "{{item.link}}",
+                          "title": "{{item.title}}",
+                          "summary": "{{item.summary}}",
+                          "feed": "{{item.feed}}",
+                          "published": "{{item.published}}",
+                          "retry": 1
+                        }
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "pending-rows",
+                        "payload": {}
+                      }
+                    ]
+                  }
+                ]
+              },
+              "stripe": {
+                "even": "rgba(127,127,127,0.10)",
+                "odd": "rgba(127,127,127,0.03)",
+                "padding": 10,
+                "radius": 6
+              }
             },
             {
               "type": "text",
@@ -581,17 +750,6 @@
               "placeholder": "Nothing has been read aloud yet."
             },
             {
-              "type": "button",
-              "label": "Refresh the programme",
-              "actions": [
-                {
-                  "type": "process",
-                  "serviceUuid": "pl-base",
-                  "payload": {}
-                }
-              ]
-            },
-            {
               "type": "text",
               "label": "Playlist",
               "source": {
@@ -626,12 +784,24 @@
           "serviceUuid": "each",
           "path": "error"
         }
+      },
+      {
+        "source": {
+          "serviceUuid": "each.voice.render",
+          "path": "error"
+        },
+        "tone": "error"
       }
     ],
     "init": [
       {
         "type": "process",
         "serviceUuid": "pl-base",
+        "payload": {}
+      },
+      {
+        "type": "process",
+        "serviceUuid": "pending-rows",
         "payload": {}
       }
     ]
