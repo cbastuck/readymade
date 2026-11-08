@@ -21,6 +21,11 @@ website itself. This changes only the member page's origin; the coordinator in
 the link must still be reachable from that browser. Dropitapp's LAN links
 continue to use `HKP_WEBAPP_URL`.
 
+The members dialog's QR code is scanned on another device, which cannot reach a
+website on this machine's loopback. When the variable names one (`localhost`,
+`127.0.0.1`, `[::1]`), the QR code points at `https://readymadeit.com` instead;
+the copied link keeps the configured origin.
+
 ## Running it
 
 ```sh

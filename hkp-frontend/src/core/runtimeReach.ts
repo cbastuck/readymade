@@ -134,7 +134,7 @@ const APP_ORIGINS = [
 ];
 
 /** True for the origin of a page, or a server, on the machine itself. */
-function isLoopbackOrigin(origin: string): boolean {
+export function isLoopbackOrigin(origin: string): boolean {
   const match = /^https?:\/\/(\[[^\]]*\]|[^:/]+)(?::\d+)?$/.exec(
     origin.toLowerCase(),
   );

@@ -81,6 +81,7 @@ is the one worth being pedantic in.
 | **Registry** | What services a runtime can create, sent back when it is provisioned. | `hkp-frontend/src/runtime/browser/BrowserRegistry.tsx`, `hkp-node/src/server.ts` |
 | **YAS** | The binary wire format for non-textual data over REST — 7-byte header, type-prefixed payload. | `hkp-frontend/src/runtime/rest/Message.ts`, `hkp-python/src/hkp/yas.py`, `hkp-node/src/yas.ts` |
 | **Remote** | A runtime server the host knows by name. A board may name one (`"remote": "Laptop"`) instead of giving a `url`; the client opening the board resolves it. `hkp://remotes/<name>` addresses the app's own embedded runtime. → `concepts/remotes.md` | `hkp-frontend/src/runtime/board/remote.ts#resolveRuntimeAddress`, `meander/backend/remoteRoute.h`, `meander/frontend/src/useBackendRemotes.ts` |
+| **Move (a runtime)** | Putting a runtime on another runtime server with its current state, as much of it as travels: each service's live state is carried, the runtime is built on the new server before it leaves the old one, and it keeps its id. What the old server keeps for the board — tables, records, files — stays there. "Move to …" in the runtime menu. → `concepts/remotes.md` | `hkp-frontend/src/core/runtimeOperations.ts#moveRuntime`, `hkp-frontend/src/ui-components/runtime-ui/MoveRuntimeDialog.tsx` |
 
 ---
 

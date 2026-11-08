@@ -8,6 +8,14 @@ import {
 } from "@testing-library/react";
 
 import MembersDialog from "../MembersDialog";
+
+// The QR itself paints to a canvas, which jsdom does not implement; what is
+// tested is the link it is handed.
+vi.mock("hkp-frontend/src/components/QR", () => ({
+  default: ({ url }: { url: string }) => (
+    <canvas data-testid="member-qr" data-url={url} />
+  ),
+}));
 import { listSharedBoards } from "../coordinatorClient";
 
 /**
@@ -92,6 +100,51 @@ describe("the members dialog", () => {
     expect(url.searchParams.get("shared")).toBe(
       "http://192.168.1.5:8080/coordinator",
     );
+  });
+
+  it("shows the member link as a QR code, for opening the board on a phone", async () => {
+    vi.mocked(navigator.clipboard.writeText).mockClear();
+    open();
+    expect(screen.queryByTestId("member-qr")).toBeNull();
+
+    fireEvent.click(screen.getByText("QR code"));
+    const shown = screen.getByTestId("member-qr").getAttribute("data-url");
+
+    // The very link "Copy link" hands out.
+    fireEvent.click(screen.getByText("Copy link"));
+    await waitFor(() =>
+      expect(navigator.clipboard.writeText).toHaveBeenCalledOnce(),
+    );
+    expect(shown).toBe(vi.mocked(navigator.clipboard.writeText).mock.calls[0][0]);
+    const url = new URL(shown!);
+    expect(url.searchParams.get("shared")).toBe(COORDINATOR);
+    expect(url.searchParams.get("board")).toBe("Court booking");
+
+    fireEvent.click(screen.getByText("Hide QR code"));
+    expect(screen.queryByTestId("member-qr")).toBeNull();
+  });
+
+  it("puts the hosted website in the QR code when links go to one on this machine", async () => {
+    vi.stubEnv("VITE_MEMBER_WEBAPP_ORIGIN", "http://localhost:4000");
+    vi.mocked(navigator.clipboard.writeText).mockClear();
+    open();
+
+    fireEvent.click(screen.getByText("QR code"));
+    const scanned = new URL(
+      screen.getByTestId("member-qr").getAttribute("data-url")!,
+    );
+    expect(scanned.origin).toBe("https://readymadeit.com");
+
+    // A copied link stays on this machine, for testing the website locally.
+    fireEvent.click(screen.getByText("Copy link"));
+    await waitFor(() =>
+      expect(navigator.clipboard.writeText).toHaveBeenCalledOnce(),
+    );
+    const copied = new URL(
+      vi.mocked(navigator.clipboard.writeText).mock.calls[0][0],
+    );
+    expect(copied.origin).toBe("http://localhost:4000");
+    expect(copied.search).toBe(scanned.search);
   });
 
   it("shows who the board is shared with, asked as its owner", async () => {

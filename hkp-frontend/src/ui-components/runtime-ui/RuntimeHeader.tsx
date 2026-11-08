@@ -7,6 +7,7 @@ import {
   isRuntimeConfiguration,
   RuntimeConfiguration,
   withoutSession,
+  RuntimeClass,
   RuntimeDescriptor,
   toCanonicalRuntimeClassType,
 } from "hkp-frontend/src/types";
@@ -21,6 +22,7 @@ import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
 import RuntimeConfigurationDialog from "./RuntimeConfigurationDialog";
 import ShareAsQRDialog from "./ShareAsQRDialog";
+import MoveRuntimeDialog from "./MoveRuntimeDialog";
 import { SelectionBar } from "./WrapSelection";
 import { useSelection } from "hkp-frontend/src/selection/SelectionContext";
 
@@ -48,6 +50,7 @@ export default function RuntimeHeader({
   const [enrichedConfig, setEnrichedConfig] =
     useState<RuntimeConfiguration | null>(null);
   const [shareAsQRSource, setShareAsQRSource] = useState<object | null>(null);
+  const [isMoveOpen, setIsMoveOpen] = useState(false);
 
   const { name, id: runtimeId } = runtime;
   const boardContext = useContext(BoardCtx);
@@ -129,6 +132,39 @@ export default function RuntimeHeader({
 
   const onDelete = () => {
     boardContext?.removeRuntime(runtime);
+  };
+
+  // The runtime servers this client keeps, once each. A runtime is moved only
+  // between them, and a unit's runtime not at all: it is placed through the
+  // unit.
+  const address = (url?: string) => (url ?? "").replace(/\/+$/, "");
+  const engines = boardContext?.availableRuntimeEngines ?? [];
+  const servers = engines.filter(
+    (engine, index) =>
+      isRuntimeRestClassType(engine.type) &&
+      !!engine.url &&
+      engines.findIndex((e) => address(e.url) === address(engine.url)) === index,
+  );
+  const canMove =
+    isRuntimeRestClassType(runtime.type) &&
+    !runtime.unit &&
+    servers.some((server) => address(server.url) !== address(runtime.url));
+
+  // Throws to the dialog, which says why beside the server it was meant for.
+  const moveTo = async (target: RuntimeClass) => {
+    if (!boardContext) {
+      return;
+    }
+    const from =
+      servers.find((server) => address(server.url) === address(runtime.url))
+        ?.name ?? runtime.url;
+    const { leftBehind } = await boardContext.moveRuntime(runtimeId, target);
+    toast.success(`“${name}” moved to ${target.name}`);
+    if (leftBehind) {
+      toast.warning(`“${name}” could not be removed from ${from}`, {
+        description: `It may still be running there: ${leftBehind}`,
+      });
+    }
   };
 
   const onShareAsQR = async () => {
@@ -301,6 +337,7 @@ export default function RuntimeHeader({
           onWrapInSubService={onWrapInSubService}
           onShareAsQR={onShareAsQR}
           customActions={builtCustomActions}
+          onMove={canMove ? () => setIsMoveOpen(true) : undefined}
         />
         <div className="flex gap-2">
           <Editable
@@ -340,6 +377,14 @@ export default function RuntimeHeader({
         // dialog applies next.
         config={enrichedConfig ? { ...enrichedConfig, runtime } : runtimeConfig}
         onApply={onApplyRuntimeConfig}
+      />
+
+      <MoveRuntimeDialog
+        isOpen={isMoveOpen}
+        runtime={runtime}
+        servers={servers}
+        onMove={moveTo}
+        onClose={() => setIsMoveOpen(false)}
       />
 
       <ShareAsQRDialog

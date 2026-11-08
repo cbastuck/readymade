@@ -181,6 +181,28 @@ Which name, when the server has several: the most portable one it answers to
 
 A runtime put on an address this client keeps nothing under says the address.
 
+### Moving a runtime to another server
+
+A runtime already on a board is moved from its menu, **Move to …**, which
+opens the runtime servers this client keeps, each with its address and the
+one the runtime is on marked — names alone do not say which server is this
+machine. The runtime is built on
+the new server with the state its services have at that moment, read live
+from the server it is leaving, and only then removed from that one, so a move
+the new server refuses leaves it where it was. The board then names the new
+server by the same rule as above; when that name would lead to a different
+server on opening, it gets the address instead.
+
+The runtime keeps its id, so whatever the rest of the board says about it —
+a `hkp-mount://` reference among them — still holds. What moves is the
+services' state. What a server keeps for a board beside it — tables, records,
+files — is that server's and stays there; on the new server the runtime finds
+whatever that server keeps under the same names.
+
+This is how a board built against a local server is put on the one a
+coordinator runs before it is deployed: a board's runtimes run where the
+board names them, wherever the coordinator is.
+
 This makes a kept server and the boards that use it depend on each other in a
 way they did not when a board held the address: remove the server, and a board
 that names it no longer resolves. Renaming does not do that, because of

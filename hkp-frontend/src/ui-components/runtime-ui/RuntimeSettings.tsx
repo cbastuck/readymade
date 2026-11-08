@@ -13,6 +13,7 @@ import {
   Layers,
   Zap,
   QrCode,
+  MoveRight,
 } from "lucide-react";
 
 import {
@@ -48,6 +49,8 @@ type Props = {
   onWrapInSubService?: () => void;
   onShareAsQR: () => void;
   customActions?: Array<CustomAction>;
+  /** Opens the choice of where to move the runtime; no entry when unset. */
+  onMove?: () => void;
 };
 export default function RuntimeSettings({
   runtime,
@@ -63,6 +66,7 @@ export default function RuntimeSettings({
   onWrapInSubService,
   onShareAsQR,
   customActions,
+  onMove,
 }: Props) {
   return (
     <DropdownMenu>
@@ -147,6 +151,13 @@ export default function RuntimeSettings({
             <MenuIcon icon={QrCode} />
             <span>Share as QR</span>
           </DropdownMenuItem>
+
+          {onMove && (
+            <DropdownMenuItem className="text-base" onClick={onMove}>
+              <MenuIcon icon={MoveRight} />
+              <span>Move to ...</span>
+            </DropdownMenuItem>
+          )}
 
           {customActions && customActions.length > 0 && (
             <>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Pencil, Trash2 } from "lucide-react";
+import { Check, Copy, Pencil, QrCode, Trash2 } from "lucide-react";
 
 import {
   Dialog,
@@ -9,6 +9,7 @@ import {
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { Input } from "hkp-frontend/src/ui-components/primitives/input";
 import { copyToClipboard } from "hkp-frontend/src/clipboard";
+import QR from "hkp-frontend/src/components/QR";
 import {
   BoardMember,
   listBoardMembers,
@@ -55,6 +56,7 @@ export default function MembersDialog({
   const [editing, setEditing] = useState<string | null>(null);
   const [editedName, setEditedName] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -67,6 +69,7 @@ export default function MembersDialog({
     setName("");
     setEditing(null);
     setCopied(false);
+    setShowQR(false);
     listBoardMembers(coordinatorUrl, userId, idToken, boardName).then(
       (list) => {
         if (!stale) {
@@ -151,13 +154,18 @@ export default function MembersDialog({
       ),
     );
 
+  const memberLink = (forAnotherDevice = false) =>
+    createSharedBoardLink(
+      {
+        coordinatorUrl,
+        owner: userId,
+        boardName,
+      },
+      { forAnotherDevice },
+    );
+
   const copyLink = async () => {
-    const link = createSharedBoardLink({
-      coordinatorUrl,
-      owner: userId,
-      boardName,
-    });
-    if (await copyToClipboard(link)) {
+    if (await copyToClipboard(memberLink())) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     }
@@ -290,16 +298,44 @@ export default function MembersDialog({
           {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
 
+        {showQR && (
+          <div className="flex flex-col items-center gap-2">
+            {/* On white whatever the theme: a phone's camera reads dark
+                modules on a light ground. */}
+            <div className="rounded-md bg-white p-2">
+              {/* Scanned, so opened on another device: never on a website
+                  only this machine reaches. */}
+              <QR url={memberLink(true)} className="block" />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Scan it with your phone to open the board there. It opens only
+              for somebody on this list.
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-2">
-          <Button
-            variant="outline"
-            className="text-md"
-            onClick={() => void copyLink()}
-            title="A link to this board. It opens only for somebody on this list."
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-            <span className="ml-2">{copied ? "Copied" : "Copy link"}</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="text-md"
+              onClick={() => void copyLink()}
+              title="A link to this board. It opens only for somebody on this list."
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              <span className="ml-2">{copied ? "Copied" : "Copy link"}</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="text-md"
+              aria-pressed={showQR}
+              onClick={() => setShowQR((shown) => !shown)}
+              title="The same link as a QR code, to open the board on a phone."
+            >
+              <QrCode size={14} />
+              <span className="ml-2">{showQR ? "Hide QR code" : "QR code"}</span>
+            </Button>
+          </div>
           <Button className="text-md" variant="outline" onClick={onClose}>
             Done
           </Button>

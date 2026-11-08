@@ -54,6 +54,28 @@ describe("a shared board link", () => {
     expect(readSharedBoardLink(new URL(made).search)).toEqual(LINK);
   });
 
+  it("uses the hosted website for another device when the configured one is this machine's", () => {
+    for (const local of [
+      "http://localhost:4000",
+      "http://127.0.0.1:4000",
+      "http://[::1]:4000",
+    ]) {
+      vi.stubEnv("VITE_MEMBER_WEBAPP_ORIGIN", local);
+      const made = createSharedBoardLink(LINK, { forAnotherDevice: true });
+
+      expect(new URL(made).origin).toBe("https://readymadeit.com");
+      expect(readSharedBoardLink(new URL(made).search)).toEqual(LINK);
+    }
+  });
+
+  it("keeps a configured website another device can reach", () => {
+    vi.stubEnv("VITE_MEMBER_WEBAPP_ORIGIN", "http://192.168.1.5:4000");
+
+    expect(
+      new URL(createSharedBoardLink(LINK, { forAnotherDevice: true })).origin,
+    ).toBe("http://192.168.1.5:4000");
+  });
+
   it("does not choose a local frontend from the coordinator's scheme", () => {
     const made = createSharedBoardLink({
       ...LINK,

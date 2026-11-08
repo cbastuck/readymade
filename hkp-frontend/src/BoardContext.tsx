@@ -80,6 +80,8 @@ import {
   addRuntime as addRuntimeOp,
   removeRuntime as removeRuntimeOp,
   updateRuntime as updateRuntimeOp,
+  moveRuntime as moveRuntimeOp,
+  MoveRuntimeOutcome,
   arrangeRuntimes as arrangeRuntimesOp,
   addAvailableRuntime as addAvailableRuntimeOp,
   updateAvailableRuntime as updateAvailableRuntimeOp,
@@ -136,6 +138,13 @@ type BoardContextAPI = {
     runtimeId: string,
     updated: RuntimeConfiguration,
   ) => Promise<void>;
+  /** Rebuilds a runtime on another runtime server with its services' current
+   *  state, then removes it where it was. Throws, having changed nothing, when
+   *  it could not be built there. */
+  moveRuntime: (
+    runtimeId: string,
+    target: RuntimeClass,
+  ) => Promise<MoveRuntimeOutcome>;
   removeAllServices: (runtime: RuntimeDescriptor) => void;
 
   /** `desc` may be a palette entry carrying the preset to configure it from. */
@@ -714,6 +723,8 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       });
     const updateRuntime = (runtimeId: string, updated: RuntimeConfiguration) =>
       updateRuntimeOp(runtimeId, updated, getRefs());
+    const moveRuntime = (runtimeId: string, target: RuntimeClass) =>
+      moveRuntimeOp(runtimeId, target, getRefs());
     const arrangeRuntimes = (runtimeId: string, targetPosition: number) =>
       arrangeRuntimesOp(runtimeId, targetPosition, getRefs());
     const addAvailableRuntime = (
@@ -1218,6 +1229,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       readServiceState,
       removeRuntime,
       updateRuntime,
+      moveRuntime,
       removeAllServices,
       setBoardName,
       clearBoard,

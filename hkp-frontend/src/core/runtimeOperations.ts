@@ -8,7 +8,11 @@ import {
 import { reorderRuntime } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { assetsById } from "../runtime/board/assets";
-import { cleanAliases, remoteNameForBoard } from "../runtime/board/remote";
+import {
+  cleanAliases,
+  remoteNameForBoard,
+  resolveRuntimeAddress,
+} from "../runtime/board/remote";
 
 export function registerBrowserRuntime(boardName: string, runtimeId: string) {
   const existing = JSON.parse(
@@ -227,6 +231,146 @@ export async function updateRuntime(
       prev.map((rt) => (rt.id === runtimeId ? updated.runtime : rt)),
     );
   }
+}
+
+/** What a move left undone, for telling the person. */
+export type MoveRuntimeOutcome = {
+  /** Why the runtime could not be removed from the server it left; absent
+   *  when it was. */
+  leftBehind?: string;
+};
+
+const sameAddress = (a: string | undefined, b: string | undefined) =>
+  (a ?? "").replace(/\/+$/, "") === (b ?? "").replace(/\/+$/, "");
+
+/**
+ * Moves a runtime to another runtime server: rebuilt there with the state its
+ * services have now, then removed from where it was.
+ *
+ * What travels is what each service reports as its state, read live from the
+ * server it is leaving — or, when that server no longer answers, the state the
+ * board last had for it. What a server keeps for a board beside its services —
+ * records, tables, files — is that server's and stays there: the runtime
+ * starts on whatever the new server keeps under the same names.
+ *
+ * Built on the new server before it is taken off the old one, so a move that
+ * fails throws having changed nothing. The id is kept, because the rest of the
+ * board reaches the runtime by id (`hkp-mount://<runtimeId>/…`). The board
+ * names the new server the way the runtime picker would (`remoteNameForBoard`),
+ * and by its address when that name would not lead back to it.
+ */
+export async function moveRuntime(
+  runtimeId: string,
+  target: RuntimeClass,
+  refs: BoardStateRefs,
+): Promise<MoveRuntimeOutcome> {
+  const runtime = refs.runtimesRef.current!.find((rt) => rt.id === runtimeId);
+  if (!runtime) {
+    throw new Error(`Runtime not found: ${runtimeId}`);
+  }
+  if (!isRuntimeRestClassType(runtime.type) || !isRuntimeRestClassType(target.type)) {
+    throw new Error("Only a runtime on a runtime server can be moved to another one");
+  }
+  // A unit's runtime is the unit's to place, through its binding in the
+  // composition; a move here would be written into the unit's own document.
+  if (runtime.unit) {
+    throw new Error(
+      `"${runtime.name}" comes from the unit "${runtime.unit}" — place it through that unit's runtimes instead`,
+    );
+  }
+  if (!target.url) {
+    throw new Error(`"${target.name}" has no address`);
+  }
+  if (sameAddress(runtime.url, target.url)) {
+    return {};
+  }
+  const [scope, api] = getRuntimeScopeApi(runtimeId, refs);
+  if (!api || !scope) {
+    throw new Error(`The runtime api is missing for ${runtime.type}`);
+  }
+  const user = refs.userRef.current;
+
+  const carried = await Promise.all(
+    (refs.servicesRef.current![runtimeId] ?? []).map(async (svc) => {
+      let state = svc.state;
+      try {
+        state = await api.getServiceConfig(scope, svc);
+      } catch {
+        // The server it leaves did not answer: the board's last word on the
+        // service is the most that can travel.
+      }
+      return {
+        uuid: svc.uuid,
+        serviceId: svc.serviceId,
+        serviceName: svc.serviceName,
+        state,
+      };
+    }),
+  );
+
+  const engines = refs.availableRuntimeEnginesRef.current ?? [];
+  const name = remoteNameForBoard(engines, target.url);
+  const resolved = name
+    ? resolveRuntimeAddress({ id: runtimeId, remote: name }, engines)
+    : undefined;
+  const { remote: _remote, ...unaddressed } = withoutSession(runtime);
+  const moved: RuntimeDescriptor = {
+    ...unaddressed,
+    url: target.url,
+    ...(resolved?.ok && sameAddress(resolved.url, target.url) ? { remote: name } : {}),
+  };
+
+  const result = await api.restoreRuntime(
+    moved,
+    carried,
+    user,
+    refs.boardNameRef.current ?? undefined,
+    refs.assetsFor?.(moved),
+  );
+  if (!result) {
+    throw new Error(`"${target.name}" did not build the runtime`);
+  }
+  // A server already running a runtime under this id with the same services
+  // is attached to rather than built, and keeps the state it has. What was
+  // carried wins: that is what moving means.
+  await Promise.all(
+    carried
+      .filter((svc) => {
+        const running = result.services.find((s) => s.uuid === svc.uuid);
+        return !!svc.state && !!running && !carriedStateHeld(svc.state, running.state);
+      })
+      .map((svc) => api.configureService(result.scope, svc, svc.state)),
+  );
+
+  let leftBehind: string | undefined;
+  try {
+    await api.removeRuntime(scope, runtime, user);
+  } catch (err) {
+    leftBehind = err instanceof Error ? err.message : String(err);
+  }
+
+  refs.setRuntimes((prev) =>
+    prev.map((rt) => (rt.id === runtimeId ? moved : rt)),
+  );
+  refs.setServices((prev) => ({ ...prev, [runtimeId]: result.services }));
+  refs.setRegistry((prev) => ({ ...prev, [runtimeId]: result.registry ?? [] }));
+  refs.setScopes((prev) => ({ ...prev, [runtimeId]: result.scope }));
+  return leftBehind ? { leftBehind } : {};
+}
+
+/** Whether a running service already holds every value that was carried to
+ *  it. Only the carried keys count: a server adds its own (`__hkpMount`). */
+function carriedStateHeld(carried: unknown, running: unknown): boolean {
+  if (typeof carried !== "object" || carried === null) {
+    return JSON.stringify(carried) === JSON.stringify(running);
+  }
+  if (typeof running !== "object" || running === null) {
+    return false;
+  }
+  return Object.entries(carried).every(
+    ([key, value]) =>
+      JSON.stringify(value) === JSON.stringify((running as Record<string, unknown>)[key]),
+  );
 }
 
 export async function arrangeRuntimes(

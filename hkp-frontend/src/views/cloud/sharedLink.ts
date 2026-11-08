@@ -1,4 +1,5 @@
 import { CoordinatorDescriptor } from "../../common";
+import { isLoopbackOrigin } from "../../core/runtimeReach";
 
 /**
  * A link to a board somebody shared.
@@ -27,13 +28,28 @@ export type SharedBoardLink = {
 const CLOUD_PATH = "/cloud-boards";
 const DEFAULT_MEMBER_WEBAPP_ORIGIN = "https://readymadeit.com";
 
-/** The website that serves member links, optionally overridden for local builds. */
-function memberWebappOrigin(): string {
+/**
+ * The website that serves member links, optionally overridden for local builds.
+ *
+ * An override on this machine's loopback is a website only this machine
+ * reaches. A link that is opened elsewhere — scanned from a QR code — gets the
+ * hosted one instead, which is the one a phone can open.
+ */
+function memberWebappOrigin(forAnotherDevice: boolean): string {
   const configured = import.meta.env.VITE_MEMBER_WEBAPP_ORIGIN?.trim();
-  return configured
-    ? new URL(configured).origin
-    : DEFAULT_MEMBER_WEBAPP_ORIGIN;
+  if (!configured) {
+    return DEFAULT_MEMBER_WEBAPP_ORIGIN;
+  }
+  const origin = new URL(configured).origin;
+  return forAnotherDevice && isLoopbackOrigin(origin)
+    ? DEFAULT_MEMBER_WEBAPP_ORIGIN
+    : origin;
 }
+
+export type SharedBoardLinkOptions = {
+  /** The link is opened on another device, not on this machine. */
+  forAnotherDevice?: boolean;
+};
 
 const PARAMS = {
   coordinator: "shared",
@@ -46,7 +62,10 @@ function sameAddress(a: string, b: string): boolean {
   return key(a) === key(b);
 }
 
-export function createSharedBoardLink(link: SharedBoardLink): string {
+export function createSharedBoardLink(
+  link: SharedBoardLink,
+  { forAnotherDevice = false }: SharedBoardLinkOptions = {},
+): string {
   // Members use the website's registered sign-in origin. The coordinator URL
   // is only the board's destination; the local frontend and playground links
   // have their own LAN sharing path (see BoardLink and Dropitapp).
@@ -55,7 +74,7 @@ export function createSharedBoardLink(link: SharedBoardLink): string {
     [PARAMS.owner]: link.owner,
     [PARAMS.board]: link.boardName,
   });
-  return `${memberWebappOrigin()}${CLOUD_PATH}?${query.toString()}`;
+  return `${memberWebappOrigin(forAnotherDevice)}${CLOUD_PATH}?${query.toString()}`;
 }
 
 /** The board a location's query names, or null when it names none. */

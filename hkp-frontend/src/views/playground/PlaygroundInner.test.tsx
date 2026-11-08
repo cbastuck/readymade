@@ -90,6 +90,7 @@ function createBoardContext(
     removeService: vi.fn(),
     removeRuntime: vi.fn(),
     updateRuntime: vi.fn(async () => {}),
+    moveRuntime: vi.fn(async () => ({})),
     removeAllServices: vi.fn(),
     setBoardName: vi.fn(),
     clearBoard: vi.fn(async () => {}),
