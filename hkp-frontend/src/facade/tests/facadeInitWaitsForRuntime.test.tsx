@@ -1,5 +1,5 @@
 import { render, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BoardContextState } from "hkp-frontend/src/BoardContext";
 
@@ -15,7 +15,10 @@ const { useFacadeInit } = await import("../useFacadeInit");
  * answered into nothing. Init runs once; it has to wait.
  */
 describe("a facade's init", () => {
-  it("waits until the runtime it calls can report back", async () => {
+  beforeEach(() => executeActions.mockClear());
+
+  /** A board whose one runtime connects when `open` is called. */
+  function boardOpening() {
     let open = () => {};
     const connected = new Promise<void>((resolve) => {
       open = resolve;
@@ -41,6 +44,11 @@ describe("a facade's init", () => {
       });
       return null;
     }
+    return { Facade, open: () => open() };
+  }
+
+  it("waits until the runtime it calls can report back", async () => {
+    const { Facade, open } = boardOpening();
 
     render(<Facade />);
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -48,5 +56,17 @@ describe("a facade's init", () => {
 
     open();
     await waitFor(() => expect(executeActions).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not run for a board closed while it waited", async () => {
+    const { Facade, open } = boardOpening();
+
+    const { unmount } = render(<Facade />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    unmount();
+    open();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(executeActions).not.toHaveBeenCalled();
   });
 });

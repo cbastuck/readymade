@@ -94,10 +94,18 @@ remote runtimes, the same UI panel), with these differences:
 - A failed request passes nothing down the pipeline, rather than a fabricated
   result. A response with an error status *is* a result — the request completed,
   and what the server said is the board's business.
-- The response is the service's answer: the runtime awaits it and goes on with
-  it. That is what lets a [Join](./join.md) hold a request as a detour and come
-  back with the response beside what it had, and an [Iterator](./iterator.md)
-  count what each item brought back.
+- How the response reaches the services after it differs by runtime:
+  - **hkp-node:** the response is the service's answer — the runtime awaits it
+    and goes on with it. That is what lets a [Join](./join.md) hold a request as
+    a detour and come back with the response beside what it had, and an
+    [Iterator](./iterator.md) count what each item brought back.
+  - **Browser:** the run is deferred while the request is in flight and resumes
+    after the service with the response, still as the same run.
+  - **hkp-python:** a pass runs on a worker thread and is not awaited, so the
+    service stops the push and calls the rest of the pipeline itself when the
+    response arrives. A Join holding it as a detour does not get the response
+    back as the detour's result: put the request outside the detour, or run the
+    detour on hkp-node.
 - While a request is in flight it says so (`requesting`), and every outcome names
   the `method` and the `url` actually called, the `status` (`0` when there was no
   response at all) and an `error` (empty when there was none) — so a panel shows

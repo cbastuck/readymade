@@ -129,7 +129,8 @@ async function requestCompletion(
       }
     }
     if (choice?.finish_reason) finishReason = choice.finish_reason;
-    // Servers that report usage send it on the last chunk.
+    // Servers that report usage send it on the last chunk, which may carry no
+    // choices at all.
     if (chunk.usage) usage = chunk.usage;
   };
   const consume = (block: string) => {
@@ -355,6 +356,9 @@ export async function runOpenAICompatibleTurn(options: {
       messages,
       max_tokens: maxTokens,
       stream: true,
+      // Without it a streamed answer carries no usage: OpenAI and vLLM send
+      // the final usage chunk only when asked.
+      stream_options: { include_usage: true },
       response_format: { type: "json_object" },
       ...(options.thinking && options.thinking !== "default"
         ? {

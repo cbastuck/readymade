@@ -158,8 +158,8 @@ local mode, add `/no_think` to the system prompt to suppress reasoning
 
 Alongside `systemPrompt`, `temperature`, `topP`, `topK`, `maxTokens`,
 `timeoutSec` and `stream`, which mean what they mean everywhere else — except
-that the `anthropic` backend sends none of the three sampling settings (see
-below):
+that the `anthropic` backend sends sampling settings only to the older Claude
+models that take them (see below):
 
 | Property | Type | Default | Description |
 |---|---|---|---|
@@ -209,10 +209,11 @@ item done having produced nothing.
 
 Two behaviours worth knowing:
 
-- **No sampling on `anthropic`.** `temperature`, `topP` and `topK` are kept for
-  the `server` backend and not sent to Claude: current Claude models refuse any
-  value but their own, and API version 2026-10-21 refuses the fields on every
-  model.
+- **Little sampling on `anthropic`.** `temperature`, `topP` and `topK` are kept
+  for the `server` backend. Of Claude models, only Haiku 4.5, Sonnet 4.6 and
+  Opus 4.6 are sent `temperature` and `topK` (never `topP` beside them, and
+  neither while they think): current Claude models refuse any value but their
+  own, and API version 2026-10-21 refuses the fields on every model.
 - **`jsonSchema` turns streaming off** for that call. A constrained answer
   arrives as arguments rather than prose, and half of a JSON object is of no
   use to anything.
@@ -231,14 +232,17 @@ applies to the `server` backend, whose request is built as it always was.
 | `thinking: null` | nothing — current models think by default | nothing — no reasoning |
 | `thinking: false` | `{type: "disabled"}`, or `{type: "between_tools"}` on Sonnet 5.5; not sent to a model that always thinks (Opus 5.5, Fable) or at an effort it is refused at | nothing |
 | `effort` | `output_config: {effort}`, at the levels the model takes | not sent |
+| `temperature`, `topK` | not sent | sent while the model is not thinking |
 | `jsonSchema` | a forced tool, or structured outputs on the models that refuse one (Opus 5.5, Sonnet 5.5, Fable 5.1) | a forced tool |
 
 What a model accepts comes from the Models API (`GET /v1/models/{id}`), asked
 once per model and address, where it reports it — which thinking a model takes,
 which effort levels, and whether it has structured outputs. What it does not
-report, how "do not think" is said and whether a forced tool is accepted, comes
+report, how "do not think" is said, whether a forced tool is accepted and
+whether sampling settings are, comes
 from a table in `hkp-node/src/services/claudeModels.ts`, which also stands in
-when the API cannot be asked. A model in neither gets the oldest form of each.
+when the API cannot be asked. A model in neither gets the oldest form of each,
+and no sampling settings.
 
 **A current model's thinking counts against `maxTokens`.** It thinks before it
 answers whatever the board says, and a ceiling sized for the answer alone can

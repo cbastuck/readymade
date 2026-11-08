@@ -165,15 +165,24 @@ it("reports server and invalid-model-output errors", async () => {
   );
   await expect(runOpenAICompatibleTurn(options())).rejects.toThrow("runtimes");
 });
-function streamResponse(parts: string[], complete = true) {
+function streamResponse(
+  parts: string[],
+  complete = true,
+  usage?: Record<string, unknown>,
+) {
   const events = parts
     .map(
       (content) =>
         `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\r\n\r\n`,
     )
     .join("");
+  // Asked for with `include_usage`, usage arrives in a chunk of its own,
+  // after the last choice and with none.
+  const usageEvent = usage
+    ? `data: ${JSON.stringify({ choices: [], usage })}\r\n\r\n`
+    : "";
   const ending = complete
-    ? `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\r\n\r\ndata: [DONE]\r\n\r\n`
+    ? `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\r\n\r\n${usageEvent}data: [DONE]\r\n\r\n`
     : "";
   const bytes = new TextEncoder().encode(events + ending);
   return new Response(
@@ -211,6 +220,31 @@ it("streams split SSE events and explicitly disables thinking only when requeste
     stream: true,
     chat_template_kwargs: { enable_thinking: false },
   });
+});
+it("asks a streaming server for its usage and reports it", async () => {
+  const content = JSON.stringify({ explanation: "Done.", board });
+  const fetch = vi.fn(async () =>
+    streamResponse([content], true, {
+      prompt_tokens: 1200,
+      completion_tokens: 300,
+      prompt_tokens_details: { cached_tokens: 200 },
+    }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const config = { ...options(), onUsage: vi.fn() };
+  const result = await runOpenAICompatibleTurn(config);
+  const body = JSON.parse(
+    (fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string,
+  );
+  expect(body.stream_options).toEqual({ include_usage: true });
+  expect(result.usage).toEqual({
+    requests: 1,
+    inputTokens: 1000,
+    outputTokens: 300,
+    cacheWriteTokens: 0,
+    cacheReadTokens: 200,
+  });
+  expect(config.onUsage).toHaveBeenCalledWith(result.usage);
 });
 it("rejects an incomplete stream instead of accepting a partial board", async () => {
   vi.stubGlobal(

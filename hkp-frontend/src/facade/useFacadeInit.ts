@@ -58,6 +58,17 @@ export function useFacadeInit({
   const built = named.every((uuid) => isBuiltInside(boardContext, uuid));
 
   const ranFor = useRef<string | null>(null);
+  // The board as it is now and whether this hook is still mounted, for an init
+  // that resumes after waiting on a runtime: by then the board this render saw
+  // may have moved on, or been closed.
+  const latest = useRef({ boardContext, boardName, mounted: true });
+  latest.current = { ...latest.current, boardContext, boardName };
+  useEffect(() => {
+    latest.current.mounted = true;
+    return () => {
+      latest.current.mounted = false;
+    };
+  }, []);
   const building = useRef<{ boardName: string; since: number } | null>(null);
   const [, recheck] = useReducer((n: number) => n + 1, 0);
 
@@ -95,10 +106,16 @@ export function useFacadeInit({
             : undefined;
         }),
       );
+      const now = latest.current;
+      // Closed, or another board opened, while it waited: that board runs its
+      // own init, and this one has nobody left to draw for.
+      if (!now.mounted || now.boardName !== boardName) {
+        return;
+      }
       await executeActions({
         actions: init,
         value: undefined,
-        boardContext,
+        boardContext: now.boardContext,
         setState,
         state: stateRef.current,
         identity,
