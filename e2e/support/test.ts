@@ -130,9 +130,9 @@ export const test = base.extend<HostOptions & HostFixtures>({
   seedBoard: async ({ context, profile }, use) => {
     await use(async (name: string, descriptor: unknown) => {
       // A board has to be put where the shell about to look for it will look:
-      // the web and mobile shells read a local library out of localStorage,
-      // the desktop shell asks the platform host. Seeding both keeps the specs
-      // free of that distinction. A separate marker survives deletion too:
+      // the web shell reads a local library out of localStorage, the native
+      // shells ask the platform host. Seeding both keeps the specs free of
+      // that distinction. A separate marker survives deletion too:
       // reloading must never resurrect a board the test has removed.
       await context.addInitScript(
         ([boardName, item, board, native]: [string, string, unknown, boolean]) => {
@@ -196,11 +196,17 @@ export const test = base.extend<HostOptions & HostFixtures>({
       await press(page.getByRole("button", { name: "Open board" }));
 
       if (profile === "mobile") {
-        // The mobile shell opens a board as a collapsed list of services —
-        // there is no room for a pipeline of panels on a phone. Expanding them
-        // is what puts the same service UIs on screen the other shells render
-        // directly, so specs can then say the same thing about all three.
-        await press(page.getByRole("button", { name: "Show full service UIs" }));
+        // The mobile shell opens a board as a list of collapsed service cards
+        // — there is no room for a pipeline of panels on a phone. Unfolding
+        // each card, then its UI, is what puts the same service UIs on screen
+        // the other shells render directly, so specs can then say the same
+        // thing about all three.
+        const cards = page.locator("[data-service-card]");
+        await expect(cards.first()).toBeVisible();
+        for (const card of await cards.all()) {
+          await press(card.locator(":scope > button[aria-expanded='false']"));
+          await press(card.getByRole("button", { name: "UI", exact: true }));
+        }
       }
     });
   },

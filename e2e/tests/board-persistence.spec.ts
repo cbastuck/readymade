@@ -26,7 +26,6 @@ test("a saved edit survives reload and reopening from the library", async ({
   await expect(delayUnit).toHaveText("s");
 
   if (profile === "mobile") {
-    await press(page.getByRole("button", { name: "Switch to card view" }));
     await press(page.getByRole("button", { name: "Board menu" }));
     await press(page.getByRole("button", { name: /Save board.*Keep this board/ }));
     await press(page.getByRole("button", { name: "Save to this device", exact: true }));
@@ -35,7 +34,7 @@ test("a saved edit survives reload and reopening from the library", async ({
   }
 
   const savedUnit = async () => {
-    const saved = profile === "desktop"
+    const saved = profile !== "web"
       ? (await hostState()).boards as Record<string, typeof board>
       : await page.evaluate((n) => {
           const item = JSON.parse(localStorage.getItem(`hkp-playground-${n}`) ?? "null");
@@ -59,7 +58,7 @@ test("a saved edit survives reload and reopening from the library", async ({
 });
 
 test("native host writes survive document replacement", async ({ page, profile, openBoard, hostState }) => {
-  test.skip(profile === "web", "the web profile has no native host");
+  test.skip(profile !== "desktop", "saucer is the desktop webview's");
   await openBoard(name);
   await page.evaluate(async () => {
     const exposed = (window as any).saucer.exposed;

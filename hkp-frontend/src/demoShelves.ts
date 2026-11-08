@@ -14,7 +14,8 @@ export type DemoShelf = {
   id: string;
   title: string;
   line: string;
-  /** Opens in the browser: one click, nothing to install. */
+  /** Seen without setting anything up: opens in the browser, or plays as a
+   *  video where trying it needs more than a visitor has — signing in, say. */
   hero: string;
   /** The rest of the shelf, in order, the hero not among them. */
   picks: string[];
@@ -32,8 +33,8 @@ export const DEMO_SHELVES: DemoShelf[] = [
     id: "together",
     title: "For your club, team and customers",
     line: "Apps several people use at once, each as themselves.",
-    hero: "court-booking-browser",
-    picks: ["meeting-poll-browser", "syn-mail-desk"],
+    hero: "court-booking",
+    picks: ["meeting-poll", "syn-mail-desk"],
   },
 ];
 

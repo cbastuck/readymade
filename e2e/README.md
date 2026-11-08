@@ -60,7 +60,7 @@ told which host it is on.
 | --------- | ----------------- | -------- | -------------------------------- |
 | `web`     | `hkp-frontend`    | Chromium | none — signed out, no capabilities |
 | `desktop` | `meander/frontend`| Chromium | fake saucer + `hkp://` scheme    |
-| `mobile`  | `meander/frontend`| WebKit   | the same fake, mounting `MobileApp` |
+| `mobile`  | `meander/frontend`| WebKit   | the same fake without saucer, mounting `MobileApp` |
 
 `mobile` runs WebKit on an iPhone device descriptor because that is what the
 iOS app is: a WKWebView with real touch. The shell has its own gesture code, so
@@ -73,7 +73,8 @@ shares these specs and is not yet a separate project.
 `support/fakeNativeHost.ts` implements both surfaces the Readymade shells reach
 the platform through:
 
-- `window.saucer.exposed.*` — file dialogs and the secret store
+- `window.saucer.exposed.*` — file dialogs and the secret store (desktop only,
+  as in the shipped apps)
 - `fetch("hkp://…")` — boards, remotes, settings, history, the start-page tree
 
 Both are installed as a **page init script**, and that is not a stylistic

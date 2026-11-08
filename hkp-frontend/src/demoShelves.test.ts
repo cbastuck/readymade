@@ -59,11 +59,11 @@ describe("the shelves", () => {
     expect(new Set(shelved).size).toBe(shelved.length);
   });
 
-  it("lead with a hero that opens in the browser", () => {
+  it("lead with a hero seen without setting anything up", () => {
     for (const shelf of DEMO_SHELVES) {
       const hero = DEMO_CATALOG.find((e) => e.slug === shelf.hero);
       if (hero) {
-        expect(hero.opens, shelf.hero).toBe("browser");
+        expect(["browser", "video"], shelf.hero).toContain(hero.opens);
       }
     }
   });
@@ -79,14 +79,11 @@ describe("the shelves", () => {
     }
   });
 
-  // A video pick is listed before it is shot: until then its card is text
-  // and the board to run yourself, and the media it gets is a video.
-  it("give a video pick the board to run it yourself, and a video once it has media", () => {
+  // A video pick is listed before it is shot: until then its card is text,
+  // or a still of the board, and the board to run yourself.
+  it("give a video pick the board to run it yourself", () => {
     for (const pick of DEMO_CATALOG.filter((e) => e.opens === "video")) {
       expect(pick.runItYourself, pick.slug).toBeDefined();
-      if (pick.media) {
-        expect("video" in pick.media, pick.slug).toBe(true);
-      }
     }
   });
 

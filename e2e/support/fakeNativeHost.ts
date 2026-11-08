@@ -7,6 +7,7 @@
  *  - `window.saucer.exposed.*` — direct calls into the desktop webview
  *    (file dialogs, the secret store). Its presence is also what
  *    `MeanderPlatformProvider` reads to decide it is running natively.
+ *    Desktop only, as in the shipped apps.
  *  - `fetch("hkp://…")` — a custom scheme registered by the webview, which
  *    `meanderBackend` uses for boards, remotes, settings, history and the
  *    start-page tree.
@@ -316,7 +317,13 @@ export function installFakeNativeHost(config: FakeHostConfig): void {
 
   // The desktop webview's direct calls. `pickSavePath` and `writeFile` being
   // present is itself the native check in MeanderPlatformProvider, so a fake
-  // that omits them boots as a plain browser.
+  // that omits them boots as a plain browser. The mobile apps' webviews have
+  // none, and MeanderPlatformProvider checks for them before the shell flags:
+  // a mobile fake that had them would get the desktop's capabilities, without
+  // the board library the mobile shell opens its boards from.
+  if (config.shell !== "desktop") {
+    return;
+  }
   (window as unknown as Record<string, unknown>).saucer = {
     exposed: {
       pickFile: async () => config.pickedPath ?? null,
