@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-import SqlInspector, { cellText } from "../SqlInspector";
+import SqlInspector, { cellText, LOOK_EVERY_MS } from "../SqlInspector";
 
 /**
  * The inspector dialog over a service that answers from fixed tables: what is
@@ -58,6 +58,53 @@ describe("the SQL inspector", () => {
 
     await waitFor(() => expect(svc.inspectTables).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(svc.inspectRows).toHaveBeenCalledTimes(2));
+  });
+
+  it("looks again at most once a second while the service keeps reporting", async () => {
+    const svc = service();
+    const { rerender } = render(
+      <SqlInspector service={svc as any} isOpen revision={0} onClose={vi.fn()} />,
+    );
+    await waitFor(() => expect(svc.inspectTables).toHaveBeenCalledTimes(1));
+
+    for (const revision of [1, 2, 3, 4]) {
+      rerender(<SqlInspector service={svc as any} isOpen revision={revision} onClose={vi.fn()} />);
+    }
+
+    // The first report at once, the rest of the burst as one look after it.
+    await waitFor(() => expect(svc.inspectTables).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(svc.inspectTables).toHaveBeenCalledTimes(3), {
+      timeout: LOOK_EVERY_MS + 1000,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(svc.inspectTables).toHaveBeenCalledTimes(3);
+  });
+
+  it("goes to the last page when the table shrinks below the one shown", async () => {
+    let total = 250;
+    const svc = {
+      inspectTables: vi.fn(async () => ({
+        database: "radio",
+        tables: [{ name: "episode", type: "table", rows: total, sql: "", use: null }],
+      })),
+      inspectRows: vi.fn(async (_table: string, offset: number) => ({
+        columns: ["n"],
+        rows: offset < total ? [[offset + 1]] : [],
+        total,
+      })),
+    };
+    const { rerender } = render(
+      <SqlInspector service={svc as any} isOpen revision={0} onClose={vi.fn()} />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Next" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("cell", { name: "201" })).toBeTruthy();
+
+    total = 120;
+    rerender(<SqlInspector service={svc as any} isOpen revision={1} onClose={vi.fn()} />);
+
+    expect(await screen.findByRole("cell", { name: "101" })).toBeTruthy();
+    expect(screen.queryByText("This table is empty.")).toBeNull();
   });
 
   it("asks nothing while closed", () => {

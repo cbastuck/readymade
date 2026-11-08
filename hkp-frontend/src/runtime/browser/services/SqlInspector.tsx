@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 import {
@@ -16,11 +16,51 @@ import "./sql-inspector.css";
  * The tables down the side, the ones this service's statement writes or reads
  * first; the rows of the one picked beside them, a page at a time. Read only:
  * it is for seeing what a pipeline left behind, and the SQL Explorer board is
- * where rows are changed. It looks again whenever the service reports a pass,
- * so a table being written fills in while it is watched.
+ * where rows are changed. It looks again when the service reports a pass — at
+ * most once a second — so a table being written fills in while it is watched.
  */
 
 const PAGE = 100;
+
+/**
+ * How often an open inspector looks again while the service keeps reporting.
+ * Every look counts every table, so a board passing many times a second would
+ * otherwise have the inspector re-reading the whole database as often.
+ */
+export const LOOK_EVERY_MS = 1000;
+
+/**
+ * `value`, changing at most once every `ms`. The first change after a quiet
+ * spell arrives at once; the last one of a burst still arrives, after the wait.
+ */
+function useThrottled<T>(value: T, ms: number): T {
+  const [shown, setShown] = useState(value);
+  const shownRef = useRef(value);
+  const last = useRef(0);
+  useEffect(() => {
+    if (Object.is(value, shownRef.current)) {
+      return;
+    }
+    const show = () => {
+      last.current = Date.now();
+      shownRef.current = value;
+      setShown(value);
+    };
+    const wait = last.current + ms - Date.now();
+    if (wait <= 0) {
+      show();
+      return;
+    }
+    const timer = setTimeout(show, wait);
+    return () => clearTimeout(timer);
+  }, [value, ms]);
+  return shown;
+}
+
+/** The first row of the last page a table of `total` rows has. */
+function lastPageStart(total: number): number {
+  return Math.max(0, Math.floor((total - 1) / PAGE) * PAGE);
+}
 
 /** Sized like the service configuration dialog, which it sits beside. */
 const frameStyle: React.CSSProperties = {
@@ -86,6 +126,7 @@ export default function SqlInspector({ service, isOpen, revision, onClose }: Pro
   const [error, setError] = useState("");
   const [looks, setLooks] = useState(0);
   const lookAgain = useCallback(() => setLooks((n) => n + 1), []);
+  const reported = useThrottled(revision, LOOK_EVERY_MS);
 
   // The tables: on opening, on every pass the service reports, on Refresh.
   useEffect(() => {
@@ -114,7 +155,7 @@ export default function SqlInspector({ service, isOpen, revision, onClose }: Pro
     return () => {
       current = false;
     };
-  }, [service, isOpen, revision, looks]);
+  }, [service, isOpen, reported, looks]);
 
   // The rows of the table picked, at the page shown.
   useEffect(() => {
@@ -126,16 +167,23 @@ export default function SqlInspector({ service, isOpen, revision, onClose }: Pro
     service
       .inspectRows(picked, offset, PAGE)
       .then((page) => {
-        if (current) {
-          setRows(page);
-          setError("");
+        if (!current) {
+          return;
         }
+        // The table shrank below the page being looked at: go to its last
+        // page, which looks again, rather than calling it empty.
+        if (offset > 0 && offset >= page.total) {
+          setOffset(lastPageStart(page.total));
+          return;
+        }
+        setRows(page);
+        setError("");
       })
       .catch((err) => current && setError(sentence(err)));
     return () => {
       current = false;
     };
-  }, [service, isOpen, picked, offset, revision, looks]);
+  }, [service, isOpen, picked, offset, reported, looks]);
 
   if (!isOpen) {
     return null;

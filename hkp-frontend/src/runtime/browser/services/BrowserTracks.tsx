@@ -224,12 +224,16 @@ export class BrowserTracks extends ServiceBase<State> {
    * A service inside can be configured by its scoped address without going
    * through this one, so the stored pipelines alone would save what the
    * services were built with rather than what they were changed to since.
+   * Each entry is read from its own track's scope: two tracks may hold a
+   * service under the same id, and one must not be saved with the other's.
    */
   getConfiguration = async (): Promise<Partial<State> & { bypass: boolean }> => {
-    const current = (pipeline: PipelineEntry[]) =>
+    const current = (scopeName: string, pipeline: PipelineEntry[]) =>
       Promise.all(
         pipeline.map(async (entry) => {
-          const live = this.getInnerInstance(entry.instanceId) as any;
+          const live = this._scopes
+            .get(scopeName)
+            ?.findServiceInstance(entry.instanceId)[0] as any;
           if (!live?.getConfiguration) {
             return entry;
           }
@@ -239,13 +243,13 @@ export class BrowserTracks extends ServiceBase<State> {
     const tracks = await Promise.all(
       this.state.tracks.map(async (track) => ({
         ...track,
-        pipeline: await current(track.pipeline),
+        pipeline: await current(track.name, track.pipeline),
       })),
     );
     return {
       ...this.state,
       tracks,
-      reduce: await current(this.state.reduce),
+      reduce: await current(REDUCE, this.state.reduce),
       bypass: this.bypass,
     };
   };

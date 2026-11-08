@@ -169,8 +169,7 @@ mid-way — counts as failed after `stuckAfter` (ten minutes), so nothing says
 
 The model is Claude on hkp-node's `anthropic`
 [backend](../services/text-generation.md), with the key from the secret
-`anthropic.key`; with `apiKey` set to empty it uses `ANTHROPIC_API_KEY` from
-the runtime's environment instead. Setting the unit's `backend` param to `server`, `serverUrl` to
+`anthropic.key` — hkp-node reads no key from its environment. Setting the unit's `backend` param to `server`, `serverUrl` to
 an OpenAI-compatible server and `apiKey` to empty briefs with a local model
 instead, and nothing else in the board changes.
 

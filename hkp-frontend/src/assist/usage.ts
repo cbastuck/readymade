@@ -9,15 +9,52 @@
  * conversation, and that sum is what a price is put on.
  */
 
-export type AssistUsage = {
-  /** Requests made to the model. */
-  requests: number;
+type TokenCounts = {
   /** Input not served from or written to a cache. */
   inputTokens: number;
   outputTokens: number;
   cacheWriteTokens: number;
   cacheReadTokens: number;
 };
+
+export type AssistUsage = TokenCounts & {
+  /** Requests made to the model. */
+  requests: number;
+  /**
+   * The part of the counts above made by requests whose prompt was longer
+   * than `LONG_PROMPT_TOKENS`, which some models bill on a rate card of its
+   * own. Kept apart because the card is chosen per request, and a sum over
+   * requests no longer says which of them were long. Absent when none was.
+   */
+  longPrompt?: TokenCounts;
+};
+
+/** A prompt longer than this is billed on a model's long-prompt rates. */
+export const LONG_PROMPT_TOKENS = 100_000;
+
+const noTokens: TokenCounts = {
+  inputTokens: 0,
+  outputTokens: 0,
+  cacheWriteTokens: 0,
+  cacheReadTokens: 0,
+};
+
+function addTokens(a: TokenCounts, b: TokenCounts): TokenCounts {
+  return {
+    inputTokens: a.inputTokens + b.inputTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+    cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
+    cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
+  };
+}
+
+/** One request's usage, marked as long when its prompt was. */
+function oneRequest(tokens: TokenCounts): AssistUsage {
+  const usage: AssistUsage = { requests: 1, ...tokens };
+  return inputTotal(usage) > LONG_PROMPT_TOKENS
+    ? { ...usage, longPrompt: { ...tokens } }
+    : usage;
+}
 
 export const noUsage: AssistUsage = {
   requests: 0,
@@ -28,17 +65,17 @@ export const noUsage: AssistUsage = {
 };
 
 export function addUsage(a: AssistUsage, b: AssistUsage): AssistUsage {
-  return {
-    requests: a.requests + b.requests,
-    inputTokens: a.inputTokens + b.inputTokens,
-    outputTokens: a.outputTokens + b.outputTokens,
-    cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
-    cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
-  };
+  const sum: AssistUsage = { requests: a.requests + b.requests, ...addTokens(a, b) };
+  return a.longPrompt || b.longPrompt
+    ? {
+        ...sum,
+        longPrompt: addTokens(a.longPrompt ?? noTokens, b.longPrompt ?? noTokens),
+      }
+    : sum;
 }
 
 /** Everything the model read, whichever way it was billed. */
-export function inputTotal(usage: AssistUsage): number {
+export function inputTotal(usage: TokenCounts): number {
   return usage.inputTokens + usage.cacheWriteTokens + usage.cacheReadTokens;
 }
 
@@ -52,13 +89,12 @@ const count = (value: unknown) =>
 /** One Messages API response's `usage`. */
 export function fromAnthropicUsage(usage: unknown): AssistUsage {
   const u = (usage ?? {}) as Record<string, unknown>;
-  return {
-    requests: 1,
+  return oneRequest({
     inputTokens: count(u.input_tokens),
     outputTokens: count(u.output_tokens),
     cacheWriteTokens: count(u.cache_creation_input_tokens),
     cacheReadTokens: count(u.cache_read_input_tokens),
-  };
+  });
 }
 
 /**
@@ -70,17 +106,19 @@ export function fromOpenAIUsage(usage: unknown): AssistUsage {
   const u = (usage ?? {}) as Record<string, unknown>;
   const details = (u.prompt_tokens_details ?? {}) as Record<string, unknown>;
   const cached = count(details.cached_tokens);
-  return {
-    requests: 1,
+  return oneRequest({
     inputTokens: Math.max(0, count(u.prompt_tokens) - cached),
     outputTokens: count(u.completion_tokens),
     cacheWriteTokens: 0,
     cacheReadTokens: cached,
-  };
+  });
 }
 
 /** US dollars per million tokens. */
-type Rates = { input: number; output: number; cacheRead: number };
+type Card = { input: number; output: number; cacheRead: number };
+/** A model's rates; `longPrompt` for a request whose prompt is longer than
+ *  `LONG_PROMPT_TOKENS`, where the model has a card for those. */
+type Rates = Card & { longPrompt?: Card };
 
 /**
  * Anthropic's first-party API list prices, as of the date below. A price
@@ -99,7 +137,12 @@ const RATES: Record<string, Rates> = {
   "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.2 },
   "claude-sonnet-5": { input: 2, output: 10, cacheRead: 0.2 },
   "claude-sonnet-4-6": { input: 3, output: 15, cacheRead: 0.3 },
-  "claude-haiku-5-5": { input: 0.1, output: 0.5, cacheRead: 0.01 },
+  "claude-haiku-5-5": {
+    input: 0.1,
+    output: 0.5,
+    cacheRead: 0.01,
+    longPrompt: { input: 0.5, output: 2.5, cacheRead: 0.05 },
+  },
   "claude-haiku-4-5": { input: 1, output: 5, cacheRead: 0.1 },
 };
 /** A five-minute cache write costs a quarter more than plain input. */
@@ -113,12 +156,20 @@ const CACHE_WRITE_FACTOR = 1.25;
 export function priceOf(modelId: string, usage: AssistUsage): number | undefined {
   const rates = RATES[modelId];
   if (!rates) return undefined;
+  const long = usage.longPrompt ?? noTokens;
+  const total = rates.longPrompt
+    ? cost(usage, rates) - cost(long, rates) + cost(long, rates.longPrompt)
+    : cost(usage, rates);
+  return total / 1_000_000;
+}
+
+/** Tokens at one card's rates, in US dollars times a million. */
+function cost(tokens: TokenCounts, card: Card): number {
   return (
-    (usage.inputTokens * rates.input +
-      usage.cacheWriteTokens * rates.input * CACHE_WRITE_FACTOR +
-      usage.cacheReadTokens * rates.cacheRead +
-      usage.outputTokens * rates.output) /
-    1_000_000
+    tokens.inputTokens * card.input +
+    tokens.cacheWriteTokens * card.input * CACHE_WRITE_FACTOR +
+    tokens.cacheReadTokens * card.cacheRead +
+    tokens.outputTokens * card.output
   );
 }
 

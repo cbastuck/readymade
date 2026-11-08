@@ -76,7 +76,7 @@ lets the nested answer win, `add` protects what the input was carrying.
 | `pipeline` | `array` | `[]` | The detour, in order |
 | `as` | `string` | `""` | Put the result under this key. Empty merges at the top level |
 | `mode` | `string` | `"overwrite"` | Top-level merge only: `overwrite` or `add` |
-| `onFailure` | `string` | `"stop"` | A detour that failed: `stop`, or `merge` its `{ error, service }` in place of the result |
+| `onFailure` | `string` | `"stop"` | A detour that failed: `stop`, or `merge` its `{ error, service }` in place of the result — under `as`, or under `failure` without one |
 | `bypass` | `boolean` | `false` | Pass the input through untouched |
 
 ---
@@ -114,6 +114,10 @@ happened to:
 in  { link, title }
 out { link, title, brief: { error: "no value stored for anthropic.key", service: "write" } }
 ```
+
+The failure always arrives under a name: `as`, or `failure` when the Join
+merges at the top level. Spread into the input like a result, it could be
+hidden by an `error` the input already carried, or replace a field of its own.
 
 A board then routes on it — a map that sends `brief.error` one way and
 `brief.text` the other — and a card, a row or a log can say *failed, and why*

@@ -247,6 +247,24 @@ describe("Tracks service", () => {
     expect(await service.process({})).toEqual([1, 20]);
   });
 
+  it("saves each track from its own services when two share an id", async () => {
+    // Copied tracks keep their services' ids; a lookup across every track would
+    // save the second with the first's state.
+    const { service } = createTracks();
+    const copy = (name: string, answer: number) => ({
+      ...answering("same", answer),
+      name,
+    });
+    service.configure({ tracks: [copy("a", 1), copy("b", 2)] });
+    await service.process({});
+
+    const saved = await service.getConfiguration();
+    expect(saved.tracks.map((t: any) => t.pipeline[0].state.template)).toEqual([
+      { "=": "1" },
+      { "=": "2" },
+    ]);
+  });
+
   it("passes its input through when bypassed", async () => {
     const { service } = createTracks();
     service.configure({ tracks: [answering("a", 1)] });

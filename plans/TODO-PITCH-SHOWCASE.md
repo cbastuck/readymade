@@ -68,7 +68,7 @@ visitors should count **shelves**, not demos.
 | 01–06 | Idea, Services, Composition, Blocks, Distributed composition, From board to app | exist; copy pass (outcome before concept) |
 | 07 | **Building with AI**: *Describe the app. Review what is new.* | drafted, behind `SHOW_PITCH_AI_SLIDE` (development only) |
 | 08 | **Try it**: *Demo time.*, the gallery | rewritten |
-| 09 | **Who pays for it**: the offer table and the readiness argument | rewritten from `hkp-website/readymade-pitch-commercial-slides.md` |
+| 09 | **Who pays for it**: the offer table and the readiness argument | rewritten from the first commercial drafts (kept in `private-plans/`) |
 
 Slides are numbered by position (`SLIDES` in `Pitch.tsx`), so a slide behind a
 flag never leaves a gap in the numbering.
@@ -150,10 +150,9 @@ browser, for you") and what deploying the board changes.
       customers* × *you run it / we run it*). Cloud and Partner are where the
       money comes from; the commercial licence is the contract under Partner;
       the builds sit inside Community (now a fixed €4.99, not pay what you
-      want). The development commitment (a published share of licence revenue
-      spent on Readymade) is left out on purpose: not stated before there is
-      traction. The two markdown drafts in `hkp-website/` are superseded by
-      the deck.
+      want). One commercial decision is held back on purpose, and recorded
+      in `private-plans/` with the two first markdown drafts, which the deck
+      supersedes.
 - [x] **One slide, and the argument is readiness.** *Decided 2026-11-06:* the
       offer table already says what each slide after it said, so Community,
       Cloud, Partner, Embed it and the licence are gone; the licence terms
@@ -189,9 +188,9 @@ browser, for you") and what deploying the board changes.
       `pricing.astro` are clean. "A share of revenue" (the licence's
       pay-as-you-grow option) is a royalty term and stays. Embed it's "needs no
       server at all" is about a browser + hkp-rt board, not about Cloud. The
-      only hits were in the two superseded markdown drafts (the
-      development-commitment slide), which now say at the top that they are
-      superseded. Re-check whenever slide 07, 09 or the gallery adds copy.
+      only hits were in the two superseded markdown drafts, since moved to
+      `private-plans/`. Re-check whenever slide 07, 09 or the gallery adds
+      copy.
 
 ---
 

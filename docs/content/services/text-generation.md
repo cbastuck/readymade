@@ -92,25 +92,22 @@ Either way you also need a GGUF file on disk (e.g. `Qwen3-0.6B-Q8_0.gguf` from
 Hugging Face).
 
 **Anthropic backend (hkp-node)** — an API key, and nothing else. The service
-looks in two places: its own `apiKey`, then `ANTHROPIC_API_KEY` in the
-environment the runtime starts in.
-
-```
-ANTHROPIC_API_KEY=sk-ant-... npm start
-```
+reads it from its own `apiKey` and from nowhere else: **not from the
+environment the runtime starts in.** A server is shared — by the people who
+own boards on it, and by everyone a deployed board admits — and a key in its
+environment would be the operator's, spent by every board on it and sent
+wherever a board's `serverUrl` points.
 
 `apiKey` is write-only — the service accepts it and never gives it back, the
 same way `smtp-email` treats its password — but a key typed straight into it is
 still a credential inside the board, and a board can be downloaded, shared as a
-link, or sent through the AI Refiner. A key in the environment is in none of
-those places, which is why it is the one to prefer for anything deployed.
+link, or sent through the AI Refiner. A secret reference is in none of those
+places, which is why it is the one to use.
 
-### A secret reference, in the Readymade app
+### A secret reference
 
-Boards run in the app rarely have an environment to put anything in, and the
-app has its own store for exactly this. Add the key under **Settings →
-Secrets** with a name of your choosing, and refer to it from the board by that
-name instead of pasting the value:
+Add the key under **Settings → Secrets** with a name of your choosing, and
+refer to it from the board by that name instead of pasting the value:
 
 ```json
 { "backend": "anthropic", "model": "claude-sonnet-5", "apiKey": "{{secret.anthropic}}" }
@@ -164,8 +161,8 @@ models that take them (see below):
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `backend` | `string` | `"anthropic"` | `anthropic` (hosted) or `server` (OpenAI-compatible HTTP) |
-| `apiKey` | `string` | `""` | Write-only; takes a `{{secret.…}}` reference, and falls back to `ANTHROPIC_API_KEY` in the runtime's environment |
-| `apiKeyConfigured` | `bool` | — | Read-only: whether a key is available, from either source |
+| `apiKey` | `string` | `""` | Write-only; takes a `{{secret.…}}` reference. The runtime's environment is never read |
+| `apiKeyConfigured` | `bool` | — | Read-only: whether a key is configured |
 | `serverUrl` | `string` | `""` | Empty means the backend's own address; set it for a proxy, or for a hosted OpenAI-compatible endpoint |
 | `endpoint` | `string` | — | Read-only: the URL this configuration actually reaches |
 | `model` | `string` | `"claude-sonnet-5"` | Any model the API accepts |
@@ -190,11 +187,8 @@ question the address alone does not answer:
 A base URL already carrying a version keeps it; a bare origin gets `/v1` added,
 because that is how the two kinds of server hand their address out.
 
-One difference between the backends is deliberate and worth stating: **the
-`ANTHROPIC_API_KEY` fallback does not apply on `server`.** That key belongs to
-the hosted API, and a board naming its own address would otherwise hand the
-credential to whatever is listening at it. A server that does want a token gets
-the configured `apiKey` as a bearer.
+A server that wants a token gets the configured `apiKey` as a bearer; one that
+does not is reached with none.
 
 **A reasoning model needs `thinking: false` to answer inside a schema.** Qwen3
 and its relatives reason before answering by default, and a `jsonSchema`
@@ -388,16 +382,9 @@ curl -X POST http://127.0.0.1:5556/runtimes/text-generation-example \
 
 For the Anthropic backend, `boards/text-generation-anthropic-demo-board.json`
 turns a booking enquiry into structured fields (Injector → text-generation with
-a `jsonSchema` → monitor). Start hkp-node with a key in its environment and
-inject the message:
-
-```
-ANTHROPIC_API_KEY=sk-ant-... npm start --prefix hkp-node
-```
-
-In the Readymade app, where there is no such environment, store the key under
-Settings → Secrets and set the service's `apiKey` to `{{secret.anthropic}}`
-instead.
+a `jsonSchema` → monitor). Store the key under Settings → Secrets as
+`anthropic.key` — the name the board's `apiKey` refers to — start hkp-node and
+inject the message.
 
 The monitor shows the extracted object, not prose — which is what makes the
 next service in a board able to act on it.

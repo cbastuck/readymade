@@ -1,6 +1,7 @@
 // Board names are readymades: an everyday object given an unexpected title,
-// the way Duchamp named a bottle rack or a snow shovel. Words are single,
-// lowercase and ASCII because a name becomes the board's URL path.
+// the way Duchamp named a bottle rack or a snow shovel. Words are single and
+// ASCII because a name becomes the board's URL path; they are kept lowercase
+// here and capitalised when a name is drawn ("Curious-Teapot", `core/board.ts`).
 
 export const moods = [
   "absent", "airborne", "ambling", "amused", "ardent", "astonished",
