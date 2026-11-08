@@ -108,9 +108,10 @@ services, examples, `validate_board`, usable by any MCP client); the Shared
 Costs run (five requests, about $0.99, 11,504 tokens written, 138 lines to
 review). The video links to the Board Assist concept page.
 
-- [ ] OpenCode is not named until it is on this branch (below). The
+- [x] OpenCode is not named until it is on this branch (below). The
       provider bullet in `Pitch.tsx` already names an OpenCode server, ahead
-      of the rebase that brings it.
+      of the rebase that brings it. *On the branch since `ios_feature_add`
+      merged into `main` (#59).*
 - [x] The Shared Costs video is this slide's, not the gallery's. *Decided
       2026-11-06:* it shows an app being built, so it belongs with building
       with AI; the Shared Costs pick left the gallery's shelf. Its catalog
@@ -163,20 +164,25 @@ browser, for you") and what deploying the board changes.
       that a board made in Readymade is ready the moment it works: deployed as
       it is, nothing rewritten, and Cloud keeps it running. Headline *When the
       board is ready, so is the app.*, the old headline as its subline.
-      `COMMERCIAL_SLIDES` in `hkp-website/src/pages/Pitch.tsx`, shown with
-      `SHOW_COMMERCIAL_DRAFT`.
-- [x] Bring `TODO-COMMERCIAL-LICENSING.md` up to the Oct 19 decisions.
+      `COMMERCIAL_SLIDES` in `hkp-website/src/pages/Pitch.tsx`, always in the
+      deck since `SHOW_COMMERCIAL_DRAFT` was removed (2026-11-08).
+- [x] Bring the commercial-licensing plan up to the Oct 19 decisions. It is
+      kept outside this repository since 2026-11-08: it holds the draft
+      licence agreement, which awaits legal review.
       *Done 2026-11-06:* the offer table and Partner's three deliveries
       (embed, host, Partner on Cloud later), AGPL re-vetted and kept, the
       development commitment held back until traction.
-- [x] Get `hkp-website/astro/pages/pricing.astro` into shape, still behind
-      `SHOW_COMMERCIAL_DRAFT`; the pitch covers the offer, the page covers the
-      detail. *Done 2026-11-06:* laid out by the offer table — Community (AGPL,
+- [x] Get `hkp-website/astro/pages/pricing.astro` into shape; the pitch
+      covers the offer, the page covers the detail. *Done 2026-11-06:* laid out by the offer table — Community (AGPL,
       builds at €4.99), Cloud (not open yet, no price), Partner
       (Embedded and Hosted, the revenue-share option, Partner on Cloud later);
       the development commitment removed. The table is drawn like slide 09's
       and is the page's navigation: a chosen cell (kept in the address,
-      `/pricing/#cloud`) shows only its own text. Figures still placeholders.
+      `/pricing/#cloud`) shows only its own text. *Made public 2026-11-08:*
+      the draft flag is gone; Partner is "talk to us" with indicative figures,
+      the not-yet-open offers ask early adopters to say hello
+      (`TODO-EARLY-ADOPTERS.md`), and every price says no VAT is charged
+      (§19 UStG).
 - [x] Keep to the vocabulary rule: no *fund*, *invest*, *shares*, *stake*,
       *equity*, *returns*. And no "there is nothing to host" while Cloud is
       not an offer yet. *Checked 2026-11-06:* `COMMERCIAL_SLIDES` and
@@ -412,13 +418,15 @@ Assist page). `ios_feature_add` sits on the current `main` and merges
 without conflicts.
 
 The rebase, once it has merged:
-- [ ] carry `e145fcab`'s Board Assist changes (usage counting, the review
+- [x] carry `e145fcab`'s Board Assist changes (usage counting, the review
       summary) from `BoardAssistPanel.tsx` into `useBoardAssist.ts`; the
       other conflicts are `BoardAssistPreview.tsx`, `ServiceFrame.tsx` and
       `plans/README.md`;
 - [ ] have the OpenCode turn report usage like the other providers: one
-      request, no tokens, since its stateless API returns none;
-- [ ] typecheck and the frontend suite.
+      request, no tokens, since its stateless API returns none. *Today it
+      reports none at all (`usage: undefined` in `useBoardAssist.ts`), so an
+      OpenCode turn is missing from the conversation's request count;*
+- [x] typecheck and the frontend suite. *Pass, 2026-11-08.*
 
 ---
 
@@ -430,7 +438,8 @@ The rebase, once it has merged:
    - gallery component, with the browser and app picks registered
    - browser variants of Meeting Poll and Health Log (done; the Health Log export is not)
    - slide 07 with the existing videos
-   - commercial slides rewritten in the deck; pricing page behind its flag
+   - commercial slides rewritten in the deck; pricing page public (the
+     draft flag removed 2026-11-08)
 2. **The shoots.**
    - Court Booking with two members, Live Radio with a phone, Meeting Poll,
      Health Log, AI Collaboration; RSS Radio last, once its editor unit works

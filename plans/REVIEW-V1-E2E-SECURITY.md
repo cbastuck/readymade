@@ -6,26 +6,26 @@ Revised 2026-10-09 after a second pass that checked each security finding agains
 
 ## Progress
 
-The security findings are worked through one at a time, in the order of the table below. This table is the only record of where that work stands: a session picks up the first row that is not `done`, and needs nothing but this document to do so.
+The security findings are worked through one at a time, in the order of the table below. This table is the record of where that work stands: a session picks up the first row that is not `done`. A finding that is not done is kept outside this repository, as `plans/README.md` says of security weaknesses not yet fixed, and comes back here as its write-up once it is.
 
 | # | Finding | State | Since | Outcome, or what is pending |
 | --- | --- | --- | --- | --- |
-| 1 | Local runtimes trust every loopback caller | in progress | 2026-10-09 | Built in all three runtime servers, the desktop host and the playground, with tests and docs. Remaining: the pass by hand listed under the finding |
+| 1 | Local runtimes trust every loopback caller | done | 2026-11-08 | A request without a credential is let in only from no foreign page and for a host the server knows, in all three runtime servers and the desktop host; the playground says why a server refuses; `docs/content/concepts/runtime.md` |
 | 2 | Prototype pollution in facade projection | done | 2026-10-18 | Machinery path segments are refused at deploy and ignored in projection, projection reads own properties only, and identity reads own claims only; `docs/content/concepts/cloud-boards.md` |
-| 3 | Native page trust and navigation policy | in progress | 2026-10-18 | Built in the desktop host with tests and docs. Remaining: the pass by hand listed under the finding |
-| 4 | Hosted boards can reach private networks | in progress | 2026-10-18 | Built in hkp-node, hkp-python and hkp-rt, each with tests and a source scan; docs, READMEs and skills updated. Remaining: the pass by hand on a hosted server |
+| 3 | Native page trust and navigation policy | done | 2026-11-08 | The desktop webview loads only the app's own pages, grants the microphone, camera and location only, and files only from what was picked; `docs/content/targets.md` |
+| 4 | Hosted boards can reach private networks | done | 2026-11-08 | With `HKP_EGRESS=public`, a board reaches public addresses only, checked where the socket opens, in all three runtimes, with source scans; `docs/content/concepts/runtime.md` |
 | 5 | Unbounded coordinator WebSocket payloads | done | 2026-10-19 | A 64 MiB frame limit that is never off, and a WebSocket ceiling above it on every coordinator connection in all three runtimes; `docs/content/concepts/cloud-boards.md` |
-| 6 | The board document as untrusted input | in progress | 2026-10-18 | hkp-rt opens a path a board names only inside the folders it was given (`files.h`), in every service that opens one; desktop settings, docs and tests done. Remaining: consent before an opened board builds anything, ffmpeg built where avcpp is, and the pass by hand. A board's unit references reaching any file through the desktop `readFile` are closed by finding 3 (P3) |
+| 6 | The board document as untrusted input | in progress | 2026-10-18 | Kept outside this repository until done |
 | 7 | Same-host reverse proxy and address-based trust | done | 2026-10-19 | A request carrying `Forwarded`, `X-Forwarded-For` or `X-Real-IP` is never let in for where it comes from, in all three runtimes; `docs/content/concepts/runtime.md` |
 | 8 | JWT checks differ across runtimes | done | 2026-10-19 | RS256, issuer, audience, and a required expiry and subject in every runtime, as the website already checked; `docs/content/concepts/runtime.md` |
-| 9 | Secret and session exposure at rest | in progress | 2026-10-19 | Canary-secret sweeps in all three runtimes, a deployed board and the browser services. Remaining: platform secure stores, decided to follow v1. Two token leaks closed outside the review (see the finding) |
-| 10 | Facade capabilities and remaining shared-host items | in progress | 2026-10-19 | WebSocket tickets instead of `?access_token=`, `expression-eval` vendored, member reach pinned by tests; `/serviceRedirect` and member removal confirmed. Remaining: the mount and asset URL inventory, and the investigation areas |
+| 9 | Secret and session exposure at rest | in progress | 2026-10-19 | Kept outside this repository until done |
+| 10 | Facade capabilities and remaining shared-host items | in progress | 2026-10-19 | Kept outside this repository until done |
 
 States, in order: `open` — nothing beyond the finding; `proposed` — a fix is written under the finding and waits for a decision; `decided` — the decisions are recorded there and nothing is built; `in progress` — partly built, with what remains listed under the finding; `done`.
 
 How a finding is kept while it moves:
 
-- While it is `proposed`, `decided` or `in progress`, the finding carries one working subsection ("Proposed fix", then "Decided", then "Remaining") that is rewritten in place — never appended to.
+- While it is `proposed`, `decided` or `in progress`, the finding — in the copy kept outside this repository — carries one working subsection ("Proposed fix", then "Decided", then "Remaining") that is rewritten in place — never appended to.
 - When it is `done`, the whole finding section is cut down to three things: what was changed, the tests that pin it, and what was deliberately left. The reasoning moves to the docs page the row names, and the row says in one line what the outcome was.
 - A decision that moves work to another finding is recorded in both rows.
 
@@ -56,66 +56,24 @@ Ordered by severity after the second pass. Each finding says what was confirmed 
 | 9 | Secret and session exposure at rest | Low–Medium | #6, "before v1" |
 | 10 | Facade capabilities and remaining shared-host items | Investigate | rest of #7, plus new smaller items |
 
-### 1. Highest: local runtimes trust every loopback caller
+### 1. Done 2026-11-08: local runtimes trusted every loopback caller
 
-Evidence, desktop: `hkp-rt/lib/src/http/server.cpp`, `AuthMiddleware::before_handle` and `wsOnAccept`, let a request through whenever the server runs without auth or the caller's address is loopback — the second even in JWT mode, on the stated grounds that "a loopback-source request is necessarily this machine's own UI". `meander/backend/main.cpp` runs the embedded runtime without auth on its default loopback bind and passes `*` as allowed origins. A web page in the user's own browser is also a loopback caller, so the premise does not hold.
+A web page in the person's own browser is a loopback caller too, so being local was never proof of being the app. The rule is now in `docs/content/concepts/runtime.md` ("Who may call a server from a browser").
 
-What that caller reaches: hkp-rt's `filesystem` service reads and writes whatever path it is configured with, with no confinement (`hkp-rt/lib/src/services/filesystem.h`), and `core-input` captures the microphone. Any site visited while Readymade is running could therefore build a runtime on `127.0.0.1:8887`, read or write the user's files and, where the app holds the permission, record audio and send it out.
+**Changed.**
 
-Evidence, Node: `resolveServerAuthConfig` in `hkp-node/src/index.ts` permits no-auth on a loopback bind; `parseAllowedOrigins` defaults to `*`, HTTP CORS then reflects any origin, and `isOriginAllowed` admits any WebSocket origin. The reach is narrower than on the desktop — hkp-node's `filesystem` is confined to tenant volumes, and `hkp-node/src` contains no `eval`, `new Function` or `child_process` — but `http-client`, `smtp-email` and `sql` are all callable.
+- A request let in without a credential — a server in no-auth mode, or hkp-rt's loopback pass in JWT mode — is let in only when it does not come from a foreign page (its `Origin` is absent or on the server's list, and without an `Origin` its `Sec-Fetch-Site` is not `cross-site`) and it names the server by a host the server knows. HTTP control routes and WebSocket upgrades alike; mounts and in-process requests from a native host's own webview are exempt. A refusal is a bare `403` with no CORS headers.
+- The origin list defaults to the apps' own origins and any loopback origin; `ALLOWED_ORIGINS` replaces it, and `*` no longer admits anyone without a credential.
+- hkp-rt: `lib/include/origins.h`, applied in `http/server.cpp` (`AuthMiddleware`, `wsOnAccept`, `CorsMiddleware`); `Server::allowOrigins` adds origins while running.
+- hkp-node: `src/origins.ts`, applied in `server.ts` ahead of everything that reads a request, and in the upgrade handler.
+- hkp-python: `src/hkp/origins.py`, applied in `server.py`; CORS is decided per request.
+- Desktop host: no `*`; `allowedOrigins` in `~/.hkp/settings.json`, edited under Settings → Access → Allowed websites and applied without a restart (`backend/allowedOrigins.h`, `settings.h`, `schemeHandler.cpp`).
+- Playground: `core/runtimeReach.ts` and `ui-components/RuntimeUnreachableDialog.tsx` say why a runtime server cannot be reached — not running, or not allowing this page — and check again.
+- iOS names the origin of `DEV_WEBAPP_URL` in a development build (`HKPRuntimeHost.mm`).
 
-Status: read from code. No hostile-origin request was sent to a running runtime. Browser local-network protections (Chrome's permission prompt, mixed-content rules) reduce this for some users; they vary by browser and are not a control this project owns. Existing tests prove rejection when an explicit allowlist is supplied, not safe default behavior.
+**Tests.** `hkp-rt/tests/origins.test.cpp` and `server_origins.test.cpp` (including the in-process path the desktop host uses), `hkp-node/tests/origins.test.ts` and `server-origins.test.ts`, `hkp-python/tests/test_origins.py`, `meander/backend/tests/allowedOrigins.test.cpp`, and tests beside the playground's reach code and dialog. Each covers a foreign `Origin` on a simple POST, on preflighted JSON and on the upgrade, no `Origin` with `Sec-Fetch-Site: cross-site`, and a foreign `Host`, beside the callers that must keep working. Passed by hand 2026-11-08: a foreign page against the desktop app and a local hkp-node, the public playground against a local runtime, the packaged app, a phone on the LAN, and iOS.
 
-Proposal: make the default allowed origins the app's own rather than `*`. On control routes, refuse a request that carries a foreign `Origin` even when its source address is loopback, and validate `Host` to address DNS rebinding. Consider a per-launch capability token handed to the webview the way `__MEANDER_CONFIG__` is, so that being local is no longer sufficient. Independently, decide whether hkp-rt's `filesystem` should be confined to roots the user picked. Origin checks must protect control routes without breaking intentional public mounts or machine clients, which send no `Origin`.
-
-Required tests: a hostile browser origin against actual loopback servers for both runtimes — simple requests, preflighted JSON, WebSocket upgrade and a rebinding `Host` — creating a runtime, configuring `filesystem` and reading a file must all fail.
-
-#### Decided 2026-10-09, in progress
-
-Checked while deciding: hkp-rt parses a request body whatever its `Content-Type` (`json::parse(req.body)` throughout `server.cpp`), so a `text/plain` POST from any page creates a runtime without a preflight. Narrowing the CORS header alone would hide responses and stop nothing; the refusal happens on the server. hkp-python has the same defaults as hkp-node and is in scope.
-
-**The rule.** A request let in without a credential — a server in no-auth mode, or hkp-rt's loopback pass in JWT mode — is let in only when both hold:
-
-- it does not come from a foreign page: its `Origin` is absent or on the server's origin list, and when `Origin` is absent its `Sec-Fetch-Site` is not `cross-site` (a browser omits `Origin` on a plain cross-site GET, but says so there);
-- it addresses the server by a name the server knows: the `Host` is an IP literal, `localhost`, or the configured external host. A rebinding attack needs a name the attacker resolves, so this is what stops it.
-
-It covers HTTP control routes and WebSocket upgrades alike. Mounts stay exempt — they are matched before it. A request carrying a verified token keeps its current treatment. A request a native host forwards in-process from its own webview (`Server::handleRequest`, the `hkp://` scheme) never crossed the network and is not subject to it.
-
-**The origin list.** Unset, it is the origins Readymade's own apps run from — `saucer://embedded` (desktop), `hkp://app` (iOS), `https://appassets.androidplatform.net` (Android) — and any loopback origin, whatever its port (D2). The public website is not on it (D1). `ALLOWED_ORIGINS` replaces it with exactly what it names. `*` remains something an operator may write, and then applies to CORS headers and token-bearing requests only; for the rule above it reads as unset. The CORS header echoes the matched origin with `Vary: Origin`.
-
-**The refusal.** `403` with no CORS headers and nothing in it that says why. To the page that was refused this is the same opaque network error a server that is not running produces — no status, nothing to read — and that is intended: a page is told nothing about what refused it. (That a port is open stays observable to a page that probes for it, as for any local server; not something this changes.)
-
-A preflight is not where a page is refused. hkp-rt cannot answer one per origin — Crow answers `OPTIONS` before it has read the headers naming the page — so it answers every preflight alike, and the request that follows states its origin and is refused on it. The other runtimes may answer preflights per origin, but nothing may rest on that: the rule is applied to the request.
-
-**Allowing a remote origin (D1)** is a change at the local end only:
-
-- `ALLOWED_ORIGINS` for hkp-node, hkp-python and a standalone hkp-rt; for the desktop app an `allowedOrigins` list in `~/.hkp/settings.json`, editable in its settings dialog and applied without a restart.
-- The page says what to do. When a board cannot reach a runtime server, the playground shows a dialog worded for both causes — the server is not running, or it does not allow this page's origin — naming the server and the origin, what to change locally for each kind of server, and a **Check again** button that repeats the connection and proceeds when it succeeds. It lives in hkp-frontend and is not specific to loopback.
-
-**Left as it is.**
-
-- D3 — no per-launch token for the desktop's port. `Origin` is enforced by browsers, so what remains after this fix is other processes and other accounts on the same machine.
-- D4 — confining hkp-rt's `filesystem` is not part of this finding. Moved to finding 6, where it is required, not optional.
-
-**Built 2026-10-09**, each with the hostile cases (foreign `Origin` on a simple POST, on preflighted JSON and on the upgrade; no `Origin` with `Sec-Fetch-Site: cross-site`; a foreign `Host`) and the callers that must keep working (no `Origin` at all, each app origin, a loopback origin, a mount):
-
-- hkp-rt — the rule in `lib/include/origins.h`; `http/server.cpp` applies it in `AuthMiddleware` and `wsOnAccept` and states who may read an answer in one place (`CorsMiddleware`); `Server::allowOrigins` adds origins while running. Tests: `tests/origins.test.cpp`, `tests/server_origins.test.cpp`.
-  Found by running the app, and fixed with it: a request the desktop host hands over in-process carries no middleware context, and `callerOfRequest` read a caller out of it — a crash on the first service configured from the app's own page. The read dates from the board-members work, not from this finding; `server_origins.test.cpp` now drives that path too.
-- hkp-node — `src/origins.ts`; `server.ts` applies it ahead of everything that reads a request, and in the upgrade handler. Tests: `tests/origins.test.ts`, `tests/server-origins.test.ts`.
-- hkp-python — `src/hkp/origins.py`; `server.py` applies it in the auth middleware and decides CORS per request (`aiohttp-cors`, which takes a fixed list, is gone). Tests: `tests/test_origins.py`.
-- Desktop host — passes nothing instead of `*`, names the frontend server's LAN address, and keeps `allowedOrigins` in `~/.hkp/settings.json` (`backend/allowedOrigins.h`, `settings.h`, `schemeHandler.cpp`), handed to the running runtime as it is saved; Settings → Access → Allowed websites edits it. Tests: `backend/tests/allowedOrigins.test.cpp`.
-- Playground dialog — `hkp-frontend/src/core/runtimeReach.ts` holds a runtime create request that got no answer and makes it again once told to; `ui-components/RuntimeUnreachableDialog.tsx` says both causes and checks again. One dialog per server, however many runtimes wait on it. Tests beside each.
-- iOS — a development build names the origin of `DEV_WEBAPP_URL` (`HKPRuntimeHost.mm`). **Not compiled in the app**: `build-ios.sh` stops earlier, at its frontend type-check, on errors in files this did not touch (`Uint8Array` used as a generic), and the simulator build directory is stale. The lines were compiled and run on their own. Android already named its own origin.
-- Docs — `docs/content/concepts/runtime.md` ("Who may call a server from a browser"), `docs/content/targets.md`, and the `ALLOWED_ORIGINS` rows of the three READMEs.
-
-**Remaining.**
-
-1. A pass by hand, which nothing above replaces — the tests send a browser's headers, they are not a browser on another site, and nothing was run in the packaged app:
-   - from a page on another origin, against a running desktop app and a local hkp-node: nothing can be created or read, and the socket does not open;
-   - the playground on the public website against a local runtime: the dialog appears, and Check again lets the board through once the site is allowed — in the app's settings without a restart, for a command-line server after one;
-   - the packaged desktop app, and a phone on the LAN with external access on, still drive the runtime;
-   - an iOS build at all, once `build-ios.sh` gets past its frontend step, and then a development build on a device.
-2. Move what is settled here into the docs' own words where it is not yet, then cut this section down as the Progress rules say.
+**Left.** No per-launch token for the desktop's port (D3): browsers enforce `Origin`, so what remains is other processes and other accounts on the same machine. That an open port can be probed stays as for any local server.
 
 ### 2. Done 2026-10-18: prototype pollution in facade projection, reaching identity
 
@@ -141,142 +99,37 @@ A facade source path through `__proto__` wrote into `Object.prototype` when it w
 - A key `__proto__` with no dot, assigned directly (as in `map`), sets that one object's prototype, not the global one.
 - The frontend's facade code was not reviewed for the same pattern. It runs in one person's browser, not in a shared process.
 
-### 3. High impact, conditional: native page trust is not enforced by navigation policy
+### 3. Done 2026-11-08: native page trust was not enforced by navigation policy
 
-Evidence: `meander/backend/main.cpp` accepts every permission request, allows every same-window navigation, injects the complete vault as `window.__HKP_VAULT__` at document creation, and exposes `readFile` and `writeFile` on caller-supplied paths plus secret and grant modification methods. Only new-window navigation is diverted to the system browser. `schemeHandler.cpp` also uses broad CORS headers. All confirmed by reading in the second pass.
+The desktop webview allowed every same-window navigation and every permission, and handed any page in it the vault and file access on caller-supplied paths. What the host now allows is in `docs/content/targets.md` ("Only the app's own pages, on the desktop").
 
-The permission-handler comment assumes only trusted local pages load, but the navigation handler does not enforce that assumption. External navigation could place an untrusted document inside a privileged webview, and a `writeFile` to an arbitrary path is code execution as the user. Actual exposure of each bridge function and injection on each native engine still needs a real-host exploit test.
+**Changed.**
 
-Why conditional: it needs a way to get foreign content into the webview first. A keyword search of `hkp-frontend/src` for raw-HTML and script-evaluation sinks found only `components/SandboxFrame.tsx`; that is a search, not an audit of every link and embed. The impact is total and the fix is cheap, so it stays in the first tier, behind the two findings that need no such step.
+- `meander/backend/pageTrust.h`: `decideNavigation`, `mayGrantPermission` and `FileGrants` (paths compared after `weakly_canonical`).
+- `main.cpp`: only the app's own pages load, at any depth; a link the person clicked or a new window opens in their browser, anything else is refused and logged. Permissions are granted for the microphone, the camera and location. `readFile` and `writeFile` reach what a picker returned, and what lies beside or below it. The vault and grants are injected only into the app's own pages.
+- `schemeHandler.cpp` names the asking origin in `Access-Control-Allow-Origin` only for an own page; `hkp://local-image/` checks the grants.
+- A board's unit references can no longer read any file through `readFile` (from finding 6).
 
-Proposal: allowlist exact app origins and routes; open external URLs in the system browser; enforce bridge caller/frame origin; deny privileges in remote documents and frames. Replace blanket permissions with origin- and capability-specific decisions. Gate file access through approved file handles/paths rather than unrestricted caller-supplied paths. Keep secrets behind native operations where practical, instead of injecting the entire vault.
+**Tests.** `meander/backend/tests/pageTrust.test.cpp`: origins and lookalikes, every kind of navigation, permissions by origin and type, and file grants beside, below, `..`, a sibling, a symlink out, and writes without a save pick. Passed by hand 2026-11-08 in the packaged app.
 
-Required tests: external same-window links, redirects, iframes, custom schemes and deep links cannot read vault data, call file operations, change grants, or acquire camera/microphone permission. Run these on actual native hosts.
+**Left.** `saveJSON` writes to its own save pick, as before.
 
-#### Decided 2026-10-18, in progress
+### 4. Done 2026-11-08: hosted boards could reach private networks
 
-Checked while deciding:
+On a shared host any board could address loopback services, the host's private network and a cloud provider's metadata endpoint. The rule is in `docs/content/concepts/runtime.md` ("Where a hosted server may connect").
 
-- **The bridge does not know who calls it.** saucer registers one WebKit message handler, and WebKit offers it to every frame. `didReceiveScriptMessage` (`saucer-src/src/wk.webview.impl.mm`) does not read `frameInfo`. So any document in the webview, at any depth, can call every exposed function. Without patching saucer, what loads is the boundary. The navigate handler sees iframe loads on WebKit. WebView2 hooks main-frame navigations only, but there a frame cannot post to the host unless the host subscribes to it, and saucer does not.
-- **What already held.** The injected globals go to the main frame only (`script::no_frames`). A login comes back as a `postMessage` from the redirect relay, not as a navigation. The frontend's only iframe loads `/sandbox` on the app's own origin.
-- **A board could read any file (finding 6).** Unit references resolve with `new URL(ref, base)`, so `../../..` or `file:///…` in a board read that file through `readFile`. So did `hkp://local-image/`, whose comment counted on `readFile` being open anyway.
+**Changed.**
 
-**Decided.**
+- With `HKP_EGRESS=public`, a destination a board chose is reached only when every address its name resolves to is public. Checked on the resolved address where the socket opens, so every redirect hop and a name rebinding between lookup and connect are covered; addresses carried inside IPv6 forms are judged by their IPv4 address. `HKP_EGRESS_ALLOW` lists addresses or ranges reached anyway. Unset, nothing changes.
+- Exempt: what the operator configured, not a board — the coordinator link and the token issuer's keys.
+- hkp-node: `src/egress.ts`, an `undici` dispatcher installed as the process's, so every `fetch` is covered; IMAP and SMTP connect to the checked address.
+- hkp-python: `src/hkp/egress.py`, `client_session()` for aiohttp and `urlopen()` for urllib.
+- hkp-rt: `lib/include/egress.h` (`egress::resolve`, `egress::asyncResolve`) at each of the eight sites a board can point somewhere; `standalone_config.h` reads the variables.
+- Refusals say so ("This server does not reach private addresses (…)") instead of "fetch failed".
 
-- **P1:** only the app's own pages load, at any depth.
-- **P2:** permissions are granted for the microphone, the camera and location.
-- **P3:** files: what was picked, plus what lies beside or below a picked file. A sibling folder is where it stops.
-- **P4:** a dev build trusts the Vite server and the frontend server's LAN address.
+**Tests.** `hkp-node/tests/egress.test.ts`, the hosted cases in `imap-email.test.ts` and `smtp-email.test.ts`; `hkp-python/tests/test_egress.py`; `hkp-rt/tests/egress.test.cpp`. Each runtime also has a source scan (`egress-sources.test.ts`, `test_egress_sources.py`, `egress_sources.test.cpp`) that fails on a raw network API used outside the guard, with its exemptions listed. Passed by hand 2026-11-08 on a hosted server.
 
-**Built 2026-10-18.**
-
-- `meander/backend/pageTrust.h`: `decideNavigation`, `mayGrantPermission` and `FileGrants`, which compares paths after `weakly_canonical`.
-- `main.cpp` applies them:
-  - the navigate handler loads own pages only. A web address the person clicked, or a new window, opens in their browser; anything else is refused and logged.
-  - the permission handler applies `mayGrantPermission`;
-  - the pickers grant what they return, through `fileUriToPath`, since the macOS picker answers with a `file://` URL;
-  - `readFile` and `writeFile` check the grants;
-  - the vault and grants injections run only when `location.protocol + '//' + location.host` is an own page.
-- `schemeHandler.cpp`: `handleRequest` names the asking origin in `Access-Control-Allow-Origin` when it is an own page, and drops the header for any other origin. A request that names no origin is answered as before, because an engine need not hand a scheme handler one. `hkp://local-image/` checks the grants.
-- Tests: `backend/tests/pageTrust.test.cpp`. It covers origins and lookalikes, every kind of navigation, permissions by origin and type, and file grants beside, below, `..`, sibling, symlinked out, and writes without a save pick. It passes with `meander/run-tests.sh` (66 of 66).
-- The Debug app (embedded frontend) builds, and launched with nothing refused in its log. Only its log was read: another instance held both ports, and nothing was clicked.
-- Docs: `docs/content/targets.md`, "Only the app's own pages, on the desktop".
-
-**Left as it is.**
-
-- Secret values are still injected rather than kept behind native calls. Moving them changes how every service resolves `{{secret.…}}`.
-- `saveJSON` writes to its own save pick, as before.
-- The iOS and Android hosts were not reviewed under this finding. Their webviews load `hkp://app` and `appassets.androidplatform.net`, and their navigation and bridge policies are unchecked.
-
-**Remaining.**
-
-1. A pass by hand in the packaged app, on macOS and on Windows and Linux where built:
-   - the app's own page loads, boards run, and secrets resolve. This also confirms each engine states `saucer://embedded` as the scheme answer's origin, or names none;
-   - a same-window link to another site opens in the browser. A page-driven `location` change, a redirect and an `<iframe>` to another site load nothing, and the log names each;
-   - the camera, the microphone and location work for a board; a clipboard or notification request is refused;
-   - opening a board and its units from disk, picking an image for the start page and saving through the save dialog still work. A board whose unit names `../elsewhere/x.hkpp` reports that unit missing;
-   - a dev build (`MEANDER_USE_EMBEDDED_FRONTEND=OFF`) against Vite. This also compiles the dev branch of `ownPages`, which the Debug build did not.
-2. Then cut this section down as the Progress rules say.
-
-### 4. Medium–High: hosted boards can reach private networks
-
-Evidence: HTTP clients and asset downloads intentionally access user-selected URLs. A keyword search of `hkp-node/src/services/http-client.ts`, `rss.ts`, `websocket-reader.ts`, `hkp-node/src/assets.ts` and `credentialedFetch.ts` found no check on where a request goes — no private-range, loopback or link-local refusal. The audience-aware handling in `credentialedFetch.ts` protects which host a credential is sent to, not which hosts may be reached. On a shared host any owner's board can therefore address loopback services, the host's private network and a cloud provider's metadata endpoint. The severity depends on where the server runs: high on a cloud instance with a role attached, lower elsewhere.
-
-Proposal: decide explicitly whether hosted boards may access private networks, loopback and cloud metadata. If not, enforce policy at every redirect and resolved destination and preferably at the network layer. Local boards may legitimately need LAN access, so apply deployment-specific policy.
-
-Required tests: literal private addresses, names resolving to them, redirects into them and rebinding between resolution and connection are refused on a hosted configuration and allowed on a local one.
-
-#### Decided 2026-10-18, in progress
-
-**Why in the code and not only in a firewall.** A firewall rule on the hosted process's user would cover every service and library, and is the backstop on hosts the operator controls. But this code runs on servers its authors do not control, some on platforms with no firewall to write a rule in. And a firewall sees one process: it cannot tell a board's HTTP Client from the server's own connections (the coordinator link, the token issuer's keys, one runtime calling another's mount on the same host, as the RSS radio's voice does).
-
-**The rule (E1).** With `HKP_EGRESS=public`, a destination a board chose is reached only when every address its name resolves to is a public internet address. Unset, nothing changes: desktop, embedded and self-hosted servers keep their LAN.
-
-- **Refused ranges:** `0.0.0.0/8`, `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`, `169.254.0.0/16`, `192.0.0.0/24`, `198.18.0.0/15`, `224.0.0.0/4`, `240.0.0.0/4`, `::`, `::1`, `fe80::/10`, `fc00::/7` and `ff00::/8`.
-- **Addresses inside addresses:** `::ffff:0:0/96`, `64:ff9b::/96` and `2002::/16` carry an IPv4 address, and are judged by it.
-- **Where it is checked:** on the resolved address, where the socket opens, so every redirect hop and a name rebinding between lookup and connect are covered too. A refusal says which address and why.
-
-**The exceptions (E2).** `HKP_EGRESS_ALLOW` lists addresses or ranges that are reached anyway: an internal model server, for example. They are addresses, not names, so an allowed name cannot be repointed. There is no port: the check runs where a name is resolved, which knows no port.
-
-**What is exempt (E3).** Connections the operator configured, not a board: the coordinator link, and fetching the token issuer's keys.
-
-**Kept from being forgotten (E4).**
-- A new service is covered without doing anything: in hkp-node every `fetch` goes through a dispatcher that checks, and in hkp-rt and hkp-python services resolve through the guard.
-- Each runtime's tests scan its sources and fail on a raw network API used outside the guard, naming what to use instead. The exemptions are listed in that test, with their reasons.
-- The scaffolding skills and `CLAUDE.md` say so.
-
-**Order.**
-1. hkp-node: `egress.ts`; the `undici` dispatcher, `undici@6` to match Node 22's built-in `fetch`; IMAP and SMTP connect to the checked address, with the name kept for TLS.
-2. hkp-python: `egress.py` and a guarded `aiohttp` resolver.
-3. hkp-rt: `egress.h`, replacing the plain `resolve` at each site a board can point somewhere.
-4. Docs: a "Hosted servers" section in `docs/content/concepts/runtime.md` covering what to set and the firewall backstop.
-
-**Built 2026-10-18: hkp-node.**
-
-- `src/egress.ts` holds the ranges, `readEgressPolicy`, `isPublicAddress` and `mayReach`, and `setEgressPolicy`.
-  - **Hosted:** `setEgressPolicy` installs an `undici` (6.x) dispatcher as the process's. Its connector refuses an address literal itself, since a socket opened to one is never looked up, and resolves names through `egressLookup`, which refuses a name when any of its addresses is private. `index.ts` applies `HKP_EGRESS` before the server starts.
-  - **Open:** undici is not even loaded, so nothing changes.
-- **IMAP and SMTP** connect to `reachableAddress(host)`, the checked address, with the name passed as `servername` for TLS.
-- **Error reports:** `http-client`, `rss`, `text-generation`, IMAP and SMTP say "This server does not reach private addresses (…)". Before, it was "fetch failed", or, for text generation, advice to start a model server.
-- **Tests:**
-  - `tests/egress.test.ts`: the ranges and their edges; IPv6 forms carrying an IPv4 address; literal, named and re-spelled private addresses refused through `fetch`; the allowlist; a redirect refused at its second hop, through `fetch` and through `fetchWithCredentials`; an open server unchanged.
-  - Hosted cases in `tests/imap-email.test.ts` and `tests/smtp-email.test.ts`.
-  - `tests/egress-sources.test.ts`, the source scan, with the coordinator link as its one exemption. Checked by adding a service calling `https.get`, which it reported.
-- **Docs:** `HKP_EGRESS` and `HKP_EGRESS_ALLOW` rows in `hkp-node/README.md`; the rule in `/new-node-service`.
-
-**Built 2026-10-18: hkp-python.**
-
-- `src/hkp/egress.py` holds the same ranges and policy, applied by `__main__.py`. It offers two ways to make a request:
-  - **`client_session()`** for aiohttp. Hosted, its connector checks every address `TCPConnector._resolve_host` returns. aiohttp sends both names and literals through that method, for every connection and redirect hop, and itself refuses legacy IPv4 spellings. The method is private, so `tests/test_egress.py` pins it: renaming the override fails three tests.
-  - **`urlopen()`** for urllib. Hosted, each connection resolves through the check and opens to the address that was checked, via `http.client`'s `_create_connection` hook. TLS is still verified against the name.
-- **Where they are used:** `http_client` uses `client_session()`; `assets` and `text_generation` use `urlopen()`. A refusal is reported as one, including where `text_generation` would otherwise say to start a model server.
-- **Tests:**
-  - `tests/test_egress.py`: the same address table as hkp-node; the policy; refusal, the allowlist and a redirect refused at its second hop, through aiohttp and through urllib; an open server unchanged; the HTTP Client's error message.
-  - `tests/test_egress_sources.py`, the source scan. Its exemptions are the coordinator link and the text-to-speech model download, which comes from a fixed release address. Checked by adding a service opening its own `ClientSession`, which it reported.
-- **Docs:** README rows.
-
-**Built 2026-10-18: hkp-rt.**
-
-- `lib/include/egress.h` holds the same ranges and policy, plus `egress::resolve` and `egress::asyncResolve`. They refuse when any endpoint the resolver answers may not be reached, and the caller connects to exactly those endpoints. An address literal resolves to itself and is judged the same way.
-  - **The eight sites using them:** `http_client.cpp` (twice), `assets.cpp`, `text_generation.cpp`, `speech_http.h` (text-to-speech and speech-to-text servers), `websocket_client_session.cpp`, `receiver_session.h` (websocket-reader) and `websocket_writer.cpp`.
-  - **How a refusal reaches the person:** `egress::Refused` carries the message, and text generation reports it instead of its "start a server" hint. The async path answers with an `hkp.egress` error code, which the WebSocket writer shows as its status.
-- **Configuration:** `standalone_config.h` reads `HKP_EGRESS` and `HKP_EGRESS_ALLOW`, refusing to start on a setting it does not understand. `exe/main.cpp` applies the policy. The desktop app's embedded runtime never sets it, so it stays open.
-- **Tests:**
-  - `tests/egress.test.cpp`: the address table, the policy and its environment variables, sync and async refusal, the allowlist, and an open server unchanged.
-  - `tests/egress_sources.test.cpp`, the source scan, matching resolver calls and `getaddrinfo`. Its exemptions are the coordinator link and the token issuer's keys. Checked by adding a file with its own `resolver.resolve`, which it reported.
-  - All 368 hkp-rt tests pass, and the desktop app still builds.
-- **Docs:**
-  - "Where a hosted server may connect" in `docs/content/concepts/runtime.md`: the rule, the allowlist, what is exempt, and the firewall backstop, with what a firewall rule has to leave open.
-  - Rows in `hkp-rt/README-docker.md`.
-  - The rule in `/new-cpp-service`, and a line in `CLAUDE.md`'s service section.
-
-**Remaining.**
-
-1. A pass by hand on a hosted server, for each runtime that serves others:
-   - an HTTP Client pointed at `http://169.254.169.254/` and at the server's own private address is refused, with the message;
-   - a public URL still works;
-   - a board using an allowed internal address still works.
-2. Then cut this section down as the Progress rules say.
+**Left.** A firewall rule on the hosted process is the backstop on hosts the operator controls; the docs say what it has to leave open.
 
 ### 5. Done 2026-10-19: unbounded coordinator WebSocket payloads
 
@@ -295,62 +148,9 @@ Required tests: literal private addresses, names resolving to them, redirects in
 
 **Left.** Runtime, service and timer quotas stay opt-in (decided 2026-10-19); `hkp-node/README.md` lists them. A chunking contract for large binary values, and bounds on nested services, were not taken up.
 
-### 6. Medium, unverified: the board document as untrusted input
+### 6. In progress: the board document as untrusted input
 
-Boards are shared as files and links, and opening one builds its runtimes. Neither pass established what a board somebody else wrote can do before the person opening it has agreed to anything. A board naming the local runtime with a `filesystem` or `core-input` service is finding 1 without a browser in between. Secrets have a consent prompt and remembered grants; whether building runtimes on a local or named server has an equivalent was not checked.
-
-Proposal: state the trust model for an opened board, then test it. Inventory what a board can cause on open, per host: runtimes created, services configured, requests sent, files touched, devices opened. Anything reaching the local machine or a credentialed server should be behind the same kind of consent secrets are.
-
-Moved here from finding 1 (2026-10-09), and required rather than optional: hkp-rt's `filesystem` reads and writes whatever path it is configured with (`hkp-rt/lib/src/services/filesystem.h`). Confine it to roots the person chose, as hkp-node's is confined to tenant volumes.
-
-Required tests: a hostile board opened in the playground, the desktop app and on mobile creates nothing on a local or remote runtime and sends nothing until consent is given.
-
-**Evidence, files (2026-10-18).** Not only `filesystem`, and not only on the desktop:
-
-- Services that opened a path a board names, as given: `filesystem`, `monitor` (`fileLogPath`, appends), `cache` and `cache-subservices` (`persistRoot`, and a file name rendered from the input), `wav-reader` (`filePath`), `mp4-to-wav` (input path from the data, `outputDir`), `ffmpeg` (input from the data — any file, and any protocol ffmpeg knows, past the egress rule — and `outputFolder`).
-- The path came from the data as well as the board: `filesystem` read `m_path / path.substr(1)`, so `/../../x` walked out and `//etc/passwd` replaced the folder outright; the input may also switch the operation to `write`. With a mount upstream, an outside caller chose both.
-- On the desktop a board could write `~/.hkp/settings.json`, whose `allowedOrigins` is applied without a restart — undoing finding 1 — and read `vault.json` (finding 9).
-- On the hosted image, `filesystem` is in the registry: anyone `ALLOWED_EMAILS` admits could read `cpp/mount-secret` (every mount address), read or overwrite `cpp/coordinator-links.json`, and read `/proc/self/environ`.
-- `http_server/request_handler.h` held an uncalled `handle_request` that served any absolute path a request named.
-
-**Decided (2026-10-18, while building — to confirm).**
-
-- **F1:** a path a board names is reached only inside a folder the runtime was given. The first is the default, and a relative path is taken from it, so boards stay portable.
-- **F2:** a host that gives no folder gives nothing; that is the iOS and Android apps today.
-- **F3:** the default is `~/.hkp/cpp/files` for the desktop and a standalone server alike. Standalone: `HKP_FILES_DIR` (empty for none) and `HKP_FILES_ALLOW`, after hkp-node's `HKP_FILES_DIR`.
-- **F4:** on the desktop the person adds folders with the folder picker under Settings → Access, applied at once. A folder holding `~/.hkp` or inside it is refused, the home folder among them.
-- **F5:** a name from the data is taken inside the configured folder, whatever it says. The operation may still come from the data, as on hkp-node; it can no longer leave the folder.
-- **F6:** model paths (`text-generation`, `speech-to-text`, `text-to-speech`) are not confined. The model library reads them; nothing is handed back to the board, and the in-process backends are not in the hosted image.
-
-**Built 2026-10-18: hkp-rt files.**
-
-- `hkp-rt/lib/include/files.h`: `setFolders`, `resolve`, `resolveIn` — comparing after `weakly_canonical`, so `..` and symlinks are followed — and `input`, `output`, `list` over the `files::Path` only those make.
-- Every service listed above resolves through it; `request_handler.h` is deleted. `standalone_config.h` and `exe/main.cpp` read and apply the folders, creating the default.
-- Desktop: `meander/backend/fileFolders.h` (also now home to `fileUriToPath`), `settings.h`, `main.cpp` (folders set before the runtime server starts), `schemeHandler.cpp` (`fileFolders` in the settings answer and on save), and the *Folders boards may use* section in `MeanderSettingsDialog.tsx`.
-- `boards/dropitapp-board.json` writes to `dropitapp` instead of `/tmp/dropitapp`.
-- Tests:
-  - `hkp-rt/tests/files.test.cpp`: no folders, relative, absolute, `..`, symlinks out, data names, folder lists;
-  - `service_files.test.cpp`: each service, with something beside the folder that must stay unread and unwritten;
-  - `files_sources.test.cpp`: fails on a file opened anywhere but the guard and eight exemptions, each with its reason;
-  - `standalone_config.test.cpp`: the two variables;
-  - `meander/backend/tests/fileFolders.test.cpp`.
-- Results: all 382 hkp-rt tests and 69 backend tests pass, and the Debug desktop app builds.
-- Docs: `docs/content/concepts/runtime.md` ("Where a board may read and write files"), the Filesystem, Monitor, Cache and WAV Reader pages, the DropApp board page, `hkp-rt/README-docker.md`, `CLAUDE.md` and `/new-cpp-service`.
-
-**Left as it is.**
-
-- hkp-rt has one tenant, so everyone a hosted server admits shares its folders.
-- `file://` assets keep their own root, `HKP_ASSET_ROOT`, which was already confined the same way.
-- A symlink planted between the check and the open is not caught. Nothing a board can drive creates one.
-
-**Remaining.**
-
-1. The rest of this finding: the trust model and consent before an opened board builds runtimes.
-2. `ffmpeg` is not built on the machine this was done on (no avcpp), so its edit and its `[files]` case are unbuilt. Build where `AVCPP_FOUND` is set and run `hkp-rt-service-tests "[files]"`.
-3. A pass by hand:
-   - Desktop: the settings section lists the default folder; adding and removing a folder works and applies without a restart; the home folder and `~/.hkp` are refused. DropApp saves into `~/.hkp/cpp/files/dropitapp`. A board whose `filesystem` names `~/.hkp/settings.json` is refused and logs `file-refused`.
-   - Docker image: reading `/home/hkp/.hkp/cpp/mount-secret` and `/proc/self/environ` through `filesystem` is refused.
-4. iOS and Android (submodules): give the runtime the app's documents folder if boards there should use files.
+Kept outside this repository until it is done, as `plans/README.md` says of security weaknesses not yet fixed; its write-up comes back here then.
 
 ### 7. Done 2026-10-19: a same-host reverse proxy defeats address-based trust
 
@@ -383,73 +183,13 @@ Each covers a missing or past expiry, a future `nbf`, a wrong or missing issuer,
 
 **Left.** ID tokens are still the API credential; Auth0 access tokens with scopes were not adopted. The website's PHP is unchanged and allows no clock skew.
 
-### 9. Low–Medium: secret and session exposure at rest
+### 9. In progress: secret and session exposure at rest
 
-Evidence: `meander/frontend/src/auth/session.ts` persists refresh and ID tokens in localStorage; desktop injects the whole vault; `plans/TODO-SECRETS.md` records plaintext vault persistence with restrictive file permissions. Audience-aware redirect handling in Node's `credentialedFetch.ts` is a positive existing control.
+Kept outside this repository until it is done, as `plans/README.md` says of security weaknesses not yet fixed; its write-up comes back here then.
 
-Why lower than first ranked: a plaintext file readable only by its owner is the posture of most developer credentials on a desktop. These stores matter mainly as what findings 1 and 3 would hand over, so fixing those does more for them than moving the storage does.
+### 10. In progress: facade capabilities and remaining shared-host items
 
-Proposal: move native refresh tokens and vault values into platform secure stores, minimize JS access, and define revocation/rotation for long-lived machine credentials. Add canary-secret assertions covering export, saved boards, member snapshots, logs, errors, notifications and Playwright artifacts. Test credential audience behavior across HTTPS downgrade, redirect chains, custom headers and body payloads; header protection alone is not a complete egress policy.
-
-Reference: [OWASP HTML5 security guidance](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html).
-
-**Built 2026-10-19: canary sweeps.** A secret with a recognisable value is used, the use is made to fail, and every surface is read for the value. Each sweep also asserts the value really was sent upstream.
-- hkp-node `tests/secret-canary.test.ts`:
-  - the runtime server: the run's answer, the runtime routes, the notification socket and the console;
-  - a deployed board: what the owner's browser is told, the board's log, what the coordinator saves and holds, and the console.
-- hkp-python `tests/test_secret_canary.py` and hkp-rt `tests/secret_canary.test.cpp`: the runtime server, its log and its console.
-- hkp-frontend `runtime/browser/services/tests/secret-canary.test.ts`: HTTP Client, OpenAI Prompt and Workflow Board Builder — what each reports, says, answers and logs. Encrypt, Decrypt, Sign and the GitHub service already had such tests.
-
-No leak was found.
-
-**Closed 2026-10-18, found while testing, not by the review: the sign-in token on runtime descriptors.**
-
-- **The leak.** Creating a runtime put the signed-in user onto its descriptor, ID token included (`core/runtimeOperations.ts`). A descriptor is spread into whatever exports a runtime, so the token travelled into three places:
-  - a saved runtime file (`components/Runtime.tsx`, `onSaveRuntime`);
-  - the runtime's Configure dialog;
-  - what a custom runtime action sends to another runtime, possibly on another server (`RuntimeHeader.tsx`).
-- **Not affected:** saved boards, Share as QR and deploying, which list each runtime's fields one by one.
-- **The fix.** The descriptor no longer carries `user`. The REST runtime never read it; its scope is given the user separately (`authenticatedUser`). The only reader was the deprecated GraphQL runtime, which is now unauthenticated. The three outputs, and JSON applied in the runtime editor, drop a `user` read back from a file saved earlier (`withoutSession` in `types.ts`).
-- **Tests:** `hkp-frontend/src/core/tests/runtimeSession.test.ts`.
-- **Left:** a runtime file saved before the fix still holds a token, expired by now since an ID token lives for ten hours.
-
-Also closed on `main` (commit `72c7a55c`, 2026-10-18), outside the review: the ID token is no longer sent to third-party URLs (`views/playground/common.ts`).
-
-**Remaining.**
-
-1. Platform secure stores for the native refresh token and the vault. Decided 2026-10-19 to follow v1; there is no keychain code on any platform yet.
-2. Canaries in Playwright artifacts, and the credential-audience cases (HTTPS downgrade, redirect chains, body payloads).
-
-### 10. Investigate: facade capabilities and remaining shared-host items
-
-`coordinator/facadeAccess.ts` explicitly grants any payload to a facade-exposed process target. Hiding fields in the UI cannot enforce business rules.
-
-**Settled 2026-10-19.**
-
-- **What a member may send is pinned** in `hkp-node/tests/board-members.test.ts`:
-  - their own identity, whatever the payload claims;
-  - process calls only at the facade's targets, named exactly — a nested address or a near miss is refused;
-  - the runtime is the board's to choose, not the message's;
-  - never a configure;
-  - a rate bound;
-  - projection of state and notifications;
-  - their bridges close the moment they are removed (`evictMember`).
-  
-  Replayed submissions are ordinary calls and count against the rate bound.
-- **`/serviceRedirect`:** a relayed redirect reaches only the login waiting on the same `state`, and the PKCE verifier never leaves the webview. The frontend server keeps binding `0.0.0.0` (decided 2026-10-19).
-- **WebSocket tickets.** `POST /ws-tickets` mints a single-use ticket, good for 30 s, bound to who the token named and whether they may own. It exists in hkp-node (`wsTickets.ts`, coordinator bridge included), hkp-python (`ws_tickets.py`) and hkp-rt (`http/ws_tickets.h`).
-  - The browser opens its runtime sockets and the bridge with `?ticket=` (`runtime/rest/wsTicket.ts`).
-  - `?access_token=` is still accepted from older clients, and the browser falls back to it only on a 404 or 405.
-  - Tests: hkp-node `tests/auth-jwt.test.ts` (and every bridge in the cloud tests now opens with one), hkp-python `tests/test_auth.py`, hkp-rt `tests/server_origins.test.cpp`, hkp-frontend `runtime/rest/tests/ws-ticket.test.ts`.
-- **`expression-eval`.** No advisories, but deprecated and unmaintained. It is vendored as `hkp-node/src/expressionEval.ts`, with an identical twin in `hkp-frontend/.../base/expressionEval.ts`, on `jsep` pinned at 0.3.5.
-  - `constructor`, `prototype` and every `__` member are refused by name, and identifiers resolve to the scope's own properties only.
-  - Tests: `tests/expression-eval.test.ts` in both. The old regex looked anchored but wasn't.
-
-**Remaining.**
-
-1. Inventory public mount and asset URLs as capabilities: who holds them, and how one is revoked (renaming a mount, rotating `HKP_MOUNT_SECRET`).
-2. `hkp-frontend/src/runtime/browser/services/base/bundle.js` is an old browserify bundle nothing imports. Delete it or say why it stays.
-3. The investigation areas, before declaring a shared-host product ready: runtime plugin and model execution, public endpoint abuse, upload content types, TLS deployment and a dependency audit. hkp-rt's file boundaries are under finding 6; hkp-node's volumes and hkp-python were not re-checked.
+Kept outside this repository until it is done, as `plans/README.md` says of security weaknesses not yet fixed; its write-up comes back here then.
 
 ## E2E coverage proposals
 
@@ -483,7 +223,7 @@ Existing lower-level tests already cover many individual pieces. The proposal is
 
 ## Suggested sequence
 
-First close the local runtimes to foreign origins (finding 1), fix prototype pollution (2), enforce native page trust (3), and decide the hosted network policy (4). Add regressions with each fix. Settle what an opened board may do before consent (6) alongside finding 1, since the two share a fix. The payload ceiling (5) and the proxy rule (7) are small and can follow; JWT alignment (8) and secure storage (9) are hardening and need not block v1. In parallel with ordinary implementation work, establish PR E2E execution and the authenticated test harness.
+First close the local runtimes to foreign origins (finding 1), fix prototype pollution (2), enforce native page trust (3), and decide the hosted network policy (4). Add regressions with each fix. The payload ceiling (5) and the proxy rule (7) are small and can follow; JWT alignment (8) is hardening and need not block v1. In parallel with ordinary implementation work, establish PR E2E execution and the authenticated test harness.
 
 Then add the owner/member/stranger journey, secret-consent journey and one persisted distributed restart journey. Those three tests exercise the most consequential v1 boundaries. Follow with packaged native smoke tests and a smaller Android/mobile facade suite.
 
@@ -495,5 +235,5 @@ Define release acceptance as named journeys actually executed and passing, no un
 - Playwright test discovery completed: 130 cases across 10 files in the default configuration, including profile instances that are later skipped. Cloud uses a separate configuration.
 - Reproduced facade prototype pollution through the actual exported function in an isolated Node process and removed the probe property.
 - Second pass, 2026-10-09: re-read the code behind every security finding — facade projection and its callers in the coordinator session, the Node and Python JWT verifiers, origin and auth resolution in hkp-node, the hkp-rt auth middleware and `filesystem` service, and the desktop host's bridge, navigation and frontend server. Ran one further isolated probe through the real `readFacadeAccess`, `projectNotification` and `identityFromClaims`, which showed projection pollution turning into an email on a token without one; the probe removed its properties. Keyword searches, not audits, stand behind the statements that hkp-node has no code-execution primitive, that its outbound services filter no destinations, and that the frontend has one raw-HTML sink.
-- Not done in either pass: no request was sent to a running runtime from a hostile origin, no proxied or hosted deployment was exercised, the board-open consent path was not read, and the PHP and C++ JWT checks were not re-read.
+- Not done in either pass: no request was sent to a running runtime from a hostile origin, no proxied or hosted deployment was exercised, and the PHP and C++ JWT checks were not re-read.
 - Did not run the complete browser/native/cloud suites, attack a deployed system, or perform a dependency vulnerability audit. No claim of a green baseline or a complete security assessment is made.

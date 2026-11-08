@@ -29,11 +29,6 @@ import {
  */
 
 /**
- * The API for a runtime's class, by the same two-step lookup the board itself
- * uses: a runtime may name its class in a board-specific spelling, which falls
- * back to the canonical one the engines register under.
- */
-/**
  * Whether a remote runtime's services can be reached at all: it has an address
  * to dial, or its scope goes through the board's coordinator and needs none.
  */
@@ -47,6 +42,11 @@ function isReachable(
   );
 }
 
+/**
+ * The API for a runtime's class, by the same two-step lookup the board itself
+ * uses: a runtime may name its class in a board-specific spelling, which falls
+ * back to the canonical one the engines register under.
+ */
 function runtimeApiFor(
   boardContext: BoardContextState,
   type: RuntimeClassType | undefined,
@@ -263,11 +263,6 @@ export function findService(
 }
 
 /**
- * Asks a service to do its job with a payload, running the pipeline from that
- * service onward — rather than from the one after it, which is what a service
- * handing work onward means.
- */
-/**
  * Whether a service can be reached yet, the way `processService` reaches it.
  *
  * A board's runtimes are restored after its facade is known, and on an
@@ -364,6 +359,11 @@ export async function whenServiceConnected(
   }
 }
 
+/**
+ * Asks a service to do its job with a payload, running the pipeline from that
+ * service onward — rather than from the one after it, which is what a service
+ * handing work onward means.
+ */
 export function processService(
   boardContext: BoardContextState,
   uuid: string,
