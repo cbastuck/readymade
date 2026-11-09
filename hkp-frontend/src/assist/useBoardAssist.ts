@@ -15,6 +15,11 @@ import {
 } from "./anthropic";
 import { listOpenAIModels, runOpenAICompatibleTurn } from "./openAICompatible";
 import { listOpenCodeModels, runOpenCodeTurn } from "./openCode";
+import {
+  listOpenCodeGoModels,
+  newOpenCodeGoSession,
+  runOpenCodeGoTurn,
+} from "./openCodeGo";
 import { saveAssistSettings, useAssistSettings } from "./settings";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
@@ -109,11 +114,14 @@ export function useBoardAssist({
   const settings = useAssistSettings();
   const compatible = settings.provider === "openai-compatible";
   const openCode = settings.provider === "opencode";
+  const openCodeGo = settings.provider === "opencode-go";
   const providerReady = compatible
     ? !!settings.openAICompatibleUrl.trim()
     : openCode
       ? !!settings.openCodeUrl.trim()
-      : !!settings.anthropicToken.trim();
+      : openCodeGo
+        ? !!settings.openCodeGoUrl.trim() && !!settings.openCodeGoToken.trim()
+        : !!settings.anthropicToken.trim();
   const [models, setModels] = useState<AssistModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [reload, setReload] = useState(0);
@@ -140,6 +148,8 @@ export function useBoardAssist({
     addresses: NewAddresses;
   } | null>(null);
   const conversation = useRef<Conversation>([]);
+  // What OpenCode Go knows this conversation by; drawn at its first turn.
+  const session = useRef("");
   const abort = useRef<AbortController | null>(null);
 
   useEffect(() => () => abort.current?.abort(), []);
@@ -164,7 +174,14 @@ export function useBoardAssist({
             settings.openCodePassword,
             controller.signal,
           )
-        : listAssistModels(settings.anthropicToken, controller.signal))
+        : openCodeGo
+          ? listOpenCodeGoModels(
+              settings.openCodeGoUrl,
+              settings.openCodeGoToken,
+              settings.openCodeGoRelayKey,
+              controller.signal,
+            )
+          : listAssistModels(settings.anthropicToken, controller.signal))
       .then((list) => {
         if (controller.signal.aborted) return;
         setModels(list);
@@ -189,8 +206,12 @@ export function useBoardAssist({
     settings.openCodeUrl,
     settings.openCodeUsername,
     settings.openCodePassword,
+    settings.openCodeGoUrl,
+    settings.openCodeGoToken,
+    settings.openCodeGoRelayKey,
     compatible,
     openCode,
+    openCodeGo,
     providerReady,
     reload,
   ]);
@@ -198,6 +219,7 @@ export function useBoardAssist({
   // conversation; a new conversation reuses those positions for other entries.
   const forgetConversation = () => {
     conversation.current = [];
+    session.current = "";
     setEntries([]);
     setPrevious(null);
     setRevertEntryIndex(null);
@@ -212,6 +234,7 @@ export function useBoardAssist({
     settings.provider,
     settings.openAICompatibleUrl,
     settings.openCodeUrl,
+    settings.openCodeGoUrl,
     settings.mcpKnowledgeUrl,
   ]);
 
@@ -352,7 +375,15 @@ export function useBoardAssist({
               password: settings.openCodePassword,
               contextTokens: settings.openAIContextTokens,
             })
-          : await runAssistTurn(request);
+          : openCodeGo
+            ? await runOpenCodeGoTurn({
+                ...request,
+                baseURL: settings.openCodeGoUrl,
+                token: settings.openCodeGoToken,
+                relayKey: settings.openCodeGoRelayKey,
+                session: (session.current ||= newOpenCodeGoSession()),
+              })
+            : await runAssistTurn(request);
       controller.signal.throwIfAborted();
       conversation.current = result.conversation;
       // A server the person keeps is named, not addressed, whatever the model
@@ -625,6 +656,7 @@ export function useBoardAssist({
     settings,
     compatible,
     openCode,
+    openCodeGo,
     providerReady,
     models,
     modelsLoading,
@@ -686,7 +718,9 @@ export function useBoardAssist({
         ? settings.openAICompatibleUrl
         : openCode
           ? settings.openCodeUrl
-          : "Anthropic"
+          : openCodeGo
+            ? settings.openCodeGoUrl
+            : "Anthropic"
     }.`,
   };
 }

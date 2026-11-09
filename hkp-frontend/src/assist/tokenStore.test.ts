@@ -80,6 +80,27 @@ describe("with a host that keeps secrets", () => {
     expect(stored()).not.toHaveProperty("openCodePassword");
   });
 
+  it("keeps an OpenCode Go key in the vault, following its relay", async () => {
+    const vault = fakeVault();
+    setAssistTokenStore(vault.store);
+    await saveAssistSettings({
+      openCodeGoToken: "go-key",
+      openCodeGoRelayKey: "relay-secret",
+    });
+    const alias = ASSIST_TOKEN_ALIASES.openCodeGoToken;
+    const relayAlias = ASSIST_TOKEN_ALIASES.openCodeGoRelayKey;
+    expect(vault.values.get(alias)).toBe("go-key");
+    expect(vault.values.get(relayAlias)).toBe("relay-secret");
+    expect(vault.audiences.get(alias)).toEqual(["opencode.ai"]);
+    await saveAssistSettings({
+      openCodeGoUrl: "https://example.com/opencode.php/go/v1",
+    });
+    expect(vault.audiences.get(alias)).toEqual(["example.com"]);
+    expect(vault.audiences.get(relayAlias)).toEqual(["example.com"]);
+    expect(stored()).not.toHaveProperty("openCodeGoToken");
+    expect(stored()).not.toHaveProperty("openCodeGoRelayKey");
+  });
+
   it("removes a token from the vault when it is cleared", async () => {
     const vault = fakeVault();
     setAssistTokenStore(vault.store);

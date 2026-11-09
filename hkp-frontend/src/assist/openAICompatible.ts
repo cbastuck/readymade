@@ -25,12 +25,21 @@ export function openAIBaseURL(base: string) {
   if (url.pathname === "/") url.pathname = "/v1";
   return url.toString().replace(/\/+$/, "");
 }
+/**
+ * What a provider built on this transport adds to it: headers its server
+ * asks for, and what to say when the server cannot be reached at all.
+ */
+export type OpenAIRequestOptions = {
+  headers?: Record<string, string>;
+  unreachable?: string;
+};
 async function requestResponse(
   base: string,
   path: string,
   token: string,
   signal?: AbortSignal,
   body?: unknown,
+  extra: OpenAIRequestOptions = {},
 ) {
   let response: Response;
   try {
@@ -41,15 +50,17 @@ async function requestResponse(
       headers: {
         ...(body === undefined ? {} : { "Content-Type": "application/json" }),
         ...(token.trim() ? { Authorization: `Bearer ${token.trim()}` } : {}),
+        ...extra.headers,
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   } catch (error) {
     if (signal?.aborted) throw error;
     throw new Error(
-      body === undefined
-        ? "Could not reach the OpenAI-compatible server. Check its API base URL, that it is running, and that it allows this app's browser origin (CORS)."
-        : "The connection to the server failed or timed out before a response arrived. The server may still be processing the request. Check its connection and browser-origin permissions; this error does not prove a CORS problem.",
+      extra.unreachable ??
+        (body === undefined
+          ? "Could not reach the OpenAI-compatible server. Check its API base URL, that it is running, and that it allows this app's browser origin (CORS)."
+          : "The connection to the server failed or timed out before a response arrived. The server may still be processing the request. Check its connection and browser-origin permissions; this error does not prove a CORS problem."),
     );
   }
   if (!response.ok) {
@@ -65,8 +76,11 @@ async function requestJSON(
   path: string,
   token: string,
   signal?: AbortSignal,
+  extra?: OpenAIRequestOptions,
 ) {
-  return (await requestResponse(base, path, token, signal)).json();
+  return (
+    await requestResponse(base, path, token, signal, undefined, extra)
+  ).json();
 }
 async function requestCompletion(
   base: string,
@@ -75,6 +89,7 @@ async function requestCompletion(
   body: unknown,
   onStatus: (text: string) => void,
   onText: (text: string) => void,
+  extra?: OpenAIRequestOptions,
 ) {
   const response = await requestResponse(
     base,
@@ -82,6 +97,7 @@ async function requestCompletion(
     token,
     signal,
     body,
+    extra,
   );
   // Some compatible servers ignore stream:true. Keep JSON responses working.
   if (!response.headers.get("content-type")?.includes("text/event-stream"))
@@ -112,8 +128,11 @@ async function requestCompletion(
       );
     const choice = chunk.choices?.[0];
     const delta = choice?.delta;
-    if (typeof delta?.reasoning_content === "string") {
-      reasoningCharacters += delta.reasoning_content.length;
+    // llama.cpp and vLLM say `reasoning_content`; OpenRouter-style servers say
+    // `reasoning`.
+    const reasoning = delta?.reasoning_content ?? delta?.reasoning;
+    if (typeof reasoning === "string") {
+      reasoningCharacters += reasoning.length;
       onStatus(`Model is thinking… ${reasoningCharacters} characters received`);
     }
     if (typeof delta?.content === "string") {
@@ -180,18 +199,28 @@ async function requestCompletion(
     ...(usage ? { usage } : {}),
   };
 }
+/** The server's model list as it answered, each entry with a string id. */
+export async function requestOpenAIModelList(
+  base: string,
+  token: string,
+  signal?: AbortSignal,
+  extra?: OpenAIRequestOptions,
+): Promise<({ id: string; name?: string } & Record<string, unknown>)[]> {
+  const data = await requestJSON(base, "/models", token, signal, extra);
+  if (!Array.isArray(data.data))
+    throw new Error(
+      "The server did not return an OpenAI-compatible model list.",
+    );
+  return data.data.filter(
+    (model: { id?: unknown }) => typeof model.id === "string",
+  );
+}
 export async function listOpenAIModels(
   base: string,
   token: string,
   signal?: AbortSignal,
 ): Promise<AssistModel[]> {
-  const data = await requestJSON(base, "/models", token, signal);
-  if (!Array.isArray(data.data))
-    throw new Error(
-      "The server did not return an OpenAI-compatible model list.",
-    );
-  return data.data
-    .filter((model: { id?: unknown }) => typeof model.id === "string")
+  return (await requestOpenAIModelList(base, token, signal))
     .map((model: { id: string; name?: string }) => ({
       id: model.id,
       display_name: model.name || model.id,
@@ -215,10 +244,14 @@ export function serviceNames(value: unknown, names = new Set<string>()) {
  * left room for. The budget is in characters, conservatively: tokenization
  * differs between models, and the response needs its share. The current board
  * and request are never truncated; a board that does not fit is refused with
- * `tooLarge`, and old proposals give way to it.
+ * `tooLarge`, and old proposals give way to it. The response is allowed
+ * `outputTokens` — what the model states it can write, which includes its
+ * reasoning — or 4096 when unstated, and never more than a quarter of the
+ * context.
  */
 export async function prepareTextTurn(options: {
   contextTokens: number;
+  outputTokens?: number;
   conversation: Conversation;
   prompt: string;
   context: unknown;
@@ -228,7 +261,10 @@ export async function prepareTextTurn(options: {
   tooLarge: string;
 }) {
   const limit = Math.max(4096, options.contextTokens || 8192);
-  const maxTokens = Math.min(4096, Math.floor(limit / 4));
+  const maxTokens = Math.min(
+    options.outputTokens || 4096,
+    Math.floor(limit / 4),
+  );
   const budget = (limit - maxTokens - 512) * 2;
   const promptContext =
     options.context && typeof options.context === "object"
@@ -315,11 +351,12 @@ export function parseTextProposal(
   return { explanation: result.explanation, board };
 }
 
-export async function runOpenAICompatibleTurn(options: {
+export async function runOpenAICompatibleTurn(options: OpenAIRequestOptions & {
   baseURL: string;
   token: string;
   model: AssistModel;
   contextTokens: number;
+  outputTokens?: number;
   thinking?: "default" | "off" | "on";
   conversation: Conversation;
   prompt: string;
@@ -370,6 +407,7 @@ export async function runOpenAICompatibleTurn(options: {
     },
     options.onStatus,
     options.onText,
+    { headers: options.headers, unreachable: options.unreachable },
   );
   options.signal.throwIfAborted();
   const usage = fromOpenAIUsage(data.usage);
@@ -377,6 +415,10 @@ export async function runOpenAICompatibleTurn(options: {
   const choice = data.choices?.[0];
   const content = choice?.message?.content;
   if (typeof content === "string") options.onRawResponse?.(content);
+  if (choice?.finish_reason === "length" && !content?.trim())
+    throw new Error(
+      `The model spent its whole output limit (${maxTokens} tokens) thinking, before writing an answer. Try a simpler request or a model that reasons less.`,
+    );
   if (choice?.finish_reason === "length")
     throw new Error(
       "The response reached its output limit. Try a smaller board or increase the server and settings context size.",

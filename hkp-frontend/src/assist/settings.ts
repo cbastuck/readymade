@@ -3,7 +3,7 @@ import { destinationHost } from "../core/secrets";
 
 export type Effort = "default" | "low" | "medium" | "high" | "xhigh" | "max";
 export type AssistSettings = {
-  provider: "anthropic" | "openai-compatible" | "opencode";
+  provider: "anthropic" | "openai-compatible" | "opencode" | "opencode-go";
   openAIContextTokens: number;
   openAIThinking: "default" | "off" | "on";
   anthropicToken: string;
@@ -12,6 +12,11 @@ export type AssistSettings = {
   openCodeUrl: string;
   openCodeUsername: string;
   openCodePassword: string;
+  /** OpenCode Go's API base, or a relay's that forwards to it. */
+  openCodeGoUrl: string;
+  openCodeGoToken: string;
+  /** What a relay in front of Go asks for, sent as X-Relay-Key; "" for none. */
+  openCodeGoRelayKey: string;
   mcpKnowledgeUrl: string;
   /** Whether requests carry asset contents, or only their ids and types. */
   includeAssetContents: boolean;
@@ -20,6 +25,8 @@ export type AssistSettings = {
 };
 /** The id of Board Assist's section, in the desktop dialog and on a phone. */
 export const ASSIST_SETTINGS_SECTION = "ai-assist";
+/** OpenCode Go's own API base (`openCodeGo.ts`). */
+export const OPENCODE_GO_URL = "https://opencode.ai/zen/go/v1";
 const KEY = "readymade.ai-assist.v1";
 const EVENT = "readymade-ai-settings";
 const defaults: AssistSettings = {
@@ -32,6 +39,9 @@ const defaults: AssistSettings = {
   openCodeUrl: "http://127.0.0.1:4096",
   openCodeUsername: "opencode",
   openCodePassword: "",
+  openCodeGoUrl: OPENCODE_GO_URL,
+  openCodeGoToken: "",
+  openCodeGoRelayKey: "",
   mcpKnowledgeUrl: "",
   includeAssetContents: false,
   model: "",
@@ -43,6 +53,8 @@ export const ASSIST_TOKEN_ALIASES = {
   anthropicToken: "readymade.assist.anthropic",
   openAICompatibleToken: "readymade.assist.openai-compatible",
   openCodePassword: "readymade.assist.opencode",
+  openCodeGoToken: "readymade.assist.opencode-go",
+  openCodeGoRelayKey: "readymade.assist.opencode-go-relay",
 } as const;
 type TokenField = keyof typeof ASSIST_TOKEN_ALIASES;
 const tokenFields = Object.keys(ASSIST_TOKEN_ALIASES) as TokenField[];
@@ -61,19 +73,29 @@ export type AssistTokenStore = {
 };
 let tokenStore: AssistTokenStore | null = null;
 
+/** The address each token is sent to, and which setting holds it. */
+const tokenUrls = {
+  anthropicToken: () => "https://api.anthropic.com",
+  openAICompatibleToken: (settings: AssistSettings) =>
+    settings.openAICompatibleUrl,
+  openCodePassword: (settings: AssistSettings) => settings.openCodeUrl,
+  openCodeGoToken: (settings: AssistSettings) => settings.openCodeGoUrl,
+  openCodeGoRelayKey: (settings: AssistSettings) => settings.openCodeGoUrl,
+} satisfies Record<TokenField, (settings: AssistSettings) => string>;
+const tokenUrlFields = {
+  openAICompatibleToken: "openAICompatibleUrl",
+  openCodePassword: "openCodeUrl",
+  openCodeGoToken: "openCodeGoUrl",
+  openCodeGoRelayKey: "openCodeGoUrl",
+} as const;
+
 /**
  * Where a token may be sent: its provider's host. A board can name a token
  * like any other secret, and the audience keeps it from taking one anywhere
  * else.
  */
 function tokenAudience(field: TokenField, settings: AssistSettings): string[] {
-  const host = destinationHost(
-    field === "anthropicToken"
-      ? "https://api.anthropic.com"
-      : field === "openAICompatibleToken"
-        ? settings.openAICompatibleUrl
-        : settings.openCodeUrl,
-  );
+  const host = destinationHost(tokenUrls[field](settings));
   return host ? [host] : [];
 }
 
@@ -183,28 +205,22 @@ export function saveAssistSettings(
       );
     }
     // The token follows its server: one moved elsewhere may be sent there.
-    if (
-      patch.openAICompatibleUrl !== undefined &&
-      patch.openAICompatibleToken === undefined &&
-      next.openAICompatibleToken
-    )
-      writes.push(
-        store.setAudience(
-          ASSIST_TOKEN_ALIASES.openAICompatibleToken,
-          tokenAudience("openAICompatibleToken", next),
-        ),
-      );
-    if (
-      patch.openCodeUrl !== undefined &&
-      patch.openCodePassword === undefined &&
-      next.openCodePassword
-    )
-      writes.push(
-        store.setAudience(
-          ASSIST_TOKEN_ALIASES.openCodePassword,
-          tokenAudience("openCodePassword", next),
-        ),
-      );
+    for (const [field, urlField] of Object.entries(tokenUrlFields) as [
+      keyof typeof tokenUrlFields,
+      (typeof tokenUrlFields)[keyof typeof tokenUrlFields],
+    ][]) {
+      if (
+        patch[urlField] !== undefined &&
+        patch[field] === undefined &&
+        next[field]
+      )
+        writes.push(
+          store.setAudience(
+            ASSIST_TOKEN_ALIASES[field],
+            tokenAudience(field, next),
+          ),
+        );
+    }
   }
   if (Object.keys(local).length || !tokenStore) {
     let stored: Partial<AssistSettings> = {};
@@ -228,6 +244,14 @@ function subscribe(callback: () => void) {
     window.removeEventListener("storage", callback);
   };
 }
+/** What a provider is called wherever one is shown. */
+export const ASSIST_PROVIDER_LABELS: Record<AssistSettings["provider"], string> =
+  {
+    anthropic: "Anthropic",
+    "openai-compatible": "OpenAI compatible",
+    opencode: "OpenCode server",
+    "opencode-go": "OpenCode Go",
+  };
 export function useAssistSettings() {
   return useSyncExternalStore(subscribe, readAssistSettings, () => defaults);
 }

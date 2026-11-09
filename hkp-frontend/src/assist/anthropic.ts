@@ -29,7 +29,10 @@ import {
 import { BoardDescriptor } from "../types";
 
 export type AssistModel = Pick<ModelInfo, "id" | "display_name"> &
-  Partial<Pick<ModelInfo, "capabilities" | "max_tokens">>;
+  Partial<Pick<ModelInfo, "capabilities" | "max_tokens">> & {
+    /** The context window, for providers whose model list states it. */
+    context_tokens?: number;
+  };
 export type Conversation = MessageParam[];
 export function createAssistClient(token: string) {
   return new Anthropic({

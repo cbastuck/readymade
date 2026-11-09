@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useBoardContext } from "../../BoardContext";
 import AssistConnectionNotice from "../../assist/AssistConnectionNotice";
 import { unencryptedRemote } from "../../assist/addresses";
-import { Effort } from "../../assist/settings";
+import { ASSIST_PROVIDER_LABELS, Effort } from "../../assist/settings";
 import { useBoardAssist, type AssistFocus } from "../../assist/useBoardAssist";
 import BottomSheet from "../playground/mobile/BottomSheet";
 import MobileIcon from "../playground/mobile/MobileIcon";
@@ -62,6 +62,7 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
     settings,
     compatible,
     openCode,
+    openCodeGo,
     providerReady,
     modelsLoading,
     model,
@@ -96,6 +97,8 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
       : `Thinking ${settings.openAIThinking}`
     : openCode
       ? "OpenCode server"
+    : openCodeGo
+      ? "Model default"
     : effort === "default"
       ? "Model default"
       : `${effort} effort`;
@@ -135,11 +138,7 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
           >
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>
-                {compatible
-                  ? "OpenAI compatible"
-                  : openCode
-                    ? "OpenCode server"
-                    : "Anthropic"}
+                {ASSIST_PROVIDER_LABELS[settings.provider]}
                 {model ? ` · ${model.display_name}` : ""}
               </span>
               <span style={{ display: "block", fontSize: 12.5, color: M.textSecondary }}>
@@ -410,13 +409,17 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
               )}
             </div>
             <p style={hint}>{assist.disclosure}</p>
-            {(compatible || openCode) &&
+            {(compatible || openCode || openCodeGo) &&
               unencryptedRemote(
-                compatible ? settings.openAICompatibleUrl : settings.openCodeUrl,
+                compatible
+                  ? settings.openAICompatibleUrl
+                  : openCodeGo
+                    ? settings.openCodeGoUrl
+                    : settings.openCodeUrl,
               ) && (
               <p role="alert" style={{ ...hint, color: M.danger }}>
                 This server is reached over unencrypted HTTP on another
-                machine. Your {openCode ? "password" : "token"}, prompts and
+                machine. Your {openCode ? "password" : openCodeGo ? "key" : "token"}, prompts and
                 board can be read on the way.
               </p>
             )}
@@ -470,7 +473,7 @@ function ModelSettings({
   assist: ReturnType<typeof useBoardAssist>;
   onOpenSettings?: () => void;
 }) {
-  const { settings, compatible, openCode, models, modelsLoading, model, efforts, effort, busy } = assist;
+  const { settings, compatible, openCode, openCodeGo, models, modelsLoading, model, efforts, effort, busy } = assist;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <label style={{ fontSize: 13, color: M.textSecondary }}>
@@ -491,7 +494,7 @@ function ModelSettings({
           ))}
         </select>
       </label>
-      {!openCode && <label style={{ fontSize: 13, color: M.textSecondary }}>
+      {!openCode && !openCodeGo && <label style={{ fontSize: 13, color: M.textSecondary }}>
         {compatible ? "Thinking" : "Effort"}
         <select
           disabled={busy || (!compatible && efforts.length === 1)}

@@ -12,7 +12,8 @@ stays available while the panel is hidden; it is not saved in the board file.
 ## Setup
 
 Open **Settings → Board Assist**, in either the website or the native Readymade
-app. Choose **Anthropic** or **OpenAI compatible**; only the chosen provider's
+app. Choose **Anthropic**, **OpenAI compatible**, **OpenCode server** or
+**OpenCode Go**; only the chosen provider's
 settings are shown. As in Appearance, changes take effect as you make them — a
 choice at once, a text field when you leave it — and an invalid value is
 explained under its field instead of being saved. Each saved token can be
@@ -51,6 +52,26 @@ Leave Server default for endpoints without llama.cpp's template options. This
 controls thinking in the template and is separate from the context-size setting.
 Thinking can use the output budget before the final board appears.
 
+**OpenCode Go** uses the models of an OpenCode Go subscription through the same
+OpenAI-compatible API, with Board Assist itself as the client — no OpenCode
+server is involved. Enter the subscription's **API key** (from
+`opencode.ai/auth`); the **API base URL** starts as Go's own,
+`https://opencode.ai/zen/go/v1`. The model list shows only the models Go serves
+through chat completions, and each turn is sized by the selected model's
+context window, so there is no context setting. Each conversation is named to Go
+by a session id in the `X-Opencode-Session` header, which Go asks of every
+client; a new conversation gets a new one.
+
+Go lists its models to any page, but does not yet answer the browser's CORS
+check for generating, so a page reaches it through a relay: a small server that
+adds CORS headers for the pages using it, forwards `models` and
+`chat/completions` to `https://opencode.ai/zen/go/v1`, and passes on the
+`Authorization` and `X-Opencode-Session` headers. Its address goes in the API
+base URL, with the gateway's path, such as
+`https://example.com/opencode.php/go/v1`. The key travels through the relay to
+Go. A relay meant for only some people can ask for a key of its own: the
+**Relay key**, sent as `X-Relay-Key` when it is set, and never to Go directly.
+
 A connection failure during generation can mean a timeout or disconnect, even
 when the server is still working. It does not establish a CORS problem. The
 panel distinguishes initial connection errors from interrupted response streams;
@@ -73,7 +94,9 @@ settings; local servers can send with no API token.
 
 Where tokens are kept depends on the host. The desktop and phone apps keep them
 with their other secrets (`targets.md`, "Where secrets live"), as
-`readymade.assist.anthropic` and `readymade.assist.openai-compatible`, so they
+`readymade.assist.anthropic`, `readymade.assist.openai-compatible`,
+`readymade.assist.opencode`, `readymade.assist.opencode-go` and
+`readymade.assist.opencode-go-relay`, so they
 are listed, and can be removed, in **Settings → Secrets** like any other
 credential. Each is allowed only to its provider's host — `api.anthropic.com`,
 or the host of the API base URL, which it follows when the URL changes — so a
@@ -136,7 +159,8 @@ provenance.
 To use it with Board Assist, run the server and set **Settings → Board Assist →
 Knowledge server → MCP server URL**, for example
 `http://127.0.0.1:8787/mcp`. The URL is device-local configuration and is not
-written into boards. Both providers can consume the server's search and
+written into boards. A hosted playground needs the server behind a TLS reverse
+proxy; `readymade-mcp/README.md` walks through deploying it. Both providers can consume the server's search and
 document-reading tools. Anthropic also receives the allowlisted contract,
 compatibility, example, source-inspection and board-validation operations as
 model-controlled tools. OpenAI-compatible providers retain bounded

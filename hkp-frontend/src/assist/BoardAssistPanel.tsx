@@ -5,7 +5,7 @@ import { useBoardContext } from "../BoardContext";
 import { useSelection } from "../selection/SelectionContext";
 import SettingsDialog from "../ui-components/SettingsDialog";
 import ReadymadeMark from "../components/Toolbar/assets/hkp-single-dot-h.svg?react";
-import { Effort } from "./settings";
+import { ASSIST_PROVIDER_LABELS, Effort } from "./settings";
 import {
   describeUsage,
   formatPrice,
@@ -53,6 +53,7 @@ export default function BoardAssistPanel({
     settings,
     compatible,
     openCode,
+    openCodeGo,
     providerReady,
     models,
     modelsLoading,
@@ -136,13 +137,10 @@ export default function BoardAssistPanel({
               <span>
                 <strong>Model settings</strong>
                 <small>
-                  {compatible
-                    ? "OpenAI compatible"
-                    : openCode
-                      ? "OpenCode server"
-                      : "Anthropic"}
+                  {ASSIST_PROVIDER_LABELS[settings.provider]}
                   {model ? ` · ${model.display_name}` : ""}
                   {!openCode &&
+                    !openCodeGo &&
                     ` · ${
                       compatible
                         ? settings.openAIThinking === "default"
@@ -169,9 +167,11 @@ export default function BoardAssistPanel({
                     })
                   }
                 >
-                  <option value="anthropic">Anthropic</option>
-                  <option value="openai-compatible">OpenAI compatible</option>
-                  <option value="opencode">OpenCode server</option>
+                  {Object.entries(ASSIST_PROVIDER_LABELS).map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label>
@@ -191,7 +191,9 @@ export default function BoardAssistPanel({
                           ? "Configure an API server"
                           : openCode
                             ? "Configure an OpenCode server"
-                            : "Enter an Anthropic token"}
+                            : openCodeGo
+                              ? "Enter an OpenCode Go key"
+                              : "Enter an Anthropic token"}
                     </option>
                   )}
                   {models.map((item) => (
@@ -202,7 +204,8 @@ export default function BoardAssistPanel({
                 </select>
               </label>
               {!openCode && <div className="hkp-assist-row">
-                <label>
+                {/* Go's models take no effort or template setting here. */}
+                {!openCodeGo && <label>
                   Effort{" "}
                   <select
                     disabled={busy || (!compatible && efforts.length === 1)}
@@ -232,7 +235,7 @@ export default function BoardAssistPanel({
                       ))
                     )}
                   </select>
-                </label>
+                </label>}
                 <button
                   type="button"
                   disabled={busy || modelsLoading || !providerReady}
@@ -490,13 +493,17 @@ export default function BoardAssistPanel({
           <p className="hkp-assist-hint">
             {assist.disclosure}
           </p>
-          {(compatible || openCode) &&
+          {(compatible || openCode || openCodeGo) &&
             unencryptedRemote(
-              compatible ? settings.openAICompatibleUrl : settings.openCodeUrl,
+              compatible
+                ? settings.openAICompatibleUrl
+                : openCodeGo
+                  ? settings.openCodeGoUrl
+                  : settings.openCodeUrl,
             ) && (
             <p className="hkp-assist-error" role="alert">
               This server is reached over unencrypted HTTP on another machine.
-              Your {openCode ? "password" : "token"}, prompts and board can be read on the way.
+              Your {openCode ? "password" : openCodeGo ? "key" : "token"}, prompts and board can be read on the way.
             </p>
           )}
         </form>

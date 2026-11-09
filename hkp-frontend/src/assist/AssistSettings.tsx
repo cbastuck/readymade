@@ -13,6 +13,7 @@ import {
   ASSIST_SETTINGS_SECTION,
   ASSIST_TOKEN_ALIASES,
   AssistSettings as Settings,
+  OPENCODE_GO_URL,
   assistTokensInVault,
   readAssistSettings,
   saveAssistSettings,
@@ -28,6 +29,9 @@ type TextField =
   | "openCodeUrl"
   | "openCodeUsername"
   | "openCodePassword"
+  | "openCodeGoUrl"
+  | "openCodeGoToken"
+  | "openCodeGoRelayKey"
   | "openAIContextTokens"
   | "mcpKnowledgeUrl";
 
@@ -36,7 +40,8 @@ function parse(field: TextField, draft: string): Partial<Settings> {
   const value = draft.trim();
   switch (field) {
     case "openAICompatibleUrl":
-    case "openCodeUrl": {
+    case "openCodeUrl":
+    case "openCodeGoUrl": {
       const url = new URL(value);
       if (!["http:", "https:"].includes(url.protocol))
         throw new Error("Use an HTTP or HTTPS API base URL.");
@@ -64,6 +69,9 @@ const resetsModel = new Set<TextField>([
   "openCodeUrl",
   "openCodeUsername",
   "openCodePassword",
+  "openCodeGoUrl",
+  "openCodeGoToken",
+  "openCodeGoRelayKey",
 ]);
 
 /**
@@ -87,6 +95,9 @@ export default function AssistSettings() {
     openCodeUrl: from.openCodeUrl,
     openCodeUsername: from.openCodeUsername,
     openCodePassword: from.openCodePassword,
+    openCodeGoUrl: from.openCodeGoUrl,
+    openCodeGoToken: from.openCodeGoToken,
+    openCodeGoRelayKey: from.openCodeGoRelayKey,
     openAIContextTokens: String(from.openAIContextTokens),
     mcpKnowledgeUrl: from.mcpKnowledgeUrl,
   });
@@ -188,7 +199,11 @@ export default function AssistSettings() {
       </p>
     );
   const removeToken = (
-    field: "anthropicToken" | "openAICompatibleToken" | "openCodePassword",
+    field:
+      | "anthropicToken"
+      | "openAICompatibleToken"
+      | "openCodePassword"
+      | "openCodeGoToken",
   ) => {
     setDrafts((current) => ({ ...current, [field]: "" }));
     persist({ [field]: "", model: "" }, field);
@@ -213,6 +228,11 @@ export default function AssistSettings() {
                   id: "opencode",
                   label: "OpenCode server",
                   sub: "a local opencode serve instance",
+                },
+                {
+                  id: "opencode-go",
+                  label: "OpenCode Go",
+                  sub: "the models of an OpenCode Go subscription",
                 },
               ]}
               value={settings.provider}
@@ -243,6 +263,68 @@ export default function AssistSettings() {
                 />
               </SettingsField>
               {error("anthropicToken")}
+            </SettingsSection>
+          ) : settings.provider === "opencode-go" ? (
+            <SettingsSection
+              label="OpenCode Go"
+              hint="Your OpenCode Go subscription's models, through its OpenAI-compatible API. Only models Go serves through chat completions are listed, each with its own context size."
+              action={
+                settings.openCodeGoToken && (
+                  <RemoveButton
+                    label="Remove OpenCode Go key"
+                    onClick={() => removeToken("openCodeGoToken")}
+                  />
+                )
+              }
+            >
+              <SettingsField label="API key">
+                <SettingsInput
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  {...text("openCodeGoToken")}
+                />
+              </SettingsField>
+              {error("openCodeGoToken")}
+              <SettingsField label="API base URL">
+                <SettingsInput
+                  type="url"
+                  spellCheck={false}
+                  placeholder={OPENCODE_GO_URL}
+                  {...text("openCodeGoUrl")}
+                />
+              </SettingsField>
+              {error("openCodeGoUrl")}
+              {unencryptedRemote(drafts.openCodeGoUrl) && (
+                <SettingsNote tone="warn">
+                  This is plain HTTP to another machine. Your key, prompts and
+                  board cross the network unencrypted. Use HTTPS unless the
+                  network between you and the relay is trusted.
+                </SettingsNote>
+              )}
+              <SettingsField label="Relay key">
+                <SettingsInput
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="Only for a relay that asks for one"
+                  {...text("openCodeGoRelayKey")}
+                />
+              </SettingsField>
+              {error("openCodeGoRelayKey")}
+              <SettingsNote>
+                Get a key at{" "}
+                <a href="https://opencode.ai/auth" target="_blank" rel="noreferrer">
+                  opencode.ai/auth
+                </a>
+                . Go lists its models to any page, but does not yet answer the
+                browser's CORS check for generating. Until it does, set the API
+                base URL to a relay that adds CORS headers, forwards to{" "}
+                <code>{OPENCODE_GO_URL}</code> and passes on the{" "}
+                <code>X-Opencode-Session</code> header. A relay that asks for a
+                key of its own gets the relay key as <code>X-Relay-Key</code>;
+                leave it empty when calling Go directly.
+              </SettingsNote>
             </SettingsSection>
           ) : settings.provider === "opencode" ? (
             <>
@@ -412,9 +494,11 @@ export default function AssistSettings() {
         {assistTokensInVault() ? (
           <>
             Tokens are kept with this device's secrets, as{" "}
-            <code>{ASSIST_TOKEN_ALIASES.anthropicToken}</code> and{" "}
-            <code>{ASSIST_TOKEN_ALIASES.openAICompatibleToken}</code> and{" "}
-            <code>{ASSIST_TOKEN_ALIASES.openCodePassword}</code>, each allowed
+            <code>{ASSIST_TOKEN_ALIASES.anthropicToken}</code>,{" "}
+            <code>{ASSIST_TOKEN_ALIASES.openAICompatibleToken}</code>,{" "}
+            <code>{ASSIST_TOKEN_ALIASES.openCodePassword}</code>,{" "}
+            <code>{ASSIST_TOKEN_ALIASES.openCodeGoToken}</code> and{" "}
+            <code>{ASSIST_TOKEN_ALIASES.openCodeGoRelayKey}</code>, each allowed
             only to its provider's host. URLs stay in this device's local
             storage. Neither is ever written into a board.
           </>

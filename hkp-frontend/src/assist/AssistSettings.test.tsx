@@ -65,6 +65,31 @@ it("configures an OpenCode server and shows its current CORS origin", () => {
   });
 });
 
+it("configures OpenCode Go with a key and a relay, and says why a relay", () => {
+  render(<AssistSettings />);
+  fireEvent.click(screen.getByRole("button", { name: /OpenCode Go/ }));
+  expect(readAssistSettings().provider).toBe("opencode-go");
+  expect((screen.getByLabelText("API base URL") as HTMLInputElement).value).toBe(
+    "https://opencode.ai/zen/go/v1",
+  );
+  expect(screen.getByText(/does not yet answer/).textContent).toContain(
+    "X-Opencode-Session",
+  );
+  fireEvent.blur(type("API key", " go-key "));
+  fireEvent.blur(type("API base URL", "https://example.com/opencode.php/go/v1"));
+  fireEvent.blur(type("Relay key", "relay-secret"));
+  expect(readAssistSettings()).toMatchObject({
+    openCodeGoToken: "go-key",
+    openCodeGoUrl: "https://example.com/opencode.php/go/v1",
+    openCodeGoRelayKey: "relay-secret",
+  });
+  expect((screen.getByLabelText("Relay key") as HTMLInputElement).type).toBe(
+    "password",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Remove OpenCode Go key" }));
+  expect(readAssistSettings().openCodeGoToken).toBe("");
+});
+
 it("keeps a focused OpenCode password when the page reloads", () => {
   const view = render(<AssistSettings />);
   fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));

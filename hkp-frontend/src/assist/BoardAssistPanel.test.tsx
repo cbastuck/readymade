@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   localRun: vi.fn(),
   openCodeModels: vi.fn(),
   openCodeRun: vi.fn(),
+  goModels: vi.fn(),
+  goRun: vi.fn(),
 }));
 vi.mock("../BoardContext", () => ({ useBoardContext: () => mocks.board }));
 vi.mock("../selection/SelectionContext", () => ({
@@ -78,6 +80,14 @@ vi.mock("./openCode", () => ({
   listOpenCodeModels: mocks.openCodeModels,
   runOpenCodeTurn: mocks.openCodeRun,
 }));
+vi.mock("./openCodeGo", () => {
+  let drawn = 0;
+  return {
+    listOpenCodeGoModels: mocks.goModels,
+    runOpenCodeGoTurn: mocks.goRun,
+    newOpenCodeGoSession: () => `session-${++drawn}`,
+  };
+});
 import BoardAssistPanel from "./BoardAssistPanel";
 import { readAssistSettings, saveAssistSettings } from "./settings";
 import { BOARD_RENDER_FAILURE_EVENT } from "../core/renderFailures";
@@ -351,6 +361,56 @@ describe("Board Assist panel", () => {
         contextTokens: 8192,
       }),
     );
+    view.unmount();
+    view.host.remove();
+  });
+  it("uses OpenCode Go through a relay, one session per conversation", async () => {
+    saveAssistSettings({
+      provider: "opencode-go",
+      openCodeGoUrl: "https://example.com/opencode.php/go/v1",
+      openCodeGoToken: "go-key",
+      openCodeGoRelayKey: "relay-secret",
+    });
+    mocks.goModels.mockResolvedValue([
+      { id: "deepseek-v4.1-flash", display_name: "DeepSeek", context_tokens: 1000000 },
+    ]);
+    mocks.goRun.mockResolvedValue({
+      conversation: [],
+      text: "Go proposal",
+      board: undefined,
+    });
+    const view = mount();
+    await screen.findByRole("option", { name: "DeepSeek" });
+    expect(screen.queryByLabelText("Effort")).toBeNull();
+    const ask = async (text: string) => {
+      fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+        target: { value: text },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Send" }));
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Send" })).toBeTruthy(),
+      );
+    };
+    await ask("First");
+    await ask("Second");
+    fireEvent.click(screen.getByRole("button", { name: "New conversation" }));
+    await ask("Third");
+    expect(mocks.goModels).toHaveBeenCalledWith(
+      "https://example.com/opencode.php/go/v1",
+      "go-key",
+      "relay-secret",
+      expect.any(AbortSignal),
+    );
+    const sessions = mocks.goRun.mock.calls.map(([options]) => options.session);
+    expect(sessions).toEqual(["session-1", "session-1", "session-2"]);
+    expect(mocks.goRun.mock.calls[0][0]).toMatchObject({
+      baseURL: "https://example.com/opencode.php/go/v1",
+      token: "go-key",
+      relayKey: "relay-secret",
+    });
+    expect(
+      screen.getByText(/are sent to https:\/\/example\.com\/opencode\.php\/go\/v1/),
+    ).toBeTruthy();
     view.unmount();
     view.host.remove();
   });
