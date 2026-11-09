@@ -22,6 +22,12 @@ type Props = {
    * one of their sections rather than a row of its own here.
    */
   onOpenSettings?: () => void;
+  /** Whether the board is pinned to the Home Screen; read with onTogglePin. */
+  pinned?: boolean;
+  /** Pins the board when it is not pinned, unpins it when it is. The menu
+   *  offers it when set: on a host with a Home Screen, for a board that has
+   *  something to pin (a saved board or a demo). */
+  onTogglePin?: () => void;
 };
 
 function MenuRow({
@@ -91,6 +97,8 @@ export default function BoardMenuSheet({
   onNew,
   onDeploy,
   onOpenSettings,
+  pinned = false,
+  onTogglePin,
 }: Props) {
   const [confirmNew, setConfirmNew] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
@@ -141,6 +149,22 @@ export default function BoardMenuSheet({
             onDeploy();
           }}
         />
+        {onTogglePin && (
+          <MenuRow
+            icon="bookmark"
+            iconColor={M.blue}
+            label={pinned ? "Unpin from Home Screen" : "Pin to Home Screen"}
+            sublabel={
+              pinned
+                ? "Stop offering it outside the app"
+                : "Open it from outside the app"
+            }
+            onClick={() => {
+              onClose();
+              onTogglePin();
+            }}
+          />
+        )}
 
         {confirmNew ? (
           <div

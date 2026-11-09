@@ -17,6 +17,7 @@ export type {
   NewsItem,
   PersistedNode,
   PinnableAction,
+  PinTarget,
   RuntimeNode,
   RuntimeServiceInfo,
   SavedBoardEntry,

@@ -29,6 +29,7 @@ import {
   RemoteRuntimeStore,
   RemoteRuntimeStoreCtx,
 } from "../../../ui-components/toolbar/useRemoteRuntimeEditing";
+import type { PinTarget, PinsController } from "../../start";
 import type { AssistFocus } from "../../../assist/useBoardAssist";
 import { ASSIST_SETTINGS_SECTION } from "../../../assist/settings";
 
@@ -48,6 +49,11 @@ type MobilePlaygroundInnerProps = {
   /** Cloud board to open: lands on the Cloud tab with that board hydrated,
    *  which is how a host opens one from outside the playground. */
   openCloudBoard?: OpenCloudBoardSignal;
+  /** Pinning to the Home Screen; absent on hosts with no Home Screen. */
+  pins?: PinsController;
+  /** What the session was opened as, which the board menu offers to pin.
+   *  Saving the board under a name makes that saved board the one pinned. */
+  pinnable?: PinTarget;
 };
 
 // ── Tab bar button ─────────────────────────────────────────────
@@ -300,9 +306,15 @@ function PlaygroundShell({
   onHome,
   onOpenSettings,
   openCloudBoard,
+  pins,
+  pinnable: openedAs,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
   const { runtimeEngines, coordinators } = useMobileConnections();
+  // What Pin pins: the board as the host opened it, until it is saved under a
+  // name or cleared, which the host does not hear about.
+  const [pinnable, setPinnable] = useState(openedAs);
+  useEffect(() => setPinnable(openedAs), [openedAs]);
   const [tab, setTab] = useState<Tab>(openCloudBoard ? "cloud" : "board");
   // Which cloud board the Cloud tab should open: what the host asked for, or
   // the board this session just deployed (deploying is how a local board
@@ -405,6 +417,10 @@ function PlaygroundShell({
       });
       return;
     }
+    setPinnable({
+      action: { kind: "saved", name: finalName },
+      title: finalName,
+    });
     toast.success(
       isHostLibrary()
         ? `Saved “${finalName}”`
@@ -431,8 +447,31 @@ function PlaygroundShell({
 
   const onNew = async () => {
     await boardContext.clearBoard();
+    setPinnable(undefined);
     setTab("board");
     toast.success("Started a new board");
+  };
+
+  const pinned = !!pins && !!pinnable && pins.isPinned(pinnable.action);
+  const onTogglePin = async () => {
+    if (!pins || !pinnable) {
+      return;
+    }
+    const { action, title } = pinnable;
+    try {
+      if (pinned) {
+        await pins.unpin(action);
+        toast.success(`Unpinned “${title}”`);
+      } else {
+        // Where the person places it themselves (iOS), the host shows how.
+        await pins.pin(action, title);
+      }
+    } catch (err) {
+      toast.error(
+        pinned ? `Could not unpin “${title}”` : `Could not pin “${title}”`,
+        { description: err instanceof Error ? err.message : undefined },
+      );
+    }
   };
 
   return (
@@ -532,6 +571,10 @@ function PlaygroundShell({
         onNew={onNew}
         onDeploy={() => setDeployOpen(true)}
         onOpenSettings={onOpenSettings}
+        pinned={pinned}
+        onTogglePin={
+          pins && pinnable ? () => void onTogglePin() : undefined
+        }
       />
       <DeployBoardSheet
         open={deployOpen}
@@ -615,6 +658,8 @@ export default function MobilePlaygroundInner({
   onHome,
   onOpenSettings,
   openCloudBoard,
+  pins,
+  pinnable,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
 
@@ -631,6 +676,8 @@ export default function MobilePlaygroundInner({
             onHome={onHome}
             onOpenSettings={onOpenSettings}
             openCloudBoard={openCloudBoard}
+            pins={pins}
+            pinnable={pinnable}
           />
         </PlayProvider>
         <RuntimeUnreachableDialog />

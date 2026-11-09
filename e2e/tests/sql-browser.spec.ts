@@ -23,6 +23,10 @@ test("a booking made in the browser is still there when the board is reopened", 
   seedBoard,
   openBoard,
 }) => {
+  // The app is loaded twice, and on the desktop shell each load is a full
+  // boot from the dev server — on a slow runner that alone is most of the
+  // default budget.
+  test.slow();
   const crashes: string[] = [];
   page.on("pageerror", (error) => crashes.push(String(error)));
 

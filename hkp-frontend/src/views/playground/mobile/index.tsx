@@ -8,6 +8,7 @@ import remoteRuntimeApi from "../../../runtime/graphql/RuntimeGraphQLApi";
 import runtimeRestApi from "../../../runtime/rest/RuntimeRestApi";
 import MobilePlaygroundInner from "./MobilePlaygroundInner";
 import type { OpenCloudBoardSignal } from "../../cloud/mobile/MobileCloudBoards";
+import type { PinTarget, PinsController } from "../../start";
 
 const runtimeApis: RuntimeApiMap = {
   browser: browserRuntimeApi,
@@ -25,6 +26,11 @@ type MobilePlaygroundProps = PlaygroundProps & {
   /** Cloud board to open on arrival — boots into the Cloud tab with that
    *  board hydrated instead of the local board. */
   openCloudBoard?: OpenCloudBoardSignal;
+  /** Pinning to the Home Screen; with `pinnable`, the board menu offers Pin /
+   *  Unpin. Absent on hosts with no Home Screen. */
+  pins?: PinsController;
+  /** The saved board or demo the session was opened as. */
+  pinnable?: PinTarget;
 };
 
 function MobilePlayground(props: MobilePlaygroundProps) {
@@ -80,6 +86,8 @@ function MobilePlayground(props: MobilePlaygroundProps) {
         onHome={props.onHome}
         onOpenSettings={props.onOpenSettings}
         openCloudBoard={props.openCloudBoard}
+        pins={props.pins}
+        pinnable={props.pinnable}
       />
       {/* Host-provided children rendered inside the board context (e.g. the
           Readymade share consumer, which injects a shared item into the open

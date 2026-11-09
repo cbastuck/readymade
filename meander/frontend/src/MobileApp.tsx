@@ -12,6 +12,7 @@ import {
   BoardHistoryItem,
   BoardState,
   PinsController,
+  PinTarget,
   RemotesController,
   createEmptyBoard,
   initialsOf,
@@ -25,6 +26,7 @@ import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
 import { MobileAccountPage } from "hkp-frontend/src/views/profile";
 import { useUserProfile } from "hkp-frontend/src/core/userProfile";
 import { findDemoBoard, findDemoUnits } from "hkp-frontend/src/demoRegistry";
+import { DEMO_CATALOG } from "hkp-frontend/src/demoCatalog";
 import { useAppContext } from "hkp-frontend/src/AppContext";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { BoardSnapshot } from "hkp-frontend/src/core/boardSnapshots";
@@ -37,7 +39,11 @@ import { SharePayload, drainNextShare } from "./share/shareInbox";
 import ShareBoardPicker from "./share/ShareBoardPicker";
 import BoardShareConsumer from "./share/BoardShareConsumer";
 import { toast } from "hkp-frontend/src/ui-components/primitives/sonner";
-import { openShortcutsApp, takeLaunch } from "./homeScreen/homeScreen";
+import {
+  openShortcutsApp,
+  removePin,
+  takeLaunch,
+} from "./homeScreen/homeScreen";
 import { usePins } from "./homeScreen/usePins";
 import HomeScreenSheet from "./homeScreen/HomeScreenSheet";
 import { getBackend } from "./backend";
@@ -89,7 +95,43 @@ type BoardSession = {
   /** Set when the session was opened to run a cloud board: the playground
    *  boots into its Cloud tab with that board hydrated. */
   cloudBoard?: OpenCloudBoardSignal;
+  /** The saved board or demo the session is, which the board menu offers to
+   *  pin. Unset on a board that is neither (new, from source, a cloud board). */
+  pinnable?: PinTarget;
 };
+
+function savedSession(name: string): BoardSession {
+  return { name, pinnable: { action: { kind: "saved", name }, title: name } };
+}
+
+/** A demo, opened from the start page or launched from the Home Screen. */
+function demoSession(slug: string): BoardSession | null {
+  const board = findDemoBoard(slug);
+  if (!board) {
+    return null;
+  }
+  const name = board.boardName ?? slug;
+  return {
+    name,
+    descriptor: board,
+    units: findDemoUnits(slug),
+    pinnable: {
+      action: { kind: "demo", slug },
+      // What the start page calls it, and so what it pins it as.
+      title: DEMO_CATALOG.find((entry) => entry.slug === slug)?.label ?? name,
+    },
+  };
+}
+
+/** The demo a session of that name was, which is named after the demo's board
+ *  (`demoSession`): what the board to continue is when nothing is saved under
+ *  its name. Null for a name two demos share: guessing would pin the other. */
+function demoSessionNamed(name: string): BoardSession | null {
+  const named = DEMO_CATALOG.filter(
+    ({ slug }) => (findDemoBoard(slug)?.boardName ?? slug) === name,
+  );
+  return named.length === 1 ? demoSession(named[0].slug) : null;
+}
 
 function StartScreen({
   onOpenSession,
@@ -161,7 +203,7 @@ function StartScreen({
         label: entry.label,
         open: () => {
           const { board, units } = resumedFrom(entry);
-          onOpenSession({ name, descriptor: board, units });
+          onOpenSession({ ...savedSession(name), descriptor: board, units });
         },
       }));
     },
@@ -172,10 +214,18 @@ function StartScreen({
     if (!recentBoardName) {
       return;
     }
-    const resumed = await resumeBoard(recentBoardName);
+    const [resumed, saved] = await Promise.all([
+      resumeBoard(recentBoardName),
+      savedBoardNames().catch(() => [] as string[]),
+    ]);
     if (resumed) {
+      // The board to continue is the one last worked on, saved or not: a demo
+      // keeps a history under its name too, and is pinned as that demo.
+      const opened = saved.includes(recentBoardName)
+        ? savedSession(recentBoardName)
+        : (demoSessionNamed(recentBoardName) ?? { name: recentBoardName });
       onOpenSession({
-        name: recentBoardName,
+        ...opened,
         descriptor: resumed.board,
         units: resumed.units,
       });
@@ -195,23 +245,21 @@ function StartScreen({
       await (await getBackend()).saveBoard(name, createEmptyBoard(name));
     } catch {
       // Opening still works; the board just isn't saved yet.
+      onOpenSession({ name });
+      return;
     }
-    onOpenSession({ name });
+    onOpenSession(savedSession(name));
   };
 
   const handleOpen = (action: BoardAction) => {
     switch (action.kind) {
       case "saved":
-        onOpenSession({ name: action.name });
+        onOpenSession(savedSession(action.name));
         break;
       case "demo": {
-        const board = findDemoBoard(action.slug);
-        if (board) {
-          onOpenSession({
-            name: board.boardName ?? action.slug,
-            descriptor: board,
-            units: findDemoUnits(action.slug),
-          });
+        const demo = demoSession(action.slug);
+        if (demo) {
+          onOpenSession(demo);
         }
         break;
       }
@@ -350,22 +398,34 @@ export default function MobileApp() {
     }
     setShowAccount(false);
     setShowSettings(null);
+    // A pin whose board has gone has no details to unpin it from: offered
+    // here, where it turns up.
+    const unpinAction = {
+      label: "Unpin",
+      onClick: () =>
+        void removePin(target).catch((err: unknown) =>
+          toast.error("Could not unpin it", {
+            description: err instanceof Error ? err.message : undefined,
+          }),
+        ),
+    };
     let next: BoardSession | null = null;
     if (target.kind === "saved") {
       const names = await savedBoardNames().catch(() => [] as string[]);
       if (names.includes(target.id)) {
-        next = { name: target.id };
+        next = savedSession(target.id);
       } else {
         toast.error(`“${target.id}” is no longer on this device`, {
-          description: "It was deleted or renamed. Unpin it from its board's details.",
+          description: "It was deleted or renamed, so its pin opens nothing.",
+          action: unpinAction,
         });
       }
     } else {
-      const board = findDemoBoard(target.id);
-      if (board) {
-        next = { name: board.boardName ?? target.id, descriptor: board };
-      } else {
-        toast.error("This demo is not part of this version of Readymade");
+      next = demoSession(target.id);
+      if (!next) {
+        toast.error("This demo is not part of this version of Readymade", {
+          action: unpinAction,
+        });
       }
     }
     if (!next) {
@@ -455,7 +515,7 @@ export default function MobileApp() {
   // promoteNextShare because closing a different board takes a render pass.
   useEffect(() => {
     if (shareToInject?.boardName && session === null) {
-      setSession({ name: shareToInject.boardName });
+      setSession(savedSession(shareToInject.boardName));
     }
   }, [shareToInject, session]);
 
@@ -530,6 +590,8 @@ export default function MobileApp() {
             boardDescriptor={session.descriptor}
             unitDocuments={session.units}
             openCloudBoard={session.cloudBoard}
+            pins={pins}
+            pinnable={session.pinnable}
             onBoardSnapshot={onBoardSnapshot}
             onSaveBoard={onSaveBoard}
             onChangeBoardname={(name: string) =>

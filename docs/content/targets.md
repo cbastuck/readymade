@@ -330,7 +330,8 @@ iCloud Drive, and the desktop app — not sandboxed — reads it as a path
 saved back there, and `~/.hkp` stays where new boards go.
 
 Pinning shows the same split from the other side. The web app asks once —
-Pin in a board's details on the mobile start page, through
+Pin in a board's details on the mobile start page, or in the open board's
+menu, through
 `hkp://home-screen/` — and each shell turns the pinned list into what its
 platform launches from. Android lets an app ask for a launcher icon
 (`requestPinShortcut`), so a pin is an icon after one confirmation. iOS does

@@ -101,6 +101,16 @@ yet) the same as a warm one.
   (`PinsController` and `isPinnable` in `views/start/types.ts`; `pins` on
   `StartPageProps`, which the desktop ignores). Test:
   `views/start/tests/mobile-pin.test.tsx`.
+- [x] **Pin / Unpin in the board menu** (`BoardMenuSheet`), for the open board:
+  the saved board or demo the host opened the session as (`pinnable` on the
+  mobile playground, a `PinTarget`), and the saved board once it is saved
+  under a name. A new board offers nothing until it is saved. Test:
+  `views/playground/mobile/tests/board-menu-pin.test.tsx`.
+- [x] **Settings › Home Screen** (`meander/frontend/src/homeScreen/HomeScreenSettings.tsx`):
+  every pin in one list, the ones whose board has gone marked, Unpin per pin,
+  Unpin all, and Unpin the ones that are gone — the only place a pin with no
+  board behind it can be removed. A launch that finds its board gone offers
+  Unpin in its toast. No test: meander's frontend has no test setup.
 - [x] **Host side** in `meander/frontend/src/homeScreen/`: the route calls
   (`homeScreen.ts`), the pinned list (`usePins.ts`), and the iOS guide shown
   after pinning (`HomeScreenSheet.tsx`). `MobileApp` opens a launched board the

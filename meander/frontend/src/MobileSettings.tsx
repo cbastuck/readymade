@@ -1,4 +1,4 @@
-import { Info, KeyRound, Network, Scale, ShieldCheck } from "lucide-react";
+import { Info, KeyRound, Network, Pin, Scale, ShieldCheck } from "lucide-react";
 
 import MobileSettingsPage, {
   MobileSettingsSection,
@@ -26,6 +26,7 @@ import { openInBrowser } from "hkp-frontend/src/runtime/browser/services/helpers
 
 import { getBackend } from "./backend";
 import { currentSurface } from "./currentSurface";
+import HomeScreenSettings from "./homeScreen/HomeScreenSettings";
 
 const buildVersion = splitBuildVersion(__READYMADE_BUILD_VERSION__);
 
@@ -110,8 +111,8 @@ type Props = {
 
 /**
  * The app's settings on a phone: the desktop dialog's sections (About,
- * Appearance, Board Assist, Connections, Secrets, Access, Licences), each a
- * page.
+ * Appearance, Board Assist, Connections, Secrets, Access, Licences) and the
+ * boards pinned to the Home Screen, each a page.
  */
 export default function MobileSettings({ onClose, initialSection, remotes }: Props) {
   const platform = usePlatform();
@@ -146,6 +147,13 @@ export default function MobileSettings({ onClose, initialSection, remotes }: Pro
         />
       ),
     },
+    kitSection({
+      id: "home-screen",
+      label: "Home Screen",
+      icon: <Pin size={18} />,
+      subtitle: "Boards pinned to open from outside the app",
+      content: <HomeScreenSettings />,
+    }),
     ...(platform.getRuntimeSettings
       ? [
           {

@@ -287,6 +287,10 @@ export interface PinsController {
   unpin: (action: PinnableAction) => Promise<void>;
 }
 
+/** What pinning an open board pins: the saved board or demo it is, and the
+ *  title the platform shows for it. */
+export type PinTarget = { action: PinnableAction; title: string };
+
 export function isPinnable(
   action: BoardAction | undefined,
 ): action is PinnableAction {
