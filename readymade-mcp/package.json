@@ -1,5 +1,5 @@
 {
-  "name": "@readymade/mcp-knowledge",
+  "name": "readymade-mcp",
   "version": "0.1.0",
   "description": "Read-only MCP knowledge server for Readymade documentation, boards, contracts, and service sources.",
   "type": "module",
@@ -15,7 +15,8 @@
     "readymade-mcp": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "bundle"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -23,13 +24,19 @@
     "bundle": "node scripts/bundle.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepublishOnly": "npm run build",
+    "prepack": "npm run build && npm run bundle",
     "runInspector": "npx @modelcontextprotocol/inspector@latest"
   },
   "engines": {
     "node": ">=22"
   },
   "license": "AGPL-3.0-only",
+  "homepage": "https://readymadeit.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cbastuck/readymade.git",
+    "directory": "readymade-mcp"
+  },
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.2",
     "@modelcontextprotocol/server": "2.4.0",

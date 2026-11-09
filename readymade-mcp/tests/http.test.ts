@@ -99,6 +99,31 @@ describe("HTTP server", () => {
     expect(JSON.stringify(large)).toMatch(/maximum of 20000 elements/);
   });
 
+  it("limits each client's requests to /mcp per minute", async () => {
+    const repository = await KnowledgeRepository.create(path.resolve(import.meta.dirname, "../.."), "test-build");
+    const limited = await startHttpServer(repository, { port: 0, rateLimit: 2 });
+    try {
+      const initialize = (client: string) =>
+        fetch(limited.url, {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json, text/event-stream", "x-forwarded-for": client },
+          body: JSON.stringify(initializeRequest),
+        });
+      expect((await initialize("203.0.113.1")).status).toBe(200);
+      expect((await initialize("203.0.113.1")).status).toBe(200);
+      const over = await initialize("203.0.113.1");
+      expect(over.status).toBe(429);
+      expect(Number(over.headers.get("retry-after"))).toBeGreaterThan(0);
+      // Behind a proxy on loopback, each forwarded client has its own budget.
+      expect((await initialize("203.0.113.2")).status).toBe(200);
+      // Preflight and health are not counted.
+      expect((await fetch(limited.url, { method: "OPTIONS", headers: { origin: "http://localhost:5173", "x-forwarded-for": "203.0.113.1" } })).status).toBe(204);
+      expect((await fetch(limited.url.replace(/\/mcp$/, "/health"), { headers: { "x-forwarded-for": "203.0.113.1" } })).status).toBe(200);
+    } finally {
+      await new Promise<void>((resolve) => limited.server.close(() => resolve()));
+    }
+  });
+
   it("requires the bearer token on /mcp when one is configured", async () => {
     const repository = await KnowledgeRepository.create(path.resolve(import.meta.dirname, "../.."), "test-build");
     const guarded = await startHttpServer(repository, { port: 0, token: "s3cret" });

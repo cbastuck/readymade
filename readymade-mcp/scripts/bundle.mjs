@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// Writes what the knowledge server indexes, and the server's own sources, into
-// a fresh directory as they are committed — never the working tree — so a
-// deployed server needs no git and cannot serve an untracked, ignored or
-// edited file. Runs where git is: a development machine or CI.
+// Writes what the knowledge server indexes into a fresh directory as it is
+// committed — never the working tree — so a deployed server needs no git and
+// cannot serve an untracked, ignored or edited file. The package ships the
+// default directory, and `npm pack` writes it first. Runs where git is: a
+// development machine or CI.
 //
 //   npm run bundle                       → readymade-mcp/bundle, replaced each run
 //   node scripts/bundle.mjs --out <dir>  → a directory that must not exist yet
@@ -20,10 +21,7 @@ const superprojectPaths = [
   "boards",
   "hkp-frontend/src/runtime/browser",
   "hkp-rt/lib",
-  "readymade-mcp/package.json",
-  "readymade-mcp/package-lock.json",
-  "readymade-mcp/tsconfig.json",
-  "readymade-mcp/src",
+  "LICENSE",
 ];
 // Ignored by git, and only ever written by this script, so it is safe to
 // replace; a directory named with --out is never removed.

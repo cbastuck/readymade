@@ -12,6 +12,8 @@ export interface HttpServerOptions {
   allowedOriginHostnames?: string[];
   /** When set, /mcp requires `Authorization: Bearer <token>`. */
   token?: string;
+  /** Requests to /mcp each client may make per minute; 0 for no limit. */
+  rateLimit?: number;
 }
 
 function isLoopback(host: string): boolean {
@@ -24,6 +26,41 @@ function digest(value: string): Buffer {
   return createHash("sha256").update(value).digest();
 }
 
+/**
+ * Who a request comes from. Behind a reverse proxy on the same machine every
+ * request arrives from loopback, so there the client is the address the proxy
+ * appended last to X-Forwarded-For; from anywhere else that header is the
+ * client's own word and is ignored.
+ */
+function clientOf(request: IncomingMessage): string {
+  const remote = request.socket.remoteAddress ?? "";
+  const loopback = remote === "127.0.0.1" || remote === "::1" || remote === "::ffff:127.0.0.1";
+  const forwarded = request.headers["x-forwarded-for"];
+  const last = (Array.isArray(forwarded) ? forwarded.join(",") : forwarded)?.split(",").pop()?.trim();
+  return loopback && last ? last : remote;
+}
+
+/**
+ * Counts requests per client in fixed one-minute windows. Answers how many
+ * seconds remain until the window ends once a client is over `limit`, and
+ * undefined while it is not. Counts are dropped with each window, so memory
+ * stays bounded by the clients of a single minute.
+ */
+function rateLimiter(limit: number, windowMs = 60_000) {
+  let windowStart = Date.now();
+  let counts = new Map<string, number>();
+  return (client: string): number | undefined => {
+    const now = Date.now();
+    if (now - windowStart >= windowMs) {
+      windowStart = now;
+      counts = new Map();
+    }
+    const count = (counts.get(client) ?? 0) + 1;
+    counts.set(client, count);
+    return count > limit ? Math.ceil((windowStart + windowMs - now) / 1000) : undefined;
+  };
+}
+
 function authorized(request: IncomingMessage, expected: Buffer): boolean {
   const match = /^Bearer\s+(.+)$/i.exec(request.headers.authorization ?? "");
   return match !== null && timingSafeEqual(digest(match[1].trim()), expected);
@@ -33,8 +70,9 @@ export async function startHttpServer(repository: KnowledgeRepository, options: 
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 8787;
   if (!isLoopback(host) && (!options.allowedHostnames?.length || !options.allowedOriginHostnames?.length)) {
-    throw new Error("Non-loopback binding requires explicit allowedHostnames and allowedOriginHostnames. Put a TLS reverse proxy with rate limiting in front of it before exposing it publicly.");
+    throw new Error("Non-loopback binding requires explicit allowedHostnames and allowedOriginHostnames. Put a TLS reverse proxy in front of it before exposing it publicly.");
   }
+  const limited = options.rateLimit === 0 ? undefined : rateLimiter(options.rateLimit ?? 120);
   const token = options.token ? digest(options.token) : undefined;
   const validateHost = isLoopback(host)
     ? options.allowedHostnames?.length
@@ -81,6 +119,12 @@ export async function startHttpServer(repository: KnowledgeRepository, options: 
     if (pathname !== "/mcp") {
       response.writeHead(404, { "content-type": "application/json" });
       response.end(JSON.stringify({ error: "Not found" }));
+      return;
+    }
+    const retryAfter = limited?.(clientOf(request));
+    if (retryAfter !== undefined) {
+      response.writeHead(429, { "content-type": "application/json", "retry-after": String(retryAfter) });
+      response.end(JSON.stringify({ error: "Too many requests" }));
       return;
     }
     if (token && !authorized(request, token)) {

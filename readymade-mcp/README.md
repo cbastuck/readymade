@@ -60,71 +60,56 @@ npm run dev -- --root .. --allowed-origin readymadeit.com
 `--allowed-origin` and `--allowed-host` are repeatable and accept hostnames,
 not complete URLs. Non-loopback binding requires at least one of each.
 
+## The package
+
+The npm package carries the knowledge it serves: `npm pack` and
+`npm publish` first run `npm run bundle`, which writes `bundle/` with
+`git archive` — the docs, example boards and runtime sources as committed at
+HEAD, the submodules' at the commits the superproject records, and those
+commits in `readymade-mcp-commits.json`. An untracked board, an ignored file or
+a local edit never reaches it, so commit before packing. The bundle needs git
+where it is made, and nothing where it is served.
+
+Without `--root`, the installed server serves that bundle and reports the
+package version as the build version:
+
+```sh
+npm install readymade-mcp
+npx readymade-mcp --allowed-host mcp.example.com --allowed-origin readymadeit.com
+```
+
+`npm run bundle` on its own writes the same `bundle/`, replacing the previous
+one; git ignores it. `npm run bundle -- --out <dir>` writes elsewhere, into a
+directory that must not exist yet. `npm pack --dry-run` lists what would be
+published.
+
 ## Deploy for a hosted playground
 
 A page served over https cannot call a server's plain-http port, so a hosted
 playground reaches the server through a TLS reverse proxy. The server stays on
-loopback behind it, and is told which public names to answer to:
+loopback behind it and is told which public names to answer to:
+`--allowed-host` for the name the proxy forwards in the Host header,
+`--allowed-origin` for each browser origin that may call it. Origins are
+matched by hostname; a custom scheme, such as an app webview's `hkp://app`, is
+allowed as a whole with `--allowed-origin 'hkp://*'`.
 
-The server needs no git. Bundle what it serves where git is — a development
-machine or CI — and copy the bundle over:
-
-```sh
-cd readymade-mcp
-npm run bundle
-```
-
-It writes `readymade-mcp/bundle/`, replacing the previous one, and git ignores
-it. `npm run bundle -- --out <dir>` writes elsewhere, into a directory that
-must not exist yet.
-
-The bundle is written with `git archive`, so it holds what is committed at
-HEAD — never an untracked board, an ignored file or a local edit — with the
-runtime sources of the submodules at the commits the superproject records.
-The commits go into `readymade-mcp-commits.json`, which the server reports as
-provenance in place of `.git`. On the server:
-
-```sh
-cd bundle/readymade-mcp
-npm ci && npm run build
-node dist/cli.js --root .. \
-  --allowed-host mcp.example.com --allowed-origin readymadeit.com
-```
-
-The proxy terminates TLS and limits what one client can ask for; the server
-itself has no rate limit. An nginx example:
-
-```nginx
-limit_req_zone $binary_remote_addr zone=mcp:10m rate=5r/s;
-
-server {
-  listen 443 ssl;
-  server_name mcp.example.com;
-  # ssl_certificate / ssl_certificate_key …
-
-  client_max_body_size 1m;
-
-  location / {
-    limit_req zone=mcp burst=20 nodelay;
-    proxy_pass http://127.0.0.1:8787;
-    proxy_set_header Host $host;
-    proxy_http_version 1.1;
-    proxy_buffering off;
-    proxy_read_timeout 30s;
-  }
-}
-```
-
-`proxy_set_header Host` matters: the server checks the Host header against
-`--allowed-host`. Responses may stream as server-sent events, hence
-`proxy_buffering off`.
+readymadeit.com runs it under systemd behind Caddy:
+`hkp-website/server/etc/systemd/system/readymade-mcp.service`, with the
+Caddy site and the setup steps in `hkp-website/server/README.md`.
 
 Everything the server returns is already public in this repository, so the
-hosted endpoint is public by design: the proxy's limits are what protect it. A private deployment can require a bearer token
-on `/mcp` by setting `READYMADE_MCP_TOKEN`; preflight and `/health` stay open.
-Board Assist does not send one yet, so a token suits clients that set their
-own headers, such as Claude Code or the MCP inspector.
+hosted endpoint is public by design, and its limits are what protect it:
 
-Tool calls are capped at 20,000 array elements and object members in their
-arguments, request bodies at 1 MiB, and a request must arrive within 30
-seconds.
+- **Rate:** each client may make 120 requests to `/mcp` a minute
+  (`--rate-limit`, 0 for none); past that it gets 429 with `Retry-After`. The
+  client is the connecting address, or — when that is loopback, as behind a
+  proxy on the same machine — the last address in `X-Forwarded-For`.
+  Preflight and `/health` are not counted.
+- **Size:** request bodies are capped at 1 MiB and tool-call arguments at
+  20,000 array elements and object members.
+- **Time:** a request must arrive within 30 seconds, its headers within 10.
+
+A private deployment can require a bearer token on `/mcp` by setting
+`READYMADE_MCP_TOKEN`; preflight and `/health` stay open. Board Assist does not
+send one yet, so a token suits clients that set their own headers, such as
+Claude Code or the MCP inspector.
