@@ -8,11 +8,20 @@ import {
   SettingsRow,
   SettingsSection,
   SettingsStack,
+  SettingsSwitch,
 } from "hkp-frontend/src/ui-components/settings/kit";
 import { findDemoBoard } from "hkp-frontend/src/demoRegistry";
 
 import { getBackend } from "../backend";
-import { listPins, Pin, PINS_CHANGED, removePin } from "./homeScreen";
+import {
+  listPins,
+  opensAsApp,
+  Pin,
+  PINS_AS_APP_CHANGED,
+  PINS_CHANGED,
+  removePin,
+  setOpensAsApp,
+} from "./homeScreen";
 
 const AFTER_UNPIN_NOTE =
   (window as any).__MEANDER_IOS__ === true
@@ -34,6 +43,8 @@ export default function HomeScreenSettings() {
   const [savedNames, setSavedNames] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Read from its store on every render; bumped to render when it changes.
+  const [, setAsAppVersion] = useState(0);
 
   useEffect(() => {
     void listPins()
@@ -48,8 +59,13 @@ export default function HomeScreenSettings() {
       .catch(() => {});
     const onChanged = (event: Event) =>
       setPins((event as CustomEvent<Pin[]>).detail);
+    const onAsAppChanged = () => setAsAppVersion((n) => n + 1);
     window.addEventListener(PINS_CHANGED, onChanged);
-    return () => window.removeEventListener(PINS_CHANGED, onChanged);
+    window.addEventListener(PINS_AS_APP_CHANGED, onAsAppChanged);
+    return () => {
+      window.removeEventListener(PINS_CHANGED, onChanged);
+      window.removeEventListener(PINS_AS_APP_CHANGED, onAsAppChanged);
+    };
   }, []);
 
   const isGone = (pin: Pin) =>
@@ -73,6 +89,7 @@ export default function HomeScreenSettings() {
   };
 
   const gone = (pins ?? []).filter(isGone);
+  const present = (pins ?? []).filter((pin) => !isGone(pin));
 
   return (
     <SettingsStack>
@@ -121,6 +138,32 @@ export default function HomeScreenSettings() {
       </SettingsSection>
       {error && <SettingsNote tone="warn">{error}</SettingsNote>}
       <SettingsNote>{AFTER_UNPIN_NOTE}</SettingsNote>
+      {present.length > 0 && (
+        <SettingsSection
+          label="Open as app"
+          hint="Its facade fills the screen. Go back, or hold two fingers on the screen, to see the board around it. A board without a facade opens as usual."
+        >
+          <SettingsList>
+            {present.map((pin) => {
+              const asApp = opensAsApp(pin);
+              return (
+                <SettingsRow
+                  key={`${pin.kind}:${pin.id}`}
+                  title={pin.title}
+                  subtitle={asApp ? "Opens as an app" : "Opens with the board"}
+                  trailing={
+                    <SettingsSwitch
+                      label={`Open ${pin.title} as an app`}
+                      checked={asApp}
+                      onChange={(next) => setOpensAsApp(pin, next)}
+                    />
+                  }
+                />
+              );
+            })}
+          </SettingsList>
+        </SettingsSection>
+      )}
     </SettingsStack>
   );
 }

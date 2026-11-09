@@ -35,6 +35,50 @@ export type HomeScreenPlacement = "requested" | "manual";
  */
 export const PINS_CHANGED = "readymade:pins-changed";
 
+/** Raised when a pin starts or stops opening as an app (opensAsApp). */
+export const PINS_AS_APP_CHANGED = "readymade:pins-as-app-changed";
+
+// A pin opens as an app unless the person said otherwise: what is kept is the
+// pins that open with the board. How this person launches a board is kept
+// beside the pins on this device rather than in the board. The shells' lists
+// are not where it lives: nothing native reads it, and a change of it must not
+// move the pin to the front of the list, as pinning again does.
+const WITH_BOARD_KEY = "readymade:pins-with-board";
+
+const keyOf = (pin: Pick<Pin, "kind" | "id">) => `${pin.kind}:${pin.id}`;
+
+function readWithBoard(): string[] {
+  try {
+    const stored = JSON.parse(localStorage.getItem(WITH_BOARD_KEY) ?? "[]");
+    return Array.isArray(stored)
+      ? stored.filter((key): key is string => typeof key === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeWithBoard(keys: string[]) {
+  try {
+    localStorage.setItem(WITH_BOARD_KEY, JSON.stringify(keys));
+  } catch {
+    // Not kept: the pin goes on opening as an app.
+  }
+  window.dispatchEvent(new Event(PINS_AS_APP_CHANGED));
+}
+
+/** Whether launching the pinned board shows it as an app (app mode), which
+ *  it does unless the person chose the board around it. A board without a
+ *  facade has no app to show and opens with the board either way. */
+export function opensAsApp(pin: Pick<Pin, "kind" | "id">): boolean {
+  return !readWithBoard().includes(keyOf(pin));
+}
+
+export function setOpensAsApp(pin: Pick<Pin, "kind" | "id">, asApp: boolean) {
+  const others = readWithBoard().filter((key) => key !== keyOf(pin));
+  writeWithBoard(asApp ? others : [...others, keyOf(pin)]);
+}
+
 function announced(pins: Pin[]): Pin[] {
   window.dispatchEvent(new CustomEvent<Pin[]>(PINS_CHANGED, { detail: pins }));
   return pins;
@@ -109,14 +153,17 @@ export async function addPin(
 }
 
 export async function removePin(pin: Pick<Pin, "kind" | "id">): Promise<Pin[]> {
-  return announced(
-    await readPins(
-      await fetch(
-        `hkp://home-screen/pins/${pin.kind}/${encodeURIComponent(pin.id)}`,
-        { method: "DELETE" },
-      ),
+  const pins = await readPins(
+    await fetch(
+      `hkp://home-screen/pins/${pin.kind}/${encodeURIComponent(pin.id)}`,
+      { method: "DELETE" },
     ),
   );
+  // Pinned again later, it starts out opening as an app.
+  if (!opensAsApp(pin)) {
+    setOpensAsApp(pin, true);
+  }
+  return announced(pins);
 }
 
 /** The board the shell was last asked to open, once: taking it clears it. */

@@ -285,6 +285,11 @@ export interface PinsController {
   /** `title` is what the platform shows under the icon. */
   pin: (action: PinnableAction, title: string) => Promise<void>;
   unpin: (action: PinnableAction) => Promise<void>;
+  /** Whether a launch from the pin shows the board's facade on the whole
+   *  screen (app mode) rather than the playground around it. Absent on a host
+   *  that keeps no such choice. */
+  opensAsApp?: (action: PinnableAction) => boolean;
+  setOpensAsApp?: (action: PinnableAction, asApp: boolean) => void;
 }
 
 /** What pinning an open board pins: the saved board or demo it is, and the

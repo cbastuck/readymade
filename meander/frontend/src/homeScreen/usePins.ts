@@ -8,11 +8,14 @@ import type {
 import {
   addPin,
   listPins,
+  opensAsApp,
   Pin,
   pinOf,
+  PINS_AS_APP_CHANGED,
   PINS_CHANGED,
   removePin,
   samePin,
+  setOpensAsApp,
 } from "./homeScreen";
 
 /**
@@ -27,6 +30,9 @@ export function usePins(): {
 } {
   const [list, setList] = useState<Pin[]>([]);
   const [pinnedTitle, setPinnedTitle] = useState<string | null>(null);
+  // Bumped when a pin starts or stops opening as an app, which is read from
+  // its store rather than kept here.
+  const [asAppVersion, setAsAppVersion] = useState(0);
 
   useEffect(() => {
     // A shell without the route (an older build) has nothing pinned; the
@@ -38,8 +44,13 @@ export function usePins(): {
     // there (library/deleteBoard).
     const onChanged = (event: Event) =>
       setList((event as CustomEvent<Pin[]>).detail);
+    const onAsAppChanged = () => setAsAppVersion((n) => n + 1);
     window.addEventListener(PINS_CHANGED, onChanged);
-    return () => window.removeEventListener(PINS_CHANGED, onChanged);
+    window.addEventListener(PINS_AS_APP_CHANGED, onAsAppChanged);
+    return () => {
+      window.removeEventListener(PINS_CHANGED, onChanged);
+      window.removeEventListener(PINS_AS_APP_CHANGED, onAsAppChanged);
+    };
   }, []);
 
   const isPinned = useCallback(
@@ -60,8 +71,11 @@ export function usePins(): {
       unpin: async (action) => {
         setList(await removePin(pinOf(action, "")));
       },
+      opensAsApp: (action) => opensAsApp(pinOf(action, "")),
+      setOpensAsApp: (action, asApp) => setOpensAsApp(pinOf(action, ""), asApp),
     }),
-    [isPinned],
+    // A new controller when a pin's choice changes, so what reads it renders.
+    [isPinned, asAppVersion], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   return {

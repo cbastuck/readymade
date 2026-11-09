@@ -23,6 +23,7 @@ import DeployBoardSheet from "./DeployBoardSheet";
 import SaveBoardSheet from "./SaveBoardSheet";
 import RunSheet from "./RunSheet";
 import { CaptureButton, useCaptureControl } from "./capture";
+import { AppModeProvider, useAppModeState } from "./appMode";
 import RuntimeUnreachableDialog from "../../../ui-components/RuntimeUnreachableDialog";
 import UnknownRemoteDialog from "../../../ui-components/UnknownRemoteDialog";
 import {
@@ -54,6 +55,9 @@ type MobilePlaygroundInnerProps = {
   /** What the session was opened as, which the board menu offers to pin.
    *  Saving the board under a name makes that saved board the one pinned. */
   pinnable?: PinTarget;
+  /** Shows the board in app mode once it has loaded, which is how a host
+   *  opens a pin that opens as an app. A new value asks again. */
+  openAsApp?: number;
 };
 
 // ── Tab bar button ─────────────────────────────────────────────
@@ -308,6 +312,7 @@ function PlaygroundShell({
   openCloudBoard,
   pins,
   pinnable: openedAs,
+  openAsApp,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
   const { runtimeEngines, coordinators } = useMobileConnections();
@@ -345,6 +350,18 @@ function PlaygroundShell({
   });
   // What the board was last run with: what the plain Play sends again.
   const [lastParams, setLastParams] = useRunParams();
+  // The facade on the whole screen, entered from the canvas, which is the one
+  // that knows whether there is a facade to show.
+  const appMode = useAppModeState();
+  // Asked for until the board it was asked for has loaded, and only once: a
+  // canvas mounted again later (back from the Hub) is not asked again.
+  const [appModeRequested, setAppModeRequested] = useState(!!openAsApp);
+  useEffect(() => {
+    if (openAsApp) {
+      setAppModeRequested(true);
+      setTab("board");
+    }
+  }, [openAsApp]);
 
   // Surface Hub-managed external runtimes — and the hosts behind the Hub's
   // coordinators, which serve runtimes from the same address — in the local
@@ -448,11 +465,29 @@ function PlaygroundShell({
   const onNew = async () => {
     await boardContext.clearBoard();
     setPinnable(undefined);
+    setAppModeRequested(false);
     setTab("board");
     toast.success("Started a new board");
   };
 
   const pinned = !!pins && !!pinnable && pins.isPinned(pinnable.action);
+  // Only a board with a facade has an app to open as.
+  const hasFacade =
+    !!boardContext.facade ||
+    (boardContext.linkage?.views ?? []).some((v) => !!v.facade);
+  const opensAsApp =
+    pinned && !!pins?.opensAsApp && pins.opensAsApp(pinnable!.action);
+  const onToggleOpensAsApp = () => {
+    if (!pins?.setOpensAsApp || !pinnable) {
+      return;
+    }
+    pins.setOpensAsApp(pinnable.action, !opensAsApp);
+    toast.success(
+      opensAsApp
+        ? `“${pinnable.title}” opens with the board from the Home Screen`
+        : `“${pinnable.title}” opens as an app from the Home Screen`,
+    );
+  };
   const onTogglePin = async () => {
     if (!pins || !pinnable) {
       return;
@@ -475,6 +510,7 @@ function PlaygroundShell({
   };
 
   return (
+    <AppModeProvider value={appMode}>
     <div
       style={{
         width: "100%",
@@ -488,7 +524,7 @@ function PlaygroundShell({
       }}
     >
       {/* The cloud view renders its own header; hide the local-board TopBar there. */}
-      {tab !== "cloud" && (
+      {tab !== "cloud" && !appMode.active && (
         <TopBar
           boardName={displayName}
           runtimeCount={rtCount}
@@ -516,14 +552,34 @@ function PlaygroundShell({
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
+          // The bars kept the facade clear of the notch and the home
+          // indicator; without them it keeps clear itself, on its own surface.
+          ...(appMode.active
+            ? {
+                background: "hsl(var(--background, 0 0% 100%))",
+                paddingTop: "env(safe-area-inset-top)",
+                paddingBottom: "env(safe-area-inset-bottom)",
+                paddingLeft: "env(safe-area-inset-left)",
+                paddingRight: "env(safe-area-inset-right)",
+              }
+            : {}),
         }}
       >
-        {tab === "board" && <MobileBoardCanvas onFocus={setFocus} />}
+        {tab === "board" && (
+          <MobileBoardCanvas
+            onFocus={setFocus}
+            appModeRequested={appModeRequested}
+            onAppModeRequestSettled={() => setAppModeRequested(false)}
+          />
+        )}
         {tab === "cloud" && <MobileCloudBoards openBoard={cloudTarget} />}
         {tab === "hub" && (
           <MobileHub
             suggestedName={displayName}
-            onBoardLoaded={() => setTab("board")}
+            onBoardLoaded={() => {
+              setAppModeRequested(false);
+              setTab("board");
+            }}
           />
         )}
       </div>
@@ -531,10 +587,10 @@ function PlaygroundShell({
       {/* Bottom tab bar */}
       <div
         style={{
+          display: appMode.active ? "none" : "flex",
           background: "rgba(242,237,232,0.95)",
           backdropFilter: "blur(12px)",
           borderTop: `1px solid ${M.border}`,
-          display: "flex",
           alignItems: "center",
           paddingTop: "8px",
           paddingBottom: "max(16px, env(safe-area-inset-bottom))",
@@ -574,6 +630,12 @@ function PlaygroundShell({
         pinned={pinned}
         onTogglePin={
           pins && pinnable ? () => void onTogglePin() : undefined
+        }
+        opensAsApp={opensAsApp}
+        onToggleOpensAsApp={
+          pins?.setOpensAsApp && pinnable && hasFacade
+            ? onToggleOpensAsApp
+            : undefined
         }
       />
       <DeployBoardSheet
@@ -623,6 +685,7 @@ function PlaygroundShell({
         }}
       />
     </div>
+    </AppModeProvider>
   );
 }
 
@@ -660,6 +723,7 @@ export default function MobilePlaygroundInner({
   openCloudBoard,
   pins,
   pinnable,
+  openAsApp,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
 
@@ -678,6 +742,7 @@ export default function MobilePlaygroundInner({
             openCloudBoard={openCloudBoard}
             pins={pins}
             pinnable={pinnable}
+            openAsApp={openAsApp}
           />
         </PlayProvider>
         <RuntimeUnreachableDialog />

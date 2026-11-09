@@ -26,6 +26,7 @@ import BottomSheet from "./BottomSheet";
 import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import MobileFacadeView from "./MobileFacadeView";
+import { useAppMode, useTwoFingerHold } from "./appMode";
 import { passesNothing } from "../../../runtime/rest/Data";
 import { boardRun } from "../../../runtime/processContext";
 import type { AssistFocus } from "../../../assist/useBoardAssist";
@@ -80,6 +81,10 @@ type MobileBoardCanvasProps = {
    * Assist narrows a request to — and which sub-pipeline in it is open.
    */
   onFocus?: (focus: AssistFocus) => void;
+  /** Shows the board in app mode as soon as it has loaded, if it has a
+   *  facade: a pin that opens as an app. Settled once that is decided. */
+  appModeRequested?: boolean;
+  onAppModeRequestSettled?: () => void;
 };
 
 // ── Flow connector between service cards ───────────────────────
@@ -1679,9 +1684,12 @@ function useWireBrowserScopes(
 function ViewToggle({
   view,
   onChange,
+  onAppMode,
 }: {
   view: "facade" | "board";
   onChange: (v: "facade" | "board") => void;
+  /** Shows the facade on the whole screen; absent where the shell cannot. */
+  onAppMode?: () => void;
 }) {
   const segments: Array<{ value: "facade" | "board"; label: string; icon: MobileIconName }> = [
     { value: "facade", label: "App", icon: "home" },
@@ -1690,6 +1698,7 @@ function ViewToggle({
   return (
     <div
       style={{
+        position: "relative",
         display: "flex",
         justifyContent: "center",
         padding: "8px 0",
@@ -1740,6 +1749,30 @@ function ViewToggle({
           );
         })}
       </div>
+      {onAppMode && (
+        <button
+          onClick={onAppMode}
+          aria-label="Show the app on the whole screen"
+          title="Show the app on the whole screen"
+          style={{
+            position: "absolute",
+            right: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: 34,
+            height: 34,
+            border: "none",
+            background: "rgba(0,0,0,0.06)",
+            borderRadius: 9,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <MobileIcon name="maximize2" size={16} color={M.textSecondary} />
+        </button>
+      )}
     </div>
   );
 }
@@ -1749,6 +1782,8 @@ export default function MobileBoardCanvas({
   bridge,
   capture,
   onFocus,
+  appModeRequested = false,
+  onAppModeRequestSettled,
 }: MobileBoardCanvasProps) {
   const boardContext = useBoardContext();
 
@@ -1801,9 +1836,54 @@ export default function MobileBoardCanvas({
   // When a different board loads, prefer its facade ("App") view by default,
   // mirroring the desktop where the facade is shown first when present.
   const loadedBoardName = boardContext?.boardName;
+  // App mode shows this board's facade, so it ends with the board: another
+  // board may have none, and the canvas going away takes the facade along.
+  const appMode = useAppMode();
+  const exitAppMode = appMode?.exit;
   useEffect(() => {
     setView("facade");
-  }, [loadedBoardName]);
+    exitAppMode?.();
+  }, [loadedBoardName]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => exitAppMode?.(), [exitAppMode]);
+  const hasFacade =
+    !!boardContext?.facade ||
+    (boardContext?.linkage?.views ?? []).some((v) => !!v.facade);
+  useEffect(() => {
+    if (!hasFacade || view !== "facade") {
+      exitAppMode?.();
+    }
+  }, [hasFacade, view, exitAppMode]);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  useTwoFingerHold(canvasRef, () => exitAppMode?.(), !!appMode?.active);
+  const enterAppMode = appMode
+    ? () => {
+        if (appMode.active) {
+          return;
+        }
+        setView("facade");
+        appMode.enter();
+        toast.message("Showing the app on the whole screen", {
+          description:
+            "Go back, or hold two fingers on the screen, to see the board again.",
+        });
+      }
+    : undefined;
+  // Decided once the board has loaded: its facade arrives before its name and
+  // runtimes do, and a name arriving would end app mode again. A board that
+  // turns out to have no facade opens as it always does.
+  const loaded =
+    !!boardContext &&
+    !boardContext.isFetching &&
+    (hasFacade || boardContext.runtimes.length > 0);
+  useEffect(() => {
+    if (!appModeRequested || !loaded) {
+      return;
+    }
+    if (hasFacade) {
+      enterAppMode?.();
+    }
+    onAppModeRequestSettled?.();
+  }, [appModeRequested, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Which view is shown, if the board offers more than one. Declared with the
   // other hooks, above the early return below: it must be called on every
@@ -1871,8 +1951,11 @@ export default function MobileBoardCanvas({
       )
     : [];
 
+  const appModeShown = !!appMode?.active && showFacade;
+
   const canvas = (
     <div
+      ref={canvasRef}
       style={{
         position: "relative",
         flex: 1,
@@ -1889,7 +1972,9 @@ export default function MobileBoardCanvas({
             }),
       }}
     >
-      {facade && <ViewToggle view={view} onChange={setView} />}
+      {facade && !appModeShown && (
+        <ViewToggle view={view} onChange={setView} onAppMode={enterAppMode} />
+      )}
 
       {showFacade ? (
         <>

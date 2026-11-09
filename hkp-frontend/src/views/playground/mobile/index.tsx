@@ -31,6 +31,8 @@ type MobilePlaygroundProps = PlaygroundProps & {
   pins?: PinsController;
   /** The saved board or demo the session was opened as. */
   pinnable?: PinTarget;
+  /** Shows the board in app mode once it has loaded; a new value asks again. */
+  openAsApp?: number;
 };
 
 function MobilePlayground(props: MobilePlaygroundProps) {
@@ -88,6 +90,7 @@ function MobilePlayground(props: MobilePlaygroundProps) {
         openCloudBoard={props.openCloudBoard}
         pins={props.pins}
         pinnable={props.pinnable}
+        openAsApp={props.openAsApp}
       />
       {/* Host-provided children rendered inside the board context (e.g. the
           Readymade share consumer, which injects a shared item into the open

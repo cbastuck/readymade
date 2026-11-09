@@ -41,6 +41,7 @@ import BoardShareConsumer from "./share/BoardShareConsumer";
 import { toast } from "hkp-frontend/src/ui-components/primitives/sonner";
 import {
   openShortcutsApp,
+  opensAsApp,
   removePin,
   takeLaunch,
 } from "./homeScreen/homeScreen";
@@ -98,6 +99,9 @@ type BoardSession = {
   /** The saved board or demo the session is, which the board menu offers to
    *  pin. Unset on a board that is neither (new, from source, a cloud board). */
   pinnable?: PinTarget;
+  /** Set, to when, by a launch from a pin that opens as an app: the board is
+   *  shown in app mode once it has loaded. A new time asks again. */
+  openAsApp?: number;
 };
 
 function savedSession(name: string): BoardSession {
@@ -432,7 +436,9 @@ export default function MobileApp() {
       setSession(null);
       return;
     }
-    const opening = next;
+    const opening: BoardSession = opensAsApp(target)
+      ? { ...next, openAsApp: Date.now() }
+      : next;
     // The saved board already open stays as it is: launching it again is
     // coming back to it, not starting over.
     setSession((prev) =>
@@ -450,6 +456,10 @@ export default function MobileApp() {
       setSession(launchSession);
       setLaunchSession(null);
     } else if (launchSession && session?.name === launchSession.name) {
+      // Kept open, and still asked to be shown as an app.
+      if (launchSession.openAsApp) {
+        setSession({ ...session, openAsApp: launchSession.openAsApp });
+      }
       setLaunchSession(null);
     }
   }, [launchSession, session]);
@@ -592,6 +602,7 @@ export default function MobileApp() {
             openCloudBoard={session.cloudBoard}
             pins={pins}
             pinnable={session.pinnable}
+            openAsApp={session.openAsApp}
             onBoardSnapshot={onBoardSnapshot}
             onSaveBoard={onSaveBoard}
             onChangeBoardname={(name: string) =>

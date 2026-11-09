@@ -53,6 +53,7 @@ calling convention.
 | M8 | Settings: licenses and about | built 2026-10-27 with the Settings page; the pass on devices open |
 | M9 | Sharing into the app | built 2026-11-07; the iOS pass done, the Android pass open |
 | M10 | Board finder extras: source, fork, import, QR | open |
+| M11 | App mode: the facade on the whole screen | built 2026-11-09 with Open as app on pins; the native bars and the pass on devices open |
 
 The order is the order of value, not of dependency. M8 is small and can go in
 whenever there is a gap.
@@ -746,13 +747,81 @@ picker (`ShareBoardPicker`) chooses the board on both.
 
 ---
 
+## M11: App mode
+
+A board's facade on the whole screen, with none of the playground's bars: the
+board used as the app it was built as. Entering it is a button; leaving it has
+to work without one, because there is nothing left on screen to press.
+
+### Decided (2026-11-09)
+
+- **Leaving is the system's back** (Android's back gesture, iOS's edge swipe,
+  which `allowsBackForwardNavigationGestures` already gives the WebView) **and a
+  two-finger hold** anywhere on the facade. A plain long press was ruled out:
+  text inputs, the message list, swimlane drags, knobs, the xy-pad and the canvas
+  all take it. No facade widget asks for two fingers held still.
+- Entering pushes a history entry, the same bargain details make
+  (`MobileFacadeView`, `useDetailStack`): back from a detail opened inside app
+  mode lands on the master, still in app mode, and the next back leaves it.
+  Leaving by the hold pops through any open details.
+- What is hidden: the top bar (or the cloud board's), the App / Board toggle and
+  the Board / Cloud / Hub tabs. What stays: the facade's own tabs, a
+  composition's view tabs and a cloud board's start-up errors, which are all
+  part of the app.
+- How a board is looked at is the person's choice, so there is no board field
+  for it.
+
+### Built (2026-11-09)
+
+- [x] `views/playground/mobile/appMode.tsx`: the state (`useAppModeState`,
+  provided by the playground shell), its history entry marked per session, and
+  `useTwoFingerHold`. Tests in `tests/app-mode.test.tsx`.
+- [x] The enter button beside the App / Board toggle (`MobileBoardCanvas`), with
+  a toast saying how to come back. App mode ends when the board changes, when it
+  has no facade, or when the canvas goes away.
+- [x] The shell keeps the facade clear of the notch and the home indicator
+  itself (`env(safe-area-inset-*)`) once its bars are gone.
+- [x] **Android back goes to the page first** (`MainActivity.onBackPressed`).
+  Before this, back closed the app, and a facade detail could not be closed with
+  it either, which the detail stack assumed it could.
+
+### Still open
+
+- [ ] **The pass on devices**: entering and leaving on both, back through
+  details, the hold on a facade with a canvas or an xy-pad, rotation, and the
+  safe areas on a phone with a notch and one without.
+- [ ] **Hiding the OS bars** as well: `prefersStatusBarHidden` on iOS through a
+  message handler, and `WindowInsetsControllerCompat.hide(systemBars())` with
+  swipe-to-show on Android. Android has to draw edge-to-edge first, or
+  `env(safe-area-inset-*)` stays zero there.
+- [x] **"Open as app" on a pin** (built 2026-11-09): a board launched from
+  the Home Screen goes straight into app mode once it has loaded. A launch
+  into a board that is already open shows it as an app too. A board without a
+  facade opens as usual. **Every pin opens as an app by default** (decided
+  2026-11-09: a board pinned to the Home Screen is meant to be used like an
+  app). Opening with the board instead is chosen from the board menu of a
+  pinned board with a facade, or per pin in Settings → Home Screen. That choice
+  is kept in the web app beside the pins (`homeScreen.ts`, `opensAsApp`), not in
+  the shells' pin lists: nothing native reads it, and pinning again moves a pin
+  to the front of the list, which a change of this setting must not do.
+  Unpinning clears it.
+- [ ] Whether someone launched straight into app mode needs a visible way out
+  beyond the toast that names the gestures, such as a handle that shows for a
+  moment after a tap. Decide on devices.
+- [ ] **A shared board's member view** (`views/cloud/SharedBoard.tsx`) renders
+  the facade on its own and has no app mode. A member sees only the facade,
+  so it may be the natural default there.
+- [ ] Landscape while in app mode, for audio and canvas boards.
+
+---
+
 ## Not planned for mobile
 
 Agreed 2026-10-26:
 
 - **Runtime zoom**: mobile has its own zoom for service UIs.
 - **Retracting the toolbar over the facade** (`FacadeChrome`): the App / Board
-  toggle does that job.
+  toggle and app mode (M11) do that job.
 - **The selection-aware sidebar** and blocking swipe navigation: both are
   desktop-only behaviours.
 - **Local model backends** (speech, llama): a build decision

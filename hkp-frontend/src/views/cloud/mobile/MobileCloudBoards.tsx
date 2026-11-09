@@ -43,6 +43,7 @@ import MembersDialog from "../MembersDialog";
 import SharedBoard from "../SharedBoard";
 import { SharedBoardLink, coordinatorNameFor } from "../sharedLink";
 import MobileBoardCanvas from "../../playground/mobile/MobileBoardCanvas";
+import { useAppMode } from "../../playground/mobile/appMode";
 import CloudLoginGate from "../CloudLoginGate";
 import ManageCoordinatorsDialog from "../ManageCoordinatorsDialog";
 import NewBoardDialog from "../NewBoardDialog";
@@ -789,6 +790,7 @@ export default function MobileCloudBoards({
   >();
   // View toggle: when true show the overview even though a board is still mounted.
   const [showOverview, setShowOverview] = useState(true);
+  const appMode = useAppMode();
   // True while a start/stop request is in flight, so a second tap cannot
   // register the board twice.
   const [runToggleBusy, setRunToggleBusy] = useState(false);
@@ -1262,6 +1264,7 @@ export default function MobileCloudBoards({
           fontFamily: "'DM Sans', system-ui, sans-serif",
         }}
       >
+        {!appMode?.active && (
         <CloudTopBar
           title={boardIsOpen ? (selectedBoard?.boardName ?? "Board") : "Cloud Boards"}
           subtitle={
@@ -1285,6 +1288,7 @@ export default function MobileCloudBoards({
           onMembers={boardIsOpen ? () => setIsMembersOpen(true) : undefined}
           capture={boardIsOpen ? capture : undefined}
         />
+        )}
 
         {/* Keep the board mounted in the background while browsing the overview
             so its bridge WebSocket and notification targets stay registered. */}

@@ -28,6 +28,11 @@ type Props = {
    *  offers it when set: on a host with a Home Screen, for a board that has
    *  something to pin (a saved board or a demo). */
   onTogglePin?: () => void;
+  /** Whether a launch from the pin shows the board as an app; read with
+   *  onToggleOpensAsApp, which the menu offers when set: on a pinned board
+   *  with a facade to show. */
+  opensAsApp?: boolean;
+  onToggleOpensAsApp?: () => void;
 };
 
 function MenuRow({
@@ -99,6 +104,8 @@ export default function BoardMenuSheet({
   onOpenSettings,
   pinned = false,
   onTogglePin,
+  opensAsApp = false,
+  onToggleOpensAsApp,
 }: Props) {
   const [confirmNew, setConfirmNew] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
@@ -162,6 +169,26 @@ export default function BoardMenuSheet({
             onClick={() => {
               onClose();
               onTogglePin();
+            }}
+          />
+        )}
+        {pinned && onToggleOpensAsApp && (
+          <MenuRow
+            icon="maximize2"
+            iconColor={M.blue}
+            label={
+              opensAsApp
+                ? "Open with the board from Home Screen"
+                : "Open as app from Home Screen"
+            }
+            sublabel={
+              opensAsApp
+                ? "Show the playground around it again"
+                : "Its facade fills the screen, nothing else"
+            }
+            onClick={() => {
+              onClose();
+              onToggleOpensAsApp();
             }}
           />
         )}

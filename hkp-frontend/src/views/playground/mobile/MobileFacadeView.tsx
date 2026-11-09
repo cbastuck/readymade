@@ -230,7 +230,7 @@ export default function MobileFacadeView({
 }
 
 /** What this view keeps in a history entry it pushed for an open detail. */
-const HISTORY_KEY = "hkpFacadeDetail";
+export const HISTORY_KEY = "hkpFacadeDetail";
 
 type DetailEntry = {
   board: string;
