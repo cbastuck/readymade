@@ -31,7 +31,8 @@ function parseArguments(argv: string[]): CliOptions {
       result.allowedOriginHostnames.push(argv[++index]);
     else if (argument === "--help") {
       process.stdout.write(
-        "Usage: readymade-mcp [--stdio] [--root PATH] [--host 127.0.0.1] [--port 8787] [--allowed-host HOSTNAME] [--allowed-origin HOSTNAME]\n",
+        "Usage: readymade-mcp [--stdio] [--root PATH] [--host 127.0.0.1] [--port 8787] [--allowed-host HOSTNAME] [--allowed-origin HOSTNAME]\n" +
+          "Set READYMADE_MCP_TOKEN to require it as a bearer token on /mcp.\n",
       );
       process.exit(0);
     } else throw new Error(`Unknown argument: ${argument}`);
@@ -53,6 +54,9 @@ async function main(): Promise<void> {
     port: options.port,
     allowedHostnames: options.allowedHostnames,
     allowedOriginHostnames: options.allowedOriginHostnames,
+    // From the environment rather than an argument, which other users of the
+    // machine can read in the process list.
+    token: process.env.READYMADE_MCP_TOKEN || undefined,
   });
   console.log(`Readymade MCP knowledge server listening at ${url}`);
   console.log(`Indexed ${repository.stats().documents} documents, ${repository.stats().boards} boards, and ${repository.stats().contracts} runtime-specific contracts.`);

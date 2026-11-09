@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
-import { readCommit } from "./git.js";
+import { readBundleCommits, readCommit } from "./git.js";
 import {
   canonicalServiceId,
   normalizeRuntime,
@@ -34,6 +34,7 @@ interface ParsedServiceDocument {
   configuration: ConfigurationProperty[];
 }
 
+// scripts/bundle.mjs copies these folders; keep the two lists in step.
 const sourceRoots: Array<{ directory: string; repository: string; runtime: RuntimeName; extensions: string[] }> = [
   { directory: "hkp-frontend/src/runtime/browser", repository: "readymade", runtime: "browser", extensions: [".ts", ".tsx"] },
   { directory: "hkp-node/src", repository: "hkp-node", runtime: "node", extensions: [".ts"] },
@@ -237,7 +238,8 @@ export class KnowledgeRepository implements ValidationCatalog {
 
   static async create(root: string, buildVersion = process.env.READYMADE_BUILD_VERSION ?? "workspace"): Promise<KnowledgeRepository> {
     const absoluteRoot = path.resolve(root);
-    const rootCommit = await readCommit(absoluteRoot);
+    const bundleCommits = await readBundleCommits(absoluteRoot);
+    const rootCommit = bundleCommits?.readymade ?? await readCommit(absoluteRoot);
     const indexedAt = new Date().toISOString();
     const entries: Entry[] = [];
     const sourceEntries: Entry[] = [];
@@ -279,7 +281,7 @@ export class KnowledgeRepository implements ValidationCatalog {
 
     for (const sourceRoot of sourceRoots) {
       const worktree = path.join(absoluteRoot, sourceRoot.directory.split("/")[0]);
-      const sourceCommit = sourceRoot.repository === "readymade" ? rootCommit : await readCommit(worktree);
+      const sourceCommit = sourceRoot.repository === "readymade" ? rootCommit : bundleCommits?.[sourceRoot.repository] ?? await readCommit(worktree);
       for (const absolute of await walk(path.join(absoluteRoot, sourceRoot.directory), sourceRoot.extensions)) {
         const relativePath = path.relative(absoluteRoot, absolute).split(path.sep).join("/");
         const content = await readFile(absolute, "utf8");

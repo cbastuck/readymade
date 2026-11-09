@@ -1,4 +1,5 @@
-import { createServer, type Server } from "node:http";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { createServer, type IncomingMessage, type Server } from "node:http";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import { hostHeaderValidation, localhostHostValidation, localhostOriginValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node";
 import { createReadymadeMcpServer } from "./server.js";
@@ -9,6 +10,8 @@ export interface HttpServerOptions {
   port?: number;
   allowedHostnames?: string[];
   allowedOriginHostnames?: string[];
+  /** When set, /mcp requires `Authorization: Bearer <token>`. */
+  token?: string;
 }
 
 function isLoopback(host: string): boolean {
@@ -17,12 +20,22 @@ function isLoopback(host: string): boolean {
 
 const loopbackNames = ["localhost", "127.0.0.1", "[::1]"];
 
+function digest(value: string): Buffer {
+  return createHash("sha256").update(value).digest();
+}
+
+function authorized(request: IncomingMessage, expected: Buffer): boolean {
+  const match = /^Bearer\s+(.+)$/i.exec(request.headers.authorization ?? "");
+  return match !== null && timingSafeEqual(digest(match[1].trim()), expected);
+}
+
 export async function startHttpServer(repository: KnowledgeRepository, options: HttpServerOptions = {}): Promise<{ server: Server; url: string }> {
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 8787;
   if (!isLoopback(host) && (!options.allowedHostnames?.length || !options.allowedOriginHostnames?.length)) {
-    throw new Error("Non-loopback binding requires explicit allowedHostnames and allowedOriginHostnames. Authentication should be added before exposing this server publicly.");
+    throw new Error("Non-loopback binding requires explicit allowedHostnames and allowedOriginHostnames. Put a TLS reverse proxy with rate limiting in front of it before exposing it publicly.");
   }
+  const token = options.token ? digest(options.token) : undefined;
   const validateHost = isLoopback(host)
     ? options.allowedHostnames?.length
       ? hostHeaderValidation([...new Set([...loopbackNames, ...options.allowedHostnames])])
@@ -44,8 +57,9 @@ export async function startHttpServer(repository: KnowledgeRepository, options: 
     if (!validateHost(request, response) || !validateOrigin(request, response)) return;
     const origin = request.headers.origin;
     if (origin) {
+      // No credentials: the server uses no cookies, and a bearer token is an
+      // explicit header, so an allowed origin never gets a credentialed request.
       response.setHeader("access-control-allow-origin", origin);
-      response.setHeader("access-control-allow-credentials", "true");
       response.setHeader("access-control-expose-headers", "Mcp-Protocol-Version, Mcp-Session-Id");
       response.setHeader("vary", "Origin");
     }
@@ -69,8 +83,17 @@ export async function startHttpServer(repository: KnowledgeRepository, options: 
       response.end(JSON.stringify({ error: "Not found" }));
       return;
     }
+    if (token && !authorized(request, token)) {
+      response.writeHead(401, { "content-type": "application/json", "www-authenticate": "Bearer" });
+      response.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
     void nodeHandler(request, response);
   });
+  // Every exchange is one bounded tool call, so a client that trickles its
+  // request is cut off instead of holding a connection open.
+  server.headersTimeout = 10_000;
+  server.requestTimeout = 30_000;
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => {
