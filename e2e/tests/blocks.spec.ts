@@ -167,6 +167,7 @@ test.describe("a use on the running board", () => {
     const volume = uses(page, "note").first().getByLabel("volume");
     await volume.fill("0.25");
     await volume.press("Enter");
+    await expect(volume).toHaveValue("0.25");
 
     // The running use took them: its hit, one level in, now plays at 25%.
     // The bar's: the panel's own is hidden with the rest of the panel.
