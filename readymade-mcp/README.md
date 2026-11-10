@@ -59,5 +59,57 @@ npm run dev -- --root .. --allowed-origin readymadeit.com
 
 `--allowed-origin` and `--allowed-host` are repeatable and accept hostnames,
 not complete URLs. Non-loopback binding requires at least one of each.
-Treat non-loopback deployment as a separate production task: configure strict
-allowlists and add authentication before exposing the endpoint.
+
+## The package
+
+The npm package carries the knowledge it serves: `npm pack` and
+`npm publish` first run `npm run bundle`, which writes `bundle/` with
+`git archive` — the docs, example boards and runtime sources as committed at
+HEAD, the submodules' at the commits the superproject records, and those
+commits in `readymade-mcp-commits.json`. An untracked board, an ignored file or
+a local edit never reaches it, so commit before packing. The bundle needs git
+where it is made, and nothing where it is served.
+
+Without `--root`, the installed server serves that bundle and reports the
+package version as the build version:
+
+```sh
+npm install readymade-mcp
+npx readymade-mcp --allowed-host mcp.example.com --allowed-origin readymadeit.com
+```
+
+`npm run bundle` on its own writes the same `bundle/`, replacing the previous
+one; git ignores it. `npm run bundle -- --out <dir>` writes elsewhere, into a
+directory that must not exist yet. `npm pack --dry-run` lists what would be
+published.
+
+## Deploy for a hosted playground
+
+A page served over https cannot call a server's plain-http port, so a hosted
+playground reaches the server through a TLS reverse proxy. The server stays on
+loopback behind it and is told which public names to answer to:
+`--allowed-host` for the name the proxy forwards in the Host header,
+`--allowed-origin` for each browser origin that may call it. Origins are
+matched by hostname; a custom scheme, such as an app webview's `hkp://app`, is
+allowed as a whole with `--allowed-origin 'hkp://*'`.
+
+readymadeit.com runs it under systemd behind Caddy:
+`hkp-website/server/etc/systemd/system/readymade-mcp.service`, with the
+Caddy site and the setup steps in `hkp-website/server/README.md`.
+
+Everything the server returns is already public in this repository, so the
+hosted endpoint is public by design, and its limits are what protect it:
+
+- **Rate:** each client may make 120 requests to `/mcp` a minute
+  (`--rate-limit`, 0 for none); past that it gets 429 with `Retry-After`. The
+  client is the connecting address, or — when that is loopback, as behind a
+  proxy on the same machine — the last address in `X-Forwarded-For`.
+  Preflight and `/health` are not counted.
+- **Size:** request bodies are capped at 1 MiB and tool-call arguments at
+  20,000 array elements and object members.
+- **Time:** a request must arrive within 30 seconds, its headers within 10.
+
+A private deployment can require a bearer token on `/mcp` by setting
+`READYMADE_MCP_TOKEN`; preflight and `/health` stay open. Board Assist does not
+send one yet, so a token suits clients that set their own headers, such as
+Claude Code or the MCP inspector.

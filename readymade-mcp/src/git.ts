@@ -31,3 +31,18 @@ export async function readCommit(worktree: string): Promise<string> {
     return "unknown";
   }
 }
+
+/**
+ * The commits a bundle was made from (`scripts/bundle.mjs`), keyed by
+ * repository. A bundle has no `.git` to read them from; outside one this is
+ * undefined.
+ */
+export async function readBundleCommits(root: string): Promise<Record<string, string> | undefined> {
+  try {
+    const value: unknown = JSON.parse(await readFile(path.join(root, "readymade-mcp-commits.json"), "utf8"));
+    if (typeof value !== "object" || value === null) return undefined;
+    return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+  } catch {
+    return undefined;
+  }
+}

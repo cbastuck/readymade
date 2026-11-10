@@ -16,6 +16,11 @@ const readOnlyAnnotations = {
   openWorldHint: false,
 };
 
+// The largest board this repository ships has under 900 array elements and
+// object members; this leaves room for much larger ones while keeping a
+// single tools/call from exhausting memory during validation.
+const maxToolInputElements = 20_000;
+
 function response(value: unknown) {
   const structuredContent = value as Record<string, unknown>;
   return {
@@ -32,7 +37,7 @@ function toolError(error: unknown) {
 export function createReadymadeMcpServer(repository: KnowledgeRepository): McpServer {
   const server = new McpServer(
     { name: "readymade-knowledge", version: "0.1.0" },
-    { capabilities: { tools: {} }, instructions: "Read-only, version-labelled knowledge for designing and validating Readymade boards. The connected runtime registry remains authoritative for service availability." },
+    { capabilities: { tools: {} }, maxToolInputElements, instructions: "Read-only, version-labelled knowledge for designing and validating Readymade boards. The connected runtime registry remains authoritative for service availability." },
   );
 
   server.registerTool(

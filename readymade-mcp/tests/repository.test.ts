@@ -1,4 +1,6 @@
-import { existsSync, readdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { KnowledgeRepository } from "../src/repository.js";
@@ -96,5 +98,39 @@ describe("KnowledgeRepository", () => {
       expect.objectContaining({ code: "service.unknown", severity: "warning" }),
       expect.objectContaining({ code: "pipeline.orphan", severity: "error" }),
     ]));
+  });
+});
+
+describe("bundle", () => {
+  it("holds only committed content and the commits it came from", async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "readymade-mcp-bundle-"));
+    const out = path.join(root, "..", `${path.basename(root)}-out`);
+    const git = (...args: string[]) =>
+      execFileSync("git", ["-C", root, "-c", "user.name=test", "-c", "user.email=test@example.com", ...args]);
+    try {
+      git("init", "-q");
+      mkdirSync(path.join(root, "docs", "content"), { recursive: true });
+      mkdirSync(path.join(root, "boards"));
+      writeFileSync(path.join(root, "docs", "content", "intro.md"), "# Intro\n");
+      writeFileSync(path.join(root, "boards", "demo.json"), "{}");
+      writeFileSync(path.join(root, ".gitignore"), "boards/private.json\n");
+      git("add", ".");
+      git("commit", "-q", "-m", "init");
+      const commit = git("rev-parse", "HEAD").toString().trim();
+      writeFileSync(path.join(root, "boards", "draft.json"), "{}");
+      writeFileSync(path.join(root, "boards", "private.json"), "{}");
+      writeFileSync(path.join(root, "docs", "content", "intro.md"), "# Edited\n");
+
+      execFileSync(process.execPath, [path.join(import.meta.dirname, "../scripts/bundle.mjs"), "--root", root, "--out", out], { stdio: "pipe" });
+      expect(readdirSync(path.join(out, "boards"))).toEqual(["demo.json"]);
+      expect(readFileSync(path.join(out, "docs", "content", "intro.md"), "utf8")).toBe("# Intro\n");
+      expect(existsSync(path.join(out, ".git"))).toBe(false);
+
+      const bundled = await KnowledgeRepository.create(out, "test-build");
+      expect(bundled.stats().commit).toBe(commit);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(out, { recursive: true, force: true });
+    }
   });
 });
