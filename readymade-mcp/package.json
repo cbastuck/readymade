@@ -1,5 +1,5 @@
 {
-  "name": "readymade-mcp",
+  "name": "@readymadeit/mcp",
   "version": "0.1.0",
   "description": "Read-only MCP knowledge server for Readymade documentation, boards, contracts, and service sources.",
   "type": "module",
@@ -36,6 +36,9 @@
     "type": "git",
     "url": "https://github.com/cbastuck/readymade.git",
     "directory": "readymade-mcp"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.2",
