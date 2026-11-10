@@ -925,4 +925,45 @@ describe("Board Assist panel", () => {
     view.unmount();
     view.host.remove();
   });
+  it("offers to switch to Whole board and retry when a runtime-scoped turn proposes no board", async () => {
+    mocks.run
+      .mockResolvedValueOnce({
+        conversation: [],
+        text: "Please switch the editing context to Whole board to adjust the facade.",
+      })
+      .mockResolvedValueOnce({
+        conversation: [],
+        text: "Adjusted the facade text color.",
+        board: proposed,
+      });
+    const view = mount();
+    await screen.findByRole("option", { name: "Queried model" });
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Make the list font darker" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    const retry = await screen.findByRole("button", {
+      name: "Switch to Whole board and retry",
+    });
+    expect(screen.queryByText("Show raw model response")).toBeNull();
+    expect(mocks.run.mock.calls[0][0].scope).toEqual({
+      kind: "runtime",
+      runtimeId: "ui",
+      runtimeName: "Browser",
+    });
+
+    fireEvent.click(retry);
+    await screen.findByRole("button", { name: "Apply board" });
+    expect((screen.getByLabelText("Context") as HTMLSelectElement).value).toBe(
+      "board",
+    );
+    expect(mocks.run.mock.calls[1][0].scope).toEqual({ kind: "board" });
+    expect(mocks.run.mock.calls[1][0].prompt).toBe("Make the list font darker");
+    expect(
+      screen.queryByRole("button", { name: "Switch to Whole board and retry" }),
+    ).toBeNull();
+    view.unmount();
+    view.host.remove();
+  });
 });

@@ -414,23 +414,31 @@ export async function runOpenAICompatibleTurn(options: OpenAIRequestOptions & {
   options.onUsage?.(usage);
   const choice = data.choices?.[0];
   const content = choice?.message?.content;
-  if (typeof content === "string") options.onRawResponse?.(content);
   if (choice?.finish_reason === "length" && !content?.trim())
     throw new Error(
       `The model spent its whole output limit (${maxTokens} tokens) thinking, before writing an answer. Try a simpler request or a model that reasons less.`,
     );
-  if (choice?.finish_reason === "length")
+  if (choice?.finish_reason === "length") {
+    if (typeof content === "string") options.onRawResponse?.(content);
     throw new Error(
       "The response reached its output limit. Try a smaller board or increase the server and settings context size.",
     );
+  }
   if (typeof content !== "string")
     throw new Error("The server returned no assistant message.");
-  const { explanation, board } = parseTextProposal(
-    content,
-    options.scope,
-    options.base,
-    "The model did not return valid JSON. Use a model/chat template that supports JSON output, or try a simpler request.",
-  );
+  let parsed: ReturnType<typeof parseTextProposal>;
+  try {
+    parsed = parseTextProposal(
+      content,
+      options.scope,
+      options.base,
+      "The model did not return valid JSON. Use a model/chat template that supports JSON output, or try a simpler request.",
+    );
+  } catch (error) {
+    options.onRawResponse?.(content);
+    throw error;
+  }
+  const { explanation, board } = parsed;
   options.onText(explanation);
   const conversation: Conversation = [
     ...options.conversation,

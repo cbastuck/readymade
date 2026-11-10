@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 
-type ValueKind = "boolean" | "number" | "string" | "json";
+export type ValueKind = "boolean" | "number" | "string" | "json";
 
-function kindOf(value: unknown): ValueKind {
+function kindOf(value: unknown, defaultKind: ValueKind = "json"): ValueKind {
+  if (value === undefined || value === null) { return defaultKind; }
   if (typeof value === "boolean") { return "boolean"; }
   if (typeof value === "number") { return "number"; }
   if (typeof value === "string") { return "string"; }
@@ -10,16 +11,19 @@ function kindOf(value: unknown): ValueKind {
 }
 
 function valueToString(value: unknown, kind: ValueKind): string {
+  if (value === undefined || value === null) { return ""; }
   if (kind === "json") { return JSON.stringify(value, null, 2); }
   return String(value);
 }
 
 export function parseValue(raw: string, kind: ValueKind): unknown {
   if (kind === "number") {
+    if (!raw.trim()) return undefined;
     const n = Number(raw);
     return isNaN(n) ? raw : n;
   }
   if (kind === "json") {
+    if (!raw.trim()) return undefined;
     try { return JSON.parse(raw); } catch { return raw; }
   }
   return raw;
@@ -74,14 +78,15 @@ const inputStyle: React.CSSProperties = {
 type Props = {
   propKey: string;
   value: unknown;
+  defaultKind?: ValueKind;
   onCommit: (key: string, newValue: unknown) => void;
 };
 
-export function EditableRow({ propKey, value, onCommit }: Props) {
+export function EditableRow({ propKey, value, defaultKind, onCommit }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
-  const kind = kindOf(value);
+  const kind = kindOf(value, defaultKind);
 
   useEffect(() => {
     if (editing) {
