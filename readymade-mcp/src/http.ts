@@ -12,7 +12,7 @@ export interface HttpServerOptions {
   allowedOriginHostnames?: string[];
   /** When set, /mcp requires `Authorization: Bearer <token>`. */
   token?: string;
-  /** Requests to /mcp each client may make per minute; 0 for no limit. */
+  /** Requests each client may make per minute; 0 for no limit. */
   rateLimit?: number;
 }
 
@@ -111,6 +111,12 @@ export async function startHttpServer(repository: KnowledgeRepository, options: 
       response.end();
       return;
     }
+    const retryAfter = limited?.(clientOf(request));
+    if (retryAfter !== undefined) {
+      response.writeHead(429, { "content-type": "application/json", "retry-after": String(retryAfter) });
+      response.end(JSON.stringify({ error: "Too many requests" }));
+      return;
+    }
     if (request.method === "GET" && pathname === "/health") {
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify({ ok: true, ...repository.stats() }));
@@ -119,12 +125,6 @@ export async function startHttpServer(repository: KnowledgeRepository, options: 
     if (pathname !== "/mcp") {
       response.writeHead(404, { "content-type": "application/json" });
       response.end(JSON.stringify({ error: "Not found" }));
-      return;
-    }
-    const retryAfter = limited?.(clientOf(request));
-    if (retryAfter !== undefined) {
-      response.writeHead(429, { "content-type": "application/json", "retry-after": String(retryAfter) });
-      response.end(JSON.stringify({ error: "Too many requests" }));
       return;
     }
     if (token && !authorized(request, token)) {

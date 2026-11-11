@@ -37,7 +37,7 @@ function parseArguments(argv: string[]): CliOptions {
       process.stdout.write(
         "Usage: readymade-mcp [--stdio] [--root PATH] [--host 127.0.0.1] [--port 8787] [--allowed-host HOSTNAME] [--allowed-origin HOSTNAME] [--rate-limit PER_MINUTE]\n" +
           "Without --root it serves the knowledge the package ships, or the checkout it is run in.\n" +
-          "--rate-limit is requests to /mcp per client and minute (default 120; 0 for none).\n" +
+          "--rate-limit is requests per client and minute (default 120; 0 for none).\n" +
           "Set READYMADE_MCP_TOKEN to require it as a bearer token on /mcp.\n",
       );
       process.exit(0);

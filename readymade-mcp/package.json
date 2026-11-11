@@ -1,6 +1,6 @@
 {
   "name": "@readymadeit/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read-only MCP knowledge server for Readymade documentation, boards, contracts, and service sources.",
   "type": "module",
   "main": "dist/index.js",

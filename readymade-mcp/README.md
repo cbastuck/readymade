@@ -100,11 +100,11 @@ Caddy site and the setup steps in `hkp-website/server/README.md`.
 Everything the server returns is already public in this repository, so the
 hosted endpoint is public by design, and its limits are what protect it:
 
-- **Rate:** each client may make 120 requests to `/mcp` a minute
-  (`--rate-limit`, 0 for none); past that it gets 429 with `Retry-After`. The
-  client is the connecting address, or — when that is loopback, as behind a
-  proxy on the same machine — the last address in `X-Forwarded-For`.
-  Preflight and `/health` are not counted.
+- **Rate:** each client may make 120 requests a minute (`--rate-limit`, 0 for
+  none); past that it gets 429 with `Retry-After`. The client is the
+  connecting address, or — when that is loopback, as behind a proxy on the
+  same machine — the last address in `X-Forwarded-For`. Preflight is not
+  counted; `/mcp`, `/health` and unknown paths are.
 - **Size:** request bodies are capped at 1 MiB and tool-call arguments at
   20,000 array elements and object members.
 - **Time:** a request must arrive within 30 seconds, its headers within 10.

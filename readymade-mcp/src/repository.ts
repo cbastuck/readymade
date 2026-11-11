@@ -223,6 +223,15 @@ function provenanceFor(entry: Entry, requestedVersion?: string): Provenance {
 export class KnowledgeRepository implements ValidationCatalog {
   private readonly byPath = new Map<string, Entry>();
   private readonly contracts: ServiceContract[] = [];
+  private readonly cachedStats: {
+    documents: number;
+    boards: number;
+    contracts: number;
+    sourceFiles: number;
+    buildVersion: string;
+    commit: string;
+    indexedAt: string;
+  };
 
   private constructor(
     readonly root: string,
@@ -234,6 +243,15 @@ export class KnowledgeRepository implements ValidationCatalog {
   ) {
     for (const entry of entries) this.byPath.set(entry.relativePath, entry);
     this.buildContracts();
+    this.cachedStats = {
+      documents: this.entries.filter((entry) => entry.kind !== "board").length,
+      boards: this.entries.filter((entry) => entry.kind === "board").length,
+      contracts: this.contracts.length,
+      sourceFiles: this.sourceEntries.length,
+      buildVersion: this.buildVersion,
+      commit: this.commit,
+      indexedAt: this.indexedAt,
+    };
   }
 
   static async create(root: string, buildVersion = process.env.READYMADE_BUILD_VERSION ?? "workspace"): Promise<KnowledgeRepository> {
@@ -436,7 +454,7 @@ export class KnowledgeRepository implements ValidationCatalog {
   }
 
   stats() {
-    return { documents: this.entries.filter((entry) => entry.kind !== "board").length, boards: this.entries.filter((entry) => entry.kind === "board").length, contracts: this.contracts.length, sourceFiles: this.sourceEntries.length, buildVersion: this.buildVersion, commit: this.commit, indexedAt: this.indexedAt };
+    return this.cachedStats;
   }
 
   private findSourceEntries(serviceId: string, runtime: RuntimeName, limit: number): Entry[] {

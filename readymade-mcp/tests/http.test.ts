@@ -99,7 +99,7 @@ describe("HTTP server", () => {
     expect(JSON.stringify(large)).toMatch(/maximum of 20000 elements/);
   });
 
-  it("limits each client's requests to /mcp per minute", async () => {
+  it("limits each client's requests per minute across /mcp, /health, and 404 paths", async () => {
     const repository = await KnowledgeRepository.create(path.resolve(import.meta.dirname, "../.."), "test-build");
     const limited = await startHttpServer(repository, { port: 0, rateLimit: 2 });
     try {
@@ -114,11 +114,13 @@ describe("HTTP server", () => {
       const over = await initialize("203.0.113.1");
       expect(over.status).toBe(429);
       expect(Number(over.headers.get("retry-after"))).toBeGreaterThan(0);
+      // /health and unknown paths also share and enforce the same budget.
+      expect((await fetch(limited.url.replace(/\/mcp$/, "/health"), { headers: { "x-forwarded-for": "203.0.113.1" } })).status).toBe(429);
+      expect((await fetch(limited.url.replace(/\/mcp$/, "/unknown"), { headers: { "x-forwarded-for": "203.0.113.1" } })).status).toBe(429);
       // Behind a proxy on loopback, each forwarded client has its own budget.
       expect((await initialize("203.0.113.2")).status).toBe(200);
-      // Preflight and health are not counted.
+      // Preflight is not counted.
       expect((await fetch(limited.url, { method: "OPTIONS", headers: { origin: "http://localhost:5173", "x-forwarded-for": "203.0.113.1" } })).status).toBe(204);
-      expect((await fetch(limited.url.replace(/\/mcp$/, "/health"), { headers: { "x-forwarded-for": "203.0.113.1" } })).status).toBe(200);
     } finally {
       await new Promise<void>((resolve) => limited.server.close(() => resolve()));
     }
