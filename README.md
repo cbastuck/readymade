@@ -1,50 +1,37 @@
-# Readymade Build Guide
+# Readymade
 
-Quick instructions for building the project from the repository root.
+Readymade is a composable, distributed framework for building **interactive apps** out of inspectable building blocks (**services**).
 
-## Screenshot
+A **board** is a single JSON document describing the app's user interface (**facade**), its services, and the **runtimes** they run on — in the browser, embedded in the desktop and mobile apps (C++), or on self-hosted servers (Node.js and Python). You can build and adapt boards by hand or with **Board Assist** (using local or hosted AI models), observe data flowing through every step in real time, and run them locally or share them with a group.
 
 ![Readymade screenshot](./readymade-screenshot.png)
 
-## Platform build guides
+## Quick start (Web playground)
 
-Build steps differ per platform. Pick yours:
-
-- [Web](./README-web.md) — runs in the browser from `hkp-frontend/`; Node + npm only, no
-  native toolchain
-- [MacOS](./README-macos.md) — desktop app (`build.sh`)
-- [Linux](./README-linux.md) — desktop app (`build-linux.sh`), required packages, compiler
-  and sandbox troubleshooting
-- [Windows](./README-windows.md) — desktop app (`build-windows.ps1`), PowerShell notes
-- [iOS](./README-ios.md) — device + simulator (`build-ios.sh`), bundled web app, signing
-- [Android](./README-android.md) — `build-android.sh`, NDK/vcpkg setup, bundled web app
-
-## Prerequisites (all platforms)
-
-- Node.js + npm
-- CMake 3.21+ — for the native shells; the [web target](./README-web.md) needs neither CMake
-  nor a C++ toolchain
-
-Note: vcpkg is vendored in `3rdparty/vcpkg` and is used by CMake during configure/build.
-
-Each platform guide lists the additional toolchain it needs.
-
-## Git hooks (once per checkout)
+The fastest way to run Readymade locally requires only **Node.js + npm**:
 
 ```bash
-./scripts/install-hooks.sh
+cd hkp-frontend
+npm install
+npm run dev
 ```
 
-Git hooks are not carried by a clone, so each checkout installs them once. This points
-both the superproject and the `hkp-website` submodule at the versioned hooks in
-`.githooks` — currently a pre-commit check that the app version in
-`hkp-frontend/package.json` and `hkp-website/src/pages/constants.ts` still agree. Run it
-again after `git submodule update --init` if the website submodule was not checked out
-the first time. Details are in `docs/content/repository.md`.
+Then open **http://localhost:5555**.
 
-## Frontend dev server
+## Build guides by platform
 
-For UI iteration on the native shells, run their frontend in dev mode from `meander/frontend`:
+Each target has a self-contained build guide with its prerequisites and output paths:
+
+- **[Web](./README-web.md)** — browser playground and board engine (`hkp-frontend/`, Node + npm only)
+- **[macOS](./README-macos.md)** — desktop app with embedded C++ runtime (`./build.sh`)
+- **[Linux](./README-linux.md)** — desktop app (`./build-linux.sh`, GTK 4 / WebKitGTK)
+- **[Windows](./README-windows.md)** — desktop app (`.\build-windows.ps1`)
+- **[iOS](./README-ios.md)** — iPhone/iPad app for device and simulator (`./build-ios.sh`)
+- **[Android](./README-android.md)** — Android app (`./build-android.sh`)
+
+### Frontend dev server
+
+When iterating on the UI for the desktop or iOS simulator shells, start the shell frontend with hot reload on port `8555`:
 
 ```bash
 cd meander/frontend
@@ -52,99 +39,45 @@ npm install
 npm start
 ```
 
-This starts Vite on port `8555` with hot reload. To use the dev server instead of embedded
-assets, build with embedding disabled — see the `EmbeddedFrontend`/dev-server notes in your
-platform guide, or configure CMake directly:
+Pass `OFF` as the embedded-frontend option in your platform build script (or `-DMEANDER_USE_EMBEDDED_FRONTEND=OFF` to CMake) to load from the dev server instead of bundled assets.
+
+## Runtimes & architecture
+
+| Directory | Role | Documentation |
+| --- | --- | --- |
+| `hkp-frontend/` | Browser runtime, playground UI, and facade renderer | [README-web.md](./README-web.md) |
+| `hkp-rt/` | C++ runtime (audio DSP, local inference, embedded in native apps or standalone) | [hkp-rt/README-docker.md](./hkp-rt/README-docker.md) |
+| `hkp-node/` | Node.js runtime server and cloud-board coordinator (SQL, messaging, HTTP, webhooks) | [hkp-node/README.md](./hkp-node/README.md) |
+| `hkp-python/` | Python runtime server (local Whisper ASR, Kokoro TTS, GGUF / llama.cpp LLMs) | [hkp-python/README.md](./hkp-python/README.md) |
+| `readymade-mcp/` | Read-only MCP knowledge server over docs, example boards, and service contracts | [readymade-mcp/README.md](./readymade-mcp/README.md) |
+| `boards/` | Demo boards and worked examples | [docs/content/boards/](./docs/content/boards/) |
+| `docs/content/` | Concept guides, service reference, and repository layout | [docs/content/repository.md](./docs/content/repository.md) |
+
+## Tests & Git hooks
+
+Install the repository pre-commit hooks once per checkout:
 
 ```bash
-cmake -S . -B build -DMEANDER_USE_EMBEDDED_FRONTEND=OFF
+./scripts/install-hooks.sh
 ```
 
-## Run tests
-
-Run the unit and runtime suites from the repository root:
+Run all unit and runtime test suites from the repository root:
 
 ```bash
-./run-all-tests.sh
+./run-all-tests.sh              # unit and runtime suites (frontend, C++, Node, Python)
+./run-all-tests.sh --with-e2e   # also runs Playwright browser and cloud E2E suites (Node 22+)
 ```
 
-To also install and run the browser and cloud E2E suites (Node 22 required):
-
-```sh
-./run-all-tests.sh --with-e2e
-```
-
-See [the E2E README](e2e/README.md) for profiles, CI checks and required fixtures.
-
-Or run suites individually:
-
-### hkp-python
-
-```bash
-cd hkp-python
-./run_tests.sh
-```
-
-Optional examples:
-
-```bash
-./run_tests.sh -v
-./run_tests.sh -k map
-```
-
-### hkp-node
-
-```bash
-cd hkp-node
-npm install
-npm test
-```
-
-### hkp-rt
-
-```bash
-cd hkp-rt
-./run-tests.sh
-```
-
-Optional examples:
-
-```bash
-./run-tests.sh Debug runtime
-./run-tests.sh Debug services
-```
-
-### hkp-frontend
-
-```bash
-cd hkp-frontend
-npm install
-npm test
-```
-
-## Output
-
-Build artifacts are generated under `build/` (`build-linux/` on Linux). See your platform
-guide for the exact artifact path.
+For single-component test commands and E2E profiles, see [e2e/README.md](./e2e/README.md) and [docs/content/testing.md](./docs/content/testing.md).
 
 ## History
 
-Readymade started in November 2018 under the name Hookup and was developed in private
-repositories until March 2026. Commits before 27 March 2026 were
-imported from those repositories, keeping original dates.
-The history was filtered on import, so it is not a complete record. Older commits are
-not expected to build.
+Readymade started in November 2018 under the name Hookup and was developed in private repositories until March 2026. Commits before 27 March 2026 were imported with their original dates from a filtered history and are not expected to build.
 
-## License and copyright
+## License & project documents
 
-- License: GNU AGPL v3.0 (see `LICENSE`)
-- Copyright ownership: see `COPYRIGHT`
-
-## Project documents
-
-- [CONTRIBUTING](./CONTRIBUTING.md) — how to contribute, and the CLA
-- [Code of Conduct](./CODE_OF_CONDUCT.md) — how we treat each other in the project's
-  spaces, and what we hope Readymade gets used for
-- [Security policy](./SECURITY.md) — reporting a vulnerability, safe harbour, self-hosting
-  notes
-- [Trademark](./TRADEMARK.md) — using the Readymade name and logo
+- **License:** GNU AGPL v3.0 — see [LICENSE](./LICENSE) and [COPYRIGHT](./COPYRIGHT)
+- **[Contributing](./CONTRIBUTING.md)** — how to contribute and the CLA
+- **[Code of Conduct](./CODE_OF_CONDUCT.md)** — how we treat each other and what we hope Readymade gets used for
+- **[Security Policy](./SECURITY.md)** — reporting vulnerabilities, safe harbour, and self-hosting notes
+- **[Trademark](./TRADEMARK.md)** — using the Readymade name and logo

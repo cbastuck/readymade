@@ -1,41 +1,29 @@
 # Building Readymade for Android
 
-The Android app (`meander-android/`) embeds the shared mobile web app in an Android `WebView`,
-exposes the same `hkp://` bridge as the iOS app, and embeds `hkp-rt` as a native runtime
-through a JNI shim (`app/src/main/cpp/hkp_runtime_jni.cpp`).
+The Android app (`meander-android/`) embeds the mobile web app (`meander/frontend`) in an Android `WebView`, exposes the `hkp://` platform bridge, and runs `hkp-rt` in-process via JNI (`app/src/main/cpp/hkp_runtime_jni.cpp`).
 
-See [README.md](./README.md) for prerequisites shared by all platforms, and
-[meander-android/README.md](./meander-android/README.md) for the app architecture
-(`hkp://` routes, the injected fetch bridge, board storage, Auth0 login).
+See [meander-android/README.md](./meander-android/README.md) for the Android bridge architecture.
 
 ## Prerequisites
 
-- JDK 17 — or none on `PATH`: `build-android.sh` falls back to the JDK bundled with
-  Android Studio (`jbr`)
-- Android SDK, API 35 (`compileSdk`), with `sdk.dir` set in `meander-android/local.properties`
-- Android NDK `27.2.12479018` and CMake `3.31.6` (install both via the SDK Manager — the
-  versions are pinned in `meander-android/app/build.gradle.kts`)
-- Node.js + npm (for the bundled web app)
+- JDK 17 (if not on `PATH`, `build-android.sh` falls back to Android Studio's bundled `jbr`)
+- Android SDK (API 35 `compileSdk`, `minSdk` 26), with `sdk.dir` set in `meander-android/local.properties`
+- Android NDK `27.2.12479018` and CMake `3.31.6` (installed via SDK Manager; pinned in `meander-android/app/build.gradle.kts`)
+- Node.js + npm
 
-### Native dependencies (vcpkg)
+### Native dependencies (one-time vcpkg setup)
 
-The JNI build resolves Boost and OpenSSL from **prebuilt classic-mode vcpkg trees** under
-`3rdparty/vcpkg/installed/<triplet>`, using the overlay triplets in
-`meander-android/vcpkg-triplets/`. Unlike the desktop builds, these are not installed for you
-during configure — build them once per ABI:
+Unlike the desktop builds, the Android JNI build reads prebuilt vcpkg trees under `3rdparty/vcpkg/installed/<triplet>` using the overlay triplets in `meander-android/vcpkg-triplets/`. Build them once per ABI (`arm64-android` for devices, `x64-android` for the emulator):
 
 ```bash
 ANDROID_NDK_HOME=<path-to-ndk> ./3rdparty/vcpkg/vcpkg install \
     openssl boost-asio boost-beast boost-chrono boost-container boost-context \
     boost-date-time boost-filesystem boost-format boost-iostreams boost-json \
     boost-random boost-system boost-thread boost-url boost-uuid boost-variant \
-    --triplet arm64-android          # and again with --triplet x64-android
+    --triplet arm64-android          # repeat with --triplet x64-android for emulator
 ```
 
-`arm64-android` covers physical devices, `x64-android` the emulator. These are the only two
-ABIs the app ships (`abiFilters = ["arm64-v8a", "x86_64"]`); `minSdk` is 26.
-
-## Build
+## Build (recommended)
 
 From the repository root:
 
@@ -43,35 +31,21 @@ From the repository root:
 ./build-android.sh Debug            # or: ./build-android.sh Release
 ```
 
-The script builds `meander/frontend` with the Android Vite target, copies the result into
-`meander-android/app/src/main/assets/WebApp/`, then runs the Gradle `assemble<Config>` task
-(via `meander-android/gradlew` when present).
+This bundles `meander/frontend` into `meander-android/app/src/main/assets/WebApp/` and runs the Gradle `assemble<Config>` task.
 
-### From Android Studio
+### Building from Android Studio
 
-Open `meander-android/` as the project. You don't need Gradle or a JDK on your `PATH` — but
-you **do** need to bundle the web app yourself first (see below), then build/run as usual.
-
-## Refresh the bundled web app
-
-The bundled web app lives in `meander-android/app/src/main/assets/WebApp/`. To refresh it
-with the latest frontend, run from the repo root:
+Open `meander-android/` in Android Studio. Before building or running from the IDE, refresh the bundled web app from the repository root:
 
 ```bash
 npm --prefix meander/frontend run update:android
 ```
-
-The Android Vite target writes its output directly into the assets directory (`emptyOutDir`
-clears it first), so this single command is all the bundling required — no separate copy step.
-`build-android.sh` does this for you; the Android Studio route does not.
 
 ## Output
 
 ```text
 meander-android/app/build/outputs/apk/<config>/
 ```
-
-For example, a `Debug` build produces the APK under `.../apk/debug/`.
 
 ## Rebuild from scratch
 
@@ -80,5 +54,4 @@ For example, a `Debug` build produces the APK under `.../apk/debug/`.
 ./build-android.sh Debug
 ```
 
-The prebuilt vcpkg trees under `3rdparty/vcpkg/installed/` are unaffected by `clean` and do
-not need rebuilding.
+`clean` leaves the prebuilt vcpkg trees in `3rdparty/vcpkg/installed/` intact.
