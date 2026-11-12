@@ -1,8 +1,10 @@
 # Readymade
 
-Readymade is a composable, distributed framework for building **interactive apps** out of inspectable building blocks (**services**).
+Readymade is a composable, distributed framework for building **interactive apps** out of observable building blocks (**services**).
 
-A **board** is a single JSON document describing the app's user interface (**facade**), its services, and the **runtimes** they run on — in the browser, embedded in the desktop and mobile apps (C++), or on self-hosted servers (Node.js and Python). You can build and adapt boards by hand or with **Board Assist** (using local or hosted AI models), observe data flowing through every step in real time, and run them locally or share them with a group.
+A **board** is a single JSON document that holds your app: the **runtimes** you chain together, the **services** each one hosts, and the **facade** that turns the result into an app you can simply use. Watch data flow through every step as it happens, adjust any service while the app is running, and build by hand or with **Board Assist** (using local or hosted AI models).
+
+Each device brings its own strengths — and your board puts them to work. Boards run in the browser, or in the desktop and mobile apps (macOS, Windows, Linux, iOS, Android), where the C++ runtime is embedded. For more reach, connect self-hosted runtime servers — **hkp-node** e.g. for messaging and server I/O, **hkp-python** e.g. for AI/ML, and **hkp-rt** (C++) e.g. for audio and high-performance work — and share your boards with your team and friends.
 
 ![A Browser runtime with Timer, Map and Canvas services producing a changing Hello World message](./readymade-hello-world.gif)
 
