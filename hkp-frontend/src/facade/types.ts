@@ -212,6 +212,38 @@ export type JsonInputWidget = {
   width?: number | string;
 };
 
+// A document or piece of code on the facade, in the Monaco editor.
+//
+// Unlike `text-input`, which starts empty or from a fixed `defaultValue` and
+// only writes outward, an editor both reads what a service holds (`source`) and
+// sends what the person wrote back (`actions`, with `$$input` standing for the
+// document's text) — so picking a different note or file in another widget
+// replaces what is in the editor, and saving writes the edited text back.
+export type EditorWidget = {
+  type: "editor";
+  label?: string;
+  // What the editor holds, from a service notification (e.g. "rows.0.body").
+  source?: FacadeWidgetSource;
+  // What the editor holds when it comes from facade state or a literal string
+  // rather than a service notification.
+  value?: FacadeStateRef | string;
+  // Initial text before `source` has answered.
+  defaultValue?: string;
+  placeholder?: string;
+  // Syntax highlighting language (e.g. "markdown", "plaintext", "json", "sql").
+  // Default: "markdown".
+  language?: string;
+  height?: number | string;
+  lineNumbers?: boolean;
+  wordWrap?: boolean;
+  readOnly?: boolean;
+  // Label for the save button. Also triggered by Ctrl/Cmd+S inside the editor.
+  // Default: "Save".
+  submitLabel?: string;
+  action?: FacadeWidgetAction;
+  actions?: WidgetAction[];
+};
+
 export type StatusIndicatorWidget = {
   type: "status-indicator";
   source: FacadeWidgetSource;
@@ -798,6 +830,7 @@ export type FacadeWidget =
   | MessageListWidget
   | TextInputWidget
   | JsonInputWidget
+  | EditorWidget
   | StatusIndicatorWidget
   | TextWidget
   | ButtonWidget

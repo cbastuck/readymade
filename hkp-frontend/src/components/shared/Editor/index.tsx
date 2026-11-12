@@ -13,6 +13,7 @@ import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 import "monaco-editor/esm/vs/language/json/monaco.contribution";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution";
+import "monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution";
 
 import MonacoEditor, { loader } from "@monaco-editor/react";
 
@@ -89,8 +90,8 @@ const safeClipboardOverride = isInsecureContext
 
 type Props = {
   value: string;
-  width?: number;
-  height?: number;
+  width?: number | string;
+  height?: number | string;
   language?: string;
   style?: object;
   initialWidth?: number;

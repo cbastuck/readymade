@@ -44,6 +44,7 @@ import sharedCostsBoard from "../../boards/shared-costs-demo-board.json";
 import hackerNewsBoard from "../../boards/hacker-news-board.json";
 import healthLogBrowserBoard from "../../boards/health-log-browser-demo-board.json";
 import meetingPollBrowserBoard from "../../boards/meeting-poll-browser-demo-board.json";
+import notesBoard from "../../boards/notes-demo-board.json";
 import rssRadioBoard from "../../boards/rss-radio-board.json";
 import rssRadioEditorUnit from "../../boards/rss-radio-editor-unit-board.json";
 import rssRadioVoiceUnit from "../../boards/rss-radio-voice-unit-board.json";
@@ -100,6 +101,7 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   "hacker-news": hackerNewsBoard as BoardDescriptor,
   "health-log-browser": healthLogBrowserBoard as BoardDescriptor,
   "meeting-poll-browser": meetingPollBrowserBoard as BoardDescriptor,
+  notes: notesBoard as BoardDescriptor,
   // Its units disagree on which params they set, which JSON typing cannot
   // reconcile with UnitEntry's string record.
   "rss-radio": rssRadioBoard as unknown as BoardDescriptor,

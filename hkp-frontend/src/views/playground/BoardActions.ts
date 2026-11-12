@@ -63,6 +63,17 @@ export function remapFacadeUuids(
           ...widget,
           action: widget.action ? remapAction(widget.action) : undefined,
         };
+      case "editor":
+        return {
+          ...widget,
+          source: widget.source
+            ? {
+                ...widget.source,
+                serviceUuid: remap(widget.source.serviceUuid),
+              }
+            : undefined,
+          action: widget.action ? remapAction(widget.action) : undefined,
+        };
       case "status-indicator":
         return {
           ...widget,
