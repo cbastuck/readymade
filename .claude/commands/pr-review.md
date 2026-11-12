@@ -75,7 +75,7 @@ For every comment returned:
      unambiguous from the comment, ask before implementing.
    - **Question** ("why is this here?", "does this handle X?") — answer it for the user in
      your summary; only change code if the answer implies a change and the change is clear.
-3. Keep Readymade's architecture and design principles (see `CLAUDE.md`) in mind — composability,
+3. Keep Readymade's architecture and design principles (see `AGENTS.md`) in mind — composability,
    structured flow over wires, services scoped by concept. A comment proposing a design shift
    should be realized in a way that fits these principles.
 
@@ -87,7 +87,7 @@ Before editing anything ambiguous, ask the user. Good reasons to ask:
 
 - A design comment could be interpreted more than one way, or its scope is unclear
   (this one comment, or a broader refactor?).
-- The comment seems to conflict with existing code, another comment, or `CLAUDE.md`.
+- The comment seems to conflict with existing code, another comment, or `AGENTS.md`.
 - Fixing it "properly" would touch a lot more than the commented spot.
 - You're unsure whether the user wants a real change or was just exploring an idea.
 

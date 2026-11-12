@@ -56,7 +56,7 @@ while staying one service. Modes are configuration, not separate services: they
 are how a concept keeps its related behaviours together instead of splitting
 into near-duplicates.
 
-The design rule is in `CLAUDE.md`: *scoped by concept, not by technique*. Input
+The design rule is in `AGENTS.md`: *scoped by concept, not by technique*. Input
 handles event streams and WebSockets — different technology, same idea, one
 service. Complexity belongs in composition, not inside a service.
 
