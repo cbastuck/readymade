@@ -1,17 +1,12 @@
-# Building Readymade for the web
+# Building Readymade for the Web
 
-The web target is **`hkp-frontend/`** — a standalone Vite + React app containing the board
-engine, the browser runtime, and all browser services. It runs entirely in the browser:
-boards live in local storage, and no backend is required.
+The web target is **`hkp-frontend/`** — a standalone Vite + React app containing the board engine, the browser runtime, and all browser services. It runs entirely in the browser: boards live in local storage, and no backend is required.
 
-This is the lightest way to work on Readymade. There is no CMake, vcpkg, or native toolchain
-involved — see [README.md](./README.md) for the platform guides that build the native shells.
+This is the lightest way to work on Readymade. No CMake, vcpkg, or native toolchain is needed — see [README.md](./README.md) for the native desktop and mobile guides.
 
 ## Prerequisites
 
 - Node.js + npm
-
-That's all.
 
 ## Run locally (dev server)
 
@@ -21,13 +16,9 @@ npm install
 npm run dev
 ```
 
-Vite serves on **http://localhost:5555** with hot reload. The dev script passes `--host`, so
-the app is also reachable at your machine's LAN address — handy for opening a board on a phone
-against the same live code.
+Vite serves on **http://localhost:5555** with hot reload (and on your LAN address via `--host` for testing on a phone).
 
-`/` redirects to `/playground`, which redirects again to `/playground/<random-name>` — one
-board per URL. Other routes: `/remotes` (browse a connected runtime), `/cloud-boards`,
-`/profile`, and the auth callbacks.
+`/` redirects to `/playground/<random-name>`. Other routes include `/remotes`, `/cloud-boards`, and `/profile`.
 
 ## Production build
 
@@ -36,46 +27,30 @@ cd hkp-frontend
 npm run build
 ```
 
-`tsc && vite build` writes a static bundle to **`hkp-frontend/build/`** (`outDir` is set to
-`build` in `vite.config.ts`, not the Vite default `dist`). Serve that directory with any static
-file server. Because the app uses client-side routing, the server must fall back to
-`index.html` for unknown paths, otherwise deep links like `/playground/foo` 404 on reload.
+`tsc && vite build` writes a static bundle to **`hkp-frontend/build/`**. Serve that directory with any static file server configured to fall back to `index.html` for client-side routes.
 
-Quick local check of the built bundle:
+To preview the production bundle locally:
 
 ```bash
 npx vite preview --outDir build
 ```
 
-## Connecting runtimes
+## Connecting external runtimes
 
-The browser runtime alone covers most services. To use services that only exist on other
-runtimes (messaging, AI/ML, audio), start the runtime you need and point the board's REST
-runtime at it — `hkp-node/`, `hkp-python/`, and `hkp-rt/` each have their own README. Boards
-may use `"HKP_RUNTIME_HOST"` as a URL placeholder when the host isn't known at design time.
+The browser runtime covers UI and general data-flow services. To use services on other runtimes (messaging, SQL, AI/ML, native audio), start the server you need and add it under **Remotes** in the app (boards reference servers by name, such as `"remote": "node"` or `"remote": "python"`):
 
-## Do you need `hkp-website`?
+- **Node.js (`hkp-node/`):** [hkp-node/README.md](./hkp-node/README.md)
+- **Python (`hkp-python/`):** [hkp-python/README.md](./hkp-python/README.md)
+- **C++ (`hkp-rt/`):** [hkp-rt/README-docker.md](./hkp-rt/README-docker.md)
 
-**No.** `hkp-website/` is the public site (landing pages, the PHP endpoints under
-`hkp-website/api/`, and its own `npm run deploy` sftp scripts). It *embeds* the app by aliasing
-`hkp-frontend/src` in its `vite.config.ts` — the dependency runs website → frontend, never the
-other way around. Running `hkp-frontend` on its own gives you the same playground the site
-hosts.
+## Notes
 
-Reach for `hkp-website` only when you're working on the public site itself. It is a git
-submodule, so it needs `git submodule update --init` before it will build.
-
-## Note on `/boards`
-
-In dev, a small Vite middleware serves `boards/*.json` over HTTP at `/boards/…`.
-The production build does **not** copy that directory into the output. Demo boards the UI
-loads directly are imported as modules and get bundled normally, so this only matters if you
-link to board JSON by URL.
+- **`hkp-website/` is optional:** It is the public website submodule (`readymadeit.com`), which embeds `hkp-frontend/src`. You do not need it to develop or run the web playground.
+- **`/boards` in dev vs. production:** In dev mode, Vite serves `boards/*.json` at `/boards/…`. In production builds, demo boards referenced by the catalog are bundled directly.
 
 ## Tests
 
 ```bash
 cd hkp-frontend
-npm install
 npm test
 ```
