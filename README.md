@@ -74,7 +74,7 @@ For single-component test commands and E2E profiles, see [e2e/README.md](./e2e/R
 
 ## History
 
-Readymade started in November 2018 under the name Hookup and was developed in private repositories until March 2026. Commits before 27 March 2026 were imported with their original dates from a filtered history and are not expected to build.
+I started Readymade in November 2018 under the name Hookup and developed it in private repositories until March 2026. Commits before 27 March 2026 were imported with their original dates from a filtered history and are not expected to build.
 
 ## License & project documents
 
