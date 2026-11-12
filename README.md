@@ -1,10 +1,10 @@
 # Readymade
 
-Readymade is a composable, distributed framework for building **interactive apps** out of observable building blocks (**services**).
+Readymade is a composable, distributed framework for building **interactive apps**. You put them together from small, observable building blocks called **services**.
 
-A **board** is a single JSON document that holds your app: the **runtimes** you chain together, the **services** each one hosts, and the **facade** that turns the result into an app you can simply use. Watch data flow through every step as it happens, adjust any service while the app is running, and build by hand or with **Board Assist** (using local or hosted AI models).
+Your app lives on a **board**, and a board is a single JSON document. It chains **runtimes**, each runtime hosts **services**, and a **facade** on top turns it all into an app you can simply use. You can watch the data move through every step and change any service while the app is running. Build a board by hand, or let **Board Assist** help you (using local or hosted AI models).
 
-Each device brings its own strengths — and your board puts them to work. Boards run in the browser, or in the desktop and mobile apps (macOS, Windows, Linux, iOS, Android), where the C++ runtime is embedded. For more reach, connect self-hosted runtime servers — **hkp-node** e.g. for messaging and server I/O, **hkp-python** e.g. for AI/ML, and **hkp-rt** (C++) e.g. for audio and high-performance work — and share your boards with your team and friends.
+Every device brings its own strengths, and your board combines them. Boards run in the browser and in the desktop and mobile apps (macOS, Windows, Linux, iOS, Android), which come with the C++ runtime built in. When you need more, connect runtime servers you host yourself: **hkp-node** e.g. for messaging and server I/O, **hkp-python** e.g. for AI/ML, and **hkp-rt** (C++) e.g. for audio and high-performance work. Once your board is ready, share it with your team and friends.
 
 ![A Browser runtime with Timer, Map and Canvas services producing a changing Hello World message](./readymade-hello-world.gif)
 
