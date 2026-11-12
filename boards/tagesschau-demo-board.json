@@ -1,0 +1,163 @@
+{
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "read",
+        "serviceId": "sub-service",
+        "serviceName": "SubService",
+        "state": {
+          "bypass": false,
+          "stopPropagation": true,
+          "scope": {
+            "slots": "own"
+          },
+          "pipeline": [
+            {
+              "serviceId": "rss",
+              "instanceId": "feeds",
+              "state": {
+                "feeds": [
+                  {
+                    "url": "https://www.tagesschau.de/xml/rss2/",
+                    "name": "tagesschau.de"
+                  }
+                ],
+                "limit": 50,
+                "timeoutMs": 10000,
+                "summaryChars": 300,
+                "fetching": false,
+                "__hkpMount": ""
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "description": "",
+  "facade": {
+    "init": [
+      {
+        "payload": {},
+        "serviceUuid": "read.feeds",
+        "type": "process"
+      }
+    ],
+    "layout": "single",
+    "notices": [
+      {
+        "source": {
+          "path": "error",
+          "serviceUuid": "read.feeds"
+        }
+      }
+    ],
+    "panels": [
+      {
+        "id": "news",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "items": [
+            {
+              "align": "center",
+              "direction": "row",
+              "gap": 10,
+              "items": [
+                {
+                  "actions": [
+                    {
+                      "payload": {},
+                      "serviceUuid": "read.feeds",
+                      "type": "process"
+                    }
+                  ],
+                  "indicator": {
+                    "source": {
+                      "path": "fetching",
+                      "serviceUuid": "read.feeds"
+                    },
+                    "statusColors": {
+                      "false": "#22c55e",
+                      "true": "#f59e0b"
+                    }
+                  },
+                  "label": "Refresh",
+                  "type": "button"
+                },
+                {
+                  "grow": true,
+                  "label": "Articles",
+                  "placeholder": "—",
+                  "source": {
+                    "path": "count",
+                    "serviceUuid": "read.feeds"
+                  },
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "fontSize": 12,
+              "placeholder": "The latest reports from tagesschau.de. The feed is fetched on hkp-node, which is what lets the browser read it at all.",
+              "tone": "muted",
+              "type": "text"
+            },
+            {
+              "gap": 0,
+              "source": {
+                "path": "items",
+                "serviceUuid": "read.feeds"
+              },
+              "stripe": {
+                "even": "rgba(127,127,127,0.10)",
+                "odd": "rgba(127,127,127,0.03)",
+                "padding": 10,
+                "radius": 6
+              },
+              "template": {
+                "direction": "column",
+                "gap": 2,
+                "items": [
+                  {
+                    "fontSize": 14,
+                    "href": "{{item.link}}",
+                    "placeholder": "{{item.title}}",
+                    "type": "text"
+                  },
+                  {
+                    "fontSize": 11,
+                    "placeholder": "{{item.feed}} · {{item.publishedLabel}}",
+                    "tone": "muted",
+                    "type": "text"
+                  },
+                  {
+                    "fontSize": 12,
+                    "placeholder": "{{item.summary}}",
+                    "tone": "muted",
+                    "type": "text"
+                  }
+                ]
+              },
+              "type": "repeat"
+            }
+          ],
+          "paddingX": 16,
+          "paddingY": 12
+        },
+        "title": "tagesschau.de"
+      }
+    ]
+  }
+}
