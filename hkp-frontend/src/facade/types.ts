@@ -254,6 +254,11 @@ export type TextWidget = {
   // Shown, muted, while the source has nothing to say.
   placeholder?: string;
   tone?: "normal" | "muted" | "error";
+  // A CSS colour for the text, overriding `tone` when none of the three tones
+  // fits the background it sits on. Inside a `repeat` it may come from the item
+  // ("{{item.color}}"). A placeholder standing in for an absent source value
+  // stays muted until a value arrives.
+  color?: string;
   fontSize?: number;
   mono?: boolean;
   // Indents an object value as JSON over several lines, for a value that is a

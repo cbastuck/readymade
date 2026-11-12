@@ -194,13 +194,19 @@ export async function runOpenCodeTurn(options: {
   const content = result?.data?.text;
   if (typeof content !== "string")
     throw new Error("The OpenCode server returned no assistant message.");
-  options.onRawResponse?.(content);
-  const { explanation, board } = parseTextProposal(
-    content,
-    options.scope,
-    options.base,
-    "The OpenCode model did not return valid JSON. Try a model that follows structured prompts, or make a smaller request.",
-  );
+  let parsed: ReturnType<typeof parseTextProposal>;
+  try {
+    parsed = parseTextProposal(
+      content,
+      options.scope,
+      options.base,
+      "The OpenCode model did not return valid JSON. Try a model that follows structured prompts, or make a smaller request.",
+    );
+  } catch (error) {
+    options.onRawResponse?.(content);
+    throw error;
+  }
+  const { explanation, board } = parsed;
   options.onText(explanation);
   return {
     conversation: [

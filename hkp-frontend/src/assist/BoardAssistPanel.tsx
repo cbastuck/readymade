@@ -307,6 +307,22 @@ export default function BoardAssistPanel({
                   <pre>{entry.rawResponse || "(Empty response)"}</pre>
                 </details>
               )}
+              {entry.retryWholeBoardPrompt && (
+                <div className="hkp-assist-row">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      void assist.retryWholeBoard(
+                        entry.retryWholeBoardPrompt!,
+                        index,
+                      )
+                    }
+                  >
+                    Switch to Whole board and retry
+                  </button>
+                </div>
+              )}
               {entry.board && (
                 <>
                   <p

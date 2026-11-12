@@ -45,6 +45,12 @@ export type AssistEntry = {
   base?: string;
   applied?: boolean;
   rawResponse?: string;
+  /**
+   * The prompt to re-run against the whole board when a runtime-scoped turn
+   * answered without proposing a change (for example, because the request
+   * touches the facade or another runtime).
+   */
+  retryWholeBoardPrompt?: string;
   preflightError?: string;
   preflightPassed?: boolean;
   /** Every request the turn made, and the model it was priced for. */
@@ -283,8 +289,14 @@ export function useBoardAssist({
     if (origin) await currentBoard.current!.setBoardState(config, origin);
     else await currentBoard.current!.setBoardState(config);
   };
-  const send = async () => {
-    if (!prompt.trim() || !model || busyRef.current) return;
+  const submit = async (
+    rawPrompt: string,
+    scopeChoice = scope,
+    clearDraft = false,
+    clearRetryIndex?: number,
+  ) => {
+    const text = rawPrompt.trim();
+    if (!text || !model || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -301,12 +313,15 @@ export function useBoardAssist({
           `MCP knowledge server unavailable; used bundled documentation. ${reason.message}`,
         ),
     );
-    const text = prompt.trim();
-    setPrompt("");
+    if (clearDraft) setPrompt("");
     const index = entries.length + 1;
     let rawResponse: string | undefined;
     setEntries((list) => [
-      ...list,
+      ...list.map((entry, i) =>
+        i === clearRetryIndex
+          ? { ...entry, retryWholeBoardPrompt: undefined }
+          : entry,
+      ),
       { role: "user", text },
       { role: "assistant", text: "" },
     ]);
@@ -314,7 +329,7 @@ export function useBoardAssist({
       const captured = await snapshot();
       const config = captured.config;
       const ctx = currentBoard.current!;
-      const editScope = resolveAssistScope(config, scope, focus.runtimeId);
+      const editScope = resolveAssistScope(config, scopeChoice, focus.runtimeId);
       const request = {
         token: compatible
           ? settings.openAICompatibleToken
@@ -328,7 +343,8 @@ export function useBoardAssist({
         context: assistContext(config, editScope, {
           includeAssetContents: settings.includeAssetContents,
           units: captured.units,
-          selectedServiceUuids: scope === "board" ? [] : focus.serviceUuids,
+          selectedServiceUuids:
+            scopeChoice === "board" ? [] : focus.serviceUuids,
           openNestedPipeline: navigation?.stack ?? focus.openPipeline ?? [],
           availableRuntimeEngines: ctx.availableRuntimeEngines,
           serviceCatalog: Object.fromEntries(
@@ -415,6 +431,8 @@ export function useBoardAssist({
         text: [result.text, renamedNote].filter(Boolean).join("\n\n"),
         board: proposal,
         rawResponse: proposal ? undefined : rawResponse,
+        retryWholeBoardPrompt:
+          editScope.kind === "runtime" && !proposal ? text : undefined,
         base: JSON.stringify(captured),
         preflightError,
         preflightPassed: !!proposal && !preflightError,
@@ -456,6 +474,12 @@ export function useBoardAssist({
       setStatus("");
       abort.current = null;
     }
+  };
+  const send = () => submit(prompt, scope, true);
+  const retryWholeBoard = (retryPrompt: string, entryIndex?: number) => {
+    if (busyRef.current) return Promise.resolve();
+    setScope("board");
+    return submit(retryPrompt, "board", false, entryIndex);
   };
   const previewChanges = async (entry: AssistEntry, index: number) => {
     if (!entry.board || busyRef.current) return;
@@ -680,6 +704,7 @@ export function useBoardAssist({
     knowledgeNotice,
     error,
     send,
+    retryWholeBoard,
     /** Whether a request is in flight that Stop would end. */
     stoppable: !!abort.current,
     stop: () => abort.current?.abort(),

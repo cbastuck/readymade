@@ -142,4 +142,45 @@ describe("a text widget with an href", () => {
 
     expect(container.querySelectorAll("a")).toHaveLength(0);
   });
+
+  it("uses normal, accent, or explicit color on static/repeated text while keeping stood-in placeholders muted", () => {
+    notified[0] = undefined;
+    const { container: stoodIn } = renderNode({
+      type: "text",
+      source: { serviceUuid: "feeds", path: "title" },
+      placeholder: "Waiting…",
+      color: "#1e293b",
+    } as unknown as LayoutItem);
+    expect((stoodIn.firstElementChild as HTMLElement).querySelector("div")?.style.color).toBe(
+      "hsl(var(--muted-foreground))",
+    );
+
+    const { container: repeated } = renderNode({
+      type: "repeat",
+      items: [{ title: "Headline", summary: "Details", color: "rgb(30, 41, 59)" }],
+      template: {
+        direction: "column",
+        items: [
+          {
+            type: "text",
+            placeholder: "{{item.title}}",
+            href: "https://example.com/story",
+          },
+          {
+            type: "text",
+            placeholder: "{{item.summary}}",
+            tone: "muted",
+            color: "{{item.color}}",
+          },
+        ],
+      },
+    } as unknown as LayoutItem);
+    const linkDiv = repeated.querySelector("a > div") as HTMLElement;
+    expect(linkDiv.style.color).toBe("var(--hkp-accent)");
+    const textDivs = repeated.querySelectorAll("div");
+    const summaryDiv = Array.from(textDivs).find(
+      (el) => el.textContent === "Details" && el.children.length === 0,
+    ) as HTMLElement;
+    expect(summaryDiv.style.color).toBe("rgb(30, 41, 59)");
+  });
 });

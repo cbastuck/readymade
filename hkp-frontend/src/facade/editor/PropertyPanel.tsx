@@ -1,5 +1,21 @@
 import { LayoutItem } from "../types";
-import { EditableRow } from "./EditableRow";
+import { EditableRow, ValueKind } from "./EditableRow";
+
+const OPTIONAL_PROPERTIES: Record<string, Record<string, ValueKind>> = {
+  text: {
+    color: "string",
+    tone: "string",
+    fontSize: "number",
+    lineHeight: "number",
+    mono: "boolean",
+    wrap: "boolean",
+    href: "string",
+  },
+  repeat: {
+    stripe: "json",
+    gap: "number",
+  },
+};
 
 type Props = {
   node: LayoutItem | null;
@@ -23,9 +39,39 @@ export function PropertyPanel({ node, onChange }: Props) {
     );
   }
 
-  const entries = Object.entries(node).filter(([key]) => key !== "items");
+  const nodeType = (node as any).type ?? "container";
+  const optionalForType = OPTIONAL_PROPERTIES[nodeType] ?? {};
+  const existingEntries = Object.entries(node).filter(
+    ([key]) => key !== "items" && key !== "template",
+  );
+  const existingKeys = new Set(existingEntries.map(([key]) => key));
+  const entries: Array<[string, unknown, ValueKind | undefined]> = [
+    ...existingEntries.map(
+      ([key, value]) =>
+        [key, value, optionalForType[key]] as [
+          string,
+          unknown,
+          ValueKind | undefined,
+        ],
+    ),
+    ...Object.entries(optionalForType)
+      .filter(([key]) => !existingKeys.has(key))
+      .map(
+        ([key, kind]) =>
+          [key, undefined, kind] as [string, unknown, ValueKind | undefined],
+      ),
+  ];
 
   const handleCommit = (key: string, newValue: unknown) => {
+    if (
+      newValue === undefined ||
+      (newValue === "" && key in optionalForType)
+    ) {
+      const next = { ...node } as Record<string, unknown>;
+      delete next[key];
+      onChange(next as LayoutItem);
+      return;
+    }
     onChange({ ...node, [key]: newValue } as LayoutItem);
   };
 
@@ -42,16 +88,17 @@ export function PropertyPanel({ node, onChange }: Props) {
           marginBottom: 12,
         }}
       >
-        {(node as any).type ?? "container"}
+        {nodeType}
       </div>
 
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <tbody>
-          {entries.map(([key, value]) => (
+          {entries.map(([key, value, defaultKind]) => (
             <EditableRow
               key={key}
               propKey={key}
               value={value}
+              defaultKind={defaultKind}
               onCommit={handleCommit}
             />
           ))}

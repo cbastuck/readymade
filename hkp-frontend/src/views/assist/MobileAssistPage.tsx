@@ -267,6 +267,23 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
                       </pre>
                     </details>
                   )}
+                  {entry.retryWholeBoardPrompt && (
+                    <div style={{ marginTop: 10 }}>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          void assist.retryWholeBoard(
+                            entry.retryWholeBoardPrompt!,
+                            index,
+                          )
+                        }
+                        style={button("plain", !busy)}
+                      >
+                        Switch to Whole board and retry
+                      </button>
+                    </div>
+                  )}
                   {entry.board && (
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${M.border}` }}>
                       <p

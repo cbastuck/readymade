@@ -68,4 +68,66 @@ describe("facade state in the editor", () => {
     fireEvent.click(screen.getByText("let go"));
     expect(row("selectedCard").textContent).toBe("selectedCard—");
   });
+
+  it("lets a repeat template's text widget be selected and its color edited", () => {
+    let current: FacadeDescriptor = {
+      layout: "single",
+      panels: [
+        {
+          id: "news",
+          layout: {
+            direction: "column",
+            items: [
+              {
+                type: "repeat",
+                source: { serviceUuid: "feed", path: "items" },
+                template: {
+                  direction: "column",
+                  items: [
+                    {
+                      type: "text",
+                      placeholder: "{{item.summary}}",
+                      tone: "muted",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    };
+    const { rerender } = render(
+      <FacadeStateContext.Provider value={{ state: {}, setState: () => {} }}>
+        <FacadeEditor
+          facade={current}
+          onChange={(updated) => {
+            current = updated;
+          }}
+        />
+      </FacadeStateContext.Provider>,
+    );
+
+    fireEvent.click(screen.getByText("text · {{item.summary}}"));
+    const colorRow = screen.getByText("color").closest("tr")!;
+    fireEvent.click(colorRow.querySelectorAll("td")[1]);
+    const input = colorRow.querySelector("input")!;
+    fireEvent.change(input, { target: { value: "#1e293b" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    const repeat = (current.panels[0].layout as any).items[0];
+    expect(repeat.template.items[0].color).toBe("#1e293b");
+
+    rerender(
+      <FacadeStateContext.Provider value={{ state: {}, setState: () => {} }}>
+        <FacadeEditor
+          facade={current}
+          onChange={(updated) => {
+            current = updated;
+          }}
+        />
+      </FacadeStateContext.Provider>,
+    );
+    expect(screen.getByText("#1e293b")).toBeTruthy();
+  });
 });

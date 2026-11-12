@@ -133,17 +133,20 @@ export function TextRenderer({
   const href = linkTarget(widget.href, isPlaceholder ? "" : (text ?? ""));
   const links = !!href && !!shown.trim() && !standingIn;
 
+  const customColor = widget.color?.trim() || undefined;
   const body = (
     <div
       style={{
         // The accent says the text is a way somewhere, which is the one thing
         // a reader cannot tell from an underline they have to hover to see. A
-        // tone the board asked for still wins — it was asked for.
-        color: isPlaceholder
+        // tone or colour the board asked for still wins — it was asked for.
+        color: standingIn
           ? TONES.muted
-          : links && !widget.tone
-            ? "var(--hkp-accent)"
-            : TONES[widget.tone ?? "normal"],
+          : customColor
+            ? customColor
+            : links && !widget.tone
+              ? "var(--hkp-accent)"
+              : TONES[widget.tone ?? "normal"],
         fontSize: widget.fontSize ?? 13,
         fontFamily: widget.mono ? "var(--font-mono, monospace)" : undefined,
         // A message is prose, not a cell: it wraps, and keeps the line breaks a

@@ -342,6 +342,28 @@ it("merges a runtime-scoped reply into the current board", async () => {
   );
   expect(body.messages.at(-1).content).toContain("only runtime 'ui'");
 });
+it("does not report raw output when a reply validly proposes no board", async () => {
+  const content = JSON.stringify({
+    explanation: "Switch the context to Whole board to edit the facade.",
+    runtime: null,
+    services: null,
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => streamResponse([content])),
+  );
+  const onRawResponse = vi.fn();
+  const result = await runOpenAICompatibleTurn({
+    ...options(),
+    scope: { kind: "runtime", runtimeId: "ui", runtimeName: "Browser" },
+    onRawResponse,
+  });
+  expect(result.text).toBe(
+    "Switch the context to Whole board to edit the facade.",
+  );
+  expect(result.board).toBeUndefined();
+  expect(onRawResponse).not.toHaveBeenCalled();
+});
 it("keeps server-default thinking unspecified and respects Stop", async () => {
   const controller = new AbortController();
   const fetch = vi.fn(async () =>
