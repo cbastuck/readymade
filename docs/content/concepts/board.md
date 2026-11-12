@@ -192,7 +192,7 @@ service is.
 
 Widgets reference services by `serviceUuid` — another id-carrying field, which
 is why forking rewrites it. Types live in `hkp-frontend/src/facade/types.ts`;
-the full widget catalogue is in `CLAUDE.md` and the `/new-board` skill.
+the full widget catalogue is in `AGENTS.md` and the `/new-board` skill.
 
 Beside its panels a facade declares two things about what is on screen and when.
 **Tabs** group the panels into faces shown one at a time, because a board's

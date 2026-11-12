@@ -13,8 +13,57 @@ blocks; boards are the apps you build with them.
 
 The top-level container. Everything lives on a board. Boards have names and may be associated
 with a user account, but this is not required — the playground (readymadeit.com/playground) and
-Readymade app (MacOS + iOS + Android) run boards locally in the browser with no backend. There is
+Readymade app (MacOS + iOS + Android + Linux + Windows) run boards locally in the browser with no backend. There is
 currently no cloud persistence; boards live in the browser.
+
+### Coordinator
+
+The instance that **owns** a board: it holds the board's engine state — the runtimes, the
+services, and the state each of those last reported — and answers anything that needs a view
+of the whole board rather than one runtime (resolving a mount, baking references for export).
+
+Coordinating a board and hosting a runtime are **separate roles**, even where one process
+plays both:
+
+| Board runs as        | Coordinator | Hosts browser runtimes | Hosts remote runtimes    |
+| -------------------- | ----------- | ---------------------- | ------------------------ |
+| Playground/Readymade | the browser | the browser            | the browser drives them  |
+| Cloud board          | hkp-node    | a connected browser    | hkp-node builds them     |
+
+The browser playing both roles is the historical case, not the general one. A runtime host may
+pass the coordinator to the services it hosts (`AppInstance.coordinator`), which is how a
+service reaches beyond its own runtime; a host that cannot see the board leaves it unset, and
+callers treat that as a lookup that has not resolved yet.
+
+A board moves between the two by being **deployed**: built in the playground, where the
+browser owns it, then handed to a coordinator that builds the same runtimes itself and
+keeps them running with nobody watching. The coordinator **never dials** a runtime server:
+each one connects *to it* with a ticket the browser handed over while deploying, and the
+board is built and driven over that connection. A remote runtime whose server is not
+connected puts the board in `error`, naming it; a browser runtime with nobody attached is
+normal, and data for it simply stops there. From then on a browser attaches to it — reads and
+configures — and structural changes mean changing the board in the playground and deploying
+again. Which side a runtime is cleaned up by is declared when it is created, in the create
+payload: `garbageCollected: true` reaps it when its last client disconnects (what a browser
+asks for), and saying nothing persists it until an explicit DELETE (what a coordinator gets).
+
+A deployed board has one **owner** and may be **shared**: the coordinator keeps a list of
+members beside the board — verified emails, each with a name the owner gives it — and
+whoever is on it may attach and use the board's **facade**, nothing else. A member is sent
+a projection (the facade and what it reads), may ask only for what the facade asks for, and
+hosts no runtime. Every run carries its **caller** (`ProcessContext.caller`), stated by the
+server that verified the token and never read from a request; it survives the hop between
+a board's runtimes, and a service that needs to know who is acting asks the run — `sql`
+binds it as `$caller_email`, `$caller_name`, `$caller_sub`, and whether they are the
+board's owner or a member as `$caller_role`. The server's `ALLOWED_EMAILS`
+gates who may *own*; a board's list gates who may attach to that board.
+
+- `hkp-frontend/src/core/coordinator.ts` — the interface and the browser implementation
+- `hkp-frontend/src/core/deploy.ts` — handing a board to a coordinator
+- `hkp-node/src/coordinator/` — the cloud-board coordinator
+- `hkp-node/src/coordinator/members.ts`, `facadeAccess.ts`, `bridge.ts` — the member list, what a facade grants, who is admitted
+- `docs/content/concepts/cloud-boards.md` — the provisioning walkthrough: who owns what, in what order; callers and members
+- `docs/content/concepts/remotes.md` — naming a runtime server, tickets, and what connects to what
 
 ### Runtime
 
@@ -44,6 +93,17 @@ data on its output. Services:
 - Expose an optional **UI panel** (ServiceUI) for interactive configuration; a generic panel
   is shown for services that don't provide one
 - Can **emit data autonomously** without receiving input (e.g. Timer)
+- **Connects to what a board names only through its runtime's egress guard** —
+  `fetch` (hkp-node), `client_session`/`urlopen` from `egress.py` (hkp-python),
+  `egress::resolve` (hkp-rt). A hosted server (`HKP_EGRESS=public`) refuses
+  private destinations there; each runtime's tests fail on any other way out
+  (`docs/content/concepts/runtime.md`, "Where a hosted server may connect")
+- **Opens a file a board names only inside the folders its runtime gives boards** — on
+  hkp-rt through `files.h` (`files::resolve`, `files::resolveIn`), with a relative path
+  landing in the default folder; a test fails on a file opened any other way. The one
+  exception is a model the speech and text-generation services hand to their model
+  library by path (`docs/content/concepts/runtime.md`, "Where a board may read and
+  write files")
 
 For browser services, the service and its UI share the same JS process — state sync is a
 direct method call. For remote runtimes (Node, Python, C++), the UI communicates via REST;
@@ -107,6 +167,13 @@ Types are shared across runtimes:
 - `hkp-rt/lib/include/types/data.h` — C++ type definitions
 - `hkp-go/types/data.go` — Go type definitions
 
+A deployed board does not use YAS between runtimes. The coordinator's
+connections carry a value holding bytes as a binary frame — a JSON header
+saying what the bytes are (`bytes`, `floatRingBuffer`, `mixed`), then the bytes
+— which the coordinator forwards without reading
+(`hkp-node/src/coordinator/binaryFrame.ts`,
+`docs/content/concepts/cloud-boards.md`).
+
 ---
 
 ## Board JSON format
@@ -116,7 +183,7 @@ Types are shared across runtimes:
   "boardName": "string",
   "runtimes": [
     { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } },
-    { "id": "node", "name": "Node", "type": "rest", "url": "http://127.0.0.1:8080", "state": { "wrapServices": false } }
+    { "id": "node", "name": "Node", "type": "rest", "remote": "node", "state": { "wrapServices": false } }
   ],
   "services": {
     "ui":   [ { "uuid": "my-svc", "serviceId": "hookup.to/service/timer", "serviceName": "Timer", "state": {} } ],
@@ -127,8 +194,115 @@ Types are shared across runtimes:
 ```
 
 Runtime order = chain order. Services within a runtime are ordered top-to-bottom; that order
-is their wiring. Use `"HKP_RUNTIME_HOST"` as a placeholder in remote URLs when the host
+is their wiring.
+
+A board may also define `blocks` — sub-services written once and used by
+reference: any pipeline entry `{ "block": "<id>", "params": {…} }` stands for one. Uses are
+expanded when the board loads and written back as uses when it saves; while running, a use's
+inside is frozen and only its params vary (`docs/content/concepts/blocks.md`). Use `"HKP_RUNTIME_HOST"` as a placeholder in remote URLs when the host
 isn't known at design time.
+
+A remote runtime says where it runs in exactly **one** of two ways: `url` (an address
+someone wrote) or `remote` (the name of a runtime server, resolved against the remotes the
+client opening the board keeps). Both is an error, never a fallback, and the address a
+name resolves to is never written back into the board
+(`hkp-frontend/src/runtime/board/remote.ts`). A board never has a client *choose* a
+server for it: a runtime lands only where the board or the person named.
+
+One name is the same in every host: **`"remote": "embedded"`** is the hkp-rt the
+Readymade app that opened the board embeds, whatever that app calls it. A board meant
+for the embedded runtime uses it — never the app's port (`http://127.0.0.1:8887`) and
+never one app's own name for its runtime (`hkp://remotes/meander-cpp`, which stays
+supported for boards that already say it).
+
+Two more are agreed rather than enforced: **`"remote": "node"`** and
+**`"remote": "python"`** are the hkp-node and the hkp-python the person opening the
+board keeps under those names, wherever theirs listens. A shipped board with a Node or
+Python runtime uses them — never `http://127.0.0.1:8080`, the port both servers default
+to — and says in its description which it needs (`SHARED_REMOTE_NAMES`).
+
+A kept server answers to the name it is listed under and to any number of **aliases**,
+so one server can be `Laptop` to its owner and `node` to boards, and a renamed one keeps
+the name boards already say. A runtime added from the picker gives the board the server's
+name — the most portable one it answers to (`remoteNameForBoard`) — never its address.
+A name nobody is kept under is asked about when the board opens (`core/remotePrompt.ts`)
+and the answer is kept; unanswered, the load fails naming it.
+
+Runtime ids are unique **per user**, not globally — hkp-node namespaces runtimes by the
+authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) don't collide when
+two people load the same board against one server. What a coordinator builds for a
+deployed board is kept **per board** as well, apart from what a runtime server's clients
+create: two deployed boards may share an id, and opening a board in the playground does
+not touch its deployed runtimes (`docs/content/concepts/cloud-boards.md`).
+
+### Service endpoints (mounts)
+
+A service that must be reachable from outside (`http-server-subservices`, `peer-server`) does
+not bind a port. Its runtime assigns it an opaque path on the runtime's own server and
+publishes the address in the service's state as `__hkpMount`:
+
+```
+http://<host>:<port>/hosted/<mountId>
+```
+
+These endpoints are unauthenticated by design — they exist for outside callers holding no
+token — so the unguessable id is what gates access. The id is **derived, not drawn**: an
+HMAC of the tenant, board, runtime and the mount's name (`mountName`, defaulting to the
+service uuid), keyed by a server-held secret (`HKP_MOUNT_SECRET`, else persisted per server at
+`~/.hkp/node-<instance>/mount-secret` or `~/.hkp/<python|cpp>/mount-secret`). A standalone hkp-rt mounts the same way;
+embedded in an app it still binds the port a board names (`docs/content/concepts/mounts.md`). The address therefore survives reloads, restarts and
+redeploys — an outside party configured with it by hand keeps working — while staying
+uncomputable without the key. Renaming a mount rotates that one address; rotating the
+secret rotates all of them. Nothing sensitive enters the board, which says only what the
+endpoint is _called_.
+
+Because the address is still assigned at load time rather than written into the board, a
+board that needs to point a client at one references the _service_ rather than hard-coding
+an address — in whatever field that service already calls its target:
+
+```json
+"url": "hkp-mount://<runtimeId>/<serviceUuid>"
+```
+
+**One job each.** The reference is what a person writes and what the board keeps;
+`__hkpMount` holds the address a mount currently has — published by the owner, written onto
+a consumer by the board's coordinator (`coordinator.resolveMount`), never authored. A
+consumer prefers `__hkpMount` when it holds an address and falls back to its own field,
+where a reference means "not resolved yet" rather than something to dial. Because they are
+separate fields, resolution never overwrites what was written, so a saved board keeps its
+reference.
+
+References are found by their **scheme**, wherever they appear in service state
+(`findMountRefs`) — a `hkp-mount://` value cannot be mistaken for anything else, the same
+reason `{{secret.…}}` is resolved wherever it occurs. A bare `<runtimeId>/<serviceUuid>`
+would not do: it is indistinguishable from a relative URL, and the hosts these boards run
+on resolve those against a base that differs between builds (`hkp://` packaged, `http://`
+in dev). Boards that put the reference in `__hkpMount` itself still work.
+
+The vocabulary — field, scheme, parsing, finding — lives in
+`hkp-frontend/src/runtime/board/mount.ts`; resolution needs a view of the whole board and
+therefore belongs to the coordinator. Exporting a board substitutes the resolved address
+into whatever field held the reference, so a receiving service reads it exactly as it
+always does. Resolution is lazy, because a board restores all its runtimes concurrently and
+the referenced runtime may not have published yet.
+
+The `__hkp` prefix marks a state property whose meaning is defined outside the service
+holding it — generic board machinery reads and rewrites it. Reserved: services must not use
+such a name for anything else.
+
+### Assets
+
+Content a service serves, plays or loads — a page, a script, a sample — is declared once in
+the board's `assets` as descriptors (`id`, `mediaType`, exactly one of `text`, `base64` or
+`url`) and named from service state as `hkp-asset://<id>`, a whole value, never the content.
+The scheme is reserved beside `hkp-mount://`. The runtime that uses the content resolves the
+reference at that moment from its own asset store, which is pushed the descriptors its
+services reference (create payload, before a configure naming one, on attach, and on every
+edit) — so editing an asset changes what is served without reconfiguring anything. The
+browser runtime's store is the board's `assets` itself. Vocabulary in
+`hkp-frontend/src/runtime/board/assets.ts`; the stores in `hkp-node/src/assets.ts`,
+`hkp-python/src/hkp/assets.py` and `hkp-rt/lib/include/assets.h`; the walkthrough in
+`docs/content/concepts/assets.md`.
 
 ---
 
@@ -142,7 +316,7 @@ definitions live in `hkp-frontend/src/facade/types.ts`.
 ```json
 {
   "layout": "single | columns",
-  "panels": [{ "id": "string", "title": "optional", "layout": { ...LayoutItem } }]
+  "panels": [{ "id": "string", "title": "optional", "width": "70%", "layout": { ...LayoutItem } }]
 }
 ```
 
@@ -151,16 +325,59 @@ or a widget leaf with a `"type"` field. Widgets reference services by `serviceUu
 
 | Widget type        | What it does                                                               |
 | ------------------ | -------------------------------------------------------------------------- |
-| `button`           | Sends a configure payload to a service on click                            |
+| `button`           | Sends a configure or `process` action to a service, or a board action      |
 | `text-input`       | Text field; `$$input` in the configure payload becomes the typed value     |
 | `knob`             | Rotary control; `{{value}}` in configure payload becomes the numeric value |
 | `level-meter`      | Vertical bar driven by a service notification                              |
 | `canvas`           | Embeds a Canvas service's drawing surface                                  |
+| `camera`           | Live camera; the frame it captures goes down the pipeline                   |
+| `detect`           | What a Detect service sees: its last frame, with what it found outlined     |
+| `calendar`         | A day as a calendar: hours down the side, one column per bookable thing     |
+| `swimlane`         | One ordered card lane; compose several with a shared drag group             |
 | `xy-pad`           | Embeds an XY Pad service                                                   |
 | `qr-code`          | Displays a QR code from a service notification                             |
 | `message-list`     | Scrolling message thread with optional inline composer                     |
 | `status-indicator` | Coloured dot driven by a service notification                              |
+| `text`             | Whatever a service is saying, as text — a reason, a summary, a count       |
+| `data-table`       | Rows from a service; an array replaces the table, an object appends a row  |
+| `line-chart`       | One or more live or query-backed time series                               |
 | `file-pick`        | File chooser that sends the file to a service                              |
+| `audio-player`     | Plays a service's list of audio files through, one after the next          |
+
+Two things a facade declares beside its panels, both about **what is on screen and when**:
+
+```json
+{
+  "tabs": [{ "id": "read", "title": "Read", "panels": ["articles"] }],
+  "defaultTab": "read",
+  "notices": [{ "source": { "serviceUuid": "take-hour", "path": "error" }, "tone": "error" }]
+}
+```
+
+A panel's `width` is its share of the row it shares with other panels ("70%", or the bare
+number) — a starting point the divider between them still overrides, remembered per board.
+
+**Tabs** group the panels into faces, one at a time, because a board's controls rarely all
+belong to the same person or the same moment — subscribing to a feed is done once, reading
+it every day. A tab is a view over the panels a facade already has: it names panel ids, and
+a panel no tab names stays on screen above the bar. `defaultTab` is what everybody gets, so
+it names the tab for using the board rather than setting it up.
+
+**Notices** are what a board says without being looked at: a toast raised when a service
+reports something, instead of a row kept free for a problem that is usually not there. A
+notice reads a service the way a widget's `source` does, fires when that value arrives with
+something in it, and never seeds from the state a service was already in.
+
+A panel may be another's **detail** — `"detailOf": "<panel id>"`, a story's discussion
+beside the list of stories. Side by side where they fit; on a phone the detail opens in
+place of its master, from a `{ "type": "show-panel", "panel": "<id>" }` action, with a
+back bar and the system back gesture to return (`facade/details.ts`,
+`views/playground/mobile/MobileFacadeView.tsx`).
+
+A widget, container, panel, tab or notice marked **`"visibleTo": "owner"`** is kept for the
+board's owner: a deployed board's coordinator leaves it out of the facade a member is sent,
+so it is neither drawn, nor callable, nor projected (`facadeForMembers` in
+`hkp-node/src/coordinator/facadeAccess.ts`).
 
 Use `/new-board` for the full widget schema and board design workflow.
 
@@ -196,7 +413,27 @@ meander-ios/           iOS-specific native layer
 
 ---
 
-## Codex skills (slash commands)
+## Documentation
+
+| Where                          | What it holds                                                                                                                                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `docs/content/introduction.md` | The first-read narrative: what Readymade is, what people build with it, and the shape of a board                                                                                                                                                 |
+| `docs/content/concepts/`       | How the system is put together and why — one page per idea (board, runtime, service, presets, blocks, assets, units, mounts, coordinator, cloud boards, remotes, logging)                                                                                                          |
+| `docs/content/services/`       | One page per service                                                                                                                                                                                                                             |
+| `docs/content/boards/`         | One page per demo board — what the app does and what each runtime contributes. The runtime/service breakdown below it is generated from the board document at build time, so only the prose lives here. A file here is what puts a board in the docs; its name must match the board's file in `boards/` |
+| `docs/content/board-json.md`   | The serialisation format: what a board document contains, field by field, and what it deliberately does not                                                                                                                                      |
+| `docs/content/repository.md`   | How the checkout is laid out: what is in the superproject, what is a submodule, and what follows from that when committing, building and testing                                                                                                 |
+| `docs/content/testing.md`      | What runs where: the per-area suites behind `run-all-tests.sh`, the Playwright suite in `e2e/` across three host profiles, and what CI actually covers                                                                                           |
+| `docs/content/targets.md`      | Where a board runs: the web, desktop, iOS and Android targets, what each host adds, which features are compiled in per platform, and what each build produces                                                                                    |
+| `docs/content/vocabulary.md`   | **The words this project uses about itself, and the file behind each one.** Read it when a term in a request ("the AppMenu", "a mount", "the consent dialog") has to become a file. Finer-grained than the concepts; every concept appears in it |
+
+The vocabulary is written by hand — never add or remove a term on your own
+initiative. `/vocabulary` checks its references against a changeset and repairs
+what a change invalidated; `node scripts/vocabulary.mjs` is the check on its own.
+
+---
+
+## Skills (slash commands)
 
 | Command                | What it does                                                 |
 | ---------------------- | ------------------------------------------------------------ |
@@ -204,6 +441,7 @@ meander-ios/           iOS-specific native layer
 | `/new-browser-service` | Scaffold a browser runtime service end-to-end                |
 | `/new-node-service`    | Scaffold a Node.js runtime service end-to-end                |
 | `/new-cpp-service`     | Scaffold a C++ hkp-rt service end-to-end                     |
+| `/vocabulary`          | Check the vocabulary's references against a changeset        |
 
 When implementing a service, always produce: service logic, service UI (if interactive),
 registry registration, tests, demo board, and docs page. The demo board filename
@@ -220,7 +458,8 @@ registry registration, tests, demo board, and docs page. The demo board filename
   hard to reason about. Readymade has no wire UI; the ordered service list _is_ the flow. Express
   branching and iteration through control-flow services: a Switch that pattern-matches and
   routes into sub-pipelines, a Filter that stops propagation on a failed predicate, a Looper
-  that repeats sub-services until a predicate stops it.
+  that repeats sub-services until a predicate stops it, an Iterator that runs one pipeline over
+  many items, and Tracks that runs many pipelines over one item and reduces their answers.
 - **Scoped by concept, not by technique.** A service groups related logic by domain, not by
   implementation. Multiple modes and technologies belong together if they serve the same
   conceptual role (e.g. Input handles event streams and WebSockets — different tech, same
