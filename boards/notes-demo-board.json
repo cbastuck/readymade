@@ -1,0 +1,391 @@
+{
+  "boardName": "Notes",
+  "description": "A Markdown notebook kept in this browser. Pick a note in the sidebar to open it, start a new one, rename or delete it, and write in the Monaco editor (Save or Ctrl/Cmd+S). Nothing to install: the SQL services run SQLite compiled to WebAssembly, kept in this browser between visits, and Export saves the whole notebook as a .sqlite file.",
+  "runtimes": [
+    {
+      "id": "notes",
+      "name": "Notebook",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "notes": [
+      {
+        "uuid": "export-file",
+        "serviceId": "sub-service",
+        "serviceName": "Export the notebook",
+        "state": {
+          "stopPropagation": true,
+          "pipeline": [
+            {
+              "uuid": "export",
+              "serviceId": "sql",
+              "serviceName": "The database as a file",
+              "state": {
+                "mode": "export",
+                "format": "sqlite",
+                "database": "notes"
+              }
+            },
+            {
+              "uuid": "save",
+              "serviceId": "hookup.to/service/download",
+              "serviceName": "Save",
+              "state": {
+                "filename": "notes.sqlite",
+                "mimeType": "application/vnd.sqlite3"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "create-note",
+        "serviceId": "sql",
+        "serviceName": "Create a note",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "notes",
+          "schema": "CREATE TABLE IF NOT EXISTS note (\n  id      TEXT PRIMARY KEY CHECK(id <> ''),\n  title   TEXT NOT NULL CHECK(trim(title) <> ''),\n  body    TEXT NOT NULL DEFAULT '',\n  created TEXT NOT NULL DEFAULT (datetime('now')),\n  updated TEXT NOT NULL DEFAULT (datetime('now'))\n);\nCREATE TABLE IF NOT EXISTS note_meta (\n  key   TEXT PRIMARY KEY,\n  value TEXT NOT NULL\n);\nINSERT OR IGNORE INTO note (id, title, body, created, updated)\nSELECT 'welcome',\n       'Welcome to Notes',\n       '# Welcome to Notes\n\nWrite in **Markdown** in the Monaco editor on the right, and press **Save** (or `Ctrl/Cmd+S`) to keep your changes.\n\n- Pick any note in the sidebar to open it\n- Create a new note from the sidebar\n- Rename or delete the open note above the editor\n- Export the whole notebook as a `.sqlite` file at any time\n',\n       datetime('now', '-1 hour'),\n       datetime('now', '-1 hour')\n WHERE NOT EXISTS (SELECT 1 FROM note_meta WHERE key = 'seeded');\nINSERT OR IGNORE INTO note (id, title, body, created, updated)\nSELECT 'ideas',\n       'Scratchpad & ideas',\n       '# Scratchpad & ideas\n\nA second note to try switching between notes in the sidebar.\n\n```sql\nSELECT id, title, updated\n  FROM note\n ORDER BY updated DESC;\n```\n',\n       datetime('now', '-2 hours'),\n       datetime('now', '-2 hours')\n WHERE NOT EXISTS (SELECT 1 FROM note_meta WHERE key = 'seeded');\nINSERT OR IGNORE INTO note_meta (key, value) VALUES ('seeded', '1');",
+          "statement": "INSERT INTO note (id, title, body, created, updated)\nSELECT $id,\n       coalesce(nullif(trim($title), ''), 'Untitled note'),\n       coalesce($body, '# ' || coalesce(nullif(trim($title), ''), 'Untitled note') || char(10) || char(10)),\n       datetime('now'),\n       datetime('now')\n WHERE $intent = 'create'\n   AND coalesce($id, '') <> ''"
+        }
+      },
+      {
+        "uuid": "save-note",
+        "serviceId": "sql",
+        "serviceName": "Save the note",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "notes",
+          "statement": "UPDATE note\n   SET body    = coalesce($body, ''),\n       updated = datetime('now')\n WHERE $intent = 'save'\n   AND id = coalesce(\n     nullif($noteId, ''),\n     (SELECT id FROM note ORDER BY updated DESC, rowid DESC LIMIT 1)\n   )"
+        }
+      },
+      {
+        "uuid": "rename-note",
+        "serviceId": "sql",
+        "serviceName": "Rename the note",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "notes",
+          "statement": "UPDATE note\n   SET title   = trim($title),\n       updated = datetime('now')\n WHERE $intent = 'rename'\n   AND trim(coalesce($title, '')) <> ''\n   AND id = coalesce(\n     nullif($noteId, ''),\n     (SELECT id FROM note ORDER BY updated DESC, rowid DESC LIMIT 1)\n   )"
+        }
+      },
+      {
+        "uuid": "delete-note",
+        "serviceId": "sql",
+        "serviceName": "Delete a note",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "notes",
+          "statement": "DELETE FROM note\n WHERE $intent = 'delete'\n   AND id = $id"
+        }
+      },
+      {
+        "uuid": "active-note",
+        "serviceId": "sql",
+        "serviceName": "The open note",
+        "state": {
+          "mode": "query",
+          "emit": "input",
+          "database": "notes",
+          "statement": "WITH\n  shown(id) AS (\n    SELECT coalesce(\n      (SELECT id FROM note WHERE id = nullif($noteId, '')),\n      (SELECT id FROM note ORDER BY updated DESC, rowid DESC LIMIT 1)\n    )\n  )\nSELECT\n  n.id      AS id,\n  n.title   AS title,\n  n.body    AS body,\n  n.updated AS updated,\n  'Updated ' || substr(n.updated, 1, 16) AS byline,\n  'Delete \"' || n.title || '\"?' AS deletePrompt\nFROM shown\nJOIN note n ON n.id = shown.id"
+        }
+      },
+      {
+        "uuid": "all-notes",
+        "serviceId": "sql",
+        "serviceName": "Every note",
+        "state": {
+          "mode": "query",
+          "emit": "result",
+          "database": "notes",
+          "statement": "WITH\n  shown(id) AS (\n    SELECT coalesce(\n      (SELECT id FROM note WHERE id = nullif($noteId, '')),\n      (SELECT id FROM note ORDER BY updated DESC, rowid DESC LIMIT 1)\n    )\n  )\nSELECT\n  n.id    AS id,\n  n.title AS title,\n  substr(n.updated, 1, 16) AS updated,\n  CASE WHEN length(trim(replace(n.body, char(10), ' '))) > 60\n       THEN substr(trim(replace(n.body, char(10), ' ')), 1, 60) || '…'\n       ELSE trim(replace(n.body, char(10), ' '))\n  END AS excerpt,\n  CASE WHEN n.id = shown.id THEN 1 ELSE 0 END AS current,\n  'Delete \"' || n.title || '\"?' AS deletePrompt\nFROM note n\nCROSS JOIN shown\nORDER BY n.updated DESC, n.rowid DESC"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "state": {
+      "noteId": ""
+    },
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "create-note",
+        "payload": {
+          "intent": "none",
+          "noteId": {
+            "$state": "noteId"
+          }
+        }
+      }
+    ],
+    "panels": [
+      {
+        "id": "sidebar",
+        "title": "Notes",
+        "width": "30%",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "type": "text-input",
+              "placeholder": "New note title…",
+              "submitLabel": "New note",
+              "width": "100%",
+              "actions": [
+                {
+                  "type": "set-state",
+                  "key": "noteId",
+                  "value": ""
+                },
+                {
+                  "type": "process",
+                  "serviceUuid": "create-note",
+                  "payload": {
+                    "intent": "create",
+                    "id": {
+                      "$uuid": true
+                    },
+                    "noteId": "",
+                    "title": "$$input"
+                  }
+                },
+                {
+                  "type": "show-panel",
+                  "panel": "editor"
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "all-notes",
+                "path": "rows"
+              },
+              "gap": 6,
+              "template": {
+                "direction": "column",
+                "gap": 4,
+                "items": [
+                  {
+                    "direction": "row",
+                    "gap": 6,
+                    "align": "center",
+                    "items": [
+                      {
+                        "type": "button",
+                        "label": "{{item.title}}",
+                        "selected": "{{item.current}}",
+                        "grow": true,
+                        "actions": [
+                          {
+                            "type": "set-state",
+                            "key": "noteId",
+                            "value": "{{item.id}}"
+                          },
+                          {
+                            "type": "process",
+                            "serviceUuid": "create-note",
+                            "payload": {
+                              "intent": "open",
+                              "noteId": "{{item.id}}"
+                            }
+                          },
+                          {
+                            "type": "show-panel",
+                            "panel": "editor"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.updated}} · {{item.excerpt}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  }
+                ]
+              }
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "align": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Export .sqlite",
+                  "actions": [
+                    {
+                      "type": "process",
+                      "serviceUuid": "export-file",
+                      "payload": {}
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "editor",
+        "title": "Editor",
+        "width": "70%",
+        "detailOf": "sidebar",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "fill": true,
+          "items": [
+            {
+              "type": "repeat",
+              "source": {
+                "serviceUuid": "active-note",
+                "path": "rows"
+              },
+              "template": {
+                "direction": "row",
+                "gap": 8,
+                "align": "center",
+                "wrap": true,
+                "items": [
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.title}}",
+                    "fontSize": 16,
+                    "grow": true
+                  },
+                  {
+                    "type": "text",
+                    "placeholder": "{{item.byline}}",
+                    "tone": "muted",
+                    "fontSize": 11
+                  },
+                  {
+                    "type": "button",
+                    "label": "Rename",
+                    "actions": [
+                      {
+                        "type": "prompt",
+                        "question": "Rename note",
+                        "defaultValue": "{{item.title}}"
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "create-note",
+                        "payload": {
+                          "intent": "rename",
+                          "noteId": "{{item.id}}",
+                          "title": "$$input"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "button",
+                    "label": "Delete",
+                    "confirm": "{{item.deletePrompt}}",
+                    "actions": [
+                      {
+                        "type": "set-state",
+                        "key": "noteId",
+                        "value": ""
+                      },
+                      {
+                        "type": "process",
+                        "serviceUuid": "create-note",
+                        "payload": {
+                          "intent": "delete",
+                          "id": "{{item.id}}",
+                          "noteId": ""
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "editor",
+              "grow": true,
+              "language": "markdown",
+              "submitLabel": "Save note",
+              "placeholder": "Write your note in Markdown…",
+              "source": {
+                "serviceUuid": "active-note",
+                "path": "rows.0.body"
+              },
+              "actions": [
+                {
+                  "type": "process",
+                  "serviceUuid": "create-note",
+                  "payload": {
+                    "intent": "save",
+                    "noteId": {
+                      "$state": "noteId"
+                    },
+                    "body": "$$input"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "create-note",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "save-note",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "rename-note",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "delete-note",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "active-note",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "all-notes",
+          "path": "error"
+        }
+      }
+    ]
+  }
+}

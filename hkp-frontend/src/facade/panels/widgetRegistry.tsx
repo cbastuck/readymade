@@ -5,6 +5,7 @@ import { LevelMeterRenderer } from "./renderers/LevelMeterRenderer";
 import { ButtonRenderer } from "./renderers/ButtonRenderer";
 import { TextInputRenderer } from "./renderers/TextInputRenderer";
 import { JsonInputRenderer } from "./renderers/JsonInputRenderer";
+import { EditorRenderer } from "./renderers/EditorRenderer";
 import { QrCodeRenderer } from "./renderers/QrCodeRenderer";
 import { FilePickRenderer } from "./renderers/FilePickRenderer";
 import { MessageListRenderer } from "./renderers/MessageListRenderer";
@@ -41,6 +42,7 @@ export const widgetRegistry: Record<
   button: ButtonRenderer,
   "text-input": TextInputRenderer,
   "json-input": JsonInputRenderer,
+  editor: EditorRenderer,
   "qr-code": QrCodeRenderer,
   "file-pick": FilePickRenderer,
   "message-list": MessageListRenderer,
