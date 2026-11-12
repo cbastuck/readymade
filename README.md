@@ -4,7 +4,7 @@ Readymade is a composable, distributed framework for building **interactive apps
 
 A **board** is a single JSON document describing the app's user interface (**facade**), its services, and the **runtimes** they run on — in the browser, embedded in the desktop and mobile apps (C++), or on self-hosted servers (Node.js and Python). You can build and adapt boards by hand or with **Board Assist** (using local or hosted AI models), observe data flowing through every step in real time, and run them locally or share them with a group.
 
-![Readymade screenshot](./readymade-screenshot.png)
+![A Browser runtime with Timer, Map and Canvas services producing a changing Hello World message](./readymade-hello-world.gif)
 
 ## Quick start (Web playground)
 
