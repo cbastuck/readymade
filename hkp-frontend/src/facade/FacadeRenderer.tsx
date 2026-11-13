@@ -14,6 +14,7 @@ import { useChromeRetracted } from "./FacadeChrome";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
 import { FacadePanelNavigationContext } from "./FacadePanelNavigation";
 import { FacadeBindingsProvider } from "./FacadeBindingsContext";
+import { FacadeBindingsBadge } from "./FacadeBindingsBadge";
 import { SwimlaneDragProvider } from "./SwimlaneDragContext";
 
 type FacadeRendererProps = {
@@ -297,8 +298,14 @@ export default function FacadeRenderer({
                   background: "hsl(var(--border))",
                   flexShrink: 0,
                   userSelect: "none",
+                  // The facade's own badge sits on it, where the facade meets
+                  // the board.
+                  position: "relative",
+                  zIndex: 6,
                 }}
-              />
+              >
+                {showRuntime && showFacade && <FacadeBindingsBadge />}
+              </div>
               <div
                 style={{
                   height: !showRuntime

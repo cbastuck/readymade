@@ -424,6 +424,8 @@ describe("the facade's own bindings", () => {
       {
         site: { kind: "notice", index: 0 },
         bindings: [{ role: "shows", service: "take-hour", path: "error" }],
+        tone: "error",
+        message: undefined,
       },
     ]);
   });

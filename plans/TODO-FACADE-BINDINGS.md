@@ -11,7 +11,7 @@ This plan makes the relation between a widget and the services it touches
 discoverable **from the facade itself**, in both directions, plus the facade
 state that carries values between widgets.
 
-Raised 2026-11-13. Steps 1–4 built 2026-11-13; steps 5–9 open.
+Raised 2026-11-13. Steps 1–5 built 2026-11-13; steps 6–9 open.
 
 ---
 
@@ -293,10 +293,33 @@ with a throwaway Playwright run.
 In the facade's chrome (`FacadeChrome.tsx`): **Runs on open**, **Notices from**
 and **State**, from `facadeBindings`.
 
+**Built 2026-11-13** in `facade/FacadeBindingsBadge.tsx`, tested in
+`facade/tests/facadeBindingsBadge.test.tsx`, and looked at in the real
+playground.
+
+- **Not in `FacadeChrome`.** That is the app's toolbar, which retracts when the
+  facade is shown alone. It sits outside `FacadeRenderer`, where the bindings
+  context lives. The badge is a "Facade" chip on the divider between the
+  facade and the board instead. The divider only exists while both are on
+  screen, it is where the facade meets the board, and nothing on it can be
+  covered. Pressing the chip does not start a divider drag.
+- The rows are shared with the widget badge (`facade/panels/BindingRows.tsx`:
+  `ServiceRow`, `StateRow`, `SiteLinks`, `OverlayTabs`, `verbOf`), so both
+  overlays describe a binding the same way.
+- **Runs on open** lists each init action's bindings, with Show in board and
+  Inspect. **Notices from** lists each notice's source and what it raises.
+  `facadeBindings` now carries a notice's `tone` and `message` for this.
+- **State** already shows what step 6 asks for, apart from the history: per
+  key, its current value, whether `facade.state` seeds it, and its writers and
+  readers as links to their widgets. It also lists keys held in state that
+  nothing in the facade names.
+
 ### 6. Facade state view
 
 The State tab, and the facade editor's `StatePanel` shown from the same
-component:
+component (step 5 already gives the State tab current values, writers and
+readers; what is left is the history, the writer's identity, and sharing the
+component with `StatePanel`):
 
 - current value per key, writers and readers from `facadeBindings`, each
   resolvable to its widget
