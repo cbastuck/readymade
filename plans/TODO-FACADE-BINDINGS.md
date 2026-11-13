@@ -505,9 +505,12 @@ widget's bindings usually leads. So a badge opens the editor on its widget,
 and the overlays are gone.
 
 - **Opens on what the badge stands for.** A widget opens on Acts on, or on
-  Updated by when it acts on nothing. Properties is one tab away. The divider's
-  Facade chip opens the editor's State item. Its old Actions and Updates tabs
-  are the tree's Actions and Updates item.
+  Updated by when it acts on nothing. Properties is one tab away.
+- **No facade badge.** The divider's Facade chip opened the editor's State
+  item for a while. It was then removed: the editor is hard to miss now, and
+  its tree has State and Actions and Updates as root items. `FacadeBindings`
+  (the Actions and Updates lists) moved from `FacadeBindingsBadge.tsx` to
+  `FacadeBindings.tsx`.
 - **The tree and the facade point at the same widget.** Selecting a widget in
   the tree, from a badge or by hand, brings it into view on the facade and
   marks it there (`revealWidget`). That also finds it again after the editor,
@@ -538,7 +541,7 @@ and the overlays are gone.
   be dropped. There the editor says its changes are not saved with the board.
 
 Tested in `facade/tests/bindingsBadge.test.tsx`,
-`facadeBindingsBadge.test.tsx`, `facadeEditorSave.test.tsx` and
+`facadeBindings.test.tsx`, `facadeEditorSave.test.tsx` and
 `FacadeViewContext.test.tsx`. Looked at in the real playground with a
 throwaway Playwright run: a label edited in the editor survives save and
 reload, and a badge opens the editor on its widget with its sends listed.

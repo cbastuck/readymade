@@ -22,8 +22,8 @@ import { SentCall, useSentCalls } from "../sentCalls";
 import { timeOf } from "hkp-frontend/src/ui-components/service/flowRecords";
 
 /**
- * The rows a bindings overlay is made of — a widget's (BindingsBadge) and the
- * facade's own (FacadeBindingsBadge) — so the two say a binding the same way.
+ * The rows the facade editor lists bindings with — a widget's, and the
+ * facade's own (FacadeBindings) — so both say a binding the same way.
  */
 
 /** What a binding does, as a row's first line says it. */

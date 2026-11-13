@@ -1,19 +1,13 @@
 import { useState } from "react";
-import { Link2 } from "lucide-react";
 
 import { BindingSite, isServiceBinding } from "./bindings";
 import { useFacadeBindings } from "./FacadeBindingsContext";
-import { useFacadeView } from "./FacadeViewContext";
 import { OverlayTabs, ServiceRow, StateRow } from "./panels/BindingRows";
 
 /**
- * The bindings that belong to no widget — what runs when the facade opens
- * (`init`) and what raises a toast (`notices`) — and the facade's own badge,
- * which opens the editor on them.
- *
- * The badge is drawn on the divider between the facade and the board, which
- * is only there while both are on screen: the one view where a binding has
- * somewhere to point.
+ * The bindings that belong to no widget: what runs when the facade opens
+ * (`init`) and what raises a toast (`notices`). Shown under the facade
+ * editor's Actions and Updates.
  */
 
 export type FacadeTab = "init" | "notices";
@@ -121,31 +115,5 @@ export function FacadeBindings({
         )}
       </div>
     </>
-  );
-}
-
-export const FACADE_BADGE_LABEL = "Open the facade's state in the editor";
-
-export function FacadeBindingsBadge() {
-  const api = useFacadeBindings();
-  const view = useFacadeView();
-
-  if (!api?.badges || !view) {
-    return null;
-  }
-
-  return (
-    <button
-      type="button"
-      className="hkp-facade-binding-badge"
-      aria-label={FACADE_BADGE_LABEL}
-      title="Open the facade editor on its state, the actions it runs on open and the notices it raises"
-      // The divider under it is dragged; the badge is pressed.
-      onMouseDown={(event) => event.stopPropagation()}
-      onClick={() => view.openEditorAt({ kind: "state" })}
-    >
-      <Link2 size={11} />
-      Facade
-    </button>
   );
 }

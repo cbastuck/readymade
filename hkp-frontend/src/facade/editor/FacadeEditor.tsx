@@ -3,7 +3,7 @@ import { CSSProperties, ReactNode, useEffect, useMemo, useRef, useState } from "
 import PaneSplitter from "hkp-frontend/src/ui-components/PaneSplitter";
 
 import { BindingSite, facadeBindings, siteKey, widgetBindings } from "../bindings";
-import { FacadeBindings } from "../FacadeBindingsBadge";
+import { FacadeBindings } from "../FacadeBindings";
 import { useFacadeBindings } from "../FacadeBindingsContext";
 import {
   BindingList,

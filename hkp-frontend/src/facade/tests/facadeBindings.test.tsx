@@ -1,20 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import type { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeBindingsProvider } from "../FacadeBindingsContext";
-import { FACADE_BADGE_LABEL, FacadeBindings } from "../FacadeBindingsBadge";
+import { FacadeBindings } from "../FacadeBindings";
 import { FacadeStateView, describeValue } from "../FacadeStateView";
 import { facadeBindings } from "../bindings";
-import FacadeRenderer from "../FacadeRenderer";
-import { FacadeViewProvider } from "../FacadeViewContext";
 import { FacadeStateContext } from "../FacadeStateContext";
 import type { FacadeDescriptor } from "../types";
 
 /**
  * The bindings that belong to no widget — what runs when the facade opens, the
- * notices it raises, and its state — and the facade's own badge, which opens
- * the editor on them.
+ * notices it raises, and its state — as the facade editor lists them.
  */
 
 const reveal = vi.fn();
@@ -26,8 +23,6 @@ vi.mock("../boardServices", () => ({
   findService: () => null,
   processService: () => {},
   canReachService: () => true,
-  isBuiltInside: () => true,
-  whenServiceConnected: async () => {},
 }));
 
 const boardContext = {
@@ -64,8 +59,6 @@ const facade = {
   ],
 } as unknown as FacadeDescriptor;
 
-const BOARD = "facade-badge-board";
-
 function renderLists(values: Record<string, unknown> = { meeting: "m-1", draft: "hello" }) {
   return render(
     <FacadeStateContext.Provider value={{ state: values, setState: () => {} }}>
@@ -79,45 +72,7 @@ function renderLists(values: Record<string, unknown> = { meeting: "m-1", draft: 
   );
 }
 
-function renderFacade({ split = true, editable = true } = {}) {
-  localStorage.setItem(`hkp-facade-runtime-${BOARD}`, String(split));
-  return render(
-    <FacadeViewProvider boardName={BOARD} editable={editable}>
-      <FacadeRenderer
-        facade={facade}
-        boardContext={boardContext}
-        boardName={BOARD}
-        runtimeContent={<div>the runtimes</div>}
-      />
-    </FacadeViewProvider>,
-  );
-}
-
-beforeEach(() => localStorage.clear());
 afterEach(() => reveal.mockReset());
-
-describe("the facade's own badge", () => {
-  it("is not drawn without the board beside the facade", () => {
-    renderFacade({ split: false });
-    expect(screen.queryByRole("button", { name: FACADE_BADGE_LABEL })).toBeNull();
-  });
-
-  it("is not drawn where the facade cannot be edited, as on a deployed board", () => {
-    renderFacade({ editable: false });
-    expect(screen.queryByRole("button", { name: FACADE_BADGE_LABEL })).toBeNull();
-  });
-
-  it("opens the editor on the facade's state", () => {
-    renderFacade();
-    fireEvent.click(screen.getByRole("button", { name: FACADE_BADGE_LABEL }));
-    const tree = screen.getByRole("tree", { name: "Facade" });
-    const state = within(tree)
-      .getAllByRole("treeitem")
-      .find((item) => item.textContent === "State")!;
-    expect(state.getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("region", { name: "Facade state" })).toBeTruthy();
-  });
-});
 
 describe("the facade's own bindings", () => {
   it("counts what each tab holds", () => {
