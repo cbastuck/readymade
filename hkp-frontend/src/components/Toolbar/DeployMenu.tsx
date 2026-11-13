@@ -11,6 +11,10 @@ import {
 import { listCoordinatorBoards } from "hkp-frontend/src/views/cloud/coordinatorClient";
 import { deployBoard, describeDeploy } from "hkp-frontend/src/core/deploy";
 import DeployDialog from "./DeployDialog";
+import {
+  TOOLBAR_GROUP_BUTTON,
+  TOOLBAR_GROUP_ICON_SIZE,
+} from "./ToolbarGroup";
 
 /**
  * The toolbar's deploy control: hands the board being built to a coordinator.
@@ -164,20 +168,14 @@ export default function DeployMenu() {
             title={user ? "Deploy to a coordinator" : "Log in to deploy"}
             disabled={disabled}
             style={{
-              width: 30,
-              height: 30,
-              borderRadius: 7,
-              border: "none",
+              ...TOOLBAR_GROUP_BUTTON,
               background: "none",
               cursor: disabled ? "default" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
               color: "var(--text, #1a1a1a)",
               opacity: disabled ? 0.4 : 1,
             }}
           >
-            <Rocket size={16} strokeWidth={1.75} />
+            <Rocket size={TOOLBAR_GROUP_ICON_SIZE} strokeWidth={1.75} />
           </button>
         </DropdownMenuPrimitive.Trigger>
 

@@ -90,11 +90,11 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                         centreSlot={<PlayBoardControls />}
                         actionsSlot={
                           <>
-                            <FacadeViewControls />
                             <ToolbarGroup label="Runtimes view">
                               <RuntimeZoomToolbarButton />
                               <OverviewToolbarButton />
                             </ToolbarGroup>
+                            <FacadeViewControls />
                             <ToolbarGroup label="Board tools">
                               <FacadeEditorButton />
                               <button
@@ -123,9 +123,9 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                               </button>
                               <AssetViewToolbarButton />
                             </ToolbarGroup>
-                            <DeployMenu />
                           </>
                         }
+                        deploySlot={<DeployMenu />}
                         includeNavigationLinks={!props.hideNavigation}
                       />
                     </FacadeChrome>

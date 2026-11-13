@@ -16,6 +16,7 @@ import BoardMenu from "hkp-frontend/src/ui-components/toolbar/BoardMenu";
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 
 import ShareMenu from "./ShareMenu";
+import ToolbarGroup from "./ToolbarGroup";
 import AccountAvatar from "./AccountAvatar";
 
 import "./index.css";
@@ -28,12 +29,18 @@ type Props = {
   menuItemFactory?: BoardMenuItemFactory;
   menuSlot?: ReactNode;
   logoSlot?: ReactNode;
-  /** Actions for the view that owns the board — deploying and the overview.
+  /** Actions for the view that owns the board — the overview, the facade's
+   *  views, the editor.
    *  Passed in rather than rendered here, because a view that only attaches to
    *  a board has no business offering them. Shown under every theme: which
    *  theme a board is being looked at in says nothing about what can be done
    *  to it. */
   actionsSlot?: ReactNode;
+  /** The deploy control, drawn in one outline with sharing after the other
+   *  actions: both hand the board to someone else, where the actions before
+   *  them change how it is looked at here. Passed in for the same reason as
+   *  the actions. */
+  deploySlot?: ReactNode;
   /** Where the board runs, shown centred between the board menu and the
    *  account controls. Centred by taking it out of the flow, so it stays put
    *  as either side changes width. */
@@ -109,6 +116,7 @@ export default function Toolbar({
   menuSlot,
   logoSlot,
   actionsSlot,
+  deploySlot,
   statusSlot,
   centreSlot,
 }: Props) {
@@ -169,7 +177,10 @@ export default function Toolbar({
         >
           <Controls>
             {actionsSlot}
-            <ShareMenu />
+            <ToolbarGroup label="Share and deploy">
+              {deploySlot}
+              <ShareMenu />
+            </ToolbarGroup>
           </Controls>
           <TbSeparator />
           <AccountAvatar />
@@ -242,7 +253,12 @@ export default function Toolbar({
               paddingRight: 6,
             }}
           >
-            <Controls>{actionsSlot}</Controls>
+            <Controls>
+              {actionsSlot}
+              {deploySlot && (
+                <ToolbarGroup label="Share and deploy">{deploySlot}</ToolbarGroup>
+              )}
+            </Controls>
             <AccountAvatar />
           </div>
           {menuSlot ?? (!hideNavigation && <AppMenu />)}
