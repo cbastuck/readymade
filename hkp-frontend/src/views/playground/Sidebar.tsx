@@ -638,9 +638,7 @@ export default function Sidebar() {
               flex: "1 1 auto",
               minHeight: 0,
               overflowY: "auto",
-              // Keep final palette items fully visible above the fixed footer.
-              paddingBottom:
-                "calc(12px + 36px + env(safe-area-inset-bottom, 0px))",
+              paddingBottom: 12,
             }}
           >
             {hasRuntimes && filteredGroups.length === 0 && query && (
