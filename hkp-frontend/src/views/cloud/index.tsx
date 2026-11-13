@@ -1459,7 +1459,12 @@ export default function CloudBoards({
     >
       {/* Remembered apart from a playground board of the same name: the view a
           board is being built in says nothing about the one it is used in. */}
-      <FacadeViewProvider boardName={boardIsOpen ? mountedBoardKey : ""}>
+      {/* Not editable: the coordinator owns a deployed board, and changing
+          it means changing it in the playground and deploying again. */}
+      <FacadeViewProvider
+        boardName={boardIsOpen ? mountedBoardKey : ""}
+        editable={false}
+      >
         <div
           className="w-full h-full flex flex-col"
           style={{ background: "var(--bg-app, #fafafa)" }}

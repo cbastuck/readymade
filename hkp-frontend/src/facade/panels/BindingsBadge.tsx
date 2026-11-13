@@ -1,19 +1,14 @@
 import { RefObject, useLayoutEffect, useRef, useState } from "react";
 import { Link2 } from "lucide-react";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "hkp-frontend/src/ui-components/primitives/popover";
-import { Binding, BindingSite } from "../bindings";
+import { BindingSite } from "../bindings";
 import { useFacadeBindings } from "../FacadeBindingsContext";
-import { WidgetBindings } from "./BindingRows";
+import { useFacadeView } from "../FacadeViewContext";
 
 /**
- * The corner badge on a facade widget, and the overlay it opens: what the
- * widget sends to and what it shows from, each binding resolvable to where it
- * lives on the board.
+ * The corner badge on a facade widget: it opens the facade editor on that
+ * widget, where what it acts on and is updated by sits beside everything else
+ * about it that can be changed.
  *
  * Positioned over the widget rather than beside it, so the facade's layout is
  * the same with and without badges; faint until the widget is hovered or
@@ -139,58 +134,29 @@ function useContentCorner(
   return corner;
 }
 
-export function BindingsBadge({
-  bindings,
-  site,
-}: {
-  bindings: Binding[];
-  site: BindingSite;
-}) {
+export const BADGE_LABEL = "Open in the facade editor";
+
+export function BindingsBadge({ site }: { site: BindingSite }) {
   const api = useFacadeBindings();
-  const [open, setOpen] = useState(false);
+  const view = useFacadeView();
   const badgeRef = useRef<HTMLButtonElement>(null);
   const corner = useContentCorner(badgeRef);
 
-  if (!api?.badges) {
+  if (!api?.badges || !view) {
     return null;
   }
 
-  const onOpenChange = (next: boolean) => {
-    if (next) {
-      api.refreshLocations();
-    }
-    setOpen(next);
-  };
-
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
-        <button
-          ref={badgeRef}
-          type="button"
-          className="hkp-binding-badge"
-          style={corner ? { top: corner.top, left: corner.left, right: "auto" } : undefined}
-          aria-label="What this acts on and is updated by"
-          title="What this acts on and is updated by"
-        >
-          <Link2 size={11} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="hkp-binding-overlay"
-        align="end"
-        style={{ width: "min(360px, 92vw)", padding: 0 }}
-      >
-        <WidgetBindings
-          bindings={bindings}
-          site={site}
-          onDone={() => setOpen(false)}
-          onRevealSite={(other) => {
-            setOpen(false);
-            api.revealWidget(other);
-          }}
-        />
-      </PopoverContent>
-    </Popover>
+    <button
+      ref={badgeRef}
+      type="button"
+      className="hkp-binding-badge"
+      style={corner ? { top: corner.top, left: corner.left, right: "auto" } : undefined}
+      aria-label={BADGE_LABEL}
+      title="Open in the facade editor — what this acts on, what updates it, and its properties"
+      onClick={() => view.openEditorAt({ kind: "widget", site })}
+    >
+      <Link2 size={11} />
+    </button>
   );
 }

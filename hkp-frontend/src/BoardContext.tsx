@@ -182,6 +182,11 @@ type BoardContextAPI = {
    */
   markBoardChanged: () => void;
   /**
+   * Replaces the board's facade — what the facade editor changes. A changed
+   * facade is a change to the board's structure, so it is saved like one.
+   */
+  setFacade: Dispatch<SetStateAction<FacadeDescriptor | undefined>>;
+  /**
    * Takes what snapshot is pending now, resolving once it is written. For a
    * host about to act on the board as it is — saving it, and dropping what it
    * kept in the meantime.
@@ -1234,6 +1239,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       setBoardName,
       clearBoard,
       markBoardChanged,
+      setFacade,
       flushSnapshots,
       onAction,
       isRuntimeInScope,

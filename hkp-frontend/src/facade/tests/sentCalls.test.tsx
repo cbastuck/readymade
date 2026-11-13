@@ -1,13 +1,12 @@
-import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import type { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { executeActions } from "../executeActions";
-import { FacadeBindingsProvider } from "../FacadeBindingsContext";
-import { FacadeStateContext } from "../FacadeStateContext";
+import FacadeRenderer from "../FacadeRenderer";
+import { FacadeViewProvider } from "../FacadeViewContext";
 import { createSendLog } from "../sentCalls";
-import { GenericPanel } from "../panels/GenericPanel";
+import { BADGE_LABEL } from "../panels/BindingsBadge";
 import type { FacadeDescriptor, FacadePanel } from "../types";
 
 /**
@@ -25,6 +24,8 @@ vi.mock("../boardServices", () => ({
   processService: (_ctx: unknown, uuid: string, payload: unknown) =>
     processed(uuid, payload),
   canReachService: () => true,
+  isBuiltInside: () => true,
+  whenServiceConnected: async () => {},
 }));
 
 vi.mock("hkp-frontend/src/runtime/ui/revealService", () => ({
@@ -141,23 +142,26 @@ describe("a widget's sends under its bindings", () => {
   } as unknown as FacadePanel;
   const facade: FacadeDescriptor = { layout: "single", panels: [panel] };
 
-  /** The store as FacadeRenderer keeps it, with the send log beside it. */
-  function Facade() {
-    const [sends] = useState(() => createSendLog(10));
-    return (
-      <FacadeStateContext.Provider value={{ state: {}, setState: () => {}, sends }}>
-        <FacadeBindingsProvider facade={facade} boardContext={boardContext} badges>
-          <GenericPanel panel={panel} boardContext={boardContext} showTitle={false} />
-        </FacadeBindingsProvider>
-      </FacadeStateContext.Provider>
+  // The store as FacadeRenderer keeps it, the send log with it, and the badge
+  // that opens the editor on a widget.
+  function renderFacade() {
+    localStorage.setItem("hkp-facade-runtime-sends-board", "true");
+    return render(
+      <FacadeViewProvider boardName="sends-board">
+        <FacadeRenderer
+          facade={facade}
+          boardContext={boardContext}
+          boardName="sends-board"
+          runtimeContent={null}
+          onFacadeChange={() => {}}
+        />
+      </FacadeViewProvider>,
     );
   }
 
-  function openBadge(site: string) {
+  function openEditorOn(site: string) {
     const host = document.querySelector(`[data-facade-site="${site}"]`) as HTMLElement;
-    fireEvent.click(
-      within(host).getByRole("button", { name: "What this acts on and is updated by" }),
-    );
+    fireEvent.click(within(host).getByRole("button", { name: BADGE_LABEL }));
     return screen.getByRole("tabpanel", { name: "Acts on" });
   }
 
@@ -167,13 +171,13 @@ describe("a widget's sends under its bindings", () => {
 
   it("lists each call along the binding it went, as the widget's own", async () => {
     Element.prototype.scrollIntoView = vi.fn();
-    render(<Facade />);
+    renderFacade();
     fireEvent.click(screen.getByRole("button", { name: "Greet" }));
     await vi.waitFor(() => expect(processed).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: "Quiet" }));
     await vi.waitFor(() => expect(configured).toHaveBeenCalledTimes(2));
 
-    const list = openBadge("form/0");
+    const list = openEditorOn("form/0");
     const configure = rowOf(list, "configure level");
     expect(within(configure).getByText("Recent sends · 1")).toBeTruthy();
     // The last call in view, and again in the list.
@@ -185,10 +189,10 @@ describe("a widget's sends under its bindings", () => {
     expect(within(process).getAllByText('{"who":"Ada"}')).toHaveLength(2);
   });
 
-  it("shows a call sent while the overlay is open", async () => {
+  it("shows a call sent while the editor is open", async () => {
     Element.prototype.scrollIntoView = vi.fn();
-    render(<Facade />);
-    const list = openBadge("form/1");
+    renderFacade();
+    const list = openEditorOn("form/1");
     expect(within(rowOf(list, "configure level")).queryByText(/Recent sends/)).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Quiet" }));

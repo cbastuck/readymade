@@ -18,9 +18,9 @@ function Probe() {
   );
 }
 
-function renderProvider(boardName = "Demo") {
+function renderProvider(boardName = "Demo", editable = true) {
   return render(
-    <FacadeViewProvider boardName={boardName}>
+    <FacadeViewProvider boardName={boardName} editable={editable}>
       <Probe />
     </FacadeViewProvider>,
   );
@@ -86,5 +86,41 @@ describe("useFacadeView", () => {
   it("is null where no provider is mounted", () => {
     render(<Probe />);
     expect(api).toBe(null);
+  });
+});
+
+describe("opening the editor on something", () => {
+  const widget = { kind: "widget" as const, site: { kind: "init" as const, index: 0 } };
+
+  beforeEach(() => {
+    localStorage.clear();
+    api = null;
+  });
+
+  it("opens the editor and says what on, telling one request from the next", () => {
+    renderProvider();
+    act(() => api!.openEditorAt(widget));
+    expect(api!.editorOpen).toBe(true);
+    expect(api!.editorRequest?.target).toEqual(widget);
+    const first = api!.editorRequest!.seq;
+    act(() => api!.openEditorAt(widget));
+    expect(api!.editorRequest!.seq).toBe(first + 1);
+  });
+
+  it("opens nothing where the facade cannot be edited", () => {
+    renderProvider("Demo", false);
+    act(() => api!.openEditorAt(widget));
+    expect(api!.editable).toBe(false);
+    expect(api!.editorOpen).toBe(false);
+    expect(api!.editorRequest).toBeNull();
+  });
+
+  it("forgets the request when the editor is opened from the toolbar", () => {
+    renderProvider();
+    act(() => api!.openEditorAt({ kind: "state" }));
+    act(() => api!.toggleEditor());
+    act(() => api!.toggleEditor());
+    expect(api!.editorOpen).toBe(true);
+    expect(api!.editorRequest).toBeNull();
   });
 });

@@ -11,8 +11,9 @@ This plan makes the relation between a widget and the services it touches
 discoverable **from the facade itself**, in both directions, plus the facade
 state that carries values between widgets.
 
-Raised 2026-11-13. Steps 1–6, 6b and 6c built 2026-11-13; steps 7 and 8
-deferred; step 9 open.
+Raised 2026-11-13. Steps 1–6, 6b, 6c and 6d built 2026-11-13; steps 7 and 8
+deferred; step 9 open. Since 6d the badges open the facade editor rather than
+an overlay of their own: steps 4 and 5 describe the overlays as they were.
 
 ---
 
@@ -496,6 +497,52 @@ UUID generator demo board.
 - The state history's styles became `.hkp-binding-history*`, shared by both
   lists.
 
+### 6d. The badges open the editor
+
+Decided 2026-11-13. The overlays and the editor showed the same bindings, and
+only the editor can change the widget too, which is where looking at a
+widget's bindings usually leads. So a badge opens the editor on its widget,
+and the overlays are gone.
+
+- **Opens on what the badge stands for.** A widget opens on Acts on, or on
+  Updated by when it acts on nothing. Properties is one tab away. The divider's
+  Facade chip opens the editor's State item. Its old Actions and Updates tabs
+  are the tree's Actions and Updates item.
+- **The tree and the facade point at the same widget.** Selecting a widget in
+  the tree, from a badge or by hand, brings it into view on the facade and
+  marks it there (`revealWidget`). That also finds it again after the editor,
+  opening beside the facade, has moved it. The tree unfolds to a selection
+  made from outside and scrolls its row into view.
+- **No badges where nothing can be edited.** `FacadeViewProvider` takes
+  `editable`. The cloud view passes `false`, since a deployed board belongs to
+  its coordinator and changes mean deploying again. A member's view has no
+  provider and so never had badges.
+- **A repeat item opens on its template.** The template is written with
+  `{{item.…}}`, so the editor cannot show which item was clicked, or a
+  service that only that item addresses. Accepted for now.
+- **How.** `FacadeViewApi` has `openEditorAt(target)` and the `editorRequest`
+  the editor applies, with a `seq` so the same widget asked for twice is
+  selected twice. Opening the editor from the toolbar drops the last request.
+  `WidgetBindings` and the overlay surface style are gone, and
+  `FacadeBindings` lost its State tab, which the editor's State item shows.
+- **The editor's changes are now kept.** Found while doing this: the editor
+  changed only a draft inside `FacadeRenderer`, so an edit showed on the
+  facade but was lost on save or reload. This was confirmed in the real
+  playground. `BoardContext` now exposes `setFacade`, and `FacadeRenderer`
+  takes `onFacadeChange`, which the playground passes for an ordinary board.
+  A changed facade is a structural change and is saved like one. The draft
+  follows the facade it is given, so a facade changed by something else,
+  such as wrapping services into a block, now shows too.
+- **Not yet kept for a composition's units.** A save splits a composition back
+  into its units from their own documents, so an edit to a unit's view would
+  be dropped. There the editor says its changes are not saved with the board.
+
+Tested in `facade/tests/bindingsBadge.test.tsx`,
+`facadeBindingsBadge.test.tsx`, `facadeEditorSave.test.tsx` and
+`FacadeViewContext.test.tsx`. Looked at in the real playground with a
+throwaway Playwright run: a label edited in the editor survives save and
+reload, and a badge opens the editor on its widget with its sends listed.
+
 ### 7. Origin on runs
 
 **Deferred 2026-11-13** in favour of step 6c. Before it is taken up: the
@@ -555,6 +602,11 @@ the vocabulary is written by hand.
 - **The reverse listing on a service frame.** Listing on a service the widgets
   bound to it is cheap once step 1 exists. It isn't needed for the facade-first
   goal, and it is not decided whether it belongs.
+- **A repeat item in the editor.** A badge on a repeat item opens the
+  template (step 6d). Where items address different services, the editor
+  cannot show which one the clicked item reaches.
+- **Editing a composition's unit facades.** Not kept yet (step 6d). Saving
+  would have to write the edit back into the unit's own document.
 - **Nested levels over the facade.** Opening a nested level from a binding
   covers the facade too (step 4). Should levels open in the runtime half only
   while the facade is on screen?

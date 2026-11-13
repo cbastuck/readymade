@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 
 import { useOverview } from "hkp-frontend/src/overview/OverviewContext";
 import { useAssetView } from "hkp-frontend/src/assets/AssetViewContext";
@@ -412,49 +412,4 @@ export function bindingCounts(bindings: Binding[]): Record<WidgetTab, number> {
     sends: bindings.filter((b) => b.role === "sends").length,
     shows: bindings.filter((b) => b.role === "shows").length,
   };
-}
-
-/**
- * What one widget acts on and is updated by, under two tabs — the widget badge's
- * overlay.
- */
-export function WidgetBindings({
-  bindings,
-  site,
-  onDone,
-  onRevealSite,
-}: {
-  bindings: Binding[];
-  site: BindingSite;
-  // Called once a row has taken the person somewhere else.
-  onDone: () => void;
-  // How another widget is brought into view, from a state binding's links.
-  onRevealSite: (site: BindingSite) => void;
-}) {
-  const counts = bindingCounts(bindings);
-  const [chosen, setTab] = useState<WidgetTab | null>(null);
-  // Until one is chosen, the tab that has something in it.
-  const tab =
-    chosen ?? (counts.sends > 0 || counts.shows === 0 ? "sends" : "shows");
-
-  return (
-    <>
-      <OverlayTabs
-        tabs={(["sends", "shows"] as const).map((id) => ({
-          id,
-          title: WIDGET_TAB_TITLES[id],
-          count: counts[id],
-        }))}
-        active={tab}
-        onSelect={setTab}
-      />
-      <BindingList
-        bindings={bindings}
-        role={tab}
-        site={site}
-        onDone={onDone}
-        onRevealSite={onRevealSite}
-      />
-    </>
-  );
 }

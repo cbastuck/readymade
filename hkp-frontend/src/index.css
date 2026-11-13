@@ -1428,14 +1428,11 @@ blockquote:after {
   opacity: 0.5;
 }
 
-.hkp-binding-overlay {
-  font-family: inherit;
-  font-size: 12px;
-  overflow: hidden;
-  background: var(--bg-card, #fff);
-  color: var(--text, #1a1a1a);
-  border: 1px solid var(--border-mid, rgb(0 0 0 / 0.15));
-  border-radius: 10px;
+/* Said above the editor where what it changes is not saved with the board. */
+.hkp-editor-unsaved {
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-mid, rgb(0 0 0 / 0.12));
 }
 .hkp-binding-tabs {
   display: flex;

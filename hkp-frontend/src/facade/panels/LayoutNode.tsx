@@ -298,7 +298,7 @@ export function LayoutNode({
       className={badge ? "hkp-binding-host" : undefined}
       {...(bindingSite ? { [SITE_ATTRIBUTE]: siteKey(bindingSite) } : {})}
     >
-      {badge && <BindingsBadge bindings={bindings} site={bindingSite!} />}
+      {badge && <BindingsBadge site={bindingSite!} />}
       <FacadeStateContext.Provider value={widgetStore}>
         <Renderer
           widget={item}

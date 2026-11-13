@@ -2,7 +2,7 @@ import { CSSProperties, ReactNode, useEffect, useMemo, useRef, useState } from "
 
 import PaneSplitter from "hkp-frontend/src/ui-components/PaneSplitter";
 
-import { BindingSite, facadeBindings, widgetBindings } from "../bindings";
+import { BindingSite, facadeBindings, siteKey, widgetBindings } from "../bindings";
 import { FacadeBindings } from "../FacadeBindingsBadge";
 import { useFacadeBindings } from "../FacadeBindingsContext";
 import {
@@ -13,6 +13,7 @@ import {
   bindingCounts,
 } from "../panels/BindingRows";
 import { FacadeStateView } from "../FacadeStateView";
+import { useFacadeView } from "../FacadeViewContext";
 import { FacadeDescriptor, FacadePanel, LayoutItem } from "../types";
 import {
   EditorSelection,
@@ -89,6 +90,9 @@ const DETAIL_TAB_TITLES: Record<DetailTab, string> = {
 type Props = {
   facade: FacadeDescriptor;
   onChange: (updated: FacadeDescriptor) => void;
+  // Whether a change is kept with the board. A unit's facade, on a
+  // composition, is not yet.
+  kept?: boolean;
 };
 
 /** What the facade holds besides its own settings, shown in their own items. */
@@ -122,7 +126,7 @@ function Detail({
  * thing about a widget. A state key's other widgets are selected here rather
  * than scrolled to, since the editor is where they are being looked at.
  */
-export function FacadeEditor({ facade, onChange }: Props) {
+export function FacadeEditor({ facade, onChange, kept = true }: Props) {
   const [selected, setSelected] = useState<EditorSelection>({ kind: "panels" });
   // Kept as another node is selected: someone following what widgets send to
   // goes on looking at that as they move through the tree.
@@ -150,6 +154,43 @@ export function FacadeEditor({ facade, onChange }: Props) {
     bindingsApi?.refreshLocations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
+
+  // What a badge on the facade asked the editor to open on. A widget opens on
+  // what it binds — what it acts on, else what updates it — since that is
+  // what its badge stands for; Properties is a tab away.
+  const request = useFacadeView()?.editorRequest ?? null;
+  useEffect(() => {
+    if (!request) {
+      return;
+    }
+    const { target } = request;
+    if (target.kind !== "widget") {
+      setSelected({ kind: target.kind });
+      return;
+    }
+    const found = pathOfSite(facade, target.site);
+    if (!found) {
+      return;
+    }
+    setSelected({ kind: "node", path: found });
+    const node = getAtPath(facade, found);
+    const binds = bindingCounts(node ? widgetBindings(node) : []);
+    setDetailTab(
+      binds.sends > 0 ? "sends" : binds.shows > 0 ? "shows" : "properties",
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request?.seq]);
+
+  // The tree and the facade are kept pointing at the same thing: a selected
+  // widget is brought into view on the facade and marked there — which also
+  // finds it again after the editor opening beside it has moved it.
+  const siteKeyOfSelection = site ? siteKey(site) : "";
+  useEffect(() => {
+    if (site) {
+      bindingsApi?.revealWidget(site);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteKeyOfSelection, request?.seq]);
 
   const selectSite = (other: BindingSite) => {
     const found = pathOfSite(facade, other);
@@ -261,6 +302,12 @@ export function FacadeEditor({ facade, onChange }: Props) {
           : undefined
       }
     >
+      {!kept && (
+        <div className="hkp-binding-note hkp-binding-note--warn hkp-editor-unsaved">
+          This facade is one of the board's units. Changes show here but are
+          not saved with the board.
+        </div>
+      )}
       <div className="hkp-facade-editor-main">
         <WidgetTree facade={facade} selected={selected} onSelect={setSelected} />
         <PaneSplitter
