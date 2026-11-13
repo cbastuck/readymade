@@ -211,7 +211,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
  * chrome for another.
  */
 function ChromeFooter() {
-  return useChromeRetracted() ? null : <Footer />;
+  return useChromeRetracted() ? null : <Footer flex />;
 }
 
 /**
