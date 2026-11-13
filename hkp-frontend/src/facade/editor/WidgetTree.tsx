@@ -1,76 +1,115 @@
-import { useState } from "react";
-import { FacadeDescriptor, LayoutItem } from "../types";
-import { EditorPath, nodeLabel, nodeIsContainer, nodeChildren } from "./editorUtils";
+import { ReactNode, useState } from "react";
+import { Link2 } from "lucide-react";
 
-type TreeNodeProps = {
+import { widgetBindings } from "../bindings";
+import { FacadeDescriptor, LayoutItem } from "../types";
+import {
+  EditorPath,
+  EditorSelection,
+  nodeLabel,
+  nodeIsContainer,
+  nodeChildren,
+  selectionKey,
+} from "./editorUtils";
+
+function samePath(a: EditorPath, b: EditorPath): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
+/** One row of the tree, with a fold toggle where it has children. */
+function TreeRow({
+  depth,
+  label,
+  selected,
+  onSelect,
+  expanded,
+  onToggle,
+  binds,
+  className,
+}: {
+  depth: number;
+  label: ReactNode;
+  selected: boolean;
+  onSelect: () => void;
+  // Absent for a row with nothing under it.
+  expanded?: boolean;
+  onToggle?: () => void;
+  // Whether the node reaches anything — a service or facade state — said with
+  // the same mark its badge carries on the facade.
+  binds?: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      role="treeitem"
+      aria-selected={selected}
+      aria-expanded={expanded}
+      className={`hkp-editor-tree-row${className ? ` ${className}` : ""}`}
+      onClick={onSelect}
+      style={{ paddingLeft: 8 + depth * 14 }}
+    >
+      <span
+        className="hkp-editor-tree-toggle"
+        onClick={
+          onToggle
+            ? (e) => {
+                e.stopPropagation();
+                onToggle();
+              }
+            : undefined
+        }
+      >
+        {expanded === undefined ? "" : expanded ? "▾" : "▸"}
+      </span>
+      <span className="hkp-editor-tree-label">{label}</span>
+      {binds && (
+        <Link2
+          size={10}
+          className="hkp-editor-tree-binds"
+          aria-label="binds to the board or facade state"
+        />
+      )}
+    </div>
+  );
+}
+
+function TreeNode({
+  item,
+  path,
+  depth,
+  selected,
+  onSelect,
+}: {
   item: LayoutItem;
   path: EditorPath;
-  selectedPath: EditorPath;
-  onSelect: (path: EditorPath) => void;
-};
-
-function TreeNode({ item, path, selectedPath, onSelect }: TreeNodeProps) {
+  depth: number;
+  selected: EditorSelection;
+  onSelect: (selection: EditorSelection) => void;
+}) {
   const isContainer = nodeIsContainer(item);
-  const children = nodeChildren(item);
   const [expanded, setExpanded] = useState(true);
-
-  const isSelected =
-    path.length === selectedPath.length &&
-    path.every((v, i) => v === selectedPath[i]);
-
-  const depth = path.length - 1; // root node (path=[panelIdx]) is depth 0
+  const isSelected = selected.kind === "node" && samePath(path, selected.path);
 
   return (
     <div>
-      <div
-        onClick={() => onSelect(path)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          paddingLeft: 8 + depth * 14,
-          paddingRight: 8,
-          paddingTop: 3,
-          paddingBottom: 3,
-          cursor: "pointer",
-          background: isSelected
-            ? "hsl(var(--accent))"
-            : "transparent",
-          borderRadius: 4,
-          fontSize: 11,
-          fontFamily: "monospace",
-          color: isSelected
-            ? "hsl(var(--accent-foreground))"
-            : "hsl(var(--muted-foreground))",
-          userSelect: "none",
-        }}
-      >
-        {isContainer ? (
-          <span
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded((v) => !v);
-            }}
-            style={{ opacity: 0.6, width: 10, flexShrink: 0, textAlign: "center" }}
-          >
-            {expanded ? "▾" : "▸"}
-          </span>
-        ) : (
-          <span style={{ width: 10, flexShrink: 0 }} />
-        )}
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {nodeLabel(item)}
-        </span>
-      </div>
-
+      <TreeRow
+        depth={depth}
+        label={nodeLabel(item)}
+        selected={isSelected}
+        onSelect={() => onSelect({ kind: "node", path })}
+        expanded={isContainer ? expanded : undefined}
+        onToggle={isContainer ? () => setExpanded((v) => !v) : undefined}
+        binds={widgetBindings(item).length > 0}
+      />
       {isContainer && expanded && (
-        <div>
-          {children.map((child, i) => (
+        <div role="group">
+          {nodeChildren(item).map((child, i) => (
             <TreeNode
               key={i}
               item={child}
               path={[...path, i]}
-              selectedPath={selectedPath}
+              depth={depth + 1}
+              selected={selected}
               onSelect={onSelect}
             />
           ))}
@@ -80,48 +119,96 @@ function TreeNode({ item, path, selectedPath, onSelect }: TreeNodeProps) {
   );
 }
 
-type Props = {
+function PanelItem({
+  facade,
+  index,
+  selected,
+  onSelect,
+}: {
   facade: FacadeDescriptor;
-  selectedPath: EditorPath;
-  onSelect: (path: EditorPath) => void;
-};
-
-export function WidgetTree({ facade, selectedPath, onSelect }: Props) {
+  index: number;
+  selected: EditorSelection;
+  onSelect: (selection: EditorSelection) => void;
+}) {
+  const panel = facade.panels[index];
+  const [expanded, setExpanded] = useState(true);
   return (
-    <div
-      style={{
-        width: 220,
-        flexShrink: 0,
-        borderRight: "1px solid hsl(var(--border))",
-        overflowY: "auto",
-        padding: "8px 4px",
-      }}
-    >
-      {facade.panels.map((panel, panelIdx) => (
-        <div key={panel.id}>
-          {facade.panels.length > 1 && (
-            <div
-              style={{
-                fontSize: 10,
-                fontFamily: "monospace",
-                color: "hsl(var(--muted-foreground))",
-                opacity: 0.5,
-                padding: "4px 8px 2px",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              {panel.title ?? panel.id}
-            </div>
-          )}
+    <div>
+      <TreeRow
+        depth={1}
+        label={`panel  ·  ${panel.title ?? panel.id}`}
+        selected={selected.kind === "panel" && selected.index === index}
+        onSelect={() => onSelect({ kind: "panel", index })}
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+      />
+      {expanded && (
+        <div role="group">
           <TreeNode
             item={panel.layout}
-            path={[panelIdx]}
-            selectedPath={selectedPath}
+            path={[index]}
+            depth={2}
+            selected={selected}
             onSelect={onSelect}
           />
         </div>
-      ))}
+      )}
+    </div>
+  );
+}
+
+type Props = {
+  facade: FacadeDescriptor;
+  selected: EditorSelection;
+  onSelect: (selection: EditorSelection) => void;
+};
+
+/**
+ * Everything the editor can show, as a tree: the facade's panels with their
+ * layouts, its state, and what it does by itself — the actions it runs when
+ * it opens and the updates it raises as notices.
+ */
+export function WidgetTree({ facade, selected, onSelect }: Props) {
+  const [panelsOpen, setPanelsOpen] = useState(true);
+  const key = selectionKey(selected);
+  return (
+    <div className="hkp-editor-tree" role="tree" aria-label="Facade">
+      <TreeRow
+        depth={0}
+        label="Panels"
+        className="hkp-editor-tree-root"
+        selected={key === "panels"}
+        onSelect={() => onSelect({ kind: "panels" })}
+        expanded={panelsOpen}
+        onToggle={() => setPanelsOpen((v) => !v)}
+      />
+      {panelsOpen && (
+        <div role="group">
+          {facade.panels.map((panel, index) => (
+            <PanelItem
+              key={panel.id}
+              facade={facade}
+              index={index}
+              selected={selected}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
+      <TreeRow
+        depth={0}
+        label="State"
+        className="hkp-editor-tree-root"
+        selected={key === "state"}
+        onSelect={() => onSelect({ kind: "state" })}
+      />
+      <TreeRow
+        depth={0}
+        label="Actions and Updates"
+        className="hkp-editor-tree-root"
+        selected={key === "actions"}
+        onSelect={() => onSelect({ kind: "actions" })}
+      />
     </div>
   );
 }

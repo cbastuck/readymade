@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
 import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
+import { TOOLBAR_GROUP_BUTTON } from "./ToolbarGroup";
 import {
   createPartnerBoardLink,
   hasPeerService,
@@ -217,15 +218,9 @@ export default function ShareMenu() {
             type="button"
             title="Share"
             style={{
-              width: 30,
-              height: 30,
-              borderRadius: 7,
-              border: "none",
+              ...TOOLBAR_GROUP_BUTTON,
               background: "none",
               cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
               color: "var(--text, #1a1a1a)",
             }}
           >

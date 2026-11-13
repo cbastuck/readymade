@@ -1,3 +1,4 @@
+import type { BindingSite } from "../bindings";
 import {
   FacadeDescriptor,
   LayoutContainer,
@@ -130,4 +131,81 @@ export function setAtPath(
         : { ...panel, layout: replaceAt(panel.layout, itemIndices) },
     ),
   };
+}
+
+/**
+ * The binding site of the node at an editor path: its panel's id and its
+ * position in the layout, with a repeat's template as "template" — the address
+ * the facade's bindings and its rendered widgets use.
+ */
+export function siteOfPath(
+  facade: FacadeDescriptor,
+  path: EditorPath,
+): Extract<BindingSite, { kind: "widget" }> | null {
+  const panel = facade.panels[path[0]];
+  const node = getAtPath(facade, path);
+  if (!panel || !node) {
+    return null;
+  }
+  const sitePath: (number | "template")[] = [];
+  let current: LayoutItem = panel.layout;
+  for (const step of path.slice(1)) {
+    if (isRepeat(current)) {
+      sitePath.push("template");
+      current = current.template;
+    } else if (hasItems(current)) {
+      sitePath.push(step);
+      current = current.items[step];
+    }
+  }
+  const w = node as { type?: string; label?: unknown };
+  return {
+    kind: "widget",
+    panel: panel.id,
+    path: sitePath,
+    type: w.type,
+    label: typeof w.label === "string" ? w.label : undefined,
+  };
+}
+
+/** The editor path of a binding site, or null where the facade has no such node. */
+export function pathOfSite(
+  facade: FacadeDescriptor,
+  site: BindingSite,
+): EditorPath | null {
+  if (site.kind !== "widget") {
+    return null;
+  }
+  const panelIndex = facade.panels.findIndex((p) => p.id === site.panel);
+  if (panelIndex === -1) {
+    return null;
+  }
+  const path: EditorPath = [panelIndex];
+  for (const step of site.path) {
+    path.push(step === "template" ? 0 : step);
+  }
+  return getAtPath(facade, path) ? path : null;
+}
+
+/**
+ * What the editor has selected: one of the tree's root items, a panel, or a
+ * node of a panel's layout.
+ */
+export type EditorSelection =
+  | { kind: "panels" }
+  | { kind: "state" }
+  | { kind: "actions" }
+  | { kind: "panel"; index: number }
+  | { kind: "node"; path: EditorPath };
+
+/** A key that is the same for the same selection, for effects and React keys. */
+export function selectionKey(selection: EditorSelection): string {
+  switch (selection.kind) {
+    case "panel":
+      return `panel:${selection.index}`;
+    case "node":
+      return `node:${selection.path.join(".")}`;
+    default:
+      return selection.kind;
+  }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import PaneSplitter from "hkp-frontend/src/ui-components/PaneSplitter";
 import {
   Monitor,
   Server,
@@ -270,117 +271,6 @@ const RUNTIMES_HEIGHT_KEY = "hkp-sidebar-runtimes-height";
 /** Enough of a pane to be worth having; below this the drag stops. */
 const MIN_RUNTIMES_HEIGHT = 44;
 const MIN_SERVICES_HEIGHT = 140;
-
-/**
- * Drag handle between the runtimes pane and the services pane. Reports the
- * runtimes height the pointer implies; clamping and persistence are the
- * caller's business.
- */
-function PaneSplitter({
-  onResize,
-  onCommit,
-  onReset,
-  heightOf,
-  boundsOf,
-}: {
-  onResize: (height: number) => void;
-  onCommit: () => void;
-  onReset: () => void;
-  /** The pane's height right now — a drag starts from what is on screen. */
-  heightOf: () => number;
-  /** How much room the two panes share, for the far end of the clamp. */
-  boundsOf: () => number;
-}) {
-  const [dragging, setDragging] = useState(false);
-  const [hovered, setHovered] = useState(false);
-
-  // While dragging, the whole document shows the resize cursor and stops
-  // selecting text — the pointer regularly leaves the handle itself.
-  useEffect(() => {
-    if (!dragging) {
-      return;
-    }
-    const { style } = document.body;
-    const cursor = style.cursor;
-    const select = style.userSelect;
-    style.cursor = "ns-resize";
-    style.userSelect = "none";
-    return () => {
-      style.cursor = cursor;
-      style.userSelect = select;
-    };
-  }, [dragging]);
-
-  const clamp = (height: number) =>
-    Math.max(
-      MIN_RUNTIMES_HEIGHT,
-      Math.min(
-        Math.max(MIN_RUNTIMES_HEIGHT, boundsOf() - MIN_SERVICES_HEIGHT),
-        height,
-      ),
-    );
-
-  const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const startY = event.clientY;
-    const startHeight = heightOf();
-    setDragging(true);
-
-    const move = (e: PointerEvent) => {
-      onResize(clamp(startHeight + e.clientY - startY));
-    };
-    const stop = () => {
-      setDragging(false);
-      onCommit();
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", stop);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", stop);
-    window.addEventListener("pointercancel", stop);
-  };
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const step =
-      event.key === "ArrowUp" ? -12 : event.key === "ArrowDown" ? 12 : 0;
-    if (!step) {
-      return;
-    }
-    event.preventDefault();
-    onResize(clamp(heightOf() + step));
-    onCommit();
-  };
-
-  const lit = dragging || hovered;
-  return (
-    <div
-      role="separator"
-      aria-orientation="horizontal"
-      aria-label="Resize runtimes and services"
-      tabIndex={0}
-      onPointerDown={startDrag}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-      onDoubleClick={onReset}
-      onKeyDown={onKeyDown}
-      title="Drag to resize — double-click to reset"
-      style={{
-        height: 7,
-        flexShrink: 0,
-        cursor: "ns-resize",
-        userSelect: "none",
-        // The hairline lights up on hover / while dragging; the hit area
-        // around it stays invisible.
-        background: `linear-gradient(180deg, transparent 3px, ${
-          lit ? "var(--hkp-accent)" : "var(--border-mid, #d1d5db)"
-        } 3px, ${
-          lit ? "var(--hkp-accent)" : "var(--border-mid, #d1d5db)"
-        } 4px, transparent 4px)`,
-      }}
-    />
-  );
-}
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
@@ -682,12 +572,16 @@ export default function Sidebar() {
           </div>
 
           <PaneSplitter
+            label="Resize runtimes and services"
             heightOf={() =>
               runtimesHeight ??
               runtimesRef.current?.getBoundingClientRect().height ??
               0
             }
-            boundsOf={() => bodyRef.current?.clientHeight ?? 0}
+            minHeight={MIN_RUNTIMES_HEIGHT}
+            maxHeight={() =>
+              (bodyRef.current?.clientHeight ?? 0) - MIN_SERVICES_HEIGHT
+            }
             onResize={setRuntimesHeight}
             onCommit={commitRuntimesHeight}
             onReset={resetRuntimesHeight}
@@ -744,9 +638,7 @@ export default function Sidebar() {
               flex: "1 1 auto",
               minHeight: 0,
               overflowY: "auto",
-              // Keep final palette items fully visible above the fixed footer.
-              paddingBottom:
-                "calc(12px + 36px + env(safe-area-inset-bottom, 0px))",
+              paddingBottom: 12,
             }}
           >
             {hasRuntimes && filteredGroups.length === 0 && query && (

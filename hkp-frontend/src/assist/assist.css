@@ -369,8 +369,7 @@
 
 /* ── Composer ── */
 .hkp-assist form {
-  /* Clears the fixed page footer, as the Sidebar's palette does. */
-  padding: 10px 12px calc(12px + 36px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 12px 12px;
 }
 .hkp-assist-prompt-editor {
   margin-bottom: 8px;

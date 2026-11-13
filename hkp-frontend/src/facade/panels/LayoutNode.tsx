@@ -1,14 +1,20 @@
-import { CSSProperties } from "react";
+import { CSSProperties, useMemo } from "react";
 
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { LayoutItem, LayoutContainer, LayoutWidget, KnobWidget, RepeatWidget, FacadeStateRef } from "../types";
 import { PanelContext, widgetRegistry } from "./widgetRegistry";
-import { useFacadeState } from "../FacadeStateContext";
+import {
+  FacadeStateContext,
+  FacadeStateStore,
+  useFacadeState,
+} from "../FacadeStateContext";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { useNotificationValue } from "./renderers/StatusIndicatorRenderer";
 import { interpolateTemplate } from "../itemTemplate";
 import { useMissingServices } from "../serviceNotifications";
-import { widgetServiceUuids } from "../widgetServices";
+import { BindingSite, bindingServices, siteKey, widgetBindings } from "../bindings";
+import { SITE_ATTRIBUTE, useFacadeBindings } from "../FacadeBindingsContext";
+import { BindingsBadge } from "./BindingsBadge";
 
 export function isContainer(item: LayoutItem): item is LayoutContainer | LayoutWidget {
   return "items" in item && (!("type" in item) || (item as any).type !== "repeat");
@@ -66,16 +72,63 @@ function paddingOf(item: LayoutContainer): CSSProperties {
   };
 }
 
+/**
+ * Where a node sits: its panel and its position in that panel's layout, the
+ * same address `facadeBindings` gives it (see `BindingSite`). Absent where a
+ * layout is drawn outside a panel — a preview — which then has no badges.
+ */
+export type NodeSite = { panel: string; path: (number | "template")[] };
+
+function childSite(
+  site: NodeSite | undefined,
+  step: number | "template",
+): NodeSite | undefined {
+  return site ? { panel: site.panel, path: [...site.path, step] } : undefined;
+}
+
 export function LayoutNode({
   item,
   boardContext,
   panelContext,
+  site,
 }: {
   item: LayoutItem;
   boardContext: BoardContextState;
   panelContext: PanelContext;
+  site?: NodeSite;
 }) {
-  const { state: facadeState } = useFacadeState();
+  const store = useFacadeState();
+  const facadeState = store.state;
+  const bindingsView = useFacadeBindings();
+
+  const bindingSite: BindingSite | undefined = site
+    ? {
+        kind: "widget",
+        ...site,
+        type: (item as { type?: string }).type,
+        label:
+          typeof (item as { label?: unknown }).label === "string"
+            ? (item as { label: string }).label
+            : undefined,
+      }
+    : undefined;
+  // The store a widget is handed knows which widget it is, so whatever it
+  // writes — through its actions or by itself, a table's selection — is
+  // written as that widget's, without each renderer having to say so.
+  const writerKey = bindingSite ? siteKey(bindingSite) : undefined;
+  const writerLabel = bindingSite?.label;
+  const widgetStore = useMemo<FacadeStateStore>(
+    () =>
+      bindingSite
+        ? {
+            ...store,
+            setState: (key, value) => store.setState(key, value, bindingSite),
+          }
+        : store,
+    // The site is rebuilt on every render; its key and label are what it is.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [store, writerKey, writerLabel],
+  );
 
   // Asked for unconditionally, because a hook cannot be: a node that is not a
   // repeat, or a repeat taking its items from the board, passes no source and
@@ -89,9 +142,10 @@ export function LayoutNode({
   // Unconditional for the same reason, and asked of every kind of node rather
   // than only the widget leaves that draw the answer below: a uuid the board
   // has nothing under is worth saying wherever it was written.
+  const bindings = widgetBindings(item);
   const missingServices = useMissingServices(
     boardContext,
-    widgetServiceUuids(item),
+    bindingServices(bindings),
   );
 
   if ("type" in item && item.type === "repeat") {
@@ -148,6 +202,9 @@ export function LayoutNode({
               item={resolved}
               boardContext={boardContext}
               panelContext={panelContext}
+              // Every item is the template's, which is one site for all of
+              // them: what it names is the same key whichever item names it.
+              site={childSite(site, "template")}
             />
           );
           if (!stripe) {
@@ -198,6 +255,7 @@ export function LayoutNode({
             item={child}
             boardContext={boardContext}
             panelContext={panelContext}
+            site={childSite(site, i)}
           />
         ))}
       </div>
@@ -227,13 +285,25 @@ export function LayoutNode({
       }
     : undefined;
 
+  // The badge sits over the widget's corner, so the wrapper is what it is
+  // placed against — but only while badges are drawn, so a facade without
+  // them lays out exactly as it always has.
+  const badge = !!bindingsView?.badges && !!bindingSite && bindings.length > 0;
+
   return (
-    <div style={leafStyle}>
-      <Renderer
-        widget={item}
-        boardContext={boardContext}
-        panelContext={panelContext}
-      />
+    <div
+      style={badge ? { ...leafStyle, position: "relative" } : leafStyle}
+      className={badge ? "hkp-binding-host" : undefined}
+      {...(bindingSite ? { [SITE_ATTRIBUTE]: siteKey(bindingSite) } : {})}
+    >
+      {badge && <BindingsBadge bindings={bindings} site={bindingSite!} />}
+      <FacadeStateContext.Provider value={widgetStore}>
+        <Renderer
+          widget={item}
+          boardContext={boardContext}
+          panelContext={panelContext}
+        />
+      </FacadeStateContext.Provider>
       {missingServices.length > 0 && (
         <MissingServices uuids={missingServices} />
       )}

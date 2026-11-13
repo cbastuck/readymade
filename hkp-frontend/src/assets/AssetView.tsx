@@ -38,6 +38,10 @@ import Editor from "hkp-frontend/src/components/shared/Editor";
 import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
 import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
 import {
+  revealService,
+  revealTargetAlong,
+} from "hkp-frontend/src/runtime/ui/revealService";
+import {
   AssetDescriptor,
   AssetSourceKind,
   AssetUse,
@@ -55,10 +59,6 @@ import { useAssetView } from "./AssetViewContext";
 
 /** Past this, inline content is suggested to move to a URL — the author's call, never made for them. */
 const LARGE_INLINE_BYTES = 256 * 1024;
-
-/** How long a service stays marked after *Used by* jumped to it. */
-const REVEAL_HIGHLIGHT_MS = 2000;
-const REVEAL_TIMEOUT_MS = 2000;
 
 /** The editor's language for a media type. */
 function languageFor(mediaType: string): string {
@@ -128,31 +128,6 @@ type Draft = {
 
 function draftOf(asset: AssetDescriptor, original: string | null): Draft {
   return { descriptor: asset, original };
-}
-
-/**
- * Brings a service's panel into view on the board. Only the top-level service
- * is revealed: a reference nested in a pipeline is shown on the service that
- * holds that pipeline.
- */
-function revealServiceFrame(uuid: string) {
-  const deadline = performance.now() + REVEAL_TIMEOUT_MS;
-  const look = () => {
-    const element = document.getElementById(`service-frame-${uuid}`);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "center" });
-      element.classList.add("hkp-service-card--revealed");
-      setTimeout(
-        () => element.classList.remove("hkp-service-card--revealed"),
-        REVEAL_HIGHLIGHT_MS,
-      );
-      return;
-    }
-    if (performance.now() < deadline) {
-      requestAnimationFrame(look);
-    }
-  };
-  requestAnimationFrame(look);
 }
 
 const muted: React.CSSProperties = { opacity: 0.65, fontSize: 12 };
@@ -555,8 +530,20 @@ export default function AssetView() {
 
   const openUse = (use: AssetUse) => {
     assetView.hide();
-    navigation?.goTo(0);
-    revealServiceFrame(use.serviceUuid);
+    const service = board.services[use.runtimeId]?.find(
+      (each) => each.uuid === use.serviceUuid,
+    );
+    // The reference may sit in a service nested inside this one; the reveal
+    // opens the levels down to it.
+    revealService(
+      {
+        ...(service
+          ? revealTargetAlong(service, use.path)
+          : { uuid: use.serviceUuid, ancestry: [], hostLabel: () => "Pipeline" }),
+        runtimeId: use.runtimeId,
+      },
+      navigation,
+    );
   };
 
   const runtimeName = (runtimeId: string) =>

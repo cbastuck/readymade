@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FacadeStateContext } from "./FacadeStateContext";
+import {
+  FacadeStateContext,
+  StateWrite,
+  recordWrite,
+} from "./FacadeStateContext";
+import { BindingSite } from "./bindings";
+import { MAX_HISTORY } from "hkp-frontend/src/ui-components/service/flowRecords";
 import { useFacadeInit } from "./useFacadeInit";
 import { useFacadeIdentity } from "./FacadeIdentity";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
@@ -10,9 +16,10 @@ import { FacadeNotices } from "./FacadeNotices";
 import { FacadeTabBar } from "./FacadeTabBar";
 import { currentFace, defaultFaceId, resolveFaces } from "./tabs";
 import { useFacadeView } from "./FacadeViewContext";
-import { useChromeRetracted } from "./FacadeChrome";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
 import { FacadePanelNavigationContext } from "./FacadePanelNavigation";
+import { FacadeBindingsProvider } from "./FacadeBindingsContext";
+import { FacadeBindingsBadge } from "./FacadeBindingsBadge";
 import { SwimlaneDragProvider } from "./SwimlaneDragContext";
 
 type FacadeRendererProps = {
@@ -28,25 +35,42 @@ export default function FacadeRenderer({
   boardName,
   runtimeContent,
 }: FacadeRendererProps) {
-  // The copyright strip is fixed to the bottom of the window and paints over
-  // whatever is under it, so the facade keeps clear of it — except where the
-  // chrome has retracted and there is no strip to keep clear of, which is the
-  // one state where those pixels are the difference between a facade that
-  // fills the window and one that stops just short of it.
-  const footerClearance = useChromeRetracted() ? 0 : 36;
-
   // ── facade state store ───────────────────────────────────────────────────
   const [facadeState, setFacadeStateRaw] = useState<Record<string, unknown>>(
     () => facade.state ?? {},
   );
 
+  // What was written to each key, newest first, and by whom — so the state
+  // can be read as something that happened rather than only as where it is.
+  const [stateHistory, setStateHistory] = useState<
+    Record<string, StateWrite[]>
+  >({});
+
   useEffect(() => {
     setFacadeStateRaw(facade.state ?? {});
+    setStateHistory({});
   }, [boardName]);
 
-  const setFacadeStateEntry = useCallback((key: string, value: unknown) => {
-    setFacadeStateRaw((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const setFacadeStateEntry = useCallback(
+    (key: string, value: unknown, writer?: BindingSite) => {
+      setFacadeStateRaw((prev) => ({ ...prev, [key]: value }));
+      setStateHistory((prev) =>
+        recordWrite(prev, key, { at: Date.now(), value, writer }, MAX_HISTORY),
+      );
+    },
+    [],
+  );
+
+  // Init writes as the facade, by the action's place in `init`.
+  const setStateFromInit = useCallback(
+    (key: string, value: unknown, step?: number) =>
+      setFacadeStateEntry(
+        key,
+        value,
+        step === undefined ? undefined : { kind: "init", index: step },
+      ),
+    [setFacadeStateEntry],
+  );
 
   // Keep a ref so the init effect always sees the latest state at fire time.
   const facadeStateRef = useRef(facadeState);
@@ -57,7 +81,7 @@ export default function FacadeRenderer({
     facade,
     boardContext,
     boardName,
-    setState: setFacadeStateEntry,
+    setState: setStateFromInit,
     stateRef: facadeStateRef,
     identity,
   });
@@ -199,10 +223,21 @@ export default function FacadeRenderer({
 
   return (
     <FacadeStateContext.Provider
-      value={{ state: facadeState, setState: setFacadeStateEntry }}
+      value={{
+        state: facadeState,
+        setState: setFacadeStateEntry,
+        history: stateHistory,
+      }}
     >
       <SwimlaneDragProvider>
         <FacadePanelNavigationContext.Provider value={navigation}>
+        <FacadeBindingsProvider
+          facade={draftFacade}
+          boardContext={boardContext}
+          // Only with the board beside it: a binding points at the board, and
+          // a host with no view controls is showing the facade as an app.
+          badges={!!view && showFacade && showRuntime}
+        >
         <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}
         <FacadeNotices
@@ -217,7 +252,6 @@ export default function FacadeRenderer({
             background: "hsl(var(--background))",
             overflow: "hidden",
             fontFamily: "'Recursive', monospace",
-            paddingBottom: footerClearance,
           }}
         >
           {/* The board, with the editor alongside it */}
@@ -289,8 +323,14 @@ export default function FacadeRenderer({
                   background: "hsl(var(--border))",
                   flexShrink: 0,
                   userSelect: "none",
+                  // The facade's own badge sits on it, where the facade meets
+                  // the board.
+                  position: "relative",
+                  zIndex: 6,
                 }}
-              />
+              >
+                {showRuntime && showFacade && <FacadeBindingsBadge />}
+              </div>
               <div
                 style={{
                   height: !showRuntime
@@ -344,6 +384,7 @@ export default function FacadeRenderer({
           </div>
         </div>
         </FacadeBoardActionsProvider>
+        </FacadeBindingsProvider>
         </FacadePanelNavigationContext.Provider>
       </SwimlaneDragProvider>
     </FacadeStateContext.Provider>

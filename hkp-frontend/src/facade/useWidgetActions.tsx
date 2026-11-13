@@ -222,7 +222,9 @@ export function useWidgetActions(boardContext: BoardContextState): {
       confirm,
       value,
       boardContext,
-      setState,
+      // The widget's own store already says which widget writes; a step's
+      // position is only for actions that have no widget, such as init.
+      setState: (key, written) => setState(key, written),
       boardActions,
       navigation,
       // Without this a { "$state": … } reference in the payload travels as

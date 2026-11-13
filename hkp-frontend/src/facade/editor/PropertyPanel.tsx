@@ -17,12 +17,23 @@ const OPTIONAL_PROPERTIES: Record<string, Record<string, ValueKind>> = {
   },
 };
 
-type Props = {
-  node: LayoutItem | null;
-  onChange: (updated: LayoutItem) => void;
+type Props<T extends object> = {
+  node: T | null;
+  onChange: (updated: T) => void;
+  // Fields shown elsewhere in the editor — a panel's layout, the facade's
+  // panels — and so not listed here. They are kept as they are on a change.
+  omit?: string[];
 };
 
-export function PropertyPanel({ node, onChange }: Props) {
+/**
+ * The fields of what is selected, each editable in place: a layout node, a
+ * panel, or the facade itself.
+ */
+export function PropertyPanel<T extends object = LayoutItem>({
+  node,
+  onChange,
+  omit = [],
+}: Props<T>) {
   if (!node) {
     return (
       <div
@@ -41,8 +52,9 @@ export function PropertyPanel({ node, onChange }: Props) {
 
   const nodeType = (node as any).type ?? "container";
   const optionalForType = OPTIONAL_PROPERTIES[nodeType] ?? {};
+  const hidden = new Set(["items", "template", ...omit]);
   const existingEntries = Object.entries(node).filter(
-    ([key]) => key !== "items" && key !== "template",
+    ([key]) => !hidden.has(key),
   );
   const existingKeys = new Set(existingEntries.map(([key]) => key));
   const entries: Array<[string, unknown, ValueKind | undefined]> = [
@@ -69,29 +81,14 @@ export function PropertyPanel({ node, onChange }: Props) {
     ) {
       const next = { ...node } as Record<string, unknown>;
       delete next[key];
-      onChange(next as LayoutItem);
+      onChange(next as T);
       return;
     }
-    onChange({ ...node, [key]: newValue } as LayoutItem);
+    onChange({ ...node, [key]: newValue } as T);
   };
 
   return (
-    <div style={{ padding: 16 }}>
-      <div
-        style={{
-          fontSize: 10,
-          fontFamily: "monospace",
-          color: "hsl(var(--muted-foreground))",
-          opacity: 0.5,
-          textTransform: "uppercase",
-          letterSpacing: 1,
-          marginBottom: 12,
-        }}
-      >
-        {nodeType}
-      </div>
-
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <table className="hkp-editor-props">
         <tbody>
           {entries.map(([key, value, defaultKind]) => (
             <EditableRow
@@ -103,7 +100,6 @@ export function PropertyPanel({ node, onChange }: Props) {
             />
           ))}
         </tbody>
-      </table>
-    </div>
+    </table>
   );
 }

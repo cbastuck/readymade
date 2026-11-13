@@ -6,13 +6,28 @@ import { BoardCtx, BoardContextState } from "../../BoardContext";
 import PlaygroundInner from "./PlaygroundInner";
 import { PlaygroundInnerProps } from "./Playground.types";
 
+// Only the Board Assist button is drawn, wherever in the actions it sits: the
+// other controls need providers these tests are not about.
+function findAssistButton(node: React.ReactNode): React.ReactNode {
+  for (const child of Children.toArray(node)) {
+    if (!isValidElement<Record<string, unknown>>(child)) {
+      continue;
+    }
+    if (child.props["aria-label"] === "Toggle Board Assist") {
+      return child;
+    }
+    const found = findAssistButton(child.props.children as React.ReactNode);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+}
+
 vi.mock("../../components/Toolbar", () => ({
-  default: ({ actionsSlot }: { actionsSlot?: React.ReactNode }) => {
-    const actions = isValidElement<{ children?: React.ReactNode }>(actionsSlot)
-      ? Children.toArray(actionsSlot.props.children)
-      : [];
-    return <div data-testid="toolbar">{actions[0]}</div>;
-  },
+  default: ({ actionsSlot }: { actionsSlot?: React.ReactNode }) => (
+    <div data-testid="toolbar">{findAssistButton(actionsSlot)}</div>
+  ),
 }));
 
 vi.mock("../../assist/BoardAssistPanel", () => ({

@@ -392,6 +392,7 @@ export default function ServiceFrame({
   // Injecting pushes data through the board, so it stays out of reach too.
   const plug = (
     <ServiceOutputPlug
+      uuid={uuid}
       isActive={signalOutput}
       inputHistory={inputHistory}
       outputHistory={outputHistory}

@@ -15,7 +15,7 @@ export type FlowRecord = { data: any; at: number };
 /** Which way through the service a value went. */
 export type FlowSide = "input" | "output";
 
-const MAX_HISTORY = 10;
+export const MAX_HISTORY = 10;
 
 // Typed Data objects (FloatRingBuffer etc.) carry a Symbol tag, which
 // structuredClone rejects with DataCloneError — keep the reference instead.
