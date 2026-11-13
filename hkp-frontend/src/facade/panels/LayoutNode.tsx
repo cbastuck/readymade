@@ -288,7 +288,7 @@ export function LayoutNode({
   // The badge sits over the widget's corner, so the wrapper is what it is
   // placed against — but only while badges are drawn, so a facade without
   // them lays out exactly as it always has.
-  const badge = !!bindingsView && !!bindingSite && bindings.length > 0;
+  const badge = !!bindingsView?.badges && !!bindingSite && bindings.length > 0;
 
   return (
     <div

@@ -76,22 +76,10 @@ export function PropertyPanel({ node, onChange }: Props) {
   };
 
   return (
-    <div style={{ padding: 16 }}>
-      <div
-        style={{
-          fontSize: 10,
-          fontFamily: "monospace",
-          color: "hsl(var(--muted-foreground))",
-          opacity: 0.5,
-          textTransform: "uppercase",
-          letterSpacing: 1,
-          marginBottom: 12,
-        }}
-      >
-        {nodeType}
-      </div>
+    <section aria-label="Properties">
+      <div className="hkp-editor-section-title">{nodeType}</div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <table className="hkp-editor-card hkp-editor-props">
         <tbody>
           {entries.map(([key, value, defaultKind]) => (
             <EditableRow
@@ -104,6 +92,6 @@ export function PropertyPanel({ node, onChange }: Props) {
           ))}
         </tbody>
       </table>
-    </div>
+    </section>
   );
 }

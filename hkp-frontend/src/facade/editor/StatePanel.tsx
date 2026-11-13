@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { facadeBindings } from "../bindings";
+import { BindingSite, facadeBindings } from "../bindings";
 import { FacadeStateView } from "../FacadeStateView";
 import { FacadeDescriptor } from "../types";
 
@@ -14,40 +14,39 @@ import { FacadeDescriptor } from "../types";
  * from the same store the widgets write to, it follows them as they are used.
  * A key whose value was given up stays listed, as not set.
  *
- * The same view as the facade badge's State tab (FacadeStateView); here the
- * widgets are named but not linked, since the editor is not where they are.
+ * The same view as the facade badge's State tab (FacadeStateView). The index
+ * is built from the facade being edited, so it follows the draft.
  */
-export function StatePanel({ facade }: { facade: FacadeDescriptor }) {
+export function StatePanel({
+  facade,
+  onRevealSite,
+  height,
+}: {
+  facade: FacadeDescriptor;
+  // As dragged in the editor; unset, it takes what it needs up to a share.
+  height?: number | null;
+  // How a writer or reader is shown — in the editor, by selecting it.
+  onRevealSite?: (site: BindingSite) => void;
+}) {
   const index = useMemo(() => facadeBindings(facade), [facade]);
 
   return (
     <div
       aria-label="Facade state"
       role="region"
-      style={{
-        flexShrink: 0,
-        maxHeight: "40%",
-        overflowY: "auto",
-        borderTop: "1px solid hsl(var(--border))",
-        padding: 16,
-        fontSize: 12,
-      }}
+      className="hkp-editor-state"
+      style={
+        height != null ? { height, maxHeight: "none" } : undefined
+      }
     >
-      <div
-        style={{
-          fontSize: 10,
-          fontFamily: "monospace",
-          color: "hsl(var(--muted-foreground))",
-          opacity: 0.5,
-          textTransform: "uppercase",
-          letterSpacing: 1,
-          marginBottom: 12,
-        }}
-      >
-        state
+      <div className="hkp-editor-section-title">State</div>
+      <div className="hkp-editor-card">
+        <FacadeStateView
+          index={index}
+          onReveal={onRevealSite}
+          empty="Nothing in facade state yet."
+        />
       </div>
-
-      <FacadeStateView index={index} empty="Nothing in facade state yet." />
     </div>
   );
 }

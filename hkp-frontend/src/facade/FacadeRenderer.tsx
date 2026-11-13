@@ -244,7 +244,7 @@ export default function FacadeRenderer({
           boardContext={boardContext}
           // Only with the board beside it: a binding points at the board, and
           // a host with no view controls is showing the facade as an app.
-          enabled={!!view && showFacade && showRuntime}
+          badges={!!view && showFacade && showRuntime}
         >
         <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}

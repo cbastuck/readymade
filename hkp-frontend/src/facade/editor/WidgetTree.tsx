@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { Link2 } from "lucide-react";
+
+import { widgetBindings } from "../bindings";
 import { FacadeDescriptor, LayoutItem } from "../types";
 import { EditorPath, nodeLabel, nodeIsContainer, nodeChildren } from "./editorUtils";
 
@@ -9,62 +12,55 @@ type TreeNodeProps = {
   onSelect: (path: EditorPath) => void;
 };
 
+function samePath(a: EditorPath, b: EditorPath): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 function TreeNode({ item, path, selectedPath, onSelect }: TreeNodeProps) {
   const isContainer = nodeIsContainer(item);
   const children = nodeChildren(item);
   const [expanded, setExpanded] = useState(true);
-
-  const isSelected =
-    path.length === selectedPath.length &&
-    path.every((v, i) => v === selectedPath[i]);
+  const isSelected = samePath(path, selectedPath);
+  // Whether the node reaches anything — a service or facade state — said with
+  // the same mark its badge carries on the facade.
+  const binds = widgetBindings(item).length > 0;
 
   const depth = path.length - 1; // root node (path=[panelIdx]) is depth 0
 
   return (
     <div>
       <div
+        role="treeitem"
+        aria-selected={isSelected}
+        className="hkp-editor-tree-row"
         onClick={() => onSelect(path)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          paddingLeft: 8 + depth * 14,
-          paddingRight: 8,
-          paddingTop: 3,
-          paddingBottom: 3,
-          cursor: "pointer",
-          background: isSelected
-            ? "hsl(var(--accent))"
-            : "transparent",
-          borderRadius: 4,
-          fontSize: 11,
-          fontFamily: "monospace",
-          color: isSelected
-            ? "hsl(var(--accent-foreground))"
-            : "hsl(var(--muted-foreground))",
-          userSelect: "none",
-        }}
+        style={{ paddingLeft: 8 + depth * 14 }}
       >
         {isContainer ? (
           <span
+            className="hkp-editor-tree-toggle"
             onClick={(e) => {
               e.stopPropagation();
               setExpanded((v) => !v);
             }}
-            style={{ opacity: 0.6, width: 10, flexShrink: 0, textAlign: "center" }}
           >
             {expanded ? "▾" : "▸"}
           </span>
         ) : (
-          <span style={{ width: 10, flexShrink: 0 }} />
+          <span className="hkp-editor-tree-toggle" />
         )}
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {nodeLabel(item)}
-        </span>
+        <span className="hkp-editor-tree-label">{nodeLabel(item)}</span>
+        {binds && (
+          <Link2
+            size={10}
+            className="hkp-editor-tree-binds"
+            aria-label="binds to the board or facade state"
+          />
+        )}
       </div>
 
       {isContainer && expanded && (
-        <div>
+        <div role="group">
           {children.map((child, i) => (
             <TreeNode
               key={i}
@@ -86,31 +82,26 @@ type Props = {
   onSelect: (path: EditorPath) => void;
 };
 
+/**
+ * The facade's layout as a tree. Its first row is the facade itself — what it
+ * runs when it opens and the notices it raises — selected by the empty path.
+ */
 export function WidgetTree({ facade, selectedPath, onSelect }: Props) {
   return (
-    <div
-      style={{
-        width: 220,
-        flexShrink: 0,
-        borderRight: "1px solid hsl(var(--border))",
-        overflowY: "auto",
-        padding: "8px 4px",
-      }}
-    >
+    <div className="hkp-editor-tree" role="tree" aria-label="Facade layout">
+      <div
+        role="treeitem"
+        aria-selected={selectedPath.length === 0}
+        className="hkp-editor-tree-row hkp-editor-tree-root"
+        onClick={() => onSelect([])}
+      >
+        <span className="hkp-editor-tree-toggle" />
+        <span className="hkp-editor-tree-label">Facade</span>
+      </div>
       {facade.panels.map((panel, panelIdx) => (
         <div key={panel.id}>
           {facade.panels.length > 1 && (
-            <div
-              style={{
-                fontSize: 10,
-                fontFamily: "monospace",
-                color: "hsl(var(--muted-foreground))",
-                opacity: 0.5,
-                padding: "4px 8px 2px",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
+            <div className="hkp-editor-section-title hkp-editor-tree-panel">
               {panel.title ?? panel.id}
             </div>
           )}
