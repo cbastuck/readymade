@@ -153,14 +153,25 @@ async function requestJSON(
     await requestResponse(base, path, token, signal, undefined, extra)
   ).json();
 }
-async function requestCompletion(
+/** A tool call as a chat-completions answer carries it. */
+export type OpenAIToolCall = {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+};
+/**
+ * Asks for a completion and reads it, streamed or not. `onText` is given the
+ * explanation as a JSON answer streams in — or, with `plainText`, the answer
+ * itself, for a turn whose proposal comes as a tool call.
+ */
+export async function requestCompletion(
   base: string,
   token: string,
   signal: AbortSignal,
   body: unknown,
   onStatus: (text: string) => void,
   onText: (text: string) => void,
-  extra?: OpenAIRequestOptions,
+  extra?: OpenAIRequestOptions & { plainText?: boolean },
 ) {
   const response = await requestResponse(
     base,
@@ -195,6 +206,8 @@ async function requestCompletion(
   let reasoning = "";
   let reasoningCharacters = 0;
   let usage: unknown;
+  // Streamed in pieces, each naming the call it continues by its index.
+  const toolCalls: OpenAIToolCall[] = [];
   const event = (payload: string) => {
     signal.throwIfAborted();
     if (!payload.trim()) return;
@@ -220,7 +233,37 @@ async function requestCompletion(
         (typeof field === "string" ? 0 : JSON.stringify(delta.content).length);
       onStatus(`Model is thinking… ${reasoningCharacters} characters received`);
     }
-    if (text) {
+    for (const part of delta?.tool_calls ?? []) {
+      const at =
+        typeof part?.index === "number"
+          ? part.index
+          : part?.id || !toolCalls.length
+            ? toolCalls.length
+            : toolCalls.length - 1;
+      const call = (toolCalls[at] ??= {
+        id: "",
+        type: "function",
+        function: { name: "", arguments: "" },
+      });
+      if (typeof part?.id === "string" && part.id) call.id = part.id;
+      const fn = part?.function;
+      if (typeof fn?.name === "string" && fn.name) call.function.name = fn.name;
+      if (typeof fn?.arguments === "string") call.function.arguments += fn.arguments;
+      else if (fn?.arguments && typeof fn.arguments === "object")
+        call.function.arguments = JSON.stringify(fn.arguments);
+      const written = toolCalls.reduce(
+        (total, next) => total + next.function.arguments.length,
+        0,
+      );
+      onStatus(
+        `Receiving ${call.function.name || "a tool call"}… ${written} characters received`,
+      );
+    }
+    if (text && extra?.plainText) {
+      content += text;
+      onStatus(`Receiving the answer… ${content.length} characters received`);
+      onText(content);
+    } else if (text) {
       content += text;
       onStatus(`Receiving board output… ${content.length} characters received`);
       const match = content.match(/"explanation"\s*:\s*("(?:\\.|[^"\\])*")/);
@@ -282,7 +325,11 @@ async function requestCompletion(
   return {
     choices: [
       {
-        message: { content, reasoning: reasoning || undefined },
+        message: {
+          content,
+          reasoning: reasoning || undefined,
+          ...(toolCalls.length ? { tool_calls: toolCalls.filter(Boolean) } : {}),
+        },
         finish_reason: finishReason,
       },
     ],

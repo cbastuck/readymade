@@ -1,5 +1,8 @@
 import boardFormat from "../../../docs/content/board-json.md?raw";
 import introduction from "../../../docs/content/introduction.md?raw";
+// The facade's schema is its type definitions, commented: what board-json.md
+// points to for the shape of every widget, and nowhere else written down.
+import facadeTypes from "../facade/types.ts?raw";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import type { BoardDescriptor } from "../types";
 
@@ -20,6 +23,7 @@ const examples = import.meta.glob<string>("../../../boards/*.json", {
 const sources = Object.fromEntries([
   ["docs/board-json.md", async () => boardFormat],
   ["docs/introduction.md", async () => introduction],
+  ["hkp-frontend/src/facade/types.ts", async () => facadeTypes],
   ...Object.entries(documents).map(([path, load]) => [
     path.replace("../../../docs/content/", "docs/"),
     load,

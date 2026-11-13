@@ -160,7 +160,8 @@ export function checkSyntax(statement: string | SyntaxError): true | string {
     parse(statement);
     return true;
   } catch (err: any) {
-    console.error("isSyntacticallyValid", err.message);
+    // The caller shows it, beside the expression; checked on every render, a
+    // log line here would be one per keystroke and per repaint.
     return err.message;
   }
 }

@@ -1,0 +1,1785 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/FacadeDescriptor",
+  "definitions": {
+    "FacadeDescriptor": {
+      "type": "object",
+      "properties": {
+        "layout": {
+          "type": "string",
+          "enum": [
+            "single",
+            "columns"
+          ]
+        },
+        "panels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FacadePanel"
+          }
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "init": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WidgetAction"
+          }
+        },
+        "tabs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FacadeTab"
+          }
+        },
+        "defaultTab": {
+          "type": "string"
+        },
+        "notices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FacadeNotice"
+          }
+        }
+      },
+      "required": [
+        "layout",
+        "panels"
+      ],
+      "additionalProperties": false
+    },
+    "FacadePanel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "visibleTo": {
+          "type": "string",
+          "const": "owner"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "layout": {
+          "$ref": "#/definitions/LayoutItem"
+        },
+        "width": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "detailOf": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "layout"
+      ]
+    },
+    "LayoutItem": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/LayoutContainer"
+        },
+        {
+          "$ref": "#/definitions/LayoutLeaf"
+        }
+      ]
+    },
+    "LayoutContainer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "visibleTo": {
+          "type": "string",
+          "const": "owner"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "row",
+            "column"
+          ]
+        },
+        "collapsible": {
+          "type": "boolean"
+        },
+        "title": {
+          "type": "string"
+        },
+        "open": {
+          "type": "boolean"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            {
+              "$ref": "#/definitions/FacadeStateRef"
+            }
+          ]
+        },
+        "gap": {
+          "type": "number"
+        },
+        "padding": {
+          "type": "number"
+        },
+        "paddingX": {
+          "type": "number"
+        },
+        "paddingY": {
+          "type": "number"
+        },
+        "align": {
+          "type": "string"
+        },
+        "justify": {
+          "type": "string"
+        },
+        "wrap": {
+          "type": "boolean"
+        },
+        "grow": {
+          "type": "boolean"
+        },
+        "fill": {
+          "type": "boolean"
+        },
+        "width": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LayoutItem"
+          }
+        }
+      },
+      "required": [
+        "direction",
+        "items"
+      ]
+    },
+    "FacadeWidgetSource": {
+      "type": "object",
+      "properties": {
+        "serviceUuid": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "serviceUuid"
+      ],
+      "additionalProperties": false
+    },
+    "FacadeStateRef": {
+      "type": "object",
+      "properties": {
+        "$state": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "$state"
+      ],
+      "additionalProperties": false
+    },
+    "LayoutLeaf": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "message-list"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "composer": {
+              "type": "object",
+              "properties": {
+                "placeholder": {
+                  "type": "string"
+                },
+                "submitLabel": {
+                  "type": "string"
+                },
+                "action": {
+                  "$ref": "#/definitions/FacadeWidgetAction"
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "source",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "text-input"
+            },
+            "label": {
+              "type": "string"
+            },
+            "placeholder": {
+              "type": "string"
+            },
+            "multiline": {
+              "type": "boolean"
+            },
+            "rows": {
+              "type": "number"
+            },
+            "defaultValue": {
+              "type": "string"
+            },
+            "submitLabel": {
+              "type": "string"
+            },
+            "inputType": {
+              "type": "string",
+              "enum": [
+                "text",
+                "date",
+                "time",
+                "datetime"
+              ]
+            },
+            "secret": {
+              "type": "boolean"
+            },
+            "vaultKey": {
+              "type": "string"
+            },
+            "width": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "action": {
+              "$ref": "#/definitions/FacadeWidgetAction"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "json-input"
+            },
+            "label": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "array",
+                "object"
+              ]
+            },
+            "defaultValue": {},
+            "submitLabel": {
+              "type": "string"
+            },
+            "action": {
+              "$ref": "#/definitions/FacadeWidgetAction"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            },
+            "width": {
+              "type": [
+                "number",
+                "string"
+              ]
+            }
+          },
+          "required": [
+            "mode",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "status-indicator"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "statusColors": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "source",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/FacadeStateRef"
+                },
+                {
+                  "$ref": "#/definitions/FacadeUserRef"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "copyable": {
+              "type": "boolean"
+            },
+            "wrap": {
+              "type": "boolean"
+            },
+            "lineHeight": {
+              "type": "number"
+            },
+            "label": {
+              "type": "string"
+            },
+            "placeholder": {
+              "type": "string"
+            },
+            "tone": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "muted",
+                "error"
+              ]
+            },
+            "fontSize": {
+              "type": "number"
+            },
+            "mono": {
+              "type": "boolean"
+            },
+            "pretty": {
+              "type": "boolean"
+            },
+            "href": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "button"
+            },
+            "label": {
+              "type": "string"
+            },
+            "confirm": {
+              "type": "string"
+            },
+            "disabled": {
+              "type": "boolean"
+            },
+            "selected": {
+              "type": "boolean"
+            },
+            "indicator": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "$ref": "#/definitions/FacadeWidgetSource"
+                },
+                "statusColors": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "source"
+              ],
+              "additionalProperties": false
+            },
+            "action": {
+              "$ref": "#/definitions/FacadeWidgetAction"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            }
+          },
+          "required": [
+            "label",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "qr-code"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "caption": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "file-pick"
+            },
+            "label": {
+              "type": "string"
+            },
+            "accept": {
+              "type": "string"
+            },
+            "progressServiceUuid": {
+              "type": "string"
+            },
+            "action": {
+              "type": "object",
+              "properties": {
+                "serviceUuid": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "serviceUuid"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "knob"
+            },
+            "id": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "defaultValue": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            },
+            "showValue": {
+              "type": "boolean"
+            },
+            "markers": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/KnobMarker"
+              }
+            },
+            "action": {
+              "type": "object",
+              "properties": {
+                "serviceUuid": {
+                  "type": "string"
+                },
+                "configure": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "serviceUuid",
+                "configure"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "defaultValue",
+            "max",
+            "min",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "level-meter"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "thresholdKnobServiceUuid": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "bipolar-meter"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "label": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "source",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "line-chart"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "maxPoints": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            },
+            "width": {
+              "type": "number"
+            },
+            "normalize": {
+              "type": "boolean"
+            },
+            "symbol": {
+              "type": "string"
+            },
+            "symbols": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "seriesField": {
+              "type": "string"
+            },
+            "valueField": {
+              "type": "string"
+            },
+            "timeField": {
+              "type": "string"
+            },
+            "contextField": {
+              "type": "string"
+            },
+            "contextLabel": {
+              "type": "string"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "emptyLabel": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "layout"
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "row",
+                "column"
+              ]
+            },
+            "collapsible": {
+              "type": "boolean"
+            },
+            "title": {
+              "type": "string"
+            },
+            "open": {
+              "type": "boolean"
+            },
+            "summary": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/FacadeWidgetSource"
+                },
+                {
+                  "$ref": "#/definitions/FacadeStateRef"
+                }
+              ]
+            },
+            "gap": {
+              "type": "number"
+            },
+            "padding": {
+              "type": "number"
+            },
+            "paddingX": {
+              "type": "number"
+            },
+            "paddingY": {
+              "type": "number"
+            },
+            "align": {
+              "type": "string"
+            },
+            "justify": {
+              "type": "string"
+            },
+            "wrap": {
+              "type": "boolean"
+            },
+            "fill": {
+              "type": "boolean"
+            },
+            "width": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/LayoutItem"
+              }
+            }
+          },
+          "required": [
+            "direction",
+            "items",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "canvas"
+            },
+            "serviceUuid": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "serviceUuid",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "camera"
+            },
+            "serviceUuid": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            },
+            "preview": {
+              "type": "boolean"
+            },
+            "previewWidth": {
+              "type": "number"
+            },
+            "mirror": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "serviceUuid",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "detect"
+            },
+            "serviceUuid": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "serviceUuid",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "xy-pad"
+            },
+            "serviceUuid": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "serviceUuid",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "data-table"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "pageSize": {
+              "type": "number"
+            },
+            "maxPages": {
+              "type": "number"
+            },
+            "overflow": {
+              "type": "string",
+              "enum": [
+                "drop-new",
+                "drop-oldest"
+              ]
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selectable": {
+              "type": "boolean"
+            },
+            "rowKey": {
+              "type": "string"
+            },
+            "selectionState": {
+              "type": "string"
+            },
+            "cellActions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            }
+          },
+          "required": [
+            "source",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "repeat"
+            },
+            "items": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {}
+                },
+                {
+                  "$ref": "#/definitions/FacadeStateRef"
+                }
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "template": {
+              "$ref": "#/definitions/LayoutItem"
+            },
+            "columns": {
+              "type": "number"
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "row",
+                "column"
+              ]
+            },
+            "gap": {
+              "type": "number"
+            },
+            "wrap": {
+              "type": "boolean"
+            },
+            "stripe": {
+              "$ref": "#/definitions/RepeatStripe"
+            },
+            "frame": {
+              "$ref": "#/definitions/RepeatFrame"
+            }
+          },
+          "required": [
+            "template",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "audio-player"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "url": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "subtitle": {
+              "type": "string"
+            },
+            "autoplay": {
+              "type": "boolean"
+            },
+            "continuous": {
+              "type": "boolean"
+            },
+            "loop": {
+              "type": "boolean"
+            },
+            "showList": {
+              "type": "boolean"
+            },
+            "listMaxHeight": {
+              "type": "number"
+            },
+            "trackActions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AudioPlayerTrackAction"
+              }
+            },
+            "placeholder": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "type",
+            "url"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "calendar"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "fromHour": {
+              "type": "number"
+            },
+            "toHour": {
+              "type": "number"
+            },
+            "rowHeight": {
+              "type": "number"
+            },
+            "stripe": {
+              "$ref": "#/definitions/StripeColors"
+            },
+            "dayField": {
+              "type": "string"
+            },
+            "action": {
+              "$ref": "#/definitions/FacadeWidgetAction"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            },
+            "confirm": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "const": "swimlane"
+            },
+            "laneId": {
+              "type": [
+                "string",
+                "number"
+              ]
+            },
+            "title": {
+              "type": "string"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "dragGroup": {
+              "type": "string"
+            },
+            "allowDrag": {
+              "type": "boolean"
+            },
+            "acceptDrops": {
+              "type": "boolean"
+            },
+            "allowCreate": {
+              "type": "boolean"
+            },
+            "selectable": {
+              "type": "boolean"
+            },
+            "selectionState": {
+              "type": "string"
+            },
+            "emptyLabel": {
+              "type": "string"
+            },
+            "width": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "minWidth": {
+              "type": "number"
+            },
+            "maxHeight": {
+              "type": "number"
+            },
+            "cardIdField": {
+              "type": "string"
+            },
+            "laneIdField": {
+              "type": "string"
+            },
+            "allRows": {
+              "type": "boolean"
+            },
+            "except": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "$ref": "#/definitions/FacadeWidgetSource"
+                },
+                "idField": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "source"
+              ],
+              "additionalProperties": false
+            },
+            "titleField": {
+              "type": "string"
+            },
+            "descriptionField": {
+              "type": "string"
+            },
+            "positionField": {
+              "type": "string"
+            },
+            "editorTitle": {
+              "type": "string"
+            },
+            "titleLabel": {
+              "type": "string"
+            },
+            "descriptionLabel": {
+              "type": "string"
+            },
+            "saveLabel": {
+              "type": "string"
+            },
+            "createActions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            },
+            "editActions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            },
+            "deleteActions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            },
+            "moveActions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            },
+            "deleteConfirm": {
+              "type": "string"
+            },
+            "statusField": {
+              "type": "string"
+            },
+            "statusColors": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "detailField": {
+              "type": "string"
+            },
+            "cardActions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SwimlaneCardAction"
+              }
+            },
+            "audioField": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "laneId",
+            "source",
+            "title",
+            "type"
+          ]
+        }
+      ]
+    },
+    "FacadeWidgetAction": {
+      "type": "object",
+      "properties": {
+        "serviceUuid": {
+          "type": "string"
+        },
+        "configure": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "serviceUuid",
+        "configure"
+      ],
+      "additionalProperties": false
+    },
+    "WidgetAction": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ConfigureAction"
+        },
+        {
+          "$ref": "#/definitions/SetStateAction"
+        },
+        {
+          "$ref": "#/definitions/ProcessAction"
+        },
+        {
+          "$ref": "#/definitions/BoardAction"
+        },
+        {
+          "$ref": "#/definitions/ConfirmAction"
+        },
+        {
+          "$ref": "#/definitions/PromptAction"
+        },
+        {
+          "$ref": "#/definitions/ShowPanelAction"
+        }
+      ]
+    },
+    "ConfigureAction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "configure"
+        },
+        "serviceUuid": {
+          "type": "string"
+        },
+        "configure": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "type",
+        "serviceUuid",
+        "configure"
+      ],
+      "additionalProperties": false
+    },
+    "SetStateAction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "set-state"
+        },
+        "key": {
+          "type": "string"
+        },
+        "value": {}
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "ProcessAction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "process"
+        },
+        "serviceUuid": {
+          "type": "string"
+        },
+        "payload": {}
+      },
+      "required": [
+        "type",
+        "serviceUuid"
+      ],
+      "additionalProperties": false
+    },
+    "BoardAction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "board"
+        },
+        "action": {
+          "type": "string",
+          "const": "partner-board-qr"
+        }
+      },
+      "required": [
+        "type",
+        "action"
+      ],
+      "additionalProperties": false
+    },
+    "ConfirmAction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "confirm"
+        },
+        "question": {
+          "type": "string"
+        },
+        "agree": {
+          "type": "string"
+        },
+        "decline": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "question"
+      ],
+      "additionalProperties": false
+    },
+    "PromptAction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "prompt"
+        },
+        "question": {
+          "type": "string"
+        },
+        "defaultValue": {},
+        "multiline": {
+          "type": "boolean"
+        },
+        "agree": {
+          "type": "string"
+        },
+        "decline": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "question"
+      ],
+      "additionalProperties": false
+    },
+    "ShowPanelAction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "show-panel"
+        },
+        "panel": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "panel"
+      ],
+      "additionalProperties": false
+    },
+    "FacadeUserRef": {
+      "type": "object",
+      "properties": {
+        "$user": {
+          "type": "string",
+          "enum": [
+            "email",
+            "name"
+          ]
+        }
+      },
+      "required": [
+        "$user"
+      ],
+      "additionalProperties": false
+    },
+    "KnobMarker": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "RepeatStripe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "padding": {
+          "type": "number"
+        },
+        "radius": {
+          "type": "number"
+        },
+        "even": {
+          "type": "string"
+        },
+        "odd": {
+          "type": "string"
+        }
+      }
+    },
+    "RepeatFrame": {
+      "type": "object",
+      "properties": {
+        "padding": {
+          "type": "number"
+        },
+        "radius": {
+          "type": "number"
+        },
+        "maxWidth": {
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "AudioPlayerTrackAction": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "confirm": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WidgetAction"
+          }
+        }
+      },
+      "required": [
+        "label",
+        "actions"
+      ],
+      "additionalProperties": false
+    },
+    "StripeColors": {
+      "type": "object",
+      "properties": {
+        "even": {
+          "type": "string"
+        },
+        "odd": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SwimlaneCardAction": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WidgetAction"
+          }
+        },
+        "confirm": {
+          "type": "string"
+        },
+        "visibleWhen": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string"
+            },
+            "equals": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "label",
+        "actions"
+      ],
+      "additionalProperties": false
+    },
+    "FacadeTab": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "visibleTo": {
+          "type": "string",
+          "const": "owner"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "panels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "panels",
+        "title"
+      ]
+    },
+    "FacadeNotice": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "visibleTo": {
+          "type": "string",
+          "const": "owner"
+        },
+        "source": {
+          "$ref": "#/definitions/FacadeWidgetSource"
+        },
+        "tone": {
+          "type": "string",
+          "enum": [
+            "info",
+            "success",
+            "error"
+          ]
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ]
+    }
+  }
+}

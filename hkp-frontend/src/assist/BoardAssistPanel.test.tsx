@@ -603,19 +603,25 @@ describe("Board Assist panel", () => {
     view.unmount();
     view.host.remove();
   });
-  it("closes when the applied board opens as its facade alone", async () => {
-    const onClose = vi.fn();
+  /**
+   * The panel over a board that changes through React, as the real
+   * provider's does. Loading a board removes its runtimes before the new ones
+   * arrive, so a facade board passes through having nothing to show; the
+   * board it ends on has a facade, which the facade view shows on its own by
+   * default.
+   */
+  function mountOverFacadeView(onClose: () => void) {
     const host = document.createElement("div");
     document.body.appendChild(host);
-    // The board changes through React, as the real provider's does: loading
-    // the proposal leaves a board with a facade, which the facade view shows
-    // on its own by default.
+    const facade = { layout: "single", panels: [] };
     function Harness() {
       const [board, setBoard] = useState(mocks.board);
       mocks.board = board;
-      board.setBoardState = vi.fn(async () =>
-        setBoard({ ...board, facade: { layout: "single", panels: [] } }),
-      );
+      board.setBoardState = vi.fn(async () => {
+        setBoard({ ...board, runtimes: [] });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        setBoard({ ...board, facade });
+      });
       return (
         <FacadeViewProvider boardName="Before">
           <BoardAssistPanel host={host} visible onClose={onClose} />
@@ -623,27 +629,36 @@ describe("Board Assist panel", () => {
       );
     }
     const view = render(<Harness />);
-    await requestUnappliedProposal();
-    expect(onClose).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    view.unmount();
-    host.remove();
-  });
-  it("stays open when opened over a board already shown as its facade", async () => {
-    mocks.board.facade = { layout: "single", panels: [] };
+    return { ...view, host };
+  }
+  it("is hidden, not closed, while the applied board shows its facade alone", async () => {
     const onClose = vi.fn();
-    const host = document.createElement("div");
-    document.body.appendChild(host);
-    const view = render(
-      <FacadeViewProvider boardName="Before">
-        <BoardAssistPanel host={host} visible onClose={onClose} />
-      </FacadeViewProvider>,
-    );
-    await requestProposal();
+    const view = mountOverFacadeView(onClose);
+    await requestUnappliedProposal();
+    const panel = screen.getByRole("complementary", { name: "Board Assist" });
+    expect(panel.hidden).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
+    await waitFor(() => expect(panel.hidden).toBe(true));
     expect(onClose).not.toHaveBeenCalled();
     view.unmount();
-    host.remove();
+    view.host.remove();
+  });
+  it("stays hidden while the board is shown as its facade alone", () => {
+    mocks.board.facade = { layout: "single", panels: [] };
+    const view = mountOverFacadeView(() => {});
+    expect(document.getElementById("board-ai-assist")?.hidden).toBe(true);
+    view.unmount();
+    view.host.remove();
+  });
+  it("shows beside a facade that is not alone", () => {
+    mocks.board.facade = { layout: "single", panels: [] };
+    localStorage.setItem("hkp-facade-runtime-Before", "true");
+    const view = mountOverFacadeView(() => {});
+    expect(
+      screen.getByRole("complementary", { name: "Board Assist" }).hidden,
+    ).toBe(false);
+    view.unmount();
+    view.host.remove();
   });
   it("keeps a generated board as a proposal until the person applies it", async () => {
     const view = mount();

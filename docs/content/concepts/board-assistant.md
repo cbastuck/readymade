@@ -57,9 +57,11 @@ to `https://api.mistral.ai/v1` — an API hosted in the EU. Enter an **API key**
 (from `console.mistral.ai`); there is no address to set. The model list shows
 the account's chat models, without the embedding, moderation and OCR models on
 the same list, and each turn is sized by the selected model's context window,
-so there is no context setting. Requests use chat completions with JSON output
-mode, streamed, as for an OpenAI-compatible server; a reasoning model's
-thinking is shown as progress, left out of the answer and kept beside it.
+so there is no context setting. Requests use chat completions, streamed, with
+the same tools an Anthropic model gets: the model searches and reads the
+documentation itself, as often as the request needs, and proposes a board with
+a tool call. A reasoning model's thinking is shown as progress, left out of the
+answer and kept beside it.
 
 **OpenCode Go** uses the models of an OpenCode Go subscription through the same
 OpenAI-compatible API, with Board Assist itself as the client — no OpenCode
@@ -119,9 +121,9 @@ that moment — raise it first. The new request carries what the model wrote, as
 its own turn, and asks it to go on from there rather than start over; thinking
 too long for the room the context leaves loses its beginning. Whether the
 model picks up mid-thought or reconsiders from its notes is up to the model,
-but it starts from what it already worked out. Anthropic's turns are a series
-of requests, documentation lookups among them, so nothing is carried there and
-the button is **Retry**: the same request, asked afresh with the new limit. The
+but it starts from what it already worked out. Anthropic's and Mistral's turns
+are a series of requests, documentation lookups among them, so nothing is
+carried there and the button is **Retry**: the same request, asked afresh with the new limit. The
 cut-off attempt's tokens count in the conversation's usage either way
 (`hkp-frontend/src/assist/outputLimit.ts`).
 
@@ -178,8 +180,10 @@ Describe what the board should do. For example:
 > Camera service, detects faces, and sends a notification to ntfy topic xxx
 > when there are faces.
 
-The assistant can search and read the documentation in `docs/content/` and the
-JSON examples in `boards/`. Both are packaged into builds, so the documentation
+The assistant can search and read the documentation in `docs/content/`, the
+JSON examples in `boards/`, and the facade's schema — its commented type
+definitions, `hkp-frontend/src/facade/types.ts`, which `board-json.md` points
+to for the shape of every widget. All three are packaged into builds, so the documentation
 matches that build and requires no documentation server. It reads the relevant
 service contracts, configuration and data shapes before proposing a board.
 
@@ -195,11 +199,14 @@ With nothing set, Board Assist uses the hosted one at
 **Settings → Board Assist → Knowledge server → MCP server URL**, for example
 `http://127.0.0.1:8787/mcp`. The URL is device-local configuration and is not
 written into boards. A hosted playground needs the server behind a TLS reverse
-proxy; `readymade-mcp/README.md` walks through deploying it. Both providers can consume the server's search and
-document-reading tools. Anthropic also receives the allowlisted contract,
-compatibility, example, source-inspection and board-validation operations as
-model-controlled tools. OpenAI-compatible providers retain bounded
-pre-retrieval until their tool-calling support can be detected reliably.
+proxy; `readymade-mcp/README.md` walks through deploying it. Every provider can consume the server's search and
+document-reading tools. Anthropic and Mistral models call them themselves, and
+also receive the allowlisted contract, compatibility, example,
+source-inspection and board-validation operations as model-controlled tools
+(`hkp-frontend/src/assist/assistTools.ts`). The other OpenAI-compatible
+providers retain bounded pre-retrieval — one search on the request, its best
+pages handed over with it — until their tool-calling support can be detected
+reliably.
 
 The MCP connection has bounded connect and tool-call timeouts. What happens when
 a call fails depends on what the failure says about the server:
@@ -282,7 +289,15 @@ JSON or a board-load error keeps the editor open with your draft intact.
 changes since the diff was opened, so the current side you reviewed is the
 configuration being replaced. A proposal does not change the running board. It first passes
 structural validation and the normal board linker checks its blocks and
-references without loading runtimes. A failed preflight leaves the proposal and
+references without loading runtimes. Its facade is checked against the facade
+schema, generated from `hkp-frontend/src/facade/types.ts`
+(`hkp-frontend/src/facade/validateFacade.ts`): each problem says where it is,
+which widget it belongs to and what was expected — a data-table column that is
+an object rather than a name, a property a widget does not have, a widget type
+there is none of. Only what the proposal adds counts; a facade that was already
+off does not block changes around it. The same checks run when the model
+proposes, so Anthropic and Mistral models are told what is wrong and repair it
+within the turn rather than handing over a board that cannot render. A failed preflight leaves the proposal and
 diff available, but disables direct application; edit it in the diff to repair
 and revalidate it. Service-specific behavior still needs testing with the actual
 devices and runtime servers.

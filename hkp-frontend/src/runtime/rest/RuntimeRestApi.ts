@@ -960,10 +960,19 @@ async function createRuntimeRequest(
   }
   if (!res.ok) {
     const authFailure = describeAuthFailure(res, user ?? null, runtimesUrl);
+    // A refusal the server explains — a service it does not have — says
+    // which, so the board can be corrected rather than guessed at.
+    const reason =
+      res.status === 400
+        ? await res
+            .json()
+            .then((body) => (typeof body?.error === "string" ? body.error : ""))
+            .catch(() => "")
+        : "";
     throw new Error(
       authFailure
         ? `Failed to create runtime — ${authFailure}`
-        : `Failed to create runtime (${res.status} ${res.statusText}): ${runtimesUrl}`,
+        : `Failed to create runtime ${runtime.id}${reason ? `: ${reason}` : ""} (${res.status} ${res.statusText}): ${runtimesUrl}`,
     );
   }
   const body = await res.json();

@@ -35,6 +35,7 @@ import {
 } from "./outputLimit";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
+import { describeUnknownServices, unknownServices } from "./serviceCatalog";
 import {
   addUsage,
   AssistUsage,
@@ -399,6 +400,9 @@ export function useBoardAssist({
       const config = captured.config;
       const ctx = currentBoard.current!;
       const editScope = resolveAssistScope(config, scopeChoice, focus.runtimeId);
+      // Against the board as saved, which names its servers the way a
+      // proposal does, and the registries its live runtimes report.
+      const services = { runtimes: config.runtimes, registry: ctx.registry };
       const request = {
         token: compatible
           ? settings.openAICompatibleToken
@@ -449,6 +453,7 @@ export function useBoardAssist({
             ),
           ),
         knowledgeProvider,
+        services,
       };
       const result = compatible
         ? await runOpenAICompatibleTurn({
@@ -496,7 +501,14 @@ export function useBoardAssist({
       if (proposal) {
         setStatus("Preflighting the proposed board…");
         try {
-          const candidate = validateAssistBoard(proposal);
+          const candidate = validateAssistBoard(proposal, captured.config);
+          const unknown = await unknownServices(
+            candidate,
+            services,
+            captured.config,
+          );
+          if (unknown.length)
+            throw new Error(describeUnknownServices(unknown));
           await linkBoardDocument(candidate, originFor(captured));
         } catch (err) {
           preflightError =
@@ -637,8 +649,8 @@ export function useBoardAssist({
   ) => {
     if (!entry.board) return false;
     try {
-      const candidate = validateAssistBoard(entry.board);
       const before = await snapshot();
+      const candidate = validateAssistBoard(entry.board, before.config);
       if (!matchesAssistSnapshot(before, entry.base))
         throw new Error(
           "The board changed since this proposal. Ask the assistant to update its proposal using the current board.",

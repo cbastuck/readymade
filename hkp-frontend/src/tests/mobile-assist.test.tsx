@@ -48,7 +48,7 @@ const proposed = {
   services: {
     ui: [
       { uuid: "timer", serviceId: "timer", serviceName: "Timer", state: { interval: 60000 } },
-      { uuid: "monitor", serviceId: "monitor", serviceName: "Monitor" },
+      { uuid: "monitor", serviceId: "hookup.to/service/monitor", serviceName: "Monitor" },
     ],
     node: [],
   },

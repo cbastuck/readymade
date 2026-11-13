@@ -1,8 +1,6 @@
 import type { AssistModel } from "./anthropic";
-import {
-  requestOpenAIModelList,
-  runOpenAICompatibleTurn,
-} from "./openAICompatible";
+import { requestOpenAIModelList } from "./openAICompatible";
+import { runOpenAIToolTurn } from "./openAITools";
 import { MISTRAL_URL } from "./settings";
 
 /**
@@ -10,9 +8,11 @@ import { MISTRAL_URL } from "./settings";
  * it serves at a fixed address. Its API answers the browser's CORS check, so
  * Board Assist calls it directly, as it does Anthropic.
  *
- * It differs from the OpenAI-compatible transport in two ways handled here:
- * its model list says what each model can do and how much it reads, and it
- * reports a streamed answer's usage without being asked.
+ * It differs from a plain OpenAI-compatible server in three ways handled
+ * here: its model list says what each model can do and how much it reads, it
+ * reports a streamed answer's usage without being asked, and it is known to
+ * call tools — so a turn reads the documentation itself and proposes with a
+ * tool call, as an Anthropic turn does (`openAITools.ts`).
  */
 
 /** Used when a model does not state its context window. */
@@ -66,17 +66,16 @@ export async function listMistralModels(
 
 export function runMistralTurn(
   options: Omit<
-    Parameters<typeof runOpenAICompatibleTurn>[0],
+    Parameters<typeof runOpenAIToolTurn>[0],
     | "baseURL"
     | "contextTokens"
     | "outputTokens"
-    | "thinking"
     | "streamUsage"
     | "headers"
     | "unreachable"
   >,
 ) {
-  return runOpenAICompatibleTurn({
+  return runOpenAIToolTurn({
     ...options,
     baseURL: MISTRAL_URL,
     contextTokens: options.model.context_tokens ?? DEFAULT_CONTEXT_TOKENS,

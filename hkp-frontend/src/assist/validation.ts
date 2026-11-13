@@ -1,11 +1,19 @@
 import { BoardDescriptor } from "../types";
+import { facadeProblems } from "../facade/validateFacade";
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 /** Structural checks before offering model output to the board loader. State
- * contracts remain service-specific and are supplied by the documentation. */
-export function validateAssistBoard(value: unknown): BoardDescriptor {
+ * contracts remain service-specific and are supplied by the documentation.
+ *
+ * The facade is checked against its schema. Given the board it would replace,
+ * only what the proposal adds is held against it: a facade that was already
+ * off does not block every change to the board around it. */
+export function validateAssistBoard(
+  value: unknown,
+  base?: BoardDescriptor,
+): BoardDescriptor {
   if (
     !object(value) ||
     !Array.isArray(value.runtimes) ||
@@ -43,6 +51,18 @@ export function validateAssistBoard(value: unknown): BoardDescriptor {
   }
   if (value.boardName !== undefined && typeof value.boardName !== "string")
     throw new Error("Board name must be text.");
+  if (value.facade !== undefined) {
+    const known = new Set(
+      base?.facade ? facadeProblems(base.facade, { limit: Infinity }) : [],
+    );
+    const added = facadeProblems(value.facade).filter(
+      (problem) => !known.has(problem),
+    );
+    if (added.length)
+      throw new Error(
+        `The facade does not match its schema (hkp-frontend/src/facade/types.ts):\n- ${added.join("\n- ")}`,
+      );
+  }
   return value as BoardDescriptor;
 }
 function validatePipeline(entries: unknown[], topLevel: boolean) {

@@ -44,8 +44,13 @@ export default function BoardAssistPanel({
 }) {
   const board = useBoardContext();
   const selection = useSelection();
+  // The facade on its own is the app being used rather than built, and the
+  // chrome around it retracts; the panel is part of that chrome. It is hidden
+  // rather than closed, so it is back as it was when the board is.
+  const retracted = useChromeRetracted();
+  const shown = visible && !retracted;
   const assist = useBoardAssist({
-    active: visible,
+    active: shown,
     focus: {
       runtimeId: selection?.selectedRuntimeId,
       serviceUuids: selection?.selectedServices?.uuids ?? [],
@@ -94,19 +99,8 @@ export default function BoardAssistPanel({
   const thread = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (visible) threadEnd.current?.scrollIntoView?.({ block: "end" });
-  }, [entries, status, visible]);
-
-  // A board that becomes its facade alone — a proposal with a facade applied,
-  // say — is now the app being used rather than built, and the chrome around
-  // it retracts. The panel is part of that chrome, so it goes with it. Only
-  // the change closes it: opened again over the facade, it stays.
-  const retracted = useChromeRetracted();
-  const wasRetracted = useRef(retracted);
-  useEffect(() => {
-    if (retracted && !wasRetracted.current && visible) onClose();
-    wasRetracted.current = retracted;
-  }, [retracted, visible, onClose]);
+    if (shown) threadEnd.current?.scrollIntoView?.({ block: "end" });
+  }, [entries, status, shown]);
 
   if (!host) return null;
   return createPortal(
@@ -115,7 +109,7 @@ export default function BoardAssistPanel({
         id="board-ai-assist"
         className="hkp-assist"
         aria-label="Board Assist"
-        hidden={!visible}
+        hidden={!shown}
         style={
           {
             "--hkp-assist-width": `${panelWidth}px`,

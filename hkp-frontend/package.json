@@ -12,7 +12,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "security": "npm audit --omit=dev"
+    "security": "npm audit --omit=dev",
+    "facade-schema": "node scripts/facade-schema.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
@@ -93,6 +94,7 @@
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "tailwindcss-animate": "^1.0.7",
+    "ts-json-schema-generator": "^2.9.0",
     "typescript": "5.9.3",
     "vite": "8.3.4",
     "vite-plugin-dts": "^5.0.2",

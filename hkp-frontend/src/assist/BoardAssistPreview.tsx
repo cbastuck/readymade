@@ -52,7 +52,7 @@ export default function BoardAssistPreview({
     setValidationError("");
     let board: BoardDescriptor;
     try {
-      board = validateAssistBoard(JSON.parse(draft));
+      board = validateAssistBoard(JSON.parse(draft), current);
     } catch (err) {
       setValidationError(
         err instanceof Error
