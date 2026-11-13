@@ -58,6 +58,7 @@ export function GenericPanel({ panel, boardContext, showTitle }: PanelProps) {
           item={panel.layout}
           boardContext={boardContext}
           panelContext={panelContext}
+          site={{ panel: panel.id, path: [] }}
         />
       </div>
     </div>

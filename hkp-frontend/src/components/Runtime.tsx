@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { getServiceConfiguration } from "../core/actions";
+import { useRuntimeExpandRequest } from "hkp-frontend/src/ui-components/runtime-ui/runtimeRequests";
 
 import {
   RuntimeDescriptor,
@@ -271,6 +272,14 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
     setExpanded(isExpanded);
     scope?.setState?.({ minimized: !isExpanded }); // TODO: remove state duplication
   };
+
+  // Asked from outside — a reveal bringing one of this runtime's services into
+  // view, which a collapsed runtime does not show.
+  useRuntimeExpandRequest(runtimeId, () => {
+    if (!expanded) {
+      onExpand(true);
+    }
+  });
 
   const onDropService = (data: any) => {
     if (data) {

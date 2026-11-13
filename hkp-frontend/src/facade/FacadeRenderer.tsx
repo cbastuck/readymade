@@ -13,6 +13,7 @@ import { useFacadeView } from "./FacadeViewContext";
 import { useChromeRetracted } from "./FacadeChrome";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
 import { FacadePanelNavigationContext } from "./FacadePanelNavigation";
+import { FacadeBindingsProvider } from "./FacadeBindingsContext";
 import { SwimlaneDragProvider } from "./SwimlaneDragContext";
 
 type FacadeRendererProps = {
@@ -203,6 +204,13 @@ export default function FacadeRenderer({
     >
       <SwimlaneDragProvider>
         <FacadePanelNavigationContext.Provider value={navigation}>
+        <FacadeBindingsProvider
+          facade={draftFacade}
+          boardContext={boardContext}
+          // Only with the board beside it: a binding points at the board, and
+          // a host with no view controls is showing the facade as an app.
+          enabled={!!view && showFacade && showRuntime}
+        >
         <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}
         <FacadeNotices
@@ -344,6 +352,7 @@ export default function FacadeRenderer({
           </div>
         </div>
         </FacadeBoardActionsProvider>
+        </FacadeBindingsProvider>
         </FacadePanelNavigationContext.Provider>
       </SwimlaneDragProvider>
     </FacadeStateContext.Provider>

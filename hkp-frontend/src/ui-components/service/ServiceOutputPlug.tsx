@@ -28,6 +28,7 @@ import { useTheme } from "../ThemeContext";
 import FlowInspectorPopup from "./FlowInspectorPopup";
 import FlowWaveIcon from "./FlowWaveIcon";
 import type { FlowRecord, FlowSide } from "./flowRecords";
+import { useInspectorRequest } from "./inspectorRequests";
 import "../settings/settings.css";
 import "./flow-inspector.css";
 
@@ -36,6 +37,11 @@ export type { FlowRecord, FlowSide } from "./flowRecords";
 export { rememberFlow } from "./flowRecords";
 
 type Props = {
+  /**
+   * The uuid the frame renders under, for opening this inspector from outside
+   * it (`requestInspector`). Absent, only the plug opens it.
+   */
+  uuid?: string;
   isActive?: boolean;
   /** What the service was called with and what it produced, newest first;
    *  see `rememberFlow`. A service emitting on its own receives nothing. */
@@ -97,6 +103,7 @@ const expandedFrameStyle: React.CSSProperties = {
 };
 
 export default function ServiceOutputPlug({
+  uuid,
   isActive,
   inputHistory,
   outputHistory,
@@ -144,6 +151,12 @@ export default function ServiceOutputPlug({
       setAskingToCapture(true);
     }
   };
+  // Asked for from outside — a facade widget's Inspect — on a given side, the
+  // way the plug itself would open it.
+  useInspectorRequest(uuid, (requested) => {
+    setSide(requested);
+    onOpen();
+  });
   // Either answer opens it: with the values from the next run on, or with the
   // activity it has.
   const onAnswerCapture = (capture: boolean) => {

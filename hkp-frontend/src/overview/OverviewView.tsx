@@ -21,10 +21,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
+import { revealService } from "hkp-frontend/src/runtime/ui/revealService";
 import { ActivityTracker } from "./activity";
 import { Camera, createCamera, orbit, pan, project, zoom } from "./camera";
-import { OverviewNode, buildScene, keyOf } from "./graph";
-import { ServicesByRuntime, readBoardShape } from "./shape";
+import { OverviewNode, keyOf } from "./graph";
+import { useBoardScene } from "./useBoardScene";
 import { HitTarget, defaultPalette, hitTest, render } from "./render";
 import { useOverview } from "./OverviewContext";
 import OverviewDetails from "./OverviewDetails";
@@ -47,11 +48,6 @@ function isEditable(target: EventTarget | null): boolean {
 /** Stands in before the board is being listened to, so a frame drawn in
  *  between shows every node idle rather than allocating a tracker to say so. */
 const IDLE_ACTIVITY = new ActivityTracker();
-
-/** How long a service stays marked after the overview has jumped to it. */
-const REVEAL_HIGHLIGHT_MS = 2000;
-/** How long to keep looking for a service's panel after opening its levels. */
-const REVEAL_TIMEOUT_MS = 2000;
 
 /** What the accent is where no theme defines one, and where one is defined in
  *  a form the canvas cannot be handed. */
@@ -87,59 +83,6 @@ function accentColor(): string {
   probe.fillStyle = declared;
   const resolved = String(probe.fillStyle);
   return /^#[0-9a-f]{6}$/i.test(resolved) ? resolved : FALLBACK_ACCENT;
-}
-
-/**
- * Brings a service into view on the board.
- *
- * A nested service is only on screen once every pipeline above it has been
- * opened, so the hosts are opened outermost first — each one renders the level
- * the next is found on. The panel therefore does not exist yet when the last
- * one is asked for, and is waited for rather than assumed.
- *
- * Each level is asked for by the service it has to hold — the next host down,
- * or the service itself — rather than by its host alone: a host with several
- * pipelines, a Switch's cases, opens each under a name of its own panel's
- * making, and which of them leads on is only known from what is inside.
- */
-function revealService(
-  node: OverviewNode,
-  labelFor: (key: string) => string,
-  navigation: ReturnType<typeof useNestedNavigation>,
-) {
-  if (navigation) {
-    node.ancestry.forEach((hostUuid, depth) => {
-      navigation.openHolding(
-        hostUuid,
-        node.ancestry[depth + 1] ?? node.uuid,
-        labelFor(keyOf(node.ancestry.slice(0, depth), hostUuid)),
-        depth,
-      );
-    });
-    if (node.ancestry.length === 0) {
-      navigation.goTo(0);
-    }
-  }
-
-  const deadline = performance.now() + REVEAL_TIMEOUT_MS;
-  const look = () => {
-    // The frame a service renders in already carries an id built from its
-    // uuid, which is the same id a nested entry is reported under.
-    const element = document.getElementById(`service-frame-${node.uuid}`);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "center" });
-      element.classList.add("hkp-service-card--revealed");
-      setTimeout(
-        () => element.classList.remove("hkp-service-card--revealed"),
-        REVEAL_HIGHLIGHT_MS,
-      );
-      return;
-    }
-    if (performance.now() < deadline) {
-      requestAnimationFrame(look);
-    }
-  };
-  requestAnimationFrame(look);
 }
 
 export default function OverviewView() {
@@ -180,55 +123,10 @@ export default function OverviewView() {
     [theme.runtimeBackgroundColor],
   );
 
-  // What the services report about themselves, which is where a pipeline built
-  // in this session is. Read when the view opens, and again whenever the board
-  // gains or loses a service — the two moments the answer can have changed.
-  const [reported, setReported] = useState<ServicesByRuntime | null>(null);
-  useEffect(() => {
-    if (!visible || !boardContext) {
-      setReported(null);
-      return;
-    }
-    let current = true;
-    readBoardShape({
-      runtimes: boardContext.runtimes,
-      services: boardContext.services,
-      scopes: boardContext.scopes,
-      runtimeApis: boardContext.runtimeApis,
-    })
-      .then((shape) => {
-        if (current) {
-          setReported(shape);
-        }
-      })
-      .catch(() => {
-        // Nothing to show for it: the descriptors below still draw a board.
-      });
-    return () => {
-      current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, boardContext?.runtimes, boardContext?.services]);
-
   // Chosen on the view, and kept in the context so it outlives closing it.
   const layout = overview?.layout ?? "lanes";
 
-  const scene = useMemo(() => {
-    if (!boardContext) {
-      return null;
-    }
-    // The descriptors draw the board straight away; what the services report
-    // replaces them a moment later, and is what carries the nesting.
-    return buildScene(
-      boardContext.runtimes,
-      reported ?? boardContext.services,
-      layout,
-    );
-    // The scene is rebuilt whenever the board's shape changes. Configuration
-    // that leaves the shape alone does not touch these slices, and depending on
-    // the whole context instead would rebuild it on every board render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardContext?.runtimes, boardContext?.services, reported, layout]);
+  const { scene } = useBoardScene(boardContext, visible, layout);
 
   const labelFor = useCallback(
     (key: string) => scene?.byKey.get(key)?.label ?? "Pipeline",
@@ -436,7 +334,16 @@ export default function OverviewView() {
       overview?.hide();
       // Named before the trip, so the way back can say where it goes back from.
       overview?.setRevealed({ uuid: node.uuid, label: node.label });
-      revealService(node, labelFor, navigation);
+      revealService(
+        {
+          uuid: node.uuid,
+          ancestry: node.ancestry,
+          hostLabel: (depth) =>
+            labelFor(keyOf(node.ancestry.slice(0, depth), node.ancestry[depth])),
+          runtimeId: node.runtimeId,
+        },
+        navigation,
+      );
     },
     [overview, labelFor, navigation],
   );
