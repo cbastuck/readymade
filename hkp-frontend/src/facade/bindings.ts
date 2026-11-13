@@ -6,9 +6,10 @@ import {
 } from "./types";
 
 /**
- * What a widget is bound to, and which way: what it **sends to** — a service it
- * configures, asks to process, hands a file, or a facade state key it writes —
- * and what it **shows from** — a service it reads, or a state key it reads.
+ * What a widget is bound to, and which way: what it **acts on** (role
+ * "sends") — a service it configures, asks to process, hands a file, or a
+ * facade state key it writes — and what it is **updated by** (role "shows") —
+ * a service it reads, or a state key it reads.
  *
  * Named from the widget's side. The flow inspector's Input and Output are the
  * service's side, and the two point opposite ways: what a button sends is a
@@ -42,9 +43,16 @@ export type ServiceBinding =
   | { role: "sends"; service: string; verb: "surface" }
   | { role: "shows"; service: string; path?: string; surface?: true };
 
+/**
+ * A facade state key a widget touches. `access` is what it does to the key;
+ * `role` is which side it is listed on. The two differ for a value an action
+ * reads as it runs — a `{ "$state": … }` in a payload — which the widget does
+ * not show but sends on: it reads the key, and is listed under what it acts on.
+ */
 export type StateBinding =
-  | { role: "sends"; state: string }
-  | { role: "shows"; state: string };
+  | { role: "sends"; state: string; access: "writes" }
+  | { role: "sends"; state: string; access: "reads" }
+  | { role: "shows"; state: string; access: "reads" };
 
 export type Binding = ServiceBinding | StateBinding;
 
@@ -144,7 +152,11 @@ function isReference(name: string): boolean {
   return name.endsWith("ServiceUuid");
 }
 
-/** Only the state a value reads — nothing in it is an address. */
+/**
+ * Only the state a value an action carries reads — nothing in it is an
+ * address. Read when the action runs and sent on, so listed with what the
+ * widget acts on.
+ */
 function collectStateReads(value: unknown, out: Binding[]): void {
   if (Array.isArray(value)) {
     value.forEach((entry) => collectStateReads(entry, out));
@@ -155,7 +167,7 @@ function collectStateReads(value: unknown, out: Binding[]): void {
   }
   const key = stateKeyOf(value);
   if (key !== undefined) {
-    out.push({ role: "shows", state: key });
+    out.push({ role: "sends", state: key, access: "reads" });
     return;
   }
   Object.values(value).forEach((entry) => collectStateReads(entry, out));
@@ -177,7 +189,7 @@ function collectAction(action: WidgetAction, out: Binding[]): void {
       collectStateReads(action.payload, out);
       return;
     case "set-state":
-      out.push({ role: "sends", state: action.key });
+      out.push({ role: "sends", state: action.key, access: "writes" });
       collectStateReads(action.value, out);
       return;
     case "confirm":
@@ -205,7 +217,8 @@ function collect(value: unknown, name: string, out: Binding[]): void {
 
   const stateKey = stateKeyOf(value);
   if (stateKey !== undefined) {
-    out.push({ role: "shows", state: stateKey });
+    // A value the widget shows — its `value`, a container's `summary`.
+    out.push({ role: "shows", state: stateKey, access: "reads" });
     return;
   }
 
@@ -296,6 +309,7 @@ export function widgetBindings(item: LayoutItem): Binding[] {
         typeof node.selectionState === "string"
           ? node.selectionState
           : DEFAULT_SELECTION_STATE,
+      access: "writes",
     });
   }
 
@@ -308,7 +322,7 @@ export function widgetBindings(item: LayoutItem): Binding[] {
       // items are data; only a repeat reading its items from state binds here.
       const itemsKey = stateKeyOf(entry);
       if (itemsKey !== undefined) {
-        out.push({ role: "shows", state: itemsKey });
+        out.push({ role: "shows", state: itemsKey, access: "reads" });
       }
       continue;
     }
@@ -449,7 +463,7 @@ export function facadeBindings(facade: FacadeDescriptor): FacadeBindings {
         continue;
       }
       const list =
-        binding.role === "sends"
+        binding.access === "writes"
           ? entry(binding.state).writers
           : entry(binding.state).readers;
       if (!list.some((known) => siteKey(known) === siteKey(site))) {

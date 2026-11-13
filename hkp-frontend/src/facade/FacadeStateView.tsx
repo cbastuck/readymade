@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 
 import { timeOf } from "hkp-frontend/src/ui-components/service/flowRecords";
 import { BindingSite, FacadeBindings } from "./bindings";
+import { describeValue } from "./describeValue";
 import { useFacadeState } from "./FacadeStateContext";
 import { SiteLinks, siteLabel } from "./panels/BindingRows";
 
@@ -16,19 +17,7 @@ import { SiteLinks, siteLabel } from "./panels/BindingRows";
  * editor's state panel.
  */
 
-/** A value as the view shows it: short, and saying when there is none. */
-export function describeValue(value: unknown): string {
-  if (value === undefined) {
-    return "not set";
-  }
-  let text: string;
-  try {
-    text = JSON.stringify(value) ?? String(value);
-  } catch {
-    text = String(value);
-  }
-  return text.length > 160 ? `${text.slice(0, 159)}…` : text;
-}
+export { describeValue };
 
 /** Every key worth listing: those the facade names, holds, or was written. */
 export function stateKeys(

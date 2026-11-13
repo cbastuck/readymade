@@ -81,28 +81,45 @@ afterEach(() => {
 });
 
 describe("bindings in the facade editor", () => {
-  it("opens on the facade itself, with what it runs on open", async () => {
+  it("opens on its panels, and lists what it runs on open under Actions and Updates", async () => {
     renderEditor();
-    expect(row(/^Facade$/).getAttribute("aria-selected")).toBe("true");
-    const facadeSection = screen.getByRole("region", { name: "Facade bindings" });
-    expect(within(facadeSection).getByRole("tab", { name: /Runs on open/ })).toBeTruthy();
+    expect(row(/^Panels$/).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(row(/^Actions and Updates$/));
+    const facadeSection = screen.getByRole("region", { name: "Actions and updates" });
+    expect(within(facadeSection).getByRole("tab", { name: /^Actions/ })).toBeTruthy();
     expect(within(facadeSection).queryByRole("tab", { name: /State/ })).toBeNull();
     expect(await within(facadeSection).findByText("Browser › Greeter")).toBeTruthy();
   });
 
-  it("shows a selected widget's bindings beside its properties", async () => {
+  it("shows a selected widget's properties, and its bindings under tabs beside them", async () => {
     renderEditor();
     fireEvent.click(row(/Greet$/));
-    const section = screen.getByRole("region", { name: "Bindings" });
-    expect(within(section).getByText("process")).toBeTruthy();
-    expect(await within(section).findByText("Browser › Greeter")).toBeTruthy();
+    const section = screen.getByRole("region", { name: "Selected element" });
+    const tabs = within(section).getAllByRole("tab").map((tab) => tab.textContent);
+    expect(tabs).toEqual(["Properties", "Acts on2", "Updated by0"]);
+    expect(within(section).getByRole("tabpanel", { name: "Properties" })).toBeTruthy();
+    expect(within(section).getByText("label")).toBeTruthy();
+
+    fireEvent.click(within(section).getByRole("tab", { name: /Acts on/ }));
+    const list = within(section).getByRole("tabpanel", { name: "Acts on" });
+    expect(within(list).getByText("process")).toBeTruthy();
+    expect(await within(list).findByText("Browser › Greeter")).toBeTruthy();
+  });
+
+  it("stays on the chosen tab as another element is selected", () => {
+    renderEditor();
+    fireEvent.click(row(/Greet$/));
+    fireEvent.click(screen.getByRole("tab", { name: /Acts on/ }));
+    fireEvent.click(row(/Your name/));
+    expect(screen.getByRole("tabpanel", { name: "Acts on" })).toBeTruthy();
+    expect(screen.getByText("writes facade state")).toBeTruthy();
   });
 
   it("selects the other widget of a state key rather than scrolling to it", () => {
     renderEditor();
     fireEvent.click(row(/Greet$/));
-    const section = screen.getByRole("region", { name: "Bindings" });
-    fireEvent.click(within(section).getByRole("tab", { name: /Shows from/ }));
+    const section = screen.getByRole("region", { name: "Selected element" });
+    fireEvent.click(within(section).getByRole("tab", { name: /Acts on/ }));
     fireEvent.click(within(section).getByRole("button", { name: "Your name (text-input)" }));
     expect(row(/Your name/).getAttribute("aria-selected")).toBe("true");
   });
@@ -110,7 +127,8 @@ describe("bindings in the facade editor", () => {
   it("brings the board on screen before showing a service in it", async () => {
     renderEditor();
     fireEvent.click(row(/Greet$/));
-    const section = screen.getByRole("region", { name: "Bindings" });
+    const section = screen.getByRole("region", { name: "Selected element" });
+    fireEvent.click(within(section).getByRole("tab", { name: /Acts on/ }));
     await within(section).findByText("Browser › Greeter");
     fireEvent.click(within(section).getByRole("button", { name: "Show in board" }));
     expect(setMode).toHaveBeenCalledWith("split");
@@ -153,23 +171,79 @@ describe("a repeat template's widget as a list names it", () => {
   });
 });
 
-describe("the facade editor's panes", () => {
-  it("can be resized between the tree, the element and the state", () => {
+describe("the facade editor's tree", () => {
+  it("lists the panels, the state, and the actions and updates at its root", () => {
     renderEditor();
-    expect(screen.getByRole("separator", { name: "Resize the layout tree" })).toBeTruthy();
-    expect(screen.getByRole("separator", { name: "Resize the facade state" })).toBeTruthy();
+    const roots = screen
+      .getAllByRole("treeitem")
+      .filter((item) => item.classList.contains("hkp-editor-tree-root"))
+      .map((item) => item.textContent?.replace(/[▾▸]/g, "").trim());
+    expect(roots).toEqual(["Panels", "State", "Actions and Updates"]);
   });
 
-  it("keeps the state panel at the height it was dragged to", () => {
+  it("shows a panel's own properties, without its layout", () => {
     renderEditor();
-    const handle = screen.getByRole("separator", { name: "Resize the facade state" });
-    // jsdom lays nothing out, so the editor offers the room the bounds allow.
-    Object.defineProperty(handle.parentElement!, "clientHeight", { value: 600 });
-    // Nothing is laid out, so the first step lands on the smallest a pane may
-    // be, and the next one grows it from there.
-    fireEvent.keyDown(handle, { key: "ArrowUp" });
-    fireEvent.keyDown(handle, { key: "ArrowUp" });
-    const panel = screen.getByRole("region", { name: "Facade state" });
-    expect(panel.style.height).toBe("72px");
+    fireEvent.click(row(/^panel/));
+    const section = screen.getByRole("region", { name: "Panel" });
+    expect(within(section).getByText("id")).toBeTruthy();
+    expect(within(section).queryByText("layout")).toBeNull();
+  });
+
+  it("shows the facade's own settings under Panels, without what has items of its own", () => {
+    renderEditor();
+    const section = screen.getByRole("region", { name: "Facade settings" });
+    expect(within(section).getByText("layout")).toBeTruthy();
+    expect(within(section).queryByText("init")).toBeNull();
+    expect(within(section).queryByText("panels")).toBeNull();
+  });
+
+  it("shows the state in the detail pane when State is selected", () => {
+    renderEditor();
+    fireEvent.click(row(/^State$/));
+    expect(screen.getByRole("region", { name: "Facade state" })).toBeTruthy();
+  });
+
+  it("can be resized between the tree and the selected element", () => {
+    renderEditor();
+    expect(screen.getByRole("separator", { name: "Resize the layout tree" })).toBeTruthy();
+    expect(screen.queryByRole("separator", { name: "Resize the facade state" })).toBeNull();
+  });
+});
+
+describe("editing in the facade editor", () => {
+  it("writes a panel's edited title back into the facade, keeping its layout", () => {
+    let current = facade;
+    render(
+      <FacadeBindingsProvider facade={facade} boardContext={boardContext} badges={false}>
+        <FacadeEditor facade={facade} onChange={(updated) => (current = updated)} />
+      </FacadeBindingsProvider>,
+    );
+    fireEvent.click(row(/^panel/));
+    const section = screen.getByRole("region", { name: "Panel" });
+    const idRow = within(section).getByText("id").closest("tr")!;
+    fireEvent.click(idRow.querySelectorAll("td")[1]);
+    const input = idRow.querySelector("input")!;
+    fireEvent.change(input, { target: { value: "entry" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(current.panels[0].id).toBe("entry");
+    expect(current.panels[0].layout).toBe(facade.panels[0].layout);
+  });
+});
+
+describe("a state binding in the editor", () => {
+  it("says what the key holds now, so state stays in view beside a widget", async () => {
+    const { FacadeStateContext } = await import("../FacadeStateContext");
+    render(
+      <FacadeStateContext.Provider value={{ state: { name: "Ada" }, setState: () => {} }}>
+        <FacadeBindingsProvider facade={facade} boardContext={boardContext} badges={false}>
+          <FacadeEditor facade={facade} onChange={() => {}} />
+        </FacadeBindingsProvider>
+      </FacadeStateContext.Provider>,
+    );
+    fireEvent.click(row(/Greet$/));
+    fireEvent.click(screen.getByRole("tab", { name: /Acts on/ }));
+    const list = screen.getByRole("tabpanel", { name: "Acts on" });
+    expect(within(list).getByText('"Ada"')).toBeTruthy();
   });
 });

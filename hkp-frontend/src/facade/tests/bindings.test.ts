@@ -16,7 +16,7 @@ import type {
 } from "../types";
 
 /**
- * What a widget sends to and shows from.
+ * What a widget acts on and is updated by.
  *
  * One case per widget type. `WIDGET_TYPES` is exhaustive over `FacadeWidget`
  * (the build's type check says so), and the first test below fails for a type
@@ -46,7 +46,7 @@ const cases: Record<
       ],
     },
     bindings: [
-      { role: "sends", state: "name" },
+      { role: "sends", state: "name", access: "writes" },
       { role: "sends", service: "greet", verb: "process" },
     ],
   },
@@ -57,7 +57,7 @@ const cases: Record<
       action: { serviceUuid: "store", configure: { value: "$$input" } },
     },
     bindings: [
-      { role: "shows", state: "draft" },
+      { role: "shows", state: "draft", access: "reads" },
       { role: "sends", service: "store", verb: "configure", keys: ["value"] },
     ],
   },
@@ -84,7 +84,7 @@ const cases: Record<
     },
     bindings: [
       { role: "shows", service: "take-hour", path: "error" },
-      { role: "shows", state: "reason" },
+      { role: "shows", state: "reason", access: "reads" },
     ],
   },
   button: {
@@ -105,7 +105,7 @@ const cases: Record<
     bindings: [
       { role: "shows", service: "mic", path: "isRecording" },
       { role: "sends", service: "book", verb: "process" },
-      { role: "shows", state: "name" },
+      { role: "sends", state: "name", access: "reads" },
     ],
   },
   "qr-code": {
@@ -154,7 +154,7 @@ const cases: Record<
       summary: { $state: "headers" },
       items: [{ type: "canvas", serviceUuid: "inner" }],
     },
-    bindings: [{ role: "shows", state: "headers" }],
+    bindings: [{ role: "shows", state: "headers", access: "reads" }],
   },
   canvas: {
     widget: { serviceUuid: "draw" },
@@ -194,7 +194,7 @@ const cases: Record<
       ],
     },
     bindings: [
-      { role: "sends", state: "selection" },
+      { role: "sends", state: "selection", access: "writes" },
       { role: "shows", service: "rows" },
       { role: "sends", service: "write", verb: "configure", keys: ["set"] },
     ],
@@ -208,7 +208,7 @@ const cases: Record<
         actions: [{ type: "set-state", key: "meeting", value: "{{item.id}}" }],
       },
     },
-    bindings: [{ role: "shows", state: "meetings" }],
+    bindings: [{ role: "shows", state: "meetings", access: "reads" }],
   },
   "audio-player": {
     widget: {
@@ -259,7 +259,7 @@ const cases: Record<
       ],
     },
     bindings: [
-      { role: "sends", state: "article" },
+      { role: "sends", state: "article", access: "writes" },
       { role: "shows", service: "cards" },
       { role: "shows", service: "kept" },
       { role: "sends", service: "move", verb: "process" },
@@ -268,7 +268,7 @@ const cases: Record<
   },
 };
 
-describe("what a widget sends to and shows from", () => {
+describe("what a widget acts on and is updated by", () => {
   it("has a case for every widget type", () => {
     expect(Object.keys(cases).sort()).toEqual([...WIDGET_TYPES].sort());
   });
@@ -302,7 +302,7 @@ describe("what a widget sends to and shows from", () => {
         verb: "configure",
         keys: ["serviceUuid", "source", "who"],
       },
-      { role: "shows", state: "name" },
+      { role: "sends", state: "name", access: "reads" },
     ]);
   });
 
@@ -413,7 +413,7 @@ describe("the facade's own bindings", () => {
         site: { kind: "init", index: 0 },
         bindings: [
           { role: "sends", service: "poll", verb: "configure", keys: ["meeting"] },
-          { role: "shows", state: "meeting" },
+          { role: "sends", state: "meeting", access: "reads" },
         ],
       },
     ]);

@@ -89,19 +89,19 @@ describe("the facade's own badge", () => {
   it("counts what each tab holds", () => {
     renderBadge();
     fireEvent.click(screen.getByRole("button", { name: BADGE }));
-    expect(screen.getByRole("tab", { name: /Runs on open/ }).textContent).toContain("1");
-    expect(screen.getByRole("tab", { name: /Notices from/ }).textContent).toContain("2");
+    expect(screen.getByRole("tab", { name: /^Actions/ }).textContent).toContain("1");
+    expect(screen.getByRole("tab", { name: /^Updates/ }).textContent).toContain("2");
     // "meeting" from the facade, "draft" only from what is held now.
     expect(screen.getByRole("tab", { name: /State/ }).textContent).toContain("2");
   });
 
   it("lists what runs on open, with where it lives and a way to it", async () => {
     renderBadge();
-    openTab(/Runs on open/);
-    const list = screen.getByRole("tabpanel", { name: "Runs on open" });
+    openTab(/^Actions/);
+    const list = screen.getByRole("tabpanel", { name: "Actions" });
     expect(within(list).getByText("configure meeting")).toBeTruthy();
     expect(await within(list).findByText("Node › Poll")).toBeTruthy();
-    expect(within(list).getByText("reads facade state")).toBeTruthy();
+    expect(within(list).getByText("uses facade state")).toBeTruthy();
 
     fireEvent.click(within(list).getByRole("button", { name: "Show in board" }));
     expect(reveal).toHaveBeenCalledWith(
@@ -113,8 +113,8 @@ describe("the facade's own badge", () => {
 
   it("lists each notice's source and what it raises", () => {
     renderBadge();
-    openTab(/Notices from/);
-    const list = screen.getByRole("tabpanel", { name: "Notices from" });
+    openTab(/^Updates/);
+    const list = screen.getByRole("tabpanel", { name: "Updates" });
     expect(within(list).getByText("reads error")).toBeTruthy();
     expect(within(list).getByText("Raises an error toast saying the value")).toBeTruthy();
     expect(within(list).getByText("Raises a success toast: “Saved”")).toBeTruthy();

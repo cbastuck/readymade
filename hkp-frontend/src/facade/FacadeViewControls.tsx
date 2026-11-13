@@ -9,7 +9,7 @@
  * Two controls, because they are drawn in two groups: the layout is a choice
  * among three and has an outline to itself, while the editor is one of the
  * things shown beside or in place of the board and shares its outline with
- * the overview and the assets.
+ * Board Assist and the assets.
  *
  * A board with no facade has nothing to choose between, so the layout control
  * is not there at all — a board without one is where a facade is started, not

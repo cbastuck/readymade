@@ -15,6 +15,8 @@ import {
 } from "../bindings";
 import { useFacadeBindings } from "../FacadeBindingsContext";
 import { useFacadeView } from "../FacadeViewContext";
+import { useFacadeState } from "../FacadeStateContext";
+import { describeValue } from "../describeValue";
 import { ServiceLocation, revealTargetOf } from "../serviceLocation";
 
 /**
@@ -25,7 +27,11 @@ import { ServiceLocation, revealTargetOf } from "../serviceLocation";
 /** What a binding does, as a row's first line says it. */
 export function verbOf(binding: Binding): string {
   if (!isServiceBinding(binding)) {
-    return binding.role === "sends" ? "writes facade state" : "reads facade state";
+    if (binding.access === "writes") {
+      return "writes facade state";
+    }
+    // Read as an action runs and sent on, rather than shown.
+    return binding.role === "sends" ? "uses facade state" : "reads facade state";
   }
   if (binding.role === "shows") {
     if (binding.surface) {
@@ -74,7 +80,8 @@ export function OverlayTabs<T extends string>({
   active,
   onSelect,
 }: {
-  tabs: { id: T; title: string; count: number }[];
+  // A count is left out where the tab is not a list — an editor's Properties.
+  tabs: { id: T; title: string; count?: number }[];
   active: T;
   onSelect: (tab: T) => void;
 }) {
@@ -89,7 +96,9 @@ export function OverlayTabs<T extends string>({
           onClick={() => onSelect(tab.id)}
         >
           {tab.title}
-          <span className="hkp-binding-count">{tab.count}</span>
+          {tab.count !== undefined && (
+            <span className="hkp-binding-count">{tab.count}</span>
+          )}
         </button>
       ))}
     </div>
@@ -141,7 +150,7 @@ export function ServiceRow({
     onDone();
   };
 
-  // A "Sends to" binding is the service's input; a "Shows from" its output.
+  // An "Acts on" binding is the service's input; an "Updated by" its output.
   const side: FlowSide = binding.role === "sends" ? "input" : "output";
 
   return (
@@ -258,26 +267,30 @@ export function StateRow({
   onReveal: (site: BindingSite) => void;
 }) {
   const api = useFacadeBindings();
+  const { state: values } = useFacadeState();
   const entry = api?.index.state[binding.state];
   // A key written here is read elsewhere, and the other way round.
-  const others = (
-    (binding.role === "sends" ? entry?.readers : entry?.writers) ?? []
-  ).filter((site) => siteKey(site) !== siteKey(own));
+  const writes = binding.access === "writes";
+  const others = ((writes ? entry?.readers : entry?.writers) ?? []).filter(
+    (site) => siteKey(site) !== siteKey(own),
+  );
 
   return (
     <li className="hkp-binding-row">
       <div className="hkp-binding-verb">{verbOf(binding)}</div>
       <div className="hkp-binding-name">“{binding.state}”</div>
-      {binding.role === "shows" && entry?.seeded && (
+      {/* What it holds now, so state stays in view beside a widget's own. */}
+      <div className="hkp-binding-value">{describeValue(values[binding.state])}</div>
+      {!writes && entry?.seeded && (
         <div className="hkp-binding-note">
           Starts with the facade's initial state.
         </div>
       )}
       <SiteLinks
-        title={binding.role === "sends" ? "Read by" : "Written by"}
+        title={writes ? "Read by" : "Written by"}
         sites={others}
         empty={
-          binding.role === "sends" ? (
+          writes ? (
             "No other widget reads it."
           ) : entry?.seeded ? (
             "No widget writes it."
@@ -291,16 +304,73 @@ export function StateRow({
   );
 }
 
-type WidgetTab = "sends" | "shows";
+export type WidgetTab = "sends" | "shows";
 
-const WIDGET_TAB_TITLES: Record<WidgetTab, string> = {
-  sends: "Sends to",
-  shows: "Shows from",
+export const WIDGET_TAB_TITLES: Record<WidgetTab, string> = {
+  sends: "Acts on",
+  shows: "Updated by",
 };
 
 /**
- * What one widget sends to and shows from, under two tabs — the widget badge's
- * overlay, and the facade editor's Bindings section.
+ * One side of a widget's bindings — what it sends to, or what it shows from —
+ * as a list. Under the badge overlay's tabs, and under the facade editor's.
+ */
+export function BindingList({
+  bindings,
+  role,
+  site,
+  onDone,
+  onRevealSite,
+}: {
+  bindings: Binding[];
+  role: WidgetTab;
+  site: BindingSite;
+  // Called once a row has taken the person somewhere else.
+  onDone: () => void;
+  // How another widget is brought into view, from a state binding's links.
+  onRevealSite: (site: BindingSite) => void;
+}) {
+  const api = useFacadeBindings();
+  const shown = bindings.filter((b) => b.role === role);
+  return (
+    <ul
+      className="hkp-binding-list"
+      role="tabpanel"
+      aria-label={WIDGET_TAB_TITLES[role]}
+    >
+      {shown.length === 0 && (
+        <li className="hkp-binding-empty">
+          {role === "sends" ? "Acts on nothing." : "Updated by nothing."}
+        </li>
+      )}
+      {api &&
+        shown.map((binding, i) =>
+          isServiceBinding(binding) ? (
+            <ServiceRow
+              key={i}
+              binding={binding}
+              location={api.locate(binding.service)}
+              onDone={onDone}
+            />
+          ) : (
+            <StateRow key={i} binding={binding} own={site} onReveal={onRevealSite} />
+          ),
+        )}
+    </ul>
+  );
+}
+
+/** How many of a widget's bindings go each way. */
+export function bindingCounts(bindings: Binding[]): Record<WidgetTab, number> {
+  return {
+    sends: bindings.filter((b) => b.role === "sends").length,
+    shows: bindings.filter((b) => b.role === "shows").length,
+  };
+}
+
+/**
+ * What one widget acts on and is updated by, under two tabs — the widget badge's
+ * overlay.
  */
 export function WidgetBindings({
   bindings,
@@ -315,13 +385,11 @@ export function WidgetBindings({
   // How another widget is brought into view, from a state binding's links.
   onRevealSite: (site: BindingSite) => void;
 }) {
-  const api = useFacadeBindings();
-  const sends = bindings.filter((b) => b.role === "sends");
-  const shows = bindings.filter((b) => b.role === "shows");
+  const counts = bindingCounts(bindings);
   const [chosen, setTab] = useState<WidgetTab | null>(null);
   // Until one is chosen, the tab that has something in it.
-  const tab = chosen ?? (sends.length > 0 || shows.length === 0 ? "sends" : "shows");
-  const shown = tab === "sends" ? sends : shows;
+  const tab =
+    chosen ?? (counts.sends > 0 || counts.shows === 0 ? "sends" : "shows");
 
   return (
     <>
@@ -329,40 +397,18 @@ export function WidgetBindings({
         tabs={(["sends", "shows"] as const).map((id) => ({
           id,
           title: WIDGET_TAB_TITLES[id],
-          count: (id === "sends" ? sends : shows).length,
+          count: counts[id],
         }))}
         active={tab}
         onSelect={setTab}
       />
-      <ul
-        className="hkp-binding-list"
-        role="tabpanel"
-        aria-label={WIDGET_TAB_TITLES[tab]}
-      >
-        {shown.length === 0 && (
-          <li className="hkp-binding-empty">
-            {tab === "sends" ? "Sends to nothing." : "Shows from nothing."}
-          </li>
-        )}
-        {api &&
-          shown.map((binding, i) =>
-            isServiceBinding(binding) ? (
-              <ServiceRow
-                key={i}
-                binding={binding}
-                location={api.locate(binding.service)}
-                onDone={onDone}
-              />
-            ) : (
-              <StateRow
-                key={i}
-                binding={binding}
-                own={site}
-                onReveal={onRevealSite}
-              />
-            ),
-          )}
-      </ul>
+      <BindingList
+        bindings={bindings}
+        role={tab}
+        site={site}
+        onDone={onDone}
+        onRevealSite={onRevealSite}
+      />
     </>
   );
 }

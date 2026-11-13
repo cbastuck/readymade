@@ -46,12 +46,14 @@ function Facade() {
 describe("facade state in the editor", () => {
   it("says so while the facade holds none", () => {
     render(<Facade />);
+    fireEvent.click(within(screen.getByRole("tree")).getByText("State"));
     const panel = screen.getByRole("region", { name: "Facade state" });
     expect(within(panel).getByText("Nothing in facade state yet.")).toBeTruthy();
   });
 
   it("follows what widgets publish, as they publish it", () => {
     render(<Facade />);
+    fireEvent.click(within(screen.getByRole("tree")).getByText("State"));
     const panel = screen.getByRole("region", { name: "Facade state" });
     const value = (key: string) =>
       panel.querySelector(`[data-state-key="${key}"] .hkp-binding-value`)!

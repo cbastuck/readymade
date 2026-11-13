@@ -8,7 +8,7 @@ import type { FacadeDescriptor, FacadePanel } from "../types";
 
 /**
  * The badge on a facade widget, in the board + facade view: what the widget
- * sends to and shows from, and the way from each binding to the board.
+ * acts on and is updated by, and the way from each binding to the board.
  */
 
 const reveal = vi.fn();
@@ -56,7 +56,7 @@ const panel = {
 
 const facade: FacadeDescriptor = { layout: "single", panels: [panel] };
 
-const BADGE = "What this sends to and shows from";
+const BADGE = "What this acts on and is updated by";
 
 function renderPanel(enabled = true) {
   return render(
@@ -102,19 +102,20 @@ describe("a facade widget's binding badge", () => {
     renderPanel();
     fireEvent.click(badgeOf("form/1"));
 
-    const list = screen.getByRole("tabpanel", { name: "Sends to" });
+    const list = screen.getByRole("tabpanel", { name: "Acts on" });
     expect(within(list).getByText("process")).toBeTruthy();
     expect(await within(list).findByText("Greeter")).toBeTruthy();
     expect(within(list).getByText("Browser › Greeter")).toBeTruthy();
   });
 
-  it("lists the state a widget shows from, with the widgets writing it", () => {
+  it("lists the state a widget's action uses with what it acts on, and the widgets writing it", () => {
     renderPanel();
     fireEvent.click(badgeOf("form/1"));
-    fireEvent.click(screen.getByRole("tab", { name: /Shows from/ }));
 
-    const list = screen.getByRole("tabpanel", { name: "Shows from" });
-    expect(within(list).getByText("reads facade state")).toBeTruthy();
+    // Read when the button is pressed and sent on, not shown: so with what it
+    // acts on.
+    const list = screen.getByRole("tabpanel", { name: "Acts on" });
+    expect(within(list).getByText("uses facade state")).toBeTruthy();
     expect(within(list).getByText(/Written by/)).toBeTruthy();
     expect(
       within(list).getByRole("button", { name: "Your name (text-input)" }),
@@ -152,7 +153,6 @@ describe("a facade widget's binding badge", () => {
   it("brings the widget writing a state key into view", async () => {
     renderPanel();
     fireEvent.click(badgeOf("form/1"));
-    fireEvent.click(screen.getByRole("tab", { name: /Shows from/ }));
     fireEvent.click(screen.getByRole("button", { name: "Your name (text-input)" }));
 
     const writer = document.querySelector('[data-facade-site="form/0"]') as HTMLElement;

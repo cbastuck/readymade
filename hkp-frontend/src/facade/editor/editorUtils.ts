@@ -186,3 +186,26 @@ export function pathOfSite(
   }
   return getAtPath(facade, path) ? path : null;
 }
+
+/**
+ * What the editor has selected: one of the tree's root items, a panel, or a
+ * node of a panel's layout.
+ */
+export type EditorSelection =
+  | { kind: "panels" }
+  | { kind: "state" }
+  | { kind: "actions" }
+  | { kind: "panel"; index: number }
+  | { kind: "node"; path: EditorPath };
+
+/** A key that is the same for the same selection, for effects and React keys. */
+export function selectionKey(selection: EditorSelection): string {
+  switch (selection.kind) {
+    case "panel":
+      return `panel:${selection.index}`;
+    case "node":
+      return `node:${selection.path.join(".")}`;
+    default:
+      return selection.kind;
+  }
+}
