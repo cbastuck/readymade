@@ -6,9 +6,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "hkp-frontend/src/ui-components/primitives/popover";
-import { Binding, BindingSite, isServiceBinding } from "../bindings";
+import { Binding, BindingSite } from "../bindings";
 import { useFacadeBindings } from "../FacadeBindingsContext";
-import { OverlayTabs, ServiceRow, StateRow } from "./BindingRows";
+import { WidgetBindings } from "./BindingRows";
 
 /**
  * The corner badge on a facade widget, and the overlay it opens: what the
@@ -20,13 +20,6 @@ import { OverlayTabs, ServiceRow, StateRow } from "./BindingRows";
  * focused, and always shown on a screen with no hover (see index.css). Only the
  * badge itself takes clicks, so a canvas or a pad under it keeps working.
  */
-
-type Tab = "sends" | "shows";
-
-const TAB_TITLES: Record<Tab, string> = {
-  sends: "Sends to",
-  shows: "Shows from",
-};
 
 const BADGE_SIZE = 18;
 /** Elements measured by their own box, whatever is inside them. */
@@ -157,11 +150,8 @@ export function BindingsBadge({
   const [open, setOpen] = useState(false);
   const badgeRef = useRef<HTMLButtonElement>(null);
   const corner = useContentCorner(badgeRef);
-  const sends = bindings.filter((b) => b.role === "sends");
-  const shows = bindings.filter((b) => b.role === "shows");
-  const [tab, setTab] = useState<Tab>(sends.length > 0 ? "sends" : "shows");
 
-  if (!api) {
+  if (!api?.badges) {
     return null;
   }
 
@@ -171,8 +161,6 @@ export function BindingsBadge({
     }
     setOpen(next);
   };
-
-  const shown = tab === "sends" ? sends : shows;
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -193,42 +181,15 @@ export function BindingsBadge({
         align="end"
         style={{ width: "min(360px, 92vw)", padding: 0 }}
       >
-        <OverlayTabs
-          tabs={(["sends", "shows"] as const).map((id) => ({
-            id,
-            title: TAB_TITLES[id],
-            count: (id === "sends" ? sends : shows).length,
-          }))}
-          active={tab}
-          onSelect={setTab}
+        <WidgetBindings
+          bindings={bindings}
+          site={site}
+          onDone={() => setOpen(false)}
+          onRevealSite={(other) => {
+            setOpen(false);
+            api.revealWidget(other);
+          }}
         />
-        <ul className="hkp-binding-list" role="tabpanel" aria-label={TAB_TITLES[tab]}>
-          {shown.length === 0 && (
-            <li className="hkp-binding-empty">
-              {tab === "sends" ? "Sends to nothing." : "Shows from nothing."}
-            </li>
-          )}
-          {shown.map((binding, i) =>
-            isServiceBinding(binding) ? (
-              <ServiceRow
-                key={i}
-                binding={binding}
-                location={api.locate(binding.service)}
-                onDone={() => setOpen(false)}
-              />
-            ) : (
-              <StateRow
-                key={i}
-                binding={binding}
-                own={site}
-                onReveal={(other) => {
-                  setOpen(false);
-                  api.revealWidget(other);
-                }}
-              />
-            ),
-          )}
-        </ul>
       </PopoverContent>
     </Popover>
   );

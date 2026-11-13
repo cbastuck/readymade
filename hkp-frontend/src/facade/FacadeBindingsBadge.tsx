@@ -22,9 +22,9 @@ import { FacadeStateView, stateKeys } from "./FacadeStateView";
  * the one view where a binding has somewhere to point.
  */
 
-type Tab = "init" | "notices" | "state";
+export type FacadeTab = "init" | "notices" | "state";
 
-const TAB_TITLES: Record<Tab, string> = {
+const TAB_TITLES: Record<FacadeTab, string> = {
   init: "Runs on open",
   notices: "Notices from",
   state: "State",
@@ -34,11 +34,33 @@ function toastOf(tone: "info" | "success" | "error"): string {
   return tone === "success" ? "a success toast" : `an ${tone} toast`;
 }
 
-export function FacadeBindingsBadge() {
+/**
+ * The facade's own bindings under tabs — the divider badge's overlay, and the
+ * facade editor's view of the facade as a whole, which leaves the State tab to
+ * the editor's state panel.
+ */
+export function FacadeBindings({
+  tabs,
+  onDone,
+  onRevealSite,
+}: {
+  tabs: FacadeTab[];
+  // Called once a row has taken the person somewhere else.
+  onDone: () => void;
+  // How a widget is brought into view, from a state key's links.
+  onRevealSite: (site: BindingSite) => void;
+}) {
   const api = useFacadeBindings();
   const { state: values, history } = useFacadeState();
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("state");
+  const [chosen, setTab] = useState<FacadeTab | null>(null);
+  // State where it is offered — the badge's most looked-at tab — and
+  // otherwise the first.
+  const tab =
+    chosen && tabs.includes(chosen)
+      ? chosen
+      : tabs.includes("state")
+        ? "state"
+        : tabs[0];
 
   if (!api) {
     return null;
@@ -48,11 +70,94 @@ export function FacadeBindingsBadge() {
   // written by a widget whose key is made up as it runs.
   const keys = stateKeys(index, values, history);
 
-  const counts: Record<Tab, number> = {
+  const counts: Record<FacadeTab, number> = {
     init: index.init.length,
     notices: index.notices.length,
     state: keys.length,
   };
+
+  return (
+    <>
+      <OverlayTabs
+        tabs={tabs.map((id) => ({
+          id,
+          title: TAB_TITLES[id],
+          count: counts[id],
+        }))}
+        active={tab}
+        onSelect={setTab}
+      />
+      <div role="tabpanel" aria-label={TAB_TITLES[tab]}>
+        {tab === "init" && (
+          <ul className="hkp-binding-list">
+            {index.init.length === 0 ? (
+              <li className="hkp-binding-empty">Nothing runs when it opens.</li>
+            ) : (
+              index.init.flatMap(({ site, bindings }) =>
+                bindings.map((binding, i) => {
+                  const key = `${"index" in site ? site.index : 0}-${i}`;
+                  return isServiceBinding(binding) ? (
+                    <ServiceRow
+                      key={key}
+                      binding={binding}
+                      location={api.locate(binding.service)}
+                      onDone={onDone}
+                    />
+                  ) : (
+                    <StateRow
+                      key={key}
+                      binding={binding}
+                      own={site}
+                      onReveal={onRevealSite}
+                    />
+                  );
+                }),
+              )
+            )}
+          </ul>
+        )}
+        {tab === "notices" && (
+          <ul className="hkp-binding-list">
+            {index.notices.length === 0 ? (
+              <li className="hkp-binding-empty">It raises no notices.</li>
+            ) : (
+              index.notices.flatMap(({ bindings, tone, message }, n) =>
+                bindings.filter(isServiceBinding).map((binding, i) => (
+                  <ServiceRow
+                    key={`${n}-${i}`}
+                    binding={binding}
+                    location={api.locate(binding.service)}
+                    note={
+                      message
+                        ? `Raises ${toastOf(tone)}: “${message}”`
+                        : `Raises ${toastOf(tone)} saying the value`
+                    }
+                    onDone={onDone}
+                  />
+                )),
+              )
+            )}
+          </ul>
+        )}
+        {tab === "state" && (
+          <FacadeStateView
+            index={index}
+            onReveal={onRevealSite}
+            empty="The facade keeps no state."
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
+export function FacadeBindingsBadge() {
+  const api = useFacadeBindings();
+  const [open, setOpen] = useState(false);
+
+  if (!api?.badges) {
+    return null;
+  }
 
   const onOpenChange = (next: boolean) => {
     if (next) {
@@ -60,11 +165,6 @@ export function FacadeBindingsBadge() {
     }
     setOpen(next);
   };
-  const reveal = (site: BindingSite) => {
-    setOpen(false);
-    api.revealWidget(site);
-  };
-  const done = () => setOpen(false);
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -86,74 +186,14 @@ export function FacadeBindingsBadge() {
         align="end"
         style={{ width: "min(400px, 92vw)", padding: 0 }}
       >
-        <OverlayTabs
-          tabs={(["init", "notices", "state"] as const).map((id) => ({
-            id,
-            title: TAB_TITLES[id],
-            count: counts[id],
-          }))}
-          active={tab}
-          onSelect={setTab}
+        <FacadeBindings
+          tabs={["init", "notices", "state"]}
+          onDone={() => setOpen(false)}
+          onRevealSite={(site) => {
+            setOpen(false);
+            api.revealWidget(site);
+          }}
         />
-        <div role="tabpanel" aria-label={TAB_TITLES[tab]}>
-        {tab !== "state" && (
-        <ul className="hkp-binding-list">
-          {tab === "init" &&
-            (index.init.length === 0 ? (
-              <li className="hkp-binding-empty">Nothing runs when it opens.</li>
-            ) : (
-              index.init.flatMap(({ site, bindings }) =>
-                bindings.map((binding, i) =>
-                  isServiceBinding(binding) ? (
-                    <ServiceRow
-                      key={`${site.kind}-${"index" in site ? site.index : 0}-${i}`}
-                      binding={binding}
-                      location={api.locate(binding.service)}
-                      onDone={done}
-                    />
-                  ) : (
-                    <StateRow
-                      key={`${"index" in site ? site.index : 0}-${i}`}
-                      binding={binding}
-                      own={site}
-                      onReveal={reveal}
-                    />
-                  ),
-                ),
-              )
-            ))}
-
-          {tab === "notices" &&
-            (index.notices.length === 0 ? (
-              <li className="hkp-binding-empty">It raises no notices.</li>
-            ) : (
-              index.notices.flatMap(({ bindings, tone, message }, n) =>
-                bindings.filter(isServiceBinding).map((binding, i) => (
-                  <ServiceRow
-                    key={`${n}-${i}`}
-                    binding={binding}
-                    location={api.locate(binding.service)}
-                    note={
-                      message
-                        ? `Raises ${toastOf(tone)}: “${message}”`
-                        : `Raises ${toastOf(tone)} saying the value`
-                    }
-                    onDone={done}
-                  />
-                )),
-              )
-            ))}
-
-        </ul>
-        )}
-        {tab === "state" && (
-          <FacadeStateView
-            index={index}
-            onReveal={reveal}
-            empty="The facade keeps no state."
-          />
-        )}
-        </div>
       </PopoverContent>
     </Popover>
   );

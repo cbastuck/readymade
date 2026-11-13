@@ -66,7 +66,7 @@ function renderBadge({
 } = {}) {
   return render(
     <FacadeStateContext.Provider value={{ state: values, setState: () => {} }}>
-      <FacadeBindingsProvider facade={facade} boardContext={boardContext} enabled={enabled}>
+      <FacadeBindingsProvider facade={facade} boardContext={boardContext} badges={enabled}>
         <FacadeBindingsBadge />
       </FacadeBindingsProvider>
     </FacadeStateContext.Provider>,

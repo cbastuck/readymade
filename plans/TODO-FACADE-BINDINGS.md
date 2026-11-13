@@ -11,7 +11,7 @@ This plan makes the relation between a widget and the services it touches
 discoverable **from the facade itself**, in both directions, plus the facade
 state that carries values between widgets.
 
-Raised 2026-11-13. Steps 1–6 built 2026-11-13; steps 7–9 open.
+Raised 2026-11-13. Steps 1–6 and 6b built 2026-11-13; steps 7–9 open.
 
 ---
 
@@ -356,6 +356,56 @@ playground.
   actions drop that argument (`useWidgetActions`).
 - A value reads as JSON, cut at 160 characters, and "not set" when it has
   none. The editor previously showed "—" for that.
+
+### 6b. Bindings in the facade editor
+
+Added 2026-11-13, after step 6. The editor's state panel was there for
+completeness, and the editor now looks dated beside the overlays. The badges
+and overlays stay. The editor gains the same information where someone
+building the facade already is:
+
+- the selected widget's bindings ("Sends to" / "Shows from") in the editor,
+  drawn with the overlay's rows (`BindingRows.tsx`)
+- the state panel fitted to the editor in the overlay's style (it already
+  renders `FacadeStateView` since step 6)
+- Show in board and Inspect from the editor switch to the board + facade view
+  first when the board is not on screen, so the button always leads somewhere
+
+**Built 2026-11-13**, tested in `facade/tests/editorBindings.test.tsx`, and
+looked at in the real playground on the notes demo board.
+
+- The bindings context is now present wherever a facade is rendered. Only the
+  badges depend on the board + facade view (`badges`). The editor reads the
+  same index, which `FacadeRenderer` builds from the draft facade.
+- The tree's first row is **Facade**, selected by default. It shows Runs on
+  open and Notices from; the State tab is left to the state panel below. A
+  selected node shows its properties, then a **Bindings** card. Leaves always
+  get one; containers only when they bind something (`summary`). Nodes that
+  bind are marked in the tree with the badge's link mark.
+- The overlays' contents became components the editor embeds:
+  `WidgetBindings` (in `BindingRows.tsx`) and `FacadeBindings` (in
+  `FacadeBindingsBadge.tsx`). In the editor, a state key's other widgets are
+  selected in the tree rather than scrolled to (`siteOfPath` / `pathOfSite` in
+  `editorUtils.ts`).
+- Show in board and Inspect switch the view to facade + board when the board
+  is hidden. This holds for the badges too.
+- Styling: the tree, sections, property table and state panel use the
+  overlays' surfaces (`.hkp-editor-*` in `index.css`). When the editor is
+  narrower than 560px (its default is 380px), the tree stacks above the
+  details instead of squeezing the property table into a sliver. This uses a
+  container query on the editor.
+- **Resizable panes.** The sidebar's `PaneSplitter` moved to
+  `ui-components/PaneSplitter.tsx`, which the sidebar and the editor share. It
+  takes a `label`, which pane it resizes (`above` / `below`), and min and max
+  heights. The editor has two splitters: tree / element (only while the tree
+  is stacked) and element / state. Their heights are remembered in
+  localStorage (`hkp-facade-editor-tree-height`,
+  `hkp-facade-editor-state-height`), and a double-click resets them. The
+  splitters now separate the panes, so the element and state sections lost
+  their rounded frame.
+- A repeat template's widget is named in lists by what each item shows:
+  `{{item.title}}` reads as `‹title›`. The tree still shows the template as
+  written.
 
 ### 7. Origin on runs
 

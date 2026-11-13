@@ -25,10 +25,11 @@ import { FacadeDescriptor } from "./types";
  * and reads each state key), where a service lives on the board, and how to
  * bring another widget into view.
  *
- * Present only while the facade and the board's runtimes are on screen
- * together, which is the one view where a binding has somewhere to point: the
- * fullscreen facade is an app, and a member's view holds no board. A widget
- * finding no context draws no badge.
+ * Available wherever a facade is rendered, for the facade editor to use too.
+ * The badges are drawn only while the facade and the board's runtimes are on
+ * screen together (`badges`), which is the one view where a badge has
+ * somewhere to point at a glance: the fullscreen facade is an app, and a
+ * member's view holds no board.
  *
  * The board's shape — what tells a nested service from a missing one — is read
  * once for the whole facade rather than per widget, and only once an overlay
@@ -36,6 +37,8 @@ import { FacadeDescriptor } from "./types";
  * overlay opening reads it again, since a pipeline built since changes it.
  */
 export type FacadeBindingsApi = {
+  /** Whether badges are drawn on the widgets and the divider. */
+  badges: boolean;
   index: FacadeBindings;
   locate: (address: string) => ServiceLocation;
   /** Asks for the board's shape to be read, or read again. */
@@ -61,18 +64,19 @@ export const SITE_ATTRIBUTE = "data-facade-site";
 export function FacadeBindingsProvider({
   facade,
   boardContext,
-  enabled,
+  badges,
   children,
 }: {
   facade: FacadeDescriptor;
   boardContext: BoardContextState;
-  enabled: boolean;
+  badges: boolean;
   children: ReactNode;
 }) {
   const [generation, setGeneration] = useState(0);
+  // Read once something has asked where a service lives, and again each time.
   const { scene, settled } = useBoardScene(
     boardContext,
-    enabled && generation > 0,
+    generation > 0,
     "lanes",
     generation,
   );
@@ -127,9 +131,8 @@ export function FacadeBindingsProvider({
   );
 
   const value = useMemo(
-    () =>
-      enabled ? { index, locate, refreshLocations, revealWidget } : null,
-    [enabled, index, locate, refreshLocations, revealWidget],
+    () => ({ badges, index, locate, refreshLocations, revealWidget }),
+    [badges, index, locate, refreshLocations, revealWidget],
   );
 
   return (

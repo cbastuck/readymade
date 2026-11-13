@@ -63,7 +63,7 @@ function renderPanel(enabled = true) {
     <FacadeBindingsProvider
       facade={facade}
       boardContext={boardContext}
-      enabled={enabled}
+      badges={enabled}
     >
       <GenericPanel panel={panel} boardContext={boardContext} showTitle={false} />
     </FacadeBindingsProvider>,

@@ -1288,6 +1288,143 @@ blockquote:after {
   font-family: monospace;
 }
 
+/* ── Facade editor ─────────────────────────────────────────────────────────
+   The layout tree, the selected node's properties and bindings, and the
+   facade's state — in the same surfaces the binding overlays use. */
+.hkp-facade-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text, inherit);
+  /* What the narrow layout below is measured against. */
+  container-type: inline-size;
+}
+.hkp-facade-editor-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+/* In a narrow editor the tree goes above the details rather than beside
+   them: side by side, a property table gets a sliver and wraps every value a
+   character at a time. */
+@container (max-width: 560px) {
+  .hkp-facade-editor-main {
+    flex-direction: column;
+  }
+}
+.hkp-facade-editor-detail {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hkp-editor-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  margin: 0 0 6px 2px;
+}
+/* Inside the editor a section is set apart by its title and the splitters
+   between the panes, so it needs no frame of its own. */
+.hkp-editor-card {
+  overflow: hidden;
+}
+table.hkp-editor-card {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.hkp-editor-props td {
+  padding: 5px 10px !important;
+  /* A key beside a long JSON value stays level with its first line. */
+  vertical-align: top !important;
+}
+.hkp-editor-props tr + tr td {
+  border-top: 1px solid var(--border-mid, rgb(0 0 0 / 0.08));
+}
+.hkp-editor-tree {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-mid, rgb(0 0 0 / 0.12));
+  overflow-y: auto;
+  padding: 8px 6px;
+}
+/* Between the tree and the details: only while they are stacked, since side
+   by side the tree is as tall as the editor already. */
+.hkp-editor-tree-splitter {
+  display: none;
+}
+@container (max-width: 560px) {
+  .hkp-editor-tree {
+    width: auto;
+    /* As dragged (FacadeEditor sets the variable), or up to a share. */
+    height: var(--hkp-editor-tree-height, auto);
+    max-height: var(--hkp-editor-tree-height, 40%);
+    border-right: none;
+  }
+  .hkp-editor-tree-splitter {
+    display: block;
+  }
+}
+.hkp-editor-tree-panel {
+  margin: 10px 0 2px 8px;
+}
+.hkp-editor-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-mid, inherit);
+}
+.hkp-editor-tree-row:hover {
+  background: var(--bg-hover, rgb(0 0 0 / 0.04));
+}
+.hkp-editor-tree-row[aria-selected="true"] {
+  background: color-mix(in srgb, var(--hkp-accent, #0abcfb) 14%, transparent);
+  color: var(--text, inherit);
+}
+.hkp-editor-tree-root {
+  font-family: inherit;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.hkp-editor-tree-toggle {
+  width: 10px;
+  flex-shrink: 0;
+  text-align: center;
+  opacity: 0.6;
+}
+.hkp-editor-tree-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.hkp-editor-tree-binds {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+.hkp-editor-state {
+  flex-shrink: 0;
+  max-height: 40%;
+  overflow-y: auto;
+  padding: 8px 14px 12px;
+}
+
 .hkp-binding-overlay {
   font-family: inherit;
   font-size: 12px;

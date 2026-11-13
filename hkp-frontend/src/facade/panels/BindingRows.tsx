@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 
 import { useOverview } from "hkp-frontend/src/overview/OverviewContext";
 import { useAssetView } from "hkp-frontend/src/assets/AssetViewContext";
@@ -14,6 +14,7 @@ import {
   siteKey,
 } from "../bindings";
 import { useFacadeBindings } from "../FacadeBindingsContext";
+import { useFacadeView } from "../FacadeViewContext";
 import { ServiceLocation, revealTargetOf } from "../serviceLocation";
 
 /**
@@ -54,8 +55,15 @@ export function siteLabel(site: BindingSite): string {
   if (site.kind === "notice") {
     return `notice ${site.index + 1}`;
   }
-  const what = site.label
-    ? `${site.label} (${site.type ?? "widget"})`
+  // A repeat's template is labelled with item references, which say what each
+  // item shows rather than what anything is called: "{{item.title}}" reads as
+  // "‹title›".
+  const label = site.label?.replace(
+    /\{\{item(?:\.([A-Za-z0-9_$.]+))?\}\}/g,
+    (_match, path?: string) => `‹${path ?? "item"}›`,
+  );
+  const what = label
+    ? `${label} (${site.type ?? "widget"})`
     : site.type ?? "widget";
   return site.path.includes("template") ? `${what}, per item` : what;
 }
@@ -103,6 +111,7 @@ export function ServiceRow({
   const overview = useOverview();
   const assetView = useAssetView();
   const navigation = useNestedNavigation();
+  const facadeView = useFacadeView();
 
   const target = revealTargetOf(location);
   const breadcrumb =
@@ -120,9 +129,14 @@ export function ServiceRow({
     if (!target) {
       return;
     }
-    // The board is what is revealed, so whatever covers it gives way.
+    // The board is what is revealed, so whatever covers it gives way — and
+    // where only the facade is on screen, as it may be with the editor open,
+    // the board comes on screen beside it.
     overview?.hide();
     assetView?.hide();
+    if (facadeView && !facadeView.showRuntime) {
+      facadeView.setMode("split");
+    }
     revealService(target, navigation, { inspect });
     onDone();
   };
@@ -274,5 +288,81 @@ export function StateRow({
         onReveal={onReveal}
       />
     </li>
+  );
+}
+
+type WidgetTab = "sends" | "shows";
+
+const WIDGET_TAB_TITLES: Record<WidgetTab, string> = {
+  sends: "Sends to",
+  shows: "Shows from",
+};
+
+/**
+ * What one widget sends to and shows from, under two tabs — the widget badge's
+ * overlay, and the facade editor's Bindings section.
+ */
+export function WidgetBindings({
+  bindings,
+  site,
+  onDone,
+  onRevealSite,
+}: {
+  bindings: Binding[];
+  site: BindingSite;
+  // Called once a row has taken the person somewhere else.
+  onDone: () => void;
+  // How another widget is brought into view, from a state binding's links.
+  onRevealSite: (site: BindingSite) => void;
+}) {
+  const api = useFacadeBindings();
+  const sends = bindings.filter((b) => b.role === "sends");
+  const shows = bindings.filter((b) => b.role === "shows");
+  const [chosen, setTab] = useState<WidgetTab | null>(null);
+  // Until one is chosen, the tab that has something in it.
+  const tab = chosen ?? (sends.length > 0 || shows.length === 0 ? "sends" : "shows");
+  const shown = tab === "sends" ? sends : shows;
+
+  return (
+    <>
+      <OverlayTabs
+        tabs={(["sends", "shows"] as const).map((id) => ({
+          id,
+          title: WIDGET_TAB_TITLES[id],
+          count: (id === "sends" ? sends : shows).length,
+        }))}
+        active={tab}
+        onSelect={setTab}
+      />
+      <ul
+        className="hkp-binding-list"
+        role="tabpanel"
+        aria-label={WIDGET_TAB_TITLES[tab]}
+      >
+        {shown.length === 0 && (
+          <li className="hkp-binding-empty">
+            {tab === "sends" ? "Sends to nothing." : "Shows from nothing."}
+          </li>
+        )}
+        {api &&
+          shown.map((binding, i) =>
+            isServiceBinding(binding) ? (
+              <ServiceRow
+                key={i}
+                binding={binding}
+                location={api.locate(binding.service)}
+                onDone={onDone}
+              />
+            ) : (
+              <StateRow
+                key={i}
+                binding={binding}
+                own={site}
+                onReveal={onRevealSite}
+              />
+            ),
+          )}
+      </ul>
+    </>
   );
 }
