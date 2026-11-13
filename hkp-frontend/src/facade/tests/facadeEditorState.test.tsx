@@ -53,20 +53,19 @@ describe("facade state in the editor", () => {
   it("follows what widgets publish, as they publish it", () => {
     render(<Facade />);
     const panel = screen.getByRole("region", { name: "Facade state" });
-    const row = (key: string) => within(panel).getByText(key).closest("tr")!;
+    const value = (key: string) =>
+      panel.querySelector(`[data-state-key="${key}"] .hkp-binding-value`)!
+        .textContent;
 
     fireEvent.click(screen.getByText("pick"));
-    expect(row("selectedCard").textContent).toBe("selectedCard7");
+    expect(value("selectedCard")).toBe("7");
 
     fireEvent.click(screen.getByText("pick rows"));
-    expect(JSON.parse(row("picked").textContent!.replace("picked", ""))).toEqual([
-      "a",
-      "b",
-    ]);
+    expect(JSON.parse(value("picked")!)).toEqual(["a", "b"]);
 
     // Given up, not forgotten: the key is still one the facade uses.
     fireEvent.click(screen.getByText("let go"));
-    expect(row("selectedCard").textContent).toBe("selectedCard—");
+    expect(value("selectedCard")).toBe("not set");
   });
 
   it("lets a repeat template's text widget be selected and its color edited", () => {

@@ -3,7 +3,8 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import type { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeBindingsProvider } from "../FacadeBindingsContext";
-import { FacadeBindingsBadge, describeValue } from "../FacadeBindingsBadge";
+import { FacadeBindingsBadge } from "../FacadeBindingsBadge";
+import { describeValue } from "../FacadeStateView";
 import { FacadeStateContext } from "../FacadeStateContext";
 import type { FacadeDescriptor } from "../types";
 
@@ -123,13 +124,13 @@ describe("the facade's own badge", () => {
     renderBadge();
     openTab(/State/);
     const list = screen.getByRole("tabpanel", { name: "State" });
-    const meeting = within(list).getByText("“meeting”").closest("li") as HTMLElement;
+    const meeting = list.querySelector('[data-state-key="meeting"]') as HTMLElement;
     expect(within(meeting).getByText('"m-1"')).toBeTruthy();
     expect(within(meeting).getByText("Starts with the facade's initial state.")).toBeTruthy();
     expect(within(meeting).getByRole("button", { name: "Pick (button)" })).toBeTruthy();
     expect(within(meeting).getByText(/runs on open/)).toBeTruthy();
 
-    const draft = within(list).getByText("“draft”").closest("li") as HTMLElement;
+    const draft = list.querySelector('[data-state-key="draft"]') as HTMLElement;
     expect(within(draft).getByText("Nothing in the facade writes it.")).toBeTruthy();
   });
 });

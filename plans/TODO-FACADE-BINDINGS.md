@@ -11,7 +11,7 @@ This plan makes the relation between a widget and the services it touches
 discoverable **from the facade itself**, in both directions, plus the facade
 state that carries values between widgets.
 
-Raised 2026-11-13. Steps 1–5 built 2026-11-13; steps 6–9 open.
+Raised 2026-11-13. Steps 1–6 built 2026-11-13; steps 7–9 open.
 
 ---
 
@@ -330,6 +330,32 @@ component with `StatePanel`):
 Knowing who wrote a value means `setState` learns the writer: `executeActions`
 is told which widget it runs for. A widget without an `id` needs a stable key
 (its panel and position in the layout), which steps 4, 7 and 8 use as well.
+
+**Built 2026-11-13** in `facade/FacadeStateView.tsx`, tested in
+`facade/tests/facadeStateHistory.test.tsx`, and looked at in the real
+playground.
+
+- **One view.** `FacadeStateView` is the badge's State tab and the editor's
+  `StatePanel`. The editor builds its own index from the draft facade, since
+  the bindings context exists only in the board + facade view. In the editor,
+  widgets are named but not linked.
+- **History.** The store (`FacadeRenderer`) keeps `history` beside `state`:
+  per key, the latest writes, newest first, each with `at`, `value` and
+  `writer` (`recordWrite`, bounded by the flow inspector's `MAX_HISTORY`, now
+  exported). It is cleared when another board opens and is not kept across
+  reloads. It shows as "Recent writes" under each key.
+- **The writer, without telling `executeActions` about widgets.**
+  `LayoutNode` hands each widget a `FacadeStateContext` whose `setState`
+  already carries the widget's site. That covers everything the widget
+  writes, whether through its actions or by itself (a table's or a swimlane's
+  selection), and no renderer needs to change. A repeat item writes as the
+  template's site, labelled with the item's own label. Init actions have no
+  widget: `executeActions` now passes a set-state step's position in
+  `actions` as a third argument to `setState`, and `FacadeRenderer` turns it
+  into `{ kind: "init", index }`, shown as "by the facade on open". Widget
+  actions drop that argument (`useWidgetActions`).
+- A value reads as JSON, cut at 160 characters, and "not set" when it has
+  none. The editor previously showed "—" for that.
 
 ### 7. Origin on runs
 

@@ -204,7 +204,8 @@ export function SiteLinks({
   title: string;
   sites: BindingSite[];
   empty: ReactNode;
-  onReveal: (site: BindingSite) => void;
+  // Absent, the sites are named but are not links.
+  onReveal?: (site: BindingSite) => void;
 }) {
   if (sites.length === 0) {
     return <div className="hkp-binding-note">{empty}</div>;
@@ -215,7 +216,7 @@ export function SiteLinks({
       {sites.map((site, i) => (
         <span key={siteKey(site)}>
           {i > 0 && " · "}
-          {site.kind === "widget" ? (
+          {site.kind === "widget" && onReveal ? (
             <button
               type="button"
               className="hkp-binding-link"
