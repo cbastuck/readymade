@@ -11,8 +11,8 @@ This plan makes the relation between a widget and the services it touches
 discoverable **from the facade itself**, in both directions, plus the facade
 state that carries values between widgets.
 
-Raised 2026-11-13. Steps 1–6, 6b, 6c and 6d built 2026-11-13; steps 7 and 8
-deferred; step 9 open. Since 6d the badges open the facade editor rather than
+Raised 2026-11-13. Steps 1–6, 6b, 6c, 6d and 9 done 2026-11-13; steps 7 and 8
+deferred. Since 6d the badges open the facade editor rather than
 an overlay of their own: steps 4 and 5 describe the overlays as they were.
 
 ---
@@ -588,6 +588,26 @@ The facade's part of `docs/content/board-json.md`, and the flow inspector's
 description, say what bindings are and where they are shown. New terms for the
 vocabulary (`docs/content/vocabulary.md`) are proposed to its owner, not added:
 the vocabulary is written by hand.
+
+**Done 2026-11-13.** These pages are what people read on the docs site (and in
+`llms-full.txt`), and what the MCP server and Board Assist search:
+
+- `concepts/board.md`, under "The facade", has two new sections. **The facade
+  editor** covers the tree, saving, the badges, and deployed boards. **What a
+  widget is connected to** covers facade bindings in both directions, Show in
+  board and Inspect, recent sends, and a table of which widget fields make
+  which binding. An assistant can explain a facade from the board JSON alone
+  with that table.
+- The bindings are described there, not in `board-json.md`, because they are
+  not part of the format. `board-json.md`'s `facade` row points to that
+  section.
+- `concepts/runtime.md` has "Coming from a facade" beside the Flow Inspector:
+  a widget's Inspect opens the right inspector, and a `process` shows up
+  there but a `configure` does not.
+- The website's hand-written "Boards, runtimes and services" page (in the
+  `hkp-website` submodule) mentions the editor and the badges, with a link.
+- The vocabulary owner added **Facade editor** and **Facade binding** (both
+  directions, with recent sends).
 
 ---
 
