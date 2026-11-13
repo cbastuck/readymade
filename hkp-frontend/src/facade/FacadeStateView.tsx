@@ -83,18 +83,18 @@ export function FacadeStateView({
               onReveal={onReveal}
             />
             {writes.length > 0 && (
-              <details className="hkp-state-writes">
+              <details className="hkp-binding-history">
                 <summary>Recent writes · {writes.length}</summary>
                 <ol>
                   {writes.map((write, i) => (
                     <li key={`${write.at}-${i}`}>
-                      <span className="hkp-state-write-time">
+                      <span className="hkp-binding-history-time">
                         {timeOf(write.at)}
                       </span>{" "}
                       <span className="hkp-binding-value">
                         {describeValue(write.value)}
                       </span>{" "}
-                      <span className="hkp-state-write-by">
+                      <span className="hkp-binding-history-meta">
                         by{" "}
                         {write.writer?.kind === "init"
                           ? "the facade on open"

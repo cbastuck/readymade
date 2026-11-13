@@ -11,7 +11,8 @@ This plan makes the relation between a widget and the services it touches
 discoverable **from the facade itself**, in both directions, plus the facade
 state that carries values between widgets.
 
-Raised 2026-11-13. Steps 1–6 and 6b built 2026-11-13; steps 7–9 open.
+Raised 2026-11-13. Steps 1–6, 6b and 6c built 2026-11-13; steps 7 and 8
+deferred; step 9 open.
 
 ---
 
@@ -458,7 +459,51 @@ looked at in the real playground on the Hacker News board. This supersedes the
   editor and in the badge's overlay. `describeValue` moved to its own module
   (`facade/describeValue.ts`).
 
+### 6c. What a widget sent
+
+Decided 2026-11-13, in place of steps 7 and 8 for now. What matters most is
+seeing the configure calls a widget sends, where its "Acts on" bindings
+already are. Tracing a run back to its widget inside the flow inspector
+matters less. Steps 7 and 8 reach every runtime and the coordinator's bridge
+for that trace; this step stays in the browser, because the facade's dispatch
+knows what it sent whichever runtime holds the service.
+
+**Built 2026-11-13** in `facade/sentCalls.ts`, tested in
+`facade/tests/sentCalls.test.tsx`, and looked at in the real playground on the
+UUID generator demo board.
+
+- Each `configure` and `process` a widget dispatches is recorded with its
+  time, service, verb and payload as it went out: after `$state`, `$user`,
+  `$$input` and `{{value}}` were filled in. A configure whose service is not
+  found is not sent, so it is not recorded.
+- **Under the binding it went along.** A `ServiceRow` of the "Acts on" tab
+  shows the last call ("Last sent 17:09:43 `{"method":"v4"}`") and the recent
+  ones under "Recent sends", matched by service and verb. This holds in the
+  widget badge, in the facade editor, and in the facade badge's Actions tab
+  for init actions.
+- **Who sent it, as with state writes.** `executeActions` takes an `onSent`
+  callback. The store `LayoutNode` hands a widget carries a `recordSend` that
+  already knows the widget's site, and `useWidgetActions` passes it in. Init
+  records as `{ kind: "init", index }`. A repeat item records as the
+  template's site, as its writes do.
+- `KnobRenderer`, `XYPadRenderer` and `MessageListRenderer` call `configure()`
+  themselves, so they call `recordSend` themselves too. Moving them to
+  `executeActions` stays with step 8.
+- **Not React state.** A knob or an XY pad sends on every move. The log
+  (`createSendLog`) lives outside React state, bounded per sender by
+  `MAX_HISTORY` and cleared when another board opens, and the rows subscribe
+  to it (`useSentCalls`). A drag therefore does not redraw the facade.
+- The state history's styles became `.hkp-binding-history*`, shared by both
+  lists.
+
 ### 7. Origin on runs
+
+**Deferred 2026-11-13** in favour of step 6c. Before it is taken up: the
+browser's REST `processService` (`runtime/rest/RuntimeRestApi.ts`) sends no
+`__context` at all today, so a remote runtime does not even learn the run's
+id. Each runtime's `contextFromWire` keeps only the fields it knows. A
+deployed board reaches a service through the bridge, the coordinator's
+session and the participant protocol, none of which carries a context yet.
 
 An optional `origin` on `ProcessContext`, `{ kind: "facade", widget }`, set when
 `executeActions` mints the run. The entry service's `call-process` report
@@ -471,6 +516,9 @@ With origin in place a display's value traces back too: the text field shows
 from a service, whose call came from a run, which a button began.
 
 ### 8. Configure as a reported event
+
+**Deferred 2026-11-13** in favour of step 6c, which shows what a widget
+configured from the widget, not from the service's inspector.
 
 A third report, `{ __internal: { state: "configured", data, origin } }`, bounded
 by `outgoingPayload` under Capture mode like any call report. It is emitted by

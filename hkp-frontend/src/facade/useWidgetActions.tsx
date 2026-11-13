@@ -166,7 +166,7 @@ export function useWidgetActions(boardContext: BoardContextState): {
   }) => Promise<void>;
   prompt: ReactNode;
 } {
-  const { state, setState } = useFacadeState();
+  const { state, setState, recordSend } = useFacadeState();
   const identity = useFacadeIdentity(boardContext);
   const boardActions = useFacadeBoardActions();
   const navigation = useFacadePanelNavigation();
@@ -225,6 +225,10 @@ export function useWidgetActions(boardContext: BoardContextState): {
       // The widget's own store already says which widget writes; a step's
       // position is only for actions that have no widget, such as init.
       setState: (key, written) => setState(key, written),
+      // Recorded as this widget's, for the same reason.
+      onSent: recordSend
+        ? ({ service, verb, payload }) => recordSend({ service, verb, payload })
+        : undefined,
       boardActions,
       navigation,
       // Without this a { "$state": … } reference in the payload travels as

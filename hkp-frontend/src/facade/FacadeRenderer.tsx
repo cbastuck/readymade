@@ -5,6 +5,7 @@ import {
   recordWrite,
 } from "./FacadeStateContext";
 import { BindingSite } from "./bindings";
+import { createSendLog } from "./sentCalls";
 import { MAX_HISTORY } from "hkp-frontend/src/ui-components/service/flowRecords";
 import { useFacadeInit } from "./useFacadeInit";
 import { useFacadeIdentity } from "./FacadeIdentity";
@@ -46,10 +47,15 @@ export default function FacadeRenderer({
     Record<string, StateWrite[]>
   >({});
 
+  // What the facade sent to the board, per widget — held outside React state,
+  // since a knob sends on every move (see sentCalls).
+  const [sendLog] = useState(() => createSendLog(MAX_HISTORY));
+
   useEffect(() => {
     setFacadeStateRaw(facade.state ?? {});
     setStateHistory({});
-  }, [boardName]);
+    sendLog.clear();
+  }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setFacadeStateEntry = useCallback(
     (key: string, value: unknown, writer?: BindingSite) => {
@@ -84,6 +90,12 @@ export default function FacadeRenderer({
     setState: setStateFromInit,
     stateRef: facadeStateRef,
     identity,
+    // Init sends as the facade, by the action's place in `init`.
+    onSent: ({ step, ...call }) => {
+      if (step !== undefined) {
+        sendLog.record({ kind: "init", index: step }, call);
+      }
+    },
   });
 
   // Which halves are on screen is chosen from the toolbar, above this view.
@@ -227,6 +239,7 @@ export default function FacadeRenderer({
         state: facadeState,
         setState: setFacadeStateEntry,
         history: stateHistory,
+        sends: sendLog,
       }}
     >
       <SwimlaneDragProvider>

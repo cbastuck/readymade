@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 
 import type { BindingSite } from "./bindings";
+import type { SendLog, SentCall } from "./sentCalls";
 
 /**
  * One write to a facade state key: when, what, and who wrote it — the widget,
@@ -21,6 +22,14 @@ export type FacadeStateStore = {
    * history. Held for as long as the facade is on screen, as the state is.
    */
   history?: Record<string, StateWrite[]>;
+  /** What the facade sent to the board, per sender (see sentCalls). */
+  sends?: SendLog;
+  /**
+   * Records a call this widget sent. Only on the store a widget is handed,
+   * which knows which widget it is — as with `setState`, a renderer never
+   * says so itself.
+   */
+  recordSend?: (call: Omit<SentCall, "at">) => void;
 };
 
 /**

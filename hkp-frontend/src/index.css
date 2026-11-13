@@ -1263,28 +1263,30 @@ blockquote:after {
 .hkp-state-key {
   font-family: monospace;
 }
-.hkp-state-writes {
+/* What happened along a binding, newest first: a state key's writes, the
+   calls a widget sent. */
+.hkp-binding-history {
   margin-top: 4px;
   font-size: 11px;
 }
-.hkp-state-writes summary {
+.hkp-binding-history summary {
   cursor: pointer;
   opacity: 0.75;
 }
-.hkp-state-writes ol {
+.hkp-binding-history ol {
   list-style: none;
   margin: 4px 0 0;
   padding: 0;
 }
-.hkp-state-writes li {
+.hkp-binding-history li {
   padding: 2px 0;
   overflow-wrap: anywhere;
 }
-.hkp-state-write-time,
-.hkp-state-write-by {
+.hkp-binding-history-time,
+.hkp-binding-history-meta {
   opacity: 0.65;
 }
-.hkp-state-write-time {
+.hkp-binding-history-time {
   font-family: monospace;
 }
 

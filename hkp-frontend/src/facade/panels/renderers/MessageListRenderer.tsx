@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { MessageListWidget } from "../../types";
 import { findService } from "../../boardServices";
+import { useFacadeState } from "../../FacadeStateContext";
 import { useResolvedService } from "../../serviceNotifications";
 import { extractText } from "../../readValue";
 import { WidgetRendererProps } from "../widgetRegistry";
@@ -82,6 +83,9 @@ export function MessageListRenderer({
   }, [messages]);
 
   const { markBoardChanged } = boardContext;
+  // Configures directly rather than through executeActions, so it says what it
+  // sent itself.
+  const { recordSend } = useFacadeState();
   const handleSend = useCallback(
     (text: string) => {
       if (!actionService || !widget.composer) {
@@ -96,10 +100,15 @@ export function MessageListRenderer({
         ...prev,
         { id: uuidv4(), text, direction: "sent" },
       ]);
+      recordSend?.({
+        service: widget.composer.action.serviceUuid,
+        verb: "configure",
+        payload: configure,
+      });
       actionService.configure(configure);
       markBoardChanged?.();
     },
-    [actionService, widget.composer, markBoardChanged],
+    [actionService, widget.composer, markBoardChanged, recordSend],
   );
 
   const submitComposer = useCallback(() => {

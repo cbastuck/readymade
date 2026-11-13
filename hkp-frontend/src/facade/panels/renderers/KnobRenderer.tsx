@@ -2,6 +2,7 @@ import { useMemo, useCallback } from "react";
 import Knob from "hkp-frontend/src/ui-components/Knob";
 import { KnobWidget } from "../../types";
 import { findService } from "../../boardServices";
+import { useFacadeState } from "../../FacadeStateContext";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { serviceForUserInterface } from "hkp-frontend/src/types";
 
@@ -33,6 +34,9 @@ export function KnobRenderer({
   // positions, so the key is the knob's own id where it has one.
   const knobKey = widget.id ?? widget.action.serviceUuid;
   const { markBoardChanged } = boardContext;
+  // Configures directly rather than through executeActions, so it says what it
+  // sent itself.
+  const { recordSend } = useFacadeState();
 
   const value = panelContext.knobValues[knobKey] ?? widget.defaultValue;
 
@@ -46,10 +50,23 @@ export function KnobRenderer({
       for (const [k, tmpl] of Object.entries(widget.action.configure)) {
         configure[k] = applyValue(tmpl, v);
       }
+      recordSend?.({
+        service: widget.action.serviceUuid,
+        verb: "configure",
+        payload: configure,
+      });
       service.configure(configure);
       markBoardChanged?.();
     },
-    [service, widget.action.configure, knobKey, panelContext, markBoardChanged],
+    [
+      service,
+      widget.action.serviceUuid,
+      widget.action.configure,
+      knobKey,
+      panelContext,
+      markBoardChanged,
+      recordSend,
+    ],
   );
 
   const unit = widget.unit ?? "";

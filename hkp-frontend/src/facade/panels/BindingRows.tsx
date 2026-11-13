@@ -18,6 +18,8 @@ import { useFacadeView } from "../FacadeViewContext";
 import { useFacadeState } from "../FacadeStateContext";
 import { describeValue } from "../describeValue";
 import { ServiceLocation, revealTargetOf } from "../serviceLocation";
+import { SentCall, useSentCalls } from "../sentCalls";
+import { timeOf } from "hkp-frontend/src/ui-components/service/flowRecords";
 
 /**
  * The rows a bindings overlay is made of — a widget's (BindingsBadge) and the
@@ -109,14 +111,20 @@ export function ServiceRow({
   binding,
   location,
   note,
+  sender,
   onDone,
 }: {
   binding: ServiceBinding;
   location: ServiceLocation;
   // Said under the location — what a notice says when it fires, say.
   note?: ReactNode;
+  // The widget or init action the binding belongs to, whose calls along it
+  // are listed. Absent where nothing is sent — a notice.
+  sender?: BindingSite;
   onDone: () => void;
 }) {
+  const { sends } = useFacadeState();
+  const sent = useSentCalls(sends, sender, binding);
   const overview = useOverview();
   const assetView = useAssetView();
   const navigation = useNestedNavigation();
@@ -164,6 +172,7 @@ export function ServiceRow({
       )}
       <LocationNote location={location} />
       {note && <div className="hkp-binding-note">{note}</div>}
+      <SentCalls calls={sent} />
       {target && (
         <div className="hkp-binding-actions">
           <button type="button" onClick={() => reveal()}>
@@ -184,6 +193,42 @@ export function ServiceRow({
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * What was sent along a binding, newest first: the last call in view, the
+ * ones before it on request — as a state key shows its value and its writes.
+ */
+function SentCalls({ calls }: { calls: SentCall[] }) {
+  if (calls.length === 0) {
+    return null;
+  }
+  const [last] = calls;
+  return (
+    <>
+      <div className="hkp-binding-value">
+        <span className="hkp-binding-history-meta">
+          Last sent {timeOf(last.at)}
+        </span>{" "}
+        {describeValue(last.payload)}
+      </div>
+      <details className="hkp-binding-history">
+        <summary>Recent sends · {calls.length}</summary>
+        <ol>
+          {calls.map((call, i) => (
+            <li key={`${call.at}-${i}`}>
+              <span className="hkp-binding-history-time">
+                {timeOf(call.at)}
+              </span>{" "}
+              <span className="hkp-binding-value">
+                {describeValue(call.payload)}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </details>
+    </>
   );
 }
 
@@ -350,6 +395,7 @@ export function BindingList({
               key={i}
               binding={binding}
               location={api.locate(binding.service)}
+              sender={site}
               onDone={onDone}
             />
           ) : (
