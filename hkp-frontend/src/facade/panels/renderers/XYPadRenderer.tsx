@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { XYPadWidget } from "../../types";
 import { findService } from "../../boardServices";
+import { useFacadeState } from "../../FacadeStateContext";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { serviceForUserInterface } from "hkp-frontend/src/types";
 
@@ -13,6 +14,12 @@ export function XYPadRenderer({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const thumbRef = useRef({ x: 0.5, y: 0.5 });
   const { markBoardChanged } = boardContext;
+  // Configures directly rather than through executeActions, so it says what it
+  // sent itself. Held in a ref: the pointer handlers are attached once, and a
+  // drag must not lose them when the facade redraws.
+  const { recordSend } = useFacadeState();
+  const recordSendRef = useRef(recordSend);
+  recordSendRef.current = recordSend;
 
   const service = useMemo(
     () => serviceForUserInterface(findService(boardContext, widget.serviceUuid)),
@@ -121,7 +128,16 @@ export function XYPadRenderer({
     };
 
     const emit = (pos: { x: number; y: number }, eventType: string) => {
-      service?.configure({ position: { x: pos.x, y: pos.y }, eventType });
+      if (!service) {
+        return;
+      }
+      const configure = { position: { x: pos.x, y: pos.y }, eventType };
+      recordSendRef.current?.({
+        service: widget.serviceUuid,
+        verb: "configure",
+        payload: configure,
+      });
+      service.configure(configure);
       markBoardChanged?.();
     };
 
@@ -155,7 +171,7 @@ export function XYPadRenderer({
       ro.disconnect();
       canvas.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [draw, syncSize, service, markBoardChanged]);
+  }, [draw, syncSize, service, markBoardChanged, widget.serviceUuid]);
 
   const w = widget.width ?? 400;
   const h = widget.height ?? 180;

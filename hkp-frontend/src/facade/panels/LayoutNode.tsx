@@ -114,7 +114,8 @@ export function LayoutNode({
     : undefined;
   // The store a widget is handed knows which widget it is, so whatever it
   // writes — through its actions or by itself, a table's selection — is
-  // written as that widget's, without each renderer having to say so.
+  // written as that widget's, without each renderer having to say so. What it
+  // sends to the board is recorded as its own the same way.
   const writerKey = bindingSite ? siteKey(bindingSite) : undefined;
   const writerLabel = bindingSite?.label;
   const widgetStore = useMemo<FacadeStateStore>(
@@ -123,6 +124,7 @@ export function LayoutNode({
         ? {
             ...store,
             setState: (key, value) => store.setState(key, value, bindingSite),
+            recordSend: (call) => store.sends?.record(bindingSite, call),
           }
         : store,
     // The site is rebuilt on every render; its key and label are what it is.

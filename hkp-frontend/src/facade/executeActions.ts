@@ -11,6 +11,7 @@ import { FacadePanelNavigation } from "./FacadePanelNavigation";
 import { findService, processService } from "./boardServices";
 import { applyInput } from "./applyInput";
 import { FacadeIdentity, isUserRef, resolveUserRef } from "./FacadeIdentity";
+import type { SentVerb } from "./sentCalls";
 
 // Recursively resolves facade-state and action-time references. Runs before
 // $$input substitution so all of them can coexist in one payload.
@@ -92,6 +93,7 @@ export async function executeActions({
   byPerson = false,
   ask,
   askValue,
+  onSent,
 }: {
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
@@ -123,6 +125,15 @@ export async function executeActions({
   // How a prompt step reaches the person. Absent where there is nobody to ask,
   // which cancels.
   askValue?: AskPersonForValue;
+  // Told of each configure and process as it goes out, with the payload as
+  // sent, so a facade can show what a widget sent (see sentCalls). `step` is
+  // the action's position in `actions`, as for `setState`.
+  onSent?: (call: {
+    service: string;
+    verb: SentVerb;
+    payload: unknown;
+    step?: number;
+  }) => void;
 }): Promise<void> {
   // What `$$input` stands for: the widget's value, until a prompt replaces it
   // with the person's answer.
@@ -159,6 +170,12 @@ export async function executeActions({
       const target = byPerson
         ? (serviceForUserInterface(service) ?? service)
         : service;
+      onSent?.({
+        service: act.serviceUuid,
+        verb: "configure",
+        payload: configure,
+        step,
+      });
       await target.configure(configure);
       if (byPerson) {
         boardContext.markBoardChanged?.();
@@ -167,11 +184,9 @@ export async function executeActions({
       // Same substitution as a configure payload: what a board writes into one
       // it can write into the other.
       const withState = resolveActionRefs(act.payload ?? {}, state ?? {}, identity);
-      processService(
-        boardContext,
-        act.serviceUuid,
-        applyInput(withState, input),
-      );
+      const payload = applyInput(withState, input);
+      onSent?.({ service: act.serviceUuid, verb: "process", payload, step });
+      processService(boardContext, act.serviceUuid, payload);
     } else if (act.type === "set-state") {
       // A written value wins over the widget's own, and `undefined` written on
       // purpose is still a value — which is why the field's presence decides

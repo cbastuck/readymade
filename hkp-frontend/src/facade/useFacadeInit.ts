@@ -42,12 +42,15 @@ export function useFacadeInit({
   setState,
   stateRef,
   identity,
+  onSent,
 }: {
   facade: FacadeDescriptor;
   boardContext: BoardContextState;
   boardName: string;
   // `step` is the init action's position in `init`.
   setState: (key: string, value: unknown, step?: number) => void;
+  // Each configure and process init sends, by the same position.
+  onSent?: Parameters<typeof executeActions>[0]["onSent"];
   stateRef: { current: Record<string, unknown> };
   identity: FacadeIdentity;
 }): void {
@@ -120,6 +123,7 @@ export function useFacadeInit({
         setState,
         state: stateRef.current,
         identity,
+        onSent,
       });
     })();
   }, [boardName, ready]); // eslint-disable-line react-hooks/exhaustive-deps
