@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FacadeStateContext } from "./FacadeStateContext";
+import {
+  FacadeStateContext,
+  StateWrite,
+  recordWrite,
+} from "./FacadeStateContext";
+import { BindingSite } from "./bindings";
+import { MAX_HISTORY } from "hkp-frontend/src/ui-components/service/flowRecords";
 import { useFacadeInit } from "./useFacadeInit";
 import { useFacadeIdentity } from "./FacadeIdentity";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
@@ -42,13 +48,37 @@ export default function FacadeRenderer({
     () => facade.state ?? {},
   );
 
+  // What was written to each key, newest first, and by whom — so the state
+  // can be read as something that happened rather than only as where it is.
+  const [stateHistory, setStateHistory] = useState<
+    Record<string, StateWrite[]>
+  >({});
+
   useEffect(() => {
     setFacadeStateRaw(facade.state ?? {});
+    setStateHistory({});
   }, [boardName]);
 
-  const setFacadeStateEntry = useCallback((key: string, value: unknown) => {
-    setFacadeStateRaw((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const setFacadeStateEntry = useCallback(
+    (key: string, value: unknown, writer?: BindingSite) => {
+      setFacadeStateRaw((prev) => ({ ...prev, [key]: value }));
+      setStateHistory((prev) =>
+        recordWrite(prev, key, { at: Date.now(), value, writer }, MAX_HISTORY),
+      );
+    },
+    [],
+  );
+
+  // Init writes as the facade, by the action's place in `init`.
+  const setStateFromInit = useCallback(
+    (key: string, value: unknown, step?: number) =>
+      setFacadeStateEntry(
+        key,
+        value,
+        step === undefined ? undefined : { kind: "init", index: step },
+      ),
+    [setFacadeStateEntry],
+  );
 
   // Keep a ref so the init effect always sees the latest state at fire time.
   const facadeStateRef = useRef(facadeState);
@@ -59,7 +89,7 @@ export default function FacadeRenderer({
     facade,
     boardContext,
     boardName,
-    setState: setFacadeStateEntry,
+    setState: setStateFromInit,
     stateRef: facadeStateRef,
     identity,
   });
@@ -201,7 +231,11 @@ export default function FacadeRenderer({
 
   return (
     <FacadeStateContext.Provider
-      value={{ state: facadeState, setState: setFacadeStateEntry }}
+      value={{
+        state: facadeState,
+        setState: setFacadeStateEntry,
+        history: stateHistory,
+      }}
     >
       <SwimlaneDragProvider>
         <FacadePanelNavigationContext.Provider value={navigation}>

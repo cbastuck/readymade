@@ -9,12 +9,8 @@ import {
 import { BindingSite, isServiceBinding } from "./bindings";
 import { useFacadeBindings } from "./FacadeBindingsContext";
 import { useFacadeState } from "./FacadeStateContext";
-import {
-  OverlayTabs,
-  ServiceRow,
-  SiteLinks,
-  StateRow,
-} from "./panels/BindingRows";
+import { OverlayTabs, ServiceRow, StateRow } from "./panels/BindingRows";
+import { FacadeStateView, stateKeys } from "./FacadeStateView";
 
 /**
  * The facade's own badge: the bindings that belong to no widget.
@@ -34,27 +30,13 @@ const TAB_TITLES: Record<Tab, string> = {
   state: "State",
 };
 
-/** A value as the State tab shows it: short, and saying when there is none. */
-export function describeValue(value: unknown): string {
-  if (value === undefined) {
-    return "not set";
-  }
-  let text: string;
-  try {
-    text = JSON.stringify(value) ?? String(value);
-  } catch {
-    text = String(value);
-  }
-  return text.length > 160 ? `${text.slice(0, 159)}…` : text;
-}
-
 function toastOf(tone: "info" | "success" | "error"): string {
   return tone === "success" ? "a success toast" : `an ${tone} toast`;
 }
 
 export function FacadeBindingsBadge() {
   const api = useFacadeBindings();
-  const { state: values } = useFacadeState();
+  const { state: values, history } = useFacadeState();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("state");
 
@@ -64,9 +46,7 @@ export function FacadeBindingsBadge() {
   const { index } = api;
   // Every key the facade mentions, and any it holds that nothing mentions —
   // written by a widget whose key is made up as it runs.
-  const keys = [
-    ...new Set([...Object.keys(index.state), ...Object.keys(values)]),
-  ].sort();
+  const keys = stateKeys(index, values, history);
 
   const counts: Record<Tab, number> = {
     init: index.init.length,
@@ -115,11 +95,9 @@ export function FacadeBindingsBadge() {
           active={tab}
           onSelect={setTab}
         />
-        <ul
-          className="hkp-binding-list"
-          role="tabpanel"
-          aria-label={TAB_TITLES[tab]}
-        >
+        <div role="tabpanel" aria-label={TAB_TITLES[tab]}>
+        {tab !== "state" && (
+        <ul className="hkp-binding-list">
           {tab === "init" &&
             (index.init.length === 0 ? (
               <li className="hkp-binding-empty">Nothing runs when it opens.</li>
@@ -166,42 +144,16 @@ export function FacadeBindingsBadge() {
               )
             ))}
 
-          {tab === "state" &&
-            (keys.length === 0 ? (
-              <li className="hkp-binding-empty">The facade keeps no state.</li>
-            ) : (
-              keys.map((key) => {
-                const entry = index.state[key];
-                return (
-                  <li key={key} className="hkp-binding-row">
-                    <div className="hkp-binding-name">“{key}”</div>
-                    <div className="hkp-binding-value">
-                      {describeValue(values[key])}
-                    </div>
-                    {entry?.seeded && (
-                      <div className="hkp-binding-note">
-                        Starts with the facade's initial state.
-                      </div>
-                    )}
-                    <SiteLinks
-                      title="Written by"
-                      sites={entry?.writers ?? []}
-                      empty={
-                        entry?.seeded ? "No widget writes it." : "Nothing in the facade writes it."
-                      }
-                      onReveal={reveal}
-                    />
-                    <SiteLinks
-                      title="Read by"
-                      sites={entry?.readers ?? []}
-                      empty="Nothing reads it."
-                      onReveal={reveal}
-                    />
-                  </li>
-                );
-              })
-            ))}
         </ul>
+        )}
+        {tab === "state" && (
+          <FacadeStateView
+            index={index}
+            onReveal={reveal}
+            empty="The facade keeps no state."
+          />
+        )}
+        </div>
       </PopoverContent>
     </Popover>
   );

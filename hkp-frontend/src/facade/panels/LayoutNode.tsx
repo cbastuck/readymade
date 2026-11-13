@@ -1,9 +1,13 @@
-import { CSSProperties } from "react";
+import { CSSProperties, useMemo } from "react";
 
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { LayoutItem, LayoutContainer, LayoutWidget, KnobWidget, RepeatWidget, FacadeStateRef } from "../types";
 import { PanelContext, widgetRegistry } from "./widgetRegistry";
-import { useFacadeState } from "../FacadeStateContext";
+import {
+  FacadeStateContext,
+  FacadeStateStore,
+  useFacadeState,
+} from "../FacadeStateContext";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { useNotificationValue } from "./renderers/StatusIndicatorRenderer";
 import { interpolateTemplate } from "../itemTemplate";
@@ -93,8 +97,38 @@ export function LayoutNode({
   panelContext: PanelContext;
   site?: NodeSite;
 }) {
-  const { state: facadeState } = useFacadeState();
+  const store = useFacadeState();
+  const facadeState = store.state;
   const bindingsView = useFacadeBindings();
+
+  const bindingSite: BindingSite | undefined = site
+    ? {
+        kind: "widget",
+        ...site,
+        type: (item as { type?: string }).type,
+        label:
+          typeof (item as { label?: unknown }).label === "string"
+            ? (item as { label: string }).label
+            : undefined,
+      }
+    : undefined;
+  // The store a widget is handed knows which widget it is, so whatever it
+  // writes — through its actions or by itself, a table's selection — is
+  // written as that widget's, without each renderer having to say so.
+  const writerKey = bindingSite ? siteKey(bindingSite) : undefined;
+  const writerLabel = bindingSite?.label;
+  const widgetStore = useMemo<FacadeStateStore>(
+    () =>
+      bindingSite
+        ? {
+            ...store,
+            setState: (key, value) => store.setState(key, value, bindingSite),
+          }
+        : store,
+    // The site is rebuilt on every render; its key and label are what it is.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [store, writerKey, writerLabel],
+  );
 
   // Asked for unconditionally, because a hook cannot be: a node that is not a
   // repeat, or a repeat taking its items from the board, passes no source and
@@ -254,17 +288,6 @@ export function LayoutNode({
   // The badge sits over the widget's corner, so the wrapper is what it is
   // placed against — but only while badges are drawn, so a facade without
   // them lays out exactly as it always has.
-  const bindingSite: BindingSite | undefined = site
-    ? {
-        kind: "widget",
-        ...site,
-        type: item.type,
-        label:
-          typeof (item as { label?: unknown }).label === "string"
-            ? (item as { label: string }).label
-            : undefined,
-      }
-    : undefined;
   const badge = !!bindingsView && !!bindingSite && bindings.length > 0;
 
   return (
@@ -274,11 +297,13 @@ export function LayoutNode({
       {...(bindingSite ? { [SITE_ATTRIBUTE]: siteKey(bindingSite) } : {})}
     >
       {badge && <BindingsBadge bindings={bindings} site={bindingSite!} />}
-      <Renderer
-        widget={item}
-        boardContext={boardContext}
-        panelContext={panelContext}
-      />
+      <FacadeStateContext.Provider value={widgetStore}>
+        <Renderer
+          widget={item}
+          boardContext={boardContext}
+          panelContext={panelContext}
+        />
+      </FacadeStateContext.Provider>
       {missingServices.length > 0 && (
         <MissingServices uuids={missingServices} />
       )}

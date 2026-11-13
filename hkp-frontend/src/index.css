@@ -1260,6 +1260,34 @@ blockquote:after {
   margin-top: 2px;
 }
 
+.hkp-state-key {
+  font-family: monospace;
+}
+.hkp-state-writes {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.hkp-state-writes summary {
+  cursor: pointer;
+  opacity: 0.75;
+}
+.hkp-state-writes ol {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.hkp-state-writes li {
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+}
+.hkp-state-write-time,
+.hkp-state-write-by {
+  opacity: 0.65;
+}
+.hkp-state-write-time {
+  font-family: monospace;
+}
+
 .hkp-binding-overlay {
   font-family: inherit;
   font-size: 12px;

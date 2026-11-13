@@ -46,7 +46,8 @@ export function useFacadeInit({
   facade: FacadeDescriptor;
   boardContext: BoardContextState;
   boardName: string;
-  setState: (key: string, value: unknown) => void;
+  // `step` is the init action's position in `init`.
+  setState: (key: string, value: unknown, step?: number) => void;
   stateRef: { current: Record<string, unknown> };
   identity: FacadeIdentity;
 }): void {

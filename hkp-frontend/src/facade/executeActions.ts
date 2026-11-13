@@ -99,7 +99,9 @@ export async function executeActions({
   confirm?: string;
   value: unknown;
   boardContext: BoardContextState;
-  setState: (key: string, value: unknown) => void;
+  // `step` is the set-state's position in `actions`, for a caller that says
+  // which of its actions wrote — init does.
+  setState: (key: string, value: unknown, step?: number) => void;
   // What the host showing this facade can do with the board itself. Absent for
   // a host that offers none of it, which makes a board action do nothing.
   boardActions?: FacadeBoardActions;
@@ -140,7 +142,10 @@ export async function executeActions({
     ...(actions ?? []),
   ];
 
-  for (const act of all) {
+  // Where `actions` starts in `all`, past the steps the shorthands put first.
+  const offset = all.length - (actions?.length ?? 0);
+  for (const [position, act] of all.entries()) {
+    const step = position >= offset ? position - offset : undefined;
     if (act.type === "configure") {
       const service = findService(boardContext, act.serviceUuid);
       if (!service) {
@@ -171,7 +176,7 @@ export async function executeActions({
       // A written value wins over the widget's own, and `undefined` written on
       // purpose is still a value — which is why the field's presence decides
       // rather than its content.
-      setState(act.key, "value" in act ? act.value : input);
+      setState(act.key, "value" in act ? act.value : input, step);
     } else if (act.type === "board") {
       if (act.action === "partner-board-qr") {
         boardActions?.showPartnerBoardQr();

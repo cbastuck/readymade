@@ -38,7 +38,7 @@ export function FacadeEditor({ facade, onChange }: Props) {
           <PropertyPanel node={selectedNode} onChange={handleNodeChange} />
         </div>
       </div>
-      <StatePanel />
+      <StatePanel facade={facade} />
     </div>
   );
 }
