@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Link2 } from "lucide-react";
 
 import { widgetBindings } from "../bindings";
@@ -14,6 +14,15 @@ import {
 
 function samePath(a: EditorPath, b: EditorPath): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
+/** Whether the selection lies somewhere under `path`, not at it. */
+function selectionBelow(selected: EditorSelection, path: EditorPath): boolean {
+  return (
+    selected.kind === "node" &&
+    selected.path.length > path.length &&
+    path.every((v, i) => v === selected.path[i])
+  );
 }
 
 /** One row of the tree, with a fold toggle where it has children. */
@@ -39,8 +48,17 @@ function TreeRow({
   binds?: boolean;
   className?: string;
 }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  // Selected from elsewhere — a badge on the facade, a state key's link — the
+  // row may be out of sight.
+  useEffect(() => {
+    if (selected) {
+      rowRef.current?.scrollIntoView?.({ block: "nearest" });
+    }
+  }, [selected]);
   return (
     <div
+      ref={rowRef}
       role="treeitem"
       aria-selected={selected}
       aria-expanded={expanded}
@@ -89,6 +107,14 @@ function TreeNode({
   const isContainer = nodeIsContainer(item);
   const [expanded, setExpanded] = useState(true);
   const isSelected = selected.kind === "node" && samePath(path, selected.path);
+  // Something under a folded node was selected from elsewhere: unfold to it.
+  const below = selectionBelow(selected, path);
+  useEffect(() => {
+    if (below) {
+      setExpanded(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectionKey(selected)]);
 
   return (
     <div>
@@ -132,6 +158,13 @@ function PanelItem({
 }) {
   const panel = facade.panels[index];
   const [expanded, setExpanded] = useState(true);
+  const below = selected.kind === "node" && selected.path[0] === index;
+  useEffect(() => {
+    if (below) {
+      setExpanded(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectionKey(selected)]);
   return (
     <div>
       <TreeRow
@@ -171,6 +204,12 @@ type Props = {
 export function WidgetTree({ facade, selected, onSelect }: Props) {
   const [panelsOpen, setPanelsOpen] = useState(true);
   const key = selectionKey(selected);
+  useEffect(() => {
+    if (selected.kind === "node" || selected.kind === "panel") {
+      setPanelsOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
   return (
     <div className="hkp-editor-tree" role="tree" aria-label="Facade">
       <TreeRow

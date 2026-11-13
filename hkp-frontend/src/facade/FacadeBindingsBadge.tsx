@@ -1,46 +1,35 @@
 import { useState } from "react";
 import { Link2 } from "lucide-react";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "hkp-frontend/src/ui-components/primitives/popover";
 import { BindingSite, isServiceBinding } from "./bindings";
 import { useFacadeBindings } from "./FacadeBindingsContext";
-import { useFacadeState } from "./FacadeStateContext";
+import { useFacadeView } from "./FacadeViewContext";
 import { OverlayTabs, ServiceRow, StateRow } from "./panels/BindingRows";
-import { FacadeStateView, stateKeys } from "./FacadeStateView";
 
 /**
- * The facade's own badge: the bindings that belong to no widget.
+ * The bindings that belong to no widget — what runs when the facade opens
+ * (`init`) and what raises a toast (`notices`) — and the facade's own badge,
+ * which opens the editor on them.
  *
- * What runs when the facade opens (`init`), what raises a toast (`notices`),
- * and the facade state through which one widget reaches another — each key's
- * value now, who writes it and who reads it. Drawn on the divider between the
- * facade and the board, which is only there while both are on screen, which is
- * the one view where a binding has somewhere to point.
+ * The badge is drawn on the divider between the facade and the board, which
+ * is only there while both are on screen: the one view where a binding has
+ * somewhere to point.
  */
 
-export type FacadeTab = "init" | "notices" | "state";
+export type FacadeTab = "init" | "notices";
 
 // The facade's own actions — the ones it runs when it opens — and the updates
 // it raises as notices: the same words the editor's tree uses for them.
 const TAB_TITLES: Record<FacadeTab, string> = {
   init: "Actions",
   notices: "Updates",
-  state: "State",
 };
 
 function toastOf(tone: "info" | "success" | "error"): string {
   return tone === "success" ? "a success toast" : `an ${tone} toast`;
 }
 
-/**
- * The facade's own bindings under tabs — the divider badge's overlay, and the
- * facade editor's view of the facade as a whole, which leaves the State tab to
- * the editor's state panel.
- */
+/** The facade's own bindings under tabs, in the editor's Actions and Updates. */
 export function FacadeBindings({
   tabs,
   onDone,
@@ -53,29 +42,17 @@ export function FacadeBindings({
   onRevealSite: (site: BindingSite) => void;
 }) {
   const api = useFacadeBindings();
-  const { state: values, history } = useFacadeState();
   const [chosen, setTab] = useState<FacadeTab | null>(null);
-  // State where it is offered — the badge's most looked-at tab — and
-  // otherwise the first.
-  const tab =
-    chosen && tabs.includes(chosen)
-      ? chosen
-      : tabs.includes("state")
-        ? "state"
-        : tabs[0];
+  const tab = chosen && tabs.includes(chosen) ? chosen : tabs[0];
 
   if (!api) {
     return null;
   }
   const { index } = api;
-  // Every key the facade mentions, and any it holds that nothing mentions —
-  // written by a widget whose key is made up as it runs.
-  const keys = stateKeys(index, values, history);
 
   const counts: Record<FacadeTab, number> = {
     init: index.init.length,
     notices: index.notices.length,
-    state: keys.length,
   };
 
   return (
@@ -142,62 +119,33 @@ export function FacadeBindings({
             )}
           </ul>
         )}
-        {tab === "state" && (
-          <FacadeStateView
-            index={index}
-            onReveal={onRevealSite}
-            empty="The facade keeps no state."
-          />
-        )}
       </div>
     </>
   );
 }
 
+export const FACADE_BADGE_LABEL = "Open the facade's state in the editor";
+
 export function FacadeBindingsBadge() {
   const api = useFacadeBindings();
-  const [open, setOpen] = useState(false);
+  const view = useFacadeView();
 
-  if (!api?.badges) {
+  if (!api?.badges || !view) {
     return null;
   }
 
-  const onOpenChange = (next: boolean) => {
-    if (next) {
-      api.refreshLocations();
-    }
-    setOpen(next);
-  };
-
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="hkp-facade-binding-badge"
-          aria-label="What the facade runs, raises and keeps"
-          title="What the facade runs on open, the notices it raises and its state"
-          // The divider under it is dragged; the badge is pressed.
-          onMouseDown={(event) => event.stopPropagation()}
-        >
-          <Link2 size={11} />
-          Facade
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="hkp-binding-overlay"
-        align="end"
-        style={{ width: "min(400px, 92vw)", padding: 0 }}
-      >
-        <FacadeBindings
-          tabs={["init", "notices", "state"]}
-          onDone={() => setOpen(false)}
-          onRevealSite={(site) => {
-            setOpen(false);
-            api.revealWidget(site);
-          }}
-        />
-      </PopoverContent>
-    </Popover>
+    <button
+      type="button"
+      className="hkp-facade-binding-badge"
+      aria-label={FACADE_BADGE_LABEL}
+      title="Open the facade editor on its state, the actions it runs on open and the notices it raises"
+      // The divider under it is dragged; the badge is pressed.
+      onMouseDown={(event) => event.stopPropagation()}
+      onClick={() => view.openEditorAt({ kind: "state" })}
+    >
+      <Link2 size={11} />
+      Facade
+    </button>
   );
 }

@@ -220,6 +220,10 @@ export default function BoardEntryPoint({
           )}
           boardName={boardName}
           runtimeContent={boardContent}
+          // An ordinary board keeps what the editor changes in its own facade.
+          // A composition's views are its units' facades, which a save splits
+          // back from the units' own documents, so an edit there is not kept.
+          onFacadeChange={views.length === 0 ? boardContext.setFacade : undefined}
         />
       </div>
     );

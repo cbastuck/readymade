@@ -28,6 +28,12 @@ type FacadeRendererProps = {
   boardContext: BoardContextState;
   boardName: string;
   runtimeContent: React.ReactNode;
+  /**
+   * Where the facade editor's changes go to be kept — the board's own facade.
+   * Absent where a change cannot be kept: the editor's changes then last only
+   * as long as the board is open, and it says so.
+   */
+  onFacadeChange?: (facade: FacadeDescriptor) => void;
 };
 
 export default function FacadeRenderer({
@@ -35,6 +41,7 @@ export default function FacadeRenderer({
   boardContext,
   boardName,
   runtimeContent,
+  onFacadeChange,
 }: FacadeRendererProps) {
   // ── facade state store ───────────────────────────────────────────────────
   const [facadeState, setFacadeStateRaw] = useState<Record<string, unknown>>(
@@ -113,10 +120,20 @@ export default function FacadeRenderer({
   const showFacade = anyPanels && (view ? view.showFacade : true);
   const showRuntime = !anyPanels || (view ? view.showRuntime : false);
 
-  // Reset the draft whenever a different board is loaded.
+  // The draft follows the facade it was given: another board, or this one's
+  // facade changed by something other than the editor — the editor's own
+  // changes, once kept, come back as the same object.
   useEffect(() => {
     setDraftFacade(facade);
-  }, [boardName]);
+  }, [boardName, facade]);
+
+  const changeFacade = useCallback(
+    (updated: FacadeDescriptor) => {
+      setDraftFacade(updated);
+      onFacadeChange?.(updated);
+    },
+    [onFacadeChange],
+  );
 
   // ── tabs ─────────────────────────────────────────────────────────────────
   // Which face is chosen lives here rather than in storage: a board says what
@@ -248,8 +265,9 @@ export default function FacadeRenderer({
           facade={draftFacade}
           boardContext={boardContext}
           // Only with the board beside it: a binding points at the board, and
-          // a host with no view controls is showing the facade as an app.
-          badges={!!view && showFacade && showRuntime}
+          // a host with no view controls is showing the facade as an app. And
+          // only where the editor a badge opens can be opened.
+          badges={!!view?.editable && showFacade && showRuntime}
         >
         <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}
@@ -389,7 +407,8 @@ export default function FacadeRenderer({
                 >
                   <FacadeEditor
                     facade={draftFacade}
-                    onChange={setDraftFacade}
+                    onChange={changeFacade}
+                    kept={!!onFacadeChange}
                   />
                 </div>
               </>
