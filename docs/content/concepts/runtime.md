@@ -426,6 +426,15 @@ them:
   browser it is `serviceState.ts`. A pipeline nested at any depth follows the
   runtime that holds it.
 
+**Coming from a facade.** You don't need to know which service a widget
+reaches to inspect it: in the facade editor, a widget's **Inspect** opens the
+inspector of the service it acts on, or of the one that updates it
+([Board: what a widget is connected to](./board.md#what-a-widget-is-connected-to)).
+A `process` a widget sends shows up there as the service's input. A
+`configure` doesn't, because configuring a service isn't a call. What a widget
+configured is listed under the widget in the editor instead, with each
+payload it sent.
+
 Even with Capture mode on, a report carries a value only up to 5 MiB. Above
 that, a description takes its place, `{"__hkpTooLarge": {type, bytes, exact,
 preview}}`: what the value is, how large (`exact` is false where counting
