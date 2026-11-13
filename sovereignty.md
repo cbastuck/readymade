@@ -13,9 +13,9 @@
 
 ## 1. The Core Problem: Digital Dependency in Everyday Life
 
-When a sports club needs a court-booking system, a neighborhood group wants to coordinate shared tools, a family wants to track health data, or a small craft business wants to organize customer requests, they face a false choice:
+When a sports club needs a court-booking system, a neighborhood group wants to coordinate shared tools, a family wants to track health data, or a small craft business wants to organize customer requests, they face a limited choice:
 
-1. **Rent from Big Tech / SaaS:** Adopt a centralized platform that locks in their data, dictates the rules, charges per-seat subscriptions, or monetizes their attention and privacy.
+1. **Rent SaaS offering:** Adopt a centralized platform that locks in their data, dictates the rules, charges per-seat subscriptions, or monetizes their attention and privacy. Often these solution are rigid and rarely fit how the group works.
 2. **Wait or Hire:** Wait for a commercial vendor to build the exact feature they need, or pay for custom software development that they can neither understand nor maintain themselves.
 
 Even today's "AI app builders" mostly deepen this trap: they generate thousands of lines of opaque code that non-coders cannot audit, secure, or repair when something breaks.
@@ -28,7 +28,7 @@ Readymade builds software from **small, standard building blocks ("services") th
 
 Instead of writing sprawling codebases, people (and AI assistants) assemble small, self-contained **boards** where:
 
-- **The app is a document, and it is yours:** An entire application—its user interface (Facade), its workflow, and its rules—is a single, human-readable JSON file (`board.json`). The board belongs to whoever built it; the platform that runs it is free software under the **GNU AGPLv3**.
+- **The app is a document, and it is yours:** An entire application—its user interface (Facade), its workflow, and its rules—is a single, inspectable JSON file (`board.json`). The board belongs to whoever built it; the platform that runs it is free software under the **GNU AGPLv3**.
 - **Data stays in durable, open standards:** Persistent apps store their data in standard **SQLite** files (exportable in one click) and communicate over open, battle-tested protocols (**IMAP/SMTP email, RSS, HTTP, WebRTC**)—technologies that existed 20 years ago and will still work 20 years from now.
 
 ---
@@ -40,7 +40,7 @@ Self-determination over a tool comes down to three kinds of control: understandi
 ### 1. Understand it (without being a coder)
 
 - **Why it matters:** People and communities only decide for themselves about a tool if they can see what it actually does.
-- **How Readymade does it:** Readymade has no hidden control flow and no "spaghetti wires." Services run in a clear, top-to-bottom list. Anyone can turn on **Capture Mode** or open the **Overview** and watch data flow through the app in real time—seeing what entered each step, what left it, and why a rule stopped an action. You don't have to read source code to understand the behavior; you can *experience, inspect, and verify* it live, then adapt and extend it.
+- **How Readymade does it:** Readymade has no hidden control flow and no "spaghetti wires." Services run in a clear, observable order. Anyone can turn on **Capture Mode** or open the **Overview** and watch data flow through the app in real time. Observing what entered each step, what a service consumed and produced, and why a rule stopped an action. You don't have to read source code to understand the behavior; you can *experience, inspect, and verify* it live, then adapt and extend it. If you want the details, you can dive deeper and dive deeper under the hood of the user interface tweak the behavior to your individual needs.
 
 ### 2. Own it (and keep it, whatever happens to Readymade)
 
@@ -53,7 +53,7 @@ Self-determination over a tool comes down to three kinds of control: understandi
 
 - **Why it matters:** Whoever operates the machine a tool runs on has the last word over it.
 - **How Readymade does it:**
-  - **From one phone to a club's server:** The exact same board runs offline in a browser/app for one person, or deployed on a small server (a €4 VPS or a Raspberry Pi behind a home router) shared with club members on their phones.
+  - **From one phone to a club's server:** The exact same board runs in local setup for one person, or deployed into the cloud or a self-hosted server (a €4 VPS or a Raspberry Pi behind a home router) to share it other club members on their phones. Move the building block within seconds into a hosted infrastructure.
   - **Your choice of AI:** The assistant and the AI blocks work with models on your own hardware (`llama.cpp`, `Ollama`, `Whisper`, `Kokoro`) or with a European provider (Mistral). Which model sees your data is a setting you make.
 
 ---
@@ -80,7 +80,7 @@ AI can help non-coders build their own solutions, but unreviewed AI-generated co
 Tools on hardware you control keep working when someone else's infrastructure changes:
 
 - A board on a phone or laptop works offline.
-- Runtime servers dial *out* to their coordinator using narrow, revocable tickets. They work behind home routers/NAT, automatically reconnect after power cuts, and enforce verified member identities down to the database level.
+- Local runtime servers can connect to a board running in the cloud. Even if it's behind home routers/NAT. We automatically reconnect after power cuts, and enforce verified member identities down to the database level.
 
 ---
 
