@@ -8,9 +8,11 @@ import type {
 import {
   addUsage,
   AssistUsage,
+  formatTokens,
   fromAnthropicUsage,
   noUsage,
 } from "./usage";
+import { OutputLimitError } from "./outputLimit";
 import {
   bundledKnowledgeProvider,
   documentationIndex,
@@ -154,6 +156,8 @@ export async function runAssistTurn(options: {
   token: string;
   model: AssistModel;
   effort: Effort;
+  /** What the person set, never more than the model states it can write. */
+  outputLimit?: number;
   conversation: Conversation;
   prompt: string;
   context: unknown;
@@ -205,6 +209,10 @@ export async function runAssistTurn(options: {
   let text = "";
   // Every request counts, the documentation lookups as much as the proposal.
   let usage = noUsage;
+  const stated = options.model.max_tokens;
+  const maxTokens = options.outputLimit
+    ? Math.min(options.outputLimit, stated || options.outputLimit)
+    : Math.min(16384, stated || 16384);
   for (let step = 0; step < 12; step++) {
     options.signal.throwIfAborted();
     const effort = modelEfforts(options.model).includes(options.effort)
@@ -213,7 +221,7 @@ export async function runAssistTurn(options: {
     const stream = client.messages.stream(
       {
         model: options.model.id,
-        max_tokens: Math.min(16384, options.model.max_tokens || 16384),
+        max_tokens: maxTokens,
         system,
         messages,
         tools,
@@ -228,9 +236,12 @@ export async function runAssistTurn(options: {
     const response = await stream.finalMessage();
     usage = addUsage(usage, fromAnthropicUsage(response.usage));
     options.onUsage?.(usage);
+    // Nothing of it is carried into a retry: the turn is a series of
+    // requests, and the one cut off may be any of them.
     if (response.stop_reason === "max_tokens")
-      throw new Error(
-        "The response reached its output limit. Try a smaller change or lower effort.",
+      throw new OutputLimitError(
+        `The response reached its output limit (${formatTokens(maxTokens)} tokens). Raise the output limit in Model settings or lower the effort, then retry.`,
+        { limit: maxTokens },
       );
     messages.push({ role: "assistant", content: response.content });
     const calls = response.content.filter((block) => block.type === "tool_use");

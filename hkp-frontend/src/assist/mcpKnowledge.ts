@@ -1,5 +1,6 @@
 import type { CallToolResult, Client } from "@modelcontextprotocol/client";
 import { bundledKnowledgeProvider } from "./documentation";
+import { DEFAULT_MCP_KNOWLEDGE_URL } from "./settings";
 import type {
   AgenticKnowledgeProvider,
   AgentKnowledgeTool,
@@ -401,12 +402,12 @@ export function boardAssistKnowledgeProvider(
   signal: AbortSignal,
   onFallback?: (error: Error) => void,
 ): ReadymadeKnowledgeProvider {
-  return endpoint.trim()
-    ? new McpKnowledgeProvider(
-        endpoint,
-        signal,
-        bundledKnowledgeProvider,
-        onFallback,
-      )
-    : bundledKnowledgeProvider;
+  // No URL set means the hosted server, not none: the bundled documentation
+  // still answers whenever that server cannot.
+  return new McpKnowledgeProvider(
+    endpoint.trim() || DEFAULT_MCP_KNOWLEDGE_URL,
+    signal,
+    bundledKnowledgeProvider,
+    onFallback,
+  );
 }

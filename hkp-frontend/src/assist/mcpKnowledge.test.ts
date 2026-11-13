@@ -23,8 +23,10 @@ vi.mock("@modelcontextprotocol/client", () => ({
   },
 }));
 
+import { DEFAULT_MCP_KNOWLEDGE_URL } from "./settings";
 import {
   McpKnowledgeProvider,
+  boardAssistKnowledgeProvider,
   mcpFailureKind,
   normalizeMcpKnowledgeUrl,
   resetMcpKnowledgeCooldowns,
@@ -96,6 +98,19 @@ describe("MCP knowledge provider", () => {
     expect(() =>
       normalizeMcpKnowledgeUrl("http://user:secret@127.0.0.1:8787/mcp"),
     ).toThrow("without credentials");
+  });
+
+  it("uses the hosted knowledge server when no URL is set", () => {
+    const signal = new AbortController().signal;
+    for (const endpoint of ["", "   "]) {
+      const chosen = boardAssistKnowledgeProvider(endpoint, signal);
+      expect(chosen).toBeInstanceOf(McpKnowledgeProvider);
+      expect(chosen.id).toMatch(/^mcp\+/);
+    }
+    expect(DEFAULT_MCP_KNOWLEDGE_URL).toBe("https://mcp.readymadeit.com/mcp");
+    expect(normalizeMcpKnowledgeUrl(DEFAULT_MCP_KNOWLEDGE_URL)).toBe(
+      DEFAULT_MCP_KNOWLEDGE_URL,
+    );
   });
 
   it("maps structured MCP search and read results to the provider boundary", async () => {

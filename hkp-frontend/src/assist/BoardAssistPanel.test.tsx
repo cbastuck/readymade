@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 const mocks = vi.hoisted(() => ({
   board: null as any,
   run: vi.fn(),
@@ -11,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   openCodeRun: vi.fn(),
   goModels: vi.fn(),
   goRun: vi.fn(),
+  mistralModels: vi.fn(),
+  mistralRun: vi.fn(),
 }));
 vi.mock("../BoardContext", () => ({ useBoardContext: () => mocks.board }));
 vi.mock("../selection/SelectionContext", () => ({
@@ -88,8 +91,14 @@ vi.mock("./openCodeGo", () => {
     newOpenCodeGoSession: () => `session-${++drawn}`,
   };
 });
+vi.mock("./mistral", () => ({
+  listMistralModels: mocks.mistralModels,
+  runMistralTurn: mocks.mistralRun,
+}));
 import BoardAssistPanel from "./BoardAssistPanel";
+import { FacadeViewProvider } from "../facade/FacadeViewContext";
 import { readAssistSettings, saveAssistSettings } from "./settings";
+import { OutputLimitError } from "./outputLimit";
 import { BOARD_RENDER_FAILURE_EVENT } from "../core/renderFailures";
 const original = {
   boardName: "Before",
@@ -414,6 +423,122 @@ describe("Board Assist panel", () => {
     view.unmount();
     view.host.remove();
   });
+  it("uses Mistral with its key, without an effort setting", async () => {
+    saveAssistSettings({ provider: "mistral", mistralToken: "mistral-key" });
+    mocks.mistralModels.mockResolvedValue([
+      { id: "mistral-large-latest", display_name: "mistral-large-latest", context_tokens: 131072 },
+    ]);
+    mocks.mistralRun.mockResolvedValue({
+      conversation: [],
+      text: "Mistral proposal",
+      board: undefined,
+    });
+    const view = mount();
+    await screen.findByRole("option", { name: "mistral-large-latest" });
+    expect(screen.queryByLabelText("Effort")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Explain this board" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByText("Mistral proposal")).toBeTruthy();
+    expect(mocks.mistralModels).toHaveBeenCalledWith(
+      "mistral-key",
+      expect.any(AbortSignal),
+    );
+    expect(mocks.mistralRun.mock.calls[0][0]).toMatchObject({
+      token: "mistral-key",
+      prompt: "Explain this board",
+    });
+    expect(mocks.run).not.toHaveBeenCalled();
+    expect(screen.getByText(/are sent to Mistral\./)).toBeTruthy();
+    view.unmount();
+    view.host.remove();
+  });
+
+  it("continues a cut-off turn from its thinking, with the limit set since", async () => {
+    saveAssistSettings({ provider: "mistral", mistralToken: "mistral-key" });
+    mocks.mistralModels.mockResolvedValue([
+      { id: "mistral-medium", display_name: "mistral-medium", context_tokens: 131072 },
+    ]);
+    mocks.mistralRun
+      .mockImplementationOnce(async (turn) => {
+        turn.onReasoning("Weighing a clock against a timer.");
+        throw new OutputLimitError(
+          "The model spent its whole output limit (16,384 tokens) thinking.",
+          { limit: 16384, reasoning: "Weighing a clock against a timer." },
+        );
+      })
+      .mockResolvedValueOnce({ conversation: [], text: "Finished", board: undefined });
+    const view = mount();
+    await screen.findByRole("option", { name: "mistral-medium" });
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Build a clock" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    const carryOn = await screen.findByRole("button", { name: "Continue" });
+    expect(mocks.mistralRun.mock.calls[0][0].outputLimit).toBeUndefined();
+    expect(screen.getByText("Weighing a clock against a timer.")).toBeTruthy();
+    // Typed while the cut-off turn waits, and never left before Continue.
+    fireEvent.change(screen.getByLabelText("Output limit"), {
+      target: { value: "40000" },
+    });
+    fireEvent.click(carryOn);
+    expect(await screen.findByText("Finished")).toBeTruthy();
+    expect(mocks.mistralRun.mock.calls[1][0]).toMatchObject({
+      prompt: "Build a clock",
+      outputLimit: 40000,
+      continuation: { limit: 16384, reasoning: "Weighing a clock against a timer." },
+    });
+    expect(readAssistSettings().outputLimit).toBe(40000);
+    expect(
+      screen.getByText("Continue with an output limit of 40,000 tokens"),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Continue" })).toBeNull();
+    view.unmount();
+    view.host.remove();
+  });
+
+  it("retries a turn cut off with nothing to carry, and refuses an unusable limit", async () => {
+    mocks.run
+      .mockRejectedValueOnce(
+        new OutputLimitError("The response reached its output limit.", { limit: 16384 }),
+      )
+      .mockResolvedValueOnce({ conversation: [], text: "Second try", board: undefined });
+    const view = mount();
+    await screen.findByRole("option", { name: "Queried model" });
+    const limit = screen.getByLabelText("Output limit");
+    fireEvent.change(limit, { target: { value: "12" } });
+    fireEvent.blur(limit);
+    expect(screen.getByRole("alert").textContent).toMatch(/Set between 1,024/);
+    expect(readAssistSettings().outputLimit).toBe(0);
+    fireEvent.change(limit, { target: { value: "" } });
+    fireEvent.blur(limit);
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Change this timer" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+    expect(await screen.findByText("Second try")).toBeTruthy();
+    expect(mocks.run.mock.calls[1][0]).toMatchObject({
+      prompt: "Change this timer",
+      continuation: { limit: 16384 },
+    });
+    expect(
+      screen.getByText("Retry with the model's default output limit"),
+    ).toBeTruthy();
+    view.unmount();
+    view.host.remove();
+  });
+
+  it("asks for a Mistral key before anything is queried", async () => {
+    saveAssistSettings({ provider: "mistral" });
+    const view = mount();
+    expect(screen.getByRole("button", { name: "API settings" })).toBeTruthy();
+    expect(mocks.mistralModels).not.toHaveBeenCalled();
+    view.unmount();
+    view.host.remove();
+  });
+
   it("passes an optional MCP knowledge provider to the model turn", async () => {
     saveAssistSettings({
       mcpKnowledgeUrl: "http://127.0.0.1:8787/mcp",
@@ -477,6 +602,48 @@ describe("Board Assist panel", () => {
     );
     view.unmount();
     view.host.remove();
+  });
+  it("closes when the applied board opens as its facade alone", async () => {
+    const onClose = vi.fn();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    // The board changes through React, as the real provider's does: loading
+    // the proposal leaves a board with a facade, which the facade view shows
+    // on its own by default.
+    function Harness() {
+      const [board, setBoard] = useState(mocks.board);
+      mocks.board = board;
+      board.setBoardState = vi.fn(async () =>
+        setBoard({ ...board, facade: { layout: "single", panels: [] } }),
+      );
+      return (
+        <FacadeViewProvider boardName="Before">
+          <BoardAssistPanel host={host} visible onClose={onClose} />
+        </FacadeViewProvider>
+      );
+    }
+    const view = render(<Harness />);
+    await requestUnappliedProposal();
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Apply board" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    view.unmount();
+    host.remove();
+  });
+  it("stays open when opened over a board already shown as its facade", async () => {
+    mocks.board.facade = { layout: "single", panels: [] };
+    const onClose = vi.fn();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const view = render(
+      <FacadeViewProvider boardName="Before">
+        <BoardAssistPanel host={host} visible onClose={onClose} />
+      </FacadeViewProvider>,
+    );
+    await requestProposal();
+    expect(onClose).not.toHaveBeenCalled();
+    view.unmount();
+    host.remove();
   });
   it("keeps a generated board as a proposal until the person applies it", async () => {
     const view = mount();

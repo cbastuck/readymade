@@ -47,6 +47,22 @@ it("shows only the chosen provider's settings and saves the choice at once", () 
   });
 });
 
+it("configures Mistral with a key alone and can remove it", () => {
+  render(<AssistSettings />);
+  fireEvent.click(screen.getByRole("button", { name: /Mistral/ }));
+  expect(readAssistSettings().provider).toBe("mistral");
+  expect(screen.queryByLabelText("API base URL")).toBeNull();
+  const key = type("API key", " mistral-key ");
+  expect((key as HTMLInputElement).type).toBe("password");
+  fireEvent.blur(key);
+  expect(readAssistSettings()).toMatchObject({
+    mistralToken: "mistral-key",
+    model: "",
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Remove Mistral key" }));
+  expect(readAssistSettings().mistralToken).toBe("");
+});
+
 it("configures an OpenCode server and shows its current CORS origin", () => {
   render(<AssistSettings />);
   fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));

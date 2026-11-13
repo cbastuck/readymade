@@ -3,9 +3,11 @@ import { createPortal } from "react-dom";
 import { ChevronDown, X } from "lucide-react";
 import { useBoardContext } from "../BoardContext";
 import { useSelection } from "../selection/SelectionContext";
+import { useChromeRetracted } from "../facade/FacadeChrome";
 import SettingsDialog from "../ui-components/SettingsDialog";
 import ReadymadeMark from "../components/Toolbar/assets/hkp-single-dot-h.svg?react";
 import { ASSIST_PROVIDER_LABELS, Effort } from "./settings";
+import { carriesOn, continueHint } from "./outputLimit";
 import {
   describeUsage,
   formatPrice,
@@ -54,6 +56,7 @@ export default function BoardAssistPanel({
     compatible,
     openCode,
     openCodeGo,
+    mistral,
     providerReady,
     models,
     modelsLoading,
@@ -93,6 +96,17 @@ export default function BoardAssistPanel({
   useEffect(() => {
     if (visible) threadEnd.current?.scrollIntoView?.({ block: "end" });
   }, [entries, status, visible]);
+
+  // A board that becomes its facade alone — a proposal with a facade applied,
+  // say — is now the app being used rather than built, and the chrome around
+  // it retracts. The panel is part of that chrome, so it goes with it. Only
+  // the change closes it: opened again over the facade, it stays.
+  const retracted = useChromeRetracted();
+  const wasRetracted = useRef(retracted);
+  useEffect(() => {
+    if (retracted && !wasRetracted.current && visible) onClose();
+    wasRetracted.current = retracted;
+  }, [retracted, visible, onClose]);
 
   if (!host) return null;
   return createPortal(
@@ -141,6 +155,7 @@ export default function BoardAssistPanel({
                   {model ? ` · ${model.display_name}` : ""}
                   {!openCode &&
                     !openCodeGo &&
+                    !mistral &&
                     ` · ${
                       compatible
                         ? settings.openAIThinking === "default"
@@ -150,6 +165,9 @@ export default function BoardAssistPanel({
                           ? "Model default"
                           : `${effort} effort`
                     }`}
+                  {assist.takesOutputLimit &&
+                    settings.outputLimit > 0 &&
+                    ` · ${formatTokens(settings.outputLimit)} output limit`}
                 </small>
               </span>
               <ChevronDown size={14} strokeWidth={1.75} aria-hidden="true" />
@@ -193,7 +211,9 @@ export default function BoardAssistPanel({
                             ? "Configure an OpenCode server"
                             : openCodeGo
                               ? "Enter an OpenCode Go key"
-                              : "Enter an Anthropic token"}
+                              : mistral
+                                ? "Enter a Mistral API key"
+                                : "Enter an Anthropic token"}
                     </option>
                   )}
                   {models.map((item) => (
@@ -203,9 +223,37 @@ export default function BoardAssistPanel({
                   ))}
                 </select>
               </label>
+              {assist.takesOutputLimit && (
+                <>
+                  <label title="The most one answer may write, the model's thinking included. Empty uses the model's default.">
+                    Output limit{" "}
+                    <input
+                      className="hkp-assist-number"
+                      type="text"
+                      inputMode="numeric"
+                      disabled={busy}
+                      placeholder="Model default"
+                      value={assist.outputLimitDraft}
+                      aria-invalid={!!assist.outputLimitError || undefined}
+                      onChange={(event) =>
+                        assist.setOutputLimitDraft(event.target.value)
+                      }
+                      onBlur={assist.commitOutputLimit}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") assist.commitOutputLimit();
+                      }}
+                    />
+                  </label>
+                  {assist.outputLimitError && (
+                    <p role="alert" className="hkp-assist-error">
+                      {assist.outputLimitError}
+                    </p>
+                  )}
+                </>
+              )}
               {!openCode && <div className="hkp-assist-row">
-                {/* Go's models take no effort or template setting here. */}
-                {!openCodeGo && <label>
+                {/* Go's and Mistral's models take no effort or template setting here. */}
+                {!openCodeGo && !mistral && <label>
                   Effort{" "}
                   <select
                     disabled={busy || (!compatible && efforts.length === 1)}
@@ -301,6 +349,12 @@ export default function BoardAssistPanel({
                   {describeUsage(entry.usage, entry.modelId ?? "")}
                 </p>
               )}
+              {entry.reasoning && (
+                <details>
+                  <summary>Show the model's thinking</summary>
+                  <pre>{entry.reasoning}</pre>
+                </details>
+              )}
               {entry.rawResponse !== undefined && (
                 <details>
                   <summary>Show raw model response</summary>
@@ -321,6 +375,20 @@ export default function BoardAssistPanel({
                   >
                     Switch to Whole board and retry
                   </button>
+                </div>
+              )}
+              {entry.cutOff && assist.continuable(index) && (
+                <div className="hkp-assist-row hkp-assist-continue">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void assist.continueTurn(index)}
+                  >
+                    {carriesOn(entry.cutOff) ? "Continue" : "Retry"}
+                  </button>
+                  <span className="hkp-assist-hint">
+                    {continueHint(entry.cutOff, settings.outputLimit)}
+                  </span>
                 </div>
               )}
               {entry.board && (

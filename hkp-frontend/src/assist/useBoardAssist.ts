@@ -13,6 +13,7 @@ import {
   modelEfforts,
   runAssistTurn,
 } from "./anthropic";
+import { listMistralModels, runMistralTurn } from "./mistral";
 import { listOpenAIModels, runOpenAICompatibleTurn } from "./openAICompatible";
 import { listOpenCodeModels, runOpenCodeTurn } from "./openCode";
 import {
@@ -20,10 +21,27 @@ import {
   newOpenCodeGoSession,
   runOpenCodeGoTurn,
 } from "./openCodeGo";
-import { saveAssistSettings, useAssistSettings } from "./settings";
+import {
+  readAssistSettings,
+  saveAssistSettings,
+  useAssistSettings,
+} from "./settings";
+import {
+  carriesOn,
+  CutOff,
+  joinCutOffs,
+  OutputLimitError,
+  parseOutputLimit,
+} from "./outputLimit";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
-import { addUsage, AssistUsage, noUsage, priceOf } from "./usage";
+import {
+  addUsage,
+  AssistUsage,
+  formatTokens,
+  noUsage,
+  priceOf,
+} from "./usage";
 import { captureBoardRenderFailures } from "../core/renderFailures";
 import { boardAssistKnowledgeProvider } from "./mcpKnowledge";
 import { assistContext, resolveAssistScope } from "./scope";
@@ -51,6 +69,13 @@ export type AssistEntry = {
    * touches the facade or another runtime).
    */
   retryWholeBoardPrompt?: string;
+  /** The model's reasoning, for providers that send it. */
+  reasoning?: string;
+  /**
+   * A turn that ended at its output limit: what it had written, and the
+   * request it was answering, to go on from with the limit set since.
+   */
+  cutOff?: CutOff & { prompt: string };
   preflightError?: string;
   preflightPassed?: boolean;
   /** Every request the turn made, and the model it was priced for. */
@@ -121,13 +146,16 @@ export function useBoardAssist({
   const compatible = settings.provider === "openai-compatible";
   const openCode = settings.provider === "opencode";
   const openCodeGo = settings.provider === "opencode-go";
+  const mistral = settings.provider === "mistral";
   const providerReady = compatible
     ? !!settings.openAICompatibleUrl.trim()
     : openCode
       ? !!settings.openCodeUrl.trim()
       : openCodeGo
         ? !!settings.openCodeGoUrl.trim() && !!settings.openCodeGoToken.trim()
-        : !!settings.anthropicToken.trim();
+        : mistral
+          ? !!settings.mistralToken.trim()
+          : !!settings.anthropicToken.trim();
   const [models, setModels] = useState<AssistModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [reload, setReload] = useState(0);
@@ -187,7 +215,9 @@ export function useBoardAssist({
               settings.openCodeGoRelayKey,
               controller.signal,
             )
-          : listAssistModels(settings.anthropicToken, controller.signal))
+          : mistral
+            ? listMistralModels(settings.mistralToken, controller.signal)
+            : listAssistModels(settings.anthropicToken, controller.signal))
       .then((list) => {
         if (controller.signal.aborted) return;
         setModels(list);
@@ -207,6 +237,7 @@ export function useBoardAssist({
   }, [
     active,
     settings.anthropicToken,
+    settings.mistralToken,
     settings.openAICompatibleUrl,
     settings.openAICompatibleToken,
     settings.openCodeUrl,
@@ -218,6 +249,7 @@ export function useBoardAssist({
     compatible,
     openCode,
     openCodeGo,
+    mistral,
     providerReady,
     reload,
   ]);
@@ -289,14 +321,48 @@ export function useBoardAssist({
     if (origin) await currentBoard.current!.setBoardState(config, origin);
     else await currentBoard.current!.setBoardState(config);
   };
-  const submit = async (
-    rawPrompt: string,
+  // The output limit as typed, saved when the field is left.
+  const [outputLimitDraft, setOutputLimitDraft] = useState(
+    settings.outputLimit ? String(settings.outputLimit) : "",
+  );
+  const [outputLimitError, setOutputLimitError] = useState("");
+  useEffect(() => {
+    setOutputLimitDraft(settings.outputLimit ? String(settings.outputLimit) : "");
+  }, [settings.outputLimit]);
+  /**
+   * Saves the typed limit, and says what a request now gets: the typed one,
+   * or what is saved when that is not valid. A phone's sheet can close
+   * without the field being left, so a request saves it too.
+   */
+  const commitOutputLimit = () => {
+    const saved = readAssistSettings().outputLimit;
+    try {
+      const outputLimit = parseOutputLimit(outputLimitDraft);
+      setOutputLimitError("");
+      if (outputLimit !== saved) updateSettings({ outputLimit });
+      else setOutputLimitDraft(outputLimit ? String(outputLimit) : "");
+      return outputLimit;
+    } catch (err) {
+      setOutputLimitError(
+        err instanceof Error ? err.message : "Not a valid output limit.",
+      );
+      return saved;
+    }
+  };
+  /**
+   * One request for `text`, shown in the conversation as `shown`. A
+   * `continuation` is an earlier attempt at the same request that reached its
+   * output limit, which the model goes on from where the provider allows.
+   */
+  const runTurn = async (
+    text: string,
+    shown: string,
+    continuation?: CutOff,
     scopeChoice = scope,
-    clearDraft = false,
+    /** The entry whose whole-board retry this is, which then offers it no more. */
     clearRetryIndex?: number,
   ) => {
-    const text = rawPrompt.trim();
-    if (!text || !model || busyRef.current) return;
+    if (!model || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -313,16 +379,19 @@ export function useBoardAssist({
           `MCP knowledge server unavailable; used bundled documentation. ${reason.message}`,
         ),
     );
-    if (clearDraft) setPrompt("");
     const index = entries.length + 1;
     let rawResponse: string | undefined;
+    let reasoning: string | undefined;
+    // Read now, not when the view last rendered: a limit typed just before
+    // Continue is what the person means it to go on with.
+    const outputLimit = commitOutputLimit() || undefined;
     setEntries((list) => [
       ...list.map((entry, i) =>
         i === clearRetryIndex
           ? { ...entry, retryWholeBoardPrompt: undefined }
           : entry,
       ),
-      { role: "user", text },
+      { role: "user", text: shown },
       { role: "assistant", text: "" },
     ]);
     try {
@@ -359,8 +428,13 @@ export function useBoardAssist({
         }),
         signal: controller.signal,
         onStatus: setStatus,
+        outputLimit,
+        continuation,
         onRawResponse: (output: string) => {
           rawResponse = output;
+        },
+        onReasoning: (output: string) => {
+          reasoning = output;
         },
         onUsage: (usage: AssistUsage) =>
           setEntries((list) =>
@@ -399,7 +473,12 @@ export function useBoardAssist({
                 relayKey: settings.openCodeGoRelayKey,
                 session: (session.current ||= newOpenCodeGoSession()),
               })
-            : await runAssistTurn(request);
+            : mistral
+              ? await runMistralTurn({
+                  ...request,
+                  token: settings.mistralToken,
+                })
+              : await runAssistTurn(request);
       controller.signal.throwIfAborted();
       conversation.current = result.conversation;
       // A server the person keeps is named, not addressed, whatever the model
@@ -433,6 +512,7 @@ export function useBoardAssist({
         rawResponse: proposal ? undefined : rawResponse,
         retryWholeBoardPrompt:
           editScope.kind === "runtime" && !proposal ? text : undefined,
+        reasoning,
         base: JSON.stringify(captured),
         preflightError,
         preflightPassed: !!proposal && !preflightError,
@@ -453,6 +533,10 @@ export function useBoardAssist({
           ? err.message
           : "The assistant could not complete the request.";
       setError(message);
+      const cutOff =
+        err instanceof OutputLimitError && !controller.signal.aborted
+          ? { ...joinCutOffs(continuation, err.cutOff), prompt: text }
+          : undefined;
       setEntries((list) =>
         list.map((entry, i) =>
           // What a failed turn already spent is still spent.
@@ -461,6 +545,8 @@ export function useBoardAssist({
                 role: "assistant",
                 text: message,
                 rawResponse,
+                reasoning,
+                cutOff,
                 usage: entry.usage,
                 modelId: entry.modelId,
               }
@@ -475,11 +561,36 @@ export function useBoardAssist({
       abort.current = null;
     }
   };
-  const send = () => submit(prompt, scope, true);
+  const send = () => {
+    const text = prompt.trim();
+    if (!text || !model || busyRef.current) return Promise.resolve();
+    setPrompt("");
+    return runTurn(text, text);
+  };
   const retryWholeBoard = (retryPrompt: string, entryIndex?: number) => {
     if (busyRef.current) return Promise.resolve();
     setScope("board");
-    return submit(retryPrompt, "board", false, entryIndex);
+    return runTurn(retryPrompt, retryPrompt, undefined, "board", entryIndex);
+  };
+  /** The entry Continue goes on from: the last, if it was cut off. */
+  const continuable = (index: number) =>
+    index === entries.length - 1 && !!entries[index]?.cutOff;
+  /**
+   * Asks again for the request the entry at `index` was cut off answering,
+   * with the output limit set now, carrying what the model had written where
+   * the provider sent it.
+   */
+  const continueTurn = (index: number) => {
+    const cutOff = entries[index]?.cutOff;
+    if (!cutOff || !continuable(index)) return Promise.resolve();
+    const { prompt: request, ...cut } = cutOff;
+    const limit = commitOutputLimit();
+    const verb = carriesOn(cut) ? "Continue" : "Retry";
+    return runTurn(
+      request,
+      `${verb} with ${limit ? `an output limit of ${formatTokens(limit)} tokens` : "the model's default output limit"}`,
+      cut,
+    );
   };
   const previewChanges = async (entry: AssistEntry, index: number) => {
     if (!entry.board || busyRef.current) return;
@@ -681,6 +792,7 @@ export function useBoardAssist({
     compatible,
     openCode,
     openCodeGo,
+    mistral,
     providerReady,
     models,
     modelsLoading,
@@ -705,6 +817,18 @@ export function useBoardAssist({
     error,
     send,
     retryWholeBoard,
+    /** Whether the entry at this index is a cut-off turn Continue goes on from. */
+    continuable,
+    continueTurn,
+    /** Whether the provider takes an output limit; OpenCode's server does not. */
+    takesOutputLimit: !openCode,
+    outputLimitDraft,
+    setOutputLimitDraft: (draft: string) => {
+      setOutputLimitDraft(draft);
+      setOutputLimitError("");
+    },
+    commitOutputLimit: () => void commitOutputLimit(),
+    outputLimitError,
     /** Whether a request is in flight that Stop would end. */
     stoppable: !!abort.current,
     stop: () => abort.current?.abort(),
@@ -745,7 +869,9 @@ export function useBoardAssist({
           ? settings.openCodeUrl
           : openCodeGo
             ? settings.openCodeGoUrl
-            : "Anthropic"
+            : mistral
+              ? "Mistral"
+              : "Anthropic"
     }.`,
   };
 }

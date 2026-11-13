@@ -1,7 +1,8 @@
 import type { AssistModel, Conversation } from "./anthropic";
 import { bundledKnowledgeProvider } from "./documentation";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
-import { AssistUsage, fromOpenAIUsage } from "./usage";
+import { AssistUsage, formatTokens, fromOpenAIUsage } from "./usage";
+import { carriesOn, Continuation, OutputLimitError } from "./outputLimit";
 import { BoardDescriptor, toCanonicalServiceId } from "../types";
 import {
   AssistScope,
@@ -33,6 +34,76 @@ export type OpenAIRequestOptions = {
   headers?: Record<string, string>;
   unreachable?: string;
 };
+/**
+ * What a server said went wrong. OpenAI's shape is `error.message`; Mistral
+ * and FastAPI-based servers answer with `message` or `detail`, the latter a
+ * list of what was wrong with which field when a request did not validate.
+ */
+function serverError(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const { error, message, detail } = data as Record<string, unknown>;
+  const nested = (error as { message?: unknown } | null)?.message;
+  for (const text of [nested, error, message, detail])
+    if (typeof text === "string" && text.trim()) return text;
+  if (Array.isArray(detail)) {
+    const problems = detail
+      .map((item: { msg?: unknown; loc?: unknown }) =>
+        typeof item?.msg === "string"
+          ? `${Array.isArray(item.loc) ? `${item.loc.join(".")}: ` : ""}${item.msg}`
+          : "",
+      )
+      .filter(Boolean);
+    if (problems.length) return problems.join("; ");
+  }
+  return serverError(message) ?? serverError(detail);
+}
+/**
+ * An answer's text. Mostly a string; a reasoning model may answer in parts —
+ * Mistral's `[{type: "thinking", …}, {type: "text", text}]` — of which only
+ * the text is the answer.
+ */
+function contentText(content: unknown): string | undefined {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return undefined;
+  return content
+    .map((part: { type?: unknown; text?: unknown }) =>
+      part?.type === "text" && typeof part.text === "string" ? part.text : "",
+    )
+    .join("");
+}
+/**
+ * The thinking in an answer given in parts: Mistral's
+ * `{type: "thinking", thinking: [{type: "text", text}]}`.
+ */
+function thinkingText(content: unknown): string {
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part: { type?: unknown; thinking?: unknown }) => {
+      if (part?.type !== "thinking") return "";
+      if (typeof part.thinking === "string") return part.thinking;
+      return Array.isArray(part.thinking)
+        ? part.thinking
+            .map((inner: { text?: unknown }) =>
+              typeof inner?.text === "string" ? inner.text : "",
+            )
+            .join("")
+        : "";
+    })
+    .join("");
+}
+/**
+ * A message's reasoning, in whichever field its server puts it: llama.cpp and
+ * vLLM say `reasoning_content`, OpenRouter-style servers `reasoning`, and
+ * Mistral sends it as parts of the content.
+ */
+function reasoningOf(message: {
+  reasoning_content?: unknown;
+  reasoning?: unknown;
+  content?: unknown;
+}): string {
+  const field = message.reasoning_content ?? message.reasoning;
+  return typeof field === "string" ? field : thinkingText(message.content);
+}
 async function requestResponse(
   base: string,
   path: string,
@@ -66,7 +137,7 @@ async function requestResponse(
   if (!response.ok) {
     const data = await response.json().catch(() => null);
     throw new Error(
-      data?.error?.message || `Server returned HTTP ${response.status}.`,
+      serverError(data) || `Server returned HTTP ${response.status}.`,
     );
   }
   return response;
@@ -100,8 +171,16 @@ async function requestCompletion(
     extra,
   );
   // Some compatible servers ignore stream:true. Keep JSON responses working.
-  if (!response.headers.get("content-type")?.includes("text/event-stream"))
-    return response.json();
+  if (!response.headers.get("content-type")?.includes("text/event-stream")) {
+    const data = await response.json();
+    const message = data?.choices?.[0]?.message;
+    if (message) {
+      message.reasoning = reasoningOf(message) || undefined;
+      if (Array.isArray(message.content))
+        message.content = contentText(message.content);
+    }
+    return data;
+  }
   if (!response.body)
     throw new Error("The server returned an empty response stream.");
   const reader = response.body.getReader();
@@ -112,6 +191,8 @@ async function requestCompletion(
   let streamEnded = false;
   let finishReason: string | null = null;
   let explanation = "";
+  // Kept, not only counted: a turn cut off while thinking can go on from it.
+  let reasoning = "";
   let reasoningCharacters = 0;
   let usage: unknown;
   const event = (payload: string) => {
@@ -128,15 +209,19 @@ async function requestCompletion(
       );
     const choice = chunk.choices?.[0];
     const delta = choice?.delta;
-    // llama.cpp and vLLM say `reasoning_content`; OpenRouter-style servers say
-    // `reasoning`.
-    const reasoning = delta?.reasoning_content ?? delta?.reasoning;
-    if (typeof reasoning === "string") {
-      reasoningCharacters += reasoning.length;
+    const thought = delta ? reasoningOf(delta) : "";
+    reasoning += thought;
+    const field = delta?.reasoning_content ?? delta?.reasoning;
+    const text = contentText(delta?.content);
+    if (typeof field === "string" || (Array.isArray(delta?.content) && !text)) {
+      // A part in a shape not known here still shows that something arrives.
+      reasoningCharacters +=
+        thought.length ||
+        (typeof field === "string" ? 0 : JSON.stringify(delta.content).length);
       onStatus(`Model is thinking… ${reasoningCharacters} characters received`);
     }
-    if (typeof delta?.content === "string") {
-      content += delta.content;
+    if (text) {
+      content += text;
       onStatus(`Receiving board output… ${content.length} characters received`);
       const match = content.match(/"explanation"\s*:\s*("(?:\\.|[^"\\])*")/);
       if (match) {
@@ -195,7 +280,12 @@ async function requestCompletion(
       "The server connection ended before generation completed. Your board has not been changed.",
     );
   return {
-    choices: [{ message: { content }, finish_reason: finishReason }],
+    choices: [
+      {
+        message: { content, reasoning: reasoning || undefined },
+        finish_reason: finishReason,
+      },
+    ],
     ...(usage ? { usage } : {}),
   };
 }
@@ -247,11 +337,18 @@ export function serviceNames(value: unknown, names = new Set<string>()) {
  * `tooLarge`, and old proposals give way to it. The response is allowed
  * `outputTokens` — what the model states it can write, which includes its
  * reasoning — or 4096 when unstated, and never more than a quarter of the
- * context.
+ * context. An `outputLimit` the person set is used as it is.
+ *
+ * A `continuation` — what the model wrote before an earlier attempt at the
+ * same request reached its limit — is carried in the turn after the request,
+ * ahead of documentation and conversation, since going on from it is the
+ * point. Reasoning too long for the room left loses its beginning.
  */
 export async function prepareTextTurn(options: {
   contextTokens: number;
   outputTokens?: number;
+  outputLimit?: number;
+  continuation?: Continuation;
   conversation: Conversation;
   prompt: string;
   context: unknown;
@@ -261,10 +358,9 @@ export async function prepareTextTurn(options: {
   tooLarge: string;
 }) {
   const limit = Math.max(4096, options.contextTokens || 8192);
-  const maxTokens = Math.min(
-    options.outputTokens || 4096,
-    Math.floor(limit / 4),
-  );
+  const maxTokens =
+    options.outputLimit ||
+    Math.min(options.outputTokens || 4096, Math.floor(limit / 4));
   const budget = (limit - maxTokens - 512) * 2;
   const promptContext =
     options.context && typeof options.context === "object"
@@ -277,7 +373,17 @@ export async function prepareTextTurn(options: {
   const context = JSON.stringify(promptContext);
   const user = `Request: ${options.prompt}\n${scopeInstruction(options.scope)}\nCurrent board and editing context: ${context}`;
   if (openAICompatibleSystem.length + user.length > budget)
-    throw new Error(options.tooLarge);
+    throw new Error(
+      options.outputLimit
+        ? `The output limit (${formatTokens(maxTokens)} tokens) leaves too little of the ${formatTokens(limit)}-token context for this board. Lower it in Model settings, or edit a smaller board.`
+        : options.tooLarge,
+    );
+  const carried = options.continuation
+    ? continuationMessages(
+        options.continuation,
+        budget - openAICompatibleSystem.length - user.length,
+      )
+    : [];
   options.onStatus("Finding relevant board documentation…");
   const knowledge = options.knowledgeProvider ?? bundledKnowledgeProvider;
   const hits = await knowledge.searchKnowledge({
@@ -286,7 +392,11 @@ export async function prepareTextTurn(options: {
   const pages = await knowledge.readDocuments(
     hits.slice(0, 8).map((hit) => hit.path),
   );
-  let room = budget - openAICompatibleSystem.length - user.length;
+  let room =
+    budget -
+    openAICompatibleSystem.length -
+    user.length -
+    carried.reduce((total, message) => total + message.content.length, 0);
   let fitted = "";
   for (const page of pages) {
     const text = `\n${page.path}\n${page.content}`;
@@ -307,7 +417,40 @@ export async function prepareTextTurn(options: {
     room -= message.content.length;
     if (recent.length >= 4) break;
   }
-  return { maxTokens, user, documentation, recent };
+  return { maxTokens, user, documentation, recent, carried };
+}
+
+const carryOn =
+  "Your previous attempt at this request reached its output limit before the answer was complete. What you had written by then is above. Go on from it rather than starting over, and give the complete JSON answer.";
+const omitted = "[Earlier reasoning left out to fit the context.]\n";
+
+/**
+ * A cut-off attempt as conversation: what the model wrote, as its own turn,
+ * and the request to go on from it. Nothing when nothing fits in `room`,
+ * which leaves the request to be answered afresh.
+ */
+function continuationMessages(
+  cut: Continuation,
+  room: number,
+): { role: "assistant" | "user"; content: string }[] {
+  if (!carriesOn(cut)) return [];
+  const answer = cut.partial?.trim()
+    ? `Answer so far, cut off:\n${cut.partial}`
+    : "";
+  const heading = "Reasoning so far:\n";
+  let reasoning = cut.reasoning?.trim() ?? "";
+  const space =
+    room - carryOn.length - answer.length - heading.length - omitted.length - 2;
+  if (space < 0) return [];
+  if (reasoning.length > space)
+    reasoning = omitted + reasoning.slice(reasoning.length - space);
+  const written = [reasoning && `${heading}${reasoning}`, answer]
+    .filter(Boolean)
+    .join("\n\n");
+  return [
+    { role: "assistant", content: written },
+    { role: "user", content: carryOn },
+  ];
 }
 
 /**
@@ -356,8 +499,19 @@ export async function runOpenAICompatibleTurn(options: OpenAIRequestOptions & {
   token: string;
   model: AssistModel;
   contextTokens: number;
+  /** What the provider allows a turn to write when the person sets nothing. */
   outputTokens?: number;
+  /** What the person set, never more than the model states it can write. */
+  outputLimit?: number;
+  /** An earlier, cut-off attempt at this request to go on from. */
+  continuation?: Continuation;
   thinking?: "default" | "off" | "on";
+  /**
+   * Whether to ask for usage on a streamed answer (`stream_options`). On
+   * unless a provider says otherwise: one that reports usage unasked, and
+   * refuses a field it does not know, is not sent it.
+   */
+  streamUsage?: boolean;
   conversation: Conversation;
   prompt: string;
   context: unknown;
@@ -367,13 +521,20 @@ export async function runOpenAICompatibleTurn(options: OpenAIRequestOptions & {
   onText: (text: string) => void;
   onStatus: (status: string) => void;
   onRawResponse?: (text: string) => void;
+  /** The model's reasoning, once the server has answered, if it sent any. */
+  onReasoning?: (text: string) => void;
   /** The turn's usage, once the server has answered. */
   onUsage?: (usage: AssistUsage) => void;
   knowledgeProvider?: ReadymadeKnowledgeProvider;
 }) {
   options.signal.throwIfAborted();
-  const { maxTokens, user, documentation, recent } = await prepareTextTurn({
+  const stated = options.model.max_tokens;
+  const { maxTokens, user, documentation, recent, carried } = await prepareTextTurn({
     ...options,
+    outputLimit:
+      options.outputLimit && stated
+        ? Math.min(options.outputLimit, stated)
+        : options.outputLimit,
     tooLarge:
       "This board is too large for the configured server context size. Increase the context limit in the server and AI settings, or edit a smaller board.",
   });
@@ -382,8 +543,13 @@ export async function runOpenAICompatibleTurn(options: OpenAIRequestOptions & {
       { role: "system", content: `${openAICompatibleSystem}\n${documentation}` },
       ...recent,
       { role: "user", content: user },
+      ...carried,
     ];
-  options.onStatus("Generating with the selected server…");
+  options.onStatus(
+    carried.length
+      ? "Continuing where the model stopped…"
+      : "Generating with the selected server…",
+  );
   const data = await requestCompletion(
     options.baseURL,
     options.token,
@@ -395,7 +561,9 @@ export async function runOpenAICompatibleTurn(options: OpenAIRequestOptions & {
       stream: true,
       // Without it a streamed answer carries no usage: OpenAI and vLLM send
       // the final usage chunk only when asked.
-      stream_options: { include_usage: true },
+      ...(options.streamUsage === false
+        ? {}
+        : { stream_options: { include_usage: true } }),
       response_format: { type: "json_object" },
       ...(options.thinking && options.thinking !== "default"
         ? {
@@ -414,14 +582,22 @@ export async function runOpenAICompatibleTurn(options: OpenAIRequestOptions & {
   options.onUsage?.(usage);
   const choice = data.choices?.[0];
   const content = choice?.message?.content;
-  if (choice?.finish_reason === "length" && !content?.trim())
-    throw new Error(
-      `The model spent its whole output limit (${maxTokens} tokens) thinking, before writing an answer. Try a simpler request or a model that reasons less.`,
-    );
+  const reasoning: string | undefined = choice?.message?.reasoning;
+  if (reasoning) options.onReasoning?.(reasoning);
+  // Raw output is shown only for a reply that could not be used: cut off here,
+  // or not JSON below. A valid reply proposing no board is just its text.
   if (choice?.finish_reason === "length") {
     if (typeof content === "string") options.onRawResponse?.(content);
-    throw new Error(
-      "The response reached its output limit. Try a smaller board or increase the server and settings context size.",
+    const cutOff = {
+      limit: maxTokens,
+      ...(reasoning ? { reasoning } : {}),
+      ...(content?.trim() ? { partial: content } : {}),
+    };
+    throw new OutputLimitError(
+      content?.trim()
+        ? `The answer reached the output limit (${formatTokens(maxTokens)} tokens) before it was complete. Raise the output limit in Model settings, then continue.`
+        : `The model spent its whole output limit (${formatTokens(maxTokens)} tokens) thinking, before writing an answer. Raise the output limit in Model settings, then continue from where it stopped.`,
+      cutOff,
     );
   }
   if (typeof content !== "string")

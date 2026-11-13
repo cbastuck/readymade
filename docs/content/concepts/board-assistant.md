@@ -12,8 +12,8 @@ stays available while the panel is hidden; it is not saved in the board file.
 ## Setup
 
 Open **Settings → Board Assist**, in either the website or the native Readymade
-app. Choose **Anthropic**, **OpenAI compatible**, **OpenCode server** or
-**OpenCode Go**; only the chosen provider's
+app. Choose **Anthropic**, **Mistral**, **OpenAI compatible**, **OpenCode server**
+or **OpenCode Go**; only the chosen provider's
 settings are shown. As in Appearance, changes take effect as you make them — a
 choice at once, a text field when you leave it — and an invalid value is
 explained under its field instead of being saved. Each saved token can be
@@ -51,6 +51,15 @@ Off sends `chat_template_kwargs: { enable_thinking: false }`; On sends true.
 Leave Server default for endpoints without llama.cpp's template options. This
 controls thinking in the template and is separate from the context-size setting.
 Thinking can use the output budget before the final board appears.
+
+**Mistral** uses the models of a Mistral account, with requests going directly
+to `https://api.mistral.ai/v1` — an API hosted in the EU. Enter an **API key**
+(from `console.mistral.ai`); there is no address to set. The model list shows
+the account's chat models, without the embedding, moderation and OCR models on
+the same list, and each turn is sized by the selected model's context window,
+so there is no context setting. Requests use chat completions with JSON output
+mode, streamed, as for an OpenAI-compatible server; a reasoning model's
+thinking is shown as progress, left out of the answer and kept beside it.
 
 **OpenCode Go** uses the models of an OpenCode Go subscription through the same
 OpenAI-compatible API, with Board Assist itself as the client — no OpenCode
@@ -92,14 +101,39 @@ effort levels. The provider, model, effort and server settings are saved on this
 device. **API settings** replaces **Send** if the active provider lacks its required
 settings; local servers can send with no API token.
 
+**Output limit**, in the panel's model settings, is the most one answer may
+write, the model's thinking included. Left empty, each provider keeps its
+default: 16,384 tokens for Anthropic (less where a model states less) and for
+Mistral, a model's stated limit for OpenCode Go (32,768 when it states none),
+and 4,096 for an OpenAI-compatible server — the last three never more than a
+quarter of the context. A limit set here is used as it is, up to what a model
+states it can write; one that leaves too little of the context for the board is
+refused before anything is sent. The OpenCode server's API takes no limit, so
+it has no such field.
+
+A reasoning model can spend its whole limit thinking before it writes a word.
+What it sent is kept: its thinking, behind **Show the model's thinking**, and
+the answer as far as it got. When the last turn ended at its limit, it offers
+**Continue**, which asks the same request again with the output limit set at
+that moment — raise it first. The new request carries what the model wrote, as
+its own turn, and asks it to go on from there rather than start over; thinking
+too long for the room the context leaves loses its beginning. Whether the
+model picks up mid-thought or reconsiders from its notes is up to the model,
+but it starts from what it already worked out. Anthropic's turns are a series
+of requests, documentation lookups among them, so nothing is carried there and
+the button is **Retry**: the same request, asked afresh with the new limit. The
+cut-off attempt's tokens count in the conversation's usage either way
+(`hkp-frontend/src/assist/outputLimit.ts`).
+
 Where tokens are kept depends on the host. The desktop and phone apps keep them
 with their other secrets (`targets.md`, "Where secrets live"), as
-`readymade.assist.anthropic`, `readymade.assist.openai-compatible`,
+`readymade.assist.anthropic`, `readymade.assist.mistral`,
+`readymade.assist.openai-compatible`,
 `readymade.assist.opencode`, `readymade.assist.opencode-go` and
 `readymade.assist.opencode-go-relay`, so they
 are listed, and can be removed, in **Settings → Secrets** like any other
 credential. Each is allowed only to its provider's host — `api.anthropic.com`,
-or the host of the API base URL, which it follows when the URL changes — so a
+`api.mistral.ai`, or the host of the API base URL, which it follows when the URL changes — so a
 board that names one as `{{secret.readymade.assist.anthropic}}` can use it for
 its own calls to that provider and nowhere else. A token an older build kept in
 local storage moves there on the first launch. The website has no secret store
@@ -114,8 +148,8 @@ On iOS and Android, Board Assist is a page of its own, opened with the sparkle
 button in a board's top bar. Leaving it with Back keeps the conversation, as
 hiding the desktop panel does. The provider's settings are a section of
 **Settings**, after Appearance, and the page leads there when no provider is set
-up; the model, effort and **Include asset contents** are in a sheet opened from
-the model line at the top.
+up; the model, effort, output limit and **Include asset contents** are in a
+sheet opened from the model line at the top.
 
 A phone has no selection. What it has instead is what the person opened last:
 tapping a service, inspecting its flow, adding a service to a runtime, running a
@@ -149,15 +183,16 @@ JSON examples in `boards/`. Both are packaged into builds, so the documentation
 matches that build and requires no documentation server. It reads the relevant
 service contracts, configuration and data shapes before proposing a board.
 
-The repository also contains an optional read-only MCP knowledge server in
-`readymade-mcp/`. It indexes the same documentation plus example boards and
+Board Assist also asks a read-only MCP knowledge server, `readymade-mcp/` in
+this repository. It indexes the same documentation plus example boards and
 allowlisted runtime source from a pinned checkout. Its tools can search, read
 contracts, find compatible services and examples, inspect bounded source
 excerpts, and statically validate a board. Each result carries build and commit
 provenance.
 
-To use it with Board Assist, run the server and set **Settings → Board Assist →
-Knowledge server → MCP server URL**, for example
+With nothing set, Board Assist uses the hosted one at
+`https://mcp.readymadeit.com/mcp`. To use your own, run the server and set
+**Settings → Board Assist → Knowledge server → MCP server URL**, for example
 `http://127.0.0.1:8787/mcp`. The URL is device-local configuration and is not
 written into boards. A hosted playground needs the server behind a TLS reverse
 proxy; `readymade-mcp/README.md` walks through deploying it. Both providers can consume the server's search and
