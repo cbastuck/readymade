@@ -54,8 +54,11 @@ area, so a canvas or XY pad under it keeps working. It sits on leaf widgets,
 and on each item of a repeat, because a repeat's bindings differ per item.
 Containers get none.
 
-**The overlay has two tabs: "Sends to" and "Shows from".** They are named from
-the widget's side. "Inputs / Outputs" was rejected because the flow inspector
+**The overlay has two tabs: "Acts on" and "Updated by".** (First named "Sends
+to" and "Updated by"; renamed 2026-11-13 so the editor speaks one vocabulary
+with its root item "Actions and Updates": a widget acts on services through its
+actions, and is updated by what they report.) They are named from the
+widget's side. "Inputs / Outputs" was rejected because the flow inspector
 already uses those words from the *service's* side, and the two would point
 opposite ways (a button's output is a service's input).
 
@@ -68,23 +71,28 @@ opposite ways (a button's output is a service's input).
 - **Show in board**: brings the service's frame into view, opening every nested
   pipeline above it, and highlights it
 - **Inspect**: does the same, then opens the flow inspector on the matching
-  side, Input for a "Sends to" binding and Output for a "Shows from" binding
+  side, Input for a "Acts on" binding and Output for a "Updated by" binding
 - a state when the binding cannot be resolved: the service is missing, it is
   inside a block use (the binding then points at the use as a whole, as the
   board does), or its remote runtime is not attached
 
 **Facade state is a hop of its own.** A text input that `set-state`s `name`
 reaches no service, yet a button's payload carries the value with `{ "$state":
-"name" }`. Bindings list state keys too: the input's "Sends to" shows `facade
-state "name"`, and the button's "Shows from" shows that it reads it. Resolving a
+"name" }`. Bindings list state keys too: the input's "Acts on" shows `facade
+state "name"`, and the button's "Acts on" shows that it uses it. (The button
+reads the key when pressed and sends it on; it is not updated by it. Settled
+2026-11-13: a `$state` read inside an action's payload is listed under "Acts
+on" as "uses facade state", and only a value a widget shows — its `value`,
+`items`, `summary` — under "Updated by".) Resolving a
 state binding points at the *other widgets* that read or write the key, not
 at the board.
 
 **The facade gets a badge of its own.** Some bindings have no widget: init
 actions run when the facade opens, and notices are toasts. A badge in the
-facade's chrome opens the same kind of overlay with the tabs **Runs on open**
-(the facade's `init` actions), **Notices from** (each notice's `source`) and
-**State** (below).
+facade's chrome opens the same kind of overlay with the tabs **Actions** (the
+facade's `init` actions, first named "Runs on open"), **Updates** (each
+notice's `source`, first named "Notices from") and **State** (below), the
+words the editor's tree uses for them.
 
 **Facade state can be looked at, at any moment.** It is how one widget reaches
 another, yet nothing outside the facade editor shows it. The facade editor's
@@ -115,15 +123,18 @@ type Binding =
   | { role: "sends"; service: string; verb: "configure"; keys: string[] }
   | { role: "sends"; service: string; verb: "process" }
   | { role: "shows"; service: string; path?: string }
-  | { role: "sends"; state: string }   // set-state
-  | { role: "shows"; state: string };  // a { "$state": … } read
+  | { role: "sends"; state: string; access: "writes" } // set-state, selectable
+  | { role: "sends"; state: string; access: "reads" }  // $state in a payload
+  | { role: "shows"; state: string; access: "reads" }; // $state a widget shows
 ```
 
-- **Sends to:** `action`, each `configure` or `process` entry in `actions`,
+- **Acts on:** `action`, each `configure` or `process` entry in `actions`,
   and `set-state`.
-- **Shows from:** `source` (service and `path`), the secondary references
+- **Updated by:** `source` (service and `path`), the secondary references
   (`progressServiceUuid`, `thresholdKnobServiceUuid`), and every `$state`
-  reference in a widget's value, items, summary or payload.
+  reference in a widget's value, items or summary. A `$state` in an action's
+  payload is under "Acts on" with `access: "reads"`: the writers/readers
+  index goes by `access`, the tab by `role`.
 - **Embedded surfaces** (`canvas`, `camera`, `xy-pad`, `detect`) name a bare
   `serviceUuid`. Which tab they belong in depends on the widget (a camera sends
   frames, a canvas shows a drawing), so it comes from a small per-type table.
@@ -364,7 +375,7 @@ completeness, and the editor now looks dated beside the overlays. The badges
 and overlays stay. The editor gains the same information where someone
 building the facade already is:
 
-- the selected widget's bindings ("Sends to" / "Shows from") in the editor,
+- the selected widget's bindings ("Acts on" / "Updated by") in the editor,
   drawn with the overlay's rows (`BindingRows.tsx`)
 - the state panel fitted to the editor in the overlay's style (it already
   renders `FacadeStateView` since step 6)
@@ -379,12 +390,16 @@ looked at in the real playground on the notes demo board.
   same index, which `FacadeRenderer` builds from the draft facade.
 - The tree's first row is **Facade**, selected by default. It shows Runs on
   open and Notices from; the State tab is left to the state panel below. A
-  selected node shows its properties, then a **Bindings** card. Leaves always
-  get one; containers only when they bind something (`summary`). Nodes that
-  bind are marked in the tree with the badge's link mark.
+  selected node is one container with three tabs at its top: **Properties**
+  (the key/value table), **Acts on** and **Updated by**, each with its count.
+  The chosen tab is kept when another node is selected, so someone following
+  what widgets send to can move through the tree on that tab. The tabs stay
+  pinned while the properties scroll. Nodes that bind are marked in the tree
+  with the badge's link mark.
 - The overlays' contents became components the editor embeds:
-  `WidgetBindings` (in `BindingRows.tsx`) and `FacadeBindings` (in
-  `FacadeBindingsBadge.tsx`). In the editor, a state key's other widgets are
+  `BindingList` (one side of a widget's bindings) and `WidgetBindings` (both
+  sides under the badge's two tabs) in `BindingRows.tsx`, and
+  `FacadeBindings` in `FacadeBindingsBadge.tsx`. In the editor, a state key's other widgets are
   selected in the tree rather than scrolled to (`siteOfPath` / `pathOfSite` in
   `editorUtils.ts`).
 - Show in board and Inspect switch the view to facade + board when the board
@@ -406,6 +421,42 @@ looked at in the real playground on the notes demo board.
 - A repeat template's widget is named in lists by what each item shows:
   `{{item.title}}` reads as `‹title›`. The tree still shows the template as
   written.
+
+#### 6b, revised: the tree as the one place to pick what to look at
+
+Decided 2026-11-13 after using the editor on the Hacker News board, where a
+panel title in the tree looked like a heading that could not be clicked:
+
+- The tree's root items are **Panels**, **State** and **Actions and
+  Updates**, in that order. Panels starts expanded and selected.
+- Each panel is a tree item under Panels, with its layout below it.
+  Selecting a panel shows the panel's own properties (`id`, `title`,
+  `width`, `detailOf`, `visibleTo`), which the editor could not reach before.
+  Selecting Panels shows the facade's own properties (`layout`, `tabs`,
+  `defaultTab`). Panels are listed flat even where the facade has `tabs`;
+  grouping them by tab can come later.
+- **State** shows `FacadeStateView` in the detail pane. The bottom state pane
+  and its splitter go away. To keep live values in view while a widget is
+  selected, a state binding's row shows the key's current value.
+- **Actions and Updates** is what the root "Facade" row was: the init actions
+  (Runs on open) and the notices (Notices from).
+
+**Built 2026-11-13**, tested in `facade/tests/editorBindings.test.tsx`, and
+looked at in the real playground on the Hacker News board. This supersedes the
+"Facade" root row and the bottom state pane described above.
+
+- `EditorSelection` (`editorUtils.ts`) is one of `panels`, `state`,
+  `actions`, a panel by index, or a layout node by path. The tree
+  (`WidgetTree.tsx`) and the detail pane (`FacadeEditor.tsx`) both work from
+  it.
+- `PropertyPanel` edits any object. It takes an `omit` list for fields shown
+  elsewhere: a panel's `layout`, and the facade's `panels`, `state`, `init`
+  and `notices`. The omitted fields are kept as they are on a change.
+- `StatePanel.tsx` is gone, along with the state pane's splitter and stored
+  height. Only the tree / detail splitter remains, while the tree is stacked.
+- A state binding's row (`StateRow`) shows the key's current value, in the
+  editor and in the badge's overlay. `describeValue` moved to its own module
+  (`facade/describeValue.ts`).
 
 ### 7. Origin on runs
 
@@ -446,8 +497,8 @@ the vocabulary is written by hand.
 
 - **Embedded surfaces.** Which tab each of `canvas`, `camera`, `xy-pad` and
   `detect` belongs in, or both. The XY pad embeds the service's surface *and*
-  configures it with the position. Step 1 puts camera in "Sends to", canvas and
-  detect in "Shows from", and the XY pad in both; revisit once the overlay is
+  configures it with the position. Step 1 puts camera in "Acts on", canvas and
+  detect in "Updated by", and the XY pad in both; revisit once the overlay is
   on screen.
 - **Navigation-only actions.** Should `show-panel` and `board` actions be listed?
   They reach no service, but they are what a button does.

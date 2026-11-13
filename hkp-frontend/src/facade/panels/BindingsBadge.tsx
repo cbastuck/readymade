@@ -170,8 +170,8 @@ export function BindingsBadge({
           type="button"
           className="hkp-binding-badge"
           style={corner ? { top: corner.top, left: corner.left, right: "auto" } : undefined}
-          aria-label="What this sends to and shows from"
-          title="What this sends to and shows from"
+          aria-label="What this acts on and is updated by"
+          title="What this acts on and is updated by"
         >
           <Link2 size={11} />
         </button>

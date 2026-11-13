@@ -1194,7 +1194,7 @@ blockquote:after {
 }
 
 /* ── Facade binding badges ─────────────────────────────────────────────────
-   What a facade widget sends to and shows from, on a badge over its corner in
+   What a facade widget acts on and is updated by, on a badge over its corner in
    the board + facade view (facade/panels/BindingsBadge.tsx). Over the widget so
    the layout never shifts; faint until the widget is hovered or focused, and
    always shown where nothing hovers. Colours name a token and the value to use
@@ -1337,7 +1337,7 @@ blockquote:after {
 .hkp-editor-card {
   overflow: hidden;
 }
-table.hkp-editor-card {
+.hkp-editor-props {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -1349,6 +1349,13 @@ table.hkp-editor-card {
 }
 .hkp-editor-props tr + tr td {
   border-top: 1px solid var(--border-mid, rgb(0 0 0 / 0.08));
+}
+/* The selected element's tabs stay in reach while its properties scroll. */
+.hkp-editor-tabs {
+  position: sticky;
+  top: -12px;
+  z-index: 1;
+  background: hsl(var(--background, 0 0% 100%));
 }
 .hkp-editor-tree {
   width: 220px;
@@ -1417,12 +1424,6 @@ table.hkp-editor-card {
 .hkp-editor-tree-binds {
   flex-shrink: 0;
   opacity: 0.5;
-}
-.hkp-editor-state {
-  flex-shrink: 0;
-  max-height: 40%;
-  overflow-y: auto;
-  padding: 8px 14px 12px;
 }
 
 .hkp-binding-overlay {

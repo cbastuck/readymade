@@ -24,8 +24,9 @@
  * and goes moves the ones beside it, and is not somewhere to look for next
  * time. The deploy control it stands next to greys out the same way.
  *
- * Sized for the toolbar group it is drawn in, with the facade editor's and the
- * assets' controls.
+ * Sized for the toolbar group it is drawn in, with the runtime zoom: both
+ * change how the runtimes are looked at, and the zoom greys out while the
+ * overview is on, which reads plainly when the two sit side by side.
  */
 import { Boxes } from "lucide-react";
 

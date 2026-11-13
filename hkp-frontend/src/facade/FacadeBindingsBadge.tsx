@@ -24,9 +24,11 @@ import { FacadeStateView, stateKeys } from "./FacadeStateView";
 
 export type FacadeTab = "init" | "notices" | "state";
 
+// The facade's own actions — the ones it runs when it opens — and the updates
+// it raises as notices: the same words the editor's tree uses for them.
 const TAB_TITLES: Record<FacadeTab, string> = {
-  init: "Runs on open",
-  notices: "Notices from",
+  init: "Actions",
+  notices: "Updates",
   state: "State",
 };
 
