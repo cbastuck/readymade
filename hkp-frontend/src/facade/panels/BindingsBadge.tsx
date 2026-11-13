@@ -6,21 +6,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "hkp-frontend/src/ui-components/primitives/popover";
-import { useOverview } from "hkp-frontend/src/overview/OverviewContext";
-import { useAssetView } from "hkp-frontend/src/assets/AssetViewContext";
-import { useNestedNavigation } from "hkp-frontend/src/runtime/ui/NestedNavigation";
-import { revealService } from "hkp-frontend/src/runtime/ui/revealService";
-import type { FlowSide } from "hkp-frontend/src/ui-components/service/flowRecords";
-import {
-  Binding,
-  BindingSite,
-  ServiceBinding,
-  StateBinding,
-  isServiceBinding,
-  siteKey,
-} from "../bindings";
+import { Binding, BindingSite, isServiceBinding } from "../bindings";
 import { useFacadeBindings } from "../FacadeBindingsContext";
-import { ServiceLocation, revealTargetOf } from "../serviceLocation";
+import { OverlayTabs, ServiceRow, StateRow } from "./BindingRows";
 
 /**
  * The corner badge on a facade widget, and the overlay it opens: what the
@@ -39,43 +27,6 @@ const TAB_TITLES: Record<Tab, string> = {
   sends: "Sends to",
   shows: "Shows from",
 };
-
-/** What a binding does, as the overlay's first line says it. */
-export function verbOf(binding: Binding): string {
-  if (!isServiceBinding(binding)) {
-    return binding.role === "sends" ? "writes facade state" : "reads facade state";
-  }
-  if (binding.role === "shows") {
-    if (binding.surface) {
-      return "shows its surface";
-    }
-    return binding.path ? `reads ${binding.path}` : "reads";
-  }
-  switch (binding.verb) {
-    case "configure":
-      return binding.keys.length > 0
-        ? `configure ${binding.keys.join(", ")}`
-        : "configure";
-    case "process":
-      return "process";
-    case "send":
-      return "sends the file";
-    case "surface":
-      return "captures into";
-  }
-}
-
-/** What a site is called, for a list of the places a state key is used. */
-function siteLabel(site: BindingSite): string {
-  if (site.kind === "init") {
-    return "runs on open";
-  }
-  if (site.kind === "notice") {
-    return `notice ${site.index + 1}`;
-  }
-  const what = site.label ? `${site.label} (${site.type ?? "widget"})` : site.type ?? "widget";
-  return site.path.includes("template") ? `${what}, per item` : what;
-}
 
 const BADGE_SIZE = 18;
 /** Elements measured by their own box, whatever is inside them. */
@@ -242,22 +193,15 @@ export function BindingsBadge({
         align="end"
         style={{ width: "min(360px, 92vw)", padding: 0 }}
       >
-        <div className="hkp-binding-tabs" role="tablist">
-          {(["sends", "shows"] as const).map((each) => (
-            <button
-              key={each}
-              type="button"
-              role="tab"
-              aria-selected={tab === each}
-              onClick={() => setTab(each)}
-            >
-              {TAB_TITLES[each]}
-              <span className="hkp-binding-count">
-                {(each === "sends" ? sends : shows).length}
-              </span>
-            </button>
-          ))}
-        </div>
+        <OverlayTabs
+          tabs={(["sends", "shows"] as const).map((id) => ({
+            id,
+            title: TAB_TITLES[id],
+            count: (id === "sends" ? sends : shows).length,
+          }))}
+          active={tab}
+          onSelect={setTab}
+        />
         <ul className="hkp-binding-list" role="tabpanel" aria-label={TAB_TITLES[tab]}>
           {shown.length === 0 && (
             <li className="hkp-binding-empty">
@@ -287,163 +231,5 @@ export function BindingsBadge({
         </ul>
       </PopoverContent>
     </Popover>
-  );
-}
-
-function ServiceRow({
-  binding,
-  location,
-  onDone,
-}: {
-  binding: ServiceBinding;
-  location: ServiceLocation;
-  onDone: () => void;
-}) {
-  const overview = useOverview();
-  const assetView = useAssetView();
-  const navigation = useNestedNavigation();
-
-  const target = revealTargetOf(location);
-  const breadcrumb =
-    location.status === "found" ||
-    location.status === "unreachable" ||
-    location.status === "inside-use"
-      ? location.breadcrumb
-      : [];
-  const name =
-    location.status === "found" || location.status === "unreachable"
-      ? location.node.label
-      : binding.service;
-
-  const reveal = (inspect?: FlowSide) => {
-    if (!target) {
-      return;
-    }
-    // The board is what is revealed, so whatever covers it gives way.
-    overview?.hide();
-    assetView?.hide();
-    revealService(target, navigation, { inspect });
-    onDone();
-  };
-
-  // A "Sends to" binding is the service's input; a "Shows from" its output.
-  const side: FlowSide = binding.role === "sends" ? "input" : "output";
-
-  return (
-    <li className="hkp-binding-row">
-      <div className="hkp-binding-verb">{verbOf(binding)}</div>
-      <div className="hkp-binding-name">{name}</div>
-      {breadcrumb.length > 0 && (
-        <div className="hkp-binding-crumbs">
-          {breadcrumb.map((crumb) => crumb.label).join(" › ")}
-        </div>
-      )}
-      <LocationNote location={location} />
-      {target && (
-        <div className="hkp-binding-actions">
-          <button type="button" onClick={() => reveal()}>
-            Show in board
-          </button>
-          <button
-            type="button"
-            disabled={location.status === "unreachable"}
-            title={
-              location.status === "unreachable"
-                ? "Its runtime is not attached, so there is nothing to inspect"
-                : undefined
-            }
-            onClick={() => reveal(side)}
-          >
-            Inspect
-          </button>
-        </div>
-      )}
-    </li>
-  );
-}
-
-function LocationNote({ location }: { location: ServiceLocation }) {
-  switch (location.status) {
-    case "pending":
-      return <div className="hkp-binding-note">Looking for it on the board…</div>;
-    case "missing":
-      return (
-        <div className="hkp-binding-note hkp-binding-note--error">
-          No service “{location.address}” on this board.
-        </div>
-      );
-    case "unreachable":
-      return (
-        <div className="hkp-binding-note hkp-binding-note--warn">
-          Its runtime is not attached.
-        </div>
-      );
-    case "inside-use":
-      return (
-        <div className="hkp-binding-note">
-          Inside a use of block “{location.block}”, which is shown as a whole.
-        </div>
-      );
-    case "found":
-      return null;
-  }
-}
-
-function StateRow({
-  binding,
-  own,
-  onReveal,
-}: {
-  binding: StateBinding;
-  own: BindingSite;
-  onReveal: (site: BindingSite) => void;
-}) {
-  const api = useFacadeBindings();
-  const entry = api?.index.state[binding.state];
-  // A key written here is read elsewhere, and the other way round.
-  const others = (
-    (binding.role === "sends" ? entry?.readers : entry?.writers) ?? []
-  ).filter((site) => siteKey(site) !== siteKey(own));
-  const othersTitle = binding.role === "sends" ? "Read by" : "Written by";
-
-  return (
-    <li className="hkp-binding-row">
-      <div className="hkp-binding-verb">{verbOf(binding)}</div>
-      <div className="hkp-binding-name">“{binding.state}”</div>
-      {binding.role === "shows" && entry?.seeded && (
-        <div className="hkp-binding-note">Starts with the facade's initial state.</div>
-      )}
-      <div className="hkp-binding-note">
-        {others.length === 0 ? (
-          binding.role === "sends" ? (
-            "No other widget reads it."
-          ) : entry?.seeded ? (
-            "No widget writes it."
-          ) : (
-            <span className="hkp-binding-note--warn">Nothing writes it.</span>
-          )
-        ) : (
-          <>
-            {othersTitle}{" "}
-            {others.map((site, i) => (
-              <span key={siteKey(site)}>
-                {i > 0 && " · "}
-                {site.kind === "widget" ? (
-                  <button
-                    type="button"
-                    className="hkp-binding-link"
-                    onClick={() => onReveal(site)}
-                  >
-                    {siteLabel(site)}
-                  </button>
-                ) : (
-                  siteLabel(site)
-                )}
-              </span>
-            ))}
-          </>
-        )}
-      </div>
-    </li>
   );
 }

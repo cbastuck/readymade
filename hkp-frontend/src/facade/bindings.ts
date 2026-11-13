@@ -374,8 +374,13 @@ export type StateKeyBindings = {
 export type FacadeBindings = {
   // What runs when the facade opens, one entry per init action that binds.
   init: { site: BindingSite; bindings: Binding[] }[];
-  // Each notice's source.
-  notices: { site: BindingSite; bindings: Binding[] }[];
+  // Each notice's source, with how it is raised.
+  notices: {
+    site: BindingSite;
+    bindings: Binding[];
+    tone: "info" | "success" | "error";
+    message?: string;
+  }[];
   // Every state key the facade mentions, with who writes it and who reads it.
   state: Record<string, StateKeyBindings>;
 };
@@ -470,7 +475,13 @@ export function facadeBindings(facade: FacadeDescriptor): FacadeBindings {
   const notices = (facade.notices ?? []).map((notice, i) => {
     const bindings: Binding[] = [];
     collect(notice.source, "source", bindings);
-    return { site: { kind: "notice", index: i } as BindingSite, bindings };
+    return {
+      site: { kind: "notice", index: i } as BindingSite,
+      bindings,
+      // "error" unless it says otherwise, as FacadeNotices raises it.
+      tone: notice.tone ?? "error",
+      message: notice.message,
+    };
   });
 
   return {
