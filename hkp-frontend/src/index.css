@@ -1193,6 +1193,154 @@ blockquote:after {
   transition: outline-color 400ms ease-out;
 }
 
+/* ── Facade binding badges ─────────────────────────────────────────────────
+   What a facade widget sends to and shows from, on a badge over its corner in
+   the board + facade view (facade/panels/BindingsBadge.tsx). Over the widget so
+   the layout never shifts; faint until the widget is hovered or focused, and
+   always shown where nothing hovers. Colours name a token and the value to use
+   without it, as the view tabs do. */
+.hkp-binding-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 9px;
+  border: 1px solid var(--border-mid, rgb(0 0 0 / 0.15));
+  background: var(--bg-card, #fff);
+  color: var(--text-mid, #555);
+  cursor: pointer;
+  opacity: 0.25;
+  transition: opacity 0.15s;
+}
+.hkp-binding-host:hover > .hkp-binding-badge,
+.hkp-binding-host:focus-within > .hkp-binding-badge,
+.hkp-binding-badge[data-state="open"] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .hkp-binding-badge {
+    opacity: 1;
+  }
+}
+
+.hkp-binding-overlay {
+  font-family: inherit;
+  font-size: 12px;
+  overflow: hidden;
+  background: var(--bg-card, #fff);
+  color: var(--text, #1a1a1a);
+  border: 1px solid var(--border-mid, rgb(0 0 0 / 0.15));
+  border-radius: 10px;
+}
+.hkp-binding-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-mid, rgb(0 0 0 / 0.12));
+}
+.hkp-binding-tabs button {
+  flex: 1;
+  padding: 8px 10px;
+  font: inherit;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-mid, inherit);
+  cursor: pointer;
+}
+.hkp-binding-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--hkp-accent, #0abcfb);
+  color: var(--text, inherit);
+  font-weight: 600;
+}
+.hkp-binding-count {
+  margin-left: 6px;
+  opacity: 0.6;
+}
+.hkp-binding-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+}
+.hkp-binding-row,
+.hkp-binding-empty {
+  padding: 8px 12px;
+}
+.hkp-binding-empty {
+  opacity: 0.65;
+}
+.hkp-binding-row + .hkp-binding-row {
+  border-top: 1px solid var(--border-mid, rgb(0 0 0 / 0.08));
+}
+.hkp-binding-verb {
+  font-size: 11px;
+  opacity: 0.65;
+}
+.hkp-binding-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.hkp-binding-crumbs {
+  font-size: 11px;
+  opacity: 0.75;
+  overflow-wrap: anywhere;
+}
+.hkp-binding-note {
+  font-size: 11px;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+.hkp-binding-note--error {
+  color: #ef4444;
+  opacity: 1;
+}
+.hkp-binding-note--warn {
+  color: #b45309;
+  opacity: 1;
+}
+.hkp-binding-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.hkp-binding-actions button {
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-mid, rgb(0 0 0 / 0.15));
+  background: var(--bg-card, #fff);
+  color: inherit;
+  cursor: pointer;
+}
+.hkp-binding-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.hkp-binding-link {
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--hkp-accent, #0abcfb);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* A facade widget a binding pointed at, marked long enough to be found. */
+.hkp-facade-widget--revealed {
+  outline: 2px solid var(--hkp-accent, #0abcfb);
+  outline-offset: 2px;
+  border-radius: 6px;
+  transition: outline-color 400ms ease-out;
+}
+
 /* ── Facade view tabs ──────────────────────────────────────────────────────
    One tab per view of a board: each unit of a composition contributes one, and
    so does the composition itself. Deliberately not scoped to a theme — a facade

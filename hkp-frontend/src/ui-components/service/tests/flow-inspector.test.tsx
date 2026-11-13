@@ -29,6 +29,7 @@ import ServiceOutputPlug, {
   rememberFlow,
 } from "../ServiceOutputPlug";
 import { isCapturing, setCapturing } from "hkp-frontend/src/runtime/captureMode";
+import { requestInspector } from "../inspectorRequests";
 
 /**
  * The Flow Inspector's histories, kept the way ServiceFrame keeps them: added
@@ -314,5 +315,37 @@ describe("Opening the Flow Inspector without Capture mode", () => {
 
     expect(screen.queryByText("Capture mode is off")).toBeNull();
     expect(screen.getByText("Flow Inspector")).toBeTruthy();
+  });
+});
+
+describe("opening the Flow Inspector from outside its frame", () => {
+  afterEach(() => setCapturing(false));
+
+  function PlugFor({ uuid }: { uuid: string }) {
+    return React.createElement(ServiceOutputPlug, {
+      uuid,
+      inputHistory: [],
+      outputHistory: [],
+      onClearHistory: () => {},
+      onInject,
+    });
+  }
+
+  it("opens on the side it was asked for", () => {
+    setCapturing(true);
+    render(React.createElement(PlugFor, { uuid: "asked" }));
+    act(() => requestInspector("asked", "input"));
+
+    expect(screen.queryByText("Flow Inspector")).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Input" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+  });
+
+  it("asks about Capture mode first where it is off, as its own plug does", () => {
+    render(React.createElement(PlugFor, { uuid: "uncaptured" }));
+    act(() => requestInspector("uncaptured", "output"));
+
+    expect(screen.queryByText("Capture mode is off")).not.toBeNull();
   });
 });
