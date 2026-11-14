@@ -1,24 +1,24 @@
 import type { AssistModel } from "./anthropic";
 import { requestOpenAIModelList } from "./openAICompatible";
-import { runOpenAIToolTurn } from "./openAITools";
+import { runOpenAIResponsesTurn } from "./openAIResponses";
 import { Effort, OPENAI_URL } from "./settings";
 
 /**
- * OpenAI's own API, with a key from platform.openai.com. It speaks the same
- * chat completions as the compatible servers, and differs from them where a
- * local server would not follow:
+ * OpenAI's own API, with a key from platform.openai.com. Its model list is
+ * read like a compatible server's, but a turn goes over the Responses API
+ * (`openAIResponses.ts`), not chat completions:
  *
+ * - its newer reasoning models refuse function tools beside a
+ *   `reasoning_effort` on chat completions, and take both only there;
  * - its model list is every model the key may use — embeddings, speech,
- *   images — and only some of those answer chat completions;
+ *   images — and only some of those are for conversation;
  * - the list states neither a model's context window nor what it can write,
  *   so both come from the model's family;
- * - its reasoning models refuse `max_tokens` and take `max_completion_tokens`,
- *   which every model accepts;
- * - how hard a reasoning model thinks is `reasoning_effort`, offered as the
+ * - how hard a reasoning model thinks is `reasoning.effort`, offered as the
  *   panel's Effort, not llama.cpp's template switch.
  *
  * Like Mistral it calls the documentation and board tools itself, rather than
- * being handed pre-retrieved pages (`openAITools.ts`).
+ * being handed pre-retrieved pages.
  */
 
 type Family = {
@@ -26,6 +26,8 @@ type Family = {
   context: number;
   output: number;
   reasons: boolean;
+  /** The efforts it takes, when not all three. */
+  efforts?: Exclude<Effort, "default">[];
 };
 
 /**
@@ -36,6 +38,8 @@ type Family = {
  */
 const families: Family[] = [
   { match: /^gpt-5.*-chat/, context: 128_000, output: 16_384, reasons: false },
+  // GPT-5 pro thinks at high effort only, and refuses any other.
+  { match: /^gpt-5.*-pro\b/, context: 400_000, output: 128_000, reasons: true, efforts: ["high"] },
   { match: /^gpt-5/, context: 400_000, output: 128_000, reasons: true },
   { match: /^gpt-4\.1/, context: 1_047_576, output: 32_768, reasons: false },
   { match: /^gpt-4o|^chatgpt-4o/, context: 128_000, output: 16_384, reasons: false },
@@ -46,9 +50,12 @@ const families: Family[] = [
   { match: /./, context: 128_000, output: 32_768, reasons: true },
 ];
 
-/** Models that are not for conversation, or answer only the Responses API. */
+/**
+ * Models that are not for conversation, or need tools of their own that a
+ * Board Assist turn does not give (deep research, computer use).
+ */
 const notChat =
-  /embedding|tts|whisper|transcribe|audio|realtime|image|dall-e|moderation|search|instruct|codex|-pro\b|deep-research|computer-use|sora/;
+  /embedding|tts|whisper|transcribe|audio|realtime|image|dall-e|moderation|search|instruct|deep-research|computer-use|sora/;
 
 const unreachable =
   "Could not reach OpenAI. Check this device's network connection and try again.";
@@ -81,31 +88,33 @@ export async function listOpenAIPlatformModels(
         display_name: model.id,
         context_tokens: family.context,
         max_tokens: family.output,
-        ...(family.reasons ? { efforts: ["low", "medium", "high"] } : {}),
+        ...(family.reasons
+          ? { efforts: family.efforts ?? ["low", "medium", "high"] }
+          : {}),
       };
     });
 }
 
 export function runOpenAIPlatformTurn(
   options: Omit<
-    Parameters<typeof runOpenAIToolTurn>[0],
+    Parameters<typeof runOpenAIResponsesTurn>[0],
     | "baseURL"
     | "contextTokens"
     | "outputTokens"
     | "headers"
     | "unreachable"
-    | "outputLimitField"
     | "reasoningEffort"
+    | "reasons"
   > & { effort: Effort },
 ) {
   const { effort, ...turn } = options;
   const family = familyOf(options.model.id);
-  return runOpenAIToolTurn({
+  return runOpenAIResponsesTurn({
     ...turn,
     baseURL: OPENAI_URL,
     contextTokens: options.model.context_tokens ?? family.context,
     outputTokens: options.model.max_tokens ?? family.output,
-    outputLimitField: "max_completion_tokens",
+    reasons: family.reasons,
     // Only a level the model was listed with; Model default sends none.
     ...(effort !== "default" && options.model.efforts?.includes(effort)
       ? { reasoningEffort: effort }

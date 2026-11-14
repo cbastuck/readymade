@@ -31,8 +31,9 @@ import {
   carriesOn,
   CutOff,
   joinCutOffs,
-  OutputLimitError,
+  cutOffOf,
   parseOutputLimit,
+  TOOL_STEPS,
 } from "./outputLimit";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
@@ -586,10 +587,10 @@ export function useBoardAssist({
           ? err.message
           : "The assistant could not complete the request.";
       setError(message);
-      const cutOff =
-        err instanceof OutputLimitError && !controller.signal.aborted
-          ? { ...joinCutOffs(continuation, err.cutOff), prompt: text }
-          : undefined;
+      const cut = controller.signal.aborted ? undefined : cutOffOf(err);
+      const cutOff = cut
+        ? { ...joinCutOffs(continuation, cut), prompt: text }
+        : undefined;
       setEntries((list) =>
         list.map((entry, i) =>
           // What a failed turn already spent is still spent.
@@ -631,7 +632,8 @@ export function useBoardAssist({
   /**
    * Asks again for the request the entry at `index` was cut off answering,
    * with the output limit set now, carrying what the model had written where
-   * the provider sent it.
+   * the provider sent it — or, for a tool turn, resuming it from the requests
+   * it had completed.
    */
   const continueTurn = (index: number) => {
     const cutOff = entries[index]?.cutOff;
@@ -641,7 +643,9 @@ export function useBoardAssist({
     const verb = carriesOn(cut) ? "Continue" : "Retry";
     return runTurn(
       request,
-      `${verb} with ${limit ? `an output limit of ${formatTokens(limit)} tokens` : "the model's default output limit"}`,
+      cut.lookups
+        ? `${verb} for up to ${TOOL_STEPS} more requests`
+        : `${verb} with ${limit ? `an output limit of ${formatTokens(limit)} tokens` : "the model's default output limit"}`,
       cut,
     );
   };
