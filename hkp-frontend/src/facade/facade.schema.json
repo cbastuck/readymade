@@ -373,6 +373,78 @@
             },
             "type": {
               "type": "string",
+              "const": "editor"
+            },
+            "label": {
+              "type": "string"
+            },
+            "source": {
+              "$ref": "#/definitions/FacadeWidgetSource"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/FacadeStateRef"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "defaultValue": {
+              "type": "string"
+            },
+            "placeholder": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "height": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "lineNumbers": {
+              "type": "boolean"
+            },
+            "wordWrap": {
+              "type": "boolean"
+            },
+            "readOnly": {
+              "type": "boolean"
+            },
+            "submitLabel": {
+              "type": "string"
+            },
+            "action": {
+              "$ref": "#/definitions/FacadeWidgetAction"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/WidgetAction"
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visibleTo": {
+              "type": "string",
+              "const": "owner"
+            },
+            "grow": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
               "const": "status-indicator"
             },
             "source": {
@@ -443,6 +515,9 @@
                 "muted",
                 "error"
               ]
+            },
+            "color": {
+              "type": "string"
             },
             "fontSize": {
               "type": "number"
