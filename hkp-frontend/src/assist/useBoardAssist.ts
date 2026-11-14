@@ -21,6 +21,7 @@ import {
   newOpenCodeGoSession,
   runOpenCodeGoTurn,
 } from "./openCodeGo";
+import { listOpenAIPlatformModels, runOpenAIPlatformTurn } from "./openAI";
 import {
   readAssistSettings,
   saveAssistSettings,
@@ -148,7 +149,10 @@ export function useBoardAssist({
   const openCode = settings.provider === "opencode";
   const openCodeGo = settings.provider === "opencode-go";
   const mistral = settings.provider === "mistral";
-  const providerReady = compatible
+  const openAI = settings.provider === "openai";
+  const providerReady = openAI
+    ? !!settings.openAIToken.trim()
+    : compatible
     ? !!settings.openAICompatibleUrl.trim()
     : openCode
       ? !!settings.openCodeUrl.trim()
@@ -217,7 +221,9 @@ export function useBoardAssist({
     const controller = new AbortController();
     setModelsLoading(true);
     setError("");
-    (compatible
+    (openAI
+      ? listOpenAIPlatformModels(settings.openAIToken, controller.signal)
+      : compatible
       ? listOpenAIModels(
           settings.openAICompatibleUrl,
           settings.openAICompatibleToken,
@@ -262,6 +268,7 @@ export function useBoardAssist({
     modelSource,
     settings.anthropicToken,
     settings.mistralToken,
+    settings.openAIToken,
     settings.openAICompatibleUrl,
     settings.openAICompatibleToken,
     settings.openCodeUrl,
@@ -270,6 +277,7 @@ export function useBoardAssist({
     settings.openCodeGoUrl,
     settings.openCodeGoToken,
     settings.openCodeGoRelayKey,
+    openAI,
     compatible,
     openCode,
     openCodeGo,
@@ -483,7 +491,12 @@ export function useBoardAssist({
         knowledgeProvider,
         services,
       };
-      const result = compatible
+      const result = openAI
+        ? await runOpenAIPlatformTurn({
+            ...request,
+            token: settings.openAIToken,
+          })
+        : compatible
         ? await runOpenAICompatibleTurn({
             ...request,
             baseURL: settings.openAICompatibleUrl,
@@ -833,6 +846,7 @@ export function useBoardAssist({
     openCode,
     openCodeGo,
     mistral,
+    openAI,
     providerReady,
     models,
     modelsLoading,
@@ -903,7 +917,9 @@ export function useBoardAssist({
         ? "including asset contents"
         : "without asset contents"
     }, are sent to ${
-      compatible
+      openAI
+        ? "OpenAI"
+        : compatible
         ? settings.openAICompatibleUrl
         : openCode
           ? settings.openCodeUrl

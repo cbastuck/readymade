@@ -199,7 +199,9 @@ export default function BoardAssistPanel({
                     <option value="">
                       {modelsLoading
                         ? "Querying models…"
-                        : compatible
+                        : assist.openAI
+                          ? "Enter an OpenAI API key"
+                          : compatible
                           ? "Configure an API server"
                           : openCode
                             ? "Configure an OpenCode server"
