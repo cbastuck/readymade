@@ -32,7 +32,9 @@ it("saves a token when its field is left, outside boards, keeping other preferen
 it("shows only the chosen provider's settings and saves the choice at once", () => {
   render(<AssistSettings />);
   expect(screen.queryByLabelText("API base URL")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: /OpenAI compatible/ }));
+  fireEvent.change(screen.getByLabelText("Provider"), {
+    target: { value: "openai-compatible" },
+  });
   expect(readAssistSettings().provider).toBe("openai-compatible");
   expect(screen.getByLabelText("API base URL")).toBeTruthy();
   expect(screen.getAllByLabelText("API token")).toHaveLength(1);
@@ -49,7 +51,9 @@ it("shows only the chosen provider's settings and saves the choice at once", () 
 
 it("configures Mistral with a key alone and can remove it", () => {
   render(<AssistSettings />);
-  fireEvent.click(screen.getByRole("button", { name: /Mistral/ }));
+  fireEvent.change(screen.getByLabelText("Provider"), {
+    target: { value: "mistral" },
+  });
   expect(readAssistSettings().provider).toBe("mistral");
   expect(screen.queryByLabelText("API base URL")).toBeNull();
   const key = type("API key", " mistral-key ");
@@ -65,7 +69,9 @@ it("configures Mistral with a key alone and can remove it", () => {
 
 it("configures an OpenCode server and shows its current CORS origin", () => {
   render(<AssistSettings />);
-  fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));
+  fireEvent.change(screen.getByLabelText("Provider"), {
+    target: { value: "opencode" },
+  });
   expect(readAssistSettings().provider).toBe("opencode");
   expect(screen.getByLabelText("Server URL")).toBeTruthy();
   expect(screen.getByLabelText("Server username")).toBeTruthy();
@@ -83,7 +89,9 @@ it("configures an OpenCode server and shows its current CORS origin", () => {
 
 it("configures OpenCode Go with a key and a relay, and says why a relay", () => {
   render(<AssistSettings />);
-  fireEvent.click(screen.getByRole("button", { name: /OpenCode Go/ }));
+  fireEvent.change(screen.getByLabelText("Provider"), {
+    target: { value: "opencode-go" },
+  });
   expect(readAssistSettings().provider).toBe("opencode-go");
   expect((screen.getByLabelText("API base URL") as HTMLInputElement).value).toBe(
     "https://opencode.ai/zen/go/v1",
@@ -108,7 +116,9 @@ it("configures OpenCode Go with a key and a relay, and says why a relay", () => 
 
 it("keeps a focused OpenCode password when the page reloads", () => {
   const view = render(<AssistSettings />);
-  fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));
+  fireEvent.change(screen.getByLabelText("Provider"), {
+    target: { value: "opencode" },
+  });
   type("Server password", "server-password");
   fireEvent(window, new Event("pagehide"));
   expect(readAssistSettings().openCodePassword).toBe("server-password");
