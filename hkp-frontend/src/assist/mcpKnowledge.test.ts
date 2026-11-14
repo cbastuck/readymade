@@ -23,8 +23,11 @@ vi.mock("@modelcontextprotocol/client", () => ({
   },
 }));
 
+import { DEFAULT_MCP_KNOWLEDGE_URL } from "./settings";
 import {
   McpKnowledgeProvider,
+  boardAssistKnowledgeProvider,
+  checkMcpKnowledgeServer,
   mcpFailureKind,
   normalizeMcpKnowledgeUrl,
   resetMcpKnowledgeCooldowns,
@@ -96,6 +99,19 @@ describe("MCP knowledge provider", () => {
     expect(() =>
       normalizeMcpKnowledgeUrl("http://user:secret@127.0.0.1:8787/mcp"),
     ).toThrow("without credentials");
+  });
+
+  it("uses the hosted knowledge server when no URL is set", () => {
+    const signal = new AbortController().signal;
+    for (const endpoint of ["", "   "]) {
+      const chosen = boardAssistKnowledgeProvider(endpoint, signal);
+      expect(chosen).toBeInstanceOf(McpKnowledgeProvider);
+      expect(chosen.id).toMatch(/^mcp\+/);
+    }
+    expect(DEFAULT_MCP_KNOWLEDGE_URL).toBe("https://mcp.readymadeit.com/mcp");
+    expect(normalizeMcpKnowledgeUrl(DEFAULT_MCP_KNOWLEDGE_URL)).toBe(
+      DEFAULT_MCP_KNOWLEDGE_URL,
+    );
   });
 
   it("maps structured MCP search and read results to the provider boundary", async () => {
@@ -397,5 +413,46 @@ describe("MCP knowledge provider", () => {
     sdk.callTool.mockResolvedValueOnce(searchResult);
     await provider().searchKnowledge({ query: "timer" });
     expect(sdk.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it("checks a server once on request, closing the connection after", async () => {
+    expect(
+      await checkMcpKnowledgeServer(
+        "http://127.0.0.1:8787",
+        new AbortController().signal,
+      ),
+    ).toEqual({ tools: 3 });
+    expect(sdk.transport).toHaveBeenCalledWith(
+      new URL("http://127.0.0.1:8787/mcp"),
+      expect.anything(),
+    );
+    expect(sdk.connect).toHaveBeenCalledTimes(1);
+    expect(sdk.close).toHaveBeenCalledTimes(1);
+    expect(sdk.callTool).not.toHaveBeenCalled();
+  });
+
+  it("says why a checked server is unusable", async () => {
+    sdk.listTools.mockResolvedValueOnce({ tools: [{ name: "search_knowledge" }] });
+    await expect(
+      checkMcpKnowledgeServer(
+        "http://127.0.0.1:8787/mcp",
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow("does not provide 'read_document'");
+  });
+
+  it("tries a server in its cooldown when checked, and ends the cooldown", async () => {
+    sdk.callTool.mockRejectedValueOnce(
+      Object.assign(new Error("Request timed out"), { code: "REQUEST_TIMEOUT" }),
+    );
+    await provider().searchKnowledge({ query: "timer" });
+    await checkMcpKnowledgeServer(
+      "http://127.0.0.1:8787/mcp",
+      new AbortController().signal,
+    );
+    expect(sdk.connect).toHaveBeenCalledTimes(2);
+    sdk.callTool.mockResolvedValueOnce(searchResult);
+    await provider().searchKnowledge({ query: "timer" });
+    expect(sdk.connect).toHaveBeenCalledTimes(3);
   });
 });

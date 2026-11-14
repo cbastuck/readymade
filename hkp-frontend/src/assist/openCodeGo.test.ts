@@ -159,7 +159,7 @@ it("says when the model thought through its whole output limit", async () => {
   );
   await expect(
     runOpenCodeGoTurn(turn({ id: "m", display_name: "M", context_tokens: 1000000 })),
-  ).rejects.toThrow(/whole output limit \(32768 tokens\) thinking/);
+  ).rejects.toThrow(/whole output limit \(32,768 tokens\) thinking/);
 });
 
 it("refuses a board too large for a model's stated context, before sending", async () => {

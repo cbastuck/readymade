@@ -142,21 +142,7 @@
                 "serviceUuid": "answer",
                 "path": "body.files"
               },
-              "columns": [
-                {
-                  "key": "path",
-                  "label": "File"
-                },
-                {
-                  "key": "size",
-                  "label": "Bytes"
-                },
-                {
-                  "key": "contentType",
-                  "label": "Type"
-                }
-              ],
-              "empty": "Nothing kept yet"
+              "columns": ["path", "size", "contentType"]
             },
             {
               "type": "text",

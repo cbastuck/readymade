@@ -3,10 +3,25 @@ import { destinationHost } from "../core/secrets";
 
 export type Effort = "default" | "low" | "medium" | "high" | "xhigh" | "max";
 export type AssistSettings = {
-  provider: "anthropic" | "openai-compatible" | "opencode" | "opencode-go";
+  provider:
+    | "anthropic"
+    | "mistral"
+    | "openai"
+    | "openai-compatible"
+    | "opencode"
+    | "opencode-go";
   openAIContextTokens: number;
   openAIThinking: "default" | "off" | "on";
+  /**
+   * The most a turn may write, reasoning included, in tokens; 0 leaves it to
+   * the provider's default. Read when a request starts, so a turn continued
+   * after it was cut off gets the limit set since.
+   */
+  outputLimit: number;
   anthropicToken: string;
+  mistralToken: string;
+  /** A platform.openai.com API key, for the "openai" provider. */
+  openAIToken: string;
   openAICompatibleToken: string;
   openAICompatibleUrl: string;
   openCodeUrl: string;
@@ -25,17 +40,28 @@ export type AssistSettings = {
 };
 /** The id of Board Assist's section, in the desktop dialog and on a phone. */
 export const ASSIST_SETTINGS_SECTION = "ai-assist";
+/** OpenAI's API base (`openAI.ts`); not configurable — a proxy or another
+ *  host is what the compatible provider is for. */
+export const OPENAI_URL = "https://api.openai.com/v1";
 /** OpenCode Go's own API base (`openCodeGo.ts`). */
 export const OPENCODE_GO_URL = "https://opencode.ai/zen/go/v1";
+/** Mistral's API base (`mistral.ts`). */
+export const MISTRAL_URL = "https://api.mistral.ai/v1";
+/** The knowledge server Board Assist uses when `mcpKnowledgeUrl` is empty. */
+export const DEFAULT_MCP_KNOWLEDGE_URL = "https://mcp.readymadeit.com/mcp";
 const KEY = "readymade.ai-assist.v1";
 const EVENT = "readymade-ai-settings";
 const defaults: AssistSettings = {
   provider: "anthropic",
   openAIContextTokens: 8192,
   openAIThinking: "default",
+  outputLimit: 0,
   anthropicToken: "",
+  mistralToken: "",
+  openAIToken: "",
   openAICompatibleToken: "",
-  openAICompatibleUrl: "https://api.openai.com/v1",
+  // A local llama.cpp server, as in the docs; OpenAI itself is its own provider.
+  openAICompatibleUrl: "http://127.0.0.1:8081/v1",
   openCodeUrl: "http://127.0.0.1:4096",
   openCodeUsername: "opencode",
   openCodePassword: "",
@@ -51,6 +77,8 @@ const defaults: AssistSettings = {
 /** The names the provider tokens are kept under in a host's secrets. */
 export const ASSIST_TOKEN_ALIASES = {
   anthropicToken: "readymade.assist.anthropic",
+  mistralToken: "readymade.assist.mistral",
+  openAIToken: "readymade.assist.openai",
   openAICompatibleToken: "readymade.assist.openai-compatible",
   openCodePassword: "readymade.assist.opencode",
   openCodeGoToken: "readymade.assist.opencode-go",
@@ -76,6 +104,8 @@ let tokenStore: AssistTokenStore | null = null;
 /** The address each token is sent to, and which setting holds it. */
 const tokenUrls = {
   anthropicToken: () => "https://api.anthropic.com",
+  mistralToken: () => MISTRAL_URL,
+  openAIToken: () => OPENAI_URL,
   openAICompatibleToken: (settings: AssistSettings) =>
     settings.openAICompatibleUrl,
   openCodePassword: (settings: AssistSettings) => settings.openCodeUrl,
@@ -248,6 +278,8 @@ function subscribe(callback: () => void) {
 export const ASSIST_PROVIDER_LABELS: Record<AssistSettings["provider"], string> =
   {
     anthropic: "Anthropic",
+    mistral: "Mistral",
+    openai: "OpenAI",
     "openai-compatible": "OpenAI compatible",
     opencode: "OpenCode server",
     "opencode-go": "OpenCode Go",

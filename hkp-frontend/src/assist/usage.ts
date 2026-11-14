@@ -114,6 +114,22 @@ export function fromOpenAIUsage(usage: unknown): AssistUsage {
   });
 }
 
+/**
+ * One Responses API response's `usage`: the same counts as chat completions,
+ * under the names that API gives them. Reasoning is part of the output.
+ */
+export function fromOpenAIResponsesUsage(usage: unknown): AssistUsage {
+  const u = (usage ?? {}) as Record<string, unknown>;
+  const details = (u.input_tokens_details ?? {}) as Record<string, unknown>;
+  const cached = count(details.cached_tokens);
+  return oneRequest({
+    inputTokens: Math.max(0, count(u.input_tokens) - cached),
+    outputTokens: count(u.output_tokens),
+    cacheWriteTokens: 0,
+    cacheReadTokens: cached,
+  });
+}
+
 /** US dollars per million tokens. */
 type Card = { input: number; output: number; cacheRead: number };
 /** A model's rates; `longPrompt` for a request whose prompt is longer than

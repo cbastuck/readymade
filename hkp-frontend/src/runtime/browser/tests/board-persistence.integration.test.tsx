@@ -388,4 +388,58 @@ describe("board persistence integration", () => {
       });
     });
   });
+
+  describe("setBoardState that fails part-way", () => {
+    const proposed = {
+      boardName: "Todo",
+      runtimes: [
+        { id: "ui", name: "UI", type: "browser" as const },
+        { id: "node", name: "Node", type: "rest" as const, url: "http://node.test" },
+      ],
+      services: { ui: [], node: [] },
+      facade: { layout: "single", panels: [] },
+    };
+
+    it("takes down the runtimes that came up and shows the error, not a facade over nothing", async () => {
+      const uiScope = { id: "ui-scope" } as any;
+      const api = makeApi({
+        restoreRuntime: vi.fn(async (rt: RuntimeDescriptor) => ({
+          runtime: rt,
+          services: [],
+          registry: [],
+          scope: uiScope,
+        })),
+      });
+      const refused = new Error("Unknown serviceId: hookup.to/service/storage");
+      const restApi = makeApi({
+        restoreRuntime: vi.fn(async () => {
+          throw refused;
+        }),
+      });
+      const { getCtx } = renderBoard(api, [], {
+        runtimeApis: { browser: api, rest: restApi },
+      });
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+
+      let thrown: unknown;
+      await act(async () => {
+        await getCtx()!.setBoardState(proposed as any).catch((err) => {
+          thrown = err;
+        });
+      });
+
+      expect(thrown).toBe(refused);
+      expect(api.removeRuntime).toHaveBeenCalledWith(
+        uiScope,
+        expect.objectContaining({ id: "ui" }),
+        null,
+      );
+      await waitFor(() => {
+        const ctx = getCtx()!;
+        expect(ctx.runtimes).toHaveLength(0);
+        expect(ctx.facade).toBeUndefined();
+        expect(ctx.errorOnFetch).toBe(refused);
+      });
+    });
+  });
 });

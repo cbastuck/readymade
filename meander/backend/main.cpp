@@ -4,6 +4,8 @@
 
 #include <expected>
 #include <fstream>
+#include <mutex>
+#include <optional>
 #include <sstream>
 
 // hkp-rt
@@ -321,17 +323,39 @@ int real_main(int argc, char *argv[])
     return "if (" + nlohmann::json(ownPages).dump() +
            ".includes(location.protocol + '//' + location.host)) { " + code + " }";
   };
-  webview->inject(saucer::script{
-    .code   = forOwnPages("window.__HKP_VAULT__ = " + vault.getAll().dump() + ";"),
-    .run_at = saucer::script::time::creation,
-  });
+  // The vault and the grants are written into a script at creation, and a
+  // script is replayed as written on every load, so each is injected again
+  // whenever it changes (the setSecret… and …Grant calls below). Otherwise a
+  // reloaded page — the dev server reloads on most edits — would be handed
+  // them as they were at launch, and a secret saved since would seem gone.
+  std::mutex secretScriptsMutex;
+  std::optional<std::size_t> vaultScript;
+  std::optional<std::size_t> grantsScript;
+  const auto injectVault = [&]
+  {
+    std::lock_guard lock(secretScriptsMutex);
+    if (vaultScript)
+      webview->uninject(*vaultScript);
+    vaultScript = webview->inject(saucer::script{
+      .code   = forOwnPages("window.__HKP_VAULT__ = " + vault.getAll().dump() + ";"),
+      .run_at = saucer::script::time::creation,
+    });
+  };
   // At creation, like the vault: a board can be provisioned as soon as one
   // loads, and a grant that arrived later would be a question asked again for
   // something already answered.
-  webview->inject(saucer::script{
-    .code   = forOwnPages("window.__HKP_GRANTS__ = " + grants.getAll().dump() + ";"),
-    .run_at = saucer::script::time::creation,
-  });
+  const auto injectGrants = [&]
+  {
+    std::lock_guard lock(secretScriptsMutex);
+    if (grantsScript)
+      webview->uninject(*grantsScript);
+    grantsScript = webview->inject(saucer::script{
+      .code   = forOwnPages("window.__HKP_GRANTS__ = " + grants.getAll().dump() + ";"),
+      .run_at = saucer::script::time::creation,
+    });
+  };
+  injectVault();
+  injectGrants();
   // Nothing said: the runtime answers the Readymade apps and pages served from
   // this machine, and no other site. What this app adds to that — where it
   // serves itself from, and the sites the person allowed — is handed over once
@@ -566,14 +590,18 @@ int real_main(int argc, char *argv[])
     return true;
   });
 
-  webview->expose("setSecret", [&vault](const std::string& key, const std::string& value) -> bool
+  webview->expose("setSecret", [&vault, &injectVault](const std::string& key, const std::string& value) -> bool
   {
-    return vault.setSecret(key, value);
+    const bool ok = vault.setSecret(key, value);
+    injectVault();
+    return ok;
   });
 
-  webview->expose("deleteSecret", [&vault](const std::string& key) -> bool
+  webview->expose("deleteSecret", [&vault, &injectVault](const std::string& key) -> bool
   {
-    return vault.deleteSecret(key);
+    const bool ok = vault.deleteSecret(key);
+    injectVault();
+    return ok;
   });
 
   // The names only. A page that needs a value already has every value, from
@@ -593,22 +621,28 @@ int real_main(int argc, char *argv[])
   });
 
   webview->expose("setSecretAudience",
-    [&vault](const std::string& key, const std::vector<std::string>& audience) -> bool
+    [&vault, &injectVault](const std::string& key, const std::vector<std::string>& audience) -> bool
   {
-    return vault.setAudience(key, audience);
+    const bool ok = vault.setAudience(key, audience);
+    injectVault();
+    return ok;
   });
 
   // Which board may hand which secrets to which runtime — the remembered
   // answers to the consent prompt. Names only; no values pass through here.
   webview->expose("grantSecrets",
-    [&grants](const std::string& key, const std::vector<std::string>& aliases) -> bool
+    [&grants, &injectGrants](const std::string& key, const std::vector<std::string>& aliases) -> bool
   {
-    return grants.grant(key, aliases);
+    const bool ok = grants.grant(key, aliases);
+    injectGrants();
+    return ok;
   });
 
-  webview->expose("revokeSecretGrant", [&grants](const std::string& key) -> bool
+  webview->expose("revokeSecretGrant", [&grants, &injectGrants](const std::string& key) -> bool
   {
-    return grants.revoke(key);
+    const bool ok = grants.revoke(key);
+    injectGrants();
+    return ok;
   });
 
   // Only the app's own pages load, in the main frame or any other; a web

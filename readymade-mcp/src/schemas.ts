@@ -39,7 +39,25 @@ export const inspectServiceSourceInput = z.object({
   maxLines: z.number().int().min(20).max(400).default(180),
 });
 
-export const validateBoardInput = z.object({ board: z.unknown() });
+/**
+ * A board some clients send as its JSON text: a model that sees a property
+ * without a type writes it as a string. Decoded here, so the schema can say
+ * what a board is — an object — and the board still arrives as one.
+ */
+function decodeBoard(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+export const validateBoardInput = z.object({
+  board: z
+    .preprocess(decodeBoard, z.record(z.string(), z.unknown()))
+    .describe("The complete board as a JSON object {boardName, runtimes, services, facade, ...} — the object itself, never its JSON text."),
+});
 
 export const readymadeToolSchemas = {
   search_knowledge: searchKnowledgeInput,

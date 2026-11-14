@@ -29,6 +29,7 @@ import {
   modelEfforts,
   runAssistTurn,
 } from "./anthropic";
+import { LookupLimitError, TOOL_STEPS } from "./outputLimit";
 const model = {
   id: "queried-model",
   max_tokens: 20000,
@@ -342,6 +343,34 @@ describe("Anthropic assistant", () => {
     expect(result.conversation[2].content).toEqual([
       expect.objectContaining({ is_error: true }),
     ]);
+  });
+  it("keeps where a turn got to at the lookup limit, and goes on from it", async () => {
+    const thinking = { type: "thinking", thinking: "Looking for a timer.", signature: "sig" };
+    for (let step = 0; step < TOOL_STEPS; step++)
+      response([
+        thinking,
+        {
+          type: "tool_use",
+          id: `search${step}`,
+          name: "search_documentation",
+          input: { query: "timer" },
+        },
+      ]);
+    const failure = await run().catch((error) => error);
+    expect(failure).toBeInstanceOf(LookupLimitError);
+    const { transcript } = failure.cutOff;
+    expect(transcript).toMatchObject({ via: "anthropic", model: "queried-model" });
+    // The request, then each request's thinking and call and what answered it.
+    expect(transcript.messages).toHaveLength(1 + 2 * TOOL_STEPS);
+    response([{ type: "text", text: "A timer it is." }], "end_turn");
+    const result = await run({ continuation: failure.cutOff });
+    expect(result.usage.requests).toBe(1);
+    expect(result.conversation.at(-1)!.content).toEqual([
+      { type: "text", text: "A timer it is." },
+    ]);
+    const sent = sdk.stream.mock.calls.at(-1)![0].messages;
+    expect(sent.slice(0, transcript.messages.length)).toEqual(transcript.messages);
+    expect(sent[1].content[0]).toEqual(thinking);
   });
   it("rejects truncated output and cancels before issuing a request", async () => {
     response([], "max_tokens");

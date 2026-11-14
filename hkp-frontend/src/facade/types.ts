@@ -42,6 +42,13 @@ export type SetStateAction = {
 // `$$input`, { "$state": ... }, { "$user": ... }, { "$now": true } and
 // { "$uuid": true } are resolved when the action runs. The last two let the exact identity and time
 // of an event be stored and forwarded together.
+//
+// "Onward" is the whole rest of the flow: every service after it in its
+// runtime, then every runtime after that. Aiming at a service chooses where the
+// flow begins, not which service alone runs — two actions aimed at neighbours
+// run the second one's service on the first one's payload too. Actions that
+// must stay apart need a branch each (a Switch case per action, a sub-service
+// with stopPropagation), or services that each check what was asked.
 export type ProcessAction = {
   type: "process";
   serviceUuid: string;

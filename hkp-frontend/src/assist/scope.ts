@@ -229,7 +229,7 @@ export function resolveAssistProposal(
   value: unknown,
 ): BoardDescriptor {
   if (scope.kind === "board")
-    return restoreAssets(base, validateAssistBoard(value));
+    return restoreAssets(base, validateAssistBoard(value, base));
   if (!object(value) || !object(value.runtime) || !Array.isArray(value.services))
     throw new Error(
       "Propose the runtime descriptor as `runtime` and its service list as `services`.",
@@ -244,5 +244,5 @@ export function resolveAssistProposal(
       rt.id === scope.runtimeId ? value.runtime : rt,
     ),
     services: { ...base.services, [scope.runtimeId]: value.services },
-  });
+  }, base);
 }

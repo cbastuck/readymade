@@ -156,7 +156,7 @@ export async function restoreBoard(
   );
 
   const missingSecrets: string[] = [];
-  const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
+  const settled = await Promise.allSettled(
     boardRuntimes.map((rt) => {
       const api = runtimeApiFor(rt);
       if (!api) {
@@ -202,6 +202,36 @@ export async function restoreBoard(
         refs.assetsFor?.(rt),
       );
     }),
+  );
+  // A board loads whole or not at all. The runtimes that did come up are
+  // taken down again before the failure is reported: nothing will hold their
+  // scopes, so a timer or a stream in them would otherwise run on unseen, and
+  // a runtime server would keep what it built for a board that never opened.
+  const failed = settled.find(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  if (failed) {
+    await Promise.all(
+      settled.map(async (result, i) => {
+        if (result.status !== "fulfilled" || !result.value?.scope) return;
+        try {
+          await runtimeApiFor(boardRuntimes[i])?.removeRuntime(
+            result.value.scope,
+            result.value.runtime,
+            currentUser,
+          );
+        } catch (err) {
+          console.error(
+            `Could not take down runtime ${boardRuntimes[i].id} of a board that failed to load`,
+            err,
+          );
+        }
+      }),
+    );
+    throw failed.reason;
+  }
+  const restored: Array<RestoreRuntimeResult | null> = settled.map(
+    (result) => (result as PromiseFulfilledResult<RestoreRuntimeResult | null>).value,
   );
 
   const newScopes = reduceByRuntimeId(restored, "scope");
@@ -520,7 +550,20 @@ export async function setBoardState(
   refs.setFacade(linked?.facade);
   refs.setLinkage(linkage);
   refs.setAssets?.(boardAssets(linked));
-  const data = await restoreBoard(linked, refs, waitForUserLogin);
+  let data: Awaited<ReturnType<typeof restoreBoard>>;
+  try {
+    data = await restoreBoard(linked, refs, waitForUserLogin);
+  } catch (err: any) {
+    // Nothing of the board is running, so nothing of it is kept: a facade
+    // left over a board with no runtimes is a blank page, and the error is
+    // what there is to show instead. Thrown on as well, for a caller that
+    // restores what was open before (Board Assist).
+    refs.setFacade(undefined);
+    refs.setLinkage(undefined);
+    refs.setAssets?.(undefined);
+    refs.setErrorOnFetch(err);
+    throw err;
+  }
   if (data) {
     refs.setBoardNameState(data.boardName);
     refs.setRuntimes(data.runtimes);
