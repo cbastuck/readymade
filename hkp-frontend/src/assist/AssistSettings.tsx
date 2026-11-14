@@ -5,10 +5,12 @@ import {
   SettingsChoices,
   SettingsField,
   SettingsInput,
+  SettingsButton,
   SettingsNote,
   SettingsSection,
   SettingsSelect,
   SettingsStack,
+  SettingsStatusDot,
 } from "../ui-components/settings/kit";
 import {
   ASSIST_PROVIDER_LABELS,
@@ -22,12 +24,16 @@ import {
   saveAssistSettings,
   useAssistSettings,
 } from "./settings";
-import { normalizeMcpKnowledgeUrl } from "./mcpKnowledge";
+import {
+  checkMcpKnowledgeServer,
+  normalizeMcpKnowledgeUrl,
+} from "./mcpKnowledge";
 import { unencryptedRemote } from "./addresses";
 
 type TextField =
   | "anthropicToken"
   | "mistralToken"
+  | "openAIToken"
   | "openAICompatibleToken"
   | "openAICompatibleUrl"
   | "openCodeUrl"
@@ -69,6 +75,7 @@ function parse(field: TextField, draft: string): Partial<Settings> {
 const resetsModel = new Set<TextField>([
   "anthropicToken",
   "mistralToken",
+  "openAIToken",
   "openAICompatibleToken",
   "openAICompatibleUrl",
   "openCodeUrl",
@@ -96,6 +103,7 @@ export default function AssistSettings() {
   const draftFrom = (from: Settings): Record<TextField, string> => ({
     anthropicToken: from.anthropicToken,
     mistralToken: from.mistralToken,
+    openAIToken: from.openAIToken,
     openAICompatibleToken: from.openAICompatibleToken,
     openAICompatibleUrl: from.openAICompatibleUrl,
     openCodeUrl: from.openCodeUrl,
@@ -185,6 +193,57 @@ export default function AssistSettings() {
     [],
   );
 
+  // The knowledge server is asked only when Check is pressed, and what it
+  // answered is forgotten once the URL changes.
+  const [mcpCheck, setMcpCheck] = useState<{
+    state: "pending" | "ok" | "failed";
+    message: string;
+  } | null>(null);
+  const mcpCheckAbort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    mcpCheckAbort.current?.abort();
+    setMcpCheck(null);
+  }, [drafts.mcpKnowledgeUrl]);
+  useEffect(() => () => mcpCheckAbort.current?.abort(), []);
+  const checkMcp = async () => {
+    commit("mcpKnowledgeUrl");
+    let endpoint: string;
+    try {
+      endpoint = normalizeMcpKnowledgeUrl(
+        drafts.mcpKnowledgeUrl.trim() || DEFAULT_MCP_KNOWLEDGE_URL,
+      );
+    } catch (error) {
+      setMcpCheck({
+        state: "failed",
+        message: error instanceof Error ? error.message : "Invalid URL.",
+      });
+      return;
+    }
+    mcpCheckAbort.current?.abort();
+    const controller = new AbortController();
+    mcpCheckAbort.current = controller;
+    setMcpCheck({ state: "pending", message: "Checking the knowledge server…" });
+    try {
+      const { tools } = await checkMcpKnowledgeServer(
+        endpoint,
+        controller.signal,
+      );
+      if (!controller.signal.aborted)
+        setMcpCheck({
+          state: "ok",
+          message: `Connected — the server provides ${tools} knowledge tools.`,
+        });
+    } catch (error) {
+      if (!controller.signal.aborted)
+        setMcpCheck({
+          state: "failed",
+          message: `Could not use the knowledge server: ${
+            error instanceof Error ? error.message : "no answer."
+          }`,
+        });
+    }
+  };
+
   const text = (field: TextField) => ({
     value: drafts[field],
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,6 +267,7 @@ export default function AssistSettings() {
     field:
       | "anthropicToken"
       | "mistralToken"
+      | "openAIToken"
       | "openAICompatibleToken"
       | "openCodePassword"
       | "openCodeGoToken",
@@ -289,6 +349,41 @@ export default function AssistSettings() {
                   console.mistral.ai
                 </a>
                 . Requests go directly to <code>api.mistral.ai</code>.
+              </SettingsNote>
+            </SettingsSection>
+          ) : settings.provider === "openai" ? (
+            <SettingsSection
+              label="OpenAI"
+              hint="OpenAI's own API, billed to your platform account. Models are queried with your key; reasoning models offer Effort in the panel."
+              action={
+                settings.openAIToken && (
+                  <RemoveButton
+                    label="Remove OpenAI key"
+                    onClick={() => removeToken("openAIToken")}
+                  />
+                )
+              }
+            >
+              <SettingsField label="API key">
+                <SettingsInput
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="sk-…"
+                  {...text("openAIToken")}
+                />
+              </SettingsField>
+              {error("openAIToken")}
+              <SettingsNote>
+                Create a key at{" "}
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  platform.openai.com/api-keys
+                </a>
+                . A ChatGPT or Codex subscription does not include API usage.
               </SettingsNote>
             </SettingsSection>
           ) : settings.provider === "opencode-go" ? (
@@ -500,15 +595,35 @@ export default function AssistSettings() {
         label="Knowledge server"
         hint="MCP endpoint for richer, version-labelled Readymade knowledge, used with either provider. Leave it empty to use the Readymade knowledge server; Board Assist falls back to the documentation bundled with this app whenever the server is unavailable."
       >
-        <SettingsField label="MCP server URL">
-          <SettingsInput
-            type="url"
-            spellCheck={false}
-            placeholder={DEFAULT_MCP_KNOWLEDGE_URL}
-            {...text("mcpKnowledgeUrl")}
-          />
-        </SettingsField>
+        <div className="hkp-set-inline hkp-set-inline--end">
+          <SettingsField label="MCP server URL">
+            <SettingsInput
+              type="url"
+              spellCheck={false}
+              placeholder={DEFAULT_MCP_KNOWLEDGE_URL}
+              {...text("mcpKnowledgeUrl")}
+            />
+          </SettingsField>
+          <div className="hkp-set-inline hkp-set-input-height">
+            {mcpCheck && (
+              <SettingsStatusDot
+                state={mcpCheck.state}
+                label={mcpCheck.message}
+              />
+            )}
+            <SettingsButton
+              type="button"
+              disabled={mcpCheck?.state === "pending"}
+              onClick={checkMcp}
+            >
+              Check
+            </SettingsButton>
+          </div>
+        </div>
         {error("mcpKnowledgeUrl")}
+        {mcpCheck?.state === "failed" && !errors.mcpKnowledgeUrl && (
+          <p className="hkp-set-error">{mcpCheck.message}</p>
+        )}
         {unencryptedRemote(drafts.mcpKnowledgeUrl) && (
           <SettingsNote tone="warn">
             This is plain HTTP to another machine. Search terms and boards sent
@@ -523,6 +638,7 @@ export default function AssistSettings() {
             Tokens are kept with this device's secrets, as{" "}
             <code>{ASSIST_TOKEN_ALIASES.anthropicToken}</code>,{" "}
             <code>{ASSIST_TOKEN_ALIASES.mistralToken}</code>,{" "}
+            <code>{ASSIST_TOKEN_ALIASES.openAIToken}</code>,{" "}
             <code>{ASSIST_TOKEN_ALIASES.openAICompatibleToken}</code>,{" "}
             <code>{ASSIST_TOKEN_ALIASES.openCodePassword}</code>,{" "}
             <code>{ASSIST_TOKEN_ALIASES.openCodeGoToken}</code> and{" "}

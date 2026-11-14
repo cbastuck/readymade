@@ -6,6 +6,7 @@ export type AssistSettings = {
   provider:
     | "anthropic"
     | "mistral"
+    | "openai"
     | "openai-compatible"
     | "opencode"
     | "opencode-go";
@@ -19,6 +20,8 @@ export type AssistSettings = {
   outputLimit: number;
   anthropicToken: string;
   mistralToken: string;
+  /** A platform.openai.com API key, for the "openai" provider. */
+  openAIToken: string;
   openAICompatibleToken: string;
   openAICompatibleUrl: string;
   openCodeUrl: string;
@@ -37,6 +40,9 @@ export type AssistSettings = {
 };
 /** The id of Board Assist's section, in the desktop dialog and on a phone. */
 export const ASSIST_SETTINGS_SECTION = "ai-assist";
+/** OpenAI's API base (`openAI.ts`); not configurable — a proxy or another
+ *  host is what the compatible provider is for. */
+export const OPENAI_URL = "https://api.openai.com/v1";
 /** OpenCode Go's own API base (`openCodeGo.ts`). */
 export const OPENCODE_GO_URL = "https://opencode.ai/zen/go/v1";
 /** Mistral's API base (`mistral.ts`). */
@@ -52,8 +58,10 @@ const defaults: AssistSettings = {
   outputLimit: 0,
   anthropicToken: "",
   mistralToken: "",
+  openAIToken: "",
   openAICompatibleToken: "",
-  openAICompatibleUrl: "https://api.openai.com/v1",
+  // A local llama.cpp server, as in the docs; OpenAI itself is its own provider.
+  openAICompatibleUrl: "http://127.0.0.1:8081/v1",
   openCodeUrl: "http://127.0.0.1:4096",
   openCodeUsername: "opencode",
   openCodePassword: "",
@@ -70,6 +78,7 @@ const defaults: AssistSettings = {
 export const ASSIST_TOKEN_ALIASES = {
   anthropicToken: "readymade.assist.anthropic",
   mistralToken: "readymade.assist.mistral",
+  openAIToken: "readymade.assist.openai",
   openAICompatibleToken: "readymade.assist.openai-compatible",
   openCodePassword: "readymade.assist.opencode",
   openCodeGoToken: "readymade.assist.opencode-go",
@@ -96,6 +105,7 @@ let tokenStore: AssistTokenStore | null = null;
 const tokenUrls = {
   anthropicToken: () => "https://api.anthropic.com",
   mistralToken: () => MISTRAL_URL,
+  openAIToken: () => OPENAI_URL,
   openAICompatibleToken: (settings: AssistSettings) =>
     settings.openAICompatibleUrl,
   openCodePassword: (settings: AssistSettings) => settings.openCodeUrl,
@@ -269,6 +279,7 @@ export const ASSIST_PROVIDER_LABELS: Record<AssistSettings["provider"], string> 
   {
     anthropic: "Anthropic",
     mistral: "Mistral",
+    openai: "OpenAI",
     "openai-compatible": "OpenAI compatible",
     opencode: "OpenCode server",
     "opencode-go": "OpenCode Go",

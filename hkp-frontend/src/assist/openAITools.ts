@@ -88,6 +88,14 @@ export async function runOpenAIToolTurn(
     outputLimit?: number;
     /** Whether to ask for usage on a streamed answer (`stream_options`). */
     streamUsage?: boolean;
+    /**
+     * What the output limit is called in the request. OpenAI's reasoning
+     * models refuse `max_tokens` and take `max_completion_tokens`; other
+     * servers know only the older name.
+     */
+    outputLimitField?: "max_tokens" | "max_completion_tokens";
+    /** OpenAI's `reasoning_effort`, for a model that reasons; unset omits it. */
+    reasoningEffort?: string;
     conversation: Conversation;
     prompt: string;
     context: unknown;
@@ -180,7 +188,10 @@ export async function runOpenAIToolTurn(
             parameters: tool.inputSchema,
           },
         })),
-        max_tokens: maxTokens,
+        [options.outputLimitField ?? "max_tokens"]: maxTokens,
+        ...(options.reasoningEffort
+          ? { reasoning_effort: options.reasoningEffort }
+          : {}),
         stream: true,
         ...(options.streamUsage === false
           ? {}

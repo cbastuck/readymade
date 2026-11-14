@@ -30,6 +30,11 @@ export type AssistModel = Pick<ModelInfo, "id" | "display_name"> &
   Partial<Pick<ModelInfo, "capabilities" | "max_tokens">> & {
     /** The context window, for providers whose model list states it. */
     context_tokens?: number;
+    /**
+     * The effort levels a model takes, for providers that know them without
+     * Anthropic's capability report.
+     */
+    efforts?: Exclude<Effort, "default">[];
   };
 export type Conversation = MessageParam[];
 export function createAssistClient(token: string) {
@@ -54,6 +59,7 @@ export async function listAssistModels(
   return models;
 }
 export function modelEfforts(model?: AssistModel): Effort[] {
+  if (model?.efforts) return ["default", ...model.efforts];
   const capability = model?.capabilities?.effort;
   return [
     "default",

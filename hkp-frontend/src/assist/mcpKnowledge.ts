@@ -266,6 +266,16 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     }
   }
 
+  /**
+   * Connects and lists the server's tools, throwing why if it cannot. A
+   * server that answers is no longer skipped after an earlier slow failure.
+   */
+  async check(): Promise<{ tools: number }> {
+    await this.connect();
+    cooldowns.delete(this.endpoint);
+    return { tools: requiredTools.size + this.agentTools.length };
+  }
+
   async close(): Promise<void> {
     this.connecting = undefined;
     const client = this.client;
@@ -410,4 +420,21 @@ export function boardAssistKnowledgeProvider(
     bundledKnowledgeProvider,
     onFallback,
   );
+}
+
+/**
+ * Asks the server once whether it is usable as Board Assist's knowledge: it
+ * connects and provides the required tools. Only on request — Settings checks
+ * when the person asks, never on a schedule.
+ */
+export async function checkMcpKnowledgeServer(
+  endpoint: string,
+  signal: AbortSignal,
+): Promise<{ tools: number }> {
+  const provider = new McpKnowledgeProvider(endpoint, signal);
+  try {
+    return await provider.check();
+  } finally {
+    await provider.close();
+  }
 }

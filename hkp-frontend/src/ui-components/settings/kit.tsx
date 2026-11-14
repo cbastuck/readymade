@@ -180,6 +180,26 @@ export function SettingsSelect<T extends string>({
   );
 }
 
+/** A coloured dot saying how a check went: green, red, or yellow while it
+ *  runs. `label` is what a screen reader hears, and the tooltip. */
+export function SettingsStatusDot({
+  state,
+  label,
+}: {
+  state: "ok" | "failed" | "pending";
+  label: string;
+}) {
+  return (
+    <span
+      className="hkp-set-dot"
+      data-state={state}
+      role="status"
+      aria-label={label}
+      title={label}
+    />
+  );
+}
+
 /** A labelled input. The label wraps the input, so the two are associated
  *  without an id; `htmlFor` is for inputs rendered elsewhere. */
 export function SettingsField({

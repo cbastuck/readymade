@@ -420,6 +420,47 @@
   gap: 8px;
 }
 
+/* A field with something beside its input: aligned to the input, not its
+   label. */
+.hkp-set-inline--end {
+  align-items: flex-end;
+}
+.hkp-set-inline > .hkp-set-field {
+  flex: 1;
+  min-width: 0;
+}
+.hkp-set-input-height {
+  height: 34px;
+}
+
+/* A check's outcome, beside what was checked. */
+.hkp-set-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.hkp-set-dot[data-state="ok"] {
+  background: #1fa774;
+}
+.hkp-set-dot[data-state="failed"] {
+  background: var(--set-danger);
+}
+.hkp-set-dot[data-state="pending"] {
+  background: #e8b10e;
+  animation: hkp-set-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes hkp-set-pulse {
+  to {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hkp-set-dot[data-state="pending"] {
+    animation: none;
+  }
+}
+
 .hkp-set-check {
   display: flex;
   align-items: flex-start;

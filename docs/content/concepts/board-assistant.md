@@ -12,8 +12,8 @@ stays available while the panel is hidden; it is not saved in the board file.
 ## Setup
 
 Open **Settings → Board Assist**, in either the website or the native Readymade
-app. Choose **Anthropic**, **Mistral**, **OpenAI compatible**, **OpenCode server**
-or **OpenCode Go**; only the chosen provider's
+app. Choose **Anthropic**, **Mistral**, **OpenAI**, **OpenAI compatible**,
+**OpenCode server** or **OpenCode Go**; only the chosen provider's
 settings are shown. As in Appearance, changes take effect as you make them — a
 choice at once, a text field when you leave it — and an invalid value is
 explained under its field instead of being saved. Each saved token can be
@@ -22,8 +22,10 @@ or API servers clears the conversation so a previous provider's history is not
 sent to a different server. The board is kept; the conversation's revert
 checkpoint goes with it.
 
-For Anthropic, enter an API token. For OpenAI-compatible servers, enter an **API
-base URL** including `/v1`, and an optional API token. An unauthenticated local
+For Anthropic, enter an API token. For OpenAI, enter an API key from
+`platform.openai.com/api-keys`; see below. For OpenAI-compatible servers, enter an **API
+base URL** including `/v1` — it starts as `http://127.0.0.1:8081/v1`, the local
+llama.cpp server below — and an optional API token. An unauthenticated local
 llama.cpp server does not need a token. For example:
 
 - Provider: **OpenAI compatible**
@@ -62,6 +64,21 @@ the same tools an Anthropic model gets: the model searches and reads the
 documentation itself, as often as the request needs, and proposes a board with
 a tool call. A reasoning model's thinking is shown as progress, left out of the
 answer and kept beside it.
+
+**OpenAI** is OpenAI's own API at `https://api.openai.com/v1`, with an API key
+from `platform.openai.com` and usage billed to that platform account — a ChatGPT
+or Codex subscription does not include it. Only the key is asked for. The model
+list keeps the models that answer chat completions, newest first, leaving out
+embeddings, speech, image, realtime and Responses-only models (`-pro`, `codex`,
+deep research). OpenAI's list states no context window, so each turn is sized
+by the model's family — 400,000 tokens for GPT-5, for example — and there is no
+context setting. Like Mistral, requests use chat completions with the same
+tools an Anthropic model gets, so the model looks up the documentation itself.
+They send `max_completion_tokens`, which OpenAI's reasoning models require in
+place of `max_tokens`. For a reasoning model
+(GPT-5, the o-series, and any newer family) the panel's **Effort** offers
+**low**, **medium** and **high**, sent as `reasoning_effort`; **Model default**
+sends none.
 
 **OpenCode Go** uses the models of an OpenCode Go subscription through the same
 OpenAI-compatible API, with Board Assist itself as the client — no OpenCode
@@ -106,7 +123,7 @@ settings; local servers can send with no API token.
 **Output limit**, in the panel's model settings, is the most one answer may
 write, the model's thinking included. Left empty, each provider keeps its
 default: 16,384 tokens for Anthropic (less where a model states less) and for
-Mistral, a model's stated limit for OpenCode Go (32,768 when it states none),
+Mistral, what the model's family can write for OpenAI, a model's stated limit for OpenCode Go (32,768 when it states none),
 and 4,096 for an OpenAI-compatible server — the last three never more than a
 quarter of the context. A limit set here is used as it is, up to what a model
 states it can write; one that leaves too little of the context for the board is
@@ -121,7 +138,7 @@ that moment — raise it first. The new request carries what the model wrote, as
 its own turn, and asks it to go on from there rather than start over; thinking
 too long for the room the context leaves loses its beginning. Whether the
 model picks up mid-thought or reconsiders from its notes is up to the model,
-but it starts from what it already worked out. Anthropic's and Mistral's turns
+but it starts from what it already worked out. Anthropic's, Mistral's and OpenAI's turns
 are a series of requests, documentation lookups among them, so nothing is
 carried there and the button is **Retry**: the same request, asked afresh with the new limit. The
 cut-off attempt's tokens count in the conversation's usage either way
@@ -130,12 +147,13 @@ cut-off attempt's tokens count in the conversation's usage either way
 Where tokens are kept depends on the host. The desktop and phone apps keep them
 with their other secrets (`targets.md`, "Where secrets live"), as
 `readymade.assist.anthropic`, `readymade.assist.mistral`,
+`readymade.assist.openai`,
 `readymade.assist.openai-compatible`,
 `readymade.assist.opencode`, `readymade.assist.opencode-go` and
 `readymade.assist.opencode-go-relay`, so they
 are listed, and can be removed, in **Settings → Secrets** like any other
 credential. Each is allowed only to its provider's host — `api.anthropic.com`,
-`api.mistral.ai`, or the host of the API base URL, which it follows when the URL changes — so a
+`api.mistral.ai`, `api.openai.com`, or the host of the API base URL, which it follows when the URL changes — so a
 board that names one as `{{secret.readymade.assist.anthropic}}` can use it for
 its own calls to that provider and nowhere else. A token an older build kept in
 local storage moves there on the first launch. The website has no secret store
@@ -197,10 +215,16 @@ provenance.
 With nothing set, Board Assist uses the hosted one at
 `https://mcp.readymadeit.com/mcp`. To use your own, run the server and set
 **Settings → Board Assist → Knowledge server → MCP server URL**, for example
-`http://127.0.0.1:8787/mcp`. The URL is device-local configuration and is not
+`http://127.0.0.1:8787/mcp`. **Check** beside it connects once to the server
+a request would use — the hosted one while the field is empty — and lists its
+tools: the dot turns yellow while it asks, green when the server provides the
+knowledge tools, and red with the reason when it does not. The server is asked
+only when Check is pressed, and the result is forgotten when the URL changes; a
+server that answers is tried again by the next turn even if an earlier slow
+failure had it skipped. The URL is device-local configuration and is not
 written into boards. A hosted playground needs the server behind a TLS reverse
 proxy; `readymade-mcp/README.md` walks through deploying it. Every provider can consume the server's search and
-document-reading tools. Anthropic and Mistral models call them themselves, and
+document-reading tools. Anthropic, Mistral and OpenAI models call them themselves, and
 also receive the allowlisted contract, compatibility, example,
 source-inspection and board-validation operations as model-controlled tools
 (`hkp-frontend/src/assist/assistTools.ts`). The other OpenAI-compatible
