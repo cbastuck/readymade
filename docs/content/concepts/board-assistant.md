@@ -68,17 +68,21 @@ answer and kept beside it.
 **OpenAI** is OpenAI's own API at `https://api.openai.com/v1`, with an API key
 from `platform.openai.com` and usage billed to that platform account — a ChatGPT
 or Codex subscription does not include it. Only the key is asked for. The model
-list keeps the models that answer chat completions, newest first, leaving out
-embeddings, speech, image, realtime and Responses-only models (`-pro`, `codex`,
-deep research). OpenAI's list states no context window, so each turn is sized
-by the model's family — 400,000 tokens for GPT-5, for example — and there is no
-context setting. Like Mistral, requests use chat completions with the same
-tools an Anthropic model gets, so the model looks up the documentation itself.
-They send `max_completion_tokens`, which OpenAI's reasoning models require in
-place of `max_tokens`. For a reasoning model
+list keeps the conversation models, newest first, leaving out embeddings,
+speech, image and realtime models and those that need tools of their own (deep
+research, computer use); `codex` and `-pro` models are listed. OpenAI's list states no context window,
+so each turn is sized by the model's family — 400,000 tokens for GPT-5, for
+example — and there is no context setting. Requests use the Responses API
+(`/v1/responses`), streamed, with the same tools an Anthropic model gets, so
+the model looks up the documentation itself. It is the API on which OpenAI's
+newer reasoning models take tools together with a reasoning effort — chat
+completions refuses the pair for them. Nothing is stored at OpenAI
+(`store: false`): each request carries the turn so far, a reasoning model's
+reasoning included as the encrypted content OpenAI returns for that, so it
+carries on from its own thinking after a lookup. For a reasoning model
 (GPT-5, the o-series, and any newer family) the panel's **Effort** offers
-**low**, **medium** and **high**, sent as `reasoning_effort`; **Model default**
-sends none.
+**low**, **medium** and **high** — GPT-5 pro only **high**, the one it takes —
+sent as `reasoning.effort`; **Model default** sends none (`hkp-frontend/src/assist/openAIResponses.ts`).
 
 **OpenCode Go** uses the models of an OpenCode Go subscription through the same
 OpenAI-compatible API, with Board Assist itself as the client — no OpenCode
@@ -139,8 +143,18 @@ its own turn, and asks it to go on from there rather than start over; thinking
 too long for the room the context leaves loses its beginning. Whether the
 model picks up mid-thought or reconsiders from its notes is up to the model,
 but it starts from what it already worked out. Anthropic's, Mistral's and OpenAI's turns
-are a series of requests, documentation lookups among them, so nothing is
-carried there and the button is **Retry**: the same request, asked afresh with the new limit. The
+are a series of requests, documentation lookups among them. The cut-off request
+is asked again with the new limit, and the ones before it are carried as they
+were — the documentation the model read and, where the provider hands it out,
+its reasoning (Anthropic's thinking, OpenAI's encrypted reasoning) — so it goes
+on from where it stopped. A turn cut off at its first request has nothing to
+carry, and the button is **Retry**: the same request, asked afresh.
+
+A tool turn makes at most 12 requests. One that used them all without
+proposing or answering offers **Continue** too, which goes on from the last of
+them for up to 12 more. Either way, what is carried is kept in memory beside
+the failed turn only, until the next request, and goes on only with the same
+model: another cannot read the first one's reasoning, and starts afresh. The
 cut-off attempt's tokens count in the conversation's usage either way
 (`hkp-frontend/src/assist/outputLimit.ts`).
 

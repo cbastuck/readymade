@@ -104,7 +104,7 @@ function reasoningOf(message: {
   const field = message.reasoning_content ?? message.reasoning;
   return typeof field === "string" ? field : thinkingText(message.content);
 }
-async function requestResponse(
+export async function requestResponse(
   base: string,
   path: string,
   token: string,

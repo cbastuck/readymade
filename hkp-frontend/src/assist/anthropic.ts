@@ -12,7 +12,13 @@ import {
   fromAnthropicUsage,
   noUsage,
 } from "./usage";
-import { OutputLimitError } from "./outputLimit";
+import {
+  Continuation,
+  LookupLimitError,
+  OutputLimitError,
+  resumedTranscript,
+  TOOL_STEPS,
+} from "./outputLimit";
 import { bundledKnowledgeProvider } from "./documentation";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import { Effort } from "./settings";
@@ -91,6 +97,8 @@ export async function runAssistTurn(options: {
   knowledgeProvider?: ReadymadeKnowledgeProvider;
   /** What the board's runtimes have, to hold a proposal's services to. */
   services?: RunningCatalog;
+  /** An earlier attempt at the same request that stopped at a limit. */
+  continuation?: Continuation;
 }): Promise<{
   conversation: Conversation;
   text: string;
@@ -112,22 +120,41 @@ export async function runAssistTurn(options: {
         input_schema: tool.inputSchema,
       }) as Tool,
   );
-  const messages: Conversation = [
-    ...options.conversation,
-    {
-      role: "user",
-      content: `${options.prompt}\n\n${scopeInstruction(options.scope)}\n\nCurrent board and editing context:\n${JSON.stringify(options.context)}`,
+  // A resumed turn goes on from the requests its earlier attempt completed,
+  // thinking blocks and all.
+  const resumed = resumedTranscript(
+    options.continuation,
+    "anthropic",
+    options.model.id,
+  );
+  const messages: Conversation = resumed
+    ? [...(resumed.messages as Conversation)]
+    : [
+        ...options.conversation,
+        {
+          role: "user",
+          content: `${options.prompt}\n\n${scopeInstruction(options.scope)}\n\nCurrent board and editing context:\n${JSON.stringify(options.context)}`,
+        },
+      ];
+  let text = resumed?.text ?? "";
+  const transcript = (said = text) => ({
+    transcript: {
+      via: "anthropic" as const,
+      model: options.model.id,
+      messages: [...messages],
+      text: said,
     },
-  ];
-  let text = "";
+  });
   // Every request counts, the documentation lookups as much as the proposal.
   let usage = noUsage;
   const stated = options.model.max_tokens;
   const maxTokens = options.outputLimit
     ? Math.min(options.outputLimit, stated || options.outputLimit)
     : Math.min(16384, stated || 16384);
-  for (let step = 0; step < 12; step++) {
+  for (let step = 0; step < TOOL_STEPS; step++) {
     options.signal.throwIfAborted();
+    // What was said before this request: a cut-off one's text is asked again.
+    const said = text;
     const effort = modelEfforts(options.model).includes(options.effort)
       ? options.effort
       : "default";
@@ -149,12 +176,12 @@ export async function runAssistTurn(options: {
     const response = await stream.finalMessage();
     usage = addUsage(usage, fromAnthropicUsage(response.usage));
     options.onUsage?.(usage);
-    // Nothing of it is carried into a retry: the turn is a series of
-    // requests, and the one cut off may be any of them.
+    // The cut-off request is not carried: what goes on is the requests
+    // before it, when there were any, and that one is asked again.
     if (response.stop_reason === "max_tokens")
       throw new OutputLimitError(
-        `The response reached its output limit (${formatTokens(maxTokens)} tokens). Raise the output limit in Model settings or lower the effort, then retry.`,
-        { limit: maxTokens },
+        `The response reached its output limit (${formatTokens(maxTokens)} tokens). Raise the output limit in Model settings or lower the effort, then ${step || resumed ? "continue" : "retry"}.`,
+        { limit: maxTokens, ...(step || resumed ? transcript(said) : {}) },
       );
     messages.push({ role: "assistant", content: response.content });
     const calls = response.content.filter((block) => block.type === "tool_use");
@@ -216,7 +243,5 @@ export async function runAssistTurn(options: {
       };
     options.onStatus("Preparing a response…");
   }
-  throw new Error(
-    "The assistant reached its documentation lookup limit. Please narrow the request.",
-  );
+  throw new LookupLimitError({ limit: maxTokens, ...transcript() });
 }
