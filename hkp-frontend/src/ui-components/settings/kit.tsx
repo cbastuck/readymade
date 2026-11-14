@@ -151,6 +151,35 @@ export function SettingsInput({
   );
 }
 
+/** A dropdown styled like `SettingsInput`, for a choice between more options
+ *  than fit comfortably as `SettingsChoices` buttons. */
+export function SettingsSelect<T extends string>({
+  options,
+  value,
+  onChange,
+  className,
+  ...props
+}: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange"> & {
+  options: Array<{ id: T; label: string }>;
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <select
+      className={`hkp-set-input hkp-set-select${className ? ` ${className}` : ""}`}
+      value={value}
+      onChange={(event) => onChange(event.target.value as T)}
+      {...props}
+    >
+      {options.map((option) => (
+        <option key={option.id} value={option.id}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /** A labelled input. The label wraps the input, so the two are associated
  *  without an id; `htmlFor` is for inputs rendered elsewhere. */
 export function SettingsField({

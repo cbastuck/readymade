@@ -7,9 +7,11 @@ import {
   SettingsInput,
   SettingsNote,
   SettingsSection,
+  SettingsSelect,
   SettingsStack,
 } from "../ui-components/settings/kit";
 import {
+  ASSIST_PROVIDER_LABELS,
   ASSIST_SETTINGS_SECTION,
   ASSIST_TOKEN_ALIASES,
   AssistSettings as Settings,
@@ -221,30 +223,11 @@ export default function AssistSettings() {
       <SettingsCard>
         <SettingsStack>
           <SettingsSection label="Provider">
-            <SettingsChoices
-              options={[
-                { id: "anthropic", label: "Anthropic", sub: "Hosted API" },
-                {
-                  id: "mistral",
-                  label: "Mistral",
-                  sub: "Hosted API, based in the EU",
-                },
-                {
-                  id: "openai-compatible",
-                  label: "OpenAI compatible",
-                  sub: "llama.cpp or any compatible server",
-                },
-                {
-                  id: "opencode",
-                  label: "OpenCode server",
-                  sub: "a local opencode serve instance",
-                },
-                {
-                  id: "opencode-go",
-                  label: "OpenCode Go",
-                  sub: "the models of an OpenCode Go subscription",
-                },
-              ]}
+            <SettingsSelect
+              aria-label="Provider"
+              options={(
+                Object.keys(ASSIST_PROVIDER_LABELS) as Settings["provider"][]
+              ).map((id) => ({ id, label: ASSIST_PROVIDER_LABELS[id] }))}
               value={settings.provider}
               onChange={(provider) => persist({ provider, model: "" })}
             />
