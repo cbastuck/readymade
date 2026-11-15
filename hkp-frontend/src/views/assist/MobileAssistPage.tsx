@@ -4,6 +4,7 @@ import { useBoardContext } from "../../BoardContext";
 import AssistConnectionNotice from "../../assist/AssistConnectionNotice";
 import { unencryptedRemote } from "../../assist/addresses";
 import { ASSIST_PROVIDER_LABELS, Effort } from "../../assist/settings";
+import { carriesOn, continueHint } from "../../assist/outputLimit";
 import { useBoardAssist, type AssistFocus } from "../../assist/useBoardAssist";
 import BottomSheet from "../playground/mobile/BottomSheet";
 import MobileIcon from "../playground/mobile/MobileIcon";
@@ -63,6 +64,7 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
     compatible,
     openCode,
     openCodeGo,
+    mistral,
     providerReady,
     modelsLoading,
     model,
@@ -97,7 +99,7 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
       : `Thinking ${settings.openAIThinking}`
     : openCode
       ? "OpenCode server"
-    : openCodeGo
+    : openCodeGo || mistral
       ? "Model default"
     : effort === "default"
       ? "Model default"
@@ -259,6 +261,39 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
                   <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
                     {entry.text || (busy && index === entries.length - 1 ? "…" : "")}
                   </div>
+                  {entry.reasoning && (
+                    <details style={{ marginTop: 8, fontSize: 13 }}>
+                      <summary>Show the model's thinking</summary>
+                      <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 11.5 }}>
+                        {entry.reasoning}
+                      </pre>
+                    </details>
+                  )}
+                  {entry.cutOff && assist.continuable(index) && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${M.border}` }}>
+                      <p style={{ margin: "0 0 10px", fontSize: 13, color: M.textSecondary }}>
+                        {continueHint(entry.cutOff, settings.outputLimit)}
+                      </p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void assist.continueTurn(index)}
+                          style={button("primary", !busy)}
+                        >
+                          {carriesOn(entry.cutOff) ? "Continue" : "Retry"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setModelSheet(true)}
+                          style={button("plain", !busy)}
+                        >
+                          Output limit…
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {entry.rawResponse !== undefined && (
                     <details style={{ marginTop: 8, fontSize: 13 }}>
                       <summary>Show raw model response</summary>
@@ -490,7 +525,7 @@ function ModelSettings({
   assist: ReturnType<typeof useBoardAssist>;
   onOpenSettings?: () => void;
 }) {
-  const { settings, compatible, openCode, openCodeGo, models, modelsLoading, model, efforts, effort, busy } = assist;
+  const { settings, compatible, openCode, openCodeGo, mistral, models, modelsLoading, model, efforts, effort, busy } = assist;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <label style={{ fontSize: 13, color: M.textSecondary }}>
@@ -511,7 +546,30 @@ function ModelSettings({
           ))}
         </select>
       </label>
-      {!openCode && !openCodeGo && <label style={{ fontSize: 13, color: M.textSecondary }}>
+      {assist.takesOutputLimit && (
+        <label style={{ fontSize: 13, color: M.textSecondary }}>
+          Output limit
+          <input
+            type="text"
+            inputMode="numeric"
+            disabled={busy}
+            placeholder="Model default"
+            value={assist.outputLimitDraft}
+            aria-invalid={!!assist.outputLimitError || undefined}
+            onChange={(event) => assist.setOutputLimitDraft(event.target.value)}
+            onBlur={assist.commitOutputLimit}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") assist.commitOutputLimit();
+            }}
+            style={{ ...field, marginTop: 6 }}
+          />
+          <span style={{ display: "block", marginTop: 4, fontSize: 12, color: assist.outputLimitError ? M.danger : M.textMuted }}>
+            {assist.outputLimitError ||
+              "The most one answer may write, the model's thinking included."}
+          </span>
+        </label>
+      )}
+      {!openCode && !openCodeGo && !mistral && <label style={{ fontSize: 13, color: M.textSecondary }}>
         {compatible ? "Thinking" : "Effort"}
         <select
           disabled={busy || (!compatible && efforts.length === 1)}

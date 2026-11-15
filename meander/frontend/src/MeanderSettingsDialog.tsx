@@ -166,78 +166,12 @@ function ConnectionsWithRemotes({
   );
 }
 
-function AboutTab() {
-  const config = getMeanderConfig();
-  // Prefer the explicit fields; fall back to the legacy apiPort (real port when
-  // exposed, 0 otherwise) so the tab works against older backend builds too.
-  const exposed =
-    config.allowExternalAccess ?? ((config.apiPort ?? 0) > 0);
-  // authConfigured is set by the backend; when undefined we're on an older build
-  // and can't tell, so we don't claim either way.
-  const authKnown = config.authConfigured !== undefined;
-  const authConfigured = config.authConfigured === true;
-  const port = config.runtimePort ?? (config.apiPort || undefined);
-
-  // localhost-only binds 127.0.0.1; LAN mode binds 0.0.0.0 and is reachable at
-  // the LAN IP. Fall back to the LAN IP only when it is actually exposed.
-  const host = exposed ? (config.lanIp ?? "127.0.0.1") : "127.0.0.1";
-  const runtimeUrl = port ? `http://${host}:${port}` : null;
-
-  return (
-    <SettingsStack>
-      <SettingsSection label="Runtime server">
-        {runtimeUrl ? (
-          <CopyableValue value={runtimeUrl} />
-        ) : (
-          <p className="hkp-set-hint">Not available</p>
-        )}
-      </SettingsSection>
-
-      <SettingsSection label="Network">
-        <SettingsList>
-          <SettingsRow
-            icon={exposed ? <Globe size={15} /> : <Lock size={15} />}
-            title={exposed ? "Exposed to local network" : "Local only"}
-            subtitle={
-              <span style={{ whiteSpace: "normal" }}>
-                {exposed
-                  ? "Other devices on this network can connect to this runtime at the URL above."
-                  : "The runtime is bound to 127.0.0.1 and cannot be reached from other devices. Enable external access to connect from another device."}
-              </span>
-            }
-          />
-        </SettingsList>
-        {exposed && authKnown && authConfigured && (
-          <SettingsNote tone="ok">
-            Authentication is enforced. Only allow-listed users can drive this
-            runtime from another device.
-          </SettingsNote>
-        )}
-        {exposed && authKnown && !authConfigured && (
-          <SettingsNote tone="warn">
-            External access is on but no allowed users are configured, so all
-            external requests are denied. Add trusted issuers and allowed users
-            under "auth" in settings.json.
-          </SettingsNote>
-        )}
-        {exposed && !authKnown && (
-          <SettingsNote tone="warn">
-            Exposed to the local network. Configure trusted issuers and allowed
-            users under "auth" in settings.json so only allow-listed users can
-            drive this runtime.
-          </SettingsNote>
-        )}
-      </SettingsSection>
-    </SettingsStack>
-  );
-}
-
-function AccessTab() {
+// The runtime access settings as settings.json holds them, shared by the tabs
+// that edit them. What is saved takes effect only after a restart.
+function useRuntimeSettings() {
   const [settings, setSettings] = useState<RuntimeSettings | null>(null);
   const [supported, setSupported] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [newEmail, setNewEmail] = useState("");
-  const [newOrigin, setNewOrigin] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -279,6 +213,108 @@ function AccessTab() {
     setSettings(updated);
   };
 
+  return { settings, supported, loading, persist };
+}
+
+function AboutTab() {
+  const config = getMeanderConfig();
+  const { settings, persist } = useRuntimeSettings();
+  // Prefer the explicit fields; fall back to the legacy apiPort (real port when
+  // exposed, 0 otherwise) so the tab works against older backend builds too.
+  const exposed =
+    config.allowExternalAccess ?? ((config.apiPort ?? 0) > 0);
+  // authConfigured is set by the backend; when undefined we're on an older build
+  // and can't tell, so we don't claim either way.
+  const authKnown = config.authConfigured !== undefined;
+  const authConfigured = config.authConfigured === true;
+  const port = config.runtimePort ?? (config.apiPort || undefined);
+
+  // localhost-only binds 127.0.0.1; LAN mode binds 0.0.0.0 and is reachable at
+  // the LAN IP. Fall back to the LAN IP only when it is actually exposed.
+  const host = exposed ? (config.lanIp ?? "127.0.0.1") : "127.0.0.1";
+  const runtimeUrl = port ? `http://${host}:${port}` : null;
+
+  return (
+    <SettingsStack>
+      <SettingsSection label="Embedded runtime server">
+        {runtimeUrl ? (
+          <CopyableValue value={runtimeUrl} />
+        ) : (
+          <p className="hkp-set-hint">Not available</p>
+        )}
+      </SettingsSection>
+
+      <SettingsSection label="Local network">
+        {settings ? (
+          // The switch shows what is saved; the URL above, what is running.
+          <>
+            <SettingsCard>
+              <div className="hkp-set-inline" style={{ justifyContent: "space-between", gap: 16 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="hkp-set-row-title">Expose to local network</div>
+                  <p className="hkp-set-hint">
+                    {settings.allowExternalRuntimeAccess
+                      ? "Bound to 0.0.0.0 — other devices can connect (authenticated)."
+                      : "Bound to 127.0.0.1 — reachable only from this device."}
+                  </p>
+                </div>
+                <SettingsSwitch
+                  label="Expose to local network"
+                  checked={settings.allowExternalRuntimeAccess}
+                  onChange={(checked) =>
+                    void persist({ allowExternalRuntimeAccess: checked })
+                  }
+                />
+              </div>
+            </SettingsCard>
+            <SettingsNote tone="warn">
+              Changes above take effect after restarting the app.
+            </SettingsNote>
+          </>
+        ) : (
+          // Older backends cannot change it from here; say what is in force.
+          <SettingsList>
+            <SettingsRow
+              icon={exposed ? <Globe size={15} /> : <Lock size={15} />}
+              title={exposed ? "Exposed to local network" : "Local only"}
+              subtitle={
+                <span style={{ whiteSpace: "normal" }}>
+                  {exposed
+                    ? "Other devices on this network can connect to this runtime at the URL above."
+                    : "The runtime is bound to 127.0.0.1 and cannot be reached from other devices."}
+                </span>
+              }
+            />
+          </SettingsList>
+        )}
+        {exposed && authKnown && authConfigured && (
+          <SettingsNote tone="ok">
+            Authentication is enforced. Only allowed users can drive this
+            runtime from another device.
+          </SettingsNote>
+        )}
+        {exposed && authKnown && !authConfigured && (
+          <SettingsNote tone="warn">
+            Exposed to the local network, but no allowed users are configured,
+            so all external requests are denied. Add them under Access.
+          </SettingsNote>
+        )}
+        {exposed && !authKnown && (
+          <SettingsNote tone="warn">
+            Exposed to the local network. Add allowed users under Access so
+            only they can drive this runtime.
+          </SettingsNote>
+        )}
+      </SettingsSection>
+    </SettingsStack>
+  );
+}
+
+function AccessTab() {
+  const { settings, supported, loading, persist } = useRuntimeSettings();
+  const [newEmail, setNewEmail] = useState("");
+  const [newOrigin, setNewOrigin] = useState("");
+
   if (loading) {
     return <p className="hkp-set-hint">Loading…</p>;
   }
@@ -290,7 +326,7 @@ function AccessTab() {
     );
   }
 
-  const { allowExternalRuntimeAccess, allowedUsers } = settings;
+  const { allowedUsers } = settings;
 
   const addEmail = () => {
     const email = newEmail.trim();
@@ -342,28 +378,6 @@ function AccessTab() {
 
   return (
     <SettingsStack>
-      <SettingsSection label="Local network">
-        <SettingsCard>
-          <div className="hkp-set-inline" style={{ justifyContent: "space-between", gap: 16 }}>
-            <div style={{ minWidth: 0 }}>
-              <div className="hkp-set-row-title">Expose to local network</div>
-              <p className="hkp-set-hint">
-                {allowExternalRuntimeAccess
-                  ? "Bound to 0.0.0.0 — other devices can connect (authenticated)."
-                  : "Bound to 127.0.0.1 — reachable only from this device."}
-              </p>
-            </div>
-            <SettingsSwitch
-              label="Expose to local network"
-              checked={allowExternalRuntimeAccess}
-              onChange={(checked) =>
-                void persist({ allowExternalRuntimeAccess: checked })
-              }
-            />
-          </div>
-        </SettingsCard>
-      </SettingsSection>
-
       <SettingsSection
         label="Allowed users"
         hint="Emails permitted to drive this runtime from other devices."

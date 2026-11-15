@@ -63,15 +63,17 @@ async function restoreRuntime(
   // Before any service is added: its store is the board's `assets`, and a
   // service may resolve one while being configured.
   scope.assets = assets;
-  const createdServices: Array<ServiceInstance> = (
-    await Promise.all(services.map((svc) => addService(scope, svc, svc.uuid)))
-  ).filter((svc) => {
-    return svc && scope.findServiceInstance(svc.uuid);
-  }) as any;
-
+  const added = await Promise.all(
+    services.map((svc) => addService(scope, svc, svc.uuid)),
+  );
+  // Paired before filtering: a service that could not be created leaves a
+  // gap, and every one after it would otherwise be configured with the state
+  // of the one before.
   await Promise.all(
-    createdServices.map((svc, idx) =>
-      configureService(scope, svc, services[idx]),
+    added.map((svc, idx) =>
+      svc && scope.findServiceInstance(svc.uuid)
+        ? configureService(scope, svc, services[idx])
+        : undefined,
     ),
   );
 

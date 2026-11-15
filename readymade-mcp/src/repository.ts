@@ -59,6 +59,9 @@ function contentSha256(content: string): string {
   return createHash("sha256").update(content).digest("hex");
 }
 
+/** Pages on their way into the documentation (`docs/content/drafts/index.md`). */
+const DRAFTS = "docs/content/drafts/";
+
 async function walk(directory: string, extensions: string[]): Promise<string[]> {
   const result: string[] = [];
   let entries;
@@ -264,6 +267,8 @@ export class KnowledgeRepository implements ValidationCatalog {
 
     for (const absolute of await walk(path.join(absoluteRoot, "docs", "content"), [".md"])) {
       const relativePath = path.relative(absoluteRoot, absolute).split(path.sep).join("/");
+      // Work in progress, not yet documentation to build boards from.
+      if (relativePath.startsWith(DRAFTS)) continue;
       const content = await readFile(absolute, "utf8");
       const isService = relativePath.startsWith("docs/content/services/");
       const parsed = isService ? parseServiceDocument(content, path.basename(absolute, ".md")) : undefined;
