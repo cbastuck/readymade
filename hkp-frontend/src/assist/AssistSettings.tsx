@@ -8,6 +8,7 @@ import {
   SettingsNote,
   SettingsSection,
   SettingsStack,
+  SettingsSwitch,
 } from "../ui-components/settings/kit";
 import {
   ASSIST_SETTINGS_SECTION,
@@ -515,22 +516,46 @@ export default function AssistSettings() {
 
       <SettingsSection
         label="Knowledge server"
-        hint="MCP endpoint for richer, version-labelled Readymade knowledge, used with either provider. Leave it empty to use the Readymade knowledge server; Board Assist falls back to the documentation bundled with this app whenever the server is unavailable."
+        hint="MCP endpoint for richer, version-labelled Readymade knowledge, used with any provider. Leave the URL empty to use the Readymade knowledge server; Board Assist falls back to the documentation bundled with this app whenever the server is unavailable."
       >
-        <SettingsField label="MCP server URL">
-          <SettingsInput
-            type="url"
-            spellCheck={false}
-            placeholder={DEFAULT_MCP_KNOWLEDGE_URL}
-            {...text("mcpKnowledgeUrl")}
-          />
-        </SettingsField>
-        {error("mcpKnowledgeUrl")}
-        {unencryptedRemote(drafts.mcpKnowledgeUrl) && (
-          <SettingsNote tone="warn">
-            This is plain HTTP to another machine. Search terms and boards sent
-            for validation cross the network unencrypted.
-          </SettingsNote>
+        <SettingsCard>
+          <div
+            className="hkp-set-inline"
+            style={{ justifyContent: "space-between", gap: 16 }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div className="hkp-set-row-title">Use a knowledge server</div>
+              <p className="hkp-set-hint">
+                {settings.mcpKnowledgeEnabled
+                  ? "Search terms, and boards sent for validation, go to the server below."
+                  : "Board Assist reads only the documentation bundled with this app. Nothing is sent for knowledge."}
+              </p>
+            </div>
+            <SettingsSwitch
+              label="Use a knowledge server"
+              checked={settings.mcpKnowledgeEnabled}
+              onChange={(checked) => persist({ mcpKnowledgeEnabled: checked })}
+            />
+          </div>
+        </SettingsCard>
+        {settings.mcpKnowledgeEnabled && (
+          <>
+            <SettingsField label="MCP server URL">
+              <SettingsInput
+                type="url"
+                spellCheck={false}
+                placeholder={DEFAULT_MCP_KNOWLEDGE_URL}
+                {...text("mcpKnowledgeUrl")}
+              />
+            </SettingsField>
+            {error("mcpKnowledgeUrl")}
+            {unencryptedRemote(drafts.mcpKnowledgeUrl) && (
+              <SettingsNote tone="warn">
+                This is plain HTTP to another machine. Search terms and boards
+                sent for validation cross the network unencrypted.
+              </SettingsNote>
+            )}
+          </>
         )}
       </SettingsSection>
 

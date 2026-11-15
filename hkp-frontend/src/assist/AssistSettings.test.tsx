@@ -133,6 +133,25 @@ it("keeps what was typed when the dialog closes without leaving the field", () =
   expect(readAssistSettings().mcpKnowledgeUrl).toBe("http://127.0.0.1:8787/mcp");
 });
 
+it("turns the knowledge server off, keeping its URL for when it is turned back on", () => {
+  saveAssistSettings({ mcpKnowledgeUrl: "http://127.0.0.1:8787/mcp" });
+  render(<AssistSettings />);
+  const toggle = screen.getByRole("switch", { name: "Use a knowledge server" });
+  expect(toggle.getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(toggle);
+  expect(readAssistSettings()).toMatchObject({
+    mcpKnowledgeEnabled: false,
+    mcpKnowledgeUrl: "http://127.0.0.1:8787/mcp",
+  });
+  expect(screen.queryByLabelText("MCP server URL")).toBeNull();
+  expect(screen.getByText(/Nothing is sent for knowledge/)).toBeTruthy();
+  fireEvent.click(toggle);
+  expect(readAssistSettings().mcpKnowledgeEnabled).toBe(true);
+  expect(
+    (screen.getByLabelText("MCP server URL") as HTMLInputElement).value,
+  ).toBe("http://127.0.0.1:8787/mcp");
+});
+
 it("removes a saved token from its section", () => {
   saveAssistSettings({ anthropicToken: "one", model: "some-model" });
   render(<AssistSettings />);

@@ -1,5 +1,8 @@
 import { BoardDescriptor } from "../types";
-import { facadeProblems } from "../facade/validateFacade";
+import { FACADE_PROBLEMS_SHOWN, facadeProblems } from "../facade/validateFacade";
+
+/** A facade problem as it reads wherever its widget sits. */
+const unplaced = (problem: string) => problem.replace(/\[\d+\]/g, "[]");
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -52,12 +55,24 @@ export function validateAssistBoard(
   if (value.boardName !== undefined && typeof value.boardName !== "string")
     throw new Error("Board name must be text.");
   if (value.facade !== undefined) {
-    const known = new Set(
-      base?.facade ? facadeProblems(base.facade, { limit: Infinity }) : [],
-    );
-    const added = facadeProblems(value.facade).filter(
-      (problem) => !known.has(problem),
-    );
+    // Counted by what each problem says with its positions left out, so one
+    // the board already had is still known after a panel or widget is added
+    // ahead of it — and one more of the same kind still counts as added.
+    const known = new Map<string, number>();
+    if (base?.facade)
+      for (const problem of facadeProblems(base.facade, { limit: Infinity })) {
+        const key = unplaced(problem);
+        known.set(key, (known.get(key) ?? 0) + 1);
+      }
+    // All of them, before any is held back: the first few could all be old.
+    const added = facadeProblems(value.facade, { limit: Infinity })
+      .filter((problem) => {
+        const key = unplaced(problem);
+        const left = known.get(key) ?? 0;
+        if (left) known.set(key, left - 1);
+        return !left;
+      })
+      .slice(0, FACADE_PROBLEMS_SHOWN);
     if (added.length)
       throw new Error(
         `The facade does not match its schema (hkp-frontend/src/facade/types.ts):\n- ${added.join("\n- ")}`,

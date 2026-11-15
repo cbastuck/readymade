@@ -186,6 +186,48 @@ it("reads the documentation it asks for, then proposes with a tool call", async 
   ]);
 });
 
+it("keeps two streamed calls apart when the server gives both the same index", async () => {
+  const chunk = (id: string, name: string, args: unknown) =>
+    `data: ${JSON.stringify({
+      choices: [
+        {
+          delta: {
+            tool_calls: [
+              { index: 0, id, function: { name, arguments: JSON.stringify(args) } },
+            ],
+          },
+        },
+      ],
+    })}\n\n`;
+  const stream =
+    chunk("search001", "search_documentation", { query: "timer" }) +
+    chunk("readDocs2", "read_documentation", { paths: ["docs/services/timer.md"] }) +
+    `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`;
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(stream, { headers: { "Content-Type": "text/event-stream" } }),
+    )
+    .mockResolvedValueOnce(answer({ content: "A timer it is." }));
+  vi.stubGlobal("fetch", fetch);
+  const provider = knowledge();
+  await runMistralTurn({
+    ...turn({ id: "m", display_name: "m", context_tokens: 131072 }),
+    knowledgeProvider: provider,
+  });
+  expect(provider.searchKnowledge).toHaveBeenCalledWith({ query: "timer" });
+  expect(provider.readDocuments).toHaveBeenCalledWith(["docs/services/timer.md"]);
+  const messages = sent(fetch, 1).messages;
+  expect(messages.at(-3).tool_calls).toEqual([
+    call("search001", "search_documentation", { query: "timer" }),
+    call("readDocs2", "read_documentation", { paths: ["docs/services/timer.md"] }),
+  ]);
+  expect(messages.slice(-2).map((m: { tool_call_id: string }) => m.tool_call_id)).toEqual([
+    "search001",
+    "readDocs2",
+  ]);
+});
+
 it("shows the next turn what it proposed, when the person says it failed", async () => {
   const fetch = vi.fn(async () => answer({ content: "Columns are names." }));
   vi.stubGlobal("fetch", fetch);

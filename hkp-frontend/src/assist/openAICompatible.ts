@@ -208,6 +208,8 @@ export async function requestCompletion(
   let usage: unknown;
   // Streamed in pieces, each naming the call it continues by its index.
   const toolCalls: OpenAIToolCall[] = [];
+  // Where in `toolCalls` the call a server numbers by `index` is kept.
+  const slots = new Map<number, number>();
   const event = (payload: string) => {
     signal.throwIfAborted();
     if (!payload.trim()) return;
@@ -234,12 +236,20 @@ export async function requestCompletion(
       onStatus(`Model is thinking… ${reasoningCharacters} characters received`);
     }
     for (const part of delta?.tool_calls ?? []) {
-      const at =
-        typeof part?.index === "number"
-          ? part.index
-          : part?.id || !toolCalls.length
+      const id = typeof part?.id === "string" ? part.id : "";
+      let at: number;
+      if (typeof part?.index === "number") {
+        // An index names the call a piece continues — unless the piece names
+        // another call. A server that sends each call whole may give every
+        // one the same index, and joining them would make neither readable.
+        const taken = slots.get(part.index);
+        at =
+          taken === undefined || (id && toolCalls[taken].id && toolCalls[taken].id !== id)
             ? toolCalls.length
-            : toolCalls.length - 1;
+            : taken;
+        slots.set(part.index, at);
+      } else
+        at = id || !toolCalls.length ? toolCalls.length : toolCalls.length - 1;
       const call = (toolCalls[at] ??= {
         id: "",
         type: "function",

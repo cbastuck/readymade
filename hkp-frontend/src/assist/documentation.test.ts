@@ -27,3 +27,9 @@ it("ships the facade schema that board-json.md points to", async () => {
   const hits = await searchDocumentation("facade data-table widget");
   expect(hits.map((hit) => hit.path)).toContain(path);
 });
+it("leaves drafts out of what a model builds boards from", async () => {
+  expect(documentationIndex).not.toContain("docs/drafts/");
+  await expect(readDocumentation(["docs/drafts/index.md"])).rejects.toThrow(
+    "Unknown",
+  );
+});

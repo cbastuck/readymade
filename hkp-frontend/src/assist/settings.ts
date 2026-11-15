@@ -29,6 +29,12 @@ export type AssistSettings = {
   openCodeGoToken: string;
   /** What a relay in front of Go asks for, sent as X-Relay-Key; "" for none. */
   openCodeGoRelayKey: string;
+  /**
+   * Whether Board Assist asks a knowledge server at all. Off, it reads only
+   * the documentation bundled with this app and nothing leaves the device
+   * for knowledge — the URL below is kept, but not used.
+   */
+  mcpKnowledgeEnabled: boolean;
   mcpKnowledgeUrl: string;
   /** Whether requests carry asset contents, or only their ids and types. */
   includeAssetContents: boolean;
@@ -60,6 +66,7 @@ const defaults: AssistSettings = {
   openCodeGoUrl: OPENCODE_GO_URL,
   openCodeGoToken: "",
   openCodeGoRelayKey: "",
+  mcpKnowledgeEnabled: true,
   mcpKnowledgeUrl: "",
   includeAssetContents: false,
   model: "",

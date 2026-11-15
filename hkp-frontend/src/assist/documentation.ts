@@ -13,6 +13,8 @@ const documents = import.meta.glob<string>(
     "../../../docs/content/**/*.md",
     "!../../../docs/content/board-json.md",
     "!../../../docs/content/introduction.md",
+    // Work in progress, not yet documentation to build boards from.
+    "!../../../docs/content/drafts/**",
   ],
   { query: "?raw", import: "default" },
 );

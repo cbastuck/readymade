@@ -50,6 +50,13 @@ describe("KnowledgeRepository", () => {
     expect(pages.filter((page) => !indexed.has(page))).toEqual([]);
   });
 
+  it("leaves drafts out of what it indexes", () => {
+    expect(() => repository.readDocuments(["docs/content/drafts/index.md"])).toThrow();
+    expect(
+      repository.search("sovereignty self-determination").map((hit) => hit.provenance.path),
+    ).not.toContainEqual(expect.stringMatching(/^docs\/content\/drafts\//));
+  });
+
   it("reads several service IDs from one availability cell", () => {
     expect(repository.hasService("hookup.to/service/game-of-life", "browser")).toBe(true);
     expect(repository.hasService("hookup.to/service/game-of-life-renderer", "browser")).toBe(true);

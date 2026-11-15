@@ -195,7 +195,10 @@ excerpts, and statically validate a board. Each result carries build and commit
 provenance.
 
 With nothing set, Board Assist uses the hosted one at
-`https://mcp.readymadeit.com/mcp`. To use your own, run the server and set
+`https://mcp.readymadeit.com/mcp`. Turning off **Settings → Board Assist →
+Knowledge server → Use a knowledge server** leaves Board Assist with the
+bundled documentation alone: no server is asked, and nothing is sent for
+knowledge. To use your own, run the server and set
 **Settings → Board Assist → Knowledge server → MCP server URL**, for example
 `http://127.0.0.1:8787/mcp`. The URL is device-local configuration and is not
 written into boards. A hosted playground needs the server behind a TLS reverse
@@ -225,8 +228,12 @@ The next turn tries the server again, which costs nothing when it refuses
 connections. A server that failed **slowly** — a timeout, or any failure that
 took two seconds or more — is skipped by later turns for a minute instead, so a
 hanging server does not delay every request before the offline path is used.
-Cancellation still stops the request. Leaving the MCP URL empty keeps the fully
-offline path and does not load the MCP client.
+While the device says it is offline, the server is not asked at all, so an
+offline turn does not wait out a connect timeout. A notice beside the thread
+says the bundled documentation is in use; it stays until the server answers
+again, rather than being raised anew by every turn.
+Cancellation still stops the request. With the knowledge server turned off, the
+offline path is the only one, and the MCP client is not loaded.
 
 The MCP server receives knowledge search terms, requested document paths and
 arguments to richer operations. Those arguments can include the current or

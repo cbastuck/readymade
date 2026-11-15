@@ -31,7 +31,8 @@ const definitions = (schema as unknown as { definitions: Record<string, Schema> 
   .definitions;
 
 /** Reported problems per facade; enough to fix, not a wall of them. */
-const MAX_PROBLEMS = 8;
+export const FACADE_PROBLEMS_SHOWN = 8;
+const MAX_PROBLEMS = FACADE_PROBLEMS_SHOWN;
 
 function resolve(node: Schema): Schema {
   let current = node;

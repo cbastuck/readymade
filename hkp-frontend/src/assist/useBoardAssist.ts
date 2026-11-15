@@ -269,11 +269,14 @@ export function useBoardAssist({
   useEffect(() => {
     abort.current?.abort();
     forgetConversation();
+    // Whatever it said was about the server asked before.
+    setKnowledgeNotice("");
   }, [
     settings.provider,
     settings.openAICompatibleUrl,
     settings.openCodeUrl,
     settings.openCodeGoUrl,
+    settings.mcpKnowledgeEnabled,
     settings.mcpKnowledgeUrl,
   ]);
 
@@ -367,18 +370,20 @@ export function useBoardAssist({
     busyRef.current = true;
     setBusy(true);
     setError("");
-    setKnowledgeNotice("");
     setPendingConnection(null);
     setStatus("Reading the current board…");
     const controller = new AbortController();
     abort.current = controller;
+    // The notice stays until the server answers again, rather than being
+    // cleared and raised anew by every turn while it is away.
     const knowledgeProvider = boardAssistKnowledgeProvider(
-      settings.mcpKnowledgeUrl,
+      { enabled: settings.mcpKnowledgeEnabled, url: settings.mcpKnowledgeUrl },
       controller.signal,
       (reason) =>
         setKnowledgeNotice(
-          `MCP knowledge server unavailable; used bundled documentation. ${reason.message}`,
+          `Knowledge server unavailable; using the bundled documentation until it answers again. ${reason.message}`,
         ),
+      () => setKnowledgeNotice(""),
     );
     const index = entries.length + 1;
     let rawResponse: string | undefined;

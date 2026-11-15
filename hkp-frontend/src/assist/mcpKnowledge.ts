@@ -148,6 +148,7 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
   private connecting?: Promise<Client>;
   private fallbackReason?: Error;
   private fallbackReported = false;
+  private answerReported = false;
   private agentTools: AgentKnowledgeTool[] = [];
 
   constructor(
@@ -155,11 +156,18 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     private readonly signal: AbortSignal,
     private readonly fallback: ReadymadeKnowledgeProvider = bundledKnowledgeProvider,
     private readonly onFallback?: (error: Error) => void,
+    /** Called once, the first time the server answers in this turn. */
+    private readonly onAnswered?: () => void,
   ) {
     this.endpoint = normalizeMcpKnowledgeUrl(endpoint);
     this.id = `mcp+${fallback.id}`;
     const cooldown = cooldowns.get(this.endpoint);
-    if (cooldown && cooldown.until > Date.now())
+    // Only "offline" is to be believed: a device that says it is online may
+    // still reach nothing. Asked anyway, the server would cost a connect
+    // timeout before the bundled documentation answered.
+    if (typeof navigator !== "undefined" && navigator.onLine === false)
+      this.fallbackReason = new Error("This device is offline.");
+    else if (cooldown && cooldown.until > Date.now())
       this.fallbackReason = new Error(
         `Skipped for ${Math.ceil((cooldown.until - Date.now()) / 1000)} s after it failed slowly: ${cooldown.reason}`,
       );
@@ -253,7 +261,9 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     }
     const started = Date.now();
     try {
-      return structured(await this.call(name, args));
+      const result = structured(await this.call(name, args));
+      this.reportAnswer();
+      return result;
     } catch (error) {
       this.signal.throwIfAborted();
       // A refused call, such as an unknown service ID, goes back to the model
@@ -286,6 +296,7 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     try {
       const result = await remote();
       cooldowns.delete(this.endpoint);
+      this.reportAnswer();
       return result;
     } catch (error) {
       this.signal.throwIfAborted();
@@ -395,19 +406,29 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     this.fallbackReported = true;
     this.onFallback?.(this.fallbackReason);
   }
+
+  private reportAnswer(): void {
+    if (this.answerReported) return;
+    this.answerReported = true;
+    this.onAnswered?.();
+  }
 }
 
 export function boardAssistKnowledgeProvider(
-  endpoint: string,
+  server: { enabled: boolean; url: string },
   signal: AbortSignal,
   onFallback?: (error: Error) => void,
+  onAnswered?: () => void,
 ): ReadymadeKnowledgeProvider {
+  // Turned off, no server is asked — not even to find it is unavailable.
+  if (!server.enabled) return bundledKnowledgeProvider;
   // No URL set means the hosted server, not none: the bundled documentation
   // still answers whenever that server cannot.
   return new McpKnowledgeProvider(
-    endpoint.trim() || DEFAULT_MCP_KNOWLEDGE_URL,
+    server.url.trim() || DEFAULT_MCP_KNOWLEDGE_URL,
     signal,
     bundledKnowledgeProvider,
     onFallback,
+    onAnswered,
   );
 }
