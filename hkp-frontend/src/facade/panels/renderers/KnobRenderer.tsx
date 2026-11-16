@@ -5,12 +5,18 @@ import { findService } from "../../boardServices";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { serviceForUserInterface } from "hkp-frontend/src/types";
 
-function applyValue(template: unknown, value: number): unknown {
+// The value as it is shown and sent: a whole number, unless the knob says how
+// many decimals it turns in.
+function shown(value: number, decimals: number): string {
+  return decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));
+}
+
+function applyValue(template: unknown, value: number, decimals: number): unknown {
   if (typeof template === "string") {
-    return template.replace(/\{\{value\}\}/g, String(Math.round(value)));
+    return template.replace(/\{\{value\}\}/g, shown(value, decimals));
   }
   if (Array.isArray(template)) {
-    return template.map((item) => applyValue(item, value));
+    return template.map((item) => applyValue(item, value, decimals));
   }
   return template;
 }
@@ -32,6 +38,7 @@ export function KnobRenderer({
   // service — cols and rows of one image, say — are one service uuid and two
   // positions, so the key is the knob's own id where it has one.
   const knobKey = widget.id ?? widget.action.serviceUuid;
+  const decimals = Math.max(0, Math.min(6, Math.floor(widget.decimals ?? 0)));
   const { markBoardChanged } = boardContext;
 
   const value = panelContext.knobValues[knobKey] ?? widget.defaultValue;
@@ -44,12 +51,12 @@ export function KnobRenderer({
       }
       const configure: Record<string, unknown> = {};
       for (const [k, tmpl] of Object.entries(widget.action.configure)) {
-        configure[k] = applyValue(tmpl, v);
+        configure[k] = applyValue(tmpl, v, decimals);
       }
       service.configure(configure);
       markBoardChanged?.();
     },
-    [service, widget.action.configure, knobKey, panelContext, markBoardChanged],
+    [service, widget.action.configure, knobKey, panelContext, markBoardChanged, decimals],
   );
 
   const unit = widget.unit ?? "";
@@ -94,7 +101,7 @@ export function KnobRenderer({
             letterSpacing: "-0.02em",
           }}
         >
-          {Math.round(value)}
+          {shown(value, decimals)}
           {unit && (
             <span
               style={{

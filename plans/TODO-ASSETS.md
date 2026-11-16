@@ -272,9 +272,15 @@ use for.
   uploading host-local content into a remote runtime's store keyed by
   `sha256`, and deploying with host-local assets (or refusing to, by name).
 - **Model loaders** taking a reference where they take a path. They load by
-  file path, so a resolved asset has to land in a file first — the on-disk
-  cache the store section describes, which is not built (the stores cache in
-  memory, bounded).
+  file path, so a resolved asset has to land in a file first. hkp-python and
+  hkp-rt have that since 2026-11-16: `resolve_path` / `resolvePath` writes an
+  asset that says its `sha256` to the server's folder (`HKP_ASSET_CACHE`, else
+  `~/.hkp/python/asset-cache` and `~/.hkp/cpp/asset-cache`) under that hash,
+  and the store's model cache shares what services load from it
+  (`docs/content/concepts/assets.md`, "Content as a file"). Open: the existing
+  loaders (`text-generation`, speech) taking a reference, hkp-node, and a
+  folder for the iOS and Android apps, which have no `HOME` to default to.
+  See `TODO-LLM-PIPELINE.md`.
 - **Unit assets in the view and flattened output.** A runtime a unit contributes
   resolves against the unit's assets locally, but the view lists and edits only
   the top-level board's own. A flattened export (deploy or share) carries only

@@ -395,6 +395,9 @@ export type KnobWidget = {
   defaultValue: number;
   // Unit suffix shown next to the numeric readout, e.g. "dB".
   unit?: string;
+  // How many decimals the knob turns in, shows and sends. Absent or 0, whole
+  // numbers — a temperature from 0 to 2 needs two.
+  decimals?: number;
   // Overall bounding box of the knob widget. The arc radius is derived from
   // Math.min(width, height) so the arc stays circular; extra space is used
   // by marker labels. Defaults to 100 × 100.

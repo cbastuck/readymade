@@ -1,9 +1,11 @@
 #include <assets.h>
 
+#include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <sstream>
 
 #include <boost/asio/connect.hpp>
@@ -37,6 +39,16 @@ struct Refused : std::runtime_error
   using std::runtime_error::runtime_error;
 };
 
+// Content that is not what was asked for, or more of it than may be kept —
+// said as it is, where a failure to reach a source is said as that.
+struct Stopped : std::runtime_error
+{
+  using std::runtime_error::runtime_error;
+};
+
+// How much of a body is handed over at a time.
+constexpr std::size_t kChunk = 256 * 1024;
+
 // How many redirects one fetch follows before it is given up.
 constexpr int kMaxRedirects = 10;
 
@@ -53,10 +65,12 @@ std::string lower(std::string text)
 }
 
 // One GET, over HTTP or HTTPS (SNI and certificate verification), with the body
-// limited to `limit` bytes.
+// limited to `limit` bytes. With a `sink`, the body of an answer that succeeded
+// is handed to it as it arrives and never held whole.
 AssetStore::FetchResponse fetchUrl(const std::string& target,
                                    const std::map<std::string, std::string>& headers,
-                                   std::size_t limit)
+                                   std::uint64_t limit,
+                                   const AssetStore::BodySink* sink = nullptr)
 {
   auto parsed = urls::parse_uri(target);
   if (parsed.has_error())
@@ -89,8 +103,56 @@ AssetStore::FetchResponse fetchUrl(const std::string& target,
     req.set(name, value);
   }
 
+  const auto timeout = std::chrono::seconds(30);
+
+  auto readInPieces = [&](auto& stream)
+  {
+    beast::flat_buffer buffer;
+    http::response_parser<http::buffer_body> parser;
+    parser.body_limit(limit);
+    http::read_header(stream, buffer, parser);
+    AssetStore::FetchResponse out;
+    out.status = parser.get().result_int();
+    out.etag = std::string(parser.get()[http::field::etag]);
+    out.location = std::string(parser.get()[http::field::location]);
+    const bool wanted = out.status >= 200 && out.status < 300;
+    std::optional<std::uint64_t> expected;
+    if (const auto length = parser.content_length())
+    {
+      expected = *length;
+    }
+    if (wanted && expected && *expected > limit)
+    {
+      throw Stopped(target + " is larger than " + std::to_string(limit) + " bytes");
+    }
+    std::vector<char> chunk(kChunk);
+    while (!parser.is_done())
+    {
+      parser.get().body().data = chunk.data();
+      parser.get().body().size = chunk.size();
+      // The time allowed is for a piece, not for the whole of a large file.
+      beast::get_lowest_layer(stream).expires_after(timeout);
+      beast::error_code ec;
+      http::read(stream, buffer, parser, ec);
+      if (ec && ec != http::error::need_buffer)
+      {
+        throw beast::system_error{ ec };
+      }
+      const auto got = chunk.size() - parser.get().body().size;
+      if (wanted && got > 0)
+      {
+        (*sink)(chunk.data(), got, expected);
+      }
+    }
+    return out;
+  };
+
   auto read = [&](auto& stream)
   {
+    if (sink)
+    {
+      return readInPieces(stream);
+    }
     beast::flat_buffer buffer;
     http::response_parser<http::string_body> parser;
     parser.body_limit(limit);
@@ -103,7 +165,6 @@ AssetStore::FetchResponse fetchUrl(const std::string& target,
     return out;
   };
 
-  const auto timeout = std::chrono::seconds(30);
   net::io_context ioc;
   tcp::resolver resolver(ioc);
   const auto endpoints = ::hkp::egress::resolve(resolver, host, port);
@@ -324,6 +385,175 @@ std::map<std::string, nlohmann::json> readAssetsPayload(const nlohmann::json& va
   return entries;
 }
 
+AssetFileCache::AssetFileCache(std::string folder, std::uint64_t maxBytes)
+  : m_folder(std::move(folder))
+  , m_maxBytes(maxBytes)
+{
+}
+
+std::shared_ptr<AssetFileCache> AssetFileCache::shared()
+{
+  static const std::shared_ptr<AssetFileCache> cache = []() -> std::shared_ptr<AssetFileCache>
+  {
+    std::string folder;
+    if (const char* named = std::getenv("HKP_ASSET_CACHE"))
+    {
+      folder = named;
+    }
+    if (folder.empty())
+    {
+      const char* home = std::getenv("HOME");
+      if (!home || !*home)
+      {
+        home = std::getenv("USERPROFILE");
+      }
+      if (!home || !*home)
+      {
+        return nullptr;
+      }
+      folder = (std::filesystem::path(home) / ".hkp" / "cpp" / "asset-cache").string();
+    }
+    std::uint64_t limit = 0;
+    if (const char* named = std::getenv("HKP_ASSET_CACHE_MAX_BYTES"))
+    {
+      limit = std::strtoull(named, nullptr, 10);
+    }
+    return limit > 0 ? std::make_shared<AssetFileCache>(folder, limit)
+                     : std::make_shared<AssetFileCache>(folder);
+  }();
+  return cache;
+}
+
+std::shared_ptr<std::mutex> AssetFileCache::lockFor(const std::string& sha256)
+{
+  std::lock_guard lock(m_mutex);
+  auto& held = m_locks[sha256];
+  if (!held)
+  {
+    held = std::make_shared<std::mutex>();
+  }
+  return held;
+}
+
+std::string AssetFileCache::find(const std::string& sha256)
+{
+  namespace fs = std::filesystem;
+  const auto path = fs::path(m_folder) / sha256;
+  std::error_code ec;
+  if (!fs::is_regular_file(path, ec))
+  {
+    return "";
+  }
+  // Used now, for what goes first when space runs out.
+  fs::last_write_time(path, fs::file_time_type::clock::now(), ec);
+  return path.string();
+}
+
+std::string AssetFileCache::put(const std::string& sha256,
+                                const std::function<void(const Sink&)>& produce,
+                                const AssetProgress& progress)
+{
+  namespace fs = std::filesystem;
+  std::error_code ec;
+  fs::create_directories(m_folder, ec);
+  const auto target = fs::path(m_folder) / sha256;
+  const auto temporary =
+    fs::path(m_folder) / (".fetching-" + sha256 + "-" + std::to_string(std::random_device{}()));
+  std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
+  if (!out)
+  {
+    throw std::runtime_error("cannot write to " + m_folder);
+  }
+  try
+  {
+    Sha256Stream hash;
+    std::uint64_t written = 0;
+    produce([&](const char* data, std::size_t size, std::optional<std::uint64_t> expected)
+    {
+      written += size;
+      if (written > m_maxBytes)
+      {
+        throw Stopped("larger than " + std::to_string(m_maxBytes) + " bytes");
+      }
+      hash.update(data, size);
+      out.write(data, static_cast<std::streamsize>(size));
+      if (!out)
+      {
+        throw std::runtime_error("cannot write to " + m_folder);
+      }
+      if (progress)
+      {
+        progress(written, expected);
+      }
+    });
+    out.close();
+    const auto actual = hash.finish();
+    if (actual != sha256)
+    {
+      throw Stopped("content does not match its sha256 (got " + actual + ")");
+    }
+    fs::rename(temporary, target);
+  }
+  catch (...)
+  {
+    out.close();
+    fs::remove(temporary, ec);
+    throw;
+  }
+  makeRoom(target.string());
+  return target.string();
+}
+
+void AssetFileCache::makeRoom(const std::string& keep)
+{
+  namespace fs = std::filesystem;
+  struct Kept
+  {
+    fs::file_time_type used;
+    std::uint64_t size;
+    fs::path path;
+  };
+  std::vector<Kept> files;
+  std::uint64_t total = 0;
+  std::error_code ec;
+  for (fs::directory_iterator it(m_folder, ec), end; !ec && it != end; it.increment(ec))
+  {
+    const auto name = it->path().filename().string();
+    std::error_code each;
+    if (name.empty() || name[0] == '.' || !it->is_regular_file(each))
+    {
+      continue;
+    }
+    const auto size = it->file_size(each);
+    const auto used = it->last_write_time(each);
+    if (each)
+    {
+      continue;
+    }
+    files.push_back({ used, size, it->path() });
+    total += size;
+  }
+  std::sort(files.begin(), files.end(),
+            [](const Kept& a, const Kept& b) { return a.used < b.used; });
+  for (const auto& file : files)
+  {
+    if (total <= m_maxBytes)
+    {
+      break;
+    }
+    if (file.path.string() == keep)
+    {
+      continue;
+    }
+    // A model loaded from it stays loaded; the next load fetches.
+    std::error_code removing;
+    if (fs::remove(file.path, removing))
+    {
+      total -= file.size;
+    }
+  }
+}
+
 AssetStore::AssetStore(Fetch fetch)
   : m_fetch(std::move(fetch))
 {
@@ -514,8 +744,85 @@ AssetResolution AssetStore::resolve(const std::string& reference)
   return { asset, "" };
 }
 
+void AssetStore::setFileCache(std::shared_ptr<AssetFileCache> files)
+{
+  std::lock_guard lock(m_mutex);
+  m_files = std::move(files);
+}
+
+AssetPathResolution AssetStore::resolvePath(const std::string& reference,
+                                            const AssetProgress& progress)
+{
+  const auto id = parseAssetRef(reference);
+  if (!id)
+  {
+    return { "", "\"" + reference + "\" is not an asset reference", "" };
+  }
+  AssetDescriptor descriptor;
+  std::shared_ptr<AssetFileCache> files;
+  {
+    std::lock_guard lock(m_mutex);
+    auto found = m_descriptors.find(*id);
+    if (found == m_descriptors.end())
+    {
+      return { "", "asset \"" + *id + "\" is not known to this runtime", "" };
+    }
+    descriptor = found->second;
+    files = m_files;
+  }
+  const auto named = "asset \"" + *id + "\"";
+  if (!descriptor.contains("sha256"))
+  {
+    return { "", named + " does not say its sha256, so it is not kept as a file", "" };
+  }
+  if (!files)
+  {
+    files = AssetFileCache::shared();
+  }
+  if (!files)
+  {
+    return { "", named + ": this runtime has no folder to keep files in (HKP_ASSET_CACHE)", "" };
+  }
+
+  const auto sha = descriptor["sha256"].get<std::string>();
+  const auto fetching = files->lockFor(sha);
+  std::lock_guard lock(*fetching);
+  auto path = files->find(sha);
+  if (!path.empty())
+  {
+    return { path, "", sha };
+  }
+  try
+  {
+    path = files->put(
+      sha,
+      [&](const AssetFileCache::Sink& sink)
+      {
+        std::string etag;
+        std::string problem;
+        const auto content = load(descriptor, nullptr, etag, problem, &sink, files->maxBytes());
+        if (!problem.empty())
+        {
+          throw Stopped(problem);
+        }
+        // An inline source is its content; a URL or a file went to the sink.
+        if (!content.empty())
+        {
+          sink(content.data(), content.size(), content.size());
+        }
+      },
+      progress);
+  }
+  catch (const std::exception& error)
+  {
+    return { "", named + ": " + error.what(), "" };
+  }
+  return { path, "", sha };
+}
+
 std::string AssetStore::load(const AssetDescriptor& descriptor, const CacheEntry* cached,
-                             std::string& etagOut, std::string& problem)
+                             std::string& etagOut, std::string& problem,
+                             const BodySink* sink, std::uint64_t limit)
 {
   if (descriptor.contains("text"))
   {
@@ -556,6 +863,23 @@ std::string AssetStore::load(const AssetDescriptor& descriptor, const CacheEntry
       problem = "no file at " + url;
       return "";
     }
+    if (sink)
+    {
+      std::error_code ec;
+      const auto size = std::filesystem::file_size(path, ec);
+      const std::optional<std::uint64_t> expected =
+        ec ? std::nullopt : std::optional<std::uint64_t>(size);
+      std::vector<char> chunk(kChunk);
+      while (in)
+      {
+        in.read(chunk.data(), static_cast<std::streamsize>(chunk.size()));
+        if (in.gcount() > 0)
+        {
+          (*sink)(chunk.data(), static_cast<std::size_t>(in.gcount()), expected);
+        }
+      }
+      return "";
+    }
     std::ostringstream bytes;
     bytes << in.rdbuf();
     return bytes.str();
@@ -583,7 +907,13 @@ std::string AssetStore::load(const AssetDescriptor& descriptor, const CacheEntry
   {
     try
     {
-      response = m_fetch ? m_fetch(current, headers) : fetchUrl(current, headers, maxBytes);
+      response = m_fetch ? m_fetch(current, headers)
+                         : fetchUrl(current, headers, sink ? limit : maxBytes, sink);
+    }
+    catch (const Stopped& stopped)
+    {
+      problem = stopped.what();
+      return "";
     }
     catch (const std::exception& error)
     {
@@ -625,6 +955,12 @@ std::string AssetStore::load(const AssetDescriptor& descriptor, const CacheEntry
     return "";
   }
   etagOut = response.etag;
+  if (sink && m_fetch)
+  {
+    // A fetch supplied from outside answers with the whole body.
+    (*sink)(response.body.data(), response.body.size(), response.body.size());
+    return "";
+  }
   return std::move(response.body);
 }
 

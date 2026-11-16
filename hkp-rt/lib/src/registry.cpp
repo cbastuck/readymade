@@ -35,6 +35,12 @@
 #include "./services/sub_service.h"
 #include "./services/tracks.h"
 #include "./services/iterator.h"
+#include "./services/loop.h"
+#include "./services/chat_template.h"
+#include "./services/tokenize.h"
+#include "./services/llm_decode.h"
+#include "./services/sample.h"
+#include "./services/detokenize.h"
 #include "./services/gather.h"
 #include "./services/if_service.h"
 #include "./services/peer_server/peer_server.h"
@@ -79,6 +85,12 @@ using ServiceTypes = Registry::TypeList<
   ,SubService
   ,Tracks
   ,Iterator
+  ,Loop
+  ,ChatTemplate
+  ,Tokenize
+  ,LlmDecode
+  ,Sample
+  ,Detokenize
   ,Gather
   ,IfService
   ,PeerServerService

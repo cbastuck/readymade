@@ -14,6 +14,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "models.h"
 
 namespace hkp {
 
@@ -41,6 +42,13 @@ namespace hkp {
 //   file://        only inside the root this host was given (HKP_ASSET_ROOT);
 //                  refused everywhere else, never read
 //
+// Content is held in memory, and no asset larger than 64 MB is. What a library
+// loads by file path — a model's weights — is resolved to a *path* instead
+// (resolvePath): the content is written once to a folder this server owns,
+// under its sha256, and found there by every runtime and after every restart.
+// Only an asset that says its sha256 is kept that way; the hash is the file's
+// name and the check that what was fetched is what the board meant.
+//
 // An asset carries no request headers and names no secret. It is resolved
 // without anyone looking, by every runtime holding it, which is no place for a
 // credential; content that needs one is fetched by a service that says where
@@ -65,6 +73,68 @@ struct AssetResolution
   std::optional<ResolvedAsset> asset;
   // Why there is none, or empty when there is.
   std::string problem;
+};
+
+struct AssetPathResolution
+{
+  // The file holding the content; empty when there is none.
+  std::string path;
+  // Why there is none, or empty when there is.
+  std::string problem;
+  // What the file holds, for keying whatever is loaded from it.
+  std::string sha256;
+};
+
+// Told how much of a file has arrived, and how much is expected — nothing when
+// the source did not say.
+using AssetProgress =
+  std::function<void(std::uint64_t received, std::optional<std::uint64_t> expected)>;
+
+// Asset content kept as files, each named by the sha256 of what it holds.
+//
+// One folder per server, shared by its runtimes: two boards naming the same
+// model fetch it once. A file appears under its name only after its content
+// was hashed and matched, so what is found here is not checked again. When the
+// folder passes its limit the files used longest ago go first.
+class AssetFileCache
+{
+public:
+  // Takes content as it arrives, with how much the source says there is.
+  using Sink = std::function<void(const char* data, std::size_t size,
+                                  std::optional<std::uint64_t> expected)>;
+
+  explicit AssetFileCache(std::string folder,
+                          std::uint64_t maxBytes = 8ull * 1024 * 1024 * 1024);
+
+  // This server's folder: HKP_ASSET_CACHE, else ~/.hkp/cpp/asset-cache, holding
+  // at most HKP_ASSET_CACHE_MAX_BYTES. Null where there is neither — a host
+  // with no home folder that was given none.
+  static std::shared_ptr<AssetFileCache> shared();
+
+  const std::string& folder() const { return m_folder; }
+  // Everything kept together, and so also the largest single file.
+  std::uint64_t maxBytes() const { return m_maxBytes; }
+
+  // Held while a file is fetched, so two askers wait for one download.
+  std::shared_ptr<std::mutex> lockFor(const std::string& sha256);
+
+  // The file named `sha256`, or empty. Finding it counts as using it.
+  std::string find(const std::string& sha256);
+
+  // Writes what `produce` hands its sink to the file named `sha256`, if that
+  // is what it is. Throws, with a sentence, when it is not, when it is larger
+  // than the folder may hold, or when `produce` throws — and keeps nothing.
+  std::string put(const std::string& sha256,
+                  const std::function<void(const Sink&)>& produce,
+                  const AssetProgress& progress = nullptr);
+
+private:
+  void makeRoom(const std::string& keep);
+
+  std::string m_folder;
+  std::uint64_t m_maxBytes;
+  std::mutex m_mutex;
+  std::map<std::string, std::shared_ptr<std::mutex>> m_locks;
 };
 
 inline const std::string& assetScheme()
@@ -180,6 +250,8 @@ public:
   };
   using Fetch = std::function<FetchResponse(const std::string& url,
                                             const std::map<std::string, std::string>& headers)>;
+  // Takes a body as it arrives, instead of FetchResponse::body holding it.
+  using BodySink = AssetFileCache::Sink;
 
   explicit AssetStore(Fetch fetch = nullptr);
 
@@ -204,6 +276,23 @@ public:
   // Blocking: a URL source is fetched on the calling thread.
   AssetResolution resolve(const std::string& reference);
 
+  // A file holding an asset's content, for a library that loads by path.
+  //
+  // Blocking, and for a first use possibly for minutes: the content is fetched
+  // to this server's folder, and `progress` is told how far it is. Every later
+  // use, by any runtime, finds the file there. Only for an asset that says its
+  // sha256. The file belongs to the server: it is read, never written to or
+  // removed by whoever is handed its path.
+  AssetPathResolution resolvePath(const std::string& reference,
+                                  const AssetProgress& progress = nullptr);
+
+  // Where content resolved to a path is kept; AssetFileCache::shared() unless
+  // given one.
+  void setFileCache(std::shared_ptr<AssetFileCache> files);
+
+  // What this runtime's services loaded from those files; see models.h.
+  ModelCache models;
+
   // Where file:// sources may be read from; empty refuses them all. Defaults to
   // HKP_ASSET_ROOT.
   void setFileRoot(const std::string& root);
@@ -219,8 +308,11 @@ private:
     std::string etag;
   };
 
+  // `sink`, when given, takes the body of a URL or file source as it arrives;
+  // what is returned is then empty. `limit` is how large it may be.
   std::string load(const AssetDescriptor& descriptor, const CacheEntry* cached,
-                   std::string& etagOut, std::string& problem);
+                   std::string& etagOut, std::string& problem,
+                   const BodySink* sink = nullptr, std::uint64_t limit = 0);
   void remember(const std::string& id, CacheEntry entry);
   void forget(const std::string& id);
   void changed(const std::string& id);
@@ -234,6 +326,7 @@ private:
   std::size_t m_nextListener = 1;
   Fetch m_fetch;
   std::string m_fileRoot;
+  std::shared_ptr<AssetFileCache> m_files;
 };
 
 } // namespace hkp

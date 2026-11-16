@@ -1,0 +1,60 @@
+{
+  "boardName": "Loop Demo",
+  "description": "An Injector holds { n: 1 }. Inject it, and the Loop on hkp-python runs its nested Map again and again on its own output: each round doubles n, until the condition `params.n >= 1000` holds. The Monitor after the Loop is called once, with the last round's output — { n: 1024 }, after ten rounds — while the Loop's panel counts the rounds as they run. Set the Loop's mode to one round per call to walk it: the first injection runs round one, and Stop and Reset are on its panel. Needs the hkp-python kept under the name \"python\".",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "remote": "python",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "start",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Start at one",
+        "state": {
+          "recentInjection": { "n": 1 },
+          "plainText": false
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "doubling",
+        "serviceId": "loop",
+        "serviceName": "Loop",
+        "state": {
+          "until": "params.n >= 1000",
+          "maxRounds": 50,
+          "mode": "run",
+          "pipeline": [
+            {
+              "uuid": "double",
+              "serviceId": "map",
+              "serviceName": "Double",
+              "state": {
+                "mode": "replace",
+                "template": { "n=": "params.n * 2" }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "result",
+        "serviceId": "monitor",
+        "serviceName": "The last round"
+      }
+    ]
+  }
+}

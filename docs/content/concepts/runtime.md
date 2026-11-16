@@ -301,7 +301,8 @@ which would read any path a template names, is switched off wherever hkp-rt
 renders one (`hkp-rt/lib/src/common/inja.h`).
 
 What it does not cover: hkp-rt has one tenant, so everyone a hosted server lets
-in shares its folders; paths the operator names — a runtime config, plugins —
+in shares its folders; paths the operator names — a runtime config, plugins,
+the folder asset content is kept in as files ([Assets](./assets.md)) —
 are the operator's; and a folder should hold nothing but what boards may have,
 because a board that may write there may write all of it. The models the speech
 and text-generation services load are named by path too and are not confined:

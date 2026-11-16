@@ -698,6 +698,10 @@ says so itself (`replace($starts, 'T', ' ')`); SQLite's date functions read both
 
 `{{value}}` in the configure payload is replaced with the current numeric value. Works inside arrays too.
 
+A knob turns in whole numbers. `"decimals": 2` makes it turn, show and send that many decimals —
+for a range like 0 to 1, where whole numbers leave two positions. The value is sent as text
+(`"0.80"`), so the service it configures has to read a number written that way.
+
 A panel holds each knob's position under its `id`, falling back to the service uuid. Two knobs
 driving the same service — the columns and rows of one image, say — therefore need an `id` each,
 or they share one position and jump on the first drag.

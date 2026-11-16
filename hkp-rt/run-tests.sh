@@ -50,8 +50,12 @@ fi
 # that needs no dependency. Off by default so a test run costs what the tests
 # need; HKP_ML_BACKENDS=ON compiles the guarded regions too.
 HKP_ML_BACKENDS="${HKP_ML_BACKENDS:-OFF}"
+# llama.cpp alone, for the services that lay a model out on a board
+# (service_llm_pipeline.test.cpp). Their cases that need a model run when
+# HKP_TEST_GGUF names a GGUF file, and are skipped otherwise.
+HKP_LLAMA="${HKP_LLAMA:-${HKP_ML_BACKENDS}}"
 
-echo "==> Configuring hkp-rt tests (${CONFIG}, ML backends ${HKP_ML_BACKENDS})"
+echo "==> Configuring hkp-rt tests (${CONFIG}, ML backends ${HKP_ML_BACKENDS}, llama.cpp ${HKP_LLAMA})"
 cmake \
   -S "${HKP_RT_DIR}" \
   -B "${BUILD_DIR}" \
@@ -63,7 +67,7 @@ cmake \
   -DVCPKG_OVERLAY_TRIPLETS="${VCPKG_OVERLAY_TRIPLETS_DIR}" \
   -DBUILD_TESTING=ON \
   -DHKP_RT_BUILD_TESTS=ON \
-  -DHKP_LLAMA_ENABLED="${HKP_ML_BACKENDS}" \
+  -DHKP_LLAMA_ENABLED="${HKP_LLAMA}" \
   -DHKP_SPEECH_ENABLED="${HKP_ML_BACKENDS}" \
   -DHKP_INFLECT_ENABLED="${HKP_ML_BACKENDS}" \
   -DBUILD_HKP_SAUCER=OFF
