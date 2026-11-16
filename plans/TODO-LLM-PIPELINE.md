@@ -15,8 +15,8 @@ architecture is the board itself.
   services a board holds, which is what makes a different attention mechanism
   or layer count a real experiment and not noise.
 
-**State:** planned 2026-11-16. M0, M1 and M2 built the same day; see *Work*.
-M3 next.
+**State:** planned 2026-11-16. M0, M1, M2 and M3 built the same day; see *Work*.
+M4 next.
 
 `text-generation` is not touched in either runtime. It stays the service a
 board uses to get text; these boards are for seeing and changing how text is
@@ -350,9 +350,30 @@ Not done in M1:
 
 ### M3: Board 2, looked into
 
-- Service panels: attention patterns, the stream, the early answer.
-- The changes listed under *What can be changed on pretrained weights*.
-- The facade, including the matrix display.
+- **Done.** Service panels in `hkp-frontend/src/runtime/rest/ui/`:
+  `AttentionUI.tsx` (interactive head selector, head on/off toggle, mask,
+  window, temperature, and embedded attention matrix), `StreamStepUI.tsx`
+  (per-token stream vector norm bars for `token-embed` and `mlp`), and
+  `UnembedUI.tsx` (top candidate probability bars, `passThrough` early-answer
+  toggle, and layer-by-layer logit-lens progression), registered in both REST
+  and browser `UIRegistry.ts`.
+- **Done.** Pretrained-weight experiments in `attention.py` and `unembed.py`:
+  switching individual heads off (`disabledHeads` as array or string),
+  changing `mask` (`causal`, `window` over the last *n* tokens, or `full`
+  including future tokens), sharpening/flattening attention (`temperature`),
+  and reading the answer early (`unembed` with `passThrough: true`, plus
+  automatic layer-by-layer logit-lens scoring in `unembed` from the stream's
+  trace).
+- **Done.** Block-use notification roll-up in `sub_service.py` (Option A: a
+  plain `SubService` also emits `{ [childId]: payload }` on its own address so
+  a block use can be observed as a whole without crossing its boundary), and
+  `layer` block parameters (`layer`, `mask`, `window`, `temperature`,
+  `disabledHeads`) delegated on `boards/gpt2-layers-board.json`.
+- **Done.** Generic `heatmap` facade widget (`HeatmapRenderer.tsx`, `types.ts`,
+  `widgetRegistry.tsx`, `heatmap.test.tsx`) supporting 2D matrices and 3D
+  slice arrays with row/column labels, hover readout and slice tabs, wired into
+  `boards/gpt2-layers-board.json` alongside `Inspect layer` and `Inspect head`
+  knobs and the layer-by-layer guess table.
 
 ### M4: Train
 

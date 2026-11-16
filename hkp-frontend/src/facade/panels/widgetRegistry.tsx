@@ -21,6 +21,7 @@ import { TextRenderer } from "./renderers/TextRenderer";
 import { CalendarRenderer } from "./renderers/CalendarRenderer";
 import { AudioPlayerRenderer } from "./renderers/AudioPlayerRenderer";
 import { SwimlaneRenderer } from "./renderers/SwimlaneRenderer";
+import { HeatmapRenderer } from "./renderers/HeatmapRenderer";
 
 export type PanelContext = {
   knobValues: Record<string, number>;
@@ -58,4 +59,5 @@ export const widgetRegistry: Record<
   calendar: CalendarRenderer,
   "audio-player": AudioPlayerRenderer,
   swimlane: SwimlaneRenderer,
+  heatmap: HeatmapRenderer,
 };

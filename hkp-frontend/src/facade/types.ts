@@ -829,6 +829,31 @@ export type AudioPlayerTrackAction = {
   actions: WidgetAction[];
 };
 
+// A 2D matrix of numbers drawn as a grid of coloured cells — an attention
+// pattern over tokens, a confusion matrix, a correlation table.
+//
+// `source` may point at a bare 2D `number[][]`, a 3D `number[][][]` of slices
+// (one 2D matrix per attention head, with a slice bar to pick between them),
+// or an object carrying `{ matrix | pattern | patterns, rows?, columns?,
+// pieces?, labels?, head? }`.
+export type HeatmapWidget = {
+  type: "heatmap";
+  source: FacadeWidgetSource;
+  // Optional separate source for row and column labels when `source` yields a
+  // bare 2D array.
+  labelsSource?: FacadeWidgetSource;
+  label?: string;
+  rowAxis?: string;
+  columnAxis?: string;
+  // Accent colour for the highest value (CSS hex, default "#3b82f6").
+  color?: string;
+  min?: number;
+  max?: number;
+  showValues?: boolean;
+  cellSize?: number;
+  placeholder?: string;
+};
+
 export type FacadeWidget =
   | MessageListWidget
   | TextInputWidget
@@ -852,7 +877,8 @@ export type FacadeWidget =
   | RepeatWidget
   | AudioPlayerWidget
   | CalendarWidget
-  | SwimlaneWidget;
+  | SwimlaneWidget
+  | HeatmapWidget;
 
 // ---------------------------------------------------------------------------
 // Layout tree — panels declare their structure declaratively.

@@ -21,6 +21,10 @@ import HttpEndpointUI from "./ui/HttpEndpointUI";
 import RssUI from "./ui/RssUI";
 import SubServiceUI from "./ui/SubServiceUI";
 import AssetUI from "./ui/AssetUI";
+import AttentionUI from "./ui/AttentionUI";
+import StreamStepUI from "./ui/StreamStepUI";
+import UnembedUI from "./ui/UnembedUI";
+import LoopUI from "../browser/services/LoopUI";
 
 export type ServiceLookup = {
   serviceId?: ServiceClass["serviceId"];
@@ -88,6 +92,16 @@ function findServiceUIByKey(
       return RssUI;
     case "asset":
       return AssetUI;
+    case "loop":
+    case "loop@v1":
+      return LoopUI;
+    case "attention":
+      return AttentionUI;
+    case "token-embed":
+    case "mlp":
+      return StreamStepUI;
+    case "unembed":
+      return UnembedUI;
   }
   return null;
 }

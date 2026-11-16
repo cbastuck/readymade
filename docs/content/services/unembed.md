@@ -34,13 +34,26 @@ Nothing is chosen here; that is what [Sample](./sample.md) is for. What leaves
 is the exact same `MixedData` scores shape that [LLM Decode](./llm-decode.md)
 hands on in `hkp-rt`, so the same chain of `sample` services follows either.
 
-Placed after the last layer, it gives the model's answer. Placed after an
-earlier layer — or with the later layers removed — it shows what the model
-would say if it stopped there, so the answer can be watched forming layer by
-layer.
+### Watching the answer form layer by layer
 
-Each call reports `{ candidates }`: the `top` most likely next tokens with
-their probabilities, before any sampler has touched them.
+As the stream moves through the layers, each layer records its intermediate
+vector and attention patterns. When the stream reaches Unembed, it also scores
+each of those intermediate vectors ("logit lens") and reports:
+
+- `candidates`: the `top` most likely next tokens at this point, with their
+  probabilities;
+- `layers`: one row per layer that ran (`{ step, layer, token, piece, p, attentionAdded, mlpAdded, size }`), showing what the model's top guess was
+  after each layer;
+- `attention`: the attention matrix and token pieces for `inspectLayer` and
+  `inspectHead`. Changing `inspectLayer` or `inspectHead` re-emits the report
+  immediately from the last run, so a knob on a facade can flip through layers
+  and heads while generation is paused.
+
+### Reading the answer early (`passThrough`)
+
+Placed between two layers with `passThrough: true`, Unembed scores the stream
+at that point, reports `candidates` and `layers` to its panel, and **hands the
+stream on untouched** so the layers after it keep running.
 
 ---
 
@@ -52,6 +65,9 @@ their probabilities, before any sampler has touched them.
 | `config` | `string` | `""` | The model's `config.json`, as `hkp-asset://<id>` |
 | `tokenizer` | `string` | `""` | Optional `tokenizer.json` asset, for reporting candidate `piece` strings |
 | `top` | `number` | `10` | How many candidates each call reports |
+| `passThrough` | `boolean` | `false` | Report the early answer here and hand the stream on unchanged |
+| `inspectLayer` | `number` | `0` | Which layer's attention pattern to surface in `attention` |
+| `inspectHead` | `number` | `0` | Which head's attention pattern to surface in `attention.pattern` |
 
 ---
 
@@ -60,7 +76,7 @@ their probabilities, before any sampler has touched them.
 | | Shape |
 |---|---|
 | **Input** | the stream (`MixedData`), as [MLP](./mlp.md) or [Token Embed](./token-embed.md) hands it on |
-| **Output** | scores (`MixedData`): one float32 per vocabulary entry, with the tokens and `applied: []` in its JSON side |
+| **Output** | scores (`MixedData`): one float32 per vocabulary entry, with the tokens and `applied: []` in its JSON side — or the input stream unchanged when `passThrough` is `true` |
 
 ---
 

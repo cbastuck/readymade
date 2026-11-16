@@ -1,6 +1,6 @@
 {
   "boardName": "GPT-2 Layer by Layer",
-  "description": "Inside the forward pass of a language model: GPT-2 small (124M parameters, MIT, 548 MB) with every layer on the board as services. Your prompt is cut into tokens (tokenize), and a Loop runs once per generated token: token-embed looks up each token's vector and its position vector to start the residual stream, twelve uses of the Layer block (attention → mlp) each read the stream and add what they found to it, unembed turns the last position's vector into one score per vocabulary entry, the sampler chain narrows and reshapes those scores and picks one token, and detokenize turns the sequence back into text. Delete, reorder or duplicate a Layer block use in the board view to see what happens to the model's continuation. Runs on hkp-python (`\"remote\": \"python\"`, with `uv sync --extra transformer`).",
+  "description": "Inside the forward pass of a language model: GPT-2 small (124M parameters, MIT, 548 MB) with every layer on the board as services. Your prompt is cut into tokens (tokenize), and a Loop runs once per generated token: token-embed looks up each token's vector and its position vector to start the residual stream, twelve uses of the Layer block (attention → mlp) each read the stream and add what they found to it, unembed turns the last position's vector into one score per vocabulary entry, the sampler chain narrows and reshapes those scores and picks one token, and detokenize turns the sequence back into text. Watch the model's top guess form layer by layer, inspect the attention matrix for any layer and head, or open the board view to delete, reorder, duplicate or tweak a Layer block use (switch heads off, restrict attention to a sliding window, or sharpen/flatten attention). Runs on hkp-python (`\"remote\": \"python\"`, with `uv sync --extra transformer`).",
   "assets": [
     {
       "id": "gpt2-weights",
@@ -33,7 +33,11 @@
       "serviceId": "sub-service",
       "description": "One transformer layer of GPT-2: causal self-attention where tokens look at earlier tokens, followed by an MLP where each token computes on its own. Both add their result to the stream.",
       "params": {
-        "layer": 0
+        "layer": 0,
+        "mask": "causal",
+        "window": 4,
+        "temperature": 1,
+        "disabledHeads": ""
       },
       "state": {
         "pipeline": [
@@ -44,7 +48,11 @@
             "state": {
               "model": "hkp-asset://gpt2-weights",
               "config": "hkp-asset://gpt2-config",
-              "layer": "{{param.layer}}"
+              "layer": "{{param.layer}}",
+              "mask": "{{param.mask}}",
+              "window": "{{param.window}}",
+              "temperature": "{{param.temperature}}",
+              "disabledHeads": "{{param.disabledHeads}}"
             }
           },
           {
@@ -142,7 +150,9 @@
                 "model": "hkp-asset://gpt2-weights",
                 "config": "hkp-asset://gpt2-config",
                 "tokenizer": "hkp-asset://gpt2-tokenizer",
-                "top": 10
+                "top": 10,
+                "inspectLayer": 0,
+                "inspectHead": 0
               }
             },
             {
@@ -233,7 +243,7 @@
     "panels": [
       {
         "id": "write",
-        "title": "Write",
+        "title": "Write & look inside the forward pass",
         "width": "58%",
         "layout": {
           "direction": "column",
@@ -381,6 +391,61 @@
                   "template": { "type": "text", "placeholder": "{{item}}", "mono": true, "fontSize": 12 }
                 }
               ]
+            },
+            {
+              "type": "text",
+              "placeholder": "How the answer forms, layer by layer (logit lens)"
+            },
+            {
+              "type": "data-table",
+              "source": { "serviceUuid": "generate-svc.unembed", "path": "layers" },
+              "columns": ["layer", "piece", "p", "attentionAdded", "mlpAdded", "size"],
+              "pageSize": 12
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "align": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "knob",
+                  "id": "inspect-layer-knob",
+                  "label": "Inspect layer",
+                  "min": 0,
+                  "max": 11,
+                  "defaultValue": 0,
+                  "width": 110,
+                  "height": 96,
+                  "action": {
+                    "serviceUuid": "generate-svc.unembed",
+                    "configure": { "inspectLayer": "{{value}}" }
+                  }
+                },
+                {
+                  "type": "knob",
+                  "id": "inspect-head-knob",
+                  "label": "Inspect head",
+                  "min": 0,
+                  "max": 11,
+                  "defaultValue": 0,
+                  "width": 110,
+                  "height": 96,
+                  "action": {
+                    "serviceUuid": "generate-svc.unembed",
+                    "configure": { "inspectHead": "{{value}}" }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "heatmap",
+              "label": "Attention pattern (which earlier token each token looks at)",
+              "source": { "serviceUuid": "generate-svc.unembed", "path": "attention" },
+              "rowAxis": "token",
+              "columnAxis": "looks at",
+              "cellSize": 26,
+              "placeholder": "Step or write a token to see what the chosen layer and head attend to."
             }
           ]
         }

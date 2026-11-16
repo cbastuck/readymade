@@ -30,8 +30,7 @@ about (its *key*), and how well the two match decides how much of the earlier
 token's content (its *value*) the asking token takes.
 
 A model does this several times side by side — its **heads** (12 in GPT-2
-small) — each with its own idea of what is worth asking. A token may only look
-backwards: what follows it has not been written yet.
+small) — each with its own idea of what is worth asking.
 
 What the heads gathered is **added** to the stream, not put in its place. The
 stream that leaves is the one that came in, plus what this layer found.
@@ -42,9 +41,42 @@ weights it uses. Paired with [MLP](./mlp.md) of the same `layer` inside a
 a use to skip that layer, duplicate it to run the layer twice, or reorder two
 uses.
 
-Each call reports `{ layer, heads, added, size }`, where `added` is how much
-this step added to the last token's vector and `size` is how long that vector
-is afterwards.
+### What to change on pretrained weights
+
+- **Switch individual heads off** (`disabledHeads`): pass `[0, 3]` or `"0, 3"`
+  (or double-click a head tab in the service panel) to zero out those heads'
+  contributions.
+- **Change what a token may look at** (`mask`):
+  - `causal` (default): each token looks at itself and everything before it;
+  - `window`: each token looks only at the last `window` tokens up to itself;
+  - `full`: each token looks at every token in the sequence, including tokens
+    that follow it.
+- **Sharpen or flatten attention** (`temperature`): divides the query-key match
+  scores before softmax. Below 1 sharpens focus onto the single best-matching
+  token; above 1 flattens attention toward an even average.
+
+### What each call reports
+
+```json
+{
+  "layer": 0,
+  "heads": 12,
+  "head": 0,
+  "disabledHeads": [],
+  "mask": "causal",
+  "window": 4,
+  "temperature": 1.0,
+  "added": 21.4,
+  "size": 58.9,
+  "pieces": ["The", " colours", " of"],
+  "headSizes": [3.1, 2.8, …],
+  "pattern": [[1.0, 0.0, 0.0], [0.62, 0.38, 0.0], …],
+  "patterns": [ … ]
+}
+```
+
+`patterns` is one `tokens × tokens` matrix per head; `pattern` is the matrix
+for `head`, ready for a `heatmap` facade widget.
 
 ---
 
@@ -55,6 +87,11 @@ is afterwards.
 | `model` | `string` | `""` | The model's weights (`.safetensors`), as `hkp-asset://<id>` |
 | `config` | `string` | `""` | The model's `config.json`, as `hkp-asset://<id>` |
 | `layer` | `number` | `0` | Which of the model's layers this is, counted from 0 |
+| `mask` | `string` | `"causal"` | `"causal"`, `"window"` or `"full"` |
+| `window` | `number` | `4` | How many tokens back a token may look when `mask` is `"window"` |
+| `temperature` | `number` | `1.0` | Divides attention logits before softmax (`< 1` sharper, `> 1` flatter) |
+| `disabledHeads` | `number[]` \| `string` | `[]` | Heads switched off, as `[0, 3]` or `"0, 3"` |
+| `head` | `number` | `0` | Which head's matrix is reported as `pattern` |
 
 ---
 
