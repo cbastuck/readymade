@@ -430,7 +430,12 @@ describe("MCP knowledge provider", () => {
     try {
       const onFallback = vi.fn();
       const bundled = fallback();
-      const offline = provider(bundled, onFallback);
+      const offline = new McpKnowledgeProvider(
+        "https://knowledge.example/mcp",
+        new AbortController().signal,
+        bundled,
+        onFallback,
+      );
       await offline.searchKnowledge({ query: "timer" });
       expect(await offline.listAgentTools()).toEqual([]);
       expect(sdk.connect).not.toHaveBeenCalled();
@@ -439,6 +444,30 @@ describe("MCP knowledge provider", () => {
       expect(onFallback).toHaveBeenCalledWith(
         expect.objectContaining({ message: "This device is offline." }),
       );
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("still asks a server on this machine while the device says it is offline", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    try {
+      sdk.callTool.mockResolvedValue(searchResult);
+      const onFallback = vi.fn();
+      for (const url of [
+        "http://127.0.0.1:8787/mcp",
+        "http://localhost:8787/mcp",
+        "http://[::1]:8787/mcp",
+      ]) {
+        await new McpKnowledgeProvider(
+          url,
+          new AbortController().signal,
+          fallback(),
+          onFallback,
+        ).searchKnowledge({ query: "timer" });
+      }
+      expect(sdk.connect).toHaveBeenCalledTimes(3);
+      expect(onFallback).not.toHaveBeenCalled();
     } finally {
       vi.restoreAllMocks();
     }

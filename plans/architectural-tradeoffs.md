@@ -7,7 +7,7 @@ and `saucer.exposed` beside an in-process `hkp-rt`) and the engineering measures
 to close them.
 
 See `docs/content/targets.md` for how the target architecture works today and
-`architecture.md` in the repository root for the pitch brief.
+`docs/content/drafts/architecture.md` for the pitch brief.
 
 **Status legend:** ☐ not started · ◐ in progress · ☑ done · ✎ needs design before build
 **Effort legend:** S = under a day · M = 2–4 days · L = 1–2 weeks

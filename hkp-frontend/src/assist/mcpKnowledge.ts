@@ -1,4 +1,5 @@
 import type { CallToolResult, Client } from "@modelcontextprotocol/client";
+import { isLoopbackHost } from "./addresses";
 import { bundledKnowledgeProvider } from "./documentation";
 import { DEFAULT_MCP_KNOWLEDGE_URL } from "./settings";
 import type {
@@ -164,8 +165,13 @@ export class McpKnowledgeProvider implements AgenticKnowledgeProvider {
     const cooldown = cooldowns.get(this.endpoint);
     // Only "offline" is to be believed: a device that says it is online may
     // still reach nothing. Asked anyway, the server would cost a connect
-    // timeout before the bundled documentation answered.
-    if (typeof navigator !== "undefined" && navigator.onLine === false)
+    // timeout before the bundled documentation answered. A server on this
+    // machine is still there with no network, so it is asked regardless.
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.onLine === false &&
+      !isLoopbackHost(new URL(this.endpoint).hostname)
+    )
       this.fallbackReason = new Error("This device is offline.");
     else if (cooldown && cooldown.until > Date.now())
       this.fallbackReason = new Error(

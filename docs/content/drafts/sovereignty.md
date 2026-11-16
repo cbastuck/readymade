@@ -15,7 +15,7 @@
 
 When a sports club needs a court-booking system, a neighborhood group wants to coordinate shared tools, a family wants to track health data, or a small craft business wants to organize customer requests, they face a limited choice:
 
-1. **Rent a SaaS offering:** Adopt a centralized platform that locks in their data, dictates the rules, charges per-seat subscriptions, or monetizes their attention and privacy. Often these solution are rigid and rarely fit how the group actually works.
+1. **Rent a SaaS offering:** Adopt a centralized platform that locks in their data, dictates the rules, charges per-seat subscriptions, or monetizes their attention and privacy. Often these solutions are rigid and rarely fit how the group actually works.
 2. **Wait or Hire:** Wait for a commercial vendor to build the exact feature they need, or pay for custom software development that they can neither understand nor maintain themselves.
 
 Even today's "AI app builders" mostly deepen this trap: they generate thousands of lines of opaque code that non-coders cannot audit, secure, or repair when something breaks.
@@ -80,7 +80,7 @@ AI can help non-coders build their own solutions, but unreviewed AI-generated co
 Tools on hardware you control keep working when someone else's infrastructure changes:
 
 - A board on a phone or laptop works offline.
-- Local runtime servers (even behind home routers/NAT) can connect to a shared board in the cloud or your own relay server. They automatically reconnect after power cuts and enforce verified member identities down to the database level.
+- Local runtime servers (even behind home routers/NAT) connect *out* to a shared board in the cloud or on your own server, using narrow, revocable tickets. They automatically reconnect after power cuts and enforce verified member identities down to the database level.
 
 ---
 
@@ -133,7 +133,7 @@ Selbstbestimmung über ein Werkzeug heißt, drei Dinge in der Hand zu haben: es 
 ### 1. Verstehen (ohne Programmierkenntnisse)
 
 - **Warum das entscheidend ist:** Menschen und Gemeinschaften entscheiden nur dann selbst über ein Werkzeug, wenn sie nachvollziehen können, was es tut.
-- **Wie Readymade das macht:** Readymade verzichtet auf versteckte Abläufe und unübersichtliche „Spaghetti-Verkabelung“. Services laufen in einer klar, beobachtbaren Abfolge. Über den **Capture Mode** oder den **Overview** kann jeder in Echtzeit verfolgen, wie Daten durch die App fließen – und beobachten, was in jeden Schritt hineinging, was ein Service verarbeitet und erzeugt hat und warum eine Regel eine Aktion gestoppt hat. Man muss keinen Quellcode lesen, um das Verhalten zu verstehen; man kann es live *erfahren, prüfen und nachvollziehen* und anschließend anpassen und erweitern. Wer ins Detail gehen möchte, kann unter die Haube der Bedienoberfläche schauen und das Verhalten exakt an die eigenen Bedürfnisse anpassen.
+- **Wie Readymade das macht:** Readymade verzichtet auf versteckte Abläufe und unübersichtliche „Spaghetti-Verkabelung“. Services laufen in einer klaren, beobachtbaren Abfolge. Über den **Capture Mode** oder den **Overview** kann jeder in Echtzeit verfolgen, wie Daten durch die App fließen – und beobachten, was in jeden Schritt hineinging, was ein Service verarbeitet und erzeugt hat und warum eine Regel eine Aktion gestoppt hat. Man muss keinen Quellcode lesen, um das Verhalten zu verstehen; man kann es live *erfahren, prüfen und nachvollziehen* und anschließend anpassen und erweitern. Wer ins Detail gehen möchte, kann unter die Haube der Bedienoberfläche schauen und das Verhalten exakt an die eigenen Bedürfnisse anpassen.
 
 ### 2. Besitzen (und behalten, was auch immer aus Readymade wird)
 
@@ -173,7 +173,7 @@ KI hilft Nicht-Codern enorm beim Erstellen eigener Lösungen – aber ungeprüft
 Werkzeuge auf eigener Hardware funktionieren weiter, wenn sich fremde Infrastruktur ändert:
 
 - Ein Board auf dem Smartphone oder Laptop funktioniert ohne Internetverbindung.
-- Lokale Runtime-Server (selbst hinter normalen Heim-Routern/NAT) können sich mit einem geteilten Board in der Cloud oder einem eigenen Relay-Server verbinden. Nach einem Stromausfall verbinden sie sich automatisch wieder und setzen verifizierte Mitglieder-Identitäten bis in die Datenbankebene durch.
+- Lokale Runtime-Server (selbst hinter normalen Heim-Routern/NAT) verbinden sich *ausgehend* über schmale, widerrufbare Tickets mit einem geteilten Board in der Cloud oder auf einem eigenen Server. Nach einem Stromausfall verbinden sie sich automatisch wieder und setzen verifizierte Mitglieder-Identitäten bis in die Datenbankebene durch.
 
 ---
 

@@ -229,7 +229,9 @@ connections. A server that failed **slowly** — a timeout, or any failure that
 took two seconds or more — is skipped by later turns for a minute instead, so a
 hanging server does not delay every request before the offline path is used.
 While the device says it is offline, the server is not asked at all, so an
-offline turn does not wait out a connect timeout. A notice beside the thread
+offline turn does not wait out a connect timeout. A server on this machine
+(`localhost`, `127.0.0.1`, `::1`) is the exception: it answers with no network,
+so it is still asked. A notice beside the thread
 says the bundled documentation is in use; it stays until the server answers
 again, rather than being raised anew by every turn.
 Cancellation still stops the request. With the knowledge server turned off, the
