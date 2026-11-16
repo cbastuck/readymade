@@ -106,8 +106,13 @@ own port; hkp-rt does so where its host has turned that on:
 | Browser | hosts nothing; it consumes mounts | — |
 
 Services that own a mount today: `http-server-subservices` (node, python,
-hkp-rt), `http-server` (hkp-rt), `peer-server` (node, hkp-rt) and
-`websocket-reader` (node).
+hkp-rt), `http-server` (hkp-rt), `peer-server` (node, hkp-rt),
+`websocket-reader` (node) and `mqtt-broker` (node).
+
+`mqtt-broker` is the one hkp-node service that can also open a port: devices
+that speak only MQTT over TCP have no way to follow a path. It is asked for per
+board, needs a password, and a hosted server refuses it
+([MQTT Broker](../services/mqtt-broker.md)).
 
 ### hkp-rt
 
