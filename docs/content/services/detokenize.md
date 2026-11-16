@@ -2,14 +2,16 @@
 
 Turns tokens back into text, and says whether the model has ended its turn.
 
-> One of five services that lay a language model out on a board:
+> One of the services that lay a language model out on a board:
 > [Chat Template](./chat-template.md), [Tokenize](./tokenize.md),
-> [LLM Decode](./llm-decode.md), [Sample](./sample.md) and
-> [Detokenize](./detokenize.md), with a [Loop](./loop.md) around the last
-> three. [Text Generation](./text-generation.md) does all of it in one call and
-> is the service to use for getting text; these are for seeing and changing how
-> text is made. The [LLM Pipeline](../boards/llm-pipeline-board.md) board is
-> all five together.
+> [LLM Decode](./llm-decode.md) (or [Token Embed](./token-embed.md),
+> [Attention](./attention.md), [MLP](./mlp.md) and [Unembed](./unembed.md)),
+> [Sample](./sample.md) and [Detokenize](./detokenize.md), with a
+> [Loop](./loop.md) around the generation step.
+> [Text Generation](./text-generation.md) does all of it in one call and is the
+> service to use for getting text; these are for seeing and changing how text is
+> made. See the [LLM Pipeline](../boards/llm-pipeline-board.md) and
+> [GPT-2 Layer by Layer](../boards/gpt2-layers-board.md) boards.
 
 ---
 
@@ -18,9 +20,10 @@ Turns tokens back into text, and says whether the model has ended its turn.
 | Runtime | Service ID |
 |---|---|
 | C++ (hkp-rt) | `detokenize` |
+| Python (hkp-python) | `detokenize` |
 
 Needs hkp-rt built with llama.cpp (`HKP_LLAMA_ENABLED`, on by default on
-desktop).
+desktop), or `uv sync --extra transformer` in hkp-python.
 
 ---
 
@@ -46,7 +49,8 @@ outside it has to notice.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `model` | `string` | `""` | The model whose vocabulary the tokens are from, as `hkp-asset://<id>` |
+| `model` | `string` | `""` | C++: the GGUF model whose vocabulary the tokens are from, as `hkp-asset://<id>` |
+| `tokenizer` | `string` | `""` | Python: the `tokenizer.json` asset whose vocabulary the tokens are from, as `hkp-asset://<id>` |
 
 ---
 

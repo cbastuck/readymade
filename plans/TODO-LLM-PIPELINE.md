@@ -15,9 +15,8 @@ architecture is the board itself.
   services a board holds, which is what makes a different attention mechanism
   or layer count a real experiment and not noise.
 
-**State:** planned 2026-11-16. M0 and M1 built the same day; see *Work*. M1's
-board has run against the standalone server over REST, not yet in the app.
-M2 next.
+**State:** planned 2026-11-16. M0, M1 and M2 built the same day; see *Work*.
+M3 next.
 
 `text-generation` is not touched in either runtime. It stays the service a
 board uses to get text; these boards are for seeing and changing how text is
@@ -328,11 +327,26 @@ Not done in M1:
 
 ### M2: Board 2, running
 
-- The `transformer` extra (PyTorch, safetensors, a tokenizer library).
-- `tokenize`, `sample`, `detokenize`, `token-embed`, `attention`, `mlp`,
-  `unembed` in hkp-python, and the `layer` block.
-- The board with GPT-2 small, generating text. `"remote": "python"`.
-- The tiny-model test, and the comparison against Board 1 by hand.
+- **Done.** The `transformer` extra (`torch`, `safetensors`, `tokenizers`,
+  `numpy`) in `hkp-python/pyproject.toml`.
+- **Done.** `tokenize`, `sample`, `detokenize`, `token-embed`, `attention`,
+  `mlp`, `unembed` in `hkp-python/src/hkp/services/` (with what they share in
+  `llm_model.py`), registered in `server.py`, and docs pages for the four
+  forward-pass services alongside updated pages for `tokenize`, `sample` and
+  `detokenize`.
+- **Done.** `AssetFileCache.fetching` and waiter progress reporting in
+  `hkp-python/src/hkp/assets.py`, matching `hkp-rt`'s so every service naming
+  the weights reports `status`, `progress` and `fetched` while waiting on the
+  download.
+- **Done.** `boards/gpt2-layers-board.json` with the `layer` block (`attention`
+  → `mlp`, parameterized by `layer` 0..11), GPT-2 small (`openai-community/gpt2`
+  weights by URL and `sha256`, tokenizer and config), facade, and
+  `docs/content/boards/gpt2-layers-board.md`. `"remote": "python"`.
+- **Tested** in `hkp-python/tests/test_llm_pipeline.py` with a tiny two-layer,
+  two-head, width-8 GPT-2 built in-process against both the reference GPT-2
+  equations and stored expected scores, plus the full loop with `layer`
+  sub-services. Comparison against Board 1 on real GPT-2 weights remains by
+  hand.
 
 ### M3: Board 2, looked into
 
