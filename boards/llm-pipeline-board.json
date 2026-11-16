@@ -189,7 +189,7 @@
                 {
                   "type": "text",
                   "label": "Fetched",
-                  "source": { "serviceUuid": "generate-svc.decode", "path": "progress" },
+                  "source": { "serviceUuid": "generate-svc.decode", "path": "fetched" },
                   "placeholder": ""
                 }
               ]

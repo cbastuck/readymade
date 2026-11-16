@@ -481,6 +481,47 @@ TEST_CASE("a large file arrives in pieces, never held whole", "[assets][files]")
   REQUIRE(expected == body.size());
 }
 
+TEST_CASE("whoever waits for a fetch is told how far it is", "[assets][files]") {
+  CacheFolder folder;
+  const auto files = folder.cache();
+  std::atomic<bool> release{ false };
+  std::atomic<int> fetches{ 0 };
+  auto slow = [&](const std::string&, const std::map<std::string, std::string>&) {
+    ++fetches;
+    return AssetStore::FetchResponse{ 200, "weights", "" };
+  };
+  AssetStore fetcher(slow);
+  AssetStore waiter(slow);
+  for (auto* store : { &fetcher, &waiter }) {
+    store->setFileCache(files);
+    store->replace({ { "m", pinnedUrl("m", "https://example.com/m.bin", "weights") } });
+  }
+
+  // The first holds the fetch open at its first report.
+  std::thread first([&] {
+    fetcher.resolvePath("hkp-asset://m", [&](std::uint64_t, std::optional<std::uint64_t>) {
+      while (!release) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    });
+  });
+  while (!files->fetching(sha256("weights")))
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  std::vector<std::uint64_t> heard;
+  const auto resolved = waiter.resolvePath("hkp-asset://m",
+    [&](std::uint64_t received, std::optional<std::uint64_t>) {
+      heard.push_back(received);
+      release = true;
+    });
+  first.join();
+
+  REQUIRE(resolved.problem == "");
+  REQUIRE(contentOf(resolved.path) == "weights");
+  REQUIRE_FALSE(heard.empty());
+  REQUIRE(heard.front() == 7);
+  REQUIRE(fetches == 1);
+  REQUIRE_FALSE(files->fetching(sha256("weights")).has_value());
+}
+
 // ── Models ───────────────────────────────────────────────────────────────────
 // What services loaded from those files, shared between them.
 

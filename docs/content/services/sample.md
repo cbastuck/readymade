@@ -124,6 +124,7 @@ there the service passes nothing on and says why:
 |---|---|
 | `status` | `idle`, `fetching`, `loading`, `ready` or `error` |
 | `progress` | 0 to 1 while fetching, when the source says its size |
+| `fetched` | the same as text — `76%` — for a panel to show; empty when nothing is being fetched |
 | `problem` | why `status` is `error` |
 
 A build of hkp-rt without llama.cpp has the service and says in `problem` that

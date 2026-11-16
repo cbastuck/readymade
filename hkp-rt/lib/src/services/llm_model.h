@@ -306,6 +306,7 @@ struct Model
 //   model     "hkp-asset://<id>", an asset that says its sha256
 //   status    idle | fetching | loading | ready | error   (read-only)
 //   progress  0…1 while fetching, when the source says its size (read-only)
+//   fetched   the same as text, "76%", for a panel to show     (read-only)
 //   problem   why status is error                          (read-only)
 class ModelService : public Service
 {
@@ -351,6 +352,7 @@ protected:
     {
       own["progress"] = m_use.progress;
     }
+    own["fetched"] = fetchedText(m_use.status, m_use.progress);
     return mergeStateWith(own);
   }
 
@@ -390,6 +392,15 @@ protected:
   virtual void modelChanged() {}
 
 private:
+  // How much of the model has arrived, as a panel shows it: "76%" while it is
+  // being fetched, and nothing otherwise.
+  static std::string fetchedText(const std::string& status, double progress)
+  {
+    if (status != "fetching")
+      return "";
+    return progress >= 0 ? std::to_string(static_cast<int>(progress * 100)) + "%" : "…";
+  }
+
   struct Use
   {
     mutable std::mutex mutex;
@@ -408,7 +419,8 @@ private:
       m_use.status = status;
       m_use.problem = problem;
       m_use.progress = progress;
-      said = json{ { "status", status }, { "problem", problem } };
+      said = json{ { "status", status }, { "problem", problem },
+                   { "fetched", fetchedText(status, progress) } };
       if (progress >= 0)
       {
         said["progress"] = progress;

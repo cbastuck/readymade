@@ -118,6 +118,15 @@ public:
   // Held while a file is fetched, so two askers wait for one download.
   std::shared_ptr<std::mutex> lockFor(const std::string& sha256);
 
+  // How far the fetch of `sha256` is, when one is under way — for whoever is
+  // waiting on it rather than doing it.
+  struct Fetching
+  {
+    std::uint64_t received = 0;
+    std::optional<std::uint64_t> expected;
+  };
+  std::optional<Fetching> fetching(const std::string& sha256);
+
   // The file named `sha256`, or empty. Finding it counts as using it.
   std::string find(const std::string& sha256);
 
@@ -135,6 +144,7 @@ private:
   std::uint64_t m_maxBytes;
   std::mutex m_mutex;
   std::map<std::string, std::shared_ptr<std::mutex>> m_locks;
+  std::map<std::string, Fetching> m_fetching;
 };
 
 inline const std::string& assetScheme()
@@ -279,7 +289,8 @@ public:
   // A file holding an asset's content, for a library that loads by path.
   //
   // Blocking, and for a first use possibly for minutes: the content is fetched
-  // to this server's folder, and `progress` is told how far it is. Every later
+  // to this server's folder, and `progress` is told how far it is — also when
+  // another caller is the one fetching it and this one waits. Every later
   // use, by any runtime, finds the file there. Only for an asset that says its
   // sha256. The file belongs to the server: it is read, never written to or
   // removed by whoever is handed its path.

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <random>
 #include <sstream>
+#include <thread>
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -435,6 +436,13 @@ std::shared_ptr<std::mutex> AssetFileCache::lockFor(const std::string& sha256)
   return held;
 }
 
+std::optional<AssetFileCache::Fetching> AssetFileCache::fetching(const std::string& sha256)
+{
+  std::lock_guard lock(m_mutex);
+  const auto found = m_fetching.find(sha256);
+  return found == m_fetching.end() ? std::nullopt : std::optional<Fetching>(found->second);
+}
+
 std::string AssetFileCache::find(const std::string& sha256)
 {
   namespace fs = std::filesystem;
@@ -481,6 +489,10 @@ std::string AssetFileCache::put(const std::string& sha256,
       {
         throw std::runtime_error("cannot write to " + m_folder);
       }
+      {
+        std::lock_guard lock(m_mutex);
+        m_fetching[sha256] = Fetching{ written, expected };
+      }
       if (progress)
       {
         progress(written, expected);
@@ -498,7 +510,13 @@ std::string AssetFileCache::put(const std::string& sha256,
   {
     out.close();
     fs::remove(temporary, ec);
+    std::lock_guard lock(m_mutex);
+    m_fetching.erase(sha256);
     throw;
+  }
+  {
+    std::lock_guard lock(m_mutex);
+    m_fetching.erase(sha256);
   }
   makeRoom(target.string());
   return target.string();
@@ -786,7 +804,27 @@ AssetPathResolution AssetStore::resolvePath(const std::string& reference,
 
   const auto sha = descriptor["sha256"].get<std::string>();
   const auto fetching = files->lockFor(sha);
-  std::lock_guard lock(*fetching);
+  std::unique_lock lock(*fetching, std::defer_lock);
+  try
+  {
+    // Somebody else may be fetching it. Whoever waits is told how far that
+    // is, as if it were its own — and may say it no longer wants it.
+    while (!lock.try_lock())
+    {
+      if (progress)
+      {
+        if (const auto under = files->fetching(sha))
+        {
+          progress(under->received, under->expected);
+        }
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+  }
+  catch (const std::exception& error)
+  {
+    return { "", named + ": " + error.what(), "" };
+  }
   auto path = files->find(sha);
   if (!path.empty())
   {

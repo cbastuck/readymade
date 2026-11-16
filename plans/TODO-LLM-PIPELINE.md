@@ -313,8 +313,9 @@ What was decided while building it:
 
 Not done in M1:
 
-- **The board has not been opened in the Readymade app.** The facade (knob
-  positions, the token strip, the tables) is unseen.
+- **The board loads in the Readymade app** and fetched its model there
+  (2026-11-16). Writing, stepping and the knobs have not been tried in it
+  yet.
 - **Coloured token pieces** are a striped `repeat` of text widgets, two
   colours alternating. A widget of its own would do better.
 - **Probabilities are shown raw** (`0.6213…`) in the tables.
@@ -383,8 +384,10 @@ Not done in M1:
   last call's drop only what follows the change.
 - **Download size and first run.** Board 1 shows it: each service reports
   `status` and `progress` while its model is fetched, and the reason when it
-  cannot be. Only the service that is doing the fetching reports progress;
-  the others say `fetching` until it is there. Board 2's 550 MB needs the
-  same in hkp-python.
+  cannot be — also the ones waiting on a fetch another service is doing
+  (`AssetFileCache::fetching`), which was missing when the board was first
+  opened in the app: the facade watched a service that only waited, and
+  showed nothing for four minutes. `fetched` is the same as text ("76%").
+  Board 2's 550 MB needs the same in hkp-python.
 - **Licences.** GPT-2's weights are MIT. Each further model's licence is
   checked before a shipped board names it.
