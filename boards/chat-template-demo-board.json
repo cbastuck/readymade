@@ -1,0 +1,91 @@
+{
+  "boardName": "Chat Template Demo",
+  "description": "A conversation becomes the one string a chat model reads. The Injector holds a short conversation; Chat Template wraps each message in Qwen3's own control tokens, adds the system prompt, and ends where the assistant's turn begins, so the Monitor shows exactly what the model would be given. Fetches Qwen3 0.6B (640 MB) once, for the template inside it. Runs on the hkp-rt the Readymade app embeds, built with llama.cpp.",
+  "assets": [
+    {
+      "id": "qwen3-0.6b",
+      "name": "Qwen3 0.6B (Q8_0)",
+      "mediaType": "application/octet-stream",
+      "url": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q8_0.gguf",
+      "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+      "size": 639446688,
+      "runtimes": [
+        "rt"
+      ]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "rt",
+      "name": "hkp-rt",
+      "type": "rest",
+      "remote": "embedded",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "out",
+      "name": "Result",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "input",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": {
+            "messages": [
+              {
+                "role": "user",
+                "content": "Name a colour."
+              },
+              {
+                "role": "assistant",
+                "content": "Red."
+              },
+              {
+                "role": "user",
+                "content": "And another?"
+              }
+            ]
+          },
+          "plainText": false
+        }
+      }
+    ],
+    "rt": [
+      {
+        "uuid": "chat",
+        "serviceId": "chat-template",
+        "serviceName": "Chat template",
+        "state": {
+          "model": "hkp-asset://qwen3-0.6b",
+          "systemPrompt": "Answer in one short sentence.",
+          "addAssistant": true
+        }
+      }
+    ],
+    "out": [
+      {
+        "uuid": "result",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "What comes out"
+      }
+    ]
+  }
+}

@@ -97,3 +97,9 @@ there the service passes nothing on and says why:
 
 A build of hkp-rt without llama.cpp has the service and says in `problem` that
 it cannot run.
+
+---
+
+## Demo board
+
+The demo board runs it on hkp-python with GPT-2's tokenizer, which is all it fetches (about 1 MB): one sentence in, its ids and pieces out — "Readymade" comes out as three pieces, "unbelievably" as one.

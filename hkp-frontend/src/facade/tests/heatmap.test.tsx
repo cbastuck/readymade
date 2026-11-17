@@ -70,13 +70,11 @@ describe("the heatmap widget", () => {
     );
   });
 
-  it("switches slices when given a 3D patterns array", () => {
+  it("switches between slices of the same shape", () => {
     reported.value = {
-      layer: 2,
-      head: 0,
-      mask: "causal",
-      pieces: ["a", "b"],
-      patterns: [
+      labels: ["a", "b"],
+      slice: 0,
+      slices: [
         [
           [1.0, 0.0],
           [0.8, 0.2],
@@ -87,13 +85,21 @@ describe("the heatmap widget", () => {
         ],
       ],
     };
-    renderHeatmap({ showValues: true });
+    renderHeatmap({ showValues: true, sliceLabel: "Head" });
 
     expect(screen.getByTestId("heatmap-cell-1-1").textContent).toBe(".20");
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(2);
+    expect(screen.getByRole("tablist").getAttribute("aria-label")).toBe("Head");
 
     fireEvent.click(tabs[1]);
     expect(screen.getByTestId("heatmap-cell-1-1").textContent).toBe(".90");
+  });
+
+  it("reads nothing into keys it does not know", () => {
+    // What a service calls its matrix is the board's to point at with `path`.
+    reported.value = { pattern: [[1.0]], pieces: ["a"], head: 3 };
+    renderHeatmap({ placeholder: "Nothing yet." });
+    expect(screen.getByTestId("heatmap-placeholder").textContent).toBe("Nothing yet.");
   });
 });

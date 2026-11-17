@@ -73,3 +73,9 @@ them share one loaded copy in the runtime's model cache.
 | `progress` | 0 to 1 while fetching, when the source says its size |
 | `fetched` | the same as text — `76%` — for a panel to show; empty when nothing is being fetched |
 | `problem` | why `status` is `error` |
+
+---
+
+## Demo board
+
+The demo board runs layer 0 of GPT-2 small, attention then MLP, so the MLP's panel shows what it added on top. It fetches GPT-2 small (548 MB) the first time.

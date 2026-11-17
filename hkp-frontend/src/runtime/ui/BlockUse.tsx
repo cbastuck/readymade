@@ -183,6 +183,19 @@ export function usePanelBlockLock(): boolean {
   return locked;
 }
 
+/**
+ * `usePanelBlockLock` for a panel whose controls are drawn in its own render,
+ * outside the frame the hook must be called under: `children` is given
+ * whether the panel is locked, and must lock what writes.
+ */
+export function PanelBlockLock({
+  children,
+}: {
+  children: (locked: boolean) => React.ReactNode;
+}) {
+  return <>{children(usePanelBlockLock())}</>;
+}
+
 type UseInfo = {
   placed: PlacedBlock;
   definition: BlockDefinition | undefined;

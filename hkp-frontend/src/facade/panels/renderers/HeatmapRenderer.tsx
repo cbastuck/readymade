@@ -3,13 +3,18 @@ import { HeatmapWidget } from "../../types";
 import { useNotificationValue } from "./StatusIndicatorRenderer";
 import { WidgetRendererProps } from "../widgetRegistry";
 
+/**
+ * A matrix of numbers as a grid of cells, darker the larger. It knows nothing
+ * of what the numbers are — an attention pattern, a confusion matrix, a
+ * correlation table: what they mean is said by the widgets around it.
+ */
 export type NormalizedHeatmap = {
+  /** One matrix, or several of the same shape to switch between. */
   matrices: number[][][];
   rowLabels: string[];
   colLabels: string[];
+  /** Which of several matrices to show first. */
   preferredSlice?: number;
-  disabledSlices?: number[];
-  subtitle?: string;
 };
 
 function is2DMatrix(value: unknown): value is number[][] {
@@ -22,11 +27,7 @@ function is2DMatrix(value: unknown): value is number[][] {
 }
 
 function is3DMatrix(value: unknown): value is number[][][] {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    is2DMatrix(value[0])
-  );
+  return Array.isArray(value) && value.length > 0 && is2DMatrix(value[0]);
 }
 
 function toStringLabels(value: unknown, count: number): string[] {
@@ -36,92 +37,49 @@ function toStringLabels(value: unknown, count: number): string[] {
   return Array.from({ length: count }, (_, idx) => String(idx));
 }
 
+/**
+ * What a source reports, as matrices and labels: a bare `number[][]`, a
+ * `number[][][]` of slices, or `{ matrix | slices, rows?, columns?, labels?,
+ * slice? }`. Labels come from the value, else from `externalLabels`, else
+ * are the indices. Anything else is null.
+ */
 export function normalizeHeatmapValue(
   value: unknown,
   externalLabels?: unknown,
 ): NormalizedHeatmap | null {
+  let matrices: number[][][] | null = null;
+  let record: Record<string, unknown> = {};
   if (is2DMatrix(value)) {
-    const rows = value.length;
-    const cols = value[0]?.length ?? 0;
-    return {
-      matrices: [value],
-      rowLabels: toStringLabels(externalLabels, rows),
-      colLabels: toStringLabels(externalLabels, cols),
-    };
+    matrices = [value];
+  } else if (is3DMatrix(value)) {
+    matrices = value;
+  } else if (value && typeof value === "object" && !Array.isArray(value)) {
+    record = value as Record<string, unknown>;
+    if (is3DMatrix(record.slices)) {
+      matrices = record.slices;
+    } else if (is2DMatrix(record.matrix)) {
+      matrices = [record.matrix];
+    }
   }
-  if (is3DMatrix(value)) {
-    const rows = value[0].length;
-    const cols = value[0][0]?.length ?? 0;
-    return {
-      matrices: value,
-      rowLabels: toStringLabels(externalLabels, rows),
-      colLabels: toStringLabels(externalLabels, cols),
-    };
+  if (!matrices) {
+    return null;
   }
-  if (value && typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    const patterns = record.patterns ?? record.slices;
-    const single = record.matrix ?? record.pattern;
-    let matrices: number[][][] | null = null;
-    if (is3DMatrix(patterns)) {
-      matrices = patterns;
-    } else if (is2DMatrix(single)) {
-      matrices = [single];
-    }
-    if (!matrices || matrices.length === 0) {
-      return null;
-    }
-    const rows = matrices[0].length;
-    const cols = matrices[0][0]?.length ?? 0;
-    const sharedLabels = record.pieces ?? record.labels ?? externalLabels;
-    const rowLabels = toStringLabels(record.rows ?? sharedLabels, rows);
-    const colLabels = toStringLabels(record.columns ?? sharedLabels, cols);
-    const preferredSlice =
-      typeof record.head === "number"
-        ? record.head
-        : typeof record.slice === "number"
-          ? record.slice
-          : undefined;
-    const disabledSlices = Array.isArray(record.disabledHeads)
-      ? record.disabledHeads.filter((h): h is number => typeof h === "number")
-      : undefined;
-    const parts: string[] = [];
-    if (typeof record.layer === "number") {
-      parts.push(`layer ${record.layer}`);
-    }
-    if (typeof record.mask === "string") {
-      parts.push(
-        record.mask === "window" && typeof record.window === "number"
-          ? `window ${record.window}`
-          : record.mask,
-      );
-    }
-    if (typeof record.temperature === "number" && record.temperature !== 1) {
-      parts.push(`temp ${record.temperature}`);
-    }
-    return {
-      matrices,
-      rowLabels,
-      colLabels,
-      preferredSlice,
-      disabledSlices,
-      subtitle: parts.length > 0 ? parts.join(" · ") : undefined,
-    };
-  }
-  return null;
+  const rows = matrices[0].length;
+  const cols = matrices[0][0]?.length ?? 0;
+  const shared = record.labels ?? externalLabels;
+  return {
+    matrices,
+    rowLabels: toStringLabels(record.rows ?? shared, rows),
+    colLabels: toStringLabels(record.columns ?? shared, cols),
+    preferredSlice:
+      typeof record.slice === "number" ? record.slice : undefined,
+  };
 }
 
-function hexToRgb(hex: string): string {
-  const clean = hex.replace("#", "").trim();
-  if (clean.length === 6) {
-    const r = parseInt(clean.slice(0, 2), 16);
-    const g = parseInt(clean.slice(2, 4), 16);
-    const b = parseInt(clean.slice(4, 6), 16);
-    if (!Number.isNaN(r) && !Number.isNaN(g) && !Number.isNaN(b)) {
-      return `${r}, ${g}, ${b}`;
-    }
-  }
-  return "59, 130, 246";
+/** A cell's fill: `color` at a strength between faint and full. */
+function shade(color: string, strength: number): string {
+  const percent = Math.round((0.06 + strength * 0.88) * 100);
+  return `color-mix(in srgb, ${color} ${percent}%, transparent)`;
 }
 
 export function HeatmapMatrixView({
@@ -129,31 +87,25 @@ export function HeatmapMatrixView({
   label,
   rowAxis,
   columnAxis,
-  color = "#3b82f6",
+  sliceLabel,
+  color = "var(--primary)",
   min: fixedMin,
   max: fixedMax,
   showValues = false,
   cellSize = 26,
-  selectedSlice: controlledSlice,
-  onSelectSlice,
-  onToggleSliceDisabled,
 }: {
   data: NormalizedHeatmap;
   label?: string;
   rowAxis?: string;
   columnAxis?: string;
+  sliceLabel?: string;
   color?: string;
   min?: number;
   max?: number;
   showValues?: boolean;
   cellSize?: number;
-  selectedSlice?: number;
-  onSelectSlice?: (slice: number) => void;
-  onToggleSliceDisabled?: (slice: number) => void;
 }) {
-  const [internalSlice, setInternalSlice] = useState<number>(
-    data.preferredSlice ?? 0,
-  );
+  const [slice, setSlice] = useState<number>(data.preferredSlice ?? 0);
   const [hovered, setHovered] = useState<{
     row: number;
     col: number;
@@ -162,16 +114,12 @@ export function HeatmapMatrixView({
 
   useEffect(() => {
     if (typeof data.preferredSlice === "number") {
-      setInternalSlice(data.preferredSlice);
+      setSlice(data.preferredSlice);
     }
   }, [data.preferredSlice]);
 
-  const activeSlice = Math.min(
-    Math.max(controlledSlice ?? internalSlice, 0),
-    data.matrices.length - 1,
-  );
+  const activeSlice = Math.min(Math.max(slice, 0), data.matrices.length - 1);
   const matrix = data.matrices[activeSlice] ?? [];
-  const rows = matrix.length;
   const cols = matrix[0]?.length ?? 0;
 
   let minVal = fixedMin ?? Infinity;
@@ -187,19 +135,14 @@ export function HeatmapMatrixView({
     }
     if (!Number.isFinite(minVal)) minVal = 0;
     if (!Number.isFinite(maxVal)) maxVal = 1;
+    // Numbers between 0 and 1 are read as shares of a whole: on that scale,
+    // not stretched to whatever this matrix happens to span.
     if (fixedMin === undefined && minVal >= 0 && maxVal <= 1) {
       minVal = 0;
       if (fixedMax === undefined) maxVal = 1;
     }
   }
   const span = maxVal > minVal ? maxVal - minVal : 1;
-  const rgb = hexToRgb(color);
-  const disabledSet = new Set(data.disabledSlices ?? []);
-
-  const pickSlice = (idx: number) => {
-    setInternalSlice(idx);
-    onSelectSlice?.(idx);
-  };
 
   return (
     <div
@@ -207,56 +150,34 @@ export function HeatmapMatrixView({
       data-testid="heatmap-widget"
       style={{ fontSize: 12 }}
     >
-      {(label || data.subtitle || data.matrices.length > 1) && (
+      {(label || data.matrices.length > 1) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            {label && <span className="font-medium">{label}</span>}
-            {data.subtitle && (
-              <span className="opacity-60 font-mono text-xs">
-                {data.subtitle}
-              </span>
-            )}
-          </div>
+          {label ? <span className="font-medium">{label}</span> : <span />}
           {data.matrices.length > 1 && (
             <div
               className="flex flex-wrap items-center gap-1"
               role="tablist"
-              aria-label="Matrix slice"
+              aria-label={sliceLabel ?? "Matrix"}
             >
-              <span className="opacity-60 text-xs mr-1">Head</span>
+              {sliceLabel && (
+                <span className="opacity-60 text-xs mr-1">{sliceLabel}</span>
+              )}
               {data.matrices.map((_, idx) => {
                 const isSelected = idx === activeSlice;
-                const isDisabled = disabledSet.has(idx);
                 return (
                   <button
                     key={idx}
                     type="button"
                     role="tab"
                     aria-selected={isSelected}
-                    onClick={() => pickSlice(idx)}
-                    onDoubleClick={
-                      onToggleSliceDisabled
-                        ? () => onToggleSliceDisabled(idx)
-                        : undefined
-                    }
-                    title={
-                      isDisabled
-                        ? `Head ${idx} (switched off)`
-                        : `Show head ${idx}`
-                    }
+                    onClick={() => setSlice(idx)}
                     style={{
                       padding: "1px 6px",
                       borderRadius: 4,
                       fontSize: 11,
-                      fontFamily: "monospace",
-                      border: isSelected
-                        ? `1px solid ${color}`
-                        : "1px solid rgba(128,128,128,0.3)",
-                      background: isSelected
-                        ? `rgba(${rgb}, 0.22)`
-                        : "transparent",
-                      textDecoration: isDisabled ? "line-through" : undefined,
-                      opacity: isDisabled ? 0.45 : 1,
+                      fontFamily: "var(--font-mono, monospace)",
+                      border: `1px solid ${isSelected ? color : "var(--border)"}`,
+                      background: isSelected ? shade(color, 0.18) : "transparent",
                       cursor: "pointer",
                     }}
                   >
@@ -281,8 +202,8 @@ export function HeatmapMatrixView({
         >
           {/* Top-left corner */}
           <div
-            className="text-right pr-2 opacity-50 font-mono"
-            style={{ fontSize: 10 }}
+            className="text-right pr-2 font-mono"
+            style={{ fontSize: 10, color: "var(--muted-foreground)" }}
           >
             {rowAxis && columnAxis ? `${rowAxis} \\ ${columnAxis}` : ""}
           </div>
@@ -319,15 +240,12 @@ export function HeatmapMatrixView({
                 const norm = Number.isFinite(val)
                   ? Math.min(Math.max((val - minVal) / span, 0), 1)
                   : 0;
-                const isHovered =
-                  hovered?.row === r && hovered?.col === c;
+                const isHovered = hovered?.row === r && hovered?.col === c;
                 return (
                   <div
                     key={`cell-${r}-${c}`}
                     data-testid={`heatmap-cell-${r}-${c}`}
-                    onMouseEnter={() =>
-                      setHovered({ row: r, col: c, value: val })
-                    }
+                    onMouseEnter={() => setHovered({ row: r, col: c, value: val })}
                     title={`${JSON.stringify(data.rowLabels[r] ?? r)} → ${JSON.stringify(
                       data.colLabels[c] ?? c,
                     )}: ${Number.isFinite(val) ? val.toFixed(3) : "—"}`}
@@ -335,16 +253,14 @@ export function HeatmapMatrixView({
                       width: cellSize,
                       height: cellSize,
                       borderRadius: 3,
-                      background: `rgba(${rgb}, ${(0.06 + norm * 0.88).toFixed(3)})`,
-                      border: isHovered
-                        ? `1px solid ${color}`
-                        : "1px solid rgba(128,128,128,0.12)",
+                      background: shade(color, norm),
+                      border: `1px solid ${isHovered ? color : "var(--border)"}`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: 9,
-                      fontFamily: "monospace",
-                      color: norm > 0.55 ? "#ffffff" : "inherit",
+                      fontFamily: "var(--font-mono, monospace)",
+                      color: norm > 0.55 ? "var(--primary-foreground)" : "inherit",
                       userSelect: "none",
                     }}
                   >
@@ -360,15 +276,15 @@ export function HeatmapMatrixView({
       </div>
 
       <div
-        className="font-mono opacity-75"
-        style={{ fontSize: 11, minHeight: 16 }}
+        className="font-mono"
+        style={{ fontSize: 11, minHeight: 16, color: "var(--muted-foreground)" }}
         data-testid="heatmap-readout"
       >
         {hovered
           ? `${JSON.stringify(data.rowLabels[hovered.row] ?? hovered.row)} → ${JSON.stringify(
               data.colLabels[hovered.col] ?? hovered.col,
             )}: ${hovered.value.toFixed(4)}`
-          : "Hover a cell to read its weight."}
+          : "Hover a cell to read its value."}
       </div>
     </div>
   );
@@ -385,7 +301,8 @@ export function HeatmapRenderer({
   if (!data) {
     return (
       <div
-        className="opacity-60 text-sm py-2"
+        className="text-sm py-2"
+        style={{ color: "var(--muted-foreground)" }}
         data-testid="heatmap-placeholder"
       >
         {widget.placeholder ?? "Waiting for matrix data…"}
@@ -399,6 +316,7 @@ export function HeatmapRenderer({
       label={widget.label}
       rowAxis={widget.rowAxis}
       columnAxis={widget.columnAxis}
+      sliceLabel={widget.sliceLabel}
       color={widget.color}
       min={widget.min}
       max={widget.max}

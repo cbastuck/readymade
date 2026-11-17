@@ -20,9 +20,8 @@ it one token at a time with **From the start, one token** and **Next token**:
 - on the right, the ten most likely next tokens as [Unembed](../services/unembed.md)
   scored them, the same list after the samplers, and which token was picked.
 
-Turn the **Inspect layer** and **Inspect head** knobs (or click the head tabs on
-the heatmap) while paused on a token to flip through all 12 layers and 12 heads
-without running the model again.
+Turn the **Inspect layer** and **Inspect head** knobs while paused on a token
+to flip through all 12 layers and 12 heads without running the model again.
 
 Then open the board view and change the model itself:
 

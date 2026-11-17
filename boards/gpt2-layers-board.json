@@ -439,9 +439,35 @@
               ]
             },
             {
+              "direction": "row",
+              "gap": 16,
+              "wrap": true,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Showing layer",
+                  "source": { "serviceUuid": "generate-svc.unembed", "path": "attention.layer" },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Head",
+                  "source": { "serviceUuid": "generate-svc.unembed", "path": "attention.head" },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Mask",
+                  "source": { "serviceUuid": "generate-svc.unembed", "path": "attention.mask" },
+                  "placeholder": "—"
+                }
+              ]
+            },
+            {
               "type": "heatmap",
               "label": "Attention pattern (which earlier token each token looks at)",
-              "source": { "serviceUuid": "generate-svc.unembed", "path": "attention" },
+              "source": { "serviceUuid": "generate-svc.unembed", "path": "attention.pattern" },
+              "labelsSource": { "serviceUuid": "generate-svc.unembed", "path": "attention.pieces" },
               "rowAxis": "token",
               "columnAxis": "looks at",
               "cellSize": 26,

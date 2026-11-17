@@ -1,0 +1,102 @@
+{
+  "boardName": "Token Embed Demo",
+  "description": "Where a model's forward pass begins. The prompt is tokenized, and Token Embed looks up GPT-2's vector for each token and for each position and adds them: the stream, 768 numbers per token, which every layer after it reads and adds to. Its panel shows how long each token's vector is; the Monitor shows the stream's JSON side and its size. Fetches GPT-2 small (548 MB) once. Needs the hkp-python kept under the name \"python\", with the transformer extra (uv sync --extra transformer).",
+  "assets": [
+    {
+      "id": "gpt2-weights",
+      "name": "GPT-2 small (124M)",
+      "mediaType": "application/octet-stream",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/model.safetensors",
+      "sha256": "248dfc3911869ec493c76e65bf2fcf7f615828b0254c12b473182f0f81d3a707",
+      "size": 548105171,
+      "runtimes": [
+        "python"
+      ]
+    },
+    {
+      "id": "gpt2-tokenizer",
+      "name": "GPT-2 tokenizer",
+      "mediaType": "application/json",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer.json",
+      "runtimes": [
+        "python"
+      ]
+    },
+    {
+      "id": "gpt2-config",
+      "name": "GPT-2 configuration",
+      "mediaType": "application/json",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/config.json",
+      "runtimes": [
+        "python"
+      ]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "remote": "python",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "out",
+      "name": "Result",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "input",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": "The colours of the rainbow are red, orange,",
+          "plainText": true
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "tokenize",
+        "serviceId": "tokenize",
+        "serviceName": "Tokenize",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer",
+          "addSpecial": true
+        }
+      },
+      {
+        "uuid": "embed",
+        "serviceId": "token-embed",
+        "serviceName": "Token embed",
+        "state": {
+          "model": "hkp-asset://gpt2-weights",
+          "config": "hkp-asset://gpt2-config"
+        }
+      }
+    ],
+    "out": [
+      {
+        "uuid": "result",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "What comes out"
+      }
+    ]
+  }
+}

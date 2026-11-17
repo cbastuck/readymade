@@ -88,3 +88,9 @@ there the service passes nothing on and says why:
 
 A build of hkp-rt without llama.cpp has the service and says in `problem` that
 it cannot run.
+
+---
+
+## Demo board
+
+The demo board runs it on hkp-python with GPT-2's tokenizer (about 1 MB): four tokens, the first of them the prompt, come back as `" world!"` and `end: true`, because the last one is `<|endoftext|>`.

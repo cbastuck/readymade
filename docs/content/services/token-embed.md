@@ -77,3 +77,9 @@ every service that names them.
 | `progress` | 0 to 1 while fetching, when the source says its size |
 | `fetched` | the same as text — `76%` — for a panel to show; empty when nothing is being fetched |
 | `problem` | why `status` is `error` |
+
+---
+
+## Demo board
+
+The demo board tokenizes a prompt and embeds it with GPT-2 small, so the panel shows each token's vector size before any layer has touched it. It fetches GPT-2 small (548 MB) the first time.

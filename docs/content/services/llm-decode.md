@@ -110,3 +110,9 @@ there the service passes nothing on and says why:
 
 A build of hkp-rt without llama.cpp has the service and says in `problem` that
 it cannot run.
+
+---
+
+## Demo board
+
+The demo board runs Qwen3 0.6B once over a prompt and picks greedily, so the panel lists the ten tokens it weighed. Inject a longer prompt that starts the same and only the new tokens are decoded. It fetches the model (640 MB) the first time.

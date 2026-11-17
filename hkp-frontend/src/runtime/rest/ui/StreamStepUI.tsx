@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { ServiceUIProps } from "hkp-frontend/src/types";
 import InputField from "hkp-frontend/src/components/shared/InputField";
 import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
+import { PanelBlockLock } from "../../ui/BlockUse";
 
 type StreamStepState = {
   status: string;
@@ -90,17 +91,23 @@ export default function StreamStepUI(props: ServiceUIProps) {
         )}
 
         {isMlp && (
-          <InputField
-            label="Layer"
-            value={String(state.layer ?? 0)}
-            onChange={(val) => {
-              const parsed = Number.parseInt(val, 10);
-              if (Number.isFinite(parsed) && parsed >= 0) {
-                setState((prev) => ({ ...prev, layer: parsed }));
-                void service.configure({ layer: parsed });
-              }
-            }}
-          />
+          // Inside a block use the layer is the use's param, set on its bar.
+          <PanelBlockLock>
+            {(locked) => (
+              <InputField
+                label="Layer"
+                value={String(state.layer ?? 0)}
+                disabled={locked}
+                onChange={(val) => {
+                  const parsed = Number.parseInt(val, 10);
+                  if (Number.isFinite(parsed) && parsed >= 0) {
+                    setState((prev) => ({ ...prev, layer: parsed }));
+                    void service.configure({ layer: parsed });
+                  }
+                }}
+              />
+            )}
+          </PanelBlockLock>
         )}
 
         {state.tokenSizes.length > 0 ? (

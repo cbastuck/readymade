@@ -318,8 +318,11 @@ Not done in M1:
 - **Coloured token pieces** are a striped `repeat` of text widgets, two
   colours alternating. A widget of its own would do better.
 - **Probabilities are shown raw** (`0.6213…`) in the tables.
-- **Panels.** The five services have the generic panel. The docs pages and
-  the board are there; a `<slug>-demo-board.json` per service is not.
+- **Panels.** The five services have the generic panel. Each has a docs page
+  and, since 2026-11-17, a `<slug>-demo-board.json`; `chat-template` and
+  `llm-decode` run on hkp-rt, while `tokenize`, `sample` and `detokenize`,
+  shared with Board 2, run on hkp-python, where `tokenize` and `detokenize`
+  need only the 1 MB tokenizer.
 - **An asset edited while the board runs** does not reach a loaded model; the
   service has to be configured again.
 - **`gpuLayers`** is not a setting: the model is offloaded as far as the
@@ -355,25 +358,59 @@ Not done in M1:
   window, temperature, and embedded attention matrix), `StreamStepUI.tsx`
   (per-token stream vector norm bars for `token-embed` and `mlp`), and
   `UnembedUI.tsx` (top candidate probability bars, `passThrough` early-answer
-  toggle, and layer-by-layer logit-lens progression), registered in both REST
-  and browser `UIRegistry.ts`.
+  toggle, and layer-by-layer logit-lens progression), registered in the REST
+  `UIRegistry.ts`.
 - **Done.** Pretrained-weight experiments in `attention.py` and `unembed.py`:
   switching individual heads off (`disabledHeads` as array or string),
   changing `mask` (`causal`, `window` over the last *n* tokens, or `full`
   including future tokens), sharpening/flattening attention (`temperature`),
   and reading the answer early (`unembed` with `passThrough: true`, plus
-  automatic layer-by-layer logit-lens scoring in `unembed` from the stream's
-  trace).
-- **Done.** Block-use notification roll-up in `sub_service.py` (Option A: a
-  plain `SubService` also emits `{ [childId]: payload }` on its own address so
-  a block use can be observed as a whole without crossing its boundary), and
-  `layer` block parameters (`layer`, `mask`, `window`, `temperature`,
-  `disabledHeads`) delegated on `boards/gpt2-layers-board.json`.
+  automatic layer-by-layer logit-lens scoring in `unembed` from the record
+  the layers keep beside the stream).
+- **Done.** `layer` block parameters (`layer`, `mask`, `window`,
+  `temperature`, `disabledHeads`) delegated on `boards/gpt2-layers-board.json`.
 - **Done.** Generic `heatmap` facade widget (`HeatmapRenderer.tsx`, `types.ts`,
   `widgetRegistry.tsx`, `heatmap.test.tsx`) supporting 2D matrices and 3D
   slice arrays with row/column labels, hover readout and slice tabs, wired into
   `boards/gpt2-layers-board.json` alongside `Inspect layer` and `Inspect head`
   knobs and the layer-by-layer guess table.
+
+What was decided while reviewing it (2026-11-17):
+
+- **The layers' record is `MixedData.local`, not part of the stream's JSON
+  side.** A facade source names one service, so a knob cannot switch which
+  layer a heatmap reads; `unembed` relays the chosen layer and head instead,
+  and it needs every layer's last vector and patterns for that. Built first as
+  `meta._trace` of rounded lists, it cost about 250 ms and 6 MB of
+  notifications per round at 50 tokens, growing with the square of the
+  length. Kept as tensors in a field no exit serialises, a round is about
+  70 ms and 0.25 MB; only the shown head becomes a list. The record does not
+  cross runtimes.
+- **Attention reports one head**, `head`; choosing another re-reports it from
+  the last call. `unembed`'s `attention` likewise carries the inspected head
+  only, so the board's knob is the one head picker.
+- **No notification roll-up on sub-services.** M3 had every plain sub-service
+  in hkp-python re-send its steps' notifications on its own address, so a
+  block use could be read as a whole. Nothing on the board read it, no other
+  runtime does it, it doubled every notification inside a layer, and a step
+  named `scope` or `error` would read as the sub-service's own. Reverted; if a
+  board needs to read inside a use, it is decided in `concepts/blocks.md` for
+  every runtime.
+- **The heatmap knows nothing of attention.** It takes a matrix, slices of
+  one shape, or `{ matrix | slices, rows, columns, labels, slice }`, tinted
+  from the theme's primary colour; the board points it at
+  `attention.pattern` and `attention.pieces` by path and says which layer,
+  head and mask it shows with text widgets beside it.
+- **Panels inside a use lock themselves** (`usePanelBlockLock`, or
+  `PanelBlockLock` around one control): Attention's layer, mask, window,
+  temperature and head switch, MLP's layer and Unembed's `passThrough` are
+  the use's to set. Choosing which head Attention shows stays in reach — it
+  changes nothing the layer hands on.
+- **The panels are registered for REST runtimes only**: the services exist
+  in hkp-python, and the browser registry's entries for them were never
+  reached.
+- **Every service has a demo board**, `<slug>-demo-board.json`: one service
+  with only what it needs around it, between an Injector and a Monitor.
 
 ### M4: Train
 

@@ -133,3 +133,9 @@ there the service passes nothing on and says why:
 
 A build of hkp-rt without llama.cpp has the service and says in `problem` that
 it cannot run.
+
+---
+
+## Demo board
+
+The demo board runs it on hkp-python after GPT-2 small's twelve layers, once: top-k, temperature and pick in a row, each panel showing what is left. It fetches GPT-2 small (548 MB) the first time.

@@ -37,15 +37,17 @@ hands on in `hkp-rt`, so the same chain of `sample` services follows either.
 ### Watching the answer form layer by layer
 
 As the stream moves through the layers, each layer records its intermediate
-vector and attention patterns. When the stream reaches Unembed, it also scores
-each of those intermediate vectors ("logit lens") and reports:
+vector and attention patterns beside the stream — as tensors, in a record that
+stays in the runtime and is never sent (`MixedData.local`). When the stream
+reaches Unembed, it also scores each of those intermediate vectors ("logit
+lens") and reports:
 
 - `candidates`: the `top` most likely next tokens at this point, with their
   probabilities;
 - `layers`: one row per layer that ran (`{ step, layer, token, piece, p, attentionAdded, mlpAdded, size }`), showing what the model's top guess was
   after each layer;
 - `attention`: the attention matrix and token pieces for `inspectLayer` and
-  `inspectHead`. Changing `inspectLayer` or `inspectHead` re-emits the report
+  `inspectHead` — that one head's, not every head's. Changing `inspectLayer` or `inspectHead` re-emits the report
   immediately from the last run, so a knob on a facade can flip through layers
   and heads while generation is paused.
 
@@ -54,6 +56,9 @@ each of those intermediate vectors ("logit lens") and reports:
 Placed between two layers with `passThrough: true`, Unembed scores the stream
 at that point, reports `candidates` and `layers` to its panel, and **hands the
 stream on untouched** so the layers after it keep running.
+
+The record does not cross runtimes: a stream that arrives from another runtime
+has no layers to report until layers of this runtime have run on it.
 
 ---
 
@@ -92,3 +97,9 @@ copy in the runtime's model cache.
 | `progress` | 0 to 1 while fetching, when the source says its size |
 | `fetched` | the same as text — `76%` — for a panel to show; empty when nothing is being fetched |
 | `problem` | why `status` is `error` |
+
+---
+
+## Demo board
+
+The demo board runs two layers of GPT-2 small with an Unembed between them on `passThrough` and one at the end, so the two guesses can be compared. It fetches GPT-2 small (548 MB) the first time.

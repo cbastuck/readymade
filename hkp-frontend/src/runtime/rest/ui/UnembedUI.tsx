@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { ServiceUIProps } from "hkp-frontend/src/types";
 import Switch from "hkp-frontend/src/ui-components/Switch";
 import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
+import { PanelBlockLock } from "../../ui/BlockUse";
 
 type Candidate = {
   token: number;
@@ -83,17 +84,25 @@ export default function UnembedUI(props: ServiceUIProps) {
           </div>
         )}
 
-        <Switch
-          className="py-1"
-          labelClassName="hkp-svc-field-label text-xs"
-          title="Pass stream through (early answer)"
-          checked={state.passThrough}
-          onCheckedChange={() => {
-            const next = !state.passThrough;
-            setState((prev) => ({ ...prev, passThrough: next }));
-            void service.configure({ passThrough: next });
-          }}
-        />
+        {/* Inside a block use, whether it passes the stream on is the
+            definition's: shown, not offered. */}
+        <PanelBlockLock>
+          {(locked) =>
+            locked ? null : (
+              <Switch
+                className="py-1"
+                labelClassName="hkp-svc-field-label text-xs"
+                title="Pass stream through (early answer)"
+                checked={state.passThrough}
+                onCheckedChange={() => {
+                  const next = !state.passThrough;
+                  setState((prev) => ({ ...prev, passThrough: next }));
+                  void service.configure({ passThrough: next });
+                }}
+              />
+            )
+          }
+        </PanelBlockLock>
 
         {state.candidates.length > 0 ? (
           <div className="flex flex-col gap-1">

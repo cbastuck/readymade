@@ -1,0 +1,277 @@
+{
+  "boardName": "Sample Demo",
+  "description": "From scores to one token. GPT-2 small runs its twelve layers once over the prompt, and a chain of Sample services chooses the next token: top-k keeps the 40 most likely, temperature sharpens what is left, pick draws one by probability. Each sampler's panel shows how many candidates are left and the most likely of them; the Monitor shows the tokens with the chosen one appended and the text it makes. Reorder the samplers, or set Pick one's mode to greedy, and inject again. Fetches GPT-2 small (548 MB) once. Needs the hkp-python kept under the name \"python\", with the transformer extra (uv sync --extra transformer).",
+  "assets": [
+    {
+      "id": "gpt2-weights",
+      "name": "GPT-2 small (124M)",
+      "mediaType": "application/octet-stream",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/model.safetensors",
+      "sha256": "248dfc3911869ec493c76e65bf2fcf7f615828b0254c12b473182f0f81d3a707",
+      "size": 548105171,
+      "runtimes": [
+        "python"
+      ]
+    },
+    {
+      "id": "gpt2-tokenizer",
+      "name": "GPT-2 tokenizer",
+      "mediaType": "application/json",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer.json",
+      "runtimes": [
+        "python"
+      ]
+    },
+    {
+      "id": "gpt2-config",
+      "name": "GPT-2 configuration",
+      "mediaType": "application/json",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/config.json",
+      "runtimes": [
+        "python"
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": "layer",
+      "name": "Layer",
+      "serviceId": "sub-service",
+      "description": "One transformer layer of GPT-2: causal self-attention where tokens look at earlier tokens, followed by an MLP where each token computes on its own. Both add their result to the stream.",
+      "params": {
+        "layer": 0,
+        "mask": "causal",
+        "window": 4,
+        "temperature": 1,
+        "disabledHeads": ""
+      },
+      "state": {
+        "pipeline": [
+          {
+            "instanceId": "attention",
+            "serviceId": "attention",
+            "serviceName": "Attention",
+            "state": {
+              "model": "hkp-asset://gpt2-weights",
+              "config": "hkp-asset://gpt2-config",
+              "layer": "{{param.layer}}",
+              "mask": "{{param.mask}}",
+              "window": "{{param.window}}",
+              "temperature": "{{param.temperature}}",
+              "disabledHeads": "{{param.disabledHeads}}"
+            }
+          },
+          {
+            "instanceId": "mlp",
+            "serviceId": "mlp",
+            "serviceName": "MLP",
+            "state": {
+              "model": "hkp-asset://gpt2-weights",
+              "config": "hkp-asset://gpt2-config",
+              "layer": "{{param.layer}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "remote": "python",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "out",
+      "name": "Result",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "input",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": "The colours of the rainbow are red, orange,",
+          "plainText": true
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "tokenize",
+        "serviceId": "tokenize",
+        "serviceName": "Tokenize",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer",
+          "addSpecial": true
+        }
+      },
+      {
+        "uuid": "embed",
+        "serviceId": "token-embed",
+        "serviceName": "Token embed",
+        "state": {
+          "model": "hkp-asset://gpt2-weights",
+          "config": "hkp-asset://gpt2-config"
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-0",
+        "params": {
+          "layer": 0
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-1",
+        "params": {
+          "layer": 1
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-2",
+        "params": {
+          "layer": 2
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-3",
+        "params": {
+          "layer": 3
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-4",
+        "params": {
+          "layer": 4
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-5",
+        "params": {
+          "layer": 5
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-6",
+        "params": {
+          "layer": 6
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-7",
+        "params": {
+          "layer": 7
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-8",
+        "params": {
+          "layer": 8
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-9",
+        "params": {
+          "layer": 9
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-10",
+        "params": {
+          "layer": 10
+        }
+      },
+      {
+        "block": "layer",
+        "uuid": "layer-11",
+        "params": {
+          "layer": 11
+        }
+      },
+      {
+        "uuid": "unembed",
+        "serviceId": "unembed",
+        "serviceName": "Unembed",
+        "state": {
+          "model": "hkp-asset://gpt2-weights",
+          "config": "hkp-asset://gpt2-config",
+          "tokenizer": "hkp-asset://gpt2-tokenizer",
+          "top": 10
+        }
+      },
+      {
+        "uuid": "top-k",
+        "serviceId": "sample",
+        "serviceName": "Top-k",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer",
+          "mode": "top-k",
+          "k": 40
+        }
+      },
+      {
+        "uuid": "temperature",
+        "serviceId": "sample",
+        "serviceName": "Temperature",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer",
+          "mode": "temperature",
+          "temperature": 0.7
+        }
+      },
+      {
+        "uuid": "pick",
+        "serviceId": "sample",
+        "serviceName": "Pick one",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer",
+          "mode": "pick"
+        }
+      },
+      {
+        "uuid": "detokenize",
+        "serviceId": "detokenize",
+        "serviceName": "Detokenize",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer"
+        }
+      }
+    ],
+    "out": [
+      {
+        "uuid": "result",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "What comes out"
+      }
+    ]
+  }
+}

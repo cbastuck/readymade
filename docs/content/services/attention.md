@@ -44,8 +44,9 @@ uses.
 ### What to change on pretrained weights
 
 - **Switch individual heads off** (`disabledHeads`): pass `[0, 3]` or `"0, 3"`
-  (or double-click a head tab in the service panel) to zero out those heads'
-  contributions.
+  (or switch the chosen head off in the service panel) to zero out those
+  heads' contributions. On a board whose layers are uses of a block, set it as
+  the use's param: what is inside a use is locked.
 - **Change what a token may look at** (`mask`):
   - `causal` (default): each token looks at itself and everything before it;
   - `window`: each token looks only at the last `window` tokens up to itself;
@@ -70,13 +71,16 @@ uses.
   "size": 58.9,
   "pieces": ["The", " colours", " of"],
   "headSizes": [3.1, 2.8, …],
-  "pattern": [[1.0, 0.0, 0.0], [0.62, 0.38, 0.0], …],
-  "patterns": [ … ]
+  "pattern": [[1.0, 0.0, 0.0], [0.62, 0.38, 0.0], …]
 }
 ```
 
-`patterns` is one `tokens × tokens` matrix per head; `pattern` is the matrix
-for `head`, ready for a `heatmap` facade widget.
+`pattern` is the `tokens × tokens` matrix of one head, `head`, ready for a
+`heatmap` facade widget. Configuring another `head` reports that one from the
+last call, without running again. Every head's pattern also goes on with the
+stream, in a record of its layers kept beside it in the runtime and never sent
+(`MixedData.local`): that is where [Unembed](./unembed.md) reads the layer and
+head a board asks it to show, so twelve layers do not each send twelve heads.
 
 ---
 
@@ -116,3 +120,9 @@ them share one loaded copy in the runtime's model cache.
 | `progress` | 0 to 1 while fetching, when the source says its size |
 | `fetched` | the same as text — `76%` — for a panel to show; empty when nothing is being fetched |
 | `problem` | why `status` is `error` |
+
+---
+
+## Demo board
+
+The demo board runs layer 5's attention of GPT-2 small over a prompt, so the panel has a pattern to show; pick heads, switch one off or change the mask and inject again. It fetches GPT-2 small (548 MB) the first time.

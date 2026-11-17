@@ -44,9 +44,6 @@ import DecryptDescriptor from "./services/Decrypt";
 import HashDescriptor from "./services/Hash";
 import AssetDescriptor from "./services/Asset";
 import SignDescriptor from "./services/Sign";
-import AttentionUI from "../rest/ui/AttentionUI";
-import StreamStepUI from "../rest/ui/StreamStepUI";
-import UnembedUI from "../rest/ui/UnembedUI";
 
 /**
  * Browser services are not versioned, so a lookup's `version` and
@@ -91,13 +88,6 @@ export function findServiceUI(
       return IteratorUI;
     case "loop":
       return LoopUI;
-    case "attention":
-      return AttentionUI;
-    case "token-embed":
-    case "mlp":
-      return StreamStepUI;
-    case "unembed":
-      return UnembedUI;
     case "gather":
       return GatherUI;
     case "hookup.to/service/filter":

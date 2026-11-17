@@ -830,22 +830,24 @@ export type AudioPlayerTrackAction = {
 };
 
 // A 2D matrix of numbers drawn as a grid of coloured cells — an attention
-// pattern over tokens, a confusion matrix, a correlation table.
+// pattern over tokens, a confusion matrix, a correlation table. It knows
+// nothing of what the numbers are; what they mean is said by widgets beside it.
 //
 // `source` may point at a bare 2D `number[][]`, a 3D `number[][][]` of slices
-// (one 2D matrix per attention head, with a slice bar to pick between them),
-// or an object carrying `{ matrix | pattern | patterns, rows?, columns?,
-// pieces?, labels?, head? }`.
+// of one shape (with a bar to pick between them), or an object carrying
+// `{ matrix | slices, rows?, columns?, labels?, slice? }`.
 export type HeatmapWidget = {
   type: "heatmap";
   source: FacadeWidgetSource;
-  // Optional separate source for row and column labels when `source` yields a
-  // bare 2D array.
+  // Labels for rows and columns both, when `source` carries none.
   labelsSource?: FacadeWidgetSource;
   label?: string;
   rowAxis?: string;
   columnAxis?: string;
-  // Accent colour for the highest value (CSS hex, default "#3b82f6").
+  // What the bar between slices calls them ("Head", "Channel"); none by default.
+  sliceLabel?: string;
+  // The colour of the highest value: any CSS colour (default the theme's
+  // primary).
   color?: string;
   min?: number;
   max?: number;

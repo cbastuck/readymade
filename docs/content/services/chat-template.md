@@ -89,3 +89,9 @@ there the service passes nothing on and says why:
 
 A build of hkp-rt without llama.cpp has the service and says in `problem` that
 it cannot run.
+
+---
+
+## Demo board
+
+The demo board applies Qwen3 0.6B's template to a three-message conversation, so the Monitor shows the prompt, control tokens and all. It fetches the model (640 MB) the first time, for the template inside it.
