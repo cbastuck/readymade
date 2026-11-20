@@ -1,0 +1,73 @@
+{
+  "boardName": "Tokenize Demo",
+  "description": "Text becomes the token ids a model reads. Inject the sentence and Tokenize cuts it with GPT-2's tokenizer: the Monitor shows the ids, the pieces they stand for — common words whole, rarer ones in parts, the space kept on the front of the word after it — and promptTokens, which says how many of them are the prompt. Only the tokenizer is fetched (about 1 MB). Needs the hkp-python kept under the name \"python\", with the transformer extra (uv sync --extra transformer).",
+  "assets": [
+    {
+      "id": "gpt2-tokenizer",
+      "name": "GPT-2 tokenizer",
+      "mediaType": "application/json",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer.json",
+      "runtimes": [
+        "python"
+      ]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "remote": "python",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "out",
+      "name": "Result",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "input",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": "Readymade boards tokenize unbelievably ordinary sentences.",
+          "plainText": true
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "tokenize",
+        "serviceId": "tokenize",
+        "serviceName": "Tokenize",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer",
+          "addSpecial": true
+        }
+      }
+    ],
+    "out": [
+      {
+        "uuid": "result",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "What comes out"
+      }
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "boardName": "Detokenize Demo",
+  "description": "Token ids become text again. The Injector holds four GPT-2 tokens — \"Hello\", \" world\", \"!\" and <|endoftext|> — of which the first is the prompt. Detokenize hands on every token's piece, the text after the prompt with the control token left out (\" world!\"), and end: true, because the last token is the one GPT-2 ends with. That is what a Loop around a generating pipeline asks to know when to stop. Only the tokenizer is fetched (about 1 MB). Needs the hkp-python kept under the name \"python\", with the transformer extra (uv sync --extra transformer).",
+  "assets": [
+    {
+      "id": "gpt2-tokenizer",
+      "name": "GPT-2 tokenizer",
+      "mediaType": "application/json",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer.json",
+      "runtimes": [
+        "python"
+      ]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "remote": "python",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "out",
+      "name": "Result",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "input",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": {
+            "tokens": [
+              15496,
+              995,
+              0,
+              50256
+            ],
+            "promptTokens": 1
+          },
+          "plainText": false
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "detokenize",
+        "serviceId": "detokenize",
+        "serviceName": "Detokenize",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer"
+        }
+      }
+    ],
+    "out": [
+      {
+        "uuid": "result",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "What comes out"
+      }
+    ]
+  }
+}

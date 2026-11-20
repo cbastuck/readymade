@@ -3,6 +3,7 @@ import type { ServiceLookup } from "../rest/UIRegistry";
 import MapUI from "./services/MapUI";
 import TracksUI from "./services/TracksUI";
 import IteratorUI from "./services/IteratorUI";
+import LoopUI from "./services/LoopUI";
 import GatherUI from "./services/GatherUI";
 import TimerUI from "./services/TimerUI";
 import MonitorUI from "./services/MonitorUI";
@@ -85,6 +86,8 @@ export function findServiceUI(
       return TracksUI;
     case "iterator":
       return IteratorUI;
+    case "loop":
+      return LoopUI;
     case "gather":
       return GatherUI;
     case "hookup.to/service/filter":

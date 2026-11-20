@@ -1,0 +1,421 @@
+{
+  "boardName": "LLM Pipeline",
+  "description": "What a language model does to answer, one service per step. Your message is wrapped by the model's chat template, cut into tokens, and then a Loop runs once per generated token: the model scores every entry of its vocabulary (llm-decode), a chain of samplers narrows the candidates (repetition penalty, top-k, top-p, temperature), one token is picked, and the text grows by that piece. Step through it one token at a time and watch the candidates before and after the samplers; turn the knobs, reorder or remove a sampler, swap pick for greedy. Runs on the hkp-rt the Readymade app embeds, built with llama.cpp. The model, Qwen3 0.6B (Apache-2.0, 640 MB), is fetched once on first use.",
+  "assets": [
+    {
+      "id": "qwen3-0.6b",
+      "name": "Qwen3 0.6B (Q8_0)",
+      "mediaType": "application/octet-stream",
+      "url": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q8_0.gguf",
+      "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+      "size": 639446688,
+      "runtimes": ["rt"]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ask",
+      "name": "Ask",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "rt",
+      "name": "hkp-rt",
+      "type": "rest",
+      "remote": "embedded",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "answer",
+      "name": "Answer",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ask": [
+      {
+        "uuid": "question-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Question",
+        "state": {
+          "recentInjection": "Name three colours of the rainbow.",
+          "plainText": true
+        }
+      }
+    ],
+    "rt": [
+      {
+        "uuid": "chat-svc",
+        "serviceId": "chat-template",
+        "serviceName": "Chat template",
+        "state": {
+          "model": "hkp-asset://qwen3-0.6b",
+          "systemPrompt": "Answer in one short sentence. /no_think",
+          "addAssistant": true
+        }
+      },
+      {
+        "uuid": "tokenize-svc",
+        "serviceId": "tokenize",
+        "serviceName": "Tokenize",
+        "state": {
+          "model": "hkp-asset://qwen3-0.6b",
+          "addSpecial": true,
+          "parseSpecial": true
+        }
+      },
+      {
+        "uuid": "generate-svc",
+        "serviceId": "loop",
+        "serviceName": "One token per round",
+        "state": {
+          "until": "params.end",
+          "maxRounds": 200,
+          "mode": "run",
+          "pipeline": [
+            {
+              "instanceId": "decode",
+              "serviceId": "llm-decode",
+              "serviceName": "Forward pass",
+              "state": { "model": "hkp-asset://qwen3-0.6b", "contextSize": 4096, "top": 10 }
+            },
+            {
+              "instanceId": "penalty",
+              "serviceId": "sample",
+              "serviceName": "Repetition penalty",
+              "state": {
+                "model": "hkp-asset://qwen3-0.6b",
+                "mode": "repetition-penalty",
+                "penalty": 1.1,
+                "lastN": 64
+              }
+            },
+            {
+              "instanceId": "top-k",
+              "serviceId": "sample",
+              "serviceName": "Top-k",
+              "state": { "model": "hkp-asset://qwen3-0.6b", "mode": "top-k", "k": 40 }
+            },
+            {
+              "instanceId": "top-p",
+              "serviceId": "sample",
+              "serviceName": "Top-p",
+              "state": { "model": "hkp-asset://qwen3-0.6b", "mode": "top-p", "p": 0.95 }
+            },
+            {
+              "instanceId": "temperature",
+              "serviceId": "sample",
+              "serviceName": "Temperature",
+              "state": {
+                "model": "hkp-asset://qwen3-0.6b",
+                "mode": "temperature",
+                "temperature": 0.8,
+                "top": 10
+              }
+            },
+            {
+              "instanceId": "pick",
+              "serviceId": "sample",
+              "serviceName": "Pick one",
+              "state": { "model": "hkp-asset://qwen3-0.6b", "mode": "pick" }
+            },
+            {
+              "instanceId": "piece",
+              "serviceId": "detokenize",
+              "serviceName": "Detokenize",
+              "state": { "model": "hkp-asset://qwen3-0.6b" }
+            }
+          ]
+        }
+      }
+    ],
+    "answer": [
+      {
+        "uuid": "answer-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "The answer"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "state": { "question": "Name three colours of the rainbow." },
+    "notices": [
+      { "source": { "serviceUuid": "chat-svc", "path": "error" } },
+      { "source": { "serviceUuid": "tokenize-svc", "path": "error" } },
+      { "source": { "serviceUuid": "generate-svc", "path": "error" } },
+      { "source": { "serviceUuid": "generate-svc.decode", "path": "error" } },
+      { "source": { "serviceUuid": "generate-svc.pick", "path": "error" } },
+      {
+        "source": { "serviceUuid": "generate-svc.decode", "path": "problem" },
+        "message": "The model is not available — {{value}}"
+      }
+    ],
+    "panels": [
+      {
+        "id": "write",
+        "title": "Write",
+        "width": "58%",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 8,
+              "align": "center",
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": { "serviceUuid": "generate-svc.decode", "path": "status" },
+                  "statusColors": {
+                    "idle": "#6b7280",
+                    "fetching": "#f59e0b",
+                    "loading": "#f59e0b",
+                    "ready": "#22c55e",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "text",
+                  "label": "Model",
+                  "source": { "serviceUuid": "generate-svc.decode", "path": "status" },
+                  "placeholder": "Qwen3 0.6B"
+                },
+                {
+                  "type": "text",
+                  "label": "Fetched",
+                  "source": { "serviceUuid": "generate-svc.decode", "path": "fetched" },
+                  "placeholder": ""
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Your message",
+              "defaultValue": "Name three colours of the rainbow.",
+              "submitLabel": "Write",
+              "actions": [
+                { "type": "set-state", "key": "question", "value": "$$input" },
+                { "type": "configure", "serviceUuid": "generate-svc", "configure": { "mode": "run" } },
+                { "type": "process", "serviceUuid": "chat-svc", "payload": { "text": "$$input" } }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "wrap": true,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "From the start, one token",
+                  "actions": [
+                    { "type": "configure", "serviceUuid": "generate-svc", "configure": { "mode": "step" } },
+                    { "type": "process", "serviceUuid": "chat-svc", "payload": { "text": { "$state": "question" } } }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Next token",
+                  "actions": [
+                    { "type": "configure", "serviceUuid": "generate-svc", "configure": { "mode": "step" } },
+                    { "type": "process", "serviceUuid": "generate-svc" }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Carry on",
+                  "indicator": {
+                    "source": { "serviceUuid": "generate-svc", "path": "done" },
+                    "statusColors": { "true": "#6b7280", "false": "#22c55e" }
+                  },
+                  "actions": [
+                    { "type": "configure", "serviceUuid": "generate-svc", "configure": { "mode": "run" } },
+                    { "type": "process", "serviceUuid": "generate-svc" }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Stop",
+                  "action": { "serviceUuid": "generate-svc", "configure": { "stop": true } }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "What the model wrote",
+              "source": { "serviceUuid": "generate-svc", "path": "output.text" },
+              "placeholder": "Nothing yet. Write, or take it one token at a time.",
+              "copyable": true
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Round",
+                  "source": { "serviceUuid": "generate-svc", "path": "round" },
+                  "placeholder": "0"
+                },
+                {
+                  "type": "text",
+                  "label": "Ended because",
+                  "source": { "serviceUuid": "generate-svc", "path": "reason" },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Tokens run / kept",
+                  "source": { "serviceUuid": "generate-svc.decode", "path": "decoded" },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "",
+                  "source": { "serviceUuid": "generate-svc.decode", "path": "reused" },
+                  "placeholder": "—"
+                }
+              ]
+            },
+            {
+              "direction": "column",
+              "collapsible": true,
+              "title": "What the model was given, cut into tokens",
+              "summary": { "serviceUuid": "tokenize-svc", "path": "count" },
+              "open": true,
+              "items": [
+                {
+                  "type": "repeat",
+                  "source": { "serviceUuid": "tokenize-svc", "path": "pieces" },
+                  "direction": "row",
+                  "wrap": true,
+                  "gap": 0,
+                  "stripe": {
+                    "even": "rgba(59,130,246,0.22)",
+                    "odd": "rgba(245,158,11,0.22)",
+                    "padding": 3,
+                    "radius": 3
+                  },
+                  "template": { "type": "text", "placeholder": "{{item}}", "mono": true, "fontSize": 12 }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "choose",
+        "title": "Choosing the next token",
+        "width": "42%",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 12,
+              "justify": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "knob",
+                  "id": "top-k-knob",
+                  "label": "Top-k",
+                  "min": 1,
+                  "max": 100,
+                  "defaultValue": 40,
+                  "width": 110,
+                  "height": 100,
+                  "action": { "serviceUuid": "generate-svc.top-k", "configure": { "k": "{{value}}" } }
+                },
+                {
+                  "type": "knob",
+                  "id": "top-p-knob",
+                  "label": "Top-p",
+                  "min": 0.05,
+                  "max": 1,
+                  "defaultValue": 0.95,
+                  "decimals": 2,
+                  "width": 110,
+                  "height": 100,
+                  "action": { "serviceUuid": "generate-svc.top-p", "configure": { "p": "{{value}}" } }
+                },
+                {
+                  "type": "knob",
+                  "id": "temperature-knob",
+                  "label": "Temperature",
+                  "min": 0.05,
+                  "max": 2,
+                  "defaultValue": 0.8,
+                  "decimals": 2,
+                  "width": 110,
+                  "height": 100,
+                  "markers": [{ "value": 1, "text": "as scored" }],
+                  "action": {
+                    "serviceUuid": "generate-svc.temperature",
+                    "configure": { "temperature": "{{value}}" }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "As the model scored them"
+            },
+            {
+              "type": "data-table",
+              "source": { "serviceUuid": "generate-svc.decode", "path": "candidates" },
+              "columns": ["piece", "p", "token"],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "items": [
+                { "type": "text", "placeholder": "After the samplers" },
+                {
+                  "type": "text",
+                  "label": "Candidates left",
+                  "source": { "serviceUuid": "generate-svc.temperature", "path": "remaining" },
+                  "placeholder": "—"
+                }
+              ]
+            },
+            {
+              "type": "data-table",
+              "source": { "serviceUuid": "generate-svc.temperature", "path": "candidates" },
+              "columns": ["piece", "p", "token"],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Picked",
+                  "source": { "serviceUuid": "generate-svc.pick", "path": "chosen.piece" },
+                  "placeholder": "—",
+                  "mono": true
+                },
+                {
+                  "type": "text",
+                  "label": "It was this likely",
+                  "source": { "serviceUuid": "generate-svc.pick", "path": "chosen.p" },
+                  "placeholder": "—"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

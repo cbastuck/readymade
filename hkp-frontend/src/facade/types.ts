@@ -395,6 +395,9 @@ export type KnobWidget = {
   defaultValue: number;
   // Unit suffix shown next to the numeric readout, e.g. "dB".
   unit?: string;
+  // How many decimals the knob turns in, shows and sends. Absent or 0, whole
+  // numbers — a temperature from 0 to 2 needs two.
+  decimals?: number;
   // Overall bounding box of the knob widget. The arc radius is derived from
   // Math.min(width, height) so the arc stays circular; extra space is used
   // by marker labels. Defaults to 100 × 100.
@@ -826,6 +829,33 @@ export type AudioPlayerTrackAction = {
   actions: WidgetAction[];
 };
 
+// A 2D matrix of numbers drawn as a grid of coloured cells — an attention
+// pattern over tokens, a confusion matrix, a correlation table. It knows
+// nothing of what the numbers are; what they mean is said by widgets beside it.
+//
+// `source` may point at a bare 2D `number[][]`, a 3D `number[][][]` of slices
+// of one shape (with a bar to pick between them), or an object carrying
+// `{ matrix | slices, rows?, columns?, labels?, slice? }`.
+export type HeatmapWidget = {
+  type: "heatmap";
+  source: FacadeWidgetSource;
+  // Labels for rows and columns both, when `source` carries none.
+  labelsSource?: FacadeWidgetSource;
+  label?: string;
+  rowAxis?: string;
+  columnAxis?: string;
+  // What the bar between slices calls them ("Head", "Channel"); none by default.
+  sliceLabel?: string;
+  // The colour of the highest value: any CSS colour (default the theme's
+  // primary).
+  color?: string;
+  min?: number;
+  max?: number;
+  showValues?: boolean;
+  cellSize?: number;
+  placeholder?: string;
+};
+
 export type FacadeWidget =
   | MessageListWidget
   | TextInputWidget
@@ -849,7 +879,8 @@ export type FacadeWidget =
   | RepeatWidget
   | AudioPlayerWidget
   | CalendarWidget
-  | SwimlaneWidget;
+  | SwimlaneWidget
+  | HeatmapWidget;
 
 // ---------------------------------------------------------------------------
 // Layout tree — panels declare their structure declaratively.

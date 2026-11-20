@@ -1,0 +1,589 @@
+{
+  "boardName": "GPT-2 Layer by Layer",
+  "description": "Inside the forward pass of a language model: GPT-2 small (124M parameters, MIT, 548 MB) with every layer on the board as services. Your prompt is cut into tokens (tokenize), and a Loop runs once per generated token: token-embed looks up each token's vector and its position vector to start the residual stream, twelve uses of the Layer block (attention → mlp) each read the stream and add what they found to it, unembed turns the last position's vector into one score per vocabulary entry, the sampler chain narrows and reshapes those scores and picks one token, and detokenize turns the sequence back into text. Watch the model's top guess form layer by layer, inspect the attention matrix for any layer and head, or open the board view to delete, reorder, duplicate or tweak a Layer block use (switch heads off, restrict attention to a sliding window, or sharpen/flatten attention). Runs on hkp-python (`\"remote\": \"python\"`, with `uv sync --extra transformer`).",
+  "assets": [
+    {
+      "id": "gpt2-weights",
+      "name": "GPT-2 small (124M)",
+      "mediaType": "application/octet-stream",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/model.safetensors",
+      "sha256": "248dfc3911869ec493c76e65bf2fcf7f615828b0254c12b473182f0f81d3a707",
+      "size": 548105171,
+      "runtimes": ["python"]
+    },
+    {
+      "id": "gpt2-tokenizer",
+      "name": "GPT-2 tokenizer",
+      "mediaType": "application/json",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer.json",
+      "runtimes": ["python"]
+    },
+    {
+      "id": "gpt2-config",
+      "name": "GPT-2 configuration",
+      "mediaType": "application/json",
+      "url": "https://huggingface.co/openai-community/gpt2/resolve/main/config.json",
+      "runtimes": ["python"]
+    }
+  ],
+  "blocks": [
+    {
+      "id": "layer",
+      "name": "Layer",
+      "serviceId": "sub-service",
+      "description": "One transformer layer of GPT-2: causal self-attention where tokens look at earlier tokens, followed by an MLP where each token computes on its own. Both add their result to the stream.",
+      "params": {
+        "layer": 0,
+        "mask": "causal",
+        "window": 4,
+        "temperature": 1,
+        "disabledHeads": ""
+      },
+      "state": {
+        "pipeline": [
+          {
+            "instanceId": "attention",
+            "serviceId": "attention",
+            "serviceName": "Attention",
+            "state": {
+              "model": "hkp-asset://gpt2-weights",
+              "config": "hkp-asset://gpt2-config",
+              "layer": "{{param.layer}}",
+              "mask": "{{param.mask}}",
+              "window": "{{param.window}}",
+              "temperature": "{{param.temperature}}",
+              "disabledHeads": "{{param.disabledHeads}}"
+            }
+          },
+          {
+            "instanceId": "mlp",
+            "serviceId": "mlp",
+            "serviceName": "MLP",
+            "state": {
+              "model": "hkp-asset://gpt2-weights",
+              "config": "hkp-asset://gpt2-config",
+              "layer": "{{param.layer}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ask",
+      "name": "Prompt",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "remote": "python",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "answer",
+      "name": "Continuation",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ask": [
+      {
+        "uuid": "prompt-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Prompt",
+        "state": {
+          "recentInjection": "The colours of the rainbow are red, orange,",
+          "plainText": true
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "tokenize-svc",
+        "serviceId": "tokenize",
+        "serviceName": "Tokenize",
+        "state": {
+          "tokenizer": "hkp-asset://gpt2-tokenizer",
+          "addSpecial": true
+        }
+      },
+      {
+        "uuid": "generate-svc",
+        "serviceId": "loop",
+        "serviceName": "One token per round",
+        "state": {
+          "until": "params.end",
+          "maxRounds": 40,
+          "mode": "run",
+          "pipeline": [
+            {
+              "instanceId": "embed",
+              "serviceId": "token-embed",
+              "serviceName": "Token embed",
+              "state": {
+                "model": "hkp-asset://gpt2-weights",
+                "config": "hkp-asset://gpt2-config"
+              }
+            },
+            { "block": "layer", "instanceId": "layer-0", "params": { "layer": 0 } },
+            { "block": "layer", "instanceId": "layer-1", "params": { "layer": 1 } },
+            { "block": "layer", "instanceId": "layer-2", "params": { "layer": 2 } },
+            { "block": "layer", "instanceId": "layer-3", "params": { "layer": 3 } },
+            { "block": "layer", "instanceId": "layer-4", "params": { "layer": 4 } },
+            { "block": "layer", "instanceId": "layer-5", "params": { "layer": 5 } },
+            { "block": "layer", "instanceId": "layer-6", "params": { "layer": 6 } },
+            { "block": "layer", "instanceId": "layer-7", "params": { "layer": 7 } },
+            { "block": "layer", "instanceId": "layer-8", "params": { "layer": 8 } },
+            { "block": "layer", "instanceId": "layer-9", "params": { "layer": 9 } },
+            { "block": "layer", "instanceId": "layer-10", "params": { "layer": 10 } },
+            { "block": "layer", "instanceId": "layer-11", "params": { "layer": 11 } },
+            {
+              "instanceId": "unembed",
+              "serviceId": "unembed",
+              "serviceName": "Unembed",
+              "state": {
+                "model": "hkp-asset://gpt2-weights",
+                "config": "hkp-asset://gpt2-config",
+                "tokenizer": "hkp-asset://gpt2-tokenizer",
+                "top": 10,
+                "inspectLayer": 0,
+                "inspectHead": 0
+              }
+            },
+            {
+              "instanceId": "penalty",
+              "serviceId": "sample",
+              "serviceName": "Repetition penalty",
+              "state": {
+                "tokenizer": "hkp-asset://gpt2-tokenizer",
+                "mode": "repetition-penalty",
+                "penalty": 1.1,
+                "lastN": 64
+              }
+            },
+            {
+              "instanceId": "top-k",
+              "serviceId": "sample",
+              "serviceName": "Top-k",
+              "state": {
+                "tokenizer": "hkp-asset://gpt2-tokenizer",
+                "mode": "top-k",
+                "k": 40
+              }
+            },
+            {
+              "instanceId": "top-p",
+              "serviceId": "sample",
+              "serviceName": "Top-p",
+              "state": {
+                "tokenizer": "hkp-asset://gpt2-tokenizer",
+                "mode": "top-p",
+                "p": 0.95
+              }
+            },
+            {
+              "instanceId": "temperature",
+              "serviceId": "sample",
+              "serviceName": "Temperature",
+              "state": {
+                "tokenizer": "hkp-asset://gpt2-tokenizer",
+                "mode": "temperature",
+                "temperature": 0.8,
+                "top": 10
+              }
+            },
+            {
+              "instanceId": "pick",
+              "serviceId": "sample",
+              "serviceName": "Pick one",
+              "state": {
+                "tokenizer": "hkp-asset://gpt2-tokenizer",
+                "mode": "pick"
+              }
+            },
+            {
+              "instanceId": "piece",
+              "serviceId": "detokenize",
+              "serviceName": "Detokenize",
+              "state": {
+                "tokenizer": "hkp-asset://gpt2-tokenizer"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "answer": [
+      {
+        "uuid": "answer-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "The continuation"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "columns",
+    "state": { "prompt": "The colours of the rainbow are red, orange," },
+    "notices": [
+      { "source": { "serviceUuid": "tokenize-svc", "path": "error" } },
+      { "source": { "serviceUuid": "generate-svc", "path": "error" } },
+      { "source": { "serviceUuid": "generate-svc.embed", "path": "error" } },
+      { "source": { "serviceUuid": "generate-svc.unembed", "path": "error" } },
+      { "source": { "serviceUuid": "generate-svc.pick", "path": "error" } },
+      {
+        "source": { "serviceUuid": "generate-svc.embed", "path": "problem" },
+        "message": "The model is not available — {{value}}"
+      }
+    ],
+    "panels": [
+      {
+        "id": "write",
+        "title": "Write & look inside the forward pass",
+        "width": "58%",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 8,
+              "align": "center",
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": { "serviceUuid": "generate-svc.embed", "path": "status" },
+                  "statusColors": {
+                    "idle": "#6b7280",
+                    "fetching": "#f59e0b",
+                    "loading": "#f59e0b",
+                    "ready": "#22c55e",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "text",
+                  "label": "Model",
+                  "source": { "serviceUuid": "generate-svc.embed", "path": "status" },
+                  "placeholder": "GPT-2 small (124M)"
+                },
+                {
+                  "type": "text",
+                  "label": "Fetched",
+                  "source": { "serviceUuid": "generate-svc.embed", "path": "fetched" },
+                  "placeholder": ""
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Prompt",
+              "defaultValue": "The colours of the rainbow are red, orange,",
+              "submitLabel": "Write",
+              "actions": [
+                { "type": "set-state", "key": "prompt", "value": "$$input" },
+                { "type": "configure", "serviceUuid": "generate-svc", "configure": { "mode": "run" } },
+                { "type": "process", "serviceUuid": "tokenize-svc", "payload": { "text": "$$input" } }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "wrap": true,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "From the start, one token",
+                  "actions": [
+                    { "type": "configure", "serviceUuid": "generate-svc", "configure": { "mode": "step" } },
+                    { "type": "process", "serviceUuid": "tokenize-svc", "payload": { "text": { "$state": "prompt" } } }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Next token",
+                  "actions": [
+                    { "type": "configure", "serviceUuid": "generate-svc", "configure": { "mode": "step" } },
+                    { "type": "process", "serviceUuid": "generate-svc" }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Carry on",
+                  "indicator": {
+                    "source": { "serviceUuid": "generate-svc", "path": "done" },
+                    "statusColors": { "true": "#6b7280", "false": "#22c55e" }
+                  },
+                  "actions": [
+                    { "type": "configure", "serviceUuid": "generate-svc", "configure": { "mode": "run" } },
+                    { "type": "process", "serviceUuid": "generate-svc" }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "label": "Stop",
+                  "action": { "serviceUuid": "generate-svc", "configure": { "stop": true } }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "label": "What the model wrote",
+              "source": { "serviceUuid": "generate-svc", "path": "output.text" },
+              "placeholder": "Nothing yet. Write, or take it one token at a time.",
+              "copyable": true
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Round",
+                  "source": { "serviceUuid": "generate-svc", "path": "round" },
+                  "placeholder": "0"
+                },
+                {
+                  "type": "text",
+                  "label": "Ended because",
+                  "source": { "serviceUuid": "generate-svc", "path": "reason" },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Tokens in stream",
+                  "source": { "serviceUuid": "generate-svc.embed", "path": "tokens" },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Width",
+                  "source": { "serviceUuid": "generate-svc.embed", "path": "width" },
+                  "placeholder": "768"
+                }
+              ]
+            },
+            {
+              "direction": "column",
+              "collapsible": true,
+              "title": "The prompt, cut into tokens",
+              "summary": { "serviceUuid": "tokenize-svc", "path": "count" },
+              "open": true,
+              "items": [
+                {
+                  "type": "repeat",
+                  "source": { "serviceUuid": "tokenize-svc", "path": "pieces" },
+                  "direction": "row",
+                  "wrap": true,
+                  "gap": 0,
+                  "stripe": {
+                    "even": "rgba(59,130,246,0.22)",
+                    "odd": "rgba(245,158,11,0.22)",
+                    "padding": 3,
+                    "radius": 3
+                  },
+                  "template": { "type": "text", "placeholder": "{{item}}", "mono": true, "fontSize": 12 }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "How the answer forms, layer by layer (logit lens)"
+            },
+            {
+              "type": "data-table",
+              "source": { "serviceUuid": "generate-svc.unembed", "path": "layers" },
+              "columns": ["layer", "piece", "p", "attentionAdded", "mlpAdded", "size"],
+              "pageSize": 12
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "align": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "knob",
+                  "id": "inspect-layer-knob",
+                  "label": "Inspect layer",
+                  "min": 0,
+                  "max": 11,
+                  "defaultValue": 0,
+                  "width": 110,
+                  "height": 96,
+                  "action": {
+                    "serviceUuid": "generate-svc.unembed",
+                    "configure": { "inspectLayer": "{{value}}" }
+                  }
+                },
+                {
+                  "type": "knob",
+                  "id": "inspect-head-knob",
+                  "label": "Inspect head",
+                  "min": 0,
+                  "max": 11,
+                  "defaultValue": 0,
+                  "width": 110,
+                  "height": 96,
+                  "action": {
+                    "serviceUuid": "generate-svc.unembed",
+                    "configure": { "inspectHead": "{{value}}" }
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "wrap": true,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Showing layer",
+                  "source": { "serviceUuid": "generate-svc.unembed", "path": "attention.layer" },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Head",
+                  "source": { "serviceUuid": "generate-svc.unembed", "path": "attention.head" },
+                  "placeholder": "—"
+                },
+                {
+                  "type": "text",
+                  "label": "Mask",
+                  "source": { "serviceUuid": "generate-svc.unembed", "path": "attention.mask" },
+                  "placeholder": "—"
+                }
+              ]
+            },
+            {
+              "type": "heatmap",
+              "label": "Attention pattern (which earlier token each token looks at)",
+              "source": { "serviceUuid": "generate-svc.unembed", "path": "attention.pattern" },
+              "labelsSource": { "serviceUuid": "generate-svc.unembed", "path": "attention.pieces" },
+              "rowAxis": "token",
+              "columnAxis": "looks at",
+              "cellSize": 26,
+              "placeholder": "Step or write a token to see what the chosen layer and head attend to."
+            }
+          ]
+        }
+      },
+      {
+        "id": "choose",
+        "title": "Choosing the next token",
+        "width": "42%",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "paddingX": 16,
+          "paddingY": 12,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 12,
+              "justify": "center",
+              "wrap": true,
+              "items": [
+                {
+                  "type": "knob",
+                  "id": "top-k-knob",
+                  "label": "Top-k",
+                  "min": 1,
+                  "max": 100,
+                  "defaultValue": 40,
+                  "width": 110,
+                  "height": 100,
+                  "action": { "serviceUuid": "generate-svc.top-k", "configure": { "k": "{{value}}" } }
+                },
+                {
+                  "type": "knob",
+                  "id": "top-p-knob",
+                  "label": "Top-p",
+                  "min": 0.05,
+                  "max": 1,
+                  "defaultValue": 0.95,
+                  "decimals": 2,
+                  "width": 110,
+                  "height": 100,
+                  "action": { "serviceUuid": "generate-svc.top-p", "configure": { "p": "{{value}}" } }
+                },
+                {
+                  "type": "knob",
+                  "id": "temperature-knob",
+                  "label": "Temperature",
+                  "min": 0.05,
+                  "max": 2,
+                  "defaultValue": 0.8,
+                  "decimals": 2,
+                  "width": 110,
+                  "height": 100,
+                  "markers": [{ "value": 1, "text": "as scored" }],
+                  "action": {
+                    "serviceUuid": "generate-svc.temperature",
+                    "configure": { "temperature": "{{value}}" }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "As Unembed scored them"
+            },
+            {
+              "type": "data-table",
+              "source": { "serviceUuid": "generate-svc.unembed", "path": "candidates" },
+              "columns": ["piece", "p", "token"],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "items": [
+                { "type": "text", "placeholder": "After the samplers" },
+                {
+                  "type": "text",
+                  "label": "Candidates left",
+                  "source": { "serviceUuid": "generate-svc.temperature", "path": "remaining" },
+                  "placeholder": "—"
+                }
+              ]
+            },
+            {
+              "type": "data-table",
+              "source": { "serviceUuid": "generate-svc.temperature", "path": "candidates" },
+              "columns": ["piece", "p", "token"],
+              "pageSize": 10
+            },
+            {
+              "direction": "row",
+              "gap": 16,
+              "items": [
+                {
+                  "type": "text",
+                  "label": "Picked",
+                  "source": { "serviceUuid": "generate-svc.pick", "path": "chosen.piece" },
+                  "placeholder": "—",
+                  "mono": true
+                },
+                {
+                  "type": "text",
+                  "label": "It was this likely",
+                  "source": { "serviceUuid": "generate-svc.pick", "path": "chosen.p" },
+                  "placeholder": "—"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

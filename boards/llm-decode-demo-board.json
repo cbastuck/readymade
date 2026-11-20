@@ -1,0 +1,103 @@
+{
+  "boardName": "LLM Decode Demo",
+  "description": "The forward pass of a real model, once. The prompt is tokenized, LLM Decode runs Qwen3 0.6B over it and hands on one score per vocabulary entry; greedy takes the highest, and Detokenize says what it is. LLM Decode's panel lists the ten most likely next tokens. Inject again with a longer prompt that starts the same: only the new tokens are decoded, the rest are in its cache. Fetches Qwen3 0.6B (640 MB) once. Runs on the hkp-rt the Readymade app embeds, built with llama.cpp.",
+  "assets": [
+    {
+      "id": "qwen3-0.6b",
+      "name": "Qwen3 0.6B (Q8_0)",
+      "mediaType": "application/octet-stream",
+      "url": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q8_0.gguf",
+      "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+      "size": 639446688,
+      "runtimes": [
+        "rt"
+      ]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "rt",
+      "name": "hkp-rt",
+      "type": "rest",
+      "remote": "embedded",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "out",
+      "name": "Result",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "input",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": "The capital of France is",
+          "plainText": true
+        }
+      }
+    ],
+    "rt": [
+      {
+        "uuid": "tokenize",
+        "serviceId": "tokenize",
+        "serviceName": "Tokenize",
+        "state": {
+          "model": "hkp-asset://qwen3-0.6b",
+          "addSpecial": true,
+          "parseSpecial": true
+        }
+      },
+      {
+        "uuid": "decode",
+        "serviceId": "llm-decode",
+        "serviceName": "Forward pass",
+        "state": {
+          "model": "hkp-asset://qwen3-0.6b",
+          "contextSize": 2048,
+          "top": 10
+        }
+      },
+      {
+        "uuid": "greedy",
+        "serviceId": "sample",
+        "serviceName": "Greedy",
+        "state": {
+          "model": "hkp-asset://qwen3-0.6b",
+          "mode": "greedy"
+        }
+      },
+      {
+        "uuid": "detokenize",
+        "serviceId": "detokenize",
+        "serviceName": "Detokenize",
+        "state": {
+          "model": "hkp-asset://qwen3-0.6b"
+        }
+      }
+    ],
+    "out": [
+      {
+        "uuid": "result",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "What comes out"
+      }
+    ]
+  }
+}

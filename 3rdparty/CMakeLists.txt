@@ -222,10 +222,12 @@ CPMAddPackage(
 
 # minimp4 — single-header MP4/ISOBMFF demuxer used by the mp4-to-wav service.
 # DOWNLOAD_ONLY: its CMakeLists only installs the header; we expose it ourselves.
+# Pinned to a commit: the project tags no releases, and its master changed
+# MP4D_frame_offset's signature on 2026-11-15, which mp4_to_wav.cpp calls.
 CPMAddPackage(
     NAME minimp4
     GIT_REPOSITORY "https://github.com/lieff/minimp4.git"
-    GIT_TAG        master
+    GIT_TAG        2a3014a7753cfcba4442adeb469431967238fe6a
     DOWNLOAD_ONLY  TRUE
 )
 

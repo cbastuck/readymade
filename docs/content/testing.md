@@ -46,6 +46,16 @@ purpose: it covers rules the backend keeps apart from its webview-facing code,
 so it compiles in seconds instead of requiring a full app build. That separation
 is the reason those rules have tests at all.
 
+hkp-rt's suite is built **without the in-process ML libraries** (llama.cpp,
+sherpa-onnx, inflect), which are most of that build's weight and which almost
+nothing under `hkp-rt/tests/` runs. `HKP_ML_BACKENDS=ON ./run-tests.sh` compiles
+them all in; `HKP_LLAMA=ON` llama.cpp alone, which is what the services that
+lay a model out on a board need (`service_llm_pipeline.test.cpp`). Their cases
+that run a model do so when `HKP_TEST_GGUF` names a chat model's GGUF file and
+are skipped otherwise — no model is downloaded by a test. In `hkp-python`, the
+transformer layer tests (`test_llm_pipeline.py`) build a tiny two-layer model
+in-process when the `transformer` extra is installed (`uv sync --extra transformer`).
+
 `run-all-cpp-tests.sh` is the C++ half on its own, against an existing `./build`.
 
 ---

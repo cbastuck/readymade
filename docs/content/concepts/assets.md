@@ -143,6 +143,33 @@ runtime is given all of its board's assets, that second number is how much
 inline content a board may hold. Content past either is named by `url` and
 fetched by the runtime, where the limit is the runtime's own.
 
+### Content as a file
+
+A runtime's store holds content in memory, and none larger than 64 MB. A
+model is larger than that, and the library that runs it wants a **path**, not
+bytes. So hkp-python and hkp-rt can resolve a reference to a file instead:
+
+- **Only an asset that says its `sha256`.** The hash is the file's name and the
+  check that what was fetched is what the board meant; content that does not
+  match is not kept.
+- **Once per server.** The file goes to a folder the server owns —
+  `HKP_ASSET_CACHE`, else `~/.hkp/python/asset-cache` and
+  `~/.hkp/cpp/asset-cache` — and is found there by every runtime, by every
+  board naming the same content under whatever id, and after a restart. A first
+  use may take minutes; the store reports how much has arrived.
+- **Bounded.** The folder holds 8 GB (`HKP_ASSET_CACHE_MAX_BYTES`), which is
+  also the largest single file. Past it, what was used longest ago goes first.
+- **Read, never written.** A service is handed the path to load from. The file
+  is the server's.
+
+What services load from such a file is shared too. A board that lays a model
+out as a dozen services names the same weights from each; the store's **model
+cache** loads them for the first that asks, hands the same model to the rest,
+and lets go of it when the last service does.
+
+No service resolves a reference this way yet: the speech and text-generation
+services still take a path.
+
 ---
 
 ## An asset that does not resolve
@@ -242,4 +269,5 @@ browser does.
 | The browser runtime's resolver | `hkp-frontend/src/runtime/browser/assetResolver.ts` |
 | The asset view | `hkp-frontend/src/assets/` |
 | The runtimes' stores | `hkp-node/src/assets.ts`, `hkp-python/src/hkp/assets.py`, `hkp-rt/lib/include/assets.h` + `lib/src/assets.cpp` |
+| Content as a file, and the model cache | `resolve_path` and `AssetFileCache` in `hkp-python/src/hkp/assets.py`, `models.py`; `resolvePath` and `AssetFileCache` in `hkp-rt/lib/include/assets.h`, `models.h` |
 | The runtimes' routes | `POST /runtimes/:id/assets` (merge; `null` removes), `GET /runtimes/:id/assets/:assetId` (a check, never content) |

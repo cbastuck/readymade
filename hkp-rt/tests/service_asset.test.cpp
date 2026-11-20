@@ -1,16 +1,23 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <functional>
 #include <list>
 #include <memory>
 #include <string>
+#include <thread>
+
+#include <random>
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
 
 #include <assets.h>
@@ -287,6 +294,292 @@ TEST_CASE("a file:// source is read only inside the root this runtime was given"
 
   fs::remove_all(root);
   fs::remove(root.parent_path() / "hkp-asset-outside.txt");
+}
+
+// ── As a file ────────────────────────────────────────────────────────────────
+// What a library loads by path: fetched once to a folder the server owns.
+
+namespace {
+
+struct CacheFolder {
+  std::filesystem::path path;
+  CacheFolder() {
+    path = std::filesystem::temp_directory_path() /
+           ("hkp-asset-cache-test-" + std::to_string(std::random_device{}()));
+    std::filesystem::remove_all(path);
+  }
+  ~CacheFolder() { std::filesystem::remove_all(path); }
+
+  std::shared_ptr<AssetFileCache> cache(std::uint64_t maxBytes = 1024) const {
+    return std::make_shared<AssetFileCache>(path.string(), maxBytes);
+  }
+  std::size_t files() const {
+    if (!std::filesystem::exists(path)) return 0;
+    return std::distance(std::filesystem::directory_iterator(path),
+                         std::filesystem::directory_iterator());
+  }
+};
+
+std::string contentOf(const std::string& path) {
+  std::ifstream in(path, std::ios::binary);
+  return std::string(std::istreambuf_iterator<char>(in), {});
+}
+
+json pinnedUrl(const std::string& id, const std::string& url, const std::string& content) {
+  return json{ { "id", id }, { "mediaType", "application/octet-stream" }, { "url", url },
+               { "sha256", sha256(content) } };
+}
+
+json pinnedText(const std::string& id, const std::string& content) {
+  return json{ { "id", id }, { "mediaType", "text/plain" }, { "text", content },
+               { "sha256", sha256(content) } };
+}
+
+} // namespace
+
+TEST_CASE("an asset is fetched to a file once, and found by another runtime", "[assets][files]") {
+  CacheFolder folder;
+  int fetches = 0;
+  auto fetch = [&](const std::string&, const std::map<std::string, std::string>&) {
+    ++fetches;
+    return AssetStore::FetchResponse{ 200, "weights", "" };
+  };
+  std::vector<std::pair<std::uint64_t, std::uint64_t>> progress;
+
+  AssetStore first(fetch);
+  first.setFileCache(folder.cache());
+  first.replace({ { "m", pinnedUrl("m", "https://example.com/m.bin", "weights") } });
+  const auto one = first.resolvePath("hkp-asset://m",
+    [&](std::uint64_t received, std::optional<std::uint64_t> expected) {
+      progress.emplace_back(received, expected.value_or(0));
+    });
+
+  AssetStore second(fetch);
+  second.setFileCache(folder.cache());
+  second.replace({ { "other-name", pinnedUrl("other-name", "https://example.org/same.bin", "weights") } });
+  const auto two = second.resolvePath("hkp-asset://other-name");
+
+  REQUIRE(one.problem == "");
+  REQUIRE(contentOf(one.path) == "weights");
+  REQUIRE(one.sha256 == sha256("weights"));
+  REQUIRE(two.path == one.path);
+  REQUIRE(fetches == 1);
+  REQUIRE(progress == std::vector<std::pair<std::uint64_t, std::uint64_t>>{ { 7, 7 } });
+}
+
+TEST_CASE("inline content and a file:// source are kept as files too", "[assets][files]") {
+  namespace fs = std::filesystem;
+  CacheFolder folder;
+  const auto root = fs::temp_directory_path() / "hkp-asset-root-path-test";
+  fs::create_directories(root);
+  std::ofstream(root / "kit.wav", std::ios::binary) << "RIFF";
+
+  AssetStore store;
+  store.setFileCache(folder.cache());
+  store.setFileRoot(root.string());
+  store.replace({
+    { "t", pinnedText("t", "abc") },
+    { "kit", pinnedUrl("kit", "file:///kit.wav", "RIFF") },
+  });
+
+  REQUIRE(contentOf(store.resolvePath("hkp-asset://t").path) == "abc");
+  REQUIRE(contentOf(store.resolvePath("hkp-asset://kit").path) == "RIFF");
+  fs::remove_all(root);
+}
+
+TEST_CASE("nothing is kept that does not match its hash, and why there is no file is said",
+          "[assets][files]") {
+  CacheFolder folder;
+  AssetStore store([](const std::string& url, const std::map<std::string, std::string>&) {
+    return url.find("missing") != std::string::npos
+             ? AssetStore::FetchResponse{ 404, "", "" }
+             : AssetStore::FetchResponse{ 200, "weights", "" };
+  });
+  store.setFileCache(folder.cache());
+  const std::string big(2000, 'x');
+  store.replace({
+    { "wrong", pinnedUrl("wrong", "https://example.com/m.bin", "something else") },
+    { "missing", pinnedUrl("missing", "https://example.com/missing.bin", "weights") },
+    { "unpinned", json{ { "id", "unpinned" }, { "mediaType", "text/plain" },
+                        { "url", "https://example.com/m.bin" } } },
+    { "local", pinnedUrl("local", "file:///etc/passwd", "x") },
+    { "big", pinnedText("big", big) },
+  });
+
+  auto problem = [&](const std::string& id) { return store.resolvePath("hkp-asset://" + id).problem; };
+  REQUIRE(problem("wrong").find("does not match its sha256") != std::string::npos);
+  REQUIRE(problem("missing").find("answered 404") != std::string::npos);
+  REQUIRE(problem("unpinned").find("does not say its sha256") != std::string::npos);
+  REQUIRE(problem("local").find("file:// sources cannot be read") != std::string::npos);
+  REQUIRE(problem("big").find("larger than 1024 bytes") != std::string::npos);
+  REQUIRE(problem("nothing").find("not known") != std::string::npos);
+  REQUIRE(folder.files() == 0);
+}
+
+TEST_CASE("the folder lets go of what was used longest ago when it is full", "[assets][files]") {
+  namespace fs = std::filesystem;
+  CacheFolder folder;
+  AssetStore store;
+  store.setFileCache(folder.cache());
+  std::map<std::string, nlohmann::json> assets;
+  for (const char* name : { "a", "b", "c" }) {
+    assets[name] = pinnedText(name, std::string(400, name[0]));
+  }
+  store.replace(assets);
+
+  const auto a = store.resolvePath("hkp-asset://a").path;
+  const auto b = store.resolvePath("hkp-asset://b").path;
+  const auto long_ago = fs::file_time_type::clock::now() - std::chrono::hours(2);
+  fs::last_write_time(a, long_ago);
+  fs::last_write_time(b, long_ago + std::chrono::minutes(1));
+  store.resolvePath("hkp-asset://a"); // used again, so b is now the oldest
+  const auto c = store.resolvePath("hkp-asset://c").path;
+
+  REQUIRE(fs::exists(a));
+  REQUIRE(fs::exists(c));
+  REQUIRE_FALSE(fs::exists(b));
+}
+
+TEST_CASE("a large file arrives in pieces, never held whole", "[assets][files]") {
+  namespace net = boost::asio;
+  using net::ip::tcp;
+  // More than one piece of it, and not a whole number of them.
+  std::string body(700 * 1024 + 123, '\0');
+  for (std::size_t i = 0; i < body.size(); ++i) body[i] = static_cast<char>('a' + i % 23);
+
+  net::io_context io;
+  tcp::acceptor acceptor(io, tcp::endpoint(net::ip::make_address("127.0.0.1"), 0));
+  const auto port = acceptor.local_endpoint().port();
+  std::thread server([&] {
+    tcp::socket socket(io);
+    acceptor.accept(socket);
+    net::streambuf request;
+    boost::system::error_code ec;
+    net::read_until(socket, request, "\r\n\r\n", ec);
+    net::write(socket, net::buffer("HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(body.size()) +
+                                   "\r\nConnection: close\r\n\r\n" + body), ec);
+    socket.shutdown(tcp::socket::shutdown_both, ec);
+  });
+
+  CacheFolder folder;
+  AssetStore store;
+  store.setFileCache(folder.cache(8 * 1024 * 1024));
+  store.replace({ { "m", pinnedUrl("m", "http://127.0.0.1:" + std::to_string(port) + "/m.bin", body) } });
+  std::vector<std::uint64_t> received;
+  std::uint64_t expected = 0;
+  const auto resolved = store.resolvePath("hkp-asset://m",
+    [&](std::uint64_t got, std::optional<std::uint64_t> total) {
+      received.push_back(got);
+      expected = total.value_or(0);
+    });
+  server.join();
+
+  REQUIRE(resolved.problem == "");
+  REQUIRE(contentOf(resolved.path) == body);
+  REQUIRE(received.size() > 1);
+  REQUIRE(received.back() == body.size());
+  REQUIRE(expected == body.size());
+}
+
+TEST_CASE("whoever waits for a fetch is told how far it is", "[assets][files]") {
+  CacheFolder folder;
+  const auto files = folder.cache();
+  std::atomic<bool> release{ false };
+  std::atomic<int> fetches{ 0 };
+  auto slow = [&](const std::string&, const std::map<std::string, std::string>&) {
+    ++fetches;
+    return AssetStore::FetchResponse{ 200, "weights", "" };
+  };
+  AssetStore fetcher(slow);
+  AssetStore waiter(slow);
+  for (auto* store : { &fetcher, &waiter }) {
+    store->setFileCache(files);
+    store->replace({ { "m", pinnedUrl("m", "https://example.com/m.bin", "weights") } });
+  }
+
+  // The first holds the fetch open at its first report.
+  std::thread first([&] {
+    fetcher.resolvePath("hkp-asset://m", [&](std::uint64_t, std::optional<std::uint64_t>) {
+      while (!release) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    });
+  });
+  while (!files->fetching(sha256("weights")))
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  std::vector<std::uint64_t> heard;
+  const auto resolved = waiter.resolvePath("hkp-asset://m",
+    [&](std::uint64_t received, std::optional<std::uint64_t>) {
+      heard.push_back(received);
+      release = true;
+    });
+  first.join();
+
+  REQUIRE(resolved.problem == "");
+  REQUIRE(contentOf(resolved.path) == "weights");
+  REQUIRE_FALSE(heard.empty());
+  REQUIRE(heard.front() == 7);
+  REQUIRE(fetches == 1);
+  REQUIRE_FALSE(files->fetching(sha256("weights")).has_value());
+}
+
+// ── Models ───────────────────────────────────────────────────────────────────
+// What services loaded from those files, shared between them.
+
+TEST_CASE("a model is loaded once for everyone and closed when the last lets go", "[assets][models]") {
+  AssetStore store;
+  int loads = 0;
+  int closed = 0;
+  std::function<std::shared_ptr<std::string>()> load = [&] {
+    ++loads;
+    return std::shared_ptr<std::string>(new std::string("weights"), [&](std::string* model) {
+      ++closed;
+      delete model;
+    });
+  };
+
+  auto first = store.models.acquire<std::string>("gpt2:abc", load);
+  auto second = store.models.acquire<std::string>("gpt2:abc", load);
+  REQUIRE(first.get() == second.get());
+  REQUIRE(loads == 1);
+
+  first.reset();
+  REQUIRE(closed == 0);
+  REQUIRE(store.models.keys() == std::vector<std::string>{ "gpt2:abc" });
+  second.reset();
+  REQUIRE(closed == 1);
+  REQUIRE(store.models.keys().empty());
+
+  auto again = store.models.acquire<std::string>("gpt2:abc", load);
+  REQUIRE(loads == 2);
+}
+
+TEST_CASE("a load that fails leaves nothing behind", "[assets][models]") {
+  AssetStore store;
+  std::function<std::shared_ptr<int>()> broken = []() -> std::shared_ptr<int> {
+    throw std::runtime_error("not a model");
+  };
+  REQUIRE_THROWS(store.models.acquire<int>("k", broken));
+
+  std::function<std::shared_ptr<int>()> works = [] { return std::make_shared<int>(7); };
+  REQUIRE(*store.models.acquire<int>("k", works) == 7);
+}
+
+TEST_CASE("two services asking at once wait for one load", "[assets][models]") {
+  AssetStore store;
+  std::atomic<int> loads{ 0 };
+  std::function<std::shared_ptr<int>()> load = [&] {
+    ++loads;
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    return std::make_shared<int>(7);
+  };
+  std::shared_ptr<int> got[2];
+  std::thread a([&] { got[0] = store.models.acquire<int>("k", load); });
+  std::thread b([&] { got[1] = store.models.acquire<int>("k", load); });
+  a.join();
+  b.join();
+
+  REQUIRE(got[0].get() == got[1].get());
+  REQUIRE(loads == 1);
 }
 
 TEST_CASE("a URL source is revalidated with its ETag, or not at all when pinned", "[assets]") {

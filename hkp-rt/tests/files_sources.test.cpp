@@ -33,7 +33,8 @@ const std::map<std::string, std::string> EXEMPT = {
   {"src/app.cpp", "scanForPlugins: the bundle folder the host names"},
   {"src/coordinator_links.cpp", "the coordinator tickets, at the file the operator names"},
   {"src/http/front_door.cpp", "the mount secret, at the file the operator names"},
-  {"src/assets.cpp", "file:// assets, confined to HKP_ASSET_ROOT by fileInside"},
+  {"src/assets.cpp", "file:// assets, confined to HKP_ASSET_ROOT by fileInside, and the asset files "
+                     "this server keeps under their sha256 in the folder its operator names"},
   {"src/services/mp4_to_wav.cpp", "decodeMp4ToPcm opens the path Mp4ToWav resolved through files.h"},
   {"src/services/ffmpeg/detail.cpp", "opens the paths Ffmpeg resolved through files.h"},
 };
