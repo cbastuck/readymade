@@ -42,6 +42,7 @@ an id, a media type and exactly one source.
 | `text` \| `base64` \| `url` | **exactly one.** The content, or where it lives |
 | `sha256` | the version: an integrity check, and what lets a runtime cache a URL without asking again |
 | `size` | for the view, and for refusing oversized content |
+| `encoding` | how the content at the source is packed. `gzip` is unpacked before the content is handed over — see [Content stored packed](#content-stored-packed) |
 | `name` | what a person calls it |
 | `runtimes` | the runtimes that are given it, by id. Absent: every runtime of the document declaring it |
 
@@ -135,6 +136,11 @@ hkp-python and the browser runtime cannot read one at all.
 | hkp-python | pushed; nested pipelines delegate | text, base64, `http(s)://` |
 | hkp-rt | pushed; nested pipelines delegate | text, base64, `http(s)://`, `file://` under `HKP_ASSET_ROOT` |
 
+**Fetched content has a size too.** On hkp-node one asset may resolve to 256 MB
+(`HKP_MAX_ASSET_BYTES`), counted as fetched and again as unpacked. Whatever uses
+the content holds it in memory, so on a server other people write boards for,
+this is how much memory one asset may ask for.
+
 **Inline content has a size.** A descriptor travels in the requests that
 configure a runtime, so what it carries itself — `text`, `base64` — is limited:
 on hkp-node to 8 MB per asset (`HKP_MAX_INLINE_ASSET_BYTES`), and to 32 MB for
@@ -142,6 +148,60 @@ everything one request carries (`HKP_MAX_ASSET_REQUEST_BODY_BYTES`). Since a
 runtime is given all of its board's assets, that second number is how much
 inline content a board may hold. Content past either is named by `url` and
 fetched by the runtime, where the limit is the runtime's own.
+
+---
+
+## Content stored packed
+
+Large content is published compressed, and a service asking for a table should
+not have to know how its publisher ships it. A descriptor says so:
+
+```json
+{ "id": "geo-city", "mediaType": "application/octet-stream",
+  "url": "https://download.example.com/city-2026-11.mmdb.gz", "encoding": "gzip" }
+```
+
+and what a service is handed is the content **unpacked**. This is the one thing
+a descriptor says about preparing content. It is a statement about the source,
+not a step in a pipeline: anything more than unpacking is work for a service.
+
+`sha256` is of the content as stored — packed — because that is what the source
+serves and what a person can check against what they downloaded.
+
+| Runtime | `"encoding": "gzip"` |
+|---|---|
+| Browser | unpacked |
+| hkp-node | unpacked |
+| hkp-python | unpacked |
+| hkp-rt | refused by name |
+
+A runtime that cannot unpack what a descriptor names **refuses the asset**; it
+never passes the content on packed, where a service would read it as something
+it is not. Any encoding other than `gzip` is refused everywhere.
+
+---
+
+## Content kept between runs
+
+A runtime holds what it resolved in memory, which is right for a page and wrong
+for a table of a hundred megabytes: fetched again on every restart, and gone
+when a server restarts with no network — for content whose purpose may be to be
+there when nothing else is reachable.
+
+hkp-node therefore also keeps what an `http(s)://` source returned **on disk**,
+per owner, under `HKP_ASSET_CACHE_DIR` (by default `asset-cache` in the
+instance directory; the empty string turns it off). With a copy held:
+
+- a source is asked only **whether it changed** — with the ETag it sent — and
+  not at all when the descriptor has a `sha256` the copy matches;
+- a source that **cannot be reached** does not take the content away: the copy
+  is used. One that *answers* — with a 404, with something else — is believed,
+  as before;
+- a newer release replaces the copy, and the copies least recently written go
+  once an owner holds more than 2 GB.
+
+None of this is in the board. A board names where content is and how it is
+packed; the content itself, packed or not, never travels with it.
 
 ---
 
@@ -164,6 +224,10 @@ Only the ones that consume content resolve a reference themselves:
   hkp-rt): an answer whose
   `body` is a reference is sent as the asset's content, with the asset's media
   type unless the answer names one.
+- **[`ip-lookup`](../services/ip-lookup.md)** (hkp-node) reads the tables it
+  answers from as assets. It loads one once and holds it, so it is one of the
+  services that listens for an asset being edited rather than resolving on each
+  use.
 - **The [`asset`](../services/asset.md) service** puts an asset into the
   pipeline for any service that has no support of its own. This is how anything
   else uses an asset — by composition.
@@ -242,4 +306,5 @@ browser does.
 | The browser runtime's resolver | `hkp-frontend/src/runtime/browser/assetResolver.ts` |
 | The asset view | `hkp-frontend/src/assets/` |
 | The runtimes' stores | `hkp-node/src/assets.ts`, `hkp-python/src/hkp/assets.py`, `hkp-rt/lib/include/assets.h` + `lib/src/assets.cpp` |
+| What hkp-node keeps on disk | `hkp-node/src/assetCache.ts` |
 | The runtimes' routes | `POST /runtimes/:id/assets` (merge; `null` removes), `GET /runtimes/:id/assets/:assetId` (a check, never content) |

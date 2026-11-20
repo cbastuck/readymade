@@ -21,8 +21,11 @@ Works for me · Take an answer back · Close or reopen
 **Queries** — The dates · The meeting · What the owner runs · Dates to
 withdraw · Every meeting
 
-Every tap in the facade enters the same pipeline, and the queries at its end
-re-read what it just changed. There is no separate refresh path and no cached
+Every tap in the facade enters the same pipeline, at **Who is here**, and the
+queries at its end re-read what it just changed. Every action statement runs on
+every tap, so each acts only on the `intent` it is for — `WHERE $intent =
+'withdraw'`, `'vote'`, `'unvote'` — and does nothing otherwise (see
+[SQL: every statement runs on every request](../services/sql.md#every-statement-runs-on-every-request)). There is no separate refresh path and no cached
 copy of the poll in the board, so what you see after an action is what the
 database now says — including any change somebody else made in the meantime.
 

@@ -118,10 +118,11 @@ describe("a board's assets", () => {
         url: "https://example.com/b.wav",
         sha256: pinned,
         size: 12,
+        encoding: "gzip",
         runtimes: ["node", 7],
         text: 5,
       },
-      { id: "c", mediaType: "audio/wav", url: "https://example.com/c.wav", sha256: "abc", runtimes: "node" },
+      { id: "c", mediaType: "audio/wav", url: "https://example.com/c.wav", sha256: "abc", runtimes: "node", encoding: 7 },
     ]);
 
     expect(problems).toEqual([]);
@@ -134,6 +135,7 @@ describe("a board's assets", () => {
         url: "https://example.com/b.wav",
         sha256: pinned.toLowerCase(),
         size: 12,
+        encoding: "gzip",
         runtimes: ["node"],
       },
       { id: "c", mediaType: "audio/wav", url: "https://example.com/c.wav" },

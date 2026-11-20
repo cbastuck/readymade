@@ -213,8 +213,31 @@
     border-color 0.12s ease,
     box-shadow 0.12s ease;
 }
+.hkp-assist input.hkp-assist-number {
+  color-scheme: light;
+  font: inherit;
+  font-size: 12px;
+  min-width: 0;
+  border: 1px solid var(--border-mid, #d1d5db);
+  border-radius: 7px;
+  background: var(--bg-card, #fff);
+  color: var(--text, #1a1a1a);
+  -webkit-text-fill-color: var(--text, #1a1a1a);
+  padding: 4px 8px;
+}
+.hkp-assist input.hkp-assist-number::placeholder {
+  color: var(--text-mid, #4b5563);
+  -webkit-text-fill-color: var(--text-mid, #4b5563);
+  opacity: 0.7;
+}
+.hkp-assist input.hkp-assist-number:disabled,
 .hkp-assist select:disabled {
   opacity: 0.55;
+}
+.hkp-assist input.hkp-assist-number:focus-visible {
+  outline: none;
+  border-color: var(--hkp-accent);
+  box-shadow: 0 0 0 2px var(--hkp-accent-dim);
 }
 .hkp-assist select:focus-visible {
   outline: none;
@@ -365,6 +388,15 @@
 .hkp-assist-message .hkp-assist-row {
   justify-content: flex-start;
   margin-top: 6px;
+}
+.hkp-assist-message .hkp-assist-continue {
+  align-items: center;
+}
+.hkp-assist-continue > button {
+  flex: none;
+}
+.hkp-assist-continue > .hkp-assist-hint {
+  margin: 0;
 }
 
 /* ── Composer ── */

@@ -268,6 +268,13 @@ std::optional<AssetDescriptor> readAssetDescriptor(const nlohmann::json& value,
   {
     descriptor["size"] = value["size"];
   }
+  // How the content is stored packed. Kept so that resolving can refuse it by
+  // name: dropped here, packed content would be handed on as if it were not.
+  if (value.contains("encoding") && value["encoding"].is_string() &&
+      !value["encoding"].get<std::string>().empty())
+  {
+    descriptor["encoding"] = value["encoding"];
+  }
   // Which runtimes it is for: read by whoever provisions them, kept so that a
   // descriptor reads the same on every runtime.
   if (value.contains("runtimes") && value["runtimes"].is_array())
@@ -455,6 +462,15 @@ AssetResolution AssetStore::resolve(const std::string& reference)
     {
       cached = hit->second;
     }
+  }
+
+  // This runtime unpacks nothing yet, so content stored packed is refused
+  // before it is fetched rather than passed on as bytes no service can read.
+  if (descriptor.contains("encoding"))
+  {
+    return { std::nullopt,
+             "asset \"" + *id + "\": content encoded as " + descriptor["encoding"].dump() +
+               " cannot be unpacked by this runtime" };
   }
 
   const auto version = descriptor.dump();

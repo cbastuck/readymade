@@ -86,8 +86,9 @@ By default the result travels: a service asked a question hands on its answer,
 and the next service reads rows.
 
 `emit: "input"` passes the **input through untouched** instead. The statement
-still runs and still reports what it did — it simply stays out of the way of the
-flow. That is what lets several statements act on **one request** in turn:
+still runs and still reports what it did, and the next service gets the same
+request it did. That is what lets several statements act on **one request** in
+turn:
 
 ```json
 [
@@ -105,6 +106,22 @@ call, and without a refresh that could race the write.
 Without it the second statement would be handed the first one's
 `{ changes, lastInsertRowid }`, find none of the names it asked for, and bind
 them all to `NULL`.
+
+### Every statement runs on every request
+
+The `WHERE $intent = …` in each statement is what makes this work. A request to
+book still runs `give-back` first, and a request to cancel still runs `take` —
+each statement acts only on the request it is for and does nothing on the
+others. Aiming a facade button at a later service starts the flow lower down,
+and every service below it still runs.
+
+So a list like this is a set of statements that each check the request, ending
+in the read. A statement that checks nothing — `DELETE FROM todos WHERE id =
+$id` beside an insert that also names `$id` — acts on every request that
+reaches it, and removes the row the insert above it just wrote. When the
+actions have little in common, a [Switch](./switch.md) routing on `$intent`
+gives each one a case of its own in a browser runtime, with the read at the end
+of each case.
 
 **Reporting is not passing on.** The statement's own result is notified either
 way, so a service's panel shows what it did whatever the board does with it.

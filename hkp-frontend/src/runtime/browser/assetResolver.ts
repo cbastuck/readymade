@@ -9,6 +9,9 @@
  * Inline sources decode here; an `http(s)://` source is fetched from this
  * page, which the source's CORS policy has to allow. Other sources — `file://`
  * among them — are not readable by a browser runtime and are refused by name.
+ *
+ * Content a descriptor says is stored gzipped is unpacked here, as on a
+ * runtime server; any other encoding is refused by name.
  */
 
 import { AssetDescriptor, parseAssetRef } from "../board/assets";
@@ -93,6 +96,51 @@ async function load(descriptor: AssetDescriptor): Promise<Uint8Array | string> {
 }
 
 /**
+ * The content as a service is handed it: unpacked where the descriptor says it
+ * is stored packed, or the reason it cannot be.
+ */
+async function unpack(
+  descriptor: AssetDescriptor,
+  bytes: Uint8Array,
+): Promise<Uint8Array | string> {
+  if (!descriptor.encoding) {
+    return bytes;
+  }
+  if (descriptor.encoding !== "gzip" || typeof DecompressionStream === "undefined") {
+    return `content encoded as ${JSON.stringify(descriptor.encoding)} cannot be unpacked by this runtime`;
+  }
+  try {
+    const reader = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(bytes);
+        controller.close();
+      },
+    })
+      .pipeThrough(new DecompressionStream("gzip") as never)
+      .getReader() as ReadableStreamDefaultReader<Uint8Array>;
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) {
+        break;
+      }
+      chunks.push(value);
+      total += value.length;
+    }
+    const unpacked = new Uint8Array(total);
+    let at = 0;
+    for (const chunk of chunks) {
+      unpacked.set(chunk, at);
+      at += chunk.length;
+    }
+    return unpacked;
+  } catch {
+    return "its content is not gzip";
+  }
+}
+
+/**
  * An asset's content for one use, or a sentence saying why there is none: not a
  * reference, an unknown id, a refused source, content that does not decode, a
  * failed fetch, a hash that does not match.
@@ -119,5 +167,9 @@ export async function resolveAsset(
       return fail(`asset "${id}": content does not match its sha256 (got ${actual})`);
     }
   }
-  return { asset: { id, mediaType: descriptor.mediaType, bytes: loaded }, problem: "" };
+  const unpacked = await unpack(descriptor, loaded);
+  if (typeof unpacked === "string") {
+    return fail(`asset "${id}": ${unpacked}`);
+  }
+  return { asset: { id, mediaType: descriptor.mediaType, bytes: unpacked }, problem: "" };
 }

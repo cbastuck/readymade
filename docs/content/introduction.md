@@ -40,6 +40,14 @@ when a runtime finishes, its result becomes the input of the next runtime on the
 board — including when that runtime is on another machine, which is handled for
 you and looks like nothing at all from inside the board.
 
+The flow starts wherever data comes in. A facade button that sends something to
+a service enters the pipeline *at* that service: it runs, then every service
+after it, then every runtime after that one. So services listed one after
+another are one flow, and an action meant to run on its own gets a branch of
+its own — a case of a [Switch](./services/switch.md) routing on what was asked,
+or a [sub-service](./services/sub-service.md) that stops propagation — or ends
+the list.
+
 Every board has exactly one owner, its **coordinator**. Usually that is the app
 you are using; a board can also be *deployed* — handed to a coordinator running
 elsewhere, which keeps it going with nobody watching, and which your app then

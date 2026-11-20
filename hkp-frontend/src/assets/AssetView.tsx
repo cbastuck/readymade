@@ -875,6 +875,26 @@ export default function AssetView() {
                     aria-label="sha256"
                   />
                 </label>
+                <label>
+                  <div style={label}>Stored as</div>
+                  <select
+                    style={field}
+                    value={draft.descriptor.encoding ?? ""}
+                    onChange={(event) =>
+                      update({ encoding: event.target.value || undefined })
+                    }
+                    aria-label="Encoding"
+                  >
+                    <option value="">as it is</option>
+                    <option value="gzip">gzip — unpacked before use</option>
+                    {draft.descriptor.encoding &&
+                      draft.descriptor.encoding !== "gzip" && (
+                        <option value={draft.descriptor.encoding}>
+                          {draft.descriptor.encoding}
+                        </option>
+                      )}
+                  </select>
+                </label>
                 <p style={muted}>
                   Fetched as it is, by each runtime using it: an asset sends no
                   headers and no credentials. Content that needs them is fetched

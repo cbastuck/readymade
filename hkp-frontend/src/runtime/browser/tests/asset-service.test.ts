@@ -71,3 +71,31 @@ describe("the asset service in the browser", () => {
     expect(new BrowserRegistry().allServices().some((svc) => svc.serviceId === "asset")).toBe(true);
   });
 });
+
+describe("content stored packed, in the browser", () => {
+  it("is handed over unpacked when the descriptor says it is gzip, and refused otherwise", async () => {
+    const { gzipSync } = await import("node:zlib");
+    const { resolveAsset } = await import(
+      "hkp-frontend/src/runtime/browser/assetResolver"
+    );
+    const assets: AssetDescriptor[] = [
+      {
+        id: "table",
+        mediaType: "text/plain",
+        base64: gzipSync(Buffer.from("the content")).toString("base64"),
+        encoding: "gzip",
+      },
+      { id: "zstd", mediaType: "text/plain", text: "x", encoding: "zstd" },
+      { id: "plain", mediaType: "text/plain", text: "not packed", encoding: "gzip" },
+    ];
+
+    const table = await resolveAsset(assets, "hkp-asset://table");
+    expect(new TextDecoder().decode(table.asset?.bytes)).toBe("the content");
+    expect((await resolveAsset(assets, "hkp-asset://zstd")).problem).toMatch(
+      /encoded as "zstd" cannot be unpacked by this runtime/,
+    );
+    expect((await resolveAsset(assets, "hkp-asset://plain")).problem).toMatch(
+      /is not gzip/,
+    );
+  });
+});

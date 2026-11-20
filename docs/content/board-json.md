@@ -264,7 +264,7 @@ actually changed.
 | The types | `hkp-frontend/src/types.ts` (`BoardDescriptor`, `RuntimeDescriptor`, `ServiceDescriptor`) |
 | What counts as a board | `hkp-frontend/src/types.ts` (`isBoardDescriptor`) |
 | Reading and writing one | `hkp-frontend/src/core/boardPersistence.ts` |
-| Facade shape | `hkp-frontend/src/facade/types.ts` |
+| Facade shape | `hkp-frontend/src/facade/types.ts`; its JSON Schema, `facade.schema.json` beside it, is generated from it (`npm run facade-schema` in `hkp-frontend`) and checked against it by a test |
 | Unit and composition shape | `hkp-frontend/src/runtime/board/units.ts` |
 | Blocks and their uses | `hkp-frontend/src/runtime/board/blocks.ts`, `hkp-frontend/src/core/linkBlocks.ts` |
 | Assets and references to them | `hkp-frontend/src/runtime/board/assets.ts` |

@@ -60,4 +60,77 @@ describe("assistant board validation", () => {
     } as any;
     expect(() => validateAssistBoard(board)).toThrow("identifiers");
   });
+  it("holds a facade to its schema, saying where and what", () => {
+    const table = (columns: unknown[]) => ({
+      ...valid(),
+      facade: {
+        layout: "single",
+        panels: [
+          {
+            id: "todos",
+            layout: { type: "data-table", source: { serviceUuid: "timer" }, columns },
+          },
+        ],
+      },
+    });
+    expect(() => validateAssistBoard(table([{ key: "title" }]))).toThrow(
+      "The facade does not match its schema (hkp-frontend/src/facade/types.ts):\n- facade.panels[0].layout (data-table).columns[0]: must be string, not object.",
+    );
+    expect(() => validateAssistBoard(table(["title"]))).not.toThrow();
+  });
+  it("does not hold what was already there against a proposal", () => {
+    const facade = (extra: object) => ({
+      layout: "single",
+      panels: [{ id: "main", layout: { type: "qr-code", source: { serviceUuid: "timer" }, ...extra } }],
+    });
+    const base = { ...valid(), facade: facade({ legacy: true }) } as any;
+    const renamed = { ...base, boardName: "Renamed" };
+    expect(validateAssistBoard(renamed, base)).toBe(renamed);
+    expect(() =>
+      validateAssistBoard({ ...base, facade: facade({ legacy: true, size: "big" }) }, base),
+    ).toThrow(/\.size: is not a property here/);
+  });
+  it("still knows what was already there once a panel is added ahead of it", () => {
+    const qr = (id: string, extra: object = {}) => ({
+      id,
+      layout: { type: "qr-code", source: { serviceUuid: "timer" }, ...extra },
+    });
+    const base = {
+      ...valid(),
+      facade: { layout: "single", panels: [qr("old", { legacy: true })] },
+    } as any;
+    const ahead = {
+      ...base,
+      facade: { layout: "single", panels: [qr("new"), qr("old", { legacy: true })] },
+    };
+    expect(validateAssistBoard(ahead, base)).toBe(ahead);
+    // One more of the same kind is added, even though it reads the same.
+    expect(() =>
+      validateAssistBoard(
+        {
+          ...base,
+          facade: {
+            layout: "single",
+            panels: [qr("new", { legacy: true }), qr("old", { legacy: true })],
+          },
+        },
+        base,
+      ),
+    ).toThrow(/\.legacy: is not a property here/);
+  });
+  it("finds what a proposal adds behind more problems than are shown", () => {
+    const qr = (id: string, extra: object) => ({
+      id,
+      layout: { type: "qr-code", source: { serviceUuid: "timer" }, ...extra },
+    });
+    const old = Array.from({ length: 10 }, (_, i) => qr(`old${i}`, { legacy: true }));
+    const base = { ...valid(), facade: { layout: "single", panels: old } } as any;
+    expect(() =>
+      validateAssistBoard(
+        { ...base, facade: { layout: "single", panels: [...old, qr("new", { size: "big" })] } },
+        base,
+      ),
+    ).toThrow(/\.size: is not a property here/);
+  });
 });
+

@@ -47,6 +47,22 @@ it("shows only the chosen provider's settings and saves the choice at once", () 
   });
 });
 
+it("configures Mistral with a key alone and can remove it", () => {
+  render(<AssistSettings />);
+  fireEvent.click(screen.getByRole("button", { name: /Mistral/ }));
+  expect(readAssistSettings().provider).toBe("mistral");
+  expect(screen.queryByLabelText("API base URL")).toBeNull();
+  const key = type("API key", " mistral-key ");
+  expect((key as HTMLInputElement).type).toBe("password");
+  fireEvent.blur(key);
+  expect(readAssistSettings()).toMatchObject({
+    mistralToken: "mistral-key",
+    model: "",
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Remove Mistral key" }));
+  expect(readAssistSettings().mistralToken).toBe("");
+});
+
 it("configures an OpenCode server and shows its current CORS origin", () => {
   render(<AssistSettings />);
   fireEvent.click(screen.getByRole("button", { name: /OpenCode server/ }));
@@ -115,6 +131,25 @@ it("keeps what was typed when the dialog closes without leaving the field", () =
   type("MCP server URL", " http://127.0.0.1:8787/mcp ");
   view.unmount();
   expect(readAssistSettings().mcpKnowledgeUrl).toBe("http://127.0.0.1:8787/mcp");
+});
+
+it("turns the knowledge server off, keeping its URL for when it is turned back on", () => {
+  saveAssistSettings({ mcpKnowledgeUrl: "http://127.0.0.1:8787/mcp" });
+  render(<AssistSettings />);
+  const toggle = screen.getByRole("switch", { name: "Use a knowledge server" });
+  expect(toggle.getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(toggle);
+  expect(readAssistSettings()).toMatchObject({
+    mcpKnowledgeEnabled: false,
+    mcpKnowledgeUrl: "http://127.0.0.1:8787/mcp",
+  });
+  expect(screen.queryByLabelText("MCP server URL")).toBeNull();
+  expect(screen.getByText(/Nothing is sent for knowledge/)).toBeTruthy();
+  fireEvent.click(toggle);
+  expect(readAssistSettings().mcpKnowledgeEnabled).toBe(true);
+  expect(
+    (screen.getByLabelText("MCP server URL") as HTMLInputElement).value,
+  ).toBe("http://127.0.0.1:8787/mcp");
 });
 
 it("removes a saved token from its section", () => {

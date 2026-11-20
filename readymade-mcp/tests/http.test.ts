@@ -95,6 +95,10 @@ describe("HTTP server", () => {
       rpc(`${baseUrl}/mcp`, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "validate_board", arguments: { board } } });
     const small = await call({ runtimes: [], services: {} });
     expect(small.error).toBeUndefined();
+    // A board a model sent as its JSON text is the same board.
+    const text = await call(JSON.stringify({ runtimes: [], services: {} }));
+    expect(text.error).toBeUndefined();
+    expect(JSON.stringify(text)).toContain('\\"valid\\": true');
     const large = await call({ runtimes: [], services: { ui: Array.from({ length: 25_000 }, () => 0) } });
     expect(JSON.stringify(large)).toMatch(/maximum of 20000 elements/);
   });
