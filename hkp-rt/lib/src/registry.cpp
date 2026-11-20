@@ -17,6 +17,8 @@
 #include "./services/monitor.h"
 #include "./services/timer.h"
 #include "./services/http_client.h"
+#include "./services/matrix_listener.h"
+#include "./services/matrix_sender.h"
 #include "./services/http_server/http_server.h"
 #include "./services/http_server/http_server_subservices.h"
 #include "./services/static.h"
@@ -61,6 +63,8 @@ using ServiceTypes = Registry::TypeList<
   ,Monitor
   ,Timer
   ,HttpClient
+  ,MatrixListener
+  ,MatrixSender
   ,HttpServer
   ,HttpServerSubservices
   ,Static

@@ -54,6 +54,7 @@ add_executable(hkp-rt-service-tests
   service_timer.test.cpp
   service_hold.test.cpp
   service_http_client_mount.test.cpp
+  service_matrix.test.cpp
   service_sub_service.test.cpp
   service_scopes.test.cpp
   service_tracks.test.cpp

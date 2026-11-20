@@ -5,6 +5,8 @@ import TimerUI from "../browser/services/TimerUI";
 import ImapEmailUI from "./ui/ImapEmailUI";
 import TelegramListenerUI from "./ui/TelegramListenerUI";
 import TelegramSenderUI from "./ui/TelegramSenderUI";
+import MatrixListenerUI from "./ui/MatrixListenerUI";
+import MatrixSenderUI from "./ui/MatrixSenderUI";
 import SmtpEmailUI from "./ui/SmtpEmailUI";
 import CoreOutputUI from "./ui/CoreOutputUI";
 import CoreInputUI from "./ui/CoreInputUI";
@@ -82,6 +84,10 @@ function findServiceUIByKey(
       return TelegramListenerUI;
     case "telegram-sender":
       return TelegramSenderUI;
+    case "matrix-listener":
+      return MatrixListenerUI;
+    case "matrix-sender":
+      return MatrixSenderUI;
     case "smtp-email":
       return SmtpEmailUI;
     case "rss":

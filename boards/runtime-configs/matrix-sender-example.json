@@ -1,0 +1,33 @@
+{
+  "id": "matrix-sender-example",
+  "name": "Matrix Sender",
+  "services": [
+    {
+      "serviceId": "injector",
+      "uuid": "injector-1",
+      "name": "Injector",
+      "state": {
+        "plainText": true
+      }
+    },
+    {
+      "serviceId": "matrix-sender",
+      "uuid": "matrix-sender-1",
+      "name": "Matrix Sender",
+      "state": {
+        "homeserver": "https://matrix.org",
+        "accessToken": "{{secret.matrix.accessToken}}",
+        "roomId": "#readymade-test:matrix.org",
+        "msgtype": "m.notice"
+      }
+    },
+    {
+      "serviceId": "monitor",
+      "uuid": "monitor-1",
+      "name": "Monitor",
+      "state": {
+        "logToConsole": true
+      }
+    }
+  ]
+}
