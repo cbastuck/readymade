@@ -11,6 +11,7 @@ import WebsocketClientDescriptor from "../services/WebsocketClient";
 import OutputDescriptor from "../services/Output";
 import FetcherDesriptor from "../services/Fetcher";
 import HttpClientDescriptor from "../services/HttpClient";
+import MqttDescriptor from "../services/Mqtt";
 import SqlDescriptor from "../services/Sql";
 import DownloadDescriptor from "../services/Download";
 import FileSourceDescriptor from "../services/FileSource";
@@ -127,6 +128,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   InjectorDescriptor,
   FetcherDesriptor,
   HttpClientDescriptor,
+  MqttDescriptor,
   SqlDescriptor,
   DownloadDescriptor,
   FileSourceDescriptor,

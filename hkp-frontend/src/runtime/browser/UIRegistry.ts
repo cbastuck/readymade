@@ -22,6 +22,7 @@ import OutputUI from "./services/OutputUI";
 import FilterUI from "./services/FilterUI";
 import FetcherUI from "./services/FetcherUI";
 import HttpClientUI from "./services/HttpClientUI";
+import MqttUI from "./services/MqttUI";
 import OllamaPromptUI from "./services/OllamaPromptUI";
 import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
 import ConfiguratorUI from "./services/ConfiguratorUI";
@@ -77,6 +78,8 @@ export function findServiceUI(
       return FetcherUI;
     case "http-client":
       return HttpClientUI;
+    case "mqtt":
+      return MqttUI;
     case "hookup.to/service/injector":
       return InjectorUI;
     case "hookup.to/service/map":

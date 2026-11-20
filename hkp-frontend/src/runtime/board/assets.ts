@@ -53,6 +53,13 @@ export type AssetDescriptor = {
   /** For the view, and for refusing oversized inline content. */
   size?: number;
   /**
+   * How the content at the source is packed. `gzip` is unpacked by the runtime
+   * using the asset before the content is handed over; a runtime that cannot
+   * unpack what is named refuses the asset, never passes it on packed.
+   * `sha256` is of the content as stored — packed.
+   */
+  encoding?: string;
+  /**
    * The runtimes that are given this asset, by the id they have in the
    * document declaring it. Absent: every runtime of that document.
    */
@@ -335,6 +342,9 @@ export function checkAssetDescriptor(value: unknown): AssetDescriptor | string {
   }
   if (typeof record.size === "number" && Number.isFinite(record.size)) {
     descriptor.size = record.size;
+  }
+  if (typeof record.encoding === "string" && record.encoding) {
+    descriptor.encoding = record.encoding;
   }
   if (Array.isArray(record.runtimes)) {
     descriptor.runtimes = record.runtimes.filter((id) => typeof id === "string");

@@ -101,6 +101,18 @@ describe("with a host that keeps secrets", () => {
     expect(stored()).not.toHaveProperty("openCodeGoRelayKey");
   });
 
+  it("keeps a Mistral key in the vault, allowed only to Mistral", async () => {
+    const vault = fakeVault();
+    setAssistTokenStore(vault.store);
+    await saveAssistSettings({ mistralToken: "mistral-key", model: "" });
+    const alias = ASSIST_TOKEN_ALIASES.mistralToken;
+    expect(alias).toBe("readymade.assist.mistral");
+    expect(vault.values.get(alias)).toBe("mistral-key");
+    expect(vault.audiences.get(alias)).toEqual(["api.mistral.ai"]);
+    expect(stored()).not.toHaveProperty("mistralToken");
+    expect(readAssistSettings().mistralToken).toBe("mistral-key");
+  });
+
   it("removes a token from the vault when it is cleared", async () => {
     const vault = fakeVault();
     setAssistTokenStore(vault.store);

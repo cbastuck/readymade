@@ -238,8 +238,14 @@ TEST_CASE("the store resolves inline sources and says why when it cannot", "[ass
                       { "sha256", sha256("original") } } },
     { "ftp", json{ { "id", "ftp" }, { "mediaType", "text/plain" }, { "url", "ftp://example.com/a" } } },
     { "local", json{ { "id", "local" }, { "mediaType", "text/plain" }, { "url", "file:///etc/passwd" } } },
+    { "packed", *readAssetDescriptor(json{ { "id", "packed" }, { "mediaType", "text/plain" },
+                                           { "text", "x" }, { "encoding", "gzip" } }) },
   });
   store.setFileRoot("");
+
+  // Content stored packed is refused by name here, never handed on packed.
+  REQUIRE(store.resolve("hkp-asset://packed").problem ==
+          "asset \"packed\": content encoded as \"gzip\" cannot be unpacked by this runtime");
 
   auto page = store.resolve("hkp-asset://page");
   REQUIRE(page.asset);

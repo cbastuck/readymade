@@ -21,6 +21,9 @@ import HttpEndpointUI from "./ui/HttpEndpointUI";
 import RssUI from "./ui/RssUI";
 import SubServiceUI from "./ui/SubServiceUI";
 import AssetUI from "./ui/AssetUI";
+import IpLookupUI from "./ui/IpLookupUI";
+import MqttUI from "./ui/MqttUI";
+import MqttBrokerUI from "./ui/MqttBrokerUI";
 
 export type ServiceLookup = {
   serviceId?: ServiceClass["serviceId"];
@@ -88,6 +91,12 @@ function findServiceUIByKey(
       return RssUI;
     case "asset":
       return AssetUI;
+    case "ip-lookup":
+      return IpLookupUI;
+    case "mqtt":
+      return MqttUI;
+    case "mqtt-broker":
+      return MqttBrokerUI;
   }
   return null;
 }

@@ -8,11 +8,13 @@ import {
   SettingsNote,
   SettingsSection,
   SettingsStack,
+  SettingsSwitch,
 } from "../ui-components/settings/kit";
 import {
   ASSIST_SETTINGS_SECTION,
   ASSIST_TOKEN_ALIASES,
   AssistSettings as Settings,
+  DEFAULT_MCP_KNOWLEDGE_URL,
   OPENCODE_GO_URL,
   assistTokensInVault,
   readAssistSettings,
@@ -24,6 +26,7 @@ import { unencryptedRemote } from "./addresses";
 
 type TextField =
   | "anthropicToken"
+  | "mistralToken"
   | "openAICompatibleToken"
   | "openAICompatibleUrl"
   | "openCodeUrl"
@@ -64,6 +67,7 @@ function parse(field: TextField, draft: string): Partial<Settings> {
 /** Changing where requests go or who makes them invalidates the chosen model. */
 const resetsModel = new Set<TextField>([
   "anthropicToken",
+  "mistralToken",
   "openAICompatibleToken",
   "openAICompatibleUrl",
   "openCodeUrl",
@@ -90,6 +94,7 @@ export default function AssistSettings() {
       : window.location.origin;
   const draftFrom = (from: Settings): Record<TextField, string> => ({
     anthropicToken: from.anthropicToken,
+    mistralToken: from.mistralToken,
     openAICompatibleToken: from.openAICompatibleToken,
     openAICompatibleUrl: from.openAICompatibleUrl,
     openCodeUrl: from.openCodeUrl,
@@ -201,6 +206,7 @@ export default function AssistSettings() {
   const removeToken = (
     field:
       | "anthropicToken"
+      | "mistralToken"
       | "openAICompatibleToken"
       | "openCodePassword"
       | "openCodeGoToken",
@@ -219,6 +225,11 @@ export default function AssistSettings() {
             <SettingsChoices
               options={[
                 { id: "anthropic", label: "Anthropic", sub: "Hosted API" },
+                {
+                  id: "mistral",
+                  label: "Mistral",
+                  sub: "Hosted API, based in the EU",
+                },
                 {
                   id: "openai-compatible",
                   label: "OpenAI compatible",
@@ -263,6 +274,40 @@ export default function AssistSettings() {
                 />
               </SettingsField>
               {error("anthropicToken")}
+            </SettingsSection>
+          ) : settings.provider === "mistral" ? (
+            <SettingsSection
+              label="Mistral"
+              hint="Models are queried from Mistral with your API key, each with its own context size."
+              action={
+                settings.mistralToken && (
+                  <RemoveButton
+                    label="Remove Mistral key"
+                    onClick={() => removeToken("mistralToken")}
+                  />
+                )
+              }
+            >
+              <SettingsField label="API key">
+                <SettingsInput
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  {...text("mistralToken")}
+                />
+              </SettingsField>
+              {error("mistralToken")}
+              <SettingsNote>
+                Get a key at{" "}
+                <a
+                  href="https://console.mistral.ai/api-keys"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  console.mistral.ai
+                </a>
+                . Requests go directly to <code>api.mistral.ai</code>.
+              </SettingsNote>
             </SettingsSection>
           ) : settings.provider === "opencode-go" ? (
             <SettingsSection
@@ -471,22 +516,46 @@ export default function AssistSettings() {
 
       <SettingsSection
         label="Knowledge server"
-        hint="Optional MCP endpoint for richer, version-labelled Readymade knowledge, used with either provider. Leave it empty to use only the documentation bundled with this app; Board Assist also falls back to that whenever the server is unavailable."
+        hint="MCP endpoint for richer, version-labelled Readymade knowledge, used with any provider. Leave the URL empty to use the Readymade knowledge server; Board Assist falls back to the documentation bundled with this app whenever the server is unavailable."
       >
-        <SettingsField label="MCP server URL">
-          <SettingsInput
-            type="url"
-            spellCheck={false}
-            placeholder="http://127.0.0.1:8787/mcp"
-            {...text("mcpKnowledgeUrl")}
-          />
-        </SettingsField>
-        {error("mcpKnowledgeUrl")}
-        {unencryptedRemote(drafts.mcpKnowledgeUrl) && (
-          <SettingsNote tone="warn">
-            This is plain HTTP to another machine. Search terms and boards sent
-            for validation cross the network unencrypted.
-          </SettingsNote>
+        <SettingsCard>
+          <div
+            className="hkp-set-inline"
+            style={{ justifyContent: "space-between", gap: 16 }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div className="hkp-set-row-title">Use a knowledge server</div>
+              <p className="hkp-set-hint">
+                {settings.mcpKnowledgeEnabled
+                  ? "Search terms, and boards sent for validation, go to the server below."
+                  : "Board Assist reads only the documentation bundled with this app. Nothing is sent for knowledge."}
+              </p>
+            </div>
+            <SettingsSwitch
+              label="Use a knowledge server"
+              checked={settings.mcpKnowledgeEnabled}
+              onChange={(checked) => persist({ mcpKnowledgeEnabled: checked })}
+            />
+          </div>
+        </SettingsCard>
+        {settings.mcpKnowledgeEnabled && (
+          <>
+            <SettingsField label="MCP server URL">
+              <SettingsInput
+                type="url"
+                spellCheck={false}
+                placeholder={DEFAULT_MCP_KNOWLEDGE_URL}
+                {...text("mcpKnowledgeUrl")}
+              />
+            </SettingsField>
+            {error("mcpKnowledgeUrl")}
+            {unencryptedRemote(drafts.mcpKnowledgeUrl) && (
+              <SettingsNote tone="warn">
+                This is plain HTTP to another machine. Search terms and boards
+                sent for validation cross the network unencrypted.
+              </SettingsNote>
+            )}
+          </>
         )}
       </SettingsSection>
 
@@ -495,6 +564,7 @@ export default function AssistSettings() {
           <>
             Tokens are kept with this device's secrets, as{" "}
             <code>{ASSIST_TOKEN_ALIASES.anthropicToken}</code>,{" "}
+            <code>{ASSIST_TOKEN_ALIASES.mistralToken}</code>,{" "}
             <code>{ASSIST_TOKEN_ALIASES.openAICompatibleToken}</code>,{" "}
             <code>{ASSIST_TOKEN_ALIASES.openCodePassword}</code>,{" "}
             <code>{ASSIST_TOKEN_ALIASES.openCodeGoToken}</code> and{" "}

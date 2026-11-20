@@ -1,0 +1,68 @@
+{
+  "boardName": "IP Lookup Demo",
+  "description": "Send an IP address and read back where it is and whose it is — answered from tables the runtime holds, so the address is never told to anybody else.\n\nThe tables are not part of this board. Its assets say where they are published and that they come gzipped; the Node runtime fetches them the first time the board runs (about 65 MB, which can take a minute), unpacks them and keeps them, so later runs need no network. **Update** on the IP Lookup panel asks for newer ones. The addresses carry the month of the release: point an asset at a later month in the asset view to move on.\n\nIP geolocation by [DB-IP](https://db-ip.com), under CC BY 4.0.\n\nNeeds a Node runtime (`node`).",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "remote": "node",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "assets": [
+    {
+      "id": "geo-city",
+      "name": "DB-IP City Lite",
+      "mediaType": "application/octet-stream",
+      "url": "https://download.db-ip.com/free/dbip-city-lite-2026-11.mmdb.gz",
+      "encoding": "gzip",
+      "runtimes": ["node"]
+    },
+    {
+      "id": "geo-asn",
+      "name": "DB-IP ASN Lite",
+      "mediaType": "application/octet-stream",
+      "url": "https://download.db-ip.com/free/dbip-asn-lite-2026-11.mmdb.gz",
+      "encoding": "gzip",
+      "runtimes": ["node"]
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "address",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Address",
+        "state": { "recentInjection": "8.8.8.8" }
+      }
+    ],
+    "node": [
+      {
+        "uuid": "lookup",
+        "serviceId": "ip-lookup",
+        "serviceName": "IP Lookup",
+        "state": {
+          "databases": ["hkp-asset://geo-city", "hkp-asset://geo-asn"],
+          "table": [
+            {
+              "network": "192.168.0.0/16",
+              "organisation": "The home network"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "answer",
+        "serviceId": "monitor",
+        "serviceName": "Answer"
+      }
+    ]
+  }
+}

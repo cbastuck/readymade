@@ -20,6 +20,7 @@ import {
   openAIBaseURL,
   runOpenAICompatibleTurn,
 } from "./openAICompatible";
+import { OutputLimitError } from "./outputLimit";
 afterEach(() => vi.unstubAllGlobals());
 const board = {
   runtimes: [{ id: "ui", name: "Browser", type: "browser" }],
@@ -164,6 +165,99 @@ it("reports server and invalid-model-output errors", async () => {
     ),
   );
   await expect(runOpenAICompatibleTurn(options())).rejects.toThrow("runtimes");
+});
+it("reports errors in the shapes Mistral and FastAPI servers answer with", async () => {
+  const failing = (status: number, body: unknown) =>
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify(body), { status })),
+    );
+  failing(401, { detail: "Invalid API Key" });
+  await expect(listOpenAIModels(options().baseURL, "key")).rejects.toThrow(
+    "Invalid API Key",
+  );
+  failing(422, {
+    detail: [
+      {
+        type: "extra_forbidden",
+        loc: ["body", "stream_options"],
+        msg: "Extra inputs are not permitted",
+      },
+    ],
+  });
+  await expect(runOpenAICompatibleTurn(options())).rejects.toThrow(
+    "body.stream_options: Extra inputs are not permitted",
+  );
+  failing(429, { object: "error", message: "Rate limit exceeded", type: "rate" });
+  await expect(runOpenAICompatibleTurn(options())).rejects.toThrow(
+    "Rate limit exceeded",
+  );
+  failing(500, {});
+  await expect(runOpenAICompatibleTurn(options())).rejects.toThrow(
+    "Server returned HTTP 500.",
+  );
+});
+it("reads an answer given in parts, leaving a reasoning model's thinking out", async () => {
+  const content = JSON.stringify({ explanation: "Done.", board });
+  const half = Math.floor(content.length / 2);
+  const delta = (value: unknown) =>
+    `data: ${JSON.stringify({ choices: [{ delta: { content: value } }] })}\n\n`;
+  const sse =
+    delta([{ type: "thinking", thinking: [{ type: "text", text: "Hmm" }] }]) +
+    delta([{ type: "text", text: content.slice(0, half) }]) +
+    delta(content.slice(half)) +
+    `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(sse, { headers: { "Content-Type": "text/event-stream" } }),
+    ),
+  );
+  const streamed = options();
+  expect((await runOpenAICompatibleTurn(streamed)).text).toBe("Done.");
+  expect(streamed.onStatus).toHaveBeenCalledWith(
+    expect.stringMatching(/^Model is thinking/),
+  );
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: [
+                    { type: "thinking", thinking: [{ type: "text", text: "Hmm" }] },
+                    { type: "text", text: content },
+                  ],
+                },
+                finish_reason: "stop",
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    ),
+  );
+  expect((await runOpenAICompatibleTurn(options())).text).toBe("Done.");
+});
+it("leaves the usage request out for a provider that reports usage unasked", async () => {
+  const content = JSON.stringify({ explanation: "Done.", board });
+  const fetch = vi.fn(async () =>
+    streamResponse([content], true, { prompt_tokens: 10, completion_tokens: 5 }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const result = await runOpenAICompatibleTurn({
+    ...options(),
+    streamUsage: false,
+  });
+  const body = JSON.parse(
+    (fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string,
+  );
+  expect(body).not.toHaveProperty("stream_options");
+  expect(result.usage).toMatchObject({ inputTokens: 10, outputTokens: 5 });
 });
 function streamResponse(
   parts: string[],
@@ -380,4 +474,65 @@ it("keeps server-default thinking unspecified and respects Stop", async () => {
     runOpenAICompatibleTurn({ ...options(), signal: controller.signal }),
   ).rejects.toThrow();
   expect(fetch).toHaveBeenCalledTimes(1);
+});
+it("keeps llama.cpp's reasoning and a cut-off answer for the next attempt", async () => {
+  const event = (delta: unknown, finish?: string) =>
+    `data: ${JSON.stringify({ choices: [{ delta, ...(finish ? { finish_reason: finish } : {}) }] })}\n\n`;
+  const sse =
+    event({ reasoning_content: "A timer, " }) +
+    event({ reasoning_content: "then a monitor." }) +
+    event({ content: '{"explanation": "Adds a ti' }, "length") +
+    "data: [DONE]\n\n";
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(sse, { headers: { "Content-Type": "text/event-stream" } }),
+    ),
+  );
+  const failure = await runOpenAICompatibleTurn(options()).catch((e) => e);
+  expect(failure).toBeInstanceOf(OutputLimitError);
+  expect(failure.message).toMatch(/answer reached the output limit \(2,048 tokens\)/);
+  expect(failure.cutOff).toEqual({
+    limit: 2048,
+    reasoning: "A timer, then a monitor.",
+    partial: '{"explanation": "Adds a ti',
+  });
+});
+it("uses the person's output limit, but not past what the model can write", async () => {
+  const content = JSON.stringify({ explanation: "Done.", board });
+  const fetch = vi.fn(async () => streamResponse([content]));
+  vi.stubGlobal("fetch", fetch);
+  const big = { ...options(), contextTokens: 200000 };
+  await runOpenAICompatibleTurn({ ...big, outputLimit: 60000 });
+  await runOpenAICompatibleTurn({
+    ...big,
+    model: { ...big.model, max_tokens: 32000 },
+    outputLimit: 60000,
+  });
+  const sent = fetch.mock.calls.map(
+    (call) =>
+      JSON.parse((call as unknown as [string, RequestInit])[1].body as string)
+        .max_tokens,
+  );
+  expect(sent).toEqual([60000, 32000]);
+  await expect(
+    runOpenAICompatibleTurn({ ...options(), outputLimit: 8000 }),
+  ).rejects.toThrow(/output limit \(8,000 tokens\) leaves too little/);
+});
+it("carries the end of reasoning too long to carry whole", async () => {
+  const content = JSON.stringify({ explanation: "Done.", board });
+  const fetch = vi.fn(async () => streamResponse([content]));
+  vi.stubGlobal("fetch", fetch);
+  const reasoning = "early ".repeat(4000) + "the latest thought";
+  await runOpenAICompatibleTurn({ ...options(), continuation: { reasoning } });
+  const body = JSON.parse(
+    (fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string,
+  );
+  const [written, carryOn] = body.messages.slice(-2);
+  expect(written.role).toBe("assistant");
+  expect(written.content).toMatch(/^Reasoning so far:\n\[Earlier reasoning left out/);
+  expect(written.content).toMatch(/the latest thought$/);
+  expect(written.content.length).toBeLessThan(reasoning.length);
+  expect(carryOn.role).toBe("user");
 });

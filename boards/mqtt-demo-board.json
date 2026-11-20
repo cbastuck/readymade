@@ -1,0 +1,63 @@
+{
+  "boardName": "MQTT Demo",
+  "description": "Two connections to an MQTT broker: one publishes what the browser sends, the other listens for it. Press **Connect** on **Publish** and on **Subscribe**, then send a message — it travels to the broker and comes back under **Received**.\n\nThe broker is the public test broker at `test.mosquitto.org`, which anybody can read and write: point both services at your own (`mqtt://`, `mqtts://`, `ws://` or `wss://`) for anything that matters, and change the topic to one of your own.\n\nNeeds a Node runtime (`node`).",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "remote": "node",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "message",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Message",
+        "state": { "recentInjection": { "temperature": 21.5 } }
+      }
+    ],
+    "node": [
+      {
+        "uuid": "publish",
+        "serviceId": "mqtt",
+        "serviceName": "Publish",
+        "state": {
+          "url": "mqtt://test.mosquitto.org:1883",
+          "mode": "publish",
+          "topic": "readymade/demo/kitchen",
+          "enabled": false
+        }
+      },
+      {
+        "uuid": "published",
+        "serviceId": "stopper",
+        "serviceName": "Published"
+      },
+      {
+        "uuid": "subscribe",
+        "serviceId": "mqtt",
+        "serviceName": "Subscribe",
+        "state": {
+          "url": "mqtt://test.mosquitto.org:1883",
+          "mode": "subscribe",
+          "topics": ["readymade/demo/#"],
+          "enabled": false
+        }
+      },
+      {
+        "uuid": "received",
+        "serviceId": "monitor",
+        "serviceName": "Received"
+      }
+    ]
+  }
+}

@@ -19,6 +19,7 @@
     "bundle"
   ],
   "scripts": {
+    "start": "npm run dev -- --root ..",
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "bundle": "node scripts/bundle.mjs",

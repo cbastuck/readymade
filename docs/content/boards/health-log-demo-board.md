@@ -64,6 +64,15 @@ Every mutation uses `emit: "input"` and ends at the same read query. The screen
 therefore reflects the database after each action rather than maintaining a
 second copy of the history in facade state.
 
+Each facade action enters this list at its own service and runs everything
+below it, so every statement checks the `operation` the action names: **Delete
+selected entries** acts on `$operation = 'delete'` or `'delete-all'`, the fake
+data on `'generate-fake-data'`, each recording statement on its own
+(`'add-value'`, `'add-blood-pressure'`, `'save-journal'`). A
+statement that left out its check would run on every action passing through —
+the delete would remove what was just recorded. See
+[SQL: every statement runs on every request](../services/sql.md#every-statement-runs-on-every-request).
+
 ## Analytics and notifications are another board's job
 
 The health log records observations and does not decide what they mean. That

@@ -1,0 +1,72 @@
+{
+  "boardName": "MQTT Broker Demo",
+  "description": "A broker inside the board, and two clients talking through it. Send a message from the browser: **Say** publishes it under `demo/greeting`, the **Broker** carries it, and **Hear** — subscribed to `demo/#` — pushes it into the pipeline, where it shows up under **Heard**.\n\nBoth clients name the broker as `hkp-mount://node/hub` rather than by an address: the runtime assigns one when the board loads and the board fills it in. The Broker panel shows that address — anything else that speaks MQTT over WebSockets can connect to it and join in.\n\nNeeds a Node runtime (`node`).",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "remote": "node",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "message",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Message",
+        "state": { "recentInjection": "hello", "plainText": true }
+      }
+    ],
+    "node": [
+      {
+        "uuid": "say",
+        "serviceId": "mqtt",
+        "serviceName": "Say",
+        "state": {
+          "url": "hkp-mount://node/hub",
+          "mode": "publish",
+          "topic": "demo/greeting",
+          "enabled": true
+        }
+      },
+      {
+        "uuid": "published",
+        "serviceId": "stopper",
+        "serviceName": "Published"
+      },
+      {
+        "uuid": "hub",
+        "serviceId": "mqtt-broker",
+        "serviceName": "Broker",
+        "state": {
+          "bypass": false,
+          "topics": []
+        }
+      },
+      {
+        "uuid": "hear",
+        "serviceId": "mqtt",
+        "serviceName": "Hear",
+        "state": {
+          "url": "hkp-mount://node/hub",
+          "mode": "subscribe",
+          "topics": ["demo/#"],
+          "enabled": true
+        }
+      },
+      {
+        "uuid": "heard",
+        "serviceId": "monitor",
+        "serviceName": "Heard"
+      }
+    ]
+  }
+}
