@@ -1,0 +1,182 @@
+{
+  "boardName": "Matrix Chat",
+  "description": "Chat in a Matrix room from the Readymade app. The app's embedded runtime (hkp-rt) keeps a sync open with your homeserver and sends what you type. Needs the embedded runtime, so open it in the Readymade app. Unencrypted rooms only: an end-to-end encrypted room is reported, not read.",
+  "runtimes": [
+    {
+      "id": "matrix",
+      "name": "hkp-rt",
+      "type": "rest",
+      "remote": "embedded",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "matrix": [
+      {
+        "uuid": "matrix-compose",
+        "serviceId": "injector",
+        "serviceName": "Message",
+        "state": { "plainText": true }
+      },
+      {
+        "uuid": "matrix-send",
+        "serviceId": "matrix-sender",
+        "serviceName": "Matrix Sender",
+        "state": {
+          "homeserver": "https://matrix.org",
+          "accessToken": "{{secret.matrix.accessToken}}",
+          "roomId": "",
+          "msgtype": "m.text"
+        }
+      },
+      {
+        "uuid": "matrix-listen",
+        "serviceId": "matrix-listener",
+        "serviceName": "Matrix Listener",
+        "state": {
+          "homeserver": "https://matrix.org",
+          "accessToken": "{{secret.matrix.accessToken}}",
+          "rooms": [],
+          "includeOwn": false,
+          "running": false
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "tabs": [
+      { "id": "chat", "title": "Chat", "panels": ["chat"] },
+      { "id": "setup", "title": "Setup", "panels": ["setup"] }
+    ],
+    "defaultTab": "chat",
+    "notices": [
+      {
+        "source": { "serviceUuid": "matrix-listen", "path": "error" },
+        "tone": "error"
+      },
+      {
+        "source": { "serviceUuid": "matrix-send", "path": "error" },
+        "tone": "error"
+      },
+      {
+        "source": { "serviceUuid": "matrix-listen", "path": "warning" },
+        "tone": "info"
+      }
+    ],
+    "panels": [
+      {
+        "id": "chat",
+        "layout": {
+          "direction": "column",
+          "grow": true,
+          "items": [
+            {
+              "direction": "row",
+              "align": "center",
+              "gap": 8,
+              "padding": 8,
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": { "serviceUuid": "matrix-listen", "path": "connected" },
+                  "statusColors": { "true": "#22c55e", "false": "#9ca3af" }
+                },
+                {
+                  "type": "text",
+                  "label": "Signed in as",
+                  "source": { "serviceUuid": "matrix-listen", "path": "userId" },
+                  "placeholder": "not connected"
+                }
+              ]
+            },
+            {
+              "type": "message-list",
+              "grow": true,
+              "source": { "serviceUuid": "matrix-listen", "path": "received.text" },
+              "composer": {
+                "placeholder": "Message the room…",
+                "submitLabel": "Send",
+                "action": {
+                  "serviceUuid": "matrix-compose",
+                  "configure": { "inject": "$$input" }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "setup",
+        "title": "Your Matrix account",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 16,
+          "items": [
+            {
+              "type": "text-input",
+              "label": "Homeserver",
+              "placeholder": "https://matrix.org",
+              "defaultValue": "https://matrix.org",
+              "submitLabel": "Set",
+              "actions": [
+                { "type": "configure", "serviceUuid": "matrix-send", "configure": { "homeserver": "$$input" } },
+                { "type": "configure", "serviceUuid": "matrix-listen", "configure": { "homeserver": "$$input" } }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "Access token",
+              "placeholder": "From Element: Settings → Help & About → Access token",
+              "submitLabel": "Set",
+              "secret": true,
+              "vaultKey": "matrix.accessToken"
+            },
+            {
+              "type": "text-input",
+              "label": "Room",
+              "placeholder": "#room:matrix.org or !roomid:matrix.org",
+              "submitLabel": "Set",
+              "actions": [
+                { "type": "configure", "serviceUuid": "matrix-send", "configure": { "roomId": "$$input" } },
+                { "type": "configure", "serviceUuid": "matrix-listen", "configure": { "rooms": ["$$input"] } }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Connect",
+                  "indicator": {
+                    "source": { "serviceUuid": "matrix-listen", "path": "connected" },
+                    "statusColors": { "true": "#22c55e", "false": "#9ca3af" }
+                  },
+                  "action": {
+                    "serviceUuid": "matrix-listen",
+                    "configure": { "running": true }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "Disconnect",
+                  "action": {
+                    "serviceUuid": "matrix-listen",
+                    "configure": { "running": false }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "tone": "muted",
+              "placeholder": "The token is kept in this app's vault, never in the board. Use an account that has already joined the room."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

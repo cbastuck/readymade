@@ -1,0 +1,26 @@
+{
+  "id": "matrix-listener-example",
+  "name": "Matrix Listener",
+  "services": [
+    {
+      "serviceId": "matrix-listener",
+      "uuid": "matrix-listener-1",
+      "name": "Matrix Listener",
+      "state": {
+        "homeserver": "https://matrix.org",
+        "accessToken": "{{secret.matrix.accessToken}}",
+        "rooms": ["#readymade-test:matrix.org"],
+        "includeOwn": false,
+        "running": true
+      }
+    },
+    {
+      "serviceId": "monitor",
+      "uuid": "monitor-1",
+      "name": "Monitor",
+      "state": {
+        "logToConsole": true
+      }
+    }
+  ]
+}

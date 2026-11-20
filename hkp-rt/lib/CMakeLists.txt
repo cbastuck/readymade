@@ -117,6 +117,7 @@ target_sources(${PROJECT_NAME}
       src/services/http_server/http_session.cpp
       src/services/http_server/http_stream_listener.cpp
       src/services/http_client.cpp
+      src/services/matrix_client.cpp
       src/services/text_generation.cpp
       src/services/speech_to_text.cpp
       src/services/text_to_speech.cpp
