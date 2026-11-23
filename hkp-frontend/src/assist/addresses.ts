@@ -67,7 +67,8 @@ export function hasNewAddresses(addresses: NewAddresses) {
   return addresses.runtimes.length > 0 || addresses.services.length > 0;
 }
 
-function loopback(hostname: string) {
+/** Whether `hostname` names this machine: reachable with no network at all. */
+export function isLoopbackHost(hostname: string) {
   const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
   return (
     host === "localhost" ||
@@ -86,7 +87,7 @@ function loopback(hostname: string) {
 export function unencryptedRemote(address: string): boolean {
   try {
     const url = new URL(address.trim());
-    return url.protocol === "http:" && !loopback(url.hostname);
+    return url.protocol === "http:" && !isLoopbackHost(url.hostname);
   } catch {
     return false;
   }

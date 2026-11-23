@@ -23,8 +23,11 @@ vi.mock("@modelcontextprotocol/client", () => ({
   },
 }));
 
+import { DEFAULT_MCP_KNOWLEDGE_URL } from "./settings";
+import { bundledKnowledgeProvider } from "./documentation";
 import {
   McpKnowledgeProvider,
+  boardAssistKnowledgeProvider,
   mcpFailureKind,
   normalizeMcpKnowledgeUrl,
   resetMcpKnowledgeCooldowns,
@@ -96,6 +99,29 @@ describe("MCP knowledge provider", () => {
     expect(() =>
       normalizeMcpKnowledgeUrl("http://user:secret@127.0.0.1:8787/mcp"),
     ).toThrow("without credentials");
+  });
+
+  it("uses the hosted knowledge server when no URL is set", () => {
+    const signal = new AbortController().signal;
+    for (const url of ["", "   "]) {
+      const chosen = boardAssistKnowledgeProvider({ enabled: true, url }, signal);
+      expect(chosen).toBeInstanceOf(McpKnowledgeProvider);
+      expect(chosen.id).toMatch(/^mcp\+/);
+    }
+    expect(DEFAULT_MCP_KNOWLEDGE_URL).toBe("https://mcp.readymadeit.com/mcp");
+    expect(normalizeMcpKnowledgeUrl(DEFAULT_MCP_KNOWLEDGE_URL)).toBe(
+      DEFAULT_MCP_KNOWLEDGE_URL,
+    );
+  });
+
+  it("asks no server at all when the knowledge server is turned off", async () => {
+    const signal = new AbortController().signal;
+    for (const url of ["", "http://127.0.0.1:8787/mcp"]) {
+      const chosen = boardAssistKnowledgeProvider({ enabled: false, url }, signal);
+      expect(chosen).toBe(bundledKnowledgeProvider);
+      await chosen.searchKnowledge({ query: "timer" });
+    }
+    expect(sdk.connect).not.toHaveBeenCalled();
   });
 
   it("maps structured MCP search and read results to the provider boundary", async () => {
@@ -397,5 +423,79 @@ describe("MCP knowledge provider", () => {
     sdk.callTool.mockResolvedValueOnce(searchResult);
     await provider().searchKnowledge({ query: "timer" });
     expect(sdk.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not dial the server while the device says it is offline", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    try {
+      const onFallback = vi.fn();
+      const bundled = fallback();
+      const offline = new McpKnowledgeProvider(
+        "https://knowledge.example/mcp",
+        new AbortController().signal,
+        bundled,
+        onFallback,
+      );
+      await offline.searchKnowledge({ query: "timer" });
+      expect(await offline.listAgentTools()).toEqual([]);
+      expect(sdk.connect).not.toHaveBeenCalled();
+      expect(bundled.searchKnowledge).toHaveBeenCalled();
+      expect(onFallback).toHaveBeenCalledTimes(1);
+      expect(onFallback).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "This device is offline." }),
+      );
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("still asks a server on this machine while the device says it is offline", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    try {
+      sdk.callTool.mockResolvedValue(searchResult);
+      const onFallback = vi.fn();
+      for (const url of [
+        "http://127.0.0.1:8787/mcp",
+        "http://localhost:8787/mcp",
+        "http://[::1]:8787/mcp",
+      ]) {
+        await new McpKnowledgeProvider(
+          url,
+          new AbortController().signal,
+          fallback(),
+          onFallback,
+        ).searchKnowledge({ query: "timer" });
+      }
+      expect(sdk.connect).toHaveBeenCalledTimes(3);
+      expect(onFallback).not.toHaveBeenCalled();
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("says once per turn that the server answered, and not when it did not", async () => {
+    const onAnswered = vi.fn();
+    const answering = new McpKnowledgeProvider(
+      "http://127.0.0.1:8787/mcp",
+      new AbortController().signal,
+      fallback(),
+      undefined,
+      onAnswered,
+    );
+    sdk.callTool.mockResolvedValue(searchResult);
+    await answering.listAgentTools();
+    await answering.searchKnowledge({ query: "timer" });
+    expect(onAnswered).toHaveBeenCalledTimes(1);
+
+    const silent = vi.fn();
+    sdk.connect.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await new McpKnowledgeProvider(
+      "http://127.0.0.1:8787/mcp",
+      new AbortController().signal,
+      fallback(),
+      undefined,
+      silent,
+    ).searchKnowledge({ query: "timer" });
+    expect(silent).not.toHaveBeenCalled();
   });
 });

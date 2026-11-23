@@ -50,6 +50,13 @@ describe("KnowledgeRepository", () => {
     expect(pages.filter((page) => !indexed.has(page))).toEqual([]);
   });
 
+  it("leaves drafts out of what it indexes", () => {
+    expect(() => repository.readDocuments(["docs/content/drafts/index.md"])).toThrow();
+    expect(
+      repository.search("sovereignty self-determination").map((hit) => hit.provenance.path),
+    ).not.toContainEqual(expect.stringMatching(/^docs\/content\/drafts\//));
+  });
+
   it("reads several service IDs from one availability cell", () => {
     expect(repository.hasService("hookup.to/service/game-of-life", "browser")).toBe(true);
     expect(repository.hasService("hookup.to/service/game-of-life-renderer", "browser")).toBe(true);
@@ -69,6 +76,12 @@ describe("KnowledgeRepository", () => {
     expect(repository.readDocuments([result[0].provenance.path])[0].content).toContain("# Filter");
     expect(() => repository.readDocuments(["../../etc/passwd"])).toThrow("not an indexed document");
     expect(() => repository.readDocuments(["hkp-node/src/services/timer.ts"])).toThrow("not an indexed document");
+  });
+
+  it("reads the facade's schema at the path Board Assist lists it under", () => {
+    const [schema] = repository.readDocuments(["hkp-frontend/src/facade/types.ts"]);
+    expect(schema.content).toContain("export type FacadeDescriptor");
+    expect(schema.provenance.path).toBe("hkp-frontend/src/facade/types.ts");
   });
 
   it("finds board examples", () => {

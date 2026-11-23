@@ -1,7 +1,14 @@
 import boardFormat from "../../../docs/content/board-json.md?raw";
 import introduction from "../../../docs/content/introduction.md?raw";
+// The facade's schema is its type definitions, commented: what board-json.md
+// points to for the shape of every widget, and nowhere else written down.
+import facadeTypes from "../facade/types.ts?raw";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
+import { declarationsOf, declarationTagged } from "./declarations";
 import type { BoardDescriptor } from "../types";
+
+/** Where the facade's schema is written, read whole or one declaration at a time. */
+export const FACADE_TYPES = "hkp-frontend/src/facade/types.ts";
 
 // Vite packages the repository documentation for every host, including offline
 // native builds. Individual documents are loaded only when requested.
@@ -10,6 +17,8 @@ const documents = import.meta.glob<string>(
     "../../../docs/content/**/*.md",
     "!../../../docs/content/board-json.md",
     "!../../../docs/content/introduction.md",
+    // Work in progress, not yet documentation to build boards from.
+    "!../../../docs/content/drafts/**",
   ],
   { query: "?raw", import: "default" },
 );
@@ -20,6 +29,7 @@ const examples = import.meta.glob<string>("../../../boards/*.json", {
 const sources = Object.fromEntries([
   ["docs/board-json.md", async () => boardFormat],
   ["docs/introduction.md", async () => introduction],
+  [FACADE_TYPES, async () => facadeTypes],
   ...Object.entries(documents).map(([path, load]) => [
     path.replace("../../../docs/content/", "docs/"),
     load,
@@ -30,7 +40,18 @@ const sources = Object.fromEntries([
   ]),
 ]) as Record<string, () => Promise<string>>;
 
-export const documentationIndex = Object.keys(sources).sort().join("\n");
+export const documentationIndex = [
+  ...Object.keys(sources).sort(),
+  `${FACADE_TYPES}#<Name> reads one of its declarations: ${declarationsOf(facadeTypes)
+    .map((declaration) => declaration.name)
+    .join(", ")}`,
+].join("\n");
+
+/** The path of the declaration a facade `type` is written in, such as a widget's. */
+export function facadeTypePath(tag: string): string | undefined {
+  const name = declarationTagged(facadeTypes, tag);
+  return name && `${FACADE_TYPES}#${name}`;
+}
 export const foundation = `${introduction}\n\n${boardFormat}`;
 export async function readDocumentation(paths: string[]) {
   if (

@@ -14,6 +14,8 @@ vi.mock("@anthropic-ai/sdk", () => ({
   },
 }));
 vi.mock("./documentation", () => ({
+  FACADE_TYPES: "hkp-frontend/src/facade/types.ts",
+  facadeTypePath: () => undefined,
   foundation: "board format",
   documentationIndex: "docs/services/camera.md",
   bundledKnowledgeProvider: {

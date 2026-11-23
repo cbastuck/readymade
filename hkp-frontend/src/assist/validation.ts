@@ -1,11 +1,23 @@
 import { BoardDescriptor } from "../types";
+import { FACADE_PROBLEMS_SHOWN, facadeProblems } from "../facade/validateFacade";
+import { FACADE_TYPES, facadeTypePath } from "./documentation";
+
+/** A facade problem as it reads wherever its widget sits. */
+const unplaced = (problem: string) => problem.replace(/\[\d+\]/g, "[]");
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 /** Structural checks before offering model output to the board loader. State
- * contracts remain service-specific and are supplied by the documentation. */
-export function validateAssistBoard(value: unknown): BoardDescriptor {
+ * contracts remain service-specific and are supplied by the documentation.
+ *
+ * The facade is checked against its schema. Given the board it would replace,
+ * only what the proposal adds is held against it: a facade that was already
+ * off does not block every change to the board around it. */
+export function validateAssistBoard(
+  value: unknown,
+  base?: BoardDescriptor,
+): BoardDescriptor {
   if (
     !object(value) ||
     !Array.isArray(value.runtimes) ||
@@ -43,6 +55,49 @@ export function validateAssistBoard(value: unknown): BoardDescriptor {
   }
   if (value.boardName !== undefined && typeof value.boardName !== "string")
     throw new Error("Board name must be text.");
+  if (value.facade !== undefined) {
+    // Counted by what each problem says with its positions left out, so one
+    // the board already had is still known after a panel or widget is added
+    // ahead of it — and one more of the same kind still counts as added.
+    const known = new Map<string, number>();
+    if (base?.facade)
+      for (const problem of facadeProblems(base.facade, { limit: Infinity })) {
+        const key = unplaced(problem);
+        known.set(key, (known.get(key) ?? 0) + 1);
+      }
+    // All of them, before any is held back: the first few could all be old.
+    const added = facadeProblems(value.facade, { limit: Infinity })
+      .filter((problem) => {
+        const key = unplaced(problem);
+        const left = known.get(key) ?? 0;
+        if (left) known.set(key, left - 1);
+        return !left;
+      })
+      .slice(0, FACADE_PROBLEMS_SHOWN);
+    if (added.length) {
+      // The shape of each type a problem names, to read rather than the
+      // whole schema: the innermost `(type)` is where the problem is. A wrong
+      // number, boolean or null is shown in parentheses too, after the type,
+      // so the innermost one that names a type counts.
+      const parts = [
+        ...new Set(
+          added
+            .map((problem) =>
+              [...problem.matchAll(/\(([\w-]+)\)/g)]
+                .map((match) => facadeTypePath(match[1]))
+                .filter((path): path is string => !!path)
+                .pop(),
+            )
+            .filter((path): path is string => !!path),
+        ),
+      ];
+      throw new Error(
+        `The facade does not match its schema (${FACADE_TYPES}):\n- ${added.join("\n- ")}${
+          parts.length ? `\nRead the shapes it names: ${parts.join(", ")}.` : ""
+        }`,
+      );
+    }
+  }
   return value as BoardDescriptor;
 }
 function validatePipeline(entries: unknown[], topLevel: boolean) {

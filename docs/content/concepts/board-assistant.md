@@ -12,8 +12,8 @@ stays available while the panel is hidden; it is not saved in the board file.
 ## Setup
 
 Open **Settings → Board Assist**, in either the website or the native Readymade
-app. Choose **Anthropic**, **OpenAI compatible**, **OpenCode server** or
-**OpenCode Go**; only the chosen provider's
+app. Choose **Anthropic**, **Mistral**, **OpenAI compatible**, **OpenCode server**
+or **OpenCode Go**; only the chosen provider's
 settings are shown. As in Appearance, changes take effect as you make them — a
 choice at once, a text field when you leave it — and an invalid value is
 explained under its field instead of being saved. Each saved token can be
@@ -51,6 +51,17 @@ Off sends `chat_template_kwargs: { enable_thinking: false }`; On sends true.
 Leave Server default for endpoints without llama.cpp's template options. This
 controls thinking in the template and is separate from the context-size setting.
 Thinking can use the output budget before the final board appears.
+
+**Mistral** uses the models of a Mistral account, with requests going directly
+to `https://api.mistral.ai/v1` — an API hosted in the EU. Enter an **API key**
+(from `console.mistral.ai`); there is no address to set. The model list shows
+the account's chat models, without the embedding, moderation and OCR models on
+the same list, and each turn is sized by the selected model's context window,
+so there is no context setting. Requests use chat completions, streamed, with
+the same tools an Anthropic model gets: the model searches and reads the
+documentation itself, as often as the request needs, and proposes a board with
+a tool call. A reasoning model's thinking is shown as progress, left out of the
+answer and kept beside it.
 
 **OpenCode Go** uses the models of an OpenCode Go subscription through the same
 OpenAI-compatible API, with Board Assist itself as the client — no OpenCode
@@ -92,14 +103,39 @@ effort levels. The provider, model, effort and server settings are saved on this
 device. **API settings** replaces **Send** if the active provider lacks its required
 settings; local servers can send with no API token.
 
+**Output limit**, in the panel's model settings, is the most one answer may
+write, the model's thinking included. Left empty, each provider keeps its
+default: 16,384 tokens for Anthropic (less where a model states less) and for
+Mistral, a model's stated limit for OpenCode Go (32,768 when it states none),
+and 4,096 for an OpenAI-compatible server — the last three never more than a
+quarter of the context. A limit set here is used as it is, up to what a model
+states it can write; one that leaves too little of the context for the board is
+refused before anything is sent. The OpenCode server's API takes no limit, so
+it has no such field.
+
+A reasoning model can spend its whole limit thinking before it writes a word.
+What it sent is kept: its thinking, behind **Show the model's thinking**, and
+the answer as far as it got. When the last turn ended at its limit, it offers
+**Continue**, which asks the same request again with the output limit set at
+that moment — raise it first. The new request carries what the model wrote, as
+its own turn, and asks it to go on from there rather than start over; thinking
+too long for the room the context leaves loses its beginning. Whether the
+model picks up mid-thought or reconsiders from its notes is up to the model,
+but it starts from what it already worked out. Anthropic's and Mistral's turns
+are a series of requests, documentation lookups among them, so nothing is
+carried there and the button is **Retry**: the same request, asked afresh with the new limit. The
+cut-off attempt's tokens count in the conversation's usage either way
+(`hkp-frontend/src/assist/outputLimit.ts`).
+
 Where tokens are kept depends on the host. The desktop and phone apps keep them
 with their other secrets (`targets.md`, "Where secrets live"), as
-`readymade.assist.anthropic`, `readymade.assist.openai-compatible`,
+`readymade.assist.anthropic`, `readymade.assist.mistral`,
+`readymade.assist.openai-compatible`,
 `readymade.assist.opencode`, `readymade.assist.opencode-go` and
 `readymade.assist.opencode-go-relay`, so they
 are listed, and can be removed, in **Settings → Secrets** like any other
 credential. Each is allowed only to its provider's host — `api.anthropic.com`,
-or the host of the API base URL, which it follows when the URL changes — so a
+`api.mistral.ai`, or the host of the API base URL, which it follows when the URL changes — so a
 board that names one as `{{secret.readymade.assist.anthropic}}` can use it for
 its own calls to that provider and nowhere else. A token an older build kept in
 local storage moves there on the first launch. The website has no secret store
@@ -114,8 +150,8 @@ On iOS and Android, Board Assist is a page of its own, opened with the sparkle
 button in a board's top bar. Leaving it with Back keeps the conversation, as
 hiding the desktop panel does. The provider's settings are a section of
 **Settings**, after Appearance, and the page leads there when no provider is set
-up; the model, effort and **Include asset contents** are in a sheet opened from
-the model line at the top.
+up; the model, effort, output limit and **Include asset contents** are in a
+sheet opened from the model line at the top.
 
 A phone has no selection. What it has instead is what the person opened last:
 tapping a service, inspecting its flow, adding a service to a runtime, running a
@@ -144,27 +180,41 @@ Describe what the board should do. For example:
 > Camera service, detects faces, and sends a notification to ntfy topic xxx
 > when there are faces.
 
-The assistant can search and read the documentation in `docs/content/` and the
-JSON examples in `boards/`. Both are packaged into builds, so the documentation
+The assistant can search and read the documentation in `docs/content/`, the
+JSON examples in `boards/`, and the facade's schema — its commented type
+definitions, `hkp-frontend/src/facade/types.ts`, which `board-json.md` points
+to for the shape of every widget. All three are packaged into builds, so the documentation
 matches that build and requires no documentation server. It reads the relevant
 service contracts, configuration and data shapes before proposing a board.
+The schema can be read one declaration at a time —
+`hkp-frontend/src/facade/types.ts#KnobWidget` is one widget's shape, with the
+types it names listed as paths to read next — so a model with a small context
+reads the widgets it uses rather than the whole file
+(`hkp-frontend/src/assist/declarations.ts`).
 
-The repository also contains an optional read-only MCP knowledge server in
-`readymade-mcp/`. It indexes the same documentation plus example boards and
-allowlisted runtime source from a pinned checkout. Its tools can search, read
+Board Assist also asks a read-only MCP knowledge server, `readymade-mcp/` in
+this repository. It indexes the same documentation, the facade's schema included,
+plus example boards and allowlisted runtime source from a pinned checkout. Its tools can search, read
 contracts, find compatible services and examples, inspect bounded source
 excerpts, and statically validate a board. Each result carries build and commit
 provenance.
 
-To use it with Board Assist, run the server and set **Settings → Board Assist →
-Knowledge server → MCP server URL**, for example
+With nothing set, Board Assist uses the hosted one at
+`https://mcp.readymadeit.com/mcp`. Turning off **Settings → Board Assist →
+Knowledge server → Use a knowledge server** leaves Board Assist with the
+bundled documentation alone: no server is asked, and nothing is sent for
+knowledge. To use your own, run the server and set
+**Settings → Board Assist → Knowledge server → MCP server URL**, for example
 `http://127.0.0.1:8787/mcp`. The URL is device-local configuration and is not
 written into boards. A hosted playground needs the server behind a TLS reverse
-proxy; `readymade-mcp/README.md` walks through deploying it. Both providers can consume the server's search and
-document-reading tools. Anthropic also receives the allowlisted contract,
-compatibility, example, source-inspection and board-validation operations as
-model-controlled tools. OpenAI-compatible providers retain bounded
-pre-retrieval until their tool-calling support can be detected reliably.
+proxy; `readymade-mcp/README.md` walks through deploying it. Every provider can consume the server's search and
+document-reading tools. Anthropic and Mistral models call them themselves, and
+also receive the allowlisted contract, compatibility, example,
+source-inspection and board-validation operations as model-controlled tools
+(`hkp-frontend/src/assist/assistTools.ts`). The other OpenAI-compatible
+providers retain bounded pre-retrieval — one search on the request, its best
+pages handed over with it — until their tool-calling support can be detected
+reliably.
 
 The MCP connection has bounded connect and tool-call timeouts. What happens when
 a call fails depends on what the failure says about the server:
@@ -183,8 +233,14 @@ The next turn tries the server again, which costs nothing when it refuses
 connections. A server that failed **slowly** — a timeout, or any failure that
 took two seconds or more — is skipped by later turns for a minute instead, so a
 hanging server does not delay every request before the offline path is used.
-Cancellation still stops the request. Leaving the MCP URL empty keeps the fully
-offline path and does not load the MCP client.
+While the device says it is offline, the server is not asked at all, so an
+offline turn does not wait out a connect timeout. A server on this machine
+(`localhost`, `127.0.0.1`, `::1`) is the exception: it answers with no network,
+so it is still asked. A notice beside the thread
+says the bundled documentation is in use; it stays until the server answers
+again, rather than being raised anew by every turn.
+Cancellation still stops the request. With the knowledge server turned off, the
+offline path is the only one, and the MCP client is not loaded.
 
 The MCP server receives knowledge search terms, requested document paths and
 arguments to richer operations. Those arguments can include the current or
@@ -247,7 +303,16 @@ JSON or a board-load error keeps the editor open with your draft intact.
 changes since the diff was opened, so the current side you reviewed is the
 configuration being replaced. A proposal does not change the running board. It first passes
 structural validation and the normal board linker checks its blocks and
-references without loading runtimes. A failed preflight leaves the proposal and
+references without loading runtimes. Its facade is checked against the facade
+schema, generated from `hkp-frontend/src/facade/types.ts`
+(`hkp-frontend/src/facade/validateFacade.ts`): each problem says where it is,
+which widget it belongs to and what was expected — a data-table column that is
+an object rather than a name, a property a widget does not have, a widget type
+there is none of — and names the declaration to read for each widget it
+mentions. Only what the proposal adds counts; a facade that was already
+off does not block changes around it. The same checks run when the model
+proposes, so Anthropic and Mistral models are told what is wrong and repair it
+within the turn rather than handing over a board that cannot render. A failed preflight leaves the proposal and
 diff available, but disables direct application; edit it in the diff to repair
 and revalidate it. Service-specific behavior still needs testing with the actual
 devices and runtime servers.
