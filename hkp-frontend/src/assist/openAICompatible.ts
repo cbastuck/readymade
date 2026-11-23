@@ -3,7 +3,7 @@ import { bundledKnowledgeProvider } from "./documentation";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import { AssistUsage, formatTokens, fromOpenAIUsage } from "./usage";
 import {
-  carriesOn,
+  carriesWritten,
   contextBudget,
   Continuation,
   OutputLimitError,
@@ -170,6 +170,68 @@ export type OpenAIToolCall = {
  * explanation as a JSON answer streams in — or, with `plainText`, the answer
  * itself, for a turn whose proposal comes as a tool call.
  */
+/**
+ * A failure the server reported in its stream, passed on as it said it rather
+ * than as an interrupted stream.
+ */
+export class ReportedStreamError extends Error {}
+
+/**
+ * Reads a server-sent event stream through to its end, handing `onEvent` the
+ * data of each event, its `data:` lines joined. Anything else going wrong
+ * while reading — a dropped connection, data that is not JSON — says that the
+ * stream was interrupted; a `ReportedStreamError` thrown by `onEvent` is
+ * passed on as it is.
+ */
+export async function readEventStream(
+  body: ReadableStream<Uint8Array>,
+  signal: AbortSignal,
+  onEvent: (data: string) => void,
+) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let streamEnded = false;
+  const consume = (block: string) =>
+    onEvent(
+      block
+        .split("\n")
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trimStart())
+        .join("\n"),
+    );
+  try {
+    for (;;) {
+      signal.throwIfAborted();
+      const { done, value } = await reader.read();
+      buffer += done
+        ? decoder.decode()
+        : decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, "\n");
+      let boundary: number;
+      while ((boundary = buffer.indexOf("\n\n")) !== -1) {
+        consume(buffer.slice(0, boundary));
+        buffer = buffer.slice(boundary + 2);
+      }
+      if (done) {
+        streamEnded = true;
+        if (buffer.trim()) consume(buffer);
+        break;
+      }
+    }
+  } catch (error) {
+    if (signal.aborted || error instanceof ReportedStreamError) throw error;
+    throw new Error(
+      `The server response was interrupted during generation: ${error instanceof Error ? error.message : "connection lost"}. Your board has not been changed.`,
+    );
+  } finally {
+    // Read successful responses through EOF. Cancelling immediately at [DONE]
+    // can mark an otherwise successful request as failed in WebKit's inspector.
+    if (!streamEnded) await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
 export async function requestCompletion(
   base: string,
   token: string,
@@ -200,12 +262,8 @@ export async function requestCompletion(
   }
   if (!response.body)
     throw new Error("The server returned an empty response stream.");
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let content = "";
   let finished = false;
-  let streamEnded = false;
   let finishReason: string | null = null;
   let explanation = "";
   // Kept, not only counted: a turn cut off while thinking can go on from it.
@@ -296,44 +354,7 @@ export async function requestCompletion(
     // choices at all.
     if (chunk.usage) usage = chunk.usage;
   };
-  const consume = (block: string) => {
-    const payload = block
-      .split("\n")
-      .filter((line) => line.startsWith("data:"))
-      .map((line) => line.slice(5).trimStart())
-      .join("\n");
-    event(payload);
-  };
-  try {
-    for (;;) {
-      signal.throwIfAborted();
-      const { done, value } = await reader.read();
-      buffer += done
-        ? decoder.decode()
-        : decoder.decode(value, { stream: true });
-      buffer = buffer.replace(/\r\n/g, "\n");
-      let boundary: number;
-      while ((boundary = buffer.indexOf("\n\n")) !== -1) {
-        consume(buffer.slice(0, boundary));
-        buffer = buffer.slice(boundary + 2);
-      }
-      if (done) {
-        streamEnded = true;
-        if (buffer.trim()) consume(buffer);
-        break;
-      }
-    }
-  } catch (error) {
-    if (signal.aborted) throw error;
-    throw new Error(
-      `The server response was interrupted during generation: ${error instanceof Error ? error.message : "connection lost"}. Your board has not been changed.`,
-    );
-  } finally {
-    // Read successful responses through EOF. Cancelling immediately at [DONE]
-    // can mark an otherwise successful request as failed in WebKit's inspector.
-    if (!streamEnded) await reader.cancel().catch(() => {});
-    reader.releaseLock();
-  }
+  await readEventStream(response.body, signal, event);
   if (!finished && !finishReason)
     throw new Error(
       "The server connection ended before generation completed. Your board has not been changed.",
@@ -497,7 +518,7 @@ function continuationMessages(
   cut: Continuation,
   room: number,
 ): { role: "assistant" | "user"; content: string }[] {
-  if (!carriesOn(cut)) return [];
+  if (!carriesWritten(cut)) return [];
   const answer = cut.partial?.trim()
     ? `Answer so far, cut off:\n${cut.partial}`
     : "";

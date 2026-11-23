@@ -380,10 +380,16 @@ export default function BoardAssistPanel({
                     disabled={busy}
                     onClick={() => void assist.continueTurn(index)}
                   >
-                    {carriesOn(entry.cutOff) ? "Continue" : "Retry"}
+                    {carriesOn(entry.cutOff, assist.resumer)
+                      ? "Continue"
+                      : "Retry"}
                   </button>
                   <span className="hkp-assist-hint">
-                    {continueHint(entry.cutOff, settings.outputLimit)}
+                    {continueHint(
+                      entry.cutOff,
+                      settings.outputLimit,
+                      assist.resumer,
+                    )}
                   </span>
                 </div>
               )}

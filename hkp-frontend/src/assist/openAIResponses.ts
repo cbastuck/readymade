@@ -1,5 +1,9 @@
 import { assistSystem } from "./assistTools";
-import { requestResponse } from "./openAICompatible";
+import {
+  readEventStream,
+  ReportedStreamError,
+  requestResponse,
+} from "./openAICompatible";
 import {
   answerToolCalls,
   prepareToolTurn,
@@ -10,7 +14,9 @@ import { TOOL_STEPS } from "./outputLimit";
 import {
   addUsage,
   fromOpenAIResponsesUsage,
+  inputTotal,
   noUsage,
+  tokenTotal,
 } from "./usage";
 
 /**
@@ -63,8 +69,49 @@ function summaryText(output: Item[]) {
     .join("\n\n");
 }
 
-/** A failure the server reported in the stream, said as it said it. */
-class Reported extends Error {}
+/**
+ * Why a response that came back is no answer, in the server's words where it
+ * gave any: one that failed, or one that stopped early for a reason other
+ * than its output limit — which a turn goes on from instead.
+ */
+function unfinished(data: ResponseObject): string | undefined {
+  if (data.status === "failed" || (data.error && data.status !== "completed"))
+    return (
+      data.error?.message ||
+      "The server reported that the response failed. Your board has not been changed."
+    );
+  if (data.status !== "incomplete") return undefined;
+  const reason = data.incomplete_details?.reason;
+  if (reason === "max_output_tokens") return undefined;
+  return reason === "content_filter"
+    ? "The response was stopped by the provider's content filter before it was complete. Your board has not been changed. Rephrase the request, or narrow it."
+    : `The response stopped before it was complete${reason ? ` (${reason})` : ""}. Your board has not been changed.`;
+}
+
+/**
+ * A response's output as the next request carries it back. With nothing
+ * stored at OpenAI, a reasoning item goes back only with its encrypted
+ * content; one sent without it — a model that reasons although its family is
+ * not known to, and so was not asked for it — names an item nobody kept, and
+ * the next request would be refused. It is left out, and the ids of the rest
+ * with it, which would otherwise name it: a message goes back as what it
+ * said, a call as itself.
+ */
+export function carriedBack(output: Item[]): Item[] {
+  const unreadable = output.some(
+    (item) => item.type === "reasoning" && !item.encrypted_content,
+  );
+  if (!unreadable) return output;
+  return output.flatMap((item): Item[] => {
+    if (item.type === "reasoning") return [];
+    if (item.type === "message") {
+      const said = outputText([item]);
+      return said ? [{ role: "assistant", content: said }] : [];
+    }
+    const { id: _id, ...rest } = item;
+    return [rest];
+  });
+}
 
 /**
  * Asks for one response, streamed, and reads it to its end. `onText` is given
@@ -88,31 +135,28 @@ export async function requestResponsesTurn(
     body,
     extra,
   );
+  // A server that answers with JSON is read the same, failures included.
   if (!response.headers.get("content-type")?.includes("text/event-stream"))
     return (await response.json()) as ResponseObject;
   if (!response.body)
     throw new Error("The server returned an empty response stream.");
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let text = "";
   let argumentCharacters = 0;
-  let streamEnded = false;
   let final: ResponseObject | undefined;
   // Each output item as it finished, by its place in the output: what the
   // response is made of when the final event does not repeat it.
   const items: Item[] = [];
-  const event = (payload: string) => {
+  await readEventStream(response.body, signal, (payload) => {
     signal.throwIfAborted();
     if (!payload.trim() || payload.trim() === "[DONE]") return;
     const chunk = JSON.parse(payload);
     switch (chunk.type) {
       case "error":
-        throw new Reported(
+        throw new ReportedStreamError(
           chunk.message || chunk.error?.message || "The server reported a generation error.",
         );
       case "response.failed":
-        throw new Reported(
+        throw new ReportedStreamError(
           chunk.response?.error?.message || "The server reported a generation error.",
         );
       case "response.output_item.added":
@@ -140,42 +184,7 @@ export async function requestResponsesTurn(
         final = chunk.response ?? {};
         break;
     }
-  };
-  const consume = (block: string) =>
-    event(
-      block
-        .split("\n")
-        .filter((line) => line.startsWith("data:"))
-        .map((line) => line.slice(5).trimStart())
-        .join("\n"),
-    );
-  try {
-    while (true) {
-      signal.throwIfAborted();
-      const { done, value } = await reader.read();
-      buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
-      buffer = buffer.replace(/\r\n/g, "\n");
-      let boundary: number;
-      while ((boundary = buffer.indexOf("\n\n")) !== -1) {
-        consume(buffer.slice(0, boundary));
-        buffer = buffer.slice(boundary + 2);
-      }
-      if (done) {
-        streamEnded = true;
-        if (buffer.trim()) consume(buffer);
-        break;
-      }
-    }
-  } catch (error) {
-    if (signal.aborted) throw error;
-    if (error instanceof Reported) throw error;
-    throw new Error(
-      `The server response was interrupted during generation: ${error instanceof Error ? error.message : "connection lost"}. Your board has not been changed.`,
-    );
-  } finally {
-    if (!streamEnded) await reader.cancel().catch(() => {});
-    reader.releaseLock();
-  }
+  });
   if (!final)
     throw new Error(
       "The server connection ended before generation completed. Your board has not been changed.",
@@ -216,6 +225,8 @@ export async function runOpenAIResponsesTurn(
   let usage = noUsage;
   let text = turn.resumed?.text ?? "";
   let reasoning = "";
+  // What the last request read and wrote: about what the next one sends.
+  let sent = 0;
   for (let step = 0; step < TOOL_STEPS; step++) {
     options.signal.throwIfAborted();
     options.onStatus(
@@ -244,8 +255,11 @@ export async function runOpenAIResponsesTurn(
       { headers: options.headers, unreachable: options.unreachable },
     );
     options.signal.throwIfAborted();
-    usage = addUsage(usage, fromOpenAIResponsesUsage(data.usage));
+    const request = fromOpenAIResponsesUsage(data.usage);
+    usage = addUsage(usage, request);
     options.onUsage?.(usage);
+    const failure = unfinished(data);
+    if (failure) throw new Error(failure);
     const output = data.output ?? [];
     const summary = summaryText(output);
     if (summary) {
@@ -256,7 +270,7 @@ export async function runOpenAIResponsesTurn(
       data.status === "incomplete" &&
       data.incomplete_details?.reason === "max_output_tokens"
     )
-      throw turn.outputLimitReached(step, input, text, room);
+      throw turn.outputLimitReached(step, input, text, room, inputTotal(request));
     const content = outputText(output);
     if (content.trim()) text = [text, content.trim()].join("\n\n").trim();
     const calls = output
@@ -275,8 +289,11 @@ export async function runOpenAIResponsesTurn(
       return turn.finished(usage, text || "No changes proposed.");
     }
     // The response goes back as it came — reasoning, message and calls — so
-    // each call is answered beside the thinking that made it.
-    input.push(...output);
+    // each call is answered beside the thinking that made it. The reasoning
+    // is not counted against `room`: its encrypted size says little about the
+    // tokens it takes, and the model's long thinking can still fill the
+    // context over many lookups, which the provider then refuses.
+    input.push(...carriedBack(output));
     room -= content.length;
     const answered = await answerToolCalls(calls, options, turn, room);
     room = answered.room;
@@ -291,6 +308,7 @@ export async function runOpenAIResponsesTurn(
       options.onText(said);
       return turn.finished(usage, said, answered.proposal);
     }
+    sent = tokenTotal(request);
   }
-  throw turn.lookupLimitReached(input, text, room);
+  throw turn.lookupLimitReached(input, text, room, sent);
 }

@@ -272,7 +272,7 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
                   {entry.cutOff && assist.continuable(index) && (
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${M.border}` }}>
                       <p style={{ margin: "0 0 10px", fontSize: 13, color: M.textSecondary }}>
-                        {continueHint(entry.cutOff, settings.outputLimit)}
+                        {continueHint(entry.cutOff, settings.outputLimit, assist.resumer)}
                       </p>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
@@ -281,7 +281,7 @@ export default function MobileAssistPage({ open, onBack, focus, onOpenSettings }
                           onClick={() => void assist.continueTurn(index)}
                           style={button("primary", !busy)}
                         >
-                          {carriesOn(entry.cutOff) ? "Continue" : "Retry"}
+                          {carriesOn(entry.cutOff, assist.resumer) ? "Continue" : "Retry"}
                         </button>
                         <button
                           type="button"

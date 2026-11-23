@@ -57,6 +57,12 @@ const families: Family[] = [
 const notChat =
   /embedding|tts|whisper|transcribe|audio|realtime|image|dall-e|moderation|search|instruct|deep-research|computer-use|sora/;
 
+/**
+ * Chat models that take no function tools, which every Board Assist request
+ * carries, and no reasoning effort: the first o1 previews.
+ */
+const noTools = /^o1-(mini|preview)/;
+
 const unreachable =
   "Could not reach OpenAI. Check this device's network connection and try again.";
 
@@ -74,7 +80,10 @@ export async function listOpenAIPlatformModels(
   });
   return list
     .filter(
-      (model) => /^(gpt-|chatgpt-|o\d)/.test(model.id) && !notChat.test(model.id),
+      (model) =>
+        /^(gpt-|chatgpt-|o\d)/.test(model.id) &&
+        !notChat.test(model.id) &&
+        !noTools.test(model.id),
     )
     .sort(
       (a, b) =>

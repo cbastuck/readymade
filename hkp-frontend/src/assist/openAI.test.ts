@@ -77,6 +77,9 @@ it("lists only the chat models, newest first, with their family's limits", async
             { id: "gpt-4o-realtime-preview", created: 6 },
             { id: "o4-mini", created: 4 },
             { id: "dall-e-3", created: 3 },
+            // No function tools, no reasoning effort.
+            { id: "o1-mini", created: 1 },
+            { id: "o1-preview", created: 1 },
           ],
         }),
         { status: 200 },
@@ -395,5 +398,158 @@ it("goes on from the requests before one cut off at its output limit", async () 
     call,
     { type: "function_call_output", call_id: "call_1", output: expect.any(String) },
   ]);
-  expect(carriesOn(failure.cutOff)).toBe(true);
+  expect(carriesOn(failure.cutOff, { via: "responses", model: "gpt-5" })).toBe(true);
+  expect(carriesOn(failure.cutOff, { via: "responses", model: "gpt-5-mini" })).toBe(false);
+});
+
+it("counts a resumed turn's room against the limit it continues with", async () => {
+  const call = {
+    type: "function_call",
+    id: "fc_1",
+    call_id: "call_1",
+    name: "search_documentation",
+    arguments: '{"query":"timer"}',
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValueOnce(
+        stream({
+          type: "response.completed",
+          response: {
+            status: "completed",
+            output: [call],
+            usage: { input_tokens: 3000, output_tokens: 40 },
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        stream({
+          type: "response.incomplete",
+          response: {
+            status: "incomplete",
+            incomplete_details: { reason: "max_output_tokens" },
+            output: [],
+            usage: { input_tokens: 3200, output_tokens: 16_000 },
+          },
+        }),
+      ),
+  );
+  const model: AssistModel = {
+    id: "gpt-4o",
+    display_name: "gpt-4o",
+    context_tokens: 128_000,
+    max_tokens: 16_384,
+  };
+  const failure = await runOpenAIPlatformTurn(turn(model, "default")).catch(
+    (error) => error,
+  );
+  const { transcript } = failure.cutOff;
+  // What the cut-off request read: what going on sends again.
+  expect(transcript.inputTokens).toBe(3200);
+  expect(transcript.used).toBeGreaterThan(0);
+
+  // A limit raised so far that what was read no longer fits beside it.
+  const continued = vi.fn(async () => answer());
+  vi.stubGlobal("fetch", continued);
+  const refused = await runOpenAIPlatformTurn({
+    ...turn({ ...model, max_tokens: 200_000 }, "default"),
+    outputLimit: 127_000,
+    continuation: failure.cutOff,
+  }).catch((error) => error);
+  expect(refused).toBeInstanceOf(OutputLimitError);
+  expect(refused.message).toMatch(/no longer fits/);
+  expect(refused.cutOff.transcript).toEqual(transcript);
+  expect(continued).not.toHaveBeenCalled();
+});
+
+it("leaves out reasoning it was not given the encrypted content of", async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: "completed",
+          output: [
+            { type: "reasoning", id: "rs_1", summary: [] },
+            {
+              type: "message",
+              id: "msg_1",
+              role: "assistant",
+              content: [{ type: "output_text", text: "Looking it up." }],
+            },
+            {
+              type: "function_call",
+              id: "fc_1",
+              call_id: "call_1",
+              name: "search_documentation",
+              arguments: '{"query":"timer"}',
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    )
+    .mockResolvedValueOnce(answer());
+  vi.stubGlobal("fetch", fetch);
+  await runOpenAIPlatformTurn(
+    turn({ id: "gpt-5.2-chat-latest", display_name: "gpt-5.2-chat-latest" }, "default"),
+  );
+  const { input } = sent(fetch, 1).body;
+  expect(input.slice(1, 4)).toEqual([
+    { role: "assistant", content: "Looking it up." },
+    {
+      type: "function_call",
+      call_id: "call_1",
+      name: "search_documentation",
+      arguments: '{"query":"timer"}',
+    },
+    { type: "function_call_output", call_id: "call_1", output: expect.any(String) },
+  ]);
+});
+
+it("says what the server reported when a response in JSON failed", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            status: "failed",
+            error: { code: "server_error", message: "The model is overloaded." },
+            output: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    ),
+  );
+  await expect(
+    runOpenAIPlatformTurn(turn({ id: "gpt-5", display_name: "gpt-5" }, "default")),
+  ).rejects.toThrow("The model is overloaded.");
+});
+
+it("says a response stopped by the content filter was not finished", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      stream({
+        type: "response.incomplete",
+        response: {
+          status: "incomplete",
+          incomplete_details: { reason: "content_filter" },
+          output: [
+            {
+              type: "message",
+              role: "assistant",
+              content: [{ type: "output_text", text: "Half an" }],
+            },
+          ],
+        },
+      }),
+    ),
+  );
+  await expect(
+    runOpenAIPlatformTurn(turn({ id: "gpt-5", display_name: "gpt-5" }, "default")),
+  ).rejects.toThrow(/content filter/);
 });

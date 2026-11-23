@@ -456,11 +456,15 @@ describe("Board Assist panel", () => {
   });
 
   it("continues a cut-off turn from its thinking, with the limit set since", async () => {
-    saveAssistSettings({ provider: "mistral", mistralToken: "mistral-key" });
-    mocks.mistralModels.mockResolvedValue([
-      { id: "mistral-medium", display_name: "mistral-medium", context_tokens: 131072 },
+    // A one-shot turn carries what the model wrote; a tool turn would not.
+    saveAssistSettings({
+      provider: "openai-compatible",
+      openAICompatibleUrl: "http://127.0.0.1:8081/v1",
+    });
+    mocks.localModels.mockResolvedValue([
+      { id: "bonsai", display_name: "Bonsai" },
     ]);
-    mocks.mistralRun
+    mocks.localRun
       .mockImplementationOnce(async (turn) => {
         turn.onReasoning("Weighing a clock against a timer.");
         throw new OutputLimitError(
@@ -470,13 +474,13 @@ describe("Board Assist panel", () => {
       })
       .mockResolvedValueOnce({ conversation: [], text: "Finished", board: undefined });
     const view = mount();
-    await screen.findByRole("option", { name: "mistral-medium" });
+    await screen.findByRole("option", { name: "Bonsai" });
     fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
       target: { value: "Build a clock" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     const carryOn = await screen.findByRole("button", { name: "Continue" });
-    expect(mocks.mistralRun.mock.calls[0][0].outputLimit).toBeUndefined();
+    expect(mocks.localRun.mock.calls[0][0].outputLimit).toBeUndefined();
     expect(screen.getByText("Weighing a clock against a timer.")).toBeTruthy();
     // Typed while the cut-off turn waits, and never left before Continue.
     fireEvent.change(screen.getByLabelText("Output limit"), {
@@ -484,7 +488,7 @@ describe("Board Assist panel", () => {
     });
     fireEvent.click(carryOn);
     expect(await screen.findByText("Finished")).toBeTruthy();
-    expect(mocks.mistralRun.mock.calls[1][0]).toMatchObject({
+    expect(mocks.localRun.mock.calls[1][0]).toMatchObject({
       prompt: "Build a clock",
       outputLimit: 40000,
       continuation: { limit: 16384, reasoning: "Weighing a clock against a timer." },
@@ -494,6 +498,43 @@ describe("Board Assist panel", () => {
       screen.getByText("Continue with an output limit of 40,000 tokens"),
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Continue" })).toBeNull();
+    view.unmount();
+    view.host.remove();
+  });
+
+  it("offers Retry, not Continue, when the selected model cannot go on from the transcript", async () => {
+    saveAssistSettings({ provider: "mistral", mistralToken: "mistral-key" });
+    mocks.mistralModels.mockResolvedValue([
+      { id: "mistral-medium", display_name: "mistral-medium", context_tokens: 131072 },
+      { id: "mistral-small", display_name: "mistral-small", context_tokens: 131072 },
+    ]);
+    mocks.mistralRun.mockImplementationOnce(async () => {
+      throw new OutputLimitError("The response reached its output limit.", {
+        limit: 16384,
+        transcript: {
+          via: "chat",
+          model: "mistral-medium",
+          messages: [],
+          text: "",
+          inputTokens: 42000,
+        },
+      });
+    });
+    const view = mount();
+    await screen.findByRole("option", { name: "mistral-medium" });
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Build a clock" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByRole("button", { name: "Continue" });
+    expect(screen.getByText(/about 42,000 tokens of input each/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Model"), {
+      target: { value: "mistral-small" },
+    });
+    expect(await screen.findByRole("button", { name: "Retry" })).toBeTruthy();
+    expect(
+      screen.getByText(/select that model again to go on from there/),
+    ).toBeTruthy();
     view.unmount();
     view.host.remove();
   });

@@ -10,7 +10,9 @@ import {
   AssistUsage,
   formatTokens,
   fromAnthropicUsage,
+  inputTotal,
   noUsage,
+  tokenTotal,
 } from "./usage";
 import {
   Continuation,
@@ -138,12 +140,16 @@ export async function runAssistTurn(options: {
         },
       ];
   let text = resumed?.text ?? "";
+  // What the last request read (and, once answered, wrote): about what the
+  // next one sends again.
+  let sent = 0;
   const transcript = (said = text) => ({
     transcript: {
       via: "anthropic" as const,
       model: options.model.id,
       messages: [...messages],
       text: said,
+      ...(sent ? { inputTokens: sent } : {}),
     },
   });
   // Every request counts, the documentation lookups as much as the proposal.
@@ -176,8 +182,10 @@ export async function runAssistTurn(options: {
       options.onText(text);
     });
     const response = await stream.finalMessage();
-    usage = addUsage(usage, fromAnthropicUsage(response.usage));
+    const request = fromAnthropicUsage(response.usage);
+    usage = addUsage(usage, request);
     options.onUsage?.(usage);
+    sent = inputTotal(request);
     // The cut-off request is not carried: what goes on is the requests
     // before it, when there were any, and that one is asked again.
     if (response.stop_reason === "max_tokens")
@@ -243,6 +251,7 @@ export async function runAssistTurn(options: {
         board: proposal,
         usage,
       };
+    sent = tokenTotal(request);
     options.onStatus("Preparing a response…");
   }
   throw new LookupLimitError({ limit: maxTokens, ...transcript() });

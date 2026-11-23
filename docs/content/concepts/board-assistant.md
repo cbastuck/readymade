@@ -128,8 +128,8 @@ settings; local servers can send with no API token.
 write, the model's thinking included. Left empty, each provider keeps its
 default: 16,384 tokens for Anthropic (less where a model states less) and for
 Mistral, what the model's family can write for OpenAI, a model's stated limit for OpenCode Go (32,768 when it states none),
-and 4,096 for an OpenAI-compatible server — the last three never more than a
-quarter of the context. A limit set here is used as it is, up to what a model
+and 4,096 for an OpenAI-compatible server — all but Anthropic's never more
+than a quarter of the context. A limit set here is used as it is, up to what a model
 states it can write; one that leaves too little of the context for the board is
 refused before anything is sent. The OpenCode server's API takes no limit, so
 it has no such field.
@@ -138,8 +138,8 @@ A reasoning model can spend its whole limit thinking before it writes a word.
 What it sent is kept: its thinking, behind **Show the model's thinking**, and
 the answer as far as it got. When the last turn ended at its limit, it offers
 **Continue**, which asks the same request again with the output limit set at
-that moment — raise it first. The new request carries what the model wrote, as
-its own turn, and asks it to go on from there rather than start over; thinking
+that moment — raise it first. For an OpenAI-compatible server, OpenCode and
+OpenCode Go, the new request carries what the model wrote, as its own turn, and asks it to go on from there rather than start over; thinking
 too long for the room the context leaves loses its beginning. Whether the
 model picks up mid-thought or reconsiders from its notes is up to the model,
 but it starts from what it already worked out. Anthropic's, Mistral's and OpenAI's turns
@@ -148,13 +148,22 @@ is asked again with the new limit, and the ones before it are carried as they
 were — the documentation the model read and, where the provider hands it out,
 its reasoning (Anthropic's thinking, OpenAI's encrypted reasoning) — so it goes
 on from where it stopped. A turn cut off at its first request has nothing to
-carry, and the button is **Retry**: the same request, asked afresh.
+carry, and the button is **Retry**: the same request, asked afresh. The room
+the carried requests leave is counted again against the new limit, which a
+raised limit makes smaller; one raised so far that what was read no longer
+fits is refused before anything is sent, and **Continue** stays.
+
+Going on from a tool turn sends everything carried again with every further
+request, and each is billed for it as input; the hint beside **Continue** says
+about how many tokens that is, as the provider counted the last request.
 
 A tool turn makes at most 12 requests. One that used them all without
 proposing or answering offers **Continue** too, which goes on from the last of
 them for up to 12 more. Either way, what is carried is kept in memory beside
 the failed turn only, until the next request, and goes on only with the same
-model: another cannot read the first one's reasoning, and starts afresh. The
+model over the same provider: another cannot read the first one's reasoning.
+With another model selected the button says **Retry** and names the model to
+select again to go on instead. The
 cut-off attempt's tokens count in the conversation's usage either way
 (`hkp-frontend/src/assist/outputLimit.ts`).
 

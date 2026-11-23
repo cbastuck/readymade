@@ -28,7 +28,9 @@ import {
   AssistUsage,
   formatTokens,
   fromOpenAIUsage,
+  inputTotal,
   noUsage,
+  tokenTotal,
 } from "./usage";
 import type { RunningCatalog } from "./serviceCatalog";
 import { BoardDescriptor } from "../types";
@@ -143,8 +145,10 @@ export async function prepareToolTurn(
   });
   const { maxTokens } = budget;
   const user = `${options.prompt}\n\n${scopeInstruction(options.scope)}\n\nCurrent board and editing context:\n${JSON.stringify(options.context)}`;
+  const resumed = resumedTranscript(options.continuation, via, options.model.id);
   let room = budget.room - (assistSystem.length + user.length);
-  if (room < 0)
+  // A resumed turn's board is in what it had taken, counted below.
+  if (room < 0 && resumed?.used === undefined)
     throw tooLargeForContext(
       budget,
       "This board is too large for the model's context. Choose a model with a larger context, or edit a smaller board.",
@@ -178,15 +182,37 @@ export async function prepareToolTurn(
     ...(board ? { board } : {}),
     usage,
   });
-  const resumed = resumedTranscript(options.continuation, via, options.model.id);
+  // A resumed turn counts what it had taken against this turn's budget: the
+  // output limit was likely raised to continue, which leaves less of the
+  // context for what it reads.
+  if (resumed?.used !== undefined) {
+    room = budget.room - resumed.used;
+    if (room < 0)
+      throw new OutputLimitError(
+        `With an output limit of ${formatTokens(maxTokens)} tokens, what the model has read so far no longer fits the ${formatTokens(budget.contextTokens)}-token context. Lower the output limit in Model settings, then continue.`,
+        { limit: maxTokens, transcript: resumed },
+      );
+  }
   // Only what a later request can go on from: a turn cut off at its first
   // request has nothing, and is asked again.
-  const transcript = (messages: unknown[], text: string, room: number) => ({
-    transcript: { via, model: options.model.id, messages: [...messages], text, room },
+  const transcript = (
+    messages: unknown[],
+    text: string,
+    room: number,
+    inputTokens: number,
+  ) => ({
+    transcript: {
+      via,
+      model: options.model.id,
+      messages: [...messages],
+      text,
+      used: budget.room - room,
+      ...(inputTokens ? { inputTokens } : {}),
+    },
   });
   return {
     maxTokens,
-    room: resumed?.room ?? room,
+    room,
     user,
     earlier,
     tools,
@@ -195,23 +221,33 @@ export async function prepareToolTurn(
     finished,
     /** The requests so far and what was said, when this turn resumes one. */
     resumed,
+    /** `inputTokens`: what the cut-off request read, as the provider counted. */
     outputLimitReached: (
       step: number,
       messages: unknown[],
       text: string,
       room: number,
+      inputTokens: number,
     ) =>
       new OutputLimitError(
         `The response reached its output limit (${formatTokens(maxTokens)} tokens). Raise the output limit in Model settings, then ${step || resumed ? "continue" : "retry"}.`,
         {
           limit: maxTokens,
-          ...(step || resumed ? transcript(messages, text, room) : {}),
+          ...(step || resumed
+            ? transcript(messages, text, room, inputTokens)
+            : {}),
         },
       ),
-    lookupLimitReached: (messages: unknown[], text: string, room: number) =>
+    /** `inputTokens`: what the last request read and wrote, as counted. */
+    lookupLimitReached: (
+      messages: unknown[],
+      text: string,
+      room: number,
+      inputTokens: number,
+    ) =>
       new LookupLimitError({
         limit: maxTokens,
-        ...transcript(messages, text, room),
+        ...transcript(messages, text, room, inputTokens),
       }),
   };
 }
@@ -270,12 +306,6 @@ export async function runOpenAIToolTurn(
   options: ToolTurnOptions & {
     /** Whether to ask for usage on a streamed answer (`stream_options`). */
     streamUsage?: boolean;
-    /**
-     * What the output limit is called in the request. OpenAI's reasoning
-     * models refuse `max_tokens` and take `max_completion_tokens`; other
-     * servers know only the older name.
-     */
-    outputLimitField?: "max_tokens" | "max_completion_tokens";
   },
 ): Promise<ToolTurnResult> {
   const turn = await prepareToolTurn(options, "chat");
@@ -291,6 +321,8 @@ export async function runOpenAIToolTurn(
   let usage = noUsage;
   let text = turn.resumed?.text ?? "";
   let reasoning = "";
+  // What the last request read and wrote: about what the next one sends.
+  let sent = 0;
   for (let step = 0; step < TOOL_STEPS; step++) {
     options.signal.throwIfAborted();
     options.onStatus(
@@ -311,7 +343,7 @@ export async function runOpenAIToolTurn(
             parameters: tool.inputSchema,
           },
         })),
-        [options.outputLimitField ?? "max_tokens"]: maxTokens,
+        max_tokens: maxTokens,
         stream: true,
         ...(options.streamUsage === false
           ? {}
@@ -326,7 +358,8 @@ export async function runOpenAIToolTurn(
       },
     );
     options.signal.throwIfAborted();
-    usage = addUsage(usage, fromOpenAIUsage(data.usage));
+    const request = fromOpenAIUsage(data.usage);
+    usage = addUsage(usage, request);
     options.onUsage?.(usage);
     const choice = data.choices?.[0];
     const message = choice?.message;
@@ -335,7 +368,13 @@ export async function runOpenAIToolTurn(
       options.onReasoning?.(reasoning);
     }
     if (choice?.finish_reason === "length")
-      throw turn.outputLimitReached(step, messages, text, room);
+      throw turn.outputLimitReached(
+        step,
+        messages,
+        text,
+        room,
+        inputTotal(request),
+      );
     const content = typeof message?.content === "string" ? message.content : "";
     if (content.trim()) text = [text, content.trim()].join("\n\n").trim();
     const calls: OpenAIToolCall[] = (message?.tool_calls ?? []).map(
@@ -377,6 +416,7 @@ export async function runOpenAIToolTurn(
       options.onText(said);
       return turn.finished(usage, said, answered.proposal);
     }
+    sent = tokenTotal(request);
   }
-  throw turn.lookupLimitReached(messages, text, room);
+  throw turn.lookupLimitReached(messages, text, room, sent);
 }

@@ -33,6 +33,7 @@ import {
   joinCutOffs,
   cutOffOf,
   parseOutputLimit,
+  Resumer,
   TOOL_STEPS,
 } from "./outputLimit";
 import { matchesAssistSnapshot } from "./snapshotComparison";
@@ -151,6 +152,16 @@ export function useBoardAssist({
   const openCodeGo = settings.provider === "opencode-go";
   const mistral = settings.provider === "mistral";
   const openAI = settings.provider === "openai";
+  // What a turn sent now goes on from a cut-off one with: the tool turns
+  // over their own API, the others from what the model wrote.
+  const via: Resumer["via"] =
+    settings.provider === "anthropic"
+      ? "anthropic"
+      : openAI
+        ? "responses"
+        : mistral
+          ? "chat"
+          : "text";
   const providerReady = openAI
     ? !!settings.openAIToken.trim()
     : compatible
@@ -640,7 +651,9 @@ export function useBoardAssist({
     if (!cutOff || !continuable(index)) return Promise.resolve();
     const { prompt: request, ...cut } = cutOff;
     const limit = commitOutputLimit();
-    const verb = carriesOn(cut) ? "Continue" : "Retry";
+    const verb = carriesOn(cut, { via, model: model?.id ?? "" })
+      ? "Continue"
+      : "Retry";
     return runTurn(
       request,
       cut.lookups
@@ -878,6 +891,8 @@ export function useBoardAssist({
     /** Whether the entry at this index is a cut-off turn Continue goes on from. */
     continuable,
     continueTurn,
+    /** What Continue would go on with: the provider's API and the model now selected. */
+    resumer: { via, model: model?.id ?? "" } satisfies Resumer,
     /** Whether the provider takes an output limit; OpenCode's server does not. */
     takesOutputLimit: !openCode,
     outputLimitDraft,
