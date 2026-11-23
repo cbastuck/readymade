@@ -305,7 +305,7 @@ export async function requestCompletion(
     event(payload);
   };
   try {
-    while (true) {
+    for (;;) {
       signal.throwIfAborted();
       const { done, value } = await reader.read();
       buffer += done

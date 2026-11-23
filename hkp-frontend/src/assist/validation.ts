@@ -76,12 +76,18 @@ export function validateAssistBoard(
       .slice(0, FACADE_PROBLEMS_SHOWN);
     if (added.length) {
       // The shape of each type a problem names, to read rather than the
-      // whole schema: the innermost `(type)` is where the problem is.
+      // whole schema: the innermost `(type)` is where the problem is. A wrong
+      // number, boolean or null is shown in parentheses too, after the type,
+      // so the innermost one that names a type counts.
       const parts = [
         ...new Set(
           added
-            .map((problem) => [...problem.matchAll(/\(([\w-]+)\)/g)].pop()?.[1])
-            .map((tag) => tag && facadeTypePath(tag))
+            .map((problem) =>
+              [...problem.matchAll(/\(([\w-]+)\)/g)]
+                .map((match) => facadeTypePath(match[1]))
+                .filter((path): path is string => !!path)
+                .pop(),
+            )
             .filter((path): path is string => !!path),
         ),
       ];

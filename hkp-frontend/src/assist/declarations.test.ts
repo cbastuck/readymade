@@ -10,7 +10,7 @@ import { FACADE_TYPES, facadeTypePath, readDocumentation } from "./documentation
 
 it("reads one widget's shape, a small part of the schema, with what it names", () => {
   const knob = readDeclaration(FACADE_TYPES, "KnobWidget", facadeTypes);
-  expect(knob).toMatch(/^export type KnobWidget = \{\n  type: "knob";/);
+  expect(knob).toMatch(/^export type KnobWidget = \{\n {2}type: "knob";/);
   expect(knob).toContain(`${FACADE_TYPES}#KnobMarker`);
   expect(knob.length).toBeLessThan(facadeTypes.length / 10);
 });
