@@ -1,4 +1,5 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+import BrowserRegistry from "../runtime/browser/BrowserRegistry";
 import { BoardDescriptor } from "../types";
 import { unknownServices } from "./serviceCatalog";
 
@@ -57,4 +58,20 @@ it("holds a proposal only to what it adds", async () => {
 it("skips block uses, which are checked where they are defined", async () => {
   const board = boardOf({ ui: [{ uuid: "b", block: "my-block" } as any], node: [] });
   expect(await unknownServices(board, running)).toEqual([]);
+});
+
+it("builds a browser registry once a turn, however often the turn checks", async () => {
+  const build = vi.spyOn(BrowserRegistry, "create");
+  const catalog = { ...running };
+  const base = boardOf({ ui: [svc("old", "gone")], node: [] });
+  const proposal = () =>
+    boardOf({ ui: [svc("old", "gone"), svc("new", "also-gone")], node: [] });
+  // The proposal tool's check, then preflight's on the same board.
+  const first = await unknownServices(proposal(), catalog, base);
+  expect(await unknownServices(proposal(), catalog, base)).toEqual(first);
+  expect(build).toHaveBeenCalledTimes(1);
+  // The next turn brings its own catalog, and asks afresh.
+  await unknownServices(proposal(), { ...running }, base);
+  expect(build).toHaveBeenCalledTimes(2);
+  build.mockRestore();
 });

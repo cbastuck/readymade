@@ -21,6 +21,8 @@ const superprojectPaths = [
   "boards",
   "hkp-frontend/src/runtime/browser",
   "hkp-rt/lib",
+  // documentSources in src/repository.ts
+  "hkp-frontend/src/facade/types.ts",
   "LICENSE",
 ];
 // Ignored by git, and only ever written by this script, so it is safe to

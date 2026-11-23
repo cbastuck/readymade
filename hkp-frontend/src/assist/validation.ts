@@ -1,5 +1,6 @@
 import { BoardDescriptor } from "../types";
 import { FACADE_PROBLEMS_SHOWN, facadeProblems } from "../facade/validateFacade";
+import { FACADE_TYPES, facadeTypePath } from "./documentation";
 
 /** A facade problem as it reads wherever its widget sits. */
 const unplaced = (problem: string) => problem.replace(/\[\d+\]/g, "[]");
@@ -73,10 +74,23 @@ export function validateAssistBoard(
         return !left;
       })
       .slice(0, FACADE_PROBLEMS_SHOWN);
-    if (added.length)
+    if (added.length) {
+      // The shape of each type a problem names, to read rather than the
+      // whole schema: the innermost `(type)` is where the problem is.
+      const parts = [
+        ...new Set(
+          added
+            .map((problem) => [...problem.matchAll(/\(([\w-]+)\)/g)].pop()?.[1])
+            .map((tag) => tag && facadeTypePath(tag))
+            .filter((path): path is string => !!path),
+        ),
+      ];
       throw new Error(
-        `The facade does not match its schema (hkp-frontend/src/facade/types.ts):\n- ${added.join("\n- ")}`,
+        `The facade does not match its schema (${FACADE_TYPES}):\n- ${added.join("\n- ")}${
+          parts.length ? `\nRead the shapes it names: ${parts.join(", ")}.` : ""
+        }`,
       );
+    }
   }
   return value as BoardDescriptor;
 }

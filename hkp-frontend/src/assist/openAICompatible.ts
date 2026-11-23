@@ -2,7 +2,13 @@ import type { AssistModel, Conversation } from "./anthropic";
 import { bundledKnowledgeProvider } from "./documentation";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import { AssistUsage, formatTokens, fromOpenAIUsage } from "./usage";
-import { carriesOn, Continuation, OutputLimitError } from "./outputLimit";
+import {
+  carriesOn,
+  contextBudget,
+  Continuation,
+  OutputLimitError,
+  tooLargeForContext,
+} from "./outputLimit";
 import { BoardDescriptor, toCanonicalServiceId } from "../types";
 import {
   AssistScope,
@@ -394,7 +400,8 @@ export function serviceNames(value: unknown, names = new Set<string>()) {
  * `tooLarge`, and old proposals give way to it. The response is allowed
  * `outputTokens` — what the model states it can write, which includes its
  * reasoning — or 4096 when unstated, and never more than a quarter of the
- * context. An `outputLimit` the person set is used as it is.
+ * context. An `outputLimit` the person set is used as it is, up to the
+ * `stated` most the model can write (`contextBudget`).
  *
  * A `continuation` — what the model wrote before an earlier attempt at the
  * same request reached its limit — is carried in the turn after the request,
@@ -405,6 +412,8 @@ export async function prepareTextTurn(options: {
   contextTokens: number;
   outputTokens?: number;
   outputLimit?: number;
+  /** What the model states it can write, where it states it. */
+  stated?: number | null;
   continuation?: Continuation;
   conversation: Conversation;
   prompt: string;
@@ -414,11 +423,13 @@ export async function prepareTextTurn(options: {
   knowledgeProvider?: ReadymadeKnowledgeProvider;
   tooLarge: string;
 }) {
-  const limit = Math.max(4096, options.contextTokens || 8192);
-  const maxTokens =
-    options.outputLimit ||
-    Math.min(options.outputTokens || 4096, Math.floor(limit / 4));
-  const budget = (limit - maxTokens - 512) * 2;
+  const turnBudget = contextBudget({
+    contextTokens: options.contextTokens,
+    outputLimit: options.outputLimit,
+    stated: options.stated,
+    defaultOutput: options.outputTokens,
+  });
+  const { maxTokens, room: budget } = turnBudget;
   const promptContext =
     options.context && typeof options.context === "object"
       ? Object.fromEntries(
@@ -430,11 +441,7 @@ export async function prepareTextTurn(options: {
   const context = JSON.stringify(promptContext);
   const user = `Request: ${options.prompt}\n${scopeInstruction(options.scope)}\nCurrent board and editing context: ${context}`;
   if (openAICompatibleSystem.length + user.length > budget)
-    throw new Error(
-      options.outputLimit
-        ? `The output limit (${formatTokens(maxTokens)} tokens) leaves too little of the ${formatTokens(limit)}-token context for this board. Lower it in Model settings, or edit a smaller board.`
-        : options.tooLarge,
-    );
+    throw tooLargeForContext(turnBudget, options.tooLarge);
   const carried = options.continuation
     ? continuationMessages(
         options.continuation,
@@ -585,13 +592,9 @@ export async function runOpenAICompatibleTurn(options: OpenAIRequestOptions & {
   knowledgeProvider?: ReadymadeKnowledgeProvider;
 }) {
   options.signal.throwIfAborted();
-  const stated = options.model.max_tokens;
   const { maxTokens, user, documentation, recent, carried } = await prepareTextTurn({
     ...options,
-    outputLimit:
-      options.outputLimit && stated
-        ? Math.min(options.outputLimit, stated)
-        : options.outputLimit,
+    stated: options.model.max_tokens,
     tooLarge:
       "This board is too large for the configured server context size. Increase the context limit in the server and AI settings, or edit a smaller board.",
   });

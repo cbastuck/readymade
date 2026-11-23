@@ -78,6 +78,12 @@ describe("KnowledgeRepository", () => {
     expect(() => repository.readDocuments(["hkp-node/src/services/timer.ts"])).toThrow("not an indexed document");
   });
 
+  it("reads the facade's schema at the path Board Assist lists it under", () => {
+    const [schema] = repository.readDocuments(["hkp-frontend/src/facade/types.ts"]);
+    expect(schema.content).toContain("export type FacadeDescriptor");
+    expect(schema.provenance.path).toBe("hkp-frontend/src/facade/types.ts");
+  });
+
   it("finds board examples", () => {
     const examples = repository.findBoardExamples(["hookup.to/service/filter"]);
     expect(examples.some((item) => item.provenance.path === "boards/filter-demo-board.json")).toBe(true);

@@ -31,15 +31,17 @@ const unreachable =
 type MistralModel = {
   id: string;
   name?: string | null;
-  capabilities?: { completion_chat?: unknown };
+  capabilities?: { completion_chat?: unknown; function_calling?: unknown };
   max_context_length?: unknown;
 };
 
 /**
- * The models Board Assist can use: those that chat. Embedding, moderation and
- * OCR models are on the same list. A model that states no capabilities is
- * kept, as a plain OpenAI-compatible list would have it; an id listed twice
- * is shown once.
+ * The models Board Assist can use: those that chat and call tools, since
+ * every turn reads documentation and proposes through tool calls. Embedding,
+ * moderation and OCR models are on the same list, and so are chat models
+ * without function calling, which Mistral refuses a request with tools for. A
+ * model that states no capabilities is kept, as a plain OpenAI-compatible
+ * list would have it; an id listed twice is shown once.
  */
 export async function listMistralModels(
   token: string,
@@ -50,7 +52,11 @@ export async function listMistralModels(
   })) as MistralModel[];
   const seen = new Set<string>();
   return list
-    .filter((model) => model.capabilities?.completion_chat !== false)
+    .filter(
+      (model) =>
+        model.capabilities?.completion_chat !== false &&
+        model.capabilities?.function_calling !== false,
+    )
     .filter((model) => !seen.has(model.id) && seen.add(model.id))
     .map((model) => ({
       id: model.id,

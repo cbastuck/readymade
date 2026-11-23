@@ -74,7 +74,7 @@ describe("assistant board validation", () => {
       },
     });
     expect(() => validateAssistBoard(table([{ key: "title" }]))).toThrow(
-      "The facade does not match its schema (hkp-frontend/src/facade/types.ts):\n- facade.panels[0].layout (data-table).columns[0]: must be string, not object.",
+      "The facade does not match its schema (hkp-frontend/src/facade/types.ts):\n- facade.panels[0].layout (data-table).columns[0]: must be string, not object.\nRead the shapes it names: hkp-frontend/src/facade/types.ts#DataTableWidget.",
     );
     expect(() => validateAssistBoard(table(["title"]))).not.toThrow();
   });

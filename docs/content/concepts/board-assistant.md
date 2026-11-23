@@ -186,10 +186,15 @@ definitions, `hkp-frontend/src/facade/types.ts`, which `board-json.md` points
 to for the shape of every widget. All three are packaged into builds, so the documentation
 matches that build and requires no documentation server. It reads the relevant
 service contracts, configuration and data shapes before proposing a board.
+The schema can be read one declaration at a time —
+`hkp-frontend/src/facade/types.ts#KnobWidget` is one widget's shape, with the
+types it names listed as paths to read next — so a model with a small context
+reads the widgets it uses rather than the whole file
+(`hkp-frontend/src/assist/declarations.ts`).
 
 Board Assist also asks a read-only MCP knowledge server, `readymade-mcp/` in
-this repository. It indexes the same documentation plus example boards and
-allowlisted runtime source from a pinned checkout. Its tools can search, read
+this repository. It indexes the same documentation, the facade's schema included,
+plus example boards and allowlisted runtime source from a pinned checkout. Its tools can search, read
 contracts, find compatible services and examples, inspect bounded source
 excerpts, and statically validate a board. Each result carries build and commit
 provenance.
@@ -303,7 +308,8 @@ schema, generated from `hkp-frontend/src/facade/types.ts`
 (`hkp-frontend/src/facade/validateFacade.ts`): each problem says where it is,
 which widget it belongs to and what was expected — a data-table column that is
 an object rather than a name, a property a widget does not have, a widget type
-there is none of. Only what the proposal adds counts; a facade that was already
+there is none of — and names the declaration to read for each widget it
+mentions. Only what the proposal adds counts; a facade that was already
 off does not block changes around it. The same checks run when the model
 proposes, so Anthropic and Mistral models are told what is wrong and repair it
 within the turn rather than handing over a board that cannot render. A failed preflight leaves the proposal and

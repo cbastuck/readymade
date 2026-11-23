@@ -46,6 +46,67 @@ export function joinCutOffs(earlier: Continuation | undefined, later: CutOff): C
   };
 }
 
+/**
+ * What a turn may write, in tokens: the output limit the person set, or
+ * `fallback` without one — never more than the model states it can write.
+ */
+export function outputTokens(options: {
+  outputLimit?: number;
+  /** What the model states it can write, where it states it. */
+  stated?: number | null;
+  fallback: number;
+}): number {
+  const tokens = options.outputLimit || options.fallback;
+  return Math.min(tokens, options.stated || tokens);
+}
+
+/**
+ * How a turn to a model of a given context divides it: what the answer may
+ * write (`outputTokens`, by default at most a quarter of the context), and
+ * the room left for the request, in characters — counted at two a token so
+ * that dense JSON fits too, with 512 tokens kept for the framing.
+ */
+export type ContextBudget = {
+  contextTokens: number;
+  maxTokens: number;
+  room: number;
+  /** Whether `maxTokens` is the person's output limit. */
+  limited: boolean;
+};
+
+export function contextBudget(options: {
+  contextTokens?: number;
+  outputLimit?: number;
+  stated?: number | null;
+  /** What a turn writes by default, before the quarter-of-context cap. */
+  defaultOutput?: number;
+}): ContextBudget {
+  const contextTokens = Math.max(4096, options.contextTokens || 8192);
+  const maxTokens = outputTokens({
+    outputLimit: options.outputLimit,
+    stated: options.stated,
+    fallback: Math.min(options.defaultOutput || 4096, Math.floor(contextTokens / 4)),
+  });
+  return {
+    contextTokens,
+    maxTokens,
+    room: (contextTokens - maxTokens - 512) * 2,
+    limited: !!options.outputLimit,
+  };
+}
+
+/**
+ * Why a request does not fit its budget: the person's output limit, when
+ * they set one, or `otherwise` — what the provider's context is called.
+ */
+export function tooLargeForContext(budget: ContextBudget, otherwise: string) {
+  return new Error(
+    budget.limited
+      ? `The output limit (${formatTokens(budget.maxTokens)} tokens) leaves too little of the ${formatTokens(budget.contextTokens)}-token context for this board. Lower it in Model settings, or edit a smaller board.`
+      : otherwise,
+  );
+}
+
 export const MIN_OUTPUT_LIMIT = 1024;
 const MAX_OUTPUT_LIMIT = 1_000_000;
 

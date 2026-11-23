@@ -187,9 +187,30 @@ export function useBoardAssist({
   const session = useRef("");
   const abort = useRef<AbortController | null>(null);
 
+  // The provider settings the model list was fetched for. Hiding the view and
+  // showing it again — closing the panel, or the chrome retracting around the
+  // facade — keeps the list and whatever the panel says; only a change of
+  // provider, its address or its credentials, or Reload, asks again.
+  const modelsFetchedFor = useRef<string | null>(null);
+  const modelSource = JSON.stringify([
+    settings.provider,
+    settings.anthropicToken,
+    settings.mistralToken,
+    settings.openAICompatibleUrl,
+    settings.openAICompatibleToken,
+    settings.openCodeUrl,
+    settings.openCodeUsername,
+    settings.openCodePassword,
+    settings.openCodeGoUrl,
+    settings.openCodeGoToken,
+    settings.openCodeGoRelayKey,
+    reload,
+  ]);
+
   useEffect(() => () => abort.current?.abort(), []);
   useEffect(() => {
-    if (!active) return;
+    if (!active || modelsFetchedFor.current === modelSource) return;
+    modelsFetchedFor.current = null;
     setModels([]);
     setModelsLoading(false);
     if (!providerReady) return;
@@ -221,6 +242,7 @@ export function useBoardAssist({
             : listAssistModels(settings.anthropicToken, controller.signal))
       .then((list) => {
         if (controller.signal.aborted) return;
+        modelsFetchedFor.current = modelSource;
         setModels(list);
         if (!list.length)
           setError("No available models were returned by this provider.");
@@ -237,6 +259,7 @@ export function useBoardAssist({
     return () => controller.abort();
   }, [
     active,
+    modelSource,
     settings.anthropicToken,
     settings.mistralToken,
     settings.openAICompatibleUrl,

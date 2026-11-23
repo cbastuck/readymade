@@ -643,6 +643,31 @@ describe("Board Assist panel", () => {
     view.unmount();
     view.host.remove();
   });
+  it("is back as it was when shown again: the same models, the same error", async () => {
+    mocks.run.mockRejectedValueOnce(new Error("The turn went wrong."));
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const view = render(
+      <BoardAssistPanel host={host} visible onClose={() => {}} />,
+    );
+    await screen.findByRole("option", { name: "Queried model" });
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Change this timer" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    const alert = async () =>
+      (await screen.findByRole("alert")).textContent;
+    expect(await alert()).toBe("The turn went wrong.");
+    view.rerender(
+      <BoardAssistPanel host={host} visible={false} onClose={() => {}} />,
+    );
+    view.rerender(<BoardAssistPanel host={host} visible onClose={() => {}} />);
+    expect(await alert()).toBe("The turn went wrong.");
+    expect(screen.getByRole("option", { name: "Queried model" })).toBeTruthy();
+    expect(mocks.models).toHaveBeenCalledTimes(1);
+    view.unmount();
+    host.remove();
+  });
   it("stays hidden while the board is shown as its facade alone", () => {
     mocks.board.facade = { layout: "single", panels: [] };
     const view = mountOverFacadeView(() => {});

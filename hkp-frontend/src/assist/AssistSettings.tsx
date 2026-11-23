@@ -516,7 +516,7 @@ export default function AssistSettings() {
 
       <SettingsSection
         label="Knowledge server"
-        hint="MCP endpoint for richer, version-labelled Readymade knowledge, used with any provider. Leave the URL empty to use the Readymade knowledge server; Board Assist falls back to the documentation bundled with this app whenever the server is unavailable."
+        hint="MCP endpoint for richer, version-labelled Readymade knowledge, used with any provider. With the URL empty, Board Assist asks the Readymade knowledge server. Enter your own, such as one running on this machine, or turn the server off to use only the documentation bundled with this app. Whenever the server is unavailable, Board Assist falls back to that bundled documentation."
       >
         <SettingsCard>
           <div
@@ -544,7 +544,7 @@ export default function AssistSettings() {
               <SettingsInput
                 type="url"
                 spellCheck={false}
-                placeholder={DEFAULT_MCP_KNOWLEDGE_URL}
+                placeholder={`Default: ${DEFAULT_MCP_KNOWLEDGE_URL}`}
                 {...text("mcpKnowledgeUrl")}
               />
             </SettingsField>

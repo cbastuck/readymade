@@ -12,7 +12,7 @@ import {
   fromAnthropicUsage,
   noUsage,
 } from "./usage";
-import { OutputLimitError } from "./outputLimit";
+import { OutputLimitError, outputTokens } from "./outputLimit";
 import { bundledKnowledgeProvider } from "./documentation";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import { Effort } from "./settings";
@@ -116,10 +116,11 @@ export async function runAssistTurn(options: {
   let text = "";
   // Every request counts, the documentation lookups as much as the proposal.
   let usage = noUsage;
-  const stated = options.model.max_tokens;
-  const maxTokens = options.outputLimit
-    ? Math.min(options.outputLimit, stated || options.outputLimit)
-    : Math.min(16384, stated || 16384);
+  const maxTokens = outputTokens({
+    outputLimit: options.outputLimit,
+    stated: options.model.max_tokens,
+    fallback: 16384,
+  });
   for (let step = 0; step < 12; step++) {
     options.signal.throwIfAborted();
     const effort = modelEfforts(options.model).includes(options.effort)

@@ -12,7 +12,11 @@ import {
   OpenAIToolCall,
   requestCompletion,
 } from "./openAICompatible";
-import { OutputLimitError } from "./outputLimit";
+import {
+  contextBudget,
+  OutputLimitError,
+  tooLargeForContext,
+} from "./outputLimit";
 import { AssistScope, scopeInstruction } from "./scope";
 import {
   addUsage,
@@ -112,20 +116,19 @@ export async function runOpenAIToolTurn(
   usage: AssistUsage;
 }> {
   options.signal.throwIfAborted();
-  const limit = Math.max(4096, options.contextTokens || 8192);
-  const stated = options.model.max_tokens;
-  const maxTokens = options.outputLimit
-    ? Math.min(options.outputLimit, stated || options.outputLimit)
-    : Math.min(options.outputTokens || 4096, Math.floor(limit / 4));
-  // Characters, counted at two a token so that dense JSON fits too.
-  let room = (limit - maxTokens - 512) * 2;
+  const budget = contextBudget({
+    contextTokens: options.contextTokens,
+    outputLimit: options.outputLimit,
+    stated: options.model.max_tokens,
+    defaultOutput: options.outputTokens,
+  });
+  const { maxTokens } = budget;
   const user = `${options.prompt}\n\n${scopeInstruction(options.scope)}\n\nCurrent board and editing context:\n${JSON.stringify(options.context)}`;
-  room -= assistSystem.length + user.length;
+  let room = budget.room - (assistSystem.length + user.length);
   if (room < 0)
-    throw new Error(
-      options.outputLimit
-        ? `The output limit (${formatTokens(maxTokens)} tokens) leaves too little of the ${formatTokens(limit)}-token context for this board. Lower it in Model settings, or edit a smaller board.`
-        : "This board is too large for the model's context. Choose a model with a larger context, or edit a smaller board.",
+    throw tooLargeForContext(
+      budget,
+      "This board is too large for the model's context. Choose a model with a larger context, or edit a smaller board.",
     );
   const knowledge = options.knowledgeProvider ?? bundledKnowledgeProvider;
   const { tools, agentTools } = await assistTools(options.scope, knowledge);

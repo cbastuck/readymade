@@ -1,4 +1,5 @@
 import { documentationIndex, foundation } from "./documentation";
+import { readDocumentParts } from "./declarations";
 import {
   isAgenticKnowledgeProvider,
   type ReadymadeKnowledgeProvider,
@@ -45,7 +46,7 @@ const coreTools: AssistTool[] = [
   {
     name: "read_documentation",
     description:
-      "Read complete documentation or example boards by exact indexed paths; at most eight per call.",
+      "Read complete documentation or example boards by exact indexed paths; at most eight per call. A TypeScript path takes #Name to read one declaration of it, such as hkp-frontend/src/facade/types.ts#KnobWidget for one widget's shape.",
     inputSchema: {
       type: "object",
       properties: {
@@ -128,17 +129,29 @@ export async function assistTools(
   };
 }
 
-function decodeArgument(value: unknown, name: string) {
-  // Some models serialize nested tool arguments despite the object schema.
-  // Decode once, then apply the same structural validation.
+/**
+ * An object or array some models send as its JSON text instead, decoded once.
+ * Anything else — text that is not JSON, or JSON of a plain value — is
+ * returned as it came.
+ */
+function decodeJsonText(value: unknown): unknown {
   if (typeof value !== "string") return value;
   try {
-    return JSON.parse(value);
+    const decoded = JSON.parse(value);
+    return decoded && typeof decoded === "object" ? decoded : value;
   } catch {
-    throw new Error(
-      `The ${name} argument is a string containing invalid JSON. Pass it as JSON, not a string.`,
-    );
+    return value;
   }
+}
+
+/** A proposal's argument, which the structural validation then checks. */
+function decodeArgument(value: unknown, name: string) {
+  const decoded = decodeJsonText(value);
+  if (typeof decoded === "string")
+    throw new Error(
+      `The ${name} argument is a string, not JSON. Pass it as a JSON object, not as text.`,
+    );
+  return decoded;
 }
 
 /** Whether a schema lets a value be text, so that text is meant as text. */
@@ -157,10 +170,11 @@ function admitsText(schema: unknown): boolean {
 
 /**
  * A knowledge tool's arguments as its server expects them. Some models send
- * an object as its JSON text — every time, for a property whose schema names
- * no type (`validate_board`'s `board`) — and the server then sees a string.
- * Text that is an object or an array is decoded wherever the schema does not
- * let the value be text.
+ * an object as its JSON text — most often for a property whose schema names
+ * no type — and the server then sees a string. Text that is an object or an
+ * array is decoded wherever the schema does not let the value be text; the
+ * readymade-mcp server decodes `validate_board`'s `board` itself too, for
+ * clients that do not.
  */
 function decodeArguments(
   args: Record<string, unknown>,
@@ -169,14 +183,7 @@ function decodeArguments(
   const properties = (schema.properties ?? {}) as Record<string, unknown>;
   return Object.fromEntries(
     Object.entries(args).map(([key, value]) => {
-      if (typeof value !== "string" || admitsText(properties[key]))
-        return [key, value];
-      try {
-        const decoded = JSON.parse(value);
-        return [key, decoded && typeof decoded === "object" ? decoded : value];
-      } catch {
-        return [key, value];
-      }
+      return [key, admitsText(properties[key]) ? value : decodeJsonText(value)];
     }),
   );
 }
@@ -229,7 +236,11 @@ export async function runAssistTool(
         "Read between one and eight documentation paths, as an array of strings.",
       );
     turn.onStatus("Reading service documentation…");
-    return { result: await knowledge.readDocuments(args.paths) };
+    return {
+      result: await readDocumentParts(args.paths, (paths) =>
+        knowledge.readDocuments(paths),
+      ),
+    };
   }
   if (name === proposalToolFor(turn.scope).name) {
     const board = resolveAssistProposal(

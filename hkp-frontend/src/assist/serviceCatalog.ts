@@ -37,6 +37,38 @@ export type UnknownService = {
 const sameEngine = (a: RuntimeDescriptor, b: Json) =>
   a.type === b.type && (a.url ?? "") === (b.url ?? "") && (a.remote ?? "") === (b.remote ?? "");
 
+/**
+ * What one catalog has already worked out. A turn checks its base board and
+ * every proposal against the same catalog, from the proposal tool and again
+ * in preflight; a browser registry is built once per set of bundles, and a
+ * board once checked is not walked again. Kept with the catalog, so the next
+ * turn, which brings its own, asks afresh.
+ */
+type Memo = {
+  registries: Map<string, Promise<Set<string>>>;
+  boards: Map<string, Promise<UnknownService[]>>;
+};
+const memos = new WeakMap<RunningCatalog, Memo>();
+function memoOf(running: RunningCatalog): Memo {
+  let memo = memos.get(running);
+  if (!memo) {
+    memo = { registries: new Map(), boards: new Map() };
+    memos.set(running, memo);
+  }
+  return memo;
+}
+
+/** The value `compute` gives for `key`, computed once; a failure is not kept. */
+function once<T>(cache: Map<string, Promise<T>>, key: string, compute: () => Promise<T>) {
+  let value = cache.get(key);
+  if (!value) {
+    value = compute();
+    cache.set(key, value);
+    value.catch(() => cache.delete(key));
+  }
+  return value;
+}
+
 /** The service ids `runtime` has, or undefined where that is not known here. */
 async function knownServices(
   runtime: Json,
@@ -48,8 +80,10 @@ async function knownServices(
     return new Set(listed.map((svc) => svc.serviceId));
   if (runtime.type !== "browser") return undefined;
   const bundles = Array.isArray(runtime.bundles) ? runtime.bundles : defaultBundles;
-  const registry = await BrowserRegistry.create(bundles);
-  return new Set(registry.allServices().map((svc) => svc.serviceId));
+  return once(memoOf(running).registries, JSON.stringify(bundles), async () => {
+    const registry = await BrowserRegistry.create(bundles);
+    return new Set(registry.allServices().map((svc) => svc.serviceId));
+  });
 }
 
 /** Every service entry of a pipeline, nested pipelines included. */
@@ -85,7 +119,14 @@ export async function unknownServices(
   return found.filter((u) => !before.has(key(u)));
 }
 
-async function findUnknown(
+function findUnknown(board: BoardDescriptor, running: RunningCatalog) {
+  const { runtimes, services } = board;
+  return once(memoOf(running).boards, JSON.stringify({ runtimes, services }), () =>
+    walkUnknown(board, running),
+  );
+}
+
+async function walkUnknown(
   board: BoardDescriptor,
   running: RunningCatalog,
 ): Promise<UnknownService[]> {

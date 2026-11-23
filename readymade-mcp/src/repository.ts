@@ -62,6 +62,13 @@ function contentSha256(content: string): string {
 /** Pages on their way into the documentation (`docs/content/drafts/index.md`). */
 const DRAFTS = "docs/content/drafts/";
 
+/**
+ * Source files that are documentation: `board-json.md` points to the facade's
+ * commented types for the shape of every widget, and Board Assist lists them
+ * among what it reads. scripts/bundle.mjs copies these too.
+ */
+const documentSources = [{ path: "hkp-frontend/src/facade/types.ts", title: "Facade schema" }];
+
 async function walk(directory: string, extensions: string[]): Promise<string[]> {
   const result: string[] = [];
   let entries;
@@ -280,6 +287,20 @@ export class KnowledgeRepository implements ValidationCatalog {
         runtimes: parsed ? [...new Set(parsed.availability.map((item) => item.runtime))] : [],
         serviceIds: parsed ? [...new Set(parsed.availability.map((item) => canonicalServiceId(item.serviceId)))] : [],
         provenance: { repository: "readymade", commit: rootCommit, contentSha256: contentSha256(content), path: relativePath, buildVersion, exactBuildMatch: true, indexedAt },
+      });
+    }
+
+    for (const source of documentSources) {
+      let content: string;
+      try { content = await readFile(path.join(absoluteRoot, source.path), "utf8"); } catch { continue; }
+      entries.push({
+        kind: "documentation",
+        title: source.title,
+        relativePath: source.path,
+        content,
+        runtimes: [],
+        serviceIds: [],
+        provenance: { repository: "readymade", commit: rootCommit, contentSha256: contentSha256(content), path: source.path, buildVersion, exactBuildMatch: true, indexedAt },
       });
     }
 

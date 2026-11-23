@@ -1,5 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 vi.mock("./documentation", () => ({
+  FACADE_TYPES: "hkp-frontend/src/facade/types.ts",
+  facadeTypePath: () => undefined,
   foundation: "board format",
   documentationIndex: "docs/services/timer.md",
   bundledKnowledgeProvider: {
@@ -458,6 +460,29 @@ it("keeps a cut-off turn's thinking to show, and asks again rather than going on
   // Nothing to go on from: the panel offers Retry, as for Anthropic.
   expect(failure.cutOff).toEqual({ limit: 16384 });
   expect(onReasoning).toHaveBeenCalledWith("Weighing a timer.");
+});
+
+it("offers only the models that chat and call tools", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: [
+              { id: "mistral-large-latest", capabilities: { completion_chat: true, function_calling: true }, max_context_length: 131072 },
+              { id: "chat-without-tools", capabilities: { completion_chat: true, function_calling: false } },
+              { id: "mistral-embed", capabilities: { completion_chat: false, function_calling: false } },
+              { id: "unstated" },
+            ],
+          }),
+        ),
+    ),
+  );
+  expect((await listMistralModels("mistral-key")).map((m) => m.id)).toEqual([
+    "mistral-large-latest",
+    "unstated",
+  ]);
 });
 
 it("says what Mistral said about a key it does not accept", async () => {
