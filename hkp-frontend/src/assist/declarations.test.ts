@@ -1,3 +1,6 @@
+// Tests are outside tsconfig.json, which brings Vite's types (`?raw`) for the
+// rest of src through vite-env.d.ts.
+/// <reference types="vite/client" />
 import { expect, it, vi } from "vitest";
 import facadeTypes from "../facade/types.ts?raw";
 import {
