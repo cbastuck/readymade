@@ -146,7 +146,7 @@ std::vector<int16_t> decodeMp4ToPcm(const char* filename,
     {
         unsigned frameBytes = 0, ts = 0, dur = 0;
         const MP4D_file_offset_t offset = MP4D_frame_offset(
-            &g.demux, static_cast<unsigned>(audioTrack), i, &frameBytes, &ts, &dur);
+            &g.demux, static_cast<unsigned>(audioTrack), i, &frameBytes, &ts, nullptr, &dur, nullptr);
 
         if (!frameBytes) continue;
 
@@ -245,7 +245,7 @@ std::vector<int16_t> decodeMp4ToPcmFromMemory(const uint8_t* data,
     {
         unsigned frameBytes = 0, ts = 0, dur = 0;
         const MP4D_file_offset_t offset = MP4D_frame_offset(
-            &g.demux, static_cast<unsigned>(audioTrack), i, &frameBytes, &ts, &dur);
+            &g.demux, static_cast<unsigned>(audioTrack), i, &frameBytes, &ts, nullptr, &dur, nullptr);
 
         if (!frameBytes) continue;
 
