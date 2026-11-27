@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/cache.schema.json",
+  "title": "Cache Service State",
+  "description": "Stores and retrieves pipeline values by key; avoids redundant downstream computation for repeated inputs. (Runtimes: browser, cpp; IDs: hookup.to/service/cache, cache)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "initial": {
+      "description": "Initial cache value"
+    },
+    "updateTrigger": {
+      "type": "string",
+      "enum": [
+        "config",
+        "process"
+      ],
+      "description": "When the cache is updated",
+      "default": "config"
+    },
+    "cache+": {
+      "type": "object",
+      "description": "Merges the given object into the cached value"
+    },
+    "cacheProperties+": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of property names to pluck from the config and merge"
+    },
+    "cacheMeta": {
+      "type": "object",
+      "properties": {
+        "triggerProcess": {
+          "type": "boolean",
+          "description": "When true, fires the cached value downstream after updating",
+          "default": false
+        }
+      }
+    },
+    "key": {
+      "type": "string",
+      "description": "Inja template evaluated against the input to produce the cache key",
+      "default": ""
+    },
+    "outputKey": {
+      "type": "string",
+      "description": "Key under which the cached file path is returned",
+      "default": "path"
+    },
+    "persistRoot": {
+      "type": "string",
+      "description": "Folder for on-disk persistence, inside the folders boards are given ([Filesystem](./filesystem.md#where-the-files-are)); a relative path is taken from the default one. Empty, or outside them, = memory only",
+      "default": ""
+    },
+    "persistMode": {
+      "type": "string",
+      "description": "\"sha\" (default) or \"filename\" — controls how the on-disk filename is derived",
+      "default": ""
+    },
+    "filenameTemplate": {
+      "type": "string",
+      "description": "Inja template for the filename when persistMode is \"filename\". What it renders stays inside persistRoot, whatever the input puts in it",
+      "default": ""
+    },
+    "cacheDuration": {
+      "type": "string",
+      "description": "Max age before a cached entry is considered stale (e.g. \"24h\", \"7d\")",
+      "default": ""
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of regex patterns; keys matching any pattern bypass the cache",
+      "default": []
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/timer.schema.json",
+  "title": "Timer Service State",
+  "description": "Generates periodic or one-shot timing events to drive pipeline execution. (Runtimes: browser, node, python, cpp; IDs: hookup.to/service/timer, timer)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "periodic": {
+      "type": "boolean",
+      "description": "When true, the timer fires repeatedly at the configured interval. When false, fires once.",
+      "default": false
+    },
+    "periodicValue": {
+      "type": "number",
+      "description": "Numeric amount for the repeating interval. Interpreted in periodicUnit.",
+      "default": 1
+    },
+    "periodicUnit": {
+      "type": "string",
+      "description": "Time unit for periodicValue. Accepts any [moment.js duration unit](https://momentjs.com/docs/#/durations/): \"ms\", \"s\", \"m\", \"h\", \"d\", etc., as well as the rates \"bpm\" and \"hz\" and, in the browser, \"beats\".",
+      "default": "s"
+    },
+    "oneShotDelay": {
+      "type": "number",
+      "description": "Delay before a one-shot timer fires.",
+      "default": 0
+    },
+    "oneShotDelayUnit": {
+      "type": "string",
+      "description": "Time unit for oneShotDelay: \"ms\", \"s\", \"beats\", or any moment.js unit.",
+      "default": "ms"
+    },
+    "tempoSlot": {
+      "type": "string",
+      "description": "**Browser only.** The slot a \"beats\" duration reads its tempo from, in BPM. See *Beats* below.",
+      "default": "tempo"
+    },
+    "immediate": {
+      "type": "boolean",
+      "description": "When true, fires one tick immediately (after ~1 ms) in addition to the normal schedule."
+    },
+    "counter": {
+      "type": "number",
+      "description": "Overrides the internal trigger counter to a specific value."
+    },
+    "running": {
+      "type": "boolean",
+      "description": "Setting to false stops the timer. Setting to true starts it if start is not otherwise specified."
+    },
+    "until": {
+      "type": "object",
+      "properties": {
+        "triggerCount": {
+          "type": "number",
+          "description": "Automatically stops the timer after this many triggers have fired."
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

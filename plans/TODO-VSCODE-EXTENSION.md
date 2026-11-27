@@ -64,17 +64,17 @@ would lose.
 
 ## Milestones
 
-### V1 — the playground as a custom editor
+### V1 — the playground as a custom editor (built)
 
-- `readymade-vscode/` at the repository root, beside `readymade-mcp/`.
-- A custom editor for `*.board.json` loading the built frontend into a webview
+- [x] `readymade-vscode/` at the repository root, beside `readymade-mcp/`.
+- [x] A custom editor for `*.board.json` loading the built frontend into a webview
   via `asWebviewUri`, with a CSP that allows the remote runtimes the board names.
-- The `hkp://` shim and the first route families: `boards` (the open document),
+- [x] The `hkp://` shim and the first route families: `boards` (the open document),
   `remotes` (kept in the extension's global state), `settings`.
-- The extension's routes tested against the same contract as
+- [x] The extension's routes tested against the same contract as
   `e2e/support/fakeNativeHost.ts`, so this host is held to it from the start
   (see T1 in `architectural-tradeoffs.md`).
-- JSON Schema for board documents and per-service state, generated from the
+- [x] JSON Schema for board documents and per-service state, generated from the
   indexed contracts at build time.
 
 Done when a demo board opens from the workspace, runs against a local hkp-node,

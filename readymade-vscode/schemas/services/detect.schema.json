@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/detect.schema.json",
+  "title": "Detect Service State",
+  "description": "Finds faces in an image, on the device, and reports where they are on every frame — none included. (Runtimes: browser; IDs: hookup.to/service/detect)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "mode": {
+      "type": "string",
+      "const": "face",
+      "description": "What to look for",
+      "default": "face"
+    },
+    "minConfidence": {
+      "type": "number",
+      "description": "Detections scoring below this (0–1) are left out",
+      "default": 0.5
+    }
+  },
+  "additionalProperties": true
+}

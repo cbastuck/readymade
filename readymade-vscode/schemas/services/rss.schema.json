@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/rss.schema.json",
+  "title": "RSS Service State",
+  "description": "Several syndication feeds read as one list, newest first. (Runtimes: node; IDs: rss)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "feeds": {
+      "type": "array",
+      "description": "The subscriptions. Each entry is a URL string, or { url, name }",
+      "default": []
+    },
+    "limit": {
+      "type": "number",
+      "description": "Most articles to emit, after merging and sorting",
+      "default": 60
+    },
+    "timeoutMs": {
+      "type": "number",
+      "description": "How long one feed gets to answer",
+      "default": 10000
+    },
+    "summaryChars": {
+      "type": "number",
+      "description": "Longest summary kept; 0 drops summaries",
+      "default": 240
+    },
+    "fetching": {
+      "type": "boolean",
+      "description": "Read-only: whether a round is in flight"
+    }
+  },
+  "additionalProperties": true
+}

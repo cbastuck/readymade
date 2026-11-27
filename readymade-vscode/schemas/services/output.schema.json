@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/output.schema.json",
+  "title": "Output Service State",
+  "description": "Sends the current pipeline value to a remote endpoint via HTTP POST or WebSocket. (Runtimes: browser; IDs: hookup.to/service/output)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "description": "Skip sending; disconnect WebSocket if open. Output starts bypassed by default and must be explicitly activated.",
+      "default": true
+    },
+    "url": {
+      "type": "string",
+      "description": "Destination URL (ws://, wss://, http://, https://)",
+      "default": ""
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "websocket",
+        "post"
+      ],
+      "description": "Delivery mechanism",
+      "default": "websocket"
+    },
+    "flow": {
+      "type": "string",
+      "enum": [
+        "stop",
+        "pass"
+      ],
+      "description": "Whether to continue the pipeline after sending",
+      "default": "stop"
+    },
+    "headers": {
+      "type": "object",
+      "description": "HTTP headers (for post mode)",
+      "default": {}
+    }
+  },
+  "additionalProperties": true
+}

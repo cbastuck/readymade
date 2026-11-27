@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/hookup.to/shared/batcher.schema.json",
+  "title": "Batcher Service State",
+  "description": "Collects incoming pipeline values and flushes them as a batch after a minimum delay between flushes. (Runtimes: browser; IDs: hookup.to/shared/batcher)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "minDelayInMsec": {
+      "type": "number",
+      "description": "Minimum time in milliseconds between batch emissions",
+      "default": 1000
+    }
+  },
+  "additionalProperties": true
+}

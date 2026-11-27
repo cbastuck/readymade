@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/smtp-email.schema.json",
+  "title": "SMTP Email Service State",
+  "description": "Sends mail. Addressed by its configuration, or by whatever the pass is carrying. (Runtimes: node; IDs: smtp-email)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "mode": {
+      "type": "string",
+      "description": "configured or envelope",
+      "default": "configured"
+    },
+    "host": {
+      "type": "string",
+      "description": "SMTP server hostname",
+      "default": ""
+    },
+    "port": {
+      "type": "number",
+      "description": "SMTP server port",
+      "default": 587
+    },
+    "username": {
+      "type": "string",
+      "description": "SMTP authentication username",
+      "default": ""
+    },
+    "password": {
+      "type": "string",
+      "description": "Write-only: never echoed back. passwordConfigured says whether one is set",
+      "default": ""
+    },
+    "tls": {
+      "type": "boolean",
+      "description": "Use TLS (secure in nodemailer)",
+      "default": true
+    },
+    "from": {
+      "type": "string",
+      "description": "Sender address; envelope mode may override it per message",
+      "default": ""
+    },
+    "to": {
+      "type": "string",
+      "description": "Recipient — configured mode only",
+      "default": ""
+    },
+    "subject": {
+      "type": "string",
+      "description": "Subject — configured mode only, and the fallback in envelope mode",
+      "default": ""
+    },
+    "allowedRecipients": {
+      "type": "array",
+      "description": "Addresses or @domains this may send to. Empty = unrestricted",
+      "default": []
+    }
+  },
+  "additionalProperties": true
+}

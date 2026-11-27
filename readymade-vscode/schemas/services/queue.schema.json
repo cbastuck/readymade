@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/queue.schema.json",
+  "title": "Queue Service State",
+  "description": "How one board says something to another. (Runtimes: node; IDs: queue)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "Field": {
+      "description": "What it does"
+    },
+    "mode": {
+      "description": "See the mode table"
+    },
+    "topic": {
+      "description": "The name the two boards agreed on. Required by publish and consume; an optional filter for list"
+    },
+    "payloadFrom": {
+      "type": "string",
+      "const": "",
+      "description": "Dotted path to the part of the input to send. Empty sends the whole input"
+    },
+    "idFrom": {
+      "description": "Where ack and fail find the message id in their input"
+    },
+    "limit": {
+      "description": "How many messages one consume claims, or list returns"
+    },
+    "visibilitySeconds": {
+      "description": "How long a claim holds before the message is handed out again"
+    },
+    "maxAttempts": {
+      "description": "Hand-outs without an ack before the message is left alone"
+    },
+    "status": {
+      "type": "string",
+      "const": "",
+      "description": "Filter for list: pending, claimed, done, dead"
+    }
+  },
+  "additionalProperties": true
+}

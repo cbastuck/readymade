@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/configurator.schema.json",
+  "title": "Configurator Service State",
+  "description": "Routes a pipeline value to another service's `configure()` call instead of continuing downstream. (Runtimes: browser; IDs: hookup.to/service/configurator)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "targetServiceUuid": {
+      "type": "string",
+      "description": "UUID of the service to configure",
+      "default": ""
+    },
+    "targetRuntime": {
+      "type": "string",
+      "description": "Runtime ID for cross-runtime targeting; omit for same-runtime"
+    },
+    "passThrough": {
+      "type": "boolean",
+      "description": "When true, the original value continues downstream after configuring the target",
+      "default": false
+    },
+    "pipeline": {
+      "type": "array",
+      "items": {},
+      "description": "Optional transform pipeline applied to params before configure() is called",
+      "default": []
+    }
+  },
+  "additionalProperties": true
+}

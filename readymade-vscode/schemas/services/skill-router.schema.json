@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/skill-router.schema.json",
+  "title": "Skill Router Service State",
+  "description": "Matches free-form text — e.g. a voice transcript — against a configured set of skills with a local LLM and dispatches the matched skill's board with extracted parameters. (Runtimes: python; IDs: skill-router)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "skills": {
+      "type": "array",
+      "description": "Skills as {action, board, payload}; malformed entries are dropped",
+      "default": []
+    },
+    "noMatch": {
+      "type": "string",
+      "description": "stop ends the pipeline; forward passes the input to the services after the router",
+      "default": "stop"
+    },
+    "stream": {
+      "type": "boolean",
+      "description": "Stream the model output token by token into the UI",
+      "default": true
+    },
+    "backend": {
+      "type": "string",
+      "description": "server (OpenAI-compatible HTTP) or local (in-process GGUF)",
+      "default": "server"
+    },
+    "serverUrl": {
+      "type": "string",
+      "description": "Server backend: base URL of the OpenAI-compatible server",
+      "default": "http://127.0.0.1:8081"
+    },
+    "model": {
+      "type": "string",
+      "description": "Server backend: optional model name passed through to the server",
+      "default": ""
+    },
+    "modelPath": {
+      "type": "string",
+      "description": "Local backend: path to the .gguf file (~ expands)",
+      "default": ""
+    },
+    "contextSize": {
+      "type": "number",
+      "description": "Local backend: context window in tokens",
+      "default": 4096
+    },
+    "gpuLayers": {
+      "type": "number",
+      "description": "Local backend: layers to offload to GPU (-1 = all)",
+      "default": -1
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Sampling temperature (routing wants determinism)",
+      "default": 0.1
+    },
+    "maxTokens": {
+      "type": "number",
+      "description": "Completion token budget",
+      "default": 256
+    },
+    "timeoutSec": {
+      "type": "number",
+      "description": "Server backend: request timeout",
+      "default": 120
+    }
+  },
+  "additionalProperties": true
+}

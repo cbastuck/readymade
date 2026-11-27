@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/ollama-prompt.schema.json",
+  "title": "Ollama Service State",
+  "description": "Sends a prompt to a local Ollama instance and streams the generated response into the pipeline. (Runtimes: browser; IDs: hookup.to/service/ollama-prompt)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Base URL of the Ollama API",
+      "default": "http://localhost:11434/api"
+    },
+    "model": {
+      "type": "string",
+      "description": "Model name to use (e.g. \"llama3\", \"mistral\")",
+      "default": ""
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Prompt template sent to the model",
+      "default": ""
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Sampling temperature (0 = deterministic)",
+      "default": 0
+    },
+    "seed": {
+      "type": "number",
+      "description": "Random seed for reproducibility",
+      "default": 0
+    },
+    "responseIsJson": {
+      "type": "boolean",
+      "description": "Parse the response as JSON before emitting",
+      "default": false
+    }
+  },
+  "additionalProperties": true
+}

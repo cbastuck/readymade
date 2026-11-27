@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/audio-encode.schema.json",
+  "title": "Audio Encode Service State",
+  "description": "Turns the samples a board made into a file a board can keep. (Runtimes: python, cpp; IDs: audio-encode)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "mp3",
+        "wav"
+      ],
+      "description": "What to write"
+    },
+    "bitrate": {
+      "type": "number",
+      "description": "kbit/s, mp3 only",
+      "default": 64
+    },
+    "quality": {
+      "type": "number",
+      "description": "LAME quality, 0 (best) to 9",
+      "default": 5
+    },
+    "sampleRate": {
+      "type": "number",
+      "description": "What the incoming samples are",
+      "default": 24000
+    },
+    "channels": {
+      "description": "How to read them",
+      "default": 1
+    },
+    "stream": {
+      "type": "boolean",
+      "description": "One recording across all passes rather than one per pass — hkp-rt, mp3 only",
+      "default": false
+    }
+  },
+  "additionalProperties": true
+}

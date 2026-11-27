@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/sound.schema.json",
+  "title": "Sound Service State",
+  "description": "Synthesises audio from note events using the Web Audio API, with synth and drum modes. (Runtimes: browser; IDs: hookup.to/service/sound)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "generator": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "synth",
+            "drums"
+          ],
+          "description": "Generator mode",
+          "default": "synth"
+        }
+      }
+    },
+    "volume": {
+      "type": "number",
+      "description": "Master volume (0–1)",
+      "default": 1
+    },
+    "waveType": {
+      "type": "string",
+      "description": "Oscillator waveform for synth mode. One of sine, triangle, square, sawtooth, organ, soft, fifth",
+      "default": "sine"
+    },
+    "noteDuration": {
+      "type": "number",
+      "description": "How long a synth note is held before its release, in noteDurationUnit",
+      "default": 0.3
+    },
+    "noteDurationUnit": {
+      "type": "string",
+      "enum": [
+        "s",
+        "beats"
+      ],
+      "description": "Seconds, or beats of a tempo (see *Envelope*)",
+      "default": "s"
+    },
+    "attack": {
+      "type": "number",
+      "description": "Seconds a synth note takes to rise to full volume",
+      "default": 0.01
+    },
+    "release": {
+      "type": "number",
+      "description": "Seconds a synth note takes to fade once it is no longer held",
+      "default": 0.03
+    },
+    "tempoSlot": {
+      "type": "string",
+      "description": "The slot a tempo in BPM is read from when the input carries none",
+      "default": "tempo"
+    },
+    "drumMap": {
+      "type": "object",
+      "description": "Map of note name → drum type for drums mode"
+    },
+    "trigger": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What to play for an input that names no note of its own, such as a Timer tick: a note name, or in drums mode also \"kick\", \"snare\" or \"hihat\". Unset, such an input plays nothing. A note the input names always wins.",
+      "default": null
+    }
+  },
+  "additionalProperties": true
+}

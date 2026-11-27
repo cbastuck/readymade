@@ -1,0 +1,1522 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/service-state.schema.json",
+  "title": "Readymade Service State",
+  "description": "Configuration state for a Readymade service instance, generated from indexed service contracts.",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "description": "[Tracks] Passes the input straight through",
+      "default": false
+    },
+    "interval": {
+      "type": "number",
+      "description": "[Microphone Monitor] Sampling interval in milliseconds",
+      "default": 500
+    },
+    "cols": {
+      "type": "number",
+      "description": "[ASCII Art] Number of character columns in the output grid",
+      "default": 100
+    },
+    "rows": {
+      "type": "number",
+      "description": "[ASCII Art] Number of character rows in the output grid",
+      "default": 60
+    },
+    "charset": {
+      "type": "string",
+      "description": "[ASCII Art] Ordered character ramp from lightest to darkest",
+      "default": " .:-=+*#%@"
+    },
+    "invert": {
+      "type": "boolean",
+      "description": "[ASCII Art] When true, reverses the luminance mapping (dark → light characters)",
+      "default": false
+    },
+    "imageKey": {
+      "type": "string",
+      "description": "[ASCII Art] Key on the incoming object that holds the Blob",
+      "default": "image"
+    },
+    "asset": {
+      "type": "string",
+      "description": "[Asset] The reference emitted when the input names none, e.g. \"hkp-asset://card\""
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "mp3",
+        "wav"
+      ],
+      "description": "[Audio Encode] What to write"
+    },
+    "bitrate": {
+      "type": "number",
+      "description": "[Audio Encode] kbit/s, mp3 only",
+      "default": 64
+    },
+    "quality": {
+      "type": "number",
+      "description": "[Audio Encode] LAME quality, 0 (best) to 9",
+      "default": 5
+    },
+    "sampleRate": {
+      "type": "number",
+      "description": "[Audio Encode] What the incoming samples are",
+      "default": 24000
+    },
+    "channels": {
+      "description": "[Audio Encode] How to read them",
+      "default": 1
+    },
+    "stream": {
+      "type": "boolean",
+      "description": "[Text Generation] Generate token by token and notify the growing text as {streamText} (final notification carries streamDone: true) for live chat-bot-style display; the pipeline output is unaffected and still emitted once, when generation finishes. Set false for servers without SSE support",
+      "default": true
+    },
+    "maxLength": {
+      "type": "number",
+      "description": "[Audio Editor] Maximum number of samples to retain (default = 60 s at 48 kHz)",
+      "default": 2880000
+    },
+    "action": {
+      "type": "string",
+      "const": "clear",
+      "description": "[Hold] Forgets the held value and resets the counts."
+    },
+    "action: \"play\" params": {
+      "type": "object",
+      "description": "[Audio Editor] Sample range to play back"
+    },
+    "selectedBoard": {
+      "type": "string",
+      "description": "[Board Service] Name or identifier of the saved board to run"
+    },
+    "result": {
+      "description": "[Board Service] Internal — used by the UI to deliver a result back into the pipeline"
+    },
+    "capacity": {
+      "type": "number",
+      "description": "[Buffer] Maximum number of items before an automatic flush",
+      "default": 100
+    },
+    "accumulatedOutput": {
+      "type": "boolean",
+      "description": "[Buffer] When true, each flush emits the full accumulated buffer since the last clear rather than just the current window",
+      "default": false
+    },
+    "action: \"clear\"": {
+      "description": "[Buffer] Discards all buffered items"
+    },
+    "command: { action: \"flush\" }": {
+      "description": "[Buffer] Immediately flushes the current buffer"
+    },
+    "initial": {
+      "description": "[Cache] Initial cache value"
+    },
+    "updateTrigger": {
+      "type": "string",
+      "enum": [
+        "config",
+        "process"
+      ],
+      "description": "[Cache] When the cache is updated",
+      "default": "config"
+    },
+    "cache+": {
+      "type": "object",
+      "description": "[Cache] Merges the given object into the cached value"
+    },
+    "cacheProperties+": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "[Cache] List of property names to pluck from the config and merge"
+    },
+    "cacheMeta": {
+      "type": "object",
+      "properties": {
+        "triggerProcess": {
+          "type": "boolean",
+          "description": "[Cache] When true, fires the cached value downstream after updating",
+          "default": false
+        }
+      }
+    },
+    "key": {
+      "type": "string",
+      "description": "[Store] The key to act on, when every pass means the same slot",
+      "default": ""
+    },
+    "outputKey": {
+      "type": "string",
+      "description": "[Cache] Key under which the cached file path is returned",
+      "default": "path"
+    },
+    "persistRoot": {
+      "type": "string",
+      "description": "[Cache] Folder for on-disk persistence, inside the folders boards are given ([Filesystem](./filesystem.md#where-the-files-are)); a relative path is taken from the default one. Empty, or outside them, = memory only",
+      "default": ""
+    },
+    "persistMode": {
+      "type": "string",
+      "description": "[Cache] \"sha\" (default) or \"filename\" — controls how the on-disk filename is derived",
+      "default": ""
+    },
+    "filenameTemplate": {
+      "type": "string",
+      "description": "[Cache] Inja template for the filename when persistMode is \"filename\". What it renders stays inside persistRoot, whatever the input puts in it",
+      "default": ""
+    },
+    "cacheDuration": {
+      "type": "string",
+      "description": "[Cache] Max age before a cached entry is considered stale (e.g. \"24h\", \"7d\")",
+      "default": ""
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "[Cache] List of regex patterns; keys matching any pattern bypass the cache",
+      "default": []
+    },
+    "captureAs": {
+      "type": "string",
+      "const": "image",
+      "description": "[Camera] Output format (currently \"image\" only)",
+      "default": "image"
+    },
+    "captureFormat": {
+      "type": "string",
+      "description": "[Camera] MIME type of the captured Blob (e.g. \"image/jpeg\")",
+      "default": "image/png"
+    },
+    "value": {
+      "description": "[Hold] **Browser only.** On a writing end (slot + op: \"write\"), written into the slot when configured, as though it had arrived as input. The board keeps it, so the slot holds it again after a reload. How a board sets a value nothing in its pipelines produces — a tempo, a limit — and how a facade control changes it. Ignored on a reading end."
+    },
+    "emit": {
+      "type": "string",
+      "description": "[SQL] \"result\" passes the answer on, \"input\" passes the request through",
+      "default": "result"
+    },
+    "reset": {
+      "type": "boolean",
+      "description": "[Smooth] When true, clears current so the next tick re-initialises from scratch"
+    },
+    "goal": {
+      "type": "string",
+      "description": "[Communication Dispatcher] What the exchange is for",
+      "default": ""
+    },
+    "instruction": {
+      "type": "string",
+      "description": "[Communication Dispatcher] Sent as the opening of the question. Not a system message: the decide pipeline may hold something that already has one, or may not be a model at all"
+    },
+    "states": {
+      "type": "array",
+      "description": "[Communication Dispatcher] \"name\" or { name, describe }. The enum next is drawn from",
+      "default": []
+    },
+    "stateFrom": {
+      "type": "string",
+      "description": "[Communication Dispatcher] Dotted path to the current state in the input",
+      "default": "state"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "[Timeline] Data emitted when time reaches at",
+      "default": []
+    },
+    "decide": {
+      "type": "array",
+      "description": "[Communication Dispatcher] The pipeline that asks the model",
+      "default": []
+    },
+    "maxContextChars": {
+      "type": "number",
+      "description": "[Communication Dispatcher] Bound on the input shown to the model. 0 = no bound",
+      "default": 20000
+    },
+    "lastAction / lastReason / lastNext": {
+      "description": "[Communication Dispatcher] Read-only: what it decided, and why"
+    },
+    "targetServiceUuid": {
+      "type": "string",
+      "description": "[Configurator] UUID of the service to configure",
+      "default": ""
+    },
+    "targetRuntime": {
+      "type": "string",
+      "description": "[Configurator] Runtime ID for cross-runtime targeting; omit for same-runtime"
+    },
+    "passThrough": {
+      "type": "boolean",
+      "description": "[Configurator] When true, the original value continues downstream after configuring the target",
+      "default": false
+    },
+    "pipeline": {
+      "type": "array",
+      "items": {},
+      "description": "[Browser Sub-Service] Ordered list of services in the inner pipeline",
+      "default": []
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "plain",
+        "merge"
+      ],
+      "description": "[UUID Generator] Output mode. plain emits the UUID string directly; merge adds a uuid key to the incoming object.",
+      "default": "plain"
+    },
+    "initialState": {
+      "description": "[Reduce] Starting value for reducedState. Also resets the accumulator when updated."
+    },
+    "direction": {
+      "type": "string",
+      "description": "[Conversations] ingest: inbound or outbound, unless the input says",
+      "default": "inbound"
+    },
+    "state": {
+      "type": "string",
+      "description": "[Conversations] transition: a fixed target, for a step that always moves the same way",
+      "default": ""
+    },
+    "conversationFrom": {
+      "type": "string",
+      "description": "[Conversations] Dotted path to the conversation id, e.g. meta.conversationId",
+      "default": ""
+    },
+    "inState": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "[Conversations] actionable: which states count as work. **Required**",
+      "default": []
+    },
+    "idleSeconds": {
+      "type": "number",
+      "description": "[Conversations] actionable: only conversations untouched this long",
+      "default": 0
+    },
+    "limit": {
+      "type": "number",
+      "description": "[Store] list: how many records to take, oldest first. 0 = all",
+      "default": 0
+    },
+    "kind": {
+      "type": "string",
+      "description": "[Conversations] Artifacts: the board's word for what this is",
+      "default": ""
+    },
+    "status": {
+      "type": "string",
+      "const": "",
+      "description": "[Queue] Filter for list: pending, claimed, done, dead"
+    },
+    "payloadFrom": {
+      "type": "string",
+      "const": "",
+      "description": "[Queue] Dotted path to the part of the input to send. Empty sends the whole input"
+    },
+    "idFrom": {
+      "description": "[Queue] Where ack and fail find the message id in their input"
+    },
+    "lastCount": {
+      "type": "number",
+      "description": "[Store] Read-only: what the last pass saw"
+    },
+    "error": {
+      "type": "string",
+      "description": "[Telegram Listener] Last error message, if any"
+    },
+    "cooldown": {
+      "type": "number",
+      "description": "[Debounce] Minimum time between forwarded values, in seconds",
+      "default": 60
+    },
+    "secret": {
+      "type": "string",
+      "description": "[Sign] Shared secret used as the HMAC key",
+      "default": "secret key 123"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "v1",
+        "v4"
+      ],
+      "description": "[UUID Generator] UUID version. v4 is random; v1 is time-based.",
+      "default": "v4"
+    },
+    "time": {
+      "type": "number",
+      "description": "[Delay] Delay time in seconds",
+      "default": 0.5
+    },
+    "Parameter": {
+      "description": "[Delay] Description"
+    },
+    "feedback": {
+      "description": "[Delay] How much of the delayed signal is fed back into the delay line (0–0.999)"
+    },
+    "mix": {
+      "description": "[Delay] Wet/dry blend (0 = dry only, 1 = wet only)"
+    },
+    "minConfidence": {
+      "type": "number",
+      "description": "[Detect] Detections scoring below this (0–1) are left out",
+      "default": 0.5
+    },
+    "backend": {
+      "type": "string",
+      "description": "[Text Generation] server (OpenAI-compatible HTTP) or local (in-process GGUF)",
+      "default": "server"
+    },
+    "ocr": {
+      "type": "string",
+      "description": "[Document Extract] auto, off, or force — see above. true/false are read as auto/off",
+      "default": "auto"
+    },
+    "ocrBackend": {
+      "type": "string",
+      "description": "[Document Extract] OCR engine (paddleocr, tesseract, sceptre, …). Empty lets the library pick",
+      "default": ""
+    },
+    "ocrLanguage": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "[Document Extract] \"deu\", \"deu,eng\", or [\"deu\",\"eng\"]. Empty uses the library's default",
+      "default": []
+    },
+    "tables": {
+      "type": "boolean",
+      "description": "[Document Extract] Include extracted tables in the output",
+      "default": false
+    },
+    "metadata": {
+      "type": "boolean",
+      "description": "[Document Extract] Include document metadata (author, title, dates)",
+      "default": false
+    },
+    "maxChars": {
+      "type": "number",
+      "description": "[Document Extract] Cap the text handed on; 0 = no cap. Sets truncated when it bites",
+      "default": 0
+    },
+    "minCharsPerPage": {
+      "type": "number",
+      "description": "[Document Extract] Below this, a page counts as having no text",
+      "default": 100
+    },
+    "minTextCoverage": {
+      "type": "number",
+      "description": "[Document Extract] Below this fraction of pages carrying text, the document is sparse",
+      "default": 0.6
+    },
+    "filename": {
+      "type": "string",
+      "description": "[Download] What the file is offered as",
+      "default": "download.txt"
+    },
+    "mimeType": {
+      "type": "string",
+      "description": "[Download] The file's type; empty decides it from the input, as above",
+      "default": ""
+    },
+    "url": {
+      "type": "string",
+      "description": "[QR Code] Base URL to display as a QR code. Template variables are resolved.",
+      "default": ""
+    },
+    "headers": {
+      "type": "object",
+      "description": "[Output] HTTP headers (for post mode)",
+      "default": {}
+    },
+    "body": {
+      "type": "string",
+      "description": "[Fetcher] Request body (raw JSON string or plain text)",
+      "default": ""
+    },
+    "bodyFormat": {
+      "type": "string",
+      "enum": [
+        "json",
+        "text",
+        "expression"
+      ],
+      "description": "[Fetcher] How the request body is produced (see below)",
+      "default": "text"
+    },
+    "bodyExpression": {
+      "type": "string",
+      "description": "[Fetcher] Expression evaluated against params to produce the body; used when bodyFormat is \"expression\"",
+      "default": ""
+    },
+    "chunkSize": {
+      "type": "number",
+      "description": "[File Source] Characters per piece; 0 sends each file whole",
+      "default": 0
+    },
+    "path": {
+      "type": "string",
+      "description": "[Filesystem] A file or folder inside the folders boards are given. Relative paths are taken from the default one"
+    },
+    "operation": {
+      "type": "string",
+      "description": "[Storage] What a request naming no op means (default read)"
+    },
+    "Runtime is": {
+      "description": "[Filesystem] Adding more"
+    },
+    "the desktop app's (\"remote\": \"embedded\")": {
+      "description": "[Filesystem] *Folders boards may use* in the app's settings"
+    },
+    "a standalone hkp-rt": {
+      "description": "[Filesystem] HKP_FILES_ALLOW"
+    },
+    "the iOS and Android apps'": {
+      "description": "[Filesystem] —"
+    },
+    "conditions": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "[Filter] One or more expression strings to evaluate",
+      "default": []
+    },
+    "aggregator": {
+      "type": "string",
+      "enum": [
+        "and",
+        "or"
+      ],
+      "description": "[Filter] How multiple conditions are combined",
+      "default": "and"
+    },
+    "expression": {
+      "type": "string",
+      "description": "[FlatMap] Expression evaluated per input item. Should return an array or a value. Uses the same expression syntax and built-in functions as the [Map](./map.md) service.",
+      "default": ""
+    },
+    "maxBytes": {
+      "type": "number",
+      "description": "[Gather] The most one group may hold (64 MiB, the coordinator's default frame limit)",
+      "default": 67108864
+    },
+    "maxGroups": {
+      "type": "number",
+      "description": "[Gather] How many groups may be incomplete at once",
+      "default": 16
+    },
+    "timeoutMs": {
+      "type": "number",
+      "description": "[RSS] How long one feed gets to answer",
+      "default": 10000
+    },
+    "stopPropagation": {
+      "type": "boolean",
+      "description": "[Browser Sub-Service] Whether what the pipeline produced leaves this service — see [SubService](./sub-service.md)",
+      "default": false
+    },
+    "pending": {
+      "type": "number",
+      "description": "[Gather] Read-only: how many groups are incomplete"
+    },
+    "recording": {
+      "type": "boolean",
+      "description": "[Timeline] Whether what arrives at a playing own clock's input is kept as actions. Stopping or pausing sets it to false.",
+      "default": false
+    },
+    "delayMs": {
+      "type": "number",
+      "description": "[GIF Recorder] Inter-frame delay in milliseconds (controls playback speed)",
+      "default": 100
+    },
+    "maxFrames": {
+      "type": "number",
+      "description": "[GIF Recorder] Maximum number of frames to buffer before stopping automatically",
+      "default": 100
+    },
+    "buffer": {
+      "type": "string",
+      "description": "[Hacker] The expression to evaluate",
+      "default": ""
+    },
+    "size": {
+      "description": "[Hacker] Editor size in pixels"
+    },
+    "encoding": {
+      "type": "string",
+      "enum": [
+        "hex",
+        "base64"
+      ],
+      "description": "[Sign] Output encoding for the signature",
+      "default": "hex"
+    },
+    "finalize": {
+      "type": "boolean",
+      "description": "[Sign] **Progressive mode only** — computes and emits the HMAC over all buffered chunks"
+    },
+    "slot": {
+      "type": "string",
+      "description": "[Hold] The cell to hold in. Set, op says which end this Hold is and the value is not inspected.",
+      "default": ""
+    },
+    "op": {
+      "type": "string",
+      "enum": [
+        "read",
+        "write"
+      ],
+      "description": "[Hold] Which end. Only read with a slot.",
+      "default": "read"
+    },
+    "minDelayInMsec": {
+      "type": "number",
+      "description": "[Batcher] Minimum time in milliseconds between batch emissions",
+      "default": 1000
+    },
+    "pollUrl": {
+      "type": "string",
+      "description": "[HTTP Relay Client] URL to poll for pending requests",
+      "default": ""
+    },
+    "respondUrl": {
+      "type": "string",
+      "description": "[HTTP Relay Client] URL to POST the pipeline result back to",
+      "default": ""
+    },
+    "authVaultKey": {
+      "type": "string",
+      "description": "[HTTP Relay Client] Vault key for an optional bearer token injected into poll/respond requests",
+      "default": ""
+    },
+    "bypassAfterNumberOfPolls": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "[HTTP Relay Client] Auto-bypass after this many polls; null to disable",
+      "default": 100
+    },
+    "condition": {
+      "type": "object",
+      "description": "[If] JSON pattern; all key–value pairs must match for the branch to execute"
+    },
+    "windowLength": {
+      "type": "number",
+      "description": "[FFT] Expected window length in samples (informational; actual length is taken from the input array size)",
+      "default": 512
+    },
+    "host": {
+      "type": "string",
+      "description": "[SMTP Email] SMTP server hostname",
+      "default": ""
+    },
+    "port": {
+      "type": "number",
+      "description": "[SMTP Email] SMTP server port",
+      "default": 587
+    },
+    "username": {
+      "type": "string",
+      "description": "[SMTP Email] SMTP authentication username",
+      "default": ""
+    },
+    "password": {
+      "type": "string",
+      "description": "[SMTP Email] Write-only: never echoed back. passwordConfigured says whether one is set",
+      "default": ""
+    },
+    "tls": {
+      "type": "boolean",
+      "description": "[SMTP Email] Use TLS (secure in nodemailer)",
+      "default": true
+    },
+    "mailbox": {
+      "type": "string",
+      "description": "[IMAP Email] Mailbox folder to watch",
+      "default": "INBOX"
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "[IMAP Email] Whether to listen; persisted, so a saved board reconnects on load",
+      "default": false
+    },
+    "connect": {
+      "type": "boolean",
+      "description": "[Telegram Listener] Send { connect: true } to start polling"
+    },
+    "disconnect": {
+      "type": "boolean",
+      "description": "[Telegram Listener] Send { disconnect: true } to stop polling"
+    },
+    "Field": {
+      "description": "[Telegram Listener] Description"
+    },
+    "running": {
+      "type": "boolean",
+      "description": "[Timer] Setting to false stops the timer. Setting to true starts it if start is not otherwise specified."
+    },
+    "reconnectAttempts": {
+      "type": "number",
+      "description": "[IMAP Email] Attempts since the connection was last up; 0 while connected"
+    },
+    "inject": {
+      "description": "[Injector] Value to store and emit. Setting this fires an immediate app.next()"
+    },
+    "injectBinary": {
+      "type": "string",
+      "description": "[Injector] hkp-rt and hkp-node only: base64 payload to store and emit as binary"
+    },
+    "recentInjection": {
+      "description": "[Injector] Restore the last injected value on board load (set automatically)"
+    },
+    "plainText": {
+      "type": "boolean",
+      "description": "[Injector] Treat the stored value as a plain string rather than parsed JSON",
+      "default": false
+    },
+    "parseEventsAsJSON": {
+      "type": "boolean",
+      "description": "[Input] Parse message bodies as JSON before emitting",
+      "default": true
+    },
+    "itemsFrom": {
+      "type": "string",
+      "description": "[Spread] Dotted path to the array in the input; the input itself by default",
+      "default": ""
+    },
+    "lastItems": {
+      "type": "number",
+      "description": "[Iterator] Read-only: how many the last pass iterated"
+    },
+    "lastFailed": {
+      "type": "number",
+      "description": "[Iterator] Read-only: how many of those threw"
+    },
+    "as": {
+      "type": "string",
+      "description": "[Join] Put the result under this key. Empty merges at the top level",
+      "default": ""
+    },
+    "onFailure": {
+      "type": "string",
+      "description": "[Join] A detour that failed: stop, or merge its { error, service } in place of the result — under as, or under failure without one",
+      "default": "stop"
+    },
+    "n": {
+      "type": "number",
+      "description": "[Limit] Maximum number of elements to keep. Must be ≥ 1.",
+      "default": 10
+    },
+    "filter": {
+      "type": "string",
+      "description": "[Local Storage] Key prefix filter. Only keys starting with this string are included. Empty string = all keys.",
+      "default": ""
+    },
+    "process": {
+      "type": "boolean",
+      "description": "[Local Storage] When true, immediately fires the current item list downstream via app.next()"
+    },
+    "template": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        }
+      ],
+      "description": "[Map] The mapping template. See Template Syntax above.",
+      "default": {}
+    },
+    "arrayMode": {
+      "type": "string",
+      "enum": [
+        "array",
+        "single"
+      ],
+      "description": "[Map] Whether an array input is mapped element by element or as one value.",
+      "default": "array"
+    },
+    "sensingMode": {
+      "type": "boolean",
+      "description": "[Map] When true, the Map auto-learns the template from the first input then disables itself.",
+      "default": false
+    },
+    "filterByTerms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "[Match Filter] List of substrings to block. Any input containing one of these strings is dropped."
+    },
+    "logToConsole": {
+      "type": "boolean",
+      "description": "[Monitor] Print each value to the server's stdout",
+      "default": true
+    },
+    "fileLogPath": {
+      "type": "string",
+      "description": "[Monitor] Append each value to this file, inside the folders boards are given ([Filesystem](./filesystem.md#where-the-files-are)); a relative path is taken from the default one",
+      "default": ""
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "[Text Generation] Read-only: the URL this configuration actually reaches"
+    },
+    "model": {
+      "type": "string",
+      "description": "[Workflow Board Builder] Model name (e.g. \"claude-3-7-sonnet-latest\", \"gpt-4.1-mini\", \"gemini-2.0-flash\")"
+    },
+    "prompt": {
+      "type": "string",
+      "description": "[OpenAI Prompt] System / user prompt prepended to the pipeline value",
+      "default": ""
+    },
+    "temperature": {
+      "type": "number",
+      "description": "[Text Generation] Sampling temperature",
+      "default": 0.7
+    },
+    "seed": {
+      "type": "number",
+      "description": "[OpenAI Prompt] Reproducibility seed",
+      "default": 0
+    },
+    "responseIsJson": {
+      "type": "boolean",
+      "description": "[OpenAI Prompt] Parse the response as JSON before emitting",
+      "default": false
+    },
+    "voice": {
+      "type": "string",
+      "description": "[OpenAI Prompt] TTS voice (for tts-1 model). One of alloy, echo, fable, onyx, nova, shimmer",
+      "default": "alloy"
+    },
+    "injectPrompt": {
+      "type": "boolean",
+      "description": "[OpenAI Prompt] When true, appends the pipeline value to the configured prompt rather than replacing it"
+    },
+    "flow": {
+      "type": "string",
+      "enum": [
+        "stop",
+        "pass"
+      ],
+      "description": "[Output] Whether to continue the pipeline after sending",
+      "default": "stop"
+    },
+    "peerName": {
+      "type": "string",
+      "description": "[Peer Socket] Name this peer registers under"
+    },
+    "targetPeer": {
+      "type": "string",
+      "description": "[Peer Socket] Name of the peer to send to (in Send or Receive and Send modes)"
+    },
+    "extractIncomingData": {
+      "type": "boolean",
+      "description": "[Peer Socket] When true, only the data field of the incoming message is injected into the pipeline",
+      "default": false
+    },
+    "peerPort": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "[Peer Socket] Port override for the peer server",
+      "default": null
+    },
+    "peerHost": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "[Peer Socket] Host override for the peer server",
+      "default": null
+    },
+    "peerPath": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "[Peer Socket] Path override for the peer server WebSocket endpoint",
+      "default": null
+    },
+    "topic": {
+      "description": "[Queue] The name the two boards agreed on. Required by publish and consume; an optional filter for list"
+    },
+    "visibilitySeconds": {
+      "description": "[Queue] How long a claim holds before the message is handed out again"
+    },
+    "maxAttempts": {
+      "description": "[Queue] Hand-outs without an ack before the message is left alone"
+    },
+    "reducer": {
+      "type": "string",
+      "description": "[Reduce] Expression evaluated per tick. Uses the same expression syntax as [Map](./map.md).",
+      "default": ""
+    },
+    "resetReducer": {
+      "type": "boolean",
+      "description": "[Reduce] When true, resets reducedState back to initialState on next configure call",
+      "default": false
+    },
+    "feeds": {
+      "type": "array",
+      "description": "[RSS] The subscriptions. Each entry is a URL string, or { url, name }",
+      "default": []
+    },
+    "summaryChars": {
+      "type": "number",
+      "description": "[RSS] Longest summary kept; 0 drops summaries",
+      "default": 240
+    },
+    "fetching": {
+      "type": "boolean",
+      "description": "[RSS] Read-only: whether a round is in flight"
+    },
+    "arrayIndex": {
+      "type": "number",
+      "description": "[Select] Zero-based index of the element to return"
+    },
+    "skills": {
+      "type": "array",
+      "description": "[Skill Router] Skills as {action, board, payload}; malformed entries are dropped",
+      "default": []
+    },
+    "noMatch": {
+      "type": "string",
+      "description": "[Skill Router] stop ends the pipeline; forward passes the input to the services after the router",
+      "default": "stop"
+    },
+    "serverUrl": {
+      "type": "string",
+      "description": "[Text Generation] Server backend: base URL of the OpenAI-compatible server",
+      "default": "http://127.0.0.1:8081"
+    },
+    "modelPath": {
+      "type": "string",
+      "description": "[Text Generation] Local backend: path to the .gguf file (~ expands)",
+      "default": ""
+    },
+    "contextSize": {
+      "type": "number",
+      "description": "[Text Generation] Local backend: context window in tokens",
+      "default": 4096
+    },
+    "gpuLayers": {
+      "type": "number",
+      "description": "[Text Generation] Local backend: layers to offload to GPU (-1 = all)",
+      "default": -1
+    },
+    "maxTokens": {
+      "type": "number",
+      "description": "[Text Generation] Completion token budget",
+      "default": 512
+    },
+    "timeoutSec": {
+      "type": "number",
+      "description": "[Text Generation] Server backend: request timeout",
+      "default": 300
+    },
+    "factor": {
+      "type": "number",
+      "description": "[Smooth] EMA blend factor, clamped to [0, 1]",
+      "default": 0.1
+    },
+    "from": {
+      "type": "string",
+      "description": "[SMTP Email] Sender address; envelope mode may override it per message",
+      "default": ""
+    },
+    "to": {
+      "type": "string",
+      "description": "[SMTP Email] Recipient — configured mode only",
+      "default": ""
+    },
+    "subject": {
+      "type": "string",
+      "description": "[SMTP Email] Subject — configured mode only, and the fallback in envelope mode",
+      "default": ""
+    },
+    "allowedRecipients": {
+      "type": "array",
+      "description": "[SMTP Email] Addresses or @domains this may send to. Empty = unrestricted",
+      "default": []
+    },
+    "by": {
+      "type": "string",
+      "description": "[Sort] Name of the property to sort by",
+      "default": ""
+    },
+    "dir": {
+      "type": "string",
+      "enum": [
+        "asc",
+        "desc"
+      ],
+      "description": "[Sort] Sort direction",
+      "default": "desc"
+    },
+    "generator": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "synth",
+            "drums"
+          ],
+          "description": "[Sound] Generator mode",
+          "default": "synth"
+        }
+      }
+    },
+    "volume": {
+      "type": "number",
+      "description": "[Sound] Master volume (0–1)",
+      "default": 1
+    },
+    "waveType": {
+      "type": "string",
+      "description": "[Sound] Oscillator waveform for synth mode. One of sine, triangle, square, sawtooth, organ, soft, fifth",
+      "default": "sine"
+    },
+    "noteDuration": {
+      "type": "number",
+      "description": "[Sound] How long a synth note is held before its release, in noteDurationUnit",
+      "default": 0.3
+    },
+    "noteDurationUnit": {
+      "type": "string",
+      "enum": [
+        "s",
+        "beats"
+      ],
+      "description": "[Sound] Seconds, or beats of a tempo (see *Envelope*)",
+      "default": "s"
+    },
+    "attack": {
+      "type": "number",
+      "description": "[Sound] Seconds a synth note takes to rise to full volume",
+      "default": 0.01
+    },
+    "release": {
+      "type": "number",
+      "description": "[Sound] Seconds a synth note takes to fade once it is no longer held",
+      "default": 0.03
+    },
+    "tempoSlot": {
+      "type": "string",
+      "description": "[Timer] **Browser only.** The slot a \"beats\" duration reads its tempo from, in BPM. See *Beats* below.",
+      "default": "tempo"
+    },
+    "drumMap": {
+      "type": "object",
+      "description": "[Sound] Map of note name → drum type for drums mode"
+    },
+    "trigger": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "[Sound] What to play for an input that names no note of its own, such as a Timer tick: a note name, or in drums mode also \"kick\", \"snare\" or \"hihat\". Unset, such an input plays nothing. A note the input names always wins.",
+      "default": null
+    },
+    "voices": {
+      "type": "array",
+      "items": {},
+      "description": "[Speech Synth] Available voices (populated by the UI from speechSynthesis.getVoices())",
+      "default": []
+    },
+    "language": {
+      "type": "string",
+      "description": "[Speech To Text] ISO language code (e.g. \"en\", \"de\") or \"auto\" to detect",
+      "default": "auto"
+    },
+    "computeType": {
+      "type": "string",
+      "description": "[Speech To Text] Quantization: int8, int8_float16, float16, float32",
+      "default": "int8"
+    },
+    "device": {
+      "type": "string",
+      "description": "[Speech To Text] auto, cpu, or cuda",
+      "default": "auto"
+    },
+    "accessToken": {
+      "type": "string",
+      "description": "[Spotify] Spotify OAuth access token",
+      "default": ""
+    },
+    "refreshToken": {
+      "type": "string",
+      "description": "[Spotify] OAuth refresh token for automatic renewal",
+      "default": ""
+    },
+    "clientId": {
+      "type": "string",
+      "description": "[Spotify] Spotify app client ID (needed for token refresh)",
+      "default": ""
+    },
+    "lastTotal": {
+      "type": "number",
+      "description": "[Spread] Read-only: how many items the last array had"
+    },
+    "database": {
+      "type": "string",
+      "description": "[SQL] Which database; services naming the same one share its tables. Empty: derived from the board's title (hkp-node), default (browser). Ignored by databases",
+      "default": ""
+    },
+    "statement": {
+      "type": "string",
+      "description": "[SQL] The SQL to run (query, run, exec)",
+      "default": ""
+    },
+    "schema": {
+      "type": "string",
+      "description": "[SQL] CREATE TABLE … applied once per board",
+      "default": ""
+    },
+    "macros": {
+      "description": "[State] Named macros. Each macro has variables (keys to substitute) and a template (object or array of objects with $value placeholders)"
+    },
+    "out": {
+      "description": "[Static] The JSON value to emit on every process() call",
+      "default": null
+    },
+    "prefix": {
+      "type": "string",
+      "description": "[Storage] Confines every path to one part of the store"
+    },
+    "readOnly": {
+      "type": "boolean",
+      "description": "[Storage] Answers reads and refuses everything else"
+    },
+    "namespace": {
+      "type": "string",
+      "description": "[Store] Which of the board's tables. Empty is the board's own",
+      "default": ""
+    },
+    "keyFrom": {
+      "type": "string",
+      "description": "[Store] Dotted path into the input to take the key from, e.g. meta.messageId",
+      "default": ""
+    },
+    "valueFrom": {
+      "type": "string",
+      "description": "[Store] Dotted path to the part worth keeping; the whole input by default",
+      "default": ""
+    },
+    "show": {
+      "type": "string",
+      "description": "[Store] list: waiting, in-flight, or all",
+      "default": "waiting"
+    },
+    "boardName": {
+      "type": "string",
+      "description": "[Browser Sub-Service] Display name for the nested board",
+      "default": ""
+    },
+    "runtimeId": {
+      "type": "string",
+      "description": "[Browser Sub-Service] ID of the inner runtime",
+      "default": "browser-runtime"
+    },
+    "runtimeName": {
+      "type": "string",
+      "description": "[Browser Sub-Service] Display name of the inner runtime",
+      "default": "Browser Runtime"
+    },
+    "runtimeType": {
+      "type": "string",
+      "description": "[Browser Sub-Service] Runtime type tag",
+      "default": "browser"
+    },
+    "scope": {
+      "type": "object",
+      "description": "[Browser Sub-Service] Which cells a [hold](./hold.md) inside reaches"
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "[Switch] The cases, tried in order. when is an expression over params; pipeline is a list of pipeline entries (see [Browser Sub-Service](./browser-sub-service.md#pipeline-entry-shape)).",
+      "default": []
+    },
+    "default": {
+      "description": "[Switch] Runs when no case matches.",
+      "default": []
+    },
+    "ignoreInnerResult": {
+      "type": "boolean",
+      "description": "[Switch] Answer with the original input instead of the case pipeline's result: the case runs for its effects.",
+      "default": false
+    },
+    "botToken": {
+      "type": "string",
+      "description": "[Telegram Listener] Telegram Bot API token from @BotFather",
+      "default": ""
+    },
+    "allowedChatId": {
+      "type": "string",
+      "description": "[Telegram Listener] If set, only messages from this chat ID are forwarded",
+      "default": ""
+    },
+    "systemPrompt": {
+      "type": "string",
+      "description": "[Text Generation] Prepended when the input has no system message",
+      "default": "You are a helpful assistant"
+    },
+    "topP": {
+      "type": "number",
+      "description": "[Text Generation] Nucleus sampling",
+      "default": 0.95
+    },
+    "topK": {
+      "type": "number",
+      "description": "[Text Generation] Top-k sampling",
+      "default": 20
+    },
+    "thinking": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "[Text Generation] Server backend: force thinking on/off, for a server whose chat template takes the flag; null sends nothing",
+      "default": null
+    },
+    "apiKey": {
+      "type": "string",
+      "description": "[Text Generation] Write-only; takes a {{secret.…}} reference. The runtime's environment is never read",
+      "default": ""
+    },
+    "apiKeyConfigured": {
+      "type": "boolean",
+      "description": "[Text Generation] Read-only: whether a key is configured"
+    },
+    "thinkingBudgetTokens": {
+      "type": "number",
+      "description": "[Text Generation] Tokens reasoning may use, for a Claude model that thinks on a budget; maxTokens is lifted above it when it is not already",
+      "default": 1024
+    },
+    "effort": {
+      "type": "string",
+      "description": "[Text Generation] Claude only: low, medium, high, xhigh or max — how much the model reasons and writes. Empty is the model's own default",
+      "default": ""
+    },
+    "jsonSchema": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "[Text Generation] Constrains the answer to a shape — see below",
+      "default": null
+    },
+    "The board says": {
+      "description": "[Text Generation] An older model (Haiku 4.5, …)"
+    },
+    "thinking: true": {
+      "description": "[Text Generation] thinking: {type: \"enabled\", budget_tokens}"
+    },
+    "thinking: null": {
+      "description": "[Text Generation] nothing — no reasoning"
+    },
+    "thinking: false": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "object"
+        }
+      ],
+      "description": "[Text Generation] nothing"
+    },
+    "temperature, topK": {
+      "description": "[Text Generation] sent while the model is not thinking"
+    },
+    "clock": {
+      "type": "string",
+      "enum": [
+        "own",
+        "input"
+      ],
+      "description": "[Timeline] Where time comes from",
+      "default": "own"
+    },
+    "object": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "[Timeline] What the timeline animates",
+      "default": null
+    },
+    "keyframes": {
+      "type": "object",
+      "description": "[Timeline] Keyframes per property of the object",
+      "default": {}
+    },
+    "length": {
+      "type": "number",
+      "description": "[Timeline] Length in the timeline's unit; 0 is unbounded",
+      "default": 0
+    },
+    "loop": {
+      "type": "boolean",
+      "description": "[Timeline] Repeat the loop range",
+      "default": false
+    },
+    "loopStart": {
+      "type": "number",
+      "description": "[Timeline] Where the loop starts over from",
+      "default": 0
+    },
+    "loopEnd": {
+      "type": "number",
+      "description": "[Timeline] Where the loop starts over; 0 is the length",
+      "default": 0
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "s",
+        "beats"
+      ],
+      "description": "[Timeline] How an own clock counts",
+      "default": "s"
+    },
+    "fps": {
+      "type": "number",
+      "description": "[Timeline] Frames a second an own clock emits",
+      "default": 30
+    },
+    "speed": {
+      "type": "number",
+      "description": "[Timeline] Playback speed of an own clock",
+      "default": 1
+    },
+    "recordMode": {
+      "type": "string",
+      "enum": [
+        "overdub",
+        "replace"
+      ],
+      "description": "[Timeline] Whether a recording keeps the actions it passes over or clears them",
+      "default": "overdub"
+    },
+    "placements": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "[Timeline] When each name plays on this timeline",
+      "default": []
+    },
+    "placement": {
+      "type": "string",
+      "description": "[Timeline] The name a driven timeline takes from its driver; \"\" takes none",
+      "default": ""
+    },
+    "periodic": {
+      "type": "boolean",
+      "description": "[Timer] When true, the timer fires repeatedly at the configured interval. When false, fires once.",
+      "default": false
+    },
+    "periodicValue": {
+      "type": "number",
+      "description": "[Timer] Numeric amount for the repeating interval. Interpreted in periodicUnit.",
+      "default": 1
+    },
+    "periodicUnit": {
+      "type": "string",
+      "description": "[Timer] Time unit for periodicValue. Accepts any [moment.js duration unit](https://momentjs.com/docs/#/durations/): \"ms\", \"s\", \"m\", \"h\", \"d\", etc., as well as the rates \"bpm\" and \"hz\" and, in the browser, \"beats\".",
+      "default": "s"
+    },
+    "oneShotDelay": {
+      "type": "number",
+      "description": "[Timer] Delay before a one-shot timer fires.",
+      "default": 0
+    },
+    "oneShotDelayUnit": {
+      "type": "string",
+      "description": "[Timer] Time unit for oneShotDelay: \"ms\", \"s\", \"beats\", or any moment.js unit.",
+      "default": "ms"
+    },
+    "immediate": {
+      "type": "boolean",
+      "description": "[Timer] When true, fires one tick immediately (after ~1 ms) in addition to the normal schedule."
+    },
+    "counter": {
+      "type": "number",
+      "description": "[Timer] Overrides the internal trigger counter to a specific value."
+    },
+    "until": {
+      "type": "object",
+      "properties": {
+        "triggerCount": {
+          "type": "number",
+          "description": "[Timer] Automatically stops the timer after this many triggers have fired."
+        }
+      }
+    },
+    "tracks": {
+      "type": "array",
+      "items": {},
+      "description": "[Tracks] The pipelines, in the order their answers appear",
+      "default": []
+    },
+    "reduce": {
+      "type": "array",
+      "items": {},
+      "description": "[Tracks] Pipeline given { input, results }; empty emits the array",
+      "default": []
+    },
+    "run": {
+      "type": "string",
+      "enum": [
+        "serial",
+        "parallel"
+      ],
+      "description": "[Tracks] One at a time, or together",
+      "default": "serial"
+    },
+    "padAssignments": {
+      "type": "object",
+      "description": "[Trigger Pad] Map of pad index → payload to emit",
+      "default": {}
+    },
+    "armedPad": {
+      "type": "number",
+      "description": "[Trigger Pad] Index of the currently active/armed pad",
+      "default": 0
+    },
+    "Action": {
+      "description": "[Trigger Pad] Description"
+    },
+    "\"trigger-pad\"": {
+      "type": "object",
+      "description": "[Trigger Pad] Fire the payload of the specified pad"
+    },
+    "\"clear-pad\"": {
+      "type": "object",
+      "description": "[Trigger Pad] Remove the payload assignment for a pad"
+    },
+    "action: \"generate\"": {
+      "description": "[UUID Generator] Triggers immediate UUID generation and emission via app.next()"
+    },
+    "filePath": {
+      "type": "string",
+      "description": "[WAV Reader] The .wav file, inside the folders boards are given; a relative path is taken from the default one"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "claude",
+        "openai",
+        "gemini"
+      ],
+      "description": "[Workflow Board Builder] AI provider to use",
+      "default": "claude"
+    },
+    "description": {
+      "type": "string",
+      "description": "[Workflow Board Builder] Natural language description of the desired board"
+    },
+    "inputBoardSource": {
+      "type": "string",
+      "description": "[Workflow Board Builder] Optional existing board JSON to refine or extend",
+      "default": ""
+    },
+    "generatedBoardSource": {
+      "type": "string",
+      "description": "[Workflow Board Builder] The generated board JSON (editable in the UI)"
+    },
+    "gridRows": {
+      "type": "number",
+      "description": "[XY Pad] Number of discrete rows; 0 = continuous",
+      "default": 0
+    },
+    "gridCols": {
+      "type": "number",
+      "description": "[XY Pad] Number of discrete columns; 0 = continuous",
+      "default": 0
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,70 @@
+{
+  "name": "readymade-vscode",
+  "displayName": "Readymade",
+  "version": "0.1.0",
+  "type": "module",
+  "publisher": "readymadeit",
+  "description": "VS Code host for the Readymade playground: edit and run *.board.json files with completion from service contracts.",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://readymadeit.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cbastuck/readymade.git",
+    "directory": "readymade-vscode"
+  },
+  "engines": {
+    "vscode": "^1.95.0",
+    "node": ">=22"
+  },
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onCustomEditor:readymade.boardEditor"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "readymade.boardEditor",
+        "displayName": "Readymade Playground",
+        "selector": [
+          {
+            "filenamePattern": "*.board.json"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "*.board.json",
+          "boards/*.json"
+        ],
+        "url": "./schemas/board.schema.json"
+      },
+      {
+        "fileMatch": [
+          "*.service-state.json"
+        ],
+        "url": "./schemas/service-state.schema.json"
+      }
+    ]
+  },
+  "scripts": {
+    "generate-schemas": "tsx scripts/generate-schemas.ts",
+    "build:schemas": "npm run generate-schemas",
+    "build:webapp": "npm --prefix ../meander/frontend run build:vscode",
+    "build": "npm run generate-schemas && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "24.6.1",
+    "tsx": "4.22.4",
+    "typescript": "5.9.3",
+    "vitest": "4.1.8"
+  }
+}

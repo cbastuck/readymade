@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/delay.schema.json",
+  "title": "Delay Service State",
+  "description": "Applies a digital delay effect to an audio pipeline, adding an echo to the signal. (Runtimes: browser; IDs: hookup.to/service/delay)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "time": {
+      "type": "number",
+      "description": "Delay time in seconds",
+      "default": 0.5
+    },
+    "Parameter": {
+      "description": "Description"
+    },
+    "feedback": {
+      "description": "How much of the delayed signal is fed back into the delay line (0–0.999)"
+    },
+    "mix": {
+      "description": "Wet/dry blend (0 = dry only, 1 = wet only)"
+    }
+  },
+  "additionalProperties": true
+}

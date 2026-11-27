@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/injector.schema.json",
+  "title": "Injector Service State",
+  "description": "Injects a configured static value into the pipeline, replacing or providing the current data. (Runtimes: browser, cpp, node; IDs: hookup.to/service/injector, injector)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "inject": {
+      "description": "Value to store and emit. Setting this fires an immediate app.next()"
+    },
+    "injectBinary": {
+      "type": "string",
+      "description": "hkp-rt and hkp-node only: base64 payload to store and emit as binary"
+    },
+    "recentInjection": {
+      "description": "Restore the last injected value on board load (set automatically)"
+    },
+    "plainText": {
+      "type": "boolean",
+      "description": "Treat the stored value as a plain string rather than parsed JSON",
+      "default": false
+    }
+  },
+  "additionalProperties": true
+}

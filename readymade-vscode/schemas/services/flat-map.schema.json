@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/flat-map.schema.json",
+  "title": "FlatMap Service State",
+  "description": "Applies an expression to each item in an array and concatenates all results into a single flat array. (Runtimes: browser; IDs: hookup.to/service/flat-map)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "expression": {
+      "type": "string",
+      "description": "Expression evaluated per input item. Should return an array or a value. Uses the same expression syntax and built-in functions as the [Map](./map.md) service.",
+      "default": ""
+    }
+  },
+  "additionalProperties": true
+}

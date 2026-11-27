@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/sql.schema.json",
+  "title": "SQL Service State",
+  "description": "A board's own SQL database. Tables, columns and meaning all belong to the board. (Runtimes: node, browser; IDs: sql)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "mode": {
+      "type": "string",
+      "description": "One of the three above",
+      "default": "query"
+    },
+    "emit": {
+      "type": "string",
+      "description": "\"result\" passes the answer on, \"input\" passes the request through",
+      "default": "result"
+    },
+    "database": {
+      "type": "string",
+      "description": "Which database; services naming the same one share its tables. Empty: derived from the board's title (hkp-node), default (browser). Ignored by databases",
+      "default": ""
+    },
+    "statement": {
+      "type": "string",
+      "description": "The SQL to run (query, run, exec)",
+      "default": ""
+    },
+    "schema": {
+      "type": "string",
+      "description": "CREATE TABLE … applied once per board",
+      "default": ""
+    },
+    "lastCount": {
+      "type": "number",
+      "description": "Read-only: rows returned, or rows changed"
+    },
+    "error": {
+      "type": "string",
+      "description": "Read-only: why the last pass produced nothing"
+    }
+  },
+  "additionalProperties": true
+}

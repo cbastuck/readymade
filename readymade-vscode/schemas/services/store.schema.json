@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/store.schema.json",
+  "title": "Store Service State",
+  "description": "What a board remembers between runs — keyed, durable, and scoped to the board. (Runtimes: node; IDs: store)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "mode": {
+      "type": "string",
+      "description": "One of the eight above",
+      "default": "put"
+    },
+    "namespace": {
+      "type": "string",
+      "description": "Which of the board's tables. Empty is the board's own",
+      "default": ""
+    },
+    "key": {
+      "type": "string",
+      "description": "The key to act on, when every pass means the same slot",
+      "default": ""
+    },
+    "keyFrom": {
+      "type": "string",
+      "description": "Dotted path into the input to take the key from, e.g. meta.messageId",
+      "default": ""
+    },
+    "valueFrom": {
+      "type": "string",
+      "description": "Dotted path to the part worth keeping; the whole input by default",
+      "default": ""
+    },
+    "limit": {
+      "type": "number",
+      "description": "list: how many records to take, oldest first. 0 = all",
+      "default": 0
+    },
+    "show": {
+      "type": "string",
+      "description": "list: waiting, in-flight, or all",
+      "default": "waiting"
+    },
+    "lastCount": {
+      "type": "number",
+      "description": "Read-only: what the last pass saw"
+    }
+  },
+  "additionalProperties": true
+}

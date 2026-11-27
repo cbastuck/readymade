@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/openai-prompt.schema.json",
+  "title": "OpenAI Prompt Service State",
+  "description": "Sends pipeline data to the OpenAI API and emits the model's response. (Runtimes: browser; IDs: hookup.to/service/openai-prompt)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model name",
+      "default": "gpt-4o-mini"
+    },
+    "prompt": {
+      "type": "string",
+      "description": "System / user prompt prepended to the pipeline value",
+      "default": ""
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Sampling temperature",
+      "default": 0
+    },
+    "seed": {
+      "type": "number",
+      "description": "Reproducibility seed",
+      "default": 0
+    },
+    "responseIsJson": {
+      "type": "boolean",
+      "description": "Parse the response as JSON before emitting",
+      "default": false
+    },
+    "voice": {
+      "type": "string",
+      "description": "TTS voice (for tts-1 model). One of alloy, echo, fable, onyx, nova, shimmer",
+      "default": "alloy"
+    },
+    "injectPrompt": {
+      "type": "boolean",
+      "description": "When true, appends the pipeline value to the configured prompt rather than replacing it"
+    }
+  },
+  "additionalProperties": true
+}

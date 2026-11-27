@@ -29,6 +29,7 @@ const isNative = !!(
 );
 const isIOS = (window as any).__MEANDER_IOS__ === true;
 const isAndroid = (window as any).__MEANDER_ANDROID__ === true;
+const isVSCode = (window as any).__MEANDER_VSCODE__ === true;
 
 // iOS: the embedded runtime is LAN-exposed and enforces Jwt auth with an empty
 // allow-list (locked) until the owner signs in. This pushes the signed-in email
@@ -207,7 +208,15 @@ const capabilities: PlatformCapabilities = isNative
         refreshSession: refreshNativeSession,
         ...runtimeSettingsCapabilities,
       }
-    : {};
+    : isVSCode
+      ? {
+          loadSavedBoard: loadSavedBoardNative,
+          saveSavedBoard: saveSavedBoardNative,
+          listSavedBoards: listSavedBoardsNative,
+          deleteSavedBoard: deleteSavedBoardNative,
+          ...runtimeSettingsCapabilities,
+        }
+      : {};
 
 export function MeanderPlatformProvider({ children }: { children: ReactNode }) {
   return <PlatformProvider value={capabilities}>{children}</PlatformProvider>;

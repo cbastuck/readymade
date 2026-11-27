@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/timeline.schema.json",
+  "title": "Timeline Service State",
+  "description": "Time as a value: an object animated through keyframes, and actions fired when\ntime reaches them. (Runtimes: browser; IDs: hookup.to/service/timeline)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "clock": {
+      "type": "string",
+      "enum": [
+        "own",
+        "input"
+      ],
+      "description": "Where time comes from",
+      "default": "own"
+    },
+    "object": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the timeline animates",
+      "default": null
+    },
+    "keyframes": {
+      "type": "object",
+      "description": "Keyframes per property of the object",
+      "default": {}
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Data emitted when time reaches at",
+      "default": []
+    },
+    "length": {
+      "type": "number",
+      "description": "Length in the timeline's unit; 0 is unbounded",
+      "default": 0
+    },
+    "loop": {
+      "type": "boolean",
+      "description": "Repeat the loop range",
+      "default": false
+    },
+    "loopStart": {
+      "type": "number",
+      "description": "Where the loop starts over from",
+      "default": 0
+    },
+    "loopEnd": {
+      "type": "number",
+      "description": "Where the loop starts over; 0 is the length",
+      "default": 0
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "s",
+        "beats"
+      ],
+      "description": "How an own clock counts",
+      "default": "s"
+    },
+    "tempoSlot": {
+      "type": "string",
+      "description": "Slot holding the tempo (BPM) for \"beats\"",
+      "default": "tempo"
+    },
+    "fps": {
+      "type": "number",
+      "description": "Frames a second an own clock emits",
+      "default": 30
+    },
+    "speed": {
+      "type": "number",
+      "description": "Playback speed of an own clock",
+      "default": 1
+    },
+    "running": {
+      "type": "boolean",
+      "description": "Whether an own clock is playing; true plays, false pauses",
+      "default": false
+    },
+    "recording": {
+      "type": "boolean",
+      "description": "Whether what arrives at a playing own clock's input is kept as actions. Stopping or pausing sets it to false.",
+      "default": false
+    },
+    "recordMode": {
+      "type": "string",
+      "enum": [
+        "overdub",
+        "replace"
+      ],
+      "description": "Whether a recording keeps the actions it passes over or clears them",
+      "default": "overdub"
+    },
+    "placements": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "When each name plays on this timeline",
+      "default": []
+    },
+    "placement": {
+      "type": "string",
+      "description": "The name a driven timeline takes from its driver; \"\" takes none",
+      "default": ""
+    }
+  },
+  "additionalProperties": true
+}

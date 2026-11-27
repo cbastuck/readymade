@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/core-output.schema.json",
+  "title": "Audio IO Service State",
+  "description": "Records audio from a microphone and plays it back through the speakers, in both the browser and the hkp-rt native runtime. (Runtimes: cpp; IDs: core-output, core-input)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    }
+  },
+  "additionalProperties": true
+}

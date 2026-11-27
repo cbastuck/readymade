@@ -11,8 +11,10 @@
     "build": "tsc -b && vite build",
     "build:ios": "tsc -b && vite build --config vite.config.ios.ts",
     "build:android": "tsc -b && vite build --config vite.config.android.ts",
+    "build:vscode": "tsc -b && vite build --config vite.config.vscode.ts",
     "update:ios": "npm run build:ios",
     "update:android": "npm run build:android",
+    "update:vscode": "npm run build:vscode",
     "lint": "eslint .",
     "preview": "vite preview"
   },

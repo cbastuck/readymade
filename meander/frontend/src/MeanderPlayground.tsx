@@ -29,6 +29,7 @@ import { BoardDescriptor, RuntimeClass } from "hkp-frontend/src/types";
 
 const isBuiltInRemote = (url?: string) =>
   (url || "").startsWith("hkp://remotes/");
+const isVSCode = (window as any).__MEANDER_VSCODE__ === true;
 
 type Props = {
   initialBoard?: BoardDescriptor | null;
@@ -57,7 +58,9 @@ export default function MeanderPlayground({
   shareToInject = null,
   onShareConsumed,
 }: Props) {
-  const [boardName, setBoardName] = useState("Idea");
+  const [boardName, setBoardName] = useState(
+    initialBoard?.boardName || "Idea",
+  );
   const [remotes, setRemotes] = useState<Array<Remote> | null>(null);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [boardSource, setBoardSource] = useState("");
@@ -176,8 +179,22 @@ export default function MeanderPlayground({
     setBoardName(name);
   };
 
-  const onBoardSnapshot = (snapshot: BoardSnapshot) =>
-    recordSnapshot(snapshot, boardName, library);
+  const onBoardSnapshot = (snapshot: BoardSnapshot) => {
+    if (isVSCode) {
+      // In the VS Code custom editor the open `.board.json` document is the
+      // board: an edit in the playground writes back to `hkp://boards/<name>`
+      // so it appears as an unsaved change in the workspace file.
+      const name = snapshot.boardName || boardName;
+      if (name) {
+        void saveBoard(name, {
+          ...snapshot.documents.composition,
+          boardName: name,
+        });
+      }
+      return;
+    }
+    void recordSnapshot(snapshot, boardName, library);
+  };
 
   const onBoardLoaded = (board: BoardDescriptor) => {
     if (board.boardName) {
@@ -222,6 +239,7 @@ export default function MeanderPlayground({
       onChangeBoardname={setBoardName}
       onUpdateBoardState={onUpdatedBoard}
       onBoardSnapshot={onBoardSnapshot}
+      snapshotOnLoad={isVSCode ? false : undefined}
       menuItemFactory={menuItemFactory}
       hideNavigation
       menuSlot={<MeanderAppMenu />}

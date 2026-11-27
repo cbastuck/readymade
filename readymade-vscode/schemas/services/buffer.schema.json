@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/buffer.schema.json",
+  "title": "Buffer Service State",
+  "description": "Accumulates pipeline values into an array and flushes them as a batch when a capacity or time threshold is reached. (Runtimes: browser; IDs: hookup.to/service/buffer)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "capacity": {
+      "type": "number",
+      "description": "Maximum number of items before an automatic flush",
+      "default": 100
+    },
+    "interval": {
+      "type": "number",
+      "description": "Flush interval in milliseconds. -1 disables timer-based flushing",
+      "default": -1
+    },
+    "accumulatedOutput": {
+      "type": "boolean",
+      "description": "When true, each flush emits the full accumulated buffer since the last clear rather than just the current window",
+      "default": false
+    },
+    "action: \"clear\"": {
+      "description": "Discards all buffered items"
+    },
+    "command: { action: \"flush\" }": {
+      "description": "Immediately flushes the current buffer"
+    }
+  },
+  "additionalProperties": true
+}

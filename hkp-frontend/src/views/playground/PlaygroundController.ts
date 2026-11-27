@@ -727,7 +727,8 @@ export function usePlaygroundController(
     onChangeBoardname,
     unitOrigin,
     onBoardSnapshot: draftsEnabled ? writeDraft : props.onBoardSnapshot,
-    snapshotOnLoad: draftsEnabled ? false : undefined,
+    snapshotOnLoad:
+      props.snapshotOnLoad ?? (draftsEnabled ? false : undefined),
   };
 }
 

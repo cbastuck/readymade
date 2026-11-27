@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/trigger-pad.schema.json",
+  "title": "Trigger Pad Service State",
+  "description": "A grid of assignable buttons; pressing a pad sends its configured payload into the pipeline. (Runtimes: browser; IDs: hookup.to/service/trigger-pad)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "padAssignments": {
+      "type": "object",
+      "description": "Map of pad index → payload to emit",
+      "default": {}
+    },
+    "armedPad": {
+      "type": "number",
+      "description": "Index of the currently active/armed pad",
+      "default": 0
+    },
+    "Action": {
+      "description": "Description"
+    },
+    "\"trigger-pad\"": {
+      "type": "object",
+      "description": "Fire the payload of the specified pad"
+    },
+    "\"clear-pad\"": {
+      "type": "object",
+      "description": "Remove the payload assignment for a pad"
+    }
+  },
+  "additionalProperties": true
+}

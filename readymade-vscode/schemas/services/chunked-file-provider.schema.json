@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/chunked-file-provider.schema.json",
+  "title": "Chunked File Provider Service State",
+  "description": "Splits a file selected by the user into fixed-size chunks and emits each chunk sequentially as a `ChunkPayload`. (Runtimes: browser; IDs: hookup.to/service/chunked-file-provider)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    }
+  },
+  "additionalProperties": true
+}

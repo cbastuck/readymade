@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/switch.schema.json",
+  "title": "Switch Service State",
+  "description": "Routes its input into the first of several sub-pipelines whose condition holds: the structured if/else of a board. (Runtimes: browser; IDs: hookup.to/service/switch)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "The cases, tried in order. when is an expression over params; pipeline is a list of pipeline entries (see [Browser Sub-Service](./browser-sub-service.md#pipeline-entry-shape)).",
+      "default": []
+    },
+    "default": {
+      "description": "Runs when no case matches.",
+      "default": []
+    },
+    "ignoreInnerResult": {
+      "type": "boolean",
+      "description": "Answer with the original input instead of the case pipeline's result: the case runs for its effects.",
+      "default": false
+    }
+  },
+  "additionalProperties": true
+}

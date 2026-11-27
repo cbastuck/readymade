@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/spread.schema.json",
+  "title": "Spread Service State",
+  "description": "Sends each item of an array on by itself — one value in, as many out as it has items. (Runtimes: browser, node, python; IDs: spread)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "itemsFrom": {
+      "type": "string",
+      "description": "Dotted path to the array in the input; the input itself by default",
+      "default": ""
+    },
+    "lastTotal": {
+      "type": "number",
+      "description": "Read-only: how many items the last array had"
+    }
+  },
+  "additionalProperties": true
+}

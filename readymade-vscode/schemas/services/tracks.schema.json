@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/tracks.schema.json",
+  "title": "Tracks Service State",
+  "description": "Several pipelines over one input, and one answer out. (Runtimes: browser, node, python, cpp; IDs: tracks)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "description": "Passes the input straight through",
+      "default": false
+    },
+    "tracks": {
+      "type": "array",
+      "items": {},
+      "description": "The pipelines, in the order their answers appear",
+      "default": []
+    },
+    "reduce": {
+      "type": "array",
+      "items": {},
+      "description": "Pipeline given { input, results }; empty emits the array",
+      "default": []
+    },
+    "run": {
+      "type": "string",
+      "enum": [
+        "serial",
+        "parallel"
+      ],
+      "description": "One at a time, or together",
+      "default": "serial"
+    }
+  },
+  "additionalProperties": true
+}

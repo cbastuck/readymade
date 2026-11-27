@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/spotify.schema.json",
+  "title": "Spotify Service State",
+  "description": "Reads playback state and track metadata from the Spotify Web API. (Runtimes: browser; IDs: hookup.to/service/spotify)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "accessToken": {
+      "type": "string",
+      "description": "Spotify OAuth access token",
+      "default": ""
+    },
+    "refreshToken": {
+      "type": "string",
+      "description": "OAuth refresh token for automatic renewal",
+      "default": ""
+    },
+    "clientId": {
+      "type": "string",
+      "description": "Spotify app client ID (needed for token refresh)",
+      "default": ""
+    }
+  },
+  "additionalProperties": true
+}

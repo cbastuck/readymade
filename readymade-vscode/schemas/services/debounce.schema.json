@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/debounce.schema.json",
+  "title": "Debounce Service State",
+  "description": "Rate-limits a pipeline by suppressing values that arrive before a configurable cooldown has elapsed. (Runtimes: browser; IDs: hookup.to/service/debounce)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "cooldown": {
+      "type": "number",
+      "description": "Minimum time between forwarded values, in seconds",
+      "default": 60
+    },
+    "reset": {
+      "type": "boolean",
+      "description": "When true, clears the last-fired timestamp so the next value is forwarded immediately"
+    }
+  },
+  "additionalProperties": true
+}

@@ -75,5 +75,7 @@
     "**/3rdparty/vcpkg/**": true,
     "**/tmp/**": true,
     "**/node_modules/**": true
-  }
+  },
+  "window.titleSeparator": "-",
+  "window.title": "${rootPath}"
 }

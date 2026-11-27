@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/workflow-board-builder.schema.json",
+  "title": "Workflow Board Builder Service State",
+  "description": "Generates a complete HKP board JSON from a natural language description using an AI model. (Runtimes: browser; IDs: hookup.to/service/workflow-board-builder)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "claude",
+        "openai",
+        "gemini"
+      ],
+      "description": "AI provider to use",
+      "default": "claude"
+    },
+    "model": {
+      "type": "string",
+      "description": "Model name (e.g. \"claude-3-7-sonnet-latest\", \"gpt-4.1-mini\", \"gemini-2.0-flash\")"
+    },
+    "description": {
+      "type": "string",
+      "description": "Natural language description of the desired board"
+    },
+    "inputBoardSource": {
+      "type": "string",
+      "description": "Optional existing board JSON to refine or extend",
+      "default": ""
+    },
+    "generatedBoardSource": {
+      "type": "string",
+      "description": "The generated board JSON (editable in the UI)"
+    }
+  },
+  "additionalProperties": true
+}

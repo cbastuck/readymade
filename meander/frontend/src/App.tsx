@@ -45,14 +45,32 @@ function findDemoBySlug(
     : undefined;
 }
 
+const isVSCode = (window as any).__MEANDER_VSCODE__ === true;
+
 function shouldRenderPlaygroundFromUrl() {
+  if (isVSCode) {
+    return true;
+  }
   const { pathname } = window.location;
   return pathname === "/playground" || pathname.startsWith("/playground/");
 }
 
 async function tryResumeLastBoard(): Promise<ResumedBoard | undefined> {
-  const name = lastBoardName();
-  return name ? resumeBoard(name, lastBoardLibrary()) : undefined;
+  const initialName = (window as any).__MEANDER_INITIAL_BOARD_NAME__;
+  const name =
+    typeof initialName === "string" && initialName
+      ? initialName
+      : lastBoardName();
+  if (name) {
+    return resumeBoard(name, lastBoardLibrary());
+  }
+  if (isVSCode) {
+    const boards = await (await getBackend()).fetchSavedBoards();
+    if (boards[0]) {
+      return resumeBoard(boards[0], "local");
+    }
+  }
+  return undefined;
 }
 
 type View =

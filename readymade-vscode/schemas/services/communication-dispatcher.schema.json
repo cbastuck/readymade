@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/communication-dispatcher.schema.json",
+  "title": "Communication Dispatcher Service State",
+  "description": "The manager in the middle of the star. Decides what to do next about an ongoing\nexchange, does it, and takes the result back. (Runtimes: node; IDs: communication-dispatcher)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "goal": {
+      "type": "string",
+      "description": "What the exchange is for",
+      "default": ""
+    },
+    "instruction": {
+      "type": "string",
+      "description": "Sent as the opening of the question. Not a system message: the decide pipeline may hold something that already has one, or may not be a model at all"
+    },
+    "states": {
+      "type": "array",
+      "description": "\"name\" or { name, describe }. The enum next is drawn from",
+      "default": []
+    },
+    "stateFrom": {
+      "type": "string",
+      "description": "Dotted path to the current state in the input",
+      "default": "state"
+    },
+    "actions": {
+      "type": "array",
+      "description": "{ name, describe, available, pipeline }",
+      "default": []
+    },
+    "decide": {
+      "type": "array",
+      "description": "The pipeline that asks the model",
+      "default": []
+    },
+    "maxContextChars": {
+      "type": "number",
+      "description": "Bound on the input shown to the model. 0 = no bound",
+      "default": 20000
+    },
+    "lastAction / lastReason / lastNext": {
+      "description": "Read-only: what it decided, and why"
+    }
+  },
+  "additionalProperties": true
+}

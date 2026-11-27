@@ -58,8 +58,11 @@ TEST_CASE("with nothing said, the apps and local pages may call, and no site may
   REQUIRE(admits(allowed, "saucer://embedded"));
   REQUIRE(admits(allowed, "hkp://app"));
   REQUIRE(admits(allowed, "https://appassets.androidplatform.net"));
+  REQUIRE(admits(allowed, "vscode-webview://1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"));
   REQUIRE(admits(allowed, "http://localhost:5173"));
 
+  REQUIRE_FALSE(admits(allowed, "vscode-webview://"));
+  REQUIRE_FALSE(admits(allowed, "vscode-webview://evil/path"));
   REQUIRE_FALSE(admits(allowed, "https://evil.example"));
   // The project's own website is a site like any other until somebody says so.
   REQUIRE_FALSE(admits(allowed, "https://readymadeit.com"));

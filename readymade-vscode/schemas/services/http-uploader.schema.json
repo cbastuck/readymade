@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/http-uploader.schema.json",
+  "title": "HTTP Uploader Service State",
+  "description": "POSTs file chunks from a [Chunked File Provider](./chunked-file-provider.md) to a server endpoint. (Runtimes: browser; IDs: hookup.to/service/http-uploader)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "url": {
+      "type": "string",
+      "description": "Server endpoint that receives each chunk",
+      "default": ""
+    }
+  },
+  "additionalProperties": true
+}

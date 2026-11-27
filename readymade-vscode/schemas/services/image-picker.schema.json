@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/image-picker.schema.json",
+  "title": "Image Picker Service State",
+  "description": "Presents a file picker for images and emits the selected image as a `Blob` into the pipeline. (Runtimes: browser; IDs: hookup.to/service/image-picker)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    }
+  },
+  "additionalProperties": true
+}

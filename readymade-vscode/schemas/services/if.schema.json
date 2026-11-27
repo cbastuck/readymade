@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/if.schema.json",
+  "title": "If Service State",
+  "description": "Evaluates a structural pattern against incoming data and conditionally routes it through a nested sub-pipeline. (Runtimes: cpp; IDs: if)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "condition": {
+      "type": "object",
+      "description": "JSON pattern; all key–value pairs must match for the branch to execute"
+    },
+    "pipeline": {
+      "type": "array",
+      "items": {},
+      "description": "Ordered list of services to run when the condition is true"
+    }
+  },
+  "additionalProperties": true
+}

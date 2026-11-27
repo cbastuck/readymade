@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/local-storage.schema.json",
+  "title": "Local Storage Service State",
+  "description": "Reads key–value pairs from the browser's `localStorage` and emits them as an array. (Runtimes: browser; IDs: hookup.to/service/local-storage)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "filter": {
+      "type": "string",
+      "description": "Key prefix filter. Only keys starting with this string are included. Empty string = all keys.",
+      "default": ""
+    },
+    "process": {
+      "type": "boolean",
+      "description": "When true, immediately fires the current item list downstream via app.next()"
+    }
+  },
+  "additionalProperties": true
+}

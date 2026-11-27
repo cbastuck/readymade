@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/imap-email.schema.json",
+  "title": "IMAP Email Service State",
+  "description": "Listens on an IMAP mailbox and pushes each new incoming email as a structured object into the pipeline. (Runtimes: node; IDs: imap-email)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "host": {
+      "type": "string",
+      "description": "IMAP server hostname (e.g. imap.gmail.com)",
+      "default": ""
+    },
+    "port": {
+      "type": "number",
+      "description": "IMAP server port",
+      "default": 993
+    },
+    "username": {
+      "type": "string",
+      "description": "Login username / email address",
+      "default": ""
+    },
+    "password": {
+      "type": "string",
+      "description": "Login password or app-specific password",
+      "default": ""
+    },
+    "tls": {
+      "type": "boolean",
+      "description": "Use TLS (recommended — disable only for plain-text port 143)",
+      "default": true
+    },
+    "mailbox": {
+      "type": "string",
+      "description": "Mailbox folder to watch",
+      "default": "INBOX"
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "Whether to listen; persisted, so a saved board reconnects on load",
+      "default": false
+    },
+    "connect": {
+      "type": "boolean",
+      "description": "Send { connect: true } to start, { connect: false } to stop"
+    },
+    "disconnect": {
+      "type": "boolean",
+      "description": "Send { disconnect: true } to stop the connection"
+    },
+    "Field": {
+      "description": "Description"
+    },
+    "running": {
+      "type": "boolean",
+      "description": "Whether a connection is up right now"
+    },
+    "status": {
+      "type": "string",
+      "description": "disconnected, connecting, connected or reconnecting"
+    },
+    "reconnectAttempts": {
+      "type": "number",
+      "description": "Attempts since the connection was last up; 0 while connected"
+    },
+    "error": {
+      "type": "string",
+      "description": "Last error message, if any"
+    }
+  },
+  "additionalProperties": true
+}

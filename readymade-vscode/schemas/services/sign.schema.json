@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/sign.schema.json",
+  "title": "Sign Service State",
+  "description": "Computes an HMAC signature of any pipeline value using the Web Crypto API. (Runtimes: browser; IDs: hookup.to/service/sign)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "method": {
+      "type": "string",
+      "description": "HMAC algorithm. One of \"HmacSHA256\", \"HmacSHA512\", \"HmacSHA1\", \"HmacSHA256p\"",
+      "default": "HmacSHA256"
+    },
+    "encoding": {
+      "type": "string",
+      "enum": [
+        "hex",
+        "base64"
+      ],
+      "description": "Output encoding for the signature",
+      "default": "hex"
+    },
+    "secret": {
+      "type": "string",
+      "description": "Shared secret used as the HMAC key",
+      "default": "secret key 123"
+    },
+    "finalize": {
+      "type": "boolean",
+      "description": "**Progressive mode only** — computes and emits the HMAC over all buffered chunks"
+    }
+  },
+  "additionalProperties": true
+}

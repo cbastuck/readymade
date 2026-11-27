@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/speech-synth.schema.json",
+  "title": "Speech Synth Service State",
+  "description": "Speaks a text string aloud using the browser's Web Speech Synthesis API. (Runtimes: browser; IDs: hookup.to/service/speech-synth)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "voices": {
+      "type": "array",
+      "items": {},
+      "description": "Available voices (populated by the UI from speechSynthesis.getVoices())",
+      "default": []
+    }
+  },
+  "additionalProperties": true
+}

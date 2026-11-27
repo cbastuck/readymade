@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/changes.schema.json",
+  "title": "Changes Service State",
+  "description": "Lets the input through only when what it watches has changed since the last input — a stream of reports becomes a stream of events. (Runtimes: browser; IDs: hookup.to/service/changes)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "value": {
+      "type": "string",
+      "description": "An expression over params — what to watch. Empty watches the whole input",
+      "default": ""
+    },
+    "emit": {
+      "type": "string",
+      "enum": [
+        "change",
+        "rise",
+        "fall"
+      ],
+      "description": "Which change lets the input through",
+      "default": "change"
+    },
+    "reset": {
+      "type": "boolean",
+      "description": "Forgets what was remembered (an action, not state)"
+    }
+  },
+  "additionalProperties": true
+}

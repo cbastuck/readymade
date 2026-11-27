@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/audioeditor.schema.json",
+  "title": "Audio Editor Service State",
+  "description": "Accumulates a rolling window of incoming audio and provides playback and editing of the recorded audio. (Runtimes: browser; IDs: hookup.to/service/audioeditor)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "maxLength": {
+      "type": "number",
+      "description": "Maximum number of samples to retain (default = 60 s at 48 kHz)",
+      "default": 2880000
+    },
+    "action": {
+      "type": "string",
+      "description": "\"clear\" resets the buffer; \"play\" triggers playback of a selection"
+    },
+    "action: \"play\" params": {
+      "type": "object",
+      "description": "Sample range to play back"
+    }
+  },
+  "additionalProperties": true
+}

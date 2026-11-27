@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/storage.schema.json",
+  "title": "Storage Service State",
+  "description": "A place on the board where a board keeps bytes — audio it rendered, a file\nsomebody uploaded, an export — addressed by path and backed by whatever the\nboard points it at. (Runtimes: node; IDs: storage)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "pipeline": {
+      "type": "array",
+      "description": "The backend. Required — a store with none says so rather than inventing one"
+    },
+    "prefix": {
+      "type": "string",
+      "description": "Confines every path to one part of the store"
+    },
+    "readOnly": {
+      "type": "boolean",
+      "description": "Answers reads and refuses everything else"
+    },
+    "operation": {
+      "type": "string",
+      "description": "What a request naming no op means (default read)"
+    }
+  },
+  "additionalProperties": true
+}

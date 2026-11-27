@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/filesystem.schema.json",
+  "title": "Filesystem Service State",
+  "description": "Reads from and writes to the local file system on an hkp-rt server. (Runtimes: cpp, node; IDs: filesystem)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "path": {
+      "type": "string",
+      "description": "A file or folder inside the folders boards are given. Relative paths are taken from the default one"
+    },
+    "operation": {
+      "type": "string",
+      "enum": [
+        "read",
+        "write"
+      ],
+      "description": "What a request naming none means"
+    },
+    "Runtime is": {
+      "description": "Adding more"
+    },
+    "the desktop app's (\"remote\": \"embedded\")": {
+      "description": "*Folders boards may use* in the app's settings"
+    },
+    "a standalone hkp-rt": {
+      "description": "HKP_FILES_ALLOW"
+    },
+    "the iOS and Android apps'": {
+      "description": "—"
+    }
+  },
+  "additionalProperties": true
+}

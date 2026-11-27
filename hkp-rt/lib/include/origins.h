@@ -296,11 +296,22 @@ public:
 
 private:
   // Where the Readymade apps load their pages from: the packaged desktop app,
-  // the iOS app and the Android app.
+  // the iOS app, the Android app, and the VS Code extension's webview.
   static bool isAppOrigin(const std::string& origin)
   {
-    return origin == "saucer://embedded" || origin == "hkp://app" ||
-           origin == "https://appassets.androidplatform.net";
+    if (origin == "saucer://embedded" || origin == "hkp://app" ||
+        origin == "https://appassets.androidplatform.net")
+    {
+      return true;
+    }
+    const std::string prefix = "vscode-webview://";
+    if (origin.rfind(prefix, 0) == 0 && origin.size() > prefix.size())
+    {
+      return std::all_of(origin.begin() + prefix.size(), origin.end(), [](unsigned char c) {
+        return std::isalnum(c) != 0 || c == '-' || c == '.';
+      });
+    }
+    return false;
   }
 
   bool m_any = false;

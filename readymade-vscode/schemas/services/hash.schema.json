@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/hash.schema.json",
+  "title": "Hash Service State",
+  "description": "Computes a cryptographic hash of any pipeline value using the Web Crypto API. (Runtimes: browser; IDs: hookup.to/service/hash)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "method": {
+      "type": "string",
+      "description": "Hash algorithm. One of \"sha-256\", \"sha-384\", \"sha-512\", \"sha-1\", \"sha-256p\"",
+      "default": "sha-256"
+    },
+    "encoding": {
+      "type": "string",
+      "enum": [
+        "hex",
+        "base64"
+      ],
+      "description": "Output encoding for the hash digest",
+      "default": "hex"
+    },
+    "finalize": {
+      "type": "boolean",
+      "description": "**Progressive mode only** — when true, computes and emits the hash over all buffered chunks via app.next()"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/gather.schema.json",
+  "title": "Gather Service State",
+  "description": "Waits for every part a Spread sent on and turns them back into one value — as an array, or as whatever its nested pipeline makes of them. (Runtimes: browser, node, python, cpp; IDs: gather)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "description": "Pass every input through untouched",
+      "default": false
+    },
+    "pipeline": {
+      "type": "array",
+      "description": "The nested services that make one value of { group, items }; none passes the items on as an array",
+      "default": []
+    },
+    "maxBytes": {
+      "type": "number",
+      "description": "The most one group may hold (64 MiB, the coordinator's default frame limit)",
+      "default": 67108864
+    },
+    "maxGroups": {
+      "type": "number",
+      "description": "How many groups may be incomplete at once",
+      "default": 16
+    },
+    "timeoutMs": {
+      "type": "number",
+      "description": "How long a group may take to complete",
+      "default": 60000
+    },
+    "stopPropagation": {
+      "type": "boolean",
+      "description": "Pass nothing on, even a complete group",
+      "default": false
+    },
+    "pending": {
+      "type": "number",
+      "description": "Read-only: how many groups are incomplete"
+    },
+    "error": {
+      "type": "string",
+      "description": "Read-only: the last group refused or let go, and why",
+      "default": ""
+    }
+  },
+  "additionalProperties": true
+}

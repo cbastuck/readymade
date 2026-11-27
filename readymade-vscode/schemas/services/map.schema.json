@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/map.schema.json",
+  "title": "Map Service State",
+  "description": "Transforms pipeline data by applying a declarative template to produce a new JSON object. (Runtimes: browser, cpp, node, python; IDs: hookup.to/service/map, map)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "template": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        }
+      ],
+      "description": "The mapping template. See Template Syntax above.",
+      "default": {}
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "replace",
+        "add",
+        "overwrite"
+      ],
+      "description": "Controls how the output is merged with the input.",
+      "default": "replace"
+    },
+    "arrayMode": {
+      "type": "string",
+      "enum": [
+        "array",
+        "single"
+      ],
+      "description": "Whether an array input is mapped element by element or as one value.",
+      "default": "array"
+    },
+    "sensingMode": {
+      "type": "boolean",
+      "description": "When true, the Map auto-learns the template from the first input then disables itself.",
+      "default": false
+    }
+  },
+  "additionalProperties": true
+}

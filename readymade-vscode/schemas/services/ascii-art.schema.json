@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/ascii-art.schema.json",
+  "title": "ASCII Art Service State",
+  "description": "Converts an image (Blob) into a text grid of ASCII characters representing its luminance. (Runtimes: browser; IDs: hookup.to/service/ascii-art)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "cols": {
+      "type": "number",
+      "description": "Number of character columns in the output grid",
+      "default": 100
+    },
+    "rows": {
+      "type": "number",
+      "description": "Number of character rows in the output grid",
+      "default": 60
+    },
+    "charset": {
+      "type": "string",
+      "description": "Ordered character ramp from lightest to darkest",
+      "default": " .:-=+*#%@"
+    },
+    "invert": {
+      "type": "boolean",
+      "description": "When true, reverses the luminance mapping (dark → light characters)",
+      "default": false
+    },
+    "imageKey": {
+      "type": "string",
+      "description": "Key on the incoming object that holds the Blob",
+      "default": "image"
+    }
+  },
+  "additionalProperties": true
+}

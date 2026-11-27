@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/analyzer.schema.json",
+  "title": "Analyzer Service State",
+  "description": "Forwards pipeline data unchanged while notifying the UI of each value as it passes through. (Runtimes: browser; IDs: hookup.to/service/analyzer)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    }
+  },
+  "additionalProperties": true
+}

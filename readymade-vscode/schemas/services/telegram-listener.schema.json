@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/telegram-listener.schema.json",
+  "title": "Telegram Listener Service State",
+  "description": "Listens for incoming Telegram messages via a bot and pushes each text message into the pipeline. (Runtimes: node; IDs: telegram-listener)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "botToken": {
+      "type": "string",
+      "description": "Telegram Bot API token from @BotFather",
+      "default": ""
+    },
+    "allowedChatId": {
+      "type": "string",
+      "description": "If set, only messages from this chat ID are forwarded",
+      "default": ""
+    },
+    "connect": {
+      "type": "boolean",
+      "description": "Send { connect: true } to start polling"
+    },
+    "disconnect": {
+      "type": "boolean",
+      "description": "Send { disconnect: true } to stop polling"
+    },
+    "Field": {
+      "description": "Description"
+    },
+    "running": {
+      "type": "boolean",
+      "description": "Whether the polling loop is active"
+    },
+    "error": {
+      "type": "string",
+      "description": "Last error message, if any"
+    }
+  },
+  "additionalProperties": true
+}

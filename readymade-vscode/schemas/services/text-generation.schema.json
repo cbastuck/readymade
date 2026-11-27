@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/text-generation.schema.json",
+  "title": "Text Generation Service State",
+  "description": "Generates text with a large language model — a local one via an OpenAI-compatible server or in-process, or a hosted one. (Runtimes: python, cpp, node; IDs: text-generation)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "backend": {
+      "type": "string",
+      "description": "server (OpenAI-compatible HTTP) or local (in-process GGUF)",
+      "default": "server"
+    },
+    "serverUrl": {
+      "type": "string",
+      "description": "Server backend: base URL of the OpenAI-compatible server",
+      "default": "http://127.0.0.1:8081"
+    },
+    "model": {
+      "type": "string",
+      "description": "Server backend: optional model name passed through to the server",
+      "default": ""
+    },
+    "modelPath": {
+      "type": "string",
+      "description": "Local backend: path to the .gguf file (~ expands)",
+      "default": ""
+    },
+    "contextSize": {
+      "type": "number",
+      "description": "Local backend: context window in tokens",
+      "default": 4096
+    },
+    "gpuLayers": {
+      "type": "number",
+      "description": "Local backend: layers to offload to GPU (-1 = all)",
+      "default": -1
+    },
+    "systemPrompt": {
+      "type": "string",
+      "description": "Prepended when the input has no system message",
+      "default": "You are a helpful assistant"
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Sampling temperature",
+      "default": 0.7
+    },
+    "topP": {
+      "type": "number",
+      "description": "Nucleus sampling",
+      "default": 0.95
+    },
+    "topK": {
+      "type": "number",
+      "description": "Top-k sampling",
+      "default": 20
+    },
+    "maxTokens": {
+      "type": "number",
+      "description": "Completion token budget",
+      "default": 512
+    },
+    "timeoutSec": {
+      "type": "number",
+      "description": "Server backend: request timeout",
+      "default": 300
+    },
+    "thinking": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Server backend: force thinking on/off, for a server whose chat template takes the flag; null sends nothing",
+      "default": null
+    },
+    "stream": {
+      "type": "boolean",
+      "description": "Generate token by token and notify the growing text as {streamText} (final notification carries streamDone: true) for live chat-bot-style display; the pipeline output is unaffected and still emitted once, when generation finishes. Set false for servers without SSE support",
+      "default": true
+    },
+    "apiKey": {
+      "type": "string",
+      "description": "Write-only; takes a {{secret.…}} reference. The runtime's environment is never read",
+      "default": ""
+    },
+    "apiKeyConfigured": {
+      "type": "boolean",
+      "description": "Read-only: whether a key is configured"
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Read-only: the URL this configuration actually reaches"
+    },
+    "thinkingBudgetTokens": {
+      "type": "number",
+      "description": "Tokens reasoning may use, for a Claude model that thinks on a budget; maxTokens is lifted above it when it is not already",
+      "default": 1024
+    },
+    "effort": {
+      "type": "string",
+      "description": "Claude only: low, medium, high, xhigh or max — how much the model reasons and writes. Empty is the model's own default",
+      "default": ""
+    },
+    "jsonSchema": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Constrains the answer to a shape — see below",
+      "default": null
+    },
+    "The board says": {
+      "description": "An older model (Haiku 4.5, …)"
+    },
+    "thinking: true": {
+      "description": "thinking: {type: \"enabled\", budget_tokens}"
+    },
+    "thinking: null": {
+      "description": "nothing — no reasoning"
+    },
+    "thinking: false": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "object"
+        }
+      ],
+      "description": "nothing"
+    },
+    "temperature, topK": {
+      "description": "sent while the model is not thinking"
+    }
+  },
+  "additionalProperties": true
+}

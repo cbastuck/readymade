@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/conversations.schema.json",
+  "title": "Conversations Service State",
+  "description": "Mail arrives in threads, threads are in states, and work produced along the way\nhas to be found again. This service owns all three. (Runtimes: node; IDs: conversations)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "mode": {
+      "type": "string",
+      "description": "One of the seven above",
+      "default": "ingest"
+    },
+    "states": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "The declared state machine. Empty accepts anything",
+      "default": []
+    },
+    "initialState": {
+      "type": "string",
+      "description": "What a newly threaded conversation starts in",
+      "default": "init"
+    },
+    "direction": {
+      "type": "string",
+      "description": "ingest: inbound or outbound, unless the input says",
+      "default": "inbound"
+    },
+    "state": {
+      "type": "string",
+      "description": "transition: a fixed target, for a step that always moves the same way",
+      "default": ""
+    },
+    "stateFrom": {
+      "type": "string",
+      "description": "transition: dotted path to the target in the input",
+      "default": "state"
+    },
+    "conversationFrom": {
+      "type": "string",
+      "description": "Dotted path to the conversation id, e.g. meta.conversationId",
+      "default": ""
+    },
+    "inState": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "actionable: which states count as work. **Required**",
+      "default": []
+    },
+    "idleSeconds": {
+      "type": "number",
+      "description": "actionable: only conversations untouched this long",
+      "default": 0
+    },
+    "limit": {
+      "type": "number",
+      "description": "How many rows to take",
+      "default": 100
+    },
+    "kind": {
+      "type": "string",
+      "description": "Artifacts: the board's word for what this is",
+      "default": ""
+    },
+    "status": {
+      "type": "string",
+      "description": "Artifacts: the status to write, or to filter on",
+      "default": "pending"
+    },
+    "payloadFrom": {
+      "type": "string",
+      "description": "put-artifact: dotted path to the part worth keeping",
+      "default": ""
+    },
+    "idFrom": {
+      "type": "string",
+      "description": "set-artifact-status: dotted path to the artifact id",
+      "default": ""
+    },
+    "lastCount": {
+      "type": "number",
+      "description": "Read-only: what the last pass saw"
+    },
+    "error": {
+      "type": "string",
+      "description": "Read-only: why the last pass produced nothing"
+    }
+  },
+  "additionalProperties": true
+}

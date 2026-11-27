@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/download.schema.json",
+  "title": "Download Service State",
+  "description": "Saves whatever reaches it as a file, through the browser's own download, and passes it on. (Runtimes: browser; IDs: hookup.to/service/download)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "filename": {
+      "type": "string",
+      "description": "What the file is offered as",
+      "default": "download.txt"
+    },
+    "mimeType": {
+      "type": "string",
+      "description": "The file's type; empty decides it from the input, as above",
+      "default": ""
+    }
+  },
+  "additionalProperties": true
+}

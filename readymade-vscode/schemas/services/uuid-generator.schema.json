@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/uuid-generator.schema.json",
+  "title": "UUID Generator Service State",
+  "description": "Generates a UUID on every pipeline tick and emits it or merges it into the incoming object. (Runtimes: browser; IDs: hookup.to/service/uuid-generator)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "v1",
+        "v4"
+      ],
+      "description": "UUID version. v4 is random; v1 is time-based.",
+      "default": "v4"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "plain",
+        "merge"
+      ],
+      "description": "Output mode. plain emits the UUID string directly; merge adds a uuid key to the incoming object.",
+      "default": "plain"
+    },
+    "action: \"generate\"": {
+      "description": "Triggers immediate UUID generation and emission via app.next()"
+    }
+  },
+  "additionalProperties": true
+}

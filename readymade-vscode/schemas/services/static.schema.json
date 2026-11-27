@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://readymadeit.com/schemas/services/static.schema.json",
+  "title": "Static Service State",
+  "description": "Emits a fixed JSON value on every pipeline tick, regardless of the incoming data. (Runtimes: cpp; IDs: static)",
+  "type": "object",
+  "properties": {
+    "bypass": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the runtime skips this service and passes input straight through."
+    },
+    "out": {
+      "description": "The JSON value to emit on every process() call",
+      "default": null
+    }
+  },
+  "additionalProperties": true
+}
