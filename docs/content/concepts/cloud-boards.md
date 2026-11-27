@@ -494,6 +494,25 @@ a board, mount or local actor goes to everyone. A member is sent only
 notifications from services the facade reads, and never the runtime's own
 account of its flow (`__internal`), which carries the data passing through.
 
+**Unless the board says the answer is everybody's.** A facade may name services
+in `broadcast`:
+
+```json
+"facade": { "broadcast": ["thread"], "panels": [ … ] }
+```
+
+What a named service says goes to everyone attached, in anybody's run. It's
+for a service that reads back something everybody shares, like a chat's thread
+read after one member wrote to it, or a poll's tally after a vote. One person's
+change then reaches the others without a timer re-reading on everybody's
+behalf. The rest of the run stays the actor's: the other services it passed
+through, and the named service's own account of the flow, which carries what
+they sent. A member is still sent only what the facade reads of it, cut down as
+below, so naming a service no member reads grants a member nothing. Don't name
+a service whose answer depends on who is asking, a query filtering on
+`$caller_email` for instance: broadcast, one person's answer becomes everyone's.
+The [Group Chat](../boards/group-chat-board.md) is the worked example.
+
 **And how much of it.** A member's copy of a notification is cut down the way
 state is (`projectNotification`): to the paths the facade's sources read from
 that service, so a facade reading `rows` of `{ rows, count, … }` gives a member
@@ -554,10 +573,11 @@ calls per minute — `HKP_COORDINATOR_MAX_MEMBERS` (200),
 
 ### What is still open
 
-- **Telling everyone something changed.** With private notifications, one
-  member's calendar does not move when another books; it is right again on
-  their next action. A live board needs a way for a run to say "everyone, look
-  again" without sending anyone's view.
+- **Telling everyone something changed, per viewer.** `broadcast` sends a
+  service's answer to everybody, so it suits answers that are the same for
+  everyone. A calendar whose cells say *mine* for one person and *taken* for
+  the next is not one of those. It is still right again only on that person's
+  next action.
 - **Shared state.** `sql` keeps `error` and `lastCount` in its state, so a
   facade reading them shows what the last caller left.
 - **Members cannot configure.** A knob or field that configures a service is a

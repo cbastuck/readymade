@@ -368,6 +368,11 @@ reports something, instead of a row kept free for a problem that is usually not 
 notice reads a service the way a widget's `source` does, fires when that value arrives with
 something in it, and never seeds from the state a service was already in.
 
+A facade may also name services in **`broadcast`**: on a deployed board, what such a service
+says in one person's run goes to everybody attached rather than to that person alone. It's for
+an answer that is everybody's, like a chat's thread. A member is still sent only what the facade
+reads of it (`readBroadcast` in `hkp-node/src/coordinator/facadeAccess.ts`).
+
 A panel may be another's **detail** — `"detailOf": "<panel id>"`, a story's discussion
 beside the list of stories. Side by side where they fit; on a phone the detail opens in
 place of its master, from a `{ "type": "show-panel", "panel": "<id>" }` action, with a

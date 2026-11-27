@@ -42,6 +42,12 @@
           "items": {
             "$ref": "#/definitions/FacadeNotice"
           }
+        },
+        "broadcast": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -218,6 +224,44 @@
             "source": {
               "$ref": "#/definitions/FacadeWidgetSource"
             },
+            "textField": {
+              "type": "string"
+            },
+            "authorField": {
+              "type": "string"
+            },
+            "timeField": {
+              "type": "string"
+            },
+            "idField": {
+              "type": "string"
+            },
+            "mineWhen": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "equals": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/FacadeUserRef"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "field",
+                "equals"
+              ],
+              "additionalProperties": false
+            },
+            "placeholder": {
+              "type": "string"
+            },
             "composer": {
               "type": "object",
               "properties": {
@@ -229,11 +273,14 @@
                 },
                 "action": {
                   "$ref": "#/definitions/FacadeWidgetAction"
+                },
+                "actions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/WidgetAction"
+                  }
                 }
               },
-              "required": [
-                "action"
-              ],
               "additionalProperties": false
             }
           },
@@ -274,6 +321,9 @@
             },
             "submitLabel": {
               "type": "string"
+            },
+            "clearOnSubmit": {
+              "type": "boolean"
             },
             "inputType": {
               "type": "string",
@@ -1474,6 +1524,22 @@
         }
       ]
     },
+    "FacadeUserRef": {
+      "type": "object",
+      "properties": {
+        "$user": {
+          "type": "string",
+          "enum": [
+            "email",
+            "name"
+          ]
+        }
+      },
+      "required": [
+        "$user"
+      ],
+      "additionalProperties": false
+    },
     "FacadeWidgetAction": {
       "type": "object",
       "properties": {
@@ -1656,22 +1722,6 @@
       "required": [
         "type",
         "panel"
-      ],
-      "additionalProperties": false
-    },
-    "FacadeUserRef": {
-      "type": "object",
-      "properties": {
-        "$user": {
-          "type": "string",
-          "enum": [
-            "email",
-            "name"
-          ]
-        }
-      },
-      "required": [
-        "$user"
       ],
       "additionalProperties": false
     },

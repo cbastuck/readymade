@@ -65,7 +65,17 @@ export function TextInputRenderer({
       vaultSet(widget.vaultKey, text);
     }
     void run({ action: widget.action, actions: widget.actions, value: text });
-  }, [value, widget.action, widget.actions, widget.vaultKey, run]);
+    if (widget.clearOnSubmit) {
+      setValue("");
+    }
+  }, [
+    value,
+    widget.action,
+    widget.actions,
+    widget.vaultKey,
+    widget.clearOnSubmit,
+    run,
+  ]);
 
   return (
     <div

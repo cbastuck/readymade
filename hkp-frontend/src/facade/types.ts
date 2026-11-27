@@ -167,14 +167,41 @@ export type WidgetAction =
   | PromptAction
   | ShowPanelAction;
 
+// A conversation. What the source says is read two ways:
+//
+// - a single value (a string, or an object read at `path`) is one more
+//   message, arriving — the thread is whatever has arrived since the facade
+//   opened, which is a peer-to-peer chat's;
+// - an array is the whole thread as it now stands, oldest first, replacing
+//   what was shown — a query's rows, which is a chat kept in a database. Each
+//   row names its text, and may name who wrote it and when (the `…Field`s).
 export type MessageListWidget = {
   type: "message-list";
   source: FacadeWidgetSource;
+  // Of a row: what was said, who said it, when, and what tells it from the
+  // others. Default "text", "author", "time", "id". A row that is a string is
+  // its own text.
+  textField?: string;
+  authorField?: string;
+  timeField?: string;
+  idField?: string;
+  // Which rows are the viewer's own, drawn on the right without a name: those
+  // whose `field` is `equals` — usually who is looking, `{ "$user": "name" }`.
+  // It decides how a message is drawn and nothing else; what a person may do
+  // to a message is the service's to check, from the run's caller.
+  mineWhen?: { field: string; equals: FacadeUserRef | string };
+  // What an empty thread says.
+  placeholder?: string;
   // When present, renders an inline composer below the message thread.
   composer?: {
     placeholder?: string;
     submitLabel?: string;
-    action: FacadeWidgetAction;
+    // Configures one service, with "$$input" in its payload standing for the
+    // message.
+    action?: FacadeWidgetAction;
+    // Steps, as a button's, with "$$input" standing for the message — a
+    // `process` on the service that keeps it. Wins over `action`.
+    actions?: WidgetAction[];
   };
 };
 
@@ -191,6 +218,9 @@ export type TextInputWidget = {
   // the same value in the facade's initial state where other widgets read it.
   defaultValue?: string;
   submitLabel?: string;
+  // Empties the field once what was typed has been sent — a composer, where
+  // each submission is a new message rather than a setting kept on show.
+  clearOnSubmit?: boolean;
   // What is asked for, where it is not free text: a date or a date and a time
   // picked from a month, or a time, so nobody has to know the format. What is
   // sent is what the browser's own inputs send — "2026-09-24", "14:00", or
@@ -1034,4 +1064,12 @@ export type FacadeDescriptor = {
   defaultTab?: string;
   // Toasts raised from what services say, instead of rows kept free for them.
   notices?: FacadeNotice[];
+  // Services whose news is the board's, by uuid. On a deployed board, what a
+  // service says during one person's run is sent to that person alone; what a
+  // service named here says is sent to everybody attached, whoever's run it
+  // was — a members' view still cut down to what the facade reads of it. For a
+  // service that reads back something everybody shares (a chat's thread, a
+  // poll's tally), so one person's change reaches the rest without a timer.
+  // Never name one whose answer depends on who is asking.
+  broadcast?: string[];
 };
