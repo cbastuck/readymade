@@ -539,6 +539,106 @@ describe("Board Assist panel", () => {
     view.host.remove();
   });
 
+  it("goes on from the transcript only while the board is the one it read", async () => {
+    saveAssistSettings({ provider: "mistral", mistralToken: "mistral-key" });
+    mocks.mistralModels.mockResolvedValue([
+      { id: "mistral-medium", display_name: "mistral-medium", context_tokens: 131072 },
+    ]);
+    const transcript = { via: "chat", model: "mistral-medium", messages: ["read"], text: "" };
+    const cutOff = () =>
+      new OutputLimitError("The response reached its output limit.", {
+        limit: 16384,
+        transcript: { ...transcript },
+      });
+    mocks.mistralRun
+      .mockImplementationOnce(async () => {
+        throw cutOff();
+      })
+      .mockImplementationOnce(async () => {
+        throw cutOff();
+      })
+      .mockResolvedValueOnce({ conversation: [], text: "Asked afresh", board: undefined });
+    const view = mount();
+    await screen.findByRole("option", { name: "mistral-medium" });
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Build a clock" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(
+      await screen.findByText(/If the board or the editing scope has changed since/),
+    ).toBeTruthy();
+    // Unchanged: the transcript goes on, stamped with the board it read.
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await waitFor(() => expect(mocks.mistralRun).toHaveBeenCalledTimes(2));
+    expect(mocks.mistralRun.mock.calls[1][0].continuation.transcript).toMatchObject({
+      ...transcript,
+      basis: expect.stringContaining('"boardName":"Before"'),
+    });
+    // Edited before the next Continue: asked again, and the conversation says why.
+    const edited = {
+      ...original,
+      services: { ui: [{ uuid: "timer", serviceId: "timer", state: { interval: 1000 } }] },
+    };
+    mocks.board.serializeBoardDocuments.mockResolvedValue({ composition: edited, units: [] });
+    fireEvent.click(await screen.findByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Asked afresh")).toBeTruthy();
+    expect(mocks.mistralRun.mock.calls[2][0].continuation.transcript).toBeUndefined();
+    expect(mocks.mistralRun.mock.calls[2][0].base.services).toEqual(edited.services);
+    expect(
+      screen.getByText(
+        /^Retry with the model's default output limit — the board or editing scope changed since the attempt/,
+      ),
+    ).toBeTruthy();
+    view.unmount();
+    view.host.remove();
+  });
+
+  it("keeps what the first model read while another one retries", async () => {
+    saveAssistSettings({ provider: "mistral", mistralToken: "mistral-key" });
+    mocks.mistralModels.mockResolvedValue([
+      { id: "mistral-medium", display_name: "mistral-medium", context_tokens: 131072 },
+      { id: "mistral-small", display_name: "mistral-small", context_tokens: 131072 },
+    ]);
+    const transcript = { via: "chat", model: "mistral-medium", messages: ["read"], text: "" };
+    mocks.mistralRun
+      .mockImplementationOnce(async () => {
+        throw new OutputLimitError("The response reached its output limit.", {
+          limit: 16384,
+          transcript,
+        });
+      })
+      // The other model is cut off at its first request: nothing of its own.
+      .mockImplementationOnce(async () => {
+        throw new OutputLimitError("The response reached its output limit.", { limit: 16384 });
+      })
+      .mockResolvedValueOnce({ conversation: [], text: "Went on", board: undefined });
+    const view = mount();
+    await screen.findByRole("option", { name: "mistral-medium" });
+    fireEvent.change(screen.getByLabelText("Message to Board Assist"), {
+      target: { value: "Build a clock" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByRole("button", { name: "Continue" });
+    fireEvent.change(screen.getByLabelText("Model"), {
+      target: { value: "mistral-small" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(mocks.mistralRun).toHaveBeenCalledTimes(2));
+    await screen.findByRole("button", { name: "Retry" });
+    expect(screen.getAllByText(/select that model again to go on from there/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Model"), {
+      target: { value: "mistral-medium" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Went on")).toBeTruthy();
+    expect(mocks.mistralRun.mock.calls[2][0]).toMatchObject({
+      model: { id: "mistral-medium" },
+      continuation: { transcript: { ...transcript, basis: expect.any(String) } },
+    });
+    view.unmount();
+    view.host.remove();
+  });
+
   it("retries a turn cut off with nothing to carry, and refuses an unusable limit", async () => {
     mocks.run
       .mockRejectedValueOnce(

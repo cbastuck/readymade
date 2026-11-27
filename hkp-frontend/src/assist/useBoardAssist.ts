@@ -28,13 +28,12 @@ import {
   useAssistSettings,
 } from "./settings";
 import {
-  carriesOn,
+  continueLabel,
   CutOff,
   joinCutOffs,
   cutOffOf,
   parseOutputLimit,
   Resumer,
-  TOOL_STEPS,
 } from "./outputLimit";
 import { matchesAssistSnapshot } from "./snapshotComparison";
 import { validateAssistBoard } from "./validation";
@@ -42,7 +41,6 @@ import { describeUnknownServices, unknownServices } from "./serviceCatalog";
 import {
   addUsage,
   AssistUsage,
-  formatTokens,
   noUsage,
   priceOf,
 } from "./usage";
@@ -328,6 +326,7 @@ export function useBoardAssist({
   const effort = efforts.includes(settings.effort)
     ? settings.effort
     : "default";
+  const resumer: Resumer = { via, model: model?.id ?? "" };
   const updateSettings = (patch: Parameters<typeof saveAssistSettings>[0]) => {
     const failed = () => setError("Could not save assistant preferences.");
     try {
@@ -397,14 +396,16 @@ export function useBoardAssist({
     }
   };
   /**
-   * One request for `text`, shown in the conversation as `shown`. A
-   * `continuation` is an earlier attempt at the same request that reached its
-   * output limit, which the model goes on from where the provider allows.
+   * One request for `text`, shown in the conversation as `shown`.
+   * `requested` is an earlier attempt at the same request that stopped at a
+   * limit, which the model goes on from where the provider allows — a tool
+   * turn's transcript only while the board and scope are still the ones it
+   * was about.
    */
   const runTurn = async (
     text: string,
     shown: string,
-    continuation?: CutOff,
+    requested?: CutOff,
     scopeChoice = scope,
     /** The entry whose whole-board retry this is, which then offers it no more. */
     clearRetryIndex?: number,
@@ -429,6 +430,10 @@ export function useBoardAssist({
       () => setKnowledgeNotice(""),
     );
     const index = entries.length + 1;
+    let continuation = requested;
+    // The board and scope this attempt is about, kept with a transcript it
+    // leaves so that Continue goes on from it only about the same board.
+    let basis: string | undefined;
     let rawResponse: string | undefined;
     let reasoning: string | undefined;
     // Read now, not when the view last rendered: a limit typed just before
@@ -448,6 +453,24 @@ export function useBoardAssist({
       const config = captured.config;
       const ctx = currentBoard.current!;
       const editScope = resolveAssistScope(config, scopeChoice, focus.runtimeId);
+      const about = { board: captured, scope: editScope };
+      basis = JSON.stringify(about);
+      // A transcript carries the board its first request was sent, and the
+      // model would propose against that one. Changed since — edited, or
+      // another scope chosen — the request is asked again from the start.
+      if (
+        continuation?.transcript &&
+        !matchesAssistSnapshot(about, continuation.transcript.basis)
+      ) {
+        const { transcript: _stale, ...rest } = continuation;
+        continuation = rest;
+        const retried = `${continueLabel(rest, outputLimit ?? 0, resumer)} — the board or editing scope changed since the attempt, so it asks again from the start`;
+        setEntries((list) =>
+          list.map((entry, i) =>
+            i === index - 1 ? { ...entry, text: retried } : entry,
+          ),
+        );
+      }
       // Against the board as saved, which names its servers the way a
       // proposal does, and the registries its live runtimes report.
       const services = { runtimes: config.runtimes, registry: ctx.registry };
@@ -598,7 +621,13 @@ export function useBoardAssist({
           ? err.message
           : "The assistant could not complete the request.";
       setError(message);
-      const cut = controller.signal.aborted ? undefined : cutOffOf(err);
+      const failed = controller.signal.aborted ? undefined : cutOffOf(err);
+      // Only a transcript this attempt made is stamped; one carried from an
+      // earlier attempt keeps the board that attempt was about.
+      const cut =
+        failed?.transcript && basis
+          ? { ...failed, transcript: { ...failed.transcript, basis } }
+          : failed;
       const cutOff = cut
         ? { ...joinCutOffs(continuation, cut), prompt: text }
         : undefined;
@@ -651,16 +680,7 @@ export function useBoardAssist({
     if (!cutOff || !continuable(index)) return Promise.resolve();
     const { prompt: request, ...cut } = cutOff;
     const limit = commitOutputLimit();
-    const verb = carriesOn(cut, { via, model: model?.id ?? "" })
-      ? "Continue"
-      : "Retry";
-    return runTurn(
-      request,
-      cut.lookups
-        ? `${verb} for up to ${TOOL_STEPS} more requests`
-        : `${verb} with ${limit ? `an output limit of ${formatTokens(limit)} tokens` : "the model's default output limit"}`,
-      cut,
-    );
+    return runTurn(request, continueLabel(cut, limit, resumer), cut);
   };
   const previewChanges = async (entry: AssistEntry, index: number) => {
     if (!entry.board || busyRef.current) return;
@@ -892,7 +912,7 @@ export function useBoardAssist({
     continuable,
     continueTurn,
     /** What Continue would go on with: the provider's API and the model now selected. */
-    resumer: { via, model: model?.id ?? "" } satisfies Resumer,
+    resumer,
     /** Whether the provider takes an output limit; OpenCode's server does not. */
     takesOutputLimit: !openCode,
     outputLimitDraft,

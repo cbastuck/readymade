@@ -38,6 +38,13 @@ export type ToolTranscript = {
    * what every further request sends again.
    */
   inputTokens?: number;
+  /**
+   * The board and editing scope its requests were about, as the panel saw
+   * them when the attempt began (`useBoardAssist.ts`). The first request
+   * carries that board, so a transcript is resumed only while the board is
+   * still the same; one changed since is asked about again from the start.
+   */
+  basis?: string;
 };
 
 /**
@@ -129,8 +136,13 @@ export function joinCutOffs(earlier: Continuation | undefined, later: CutOff): C
   return {
     limit: later.limit,
     ...(later.lookups ? { lookups: true } : {}),
-    // The later attempt went on from the earlier, so its transcript has all.
-    ...(later.transcript ? { transcript: later.transcript } : {}),
+    // A later attempt that went on from the earlier has all of it in its own
+    // transcript. One by another model that was cut off at its first request
+    // has none, and the earlier one stays for when that model is selected
+    // again.
+    ...(later.transcript ?? earlier.transcript
+      ? { transcript: later.transcript ?? earlier.transcript }
+      : {}),
     ...(reasoning ? { reasoning } : {}),
     ...(later.partial ?? earlier.partial
       ? { partial: later.partial ?? earlier.partial }
@@ -238,12 +250,23 @@ function resendCost(cut: CutOff, by: Resumer) {
     : "";
 }
 
+/**
+ * What going on from a tool turn's transcript depends on: the board it read
+ * is in the transcript, and is checked against the board when Continue is
+ * pressed.
+ */
+function unlessChanged(cut: CutOff, by: Resumer) {
+  return cut.transcript && by.via !== "text"
+    ? " If the board or the editing scope has changed since, it asks again from the start instead."
+    : "";
+}
+
 /** What Continue (or Retry) beside a cut-off turn will ask for. */
 export function continueHint(cut: CutOff, outputLimit: number, by: Resumer) {
   const going = carriesOn(cut, by);
   if (cut.lookups)
     return going
-      ? `Goes on from where the model stopped, with the documentation it read, for up to ${TOOL_STEPS} more requests.${resendCost(cut, by)}`
+      ? `Goes on from where the model stopped, with the documentation it read, for up to ${TOOL_STEPS} more requests.${resendCost(cut, by)}${unlessChanged(cut, by)}`
       : `Asks again from the start, for up to ${TOOL_STEPS} requests.${elsewhere(cut, by)}`;
   const now = outputLimit
     ? `${formatTokens(outputLimit)} tokens`
@@ -252,5 +275,17 @@ export function continueHint(cut: CutOff, outputLimit: number, by: Resumer) {
     by.via === "text" ? "what the model wrote" : "the documentation it read";
   return `${
     going ? `Goes on from ${from}` : "Asks again from the start"
-  }, with an output limit of ${now} (this attempt had ${formatTokens(cut.limit)}). Change it in Model settings first; a higher limit lets the model write, and bill, more.${going ? resendCost(cut, by) : elsewhere(cut, by)}`;
+  }, with an output limit of ${now} (this attempt had ${formatTokens(cut.limit)}). Change it in Model settings first; a higher limit lets the model write, and bill, more.${going ? `${resendCost(cut, by)}${unlessChanged(cut, by)}` : elsewhere(cut, by)}`;
+}
+
+/**
+ * How a Continue (or Retry) is shown in the conversation: what it went on
+ * with. `outputLimit` is the limit it was sent with, 0 for the model's own.
+ */
+export function continueLabel(cut: CutOff, outputLimit: number, by: Resumer) {
+  const going = carriesOn(cut, by);
+  const verb = going ? "Continue" : "Retry";
+  return cut.lookups
+    ? `${verb} for up to ${TOOL_STEPS} ${going ? "more " : ""}requests`
+    : `${verb} with ${outputLimit ? `an output limit of ${formatTokens(outputLimit)} tokens` : "the model's default output limit"}`;
 }

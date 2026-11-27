@@ -160,10 +160,14 @@ about how many tokens that is, as the provider counted the last request.
 A tool turn makes at most 12 requests. One that used them all without
 proposing or answering offers **Continue** too, which goes on from the last of
 them for up to 12 more. Either way, what is carried is kept in memory beside
-the failed turn only, until the next request, and goes on only with the same
-model over the same provider: another cannot read the first one's reasoning.
-With another model selected the button says **Retry** and names the model to
-select again to go on instead. The
+the last failed turn only, and goes on only with the same model over the same
+provider — another cannot read the first one's reasoning — and only about the
+same board: the first request carried the board as it was then, so when the
+board or the editing scope has changed since the attempt, **Continue** asks
+again from the start and says so in the conversation. With another model
+selected the button says **Retry** and names the model to select again to go
+on instead; what the first model read is kept through that retry, unless the
+retry gets further and leaves its own. The
 cut-off attempt's tokens count in the conversation's usage either way
 (`hkp-frontend/src/assist/outputLimit.ts`).
 
