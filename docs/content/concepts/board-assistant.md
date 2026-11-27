@@ -1,10 +1,10 @@
 # Board assistant
 
 Build and change a board through a conversation beside the runtime canvas.
-Open it with the sparkle button beside zoom, at the top right of the playground
-toolbar:
+Open it with the sparkle button at the top right of the playground toolbar,
+next to the facade editor's button:
 
-![The playground toolbar with the Board Assist sparkle button highlighted, left of the zoom button](/images/docs/board-assist-button@2x.png)
+![The playground toolbar with the Board Assist sparkle button highlighted, between the facade editor and the assets buttons](/images/docs/board-assist-button@2x.png)
 
 Close it with the same button or the panel's close button. The conversation
 stays available while the panel is hidden; it is not saved in the board file.
