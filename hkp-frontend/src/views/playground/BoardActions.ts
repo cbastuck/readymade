@@ -54,7 +54,7 @@ export function remapFacadeUuids(
           composer: widget.composer
             ? {
                 ...widget.composer,
-                action: remapAction(widget.composer.action)!,
+                action: remapAction(widget.composer.action),
               }
             : undefined,
         };

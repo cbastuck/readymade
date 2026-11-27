@@ -415,6 +415,21 @@ is not shared, whoever has it open is its owner and sees everything. Marking a t
 panels only it names along with it — they do not fall back to the shared strip above the tabs. It decides what a member
 is *shown*: a `process` target a member can still reach must check the caller itself.
 
+### Broadcast — an answer that is everybody's
+
+On a deployed, shared board what a service says in a person's run goes to that person alone —
+one member's booking is not another's to watch. A service whose answer is the **same for
+everybody** — a chat's thread, a poll's tally — is named in `broadcast`, and what it says reaches
+everyone attached, whoever's run it was:
+
+```json
+"broadcast": ["thread"]
+```
+
+A member is still sent only what the facade reads of it. That replaces a timer re-reading on
+everybody's behalf. Never name a service whose answer depends on who is asking (a query on
+`$caller_email`): broadcast, one person's answer is shown to all.
+
 ### Notices — say it, do not reserve room for it
 
 A row kept free for a problem the board usually does not have spends layout on nothing, and
@@ -668,6 +683,10 @@ sends). Reach for it whenever a board would otherwise come up inert waiting to b
 it could have assumed: seed the same value in the facade's `state` so widgets reading
 `{ "$state": … }` agree with what the field shows.
 
+`clearOnSubmit: true` empties the field once its text has been sent — for a composer, where each
+submission is a new message rather than a setting that should stay on show. (A chat reaches for
+`message-list`, whose composer always empties.)
+
 `inputType` — `"date"`, `"time"` or `"datetime"` — swaps the field for a picker, so nobody has to
 know the format: a month to pick a day from (and an hour and minute, for `"datetime"`), drawn the
 same in every webview, or the browser's own field for a time. What is sent is what the browser's
@@ -782,6 +801,34 @@ the board understands it:
   }
 }
 ```
+
+That is a stream: each value the source says is one more message, and the thread is whatever has
+arrived since the facade opened — a peer-to-peer chat's. A chat kept in a **database** says the
+whole thread instead, as rows, and an **array** at the source's path is exactly that: it replaces
+what is shown, oldest first. Name the row's fields (`textField`, `authorField`, `timeField`,
+`idField`; default `text`, `author`, `time`, `id`), say which rows are the viewer's own with
+`mineWhen`, and post with `actions` rather than a configure:
+
+```json
+{
+  "type": "message-list",
+  "grow": true,
+  "source": { "serviceUuid": "thread", "path": "rows" },
+  "mineWhen": { "field": "author", "equals": { "$user": "name" } },
+  "placeholder": "No messages yet.",
+  "composer": {
+    "placeholder": "Message everyone…",
+    "actions": [{ "type": "process", "serviceUuid": "post", "payload": { "intent": "post", "text": "$$input" } }]
+  }
+}
+```
+
+The viewer's own are drawn on the right without a name; everybody else's under their author, once
+per run of messages. What is sent from here shows as *sending…* until the thread comes back
+holding it. `mineWhen` compares names, so it only draws: who wrote a message is the `sql`'s
+`$caller_name` / `$caller_email`, never a field of the payload — and send names, not addresses,
+in the rows everybody gets. On a deployed board, put the thread's service in the facade's
+`broadcast` (below) so one person's message reaches everybody. See `boards/group-chat-board.json`.
 
 **status-indicator** — shows a coloured dot based on service state:
 
