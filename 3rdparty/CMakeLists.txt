@@ -225,7 +225,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME minimp4
     GIT_REPOSITORY "https://github.com/lieff/minimp4.git"
-    GIT_TAG        master
+    GIT_TAG        65fab0a062c3cd5befd98ecbaa890108cd45c226 # 8-arg MP4D_frame_offset (dts, pts, is_sync); master drifts
     DOWNLOAD_ONLY  TRUE
 )
 
