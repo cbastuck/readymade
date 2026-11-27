@@ -14,8 +14,13 @@ import {
 } from "./openAICompatible";
 import {
   contextBudget,
+  Continuation,
+  LookupLimitError,
   OutputLimitError,
+  resumedTranscript,
+  TOOL_STEPS,
   tooLargeForContext,
+  ToolTranscript,
 } from "./outputLimit";
 import { AssistScope, scopeInstruction } from "./scope";
 import {
@@ -23,7 +28,9 @@ import {
   AssistUsage,
   formatTokens,
   fromOpenAIUsage,
+  inputTotal,
   noUsage,
+  tokenTotal,
 } from "./usage";
 import type { RunningCatalog } from "./serviceCatalog";
 import { BoardDescriptor } from "../types";
@@ -38,6 +45,9 @@ import { BoardDescriptor } from "../types";
  *
  * Like an Anthropic turn it is a series of requests, so a cut-off one is not
  * carried on from: the request is asked again with the new limit.
+ *
+ * What does not depend on the wire — the budget, the history, running the
+ * tools — is shared with OpenAI's Responses turn (`openAIResponses.ts`).
  */
 
 type ChatMessage =
@@ -68,7 +78,7 @@ function callId() {
  * what counts.
  */
 function history(conversation: Conversation, room: number) {
-  const recent: ChatMessage[] = [];
+  const recent: { role: "system" | "user" | "assistant"; content: string }[] = [];
   for (const message of [...conversation].reverse()) {
     if (typeof message.content !== "string" || !message.content.trim()) continue;
     if (message.content.length > room) break;
@@ -80,41 +90,52 @@ function history(conversation: Conversation, room: number) {
   return recent;
 }
 
-export async function runOpenAIToolTurn(
-  options: OpenAIRequestOptions & {
-    baseURL: string;
-    token: string;
-    model: AssistModel;
-    contextTokens: number;
-    /** What the provider allows a turn to write when the person sets nothing. */
-    outputTokens?: number;
-    /** What the person set, never more than the model states it can write. */
-    outputLimit?: number;
-    /** Whether to ask for usage on a streamed answer (`stream_options`). */
-    streamUsage?: boolean;
-    conversation: Conversation;
-    prompt: string;
-    context: unknown;
-    scope: AssistScope;
-    base: BoardDescriptor;
-    signal: AbortSignal;
-    onText: (text: string) => void;
-    onStatus: (status: string) => void;
-    onRawResponse?: (text: string) => void;
-    /** The model's reasoning so far, after every request that sent some. */
-    onReasoning?: (text: string) => void;
-    /** The turn's usage so far, after every request it makes. */
-    onUsage?: (usage: AssistUsage) => void;
-    knowledgeProvider?: ReadymadeKnowledgeProvider;
-    /** What the board's runtimes have, to hold a proposal's services to. */
-    services?: RunningCatalog;
-  },
-): Promise<{
+export type ToolTurnOptions = OpenAIRequestOptions & {
+  baseURL: string;
+  token: string;
+  model: AssistModel;
+  contextTokens: number;
+  /** What the provider allows a turn to write when the person sets nothing. */
+  outputTokens?: number;
+  /** What the person set, never more than the model states it can write. */
+  outputLimit?: number;
+  conversation: Conversation;
+  prompt: string;
+  context: unknown;
+  scope: AssistScope;
+  base: BoardDescriptor;
+  signal: AbortSignal;
+  onText: (text: string) => void;
+  onStatus: (status: string) => void;
+  onRawResponse?: (text: string) => void;
+  /** The model's reasoning so far, after every request that sent some. */
+  onReasoning?: (text: string) => void;
+  /** The turn's usage so far, after every request it makes. */
+  onUsage?: (usage: AssistUsage) => void;
+  knowledgeProvider?: ReadymadeKnowledgeProvider;
+  /** What the board's runtimes have, to hold a proposal's services to. */
+  services?: RunningCatalog;
+  /** An earlier attempt at the same request that stopped at a limit. */
+  continuation?: Continuation;
+};
+
+export type ToolTurnResult = {
   conversation: Conversation;
   text: string;
   board?: BoardDescriptor;
   usage: AssistUsage;
-}> {
+};
+
+/**
+ * What a tool turn starts from, whatever carries it: what it may write, the
+ * characters left for documentation, the request, the earlier turns that
+ * fit, and the tools — and, for a turn resumed after a limit, where the
+ * earlier attempt had got to over `via`.
+ */
+export async function prepareToolTurn(
+  options: ToolTurnOptions,
+  via: ToolTranscript["via"],
+) {
   options.signal.throwIfAborted();
   const budget = contextBudget({
     contextTokens: options.contextTokens,
@@ -124,8 +145,10 @@ export async function runOpenAIToolTurn(
   });
   const { maxTokens } = budget;
   const user = `${options.prompt}\n\n${scopeInstruction(options.scope)}\n\nCurrent board and editing context:\n${JSON.stringify(options.context)}`;
+  const resumed = resumedTranscript(options.continuation, via, options.model.id);
   let room = budget.room - (assistSystem.length + user.length);
-  if (room < 0)
+  // A resumed turn's board is in what it had taken, counted below.
+  if (room < 0 && resumed?.used === undefined)
     throw tooLargeForContext(
       budget,
       "This board is too large for the model's context. Choose a model with a larger context, or edit a smaller board.",
@@ -137,16 +160,14 @@ export async function runOpenAIToolTurn(
   // documentation is worth more than old answers.
   const earlier = history(options.conversation, Math.floor(room / 4));
   room -= earlier.reduce((total, m) => total + m.content.length, 0);
-  const messages: ChatMessage[] = [
-    { role: "system", content: assistSystem },
-    ...earlier,
-    { role: "user", content: user },
-  ];
-  let usage = noUsage;
   // What a proposal was is kept with what was said about it: when the person
   // comes back with "it did not render", the board in the context is the one
   // restored, and only this says what the model had written.
-  const finished = (text: string, board?: BoardDescriptor) => ({
+  const finished = (
+    usage: AssistUsage,
+    text: string,
+    board?: BoardDescriptor,
+  ): ToolTurnResult => ({
     conversation: [
       ...options.conversation,
       { role: "user" as const, content: options.prompt },
@@ -161,9 +182,148 @@ export async function runOpenAIToolTurn(
     ...(board ? { board } : {}),
     usage,
   });
-  let text = "";
+  // A resumed turn counts what it had taken against this turn's budget: the
+  // output limit was likely raised to continue, which leaves less of the
+  // context for what it reads.
+  if (resumed?.used !== undefined) {
+    room = budget.room - resumed.used;
+    if (room < 0)
+      throw new OutputLimitError(
+        `With an output limit of ${formatTokens(maxTokens)} tokens, what the model has read so far no longer fits the ${formatTokens(budget.contextTokens)}-token context. Lower the output limit in Model settings, then continue.`,
+        { limit: maxTokens, transcript: resumed },
+      );
+  }
+  // Only what a later request can go on from: a turn cut off at its first
+  // request has nothing, and is asked again.
+  const transcript = (
+    messages: unknown[],
+    text: string,
+    room: number,
+    inputTokens: number,
+  ) => ({
+    transcript: {
+      via,
+      model: options.model.id,
+      messages: [...messages],
+      text,
+      used: budget.room - room,
+      ...(inputTokens ? { inputTokens } : {}),
+    },
+  });
+  return {
+    maxTokens,
+    room,
+    user,
+    earlier,
+    tools,
+    agentTools,
+    knowledge,
+    finished,
+    /** The requests so far and what was said, when this turn resumes one. */
+    resumed,
+    /** `inputTokens`: what the cut-off request read, as the provider counted. */
+    outputLimitReached: (
+      step: number,
+      messages: unknown[],
+      text: string,
+      room: number,
+      inputTokens: number,
+    ) =>
+      new OutputLimitError(
+        `The response reached its output limit (${formatTokens(maxTokens)} tokens). Raise the output limit in Model settings, then ${step || resumed ? "continue" : "retry"}.`,
+        {
+          limit: maxTokens,
+          ...(step || resumed
+            ? transcript(messages, text, room, inputTokens)
+            : {}),
+        },
+      ),
+    /** `inputTokens`: what the last request read and wrote, as counted. */
+    lookupLimitReached: (
+      messages: unknown[],
+      text: string,
+      room: number,
+      inputTokens: number,
+    ) =>
+      new LookupLimitError({
+        limit: maxTokens,
+        ...transcript(messages, text, room, inputTokens),
+      }),
+  };
+}
+
+/**
+ * Runs one request's tool calls in order and says what each answered. A
+ * second proposal in the same request is refused, and a result longer than
+ * the context has left is replaced by a note saying so.
+ */
+export async function answerToolCalls(
+  calls: { id: string; name: string; arguments: string }[],
+  options: ToolTurnOptions,
+  turn: Pick<
+    Awaited<ReturnType<typeof prepareToolTurn>>,
+    "knowledge" | "agentTools"
+  >,
+  room: number,
+) {
+  let proposal: BoardDescriptor | undefined;
+  let explanation = "";
+  const results: { id: string; name: string; content: string }[] = [];
+  for (const call of calls) {
+    options.signal.throwIfAborted();
+    const { name } = call;
+    room -= call.arguments.length;
+    let result: string;
+    try {
+      if (proposal && isProposalTool(name))
+        throw new Error("Propose only once per turn.");
+      const outcome = await runAssistTool(name, call.arguments, {
+        scope: options.scope,
+        base: options.base,
+        knowledge: turn.knowledge,
+        agentTools: turn.agentTools,
+        onStatus: options.onStatus,
+        services: options.services,
+      });
+      result = JSON.stringify(outcome.result);
+      if (outcome.proposal) {
+        proposal = outcome.proposal.board;
+        explanation = outcome.proposal.explanation;
+      } else if (result.length > room)
+        result = `Error: that result is ${result.length} characters, more than the ${Math.max(0, room)} left in this model's context. Read fewer or shorter documents, or answer with what you have.`;
+    } catch (error) {
+      if (isProposalTool(name)) options.onRawResponse?.(call.arguments);
+      proposal = undefined;
+      result = `Error: ${error instanceof Error ? error.message : "Invalid tool input"}`;
+    }
+    room -= result.length;
+    results.push({ id: call.id, name, content: result });
+  }
+  return { results, room, proposal, explanation };
+}
+
+export async function runOpenAIToolTurn(
+  options: ToolTurnOptions & {
+    /** Whether to ask for usage on a streamed answer (`stream_options`). */
+    streamUsage?: boolean;
+  },
+): Promise<ToolTurnResult> {
+  const turn = await prepareToolTurn(options, "chat");
+  const { maxTokens, tools } = turn;
+  let room = turn.room;
+  const messages: ChatMessage[] = turn.resumed
+    ? [...(turn.resumed.messages as ChatMessage[])]
+    : [
+        { role: "system", content: assistSystem },
+        ...turn.earlier,
+        { role: "user", content: turn.user },
+      ];
+  let usage = noUsage;
+  let text = turn.resumed?.text ?? "";
   let reasoning = "";
-  for (let step = 0; step < 12; step++) {
+  // What the last request read and wrote: about what the next one sends.
+  let sent = 0;
+  for (let step = 0; step < TOOL_STEPS; step++) {
     options.signal.throwIfAborted();
     options.onStatus(
       step ? "Preparing a response…" : "Generating with the selected model…",
@@ -198,7 +358,8 @@ export async function runOpenAIToolTurn(
       },
     );
     options.signal.throwIfAborted();
-    usage = addUsage(usage, fromOpenAIUsage(data.usage));
+    const request = fromOpenAIUsage(data.usage);
+    usage = addUsage(usage, request);
     options.onUsage?.(usage);
     const choice = data.choices?.[0];
     const message = choice?.message;
@@ -207,9 +368,12 @@ export async function runOpenAIToolTurn(
       options.onReasoning?.(reasoning);
     }
     if (choice?.finish_reason === "length")
-      throw new OutputLimitError(
-        `The response reached its output limit (${formatTokens(maxTokens)} tokens). Raise the output limit in Model settings, then retry.`,
-        { limit: maxTokens },
+      throw turn.outputLimitReached(
+        step,
+        messages,
+        text,
+        room,
+        inputTotal(request),
       );
     const content = typeof message?.content === "string" ? message.content : "";
     if (content.trim()) text = [text, content.trim()].join("\n\n").trim();
@@ -229,54 +393,30 @@ export async function runOpenAIToolTurn(
     if (!calls.length) {
       if (!message)
         throw new Error("The server returned no assistant message.");
-      return finished(text || "No changes proposed.");
+      return turn.finished(usage, text || "No changes proposed.");
     }
     messages.push({ role: "assistant", content, tool_calls: calls });
     room -= content.length;
-    let proposal: BoardDescriptor | undefined;
-    let explanation = "";
-    for (const call of calls) {
-      options.signal.throwIfAborted();
-      const name = call.function.name;
-      room -= call.function.arguments.length;
-      let result: string;
-      try {
-        if (proposal && isProposalTool(name))
-          throw new Error("Propose only once per turn.");
-        const outcome = await runAssistTool(name, call.function.arguments, {
-          scope: options.scope,
-          base: options.base,
-          knowledge,
-          agentTools,
-          onStatus: options.onStatus,
-          services: options.services,
-        });
-        result = JSON.stringify(outcome.result);
-        if (outcome.proposal) {
-          proposal = outcome.proposal.board;
-          explanation = outcome.proposal.explanation;
-        } else if (result.length > room)
-          result = `Error: that result is ${result.length} characters, more than the ${Math.max(0, room)} left in this model's context. Read fewer or shorter documents, or answer with what you have.`;
-      } catch (error) {
-        if (isProposalTool(name)) options.onRawResponse?.(call.function.arguments);
-        proposal = undefined;
-        result = `Error: ${error instanceof Error ? error.message : "Invalid tool input"}`;
-      }
-      room -= result.length;
+    const answered = await answerToolCalls(
+      calls.map((call) => ({ id: call.id, ...call.function })),
+      options,
+      turn,
+      room,
+    );
+    room = answered.room;
+    for (const result of answered.results)
       messages.push({
         role: "tool",
-        tool_call_id: call.id,
-        name,
-        content: result,
+        tool_call_id: result.id,
+        name: result.name,
+        content: result.content,
       });
-    }
-    if (proposal) {
-      const said = [text, explanation].filter(Boolean).join("\n\n");
+    if (answered.proposal) {
+      const said = [text, answered.explanation].filter(Boolean).join("\n\n");
       options.onText(said);
-      return finished(said, proposal);
+      return turn.finished(usage, said, answered.proposal);
     }
+    sent = tokenTotal(request);
   }
-  throw new Error(
-    "The assistant reached its documentation lookup limit. Please narrow the request.",
-  );
+  throw turn.lookupLimitReached(messages, text, room, sent);
 }

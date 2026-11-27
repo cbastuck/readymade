@@ -10,9 +10,18 @@ import {
   AssistUsage,
   formatTokens,
   fromAnthropicUsage,
+  inputTotal,
   noUsage,
+  tokenTotal,
 } from "./usage";
-import { OutputLimitError, outputTokens } from "./outputLimit";
+import {
+  Continuation,
+  LookupLimitError,
+  OutputLimitError,
+  outputTokens,
+  resumedTranscript,
+  TOOL_STEPS,
+} from "./outputLimit";
 import { bundledKnowledgeProvider } from "./documentation";
 import type { ReadymadeKnowledgeProvider } from "./knowledge";
 import { Effort } from "./settings";
@@ -30,6 +39,11 @@ export type AssistModel = Pick<ModelInfo, "id" | "display_name"> &
   Partial<Pick<ModelInfo, "capabilities" | "max_tokens">> & {
     /** The context window, for providers whose model list states it. */
     context_tokens?: number;
+    /**
+     * The effort levels a model takes, for providers that know them without
+     * Anthropic's capability report.
+     */
+    efforts?: Exclude<Effort, "default">[];
   };
 export type Conversation = MessageParam[];
 export function createAssistClient(token: string) {
@@ -54,6 +68,7 @@ export async function listAssistModels(
   return models;
 }
 export function modelEfforts(model?: AssistModel): Effort[] {
+  if (model?.efforts) return ["default", ...model.efforts];
   const capability = model?.capabilities?.effort;
   return [
     "default",
@@ -85,6 +100,8 @@ export async function runAssistTurn(options: {
   knowledgeProvider?: ReadymadeKnowledgeProvider;
   /** What the board's runtimes have, to hold a proposal's services to. */
   services?: RunningCatalog;
+  /** An earlier attempt at the same request that stopped at a limit. */
+  continuation?: Continuation;
 }): Promise<{
   conversation: Conversation;
   text: string;
@@ -106,14 +123,35 @@ export async function runAssistTurn(options: {
         input_schema: tool.inputSchema,
       }) as Tool,
   );
-  const messages: Conversation = [
-    ...options.conversation,
-    {
-      role: "user",
-      content: `${options.prompt}\n\n${scopeInstruction(options.scope)}\n\nCurrent board and editing context:\n${JSON.stringify(options.context)}`,
+  // A resumed turn goes on from the requests its earlier attempt completed,
+  // thinking blocks and all.
+  const resumed = resumedTranscript(
+    options.continuation,
+    "anthropic",
+    options.model.id,
+  );
+  const messages: Conversation = resumed
+    ? [...(resumed.messages as Conversation)]
+    : [
+        ...options.conversation,
+        {
+          role: "user",
+          content: `${options.prompt}\n\n${scopeInstruction(options.scope)}\n\nCurrent board and editing context:\n${JSON.stringify(options.context)}`,
+        },
+      ];
+  let text = resumed?.text ?? "";
+  // What the last request read (and, once answered, wrote): about what the
+  // next one sends again.
+  let sent = 0;
+  const transcript = (said = text) => ({
+    transcript: {
+      via: "anthropic" as const,
+      model: options.model.id,
+      messages: [...messages],
+      text: said,
+      ...(sent ? { inputTokens: sent } : {}),
     },
-  ];
-  let text = "";
+  });
   // Every request counts, the documentation lookups as much as the proposal.
   let usage = noUsage;
   const maxTokens = outputTokens({
@@ -121,8 +159,10 @@ export async function runAssistTurn(options: {
     stated: options.model.max_tokens,
     fallback: 16384,
   });
-  for (let step = 0; step < 12; step++) {
+  for (let step = 0; step < TOOL_STEPS; step++) {
     options.signal.throwIfAborted();
+    // What was said before this request: a cut-off one's text is asked again.
+    const said = text;
     const effort = modelEfforts(options.model).includes(options.effort)
       ? options.effort
       : "default";
@@ -142,14 +182,16 @@ export async function runAssistTurn(options: {
       options.onText(text);
     });
     const response = await stream.finalMessage();
-    usage = addUsage(usage, fromAnthropicUsage(response.usage));
+    const request = fromAnthropicUsage(response.usage);
+    usage = addUsage(usage, request);
     options.onUsage?.(usage);
-    // Nothing of it is carried into a retry: the turn is a series of
-    // requests, and the one cut off may be any of them.
+    sent = inputTotal(request);
+    // The cut-off request is not carried: what goes on is the requests
+    // before it, when there were any, and that one is asked again.
     if (response.stop_reason === "max_tokens")
       throw new OutputLimitError(
-        `The response reached its output limit (${formatTokens(maxTokens)} tokens). Raise the output limit in Model settings or lower the effort, then retry.`,
-        { limit: maxTokens },
+        `The response reached its output limit (${formatTokens(maxTokens)} tokens). Raise the output limit in Model settings or lower the effort, then ${step || resumed ? "continue" : "retry"}.`,
+        { limit: maxTokens, ...(step || resumed ? transcript(said) : {}) },
       );
     messages.push({ role: "assistant", content: response.content });
     const calls = response.content.filter((block) => block.type === "tool_use");
@@ -209,9 +251,8 @@ export async function runAssistTurn(options: {
         board: proposal,
         usage,
       };
+    sent = tokenTotal(request);
     options.onStatus("Preparing a response…");
   }
-  throw new Error(
-    "The assistant reached its documentation lookup limit. Please narrow the request.",
-  );
+  throw new LookupLimitError({ limit: maxTokens, ...transcript() });
 }
