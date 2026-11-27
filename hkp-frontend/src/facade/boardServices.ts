@@ -363,14 +363,18 @@ export async function whenServiceConnected(
  * Asks a service to do its job with a payload, running the pipeline from that
  * service onward — rather than from the one after it, which is what a service
  * handing work onward means.
+ *
+ * Returns whether the service was asked: false where it is inside a use,
+ * missing, or on a runtime this window cannot reach. Whether it then did its
+ * job is the run's to say, not this.
  */
 export function processService(
   boardContext: BoardContextState,
   uuid: string,
   payload: unknown,
-): void {
+): boolean {
   if (isInsideUse(boardContext, uuid)) {
-    return;
+    return false;
   }
   // Which runtime holds the service is not asked, it is discovered: only a
   // browser scope implements findServiceInstance, because only there is the
@@ -385,7 +389,7 @@ export function processService(
         (scope as any).signedInUser?.() ?? scope.authenticatedUser ?? null,
       );
       void (scope as any).next?.(svc, payload, run, false);
-      return;
+      return true;
     }
     // A scoped address is entered through the scope holding it, so that what
     // runs is what is written inside it rather than whatever happens to
@@ -396,7 +400,7 @@ export function processService(
         (scope as any).signedInUser?.() ?? scope.authenticatedUser ?? null,
       );
       void owner.service.processNested(owner.rest, payload, run);
-      return;
+      return true;
     }
   }
 
@@ -433,8 +437,9 @@ export function processService(
         err instanceof Error ? err.message : err,
       );
     });
-    return;
+    return true;
   }
+  return false;
 }
 
 /**

@@ -185,8 +185,11 @@ export async function executeActions({
       // it can write into the other.
       const withState = resolveActionRefs(act.payload ?? {}, state ?? {}, identity);
       const payload = applyInput(withState, input);
-      onSent?.({ service: act.serviceUuid, verb: "process", payload, step });
-      processService(boardContext, act.serviceUuid, payload);
+      // Recorded only once it went out, as a configure whose service is not
+      // found is not.
+      if (processService(boardContext, act.serviceUuid, payload)) {
+        onSent?.({ service: act.serviceUuid, verb: "process", payload, step });
+      }
     } else if (act.type === "set-state") {
       // A written value wins over the widget's own, and `undefined` written on
       // purpose is still a value — which is why the field's presence decides

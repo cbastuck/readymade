@@ -21,8 +21,11 @@ vi.mock("../boardServices", () => ({
     uuid === "greet" || uuid === "level"
       ? { uuid, app: {}, configure: (c: unknown) => configured(uuid, c) }
       : null,
-  processService: (_ctx: unknown, uuid: string, payload: unknown) =>
-    processed(uuid, payload),
+  // Dispatched only where the board has the service, as the real one says.
+  processService: (_ctx: unknown, uuid: string, payload: unknown) => {
+    processed(uuid, payload);
+    return uuid === "greet" || uuid === "level";
+  },
   canReachService: () => true,
   isBuiltInside: () => true,
   whenServiceConnected: async () => {},
@@ -109,6 +112,18 @@ describe("what executeActions says it sent", () => {
     const onSent = vi.fn();
     await executeActions({
       actions: [{ type: "configure", serviceUuid: "nowhere", configure: { a: 1 } }],
+      value: undefined,
+      boardContext,
+      setState: () => {},
+      onSent,
+    });
+    expect(onSent).not.toHaveBeenCalled();
+  });
+
+  it("leaves out a process that found no service to go to", async () => {
+    const onSent = vi.fn();
+    await executeActions({
+      actions: [{ type: "process", serviceUuid: "nowhere", payload: { a: 1 } }],
       value: undefined,
       boardContext,
       setState: () => {},

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { BoardContextState } from "../../BoardContext";
@@ -64,6 +64,30 @@ export default function BoardEntryPoint({
   const activeView =
     views.find((view) => view.id === activeViewId) ?? views[0] ?? null;
   const facade = activeView?.facade ?? boardContext.facade;
+  // What a unit's view searches: that unit's runtimes. Narrowed once per change
+  // to the slices it filters, not per render — the context is a new object on
+  // every render of its provider, and fresh `runtimes` and `services` each time
+  // would have the facade's bindings read the board's shape again each time,
+  // which asks every service for its configuration.
+  const runtimeIds = activeView?.runtimeIds;
+  const narrowed = useMemo(
+    () => {
+      const { runtimes, services, scopes, registry } = narrowBoardContext(
+        boardContext,
+        runtimeIds ?? [],
+      );
+      return { runtimes, services, scopes, registry };
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      boardContext?.runtimes,
+      boardContext?.services,
+      boardContext?.scopes,
+      boardContext?.registry,
+      runtimeIds,
+    ],
+  );
+  const facadeBoardContext: BoardContextState = { ...boardContext, ...narrowed };
   const isPlaygroundEmpty =
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
@@ -214,10 +238,7 @@ export default function BoardEntryPoint({
           facade={facade ?? EMPTY_FACADE}
           // A unit's view searches that unit's runtimes, so two units may use
           // the same service uuid without their widgets finding each other's.
-          boardContext={narrowBoardContext(
-            boardContext,
-            activeView?.runtimeIds ?? [],
-          )}
+          boardContext={facadeBoardContext}
           boardName={boardName}
           runtimeContent={boardContent}
           // An ordinary board keeps what the editor changes in its own facade.

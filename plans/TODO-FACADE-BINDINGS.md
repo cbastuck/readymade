@@ -475,8 +475,9 @@ UUID generator demo board.
 
 - Each `configure` and `process` a widget dispatches is recorded with its
   time, service, verb and payload as it went out: after `$state`, `$user`,
-  `$$input` and `{{value}}` were filled in. A configure whose service is not
-  found is not sent, so it is not recorded.
+  `$$input` and `{{value}}` were filled in. A configure or process whose
+  service is not found, or not reachable, is not sent, so it is not recorded
+  (`processService` says whether it asked anybody).
 - **Under the binding it went along.** A `ServiceRow` of the "Acts on" tab
   shows the last call ("Last sent 17:09:43 `{"method":"v4"}`") and the recent
   ones under "Recent sends", matched by service and verb. This holds in the
