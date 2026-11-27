@@ -48,6 +48,7 @@ repeats what it says.
 | [TODO-SECRETS.md](TODO-SECRETS.md) | Secrets resolved at point of use and bound to a destination | Prio A built; website has an interim page-memory store (B0); Prio B open |
 | [TODO-SOVEREIGNTY-AND-ADOPTION.md](TODO-SOVEREIGNTY-AND-ADOPTION.md) | Removing external IdP dependencies (OIDC + built-in auth, capability invite links), closing self-hosting gaps (secret persistence across restarts, live multi-user sync, turnkey stacks, board+data archive), and non-coder verification (SQL caller-binding badges, domain blocks, local multi-member simulation) | planned 2026-11-11; not started |
 | [TODO-TIMELINE.md](TODO-TIMELINE.md) | A timeline animating one object by keyframes, driven by time as a value; nested timelines and blocks composing one animation on one canvas | decided 2026-09-26; service, keyframes, UI, placements and demo board built |
+| [TODO-VSCODE-EXTENSION.md](TODO-VSCODE-EXTENSION.md) | VS Code as a host for the playground: boards as workspace files in a custom editor, remotes, cloud boards, demos, a board's outline, assets and blocks as sidebar views, service state as documents with completion from the service contracts, reached through an `hkp://` fetch shim like Android's | planned 2026-11-25; not started |
 | [TODO-WORKFLOW-PLATFORM.md](TODO-WORKFLOW-PLATFORM.md) | Stateful, human-in-the-loop business-process boards — the gaps G1–G13 and their phases | in progress |
 
 How the system works *today* is documentation, not a plan: see
