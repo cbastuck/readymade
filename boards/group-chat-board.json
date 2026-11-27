@@ -1,0 +1,166 @@
+{
+  "boardName": "Group Chat",
+  "description": "One conversation for everybody the board is shared with. Deploy it, add the people to its member list, and each of them writes as themselves: who said a thing is the caller the server verified, never a field of the request, so nobody can post in somebody else's name. The thread lives in the board's own database on the server, and the facade broadcasts it, so a message one person sends reaches everybody attached at once — no timer, no reload. Clearing the history is the owner's. Needs an hkp-node kept under the name `node`.",
+  "runtimes": [
+    {
+      "id": "room",
+      "name": "Room",
+      "type": "rest",
+      "remote": "node",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "room": [
+      {
+        "uuid": "post-svc",
+        "serviceId": "sql",
+        "serviceName": "Post",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "group-chat",
+          "schema": "CREATE TABLE IF NOT EXISTS message (\n  id     INTEGER PRIMARY KEY,\n  -- What the board's member list called them when they wrote it, so a later\n  -- rename does not rewrite what was already said.\n  author TEXT,\n  -- The address of whoever wrote it, as the server that signed them in said.\n  email  TEXT,\n  text   TEXT NOT NULL,\n  at     TEXT NOT NULL DEFAULT (datetime('now'))\n);\n-- A message says who wrote it. One arriving from nobody is refused with the\n-- reason, rather than kept as an anonymous line nobody can answer.\nCREATE TRIGGER IF NOT EXISTS a_message_has_an_author\nBEFORE INSERT ON message\nWHEN NEW.email IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'sign in to write — a message is signed with who you are');\nEND;\nCREATE TRIGGER IF NOT EXISTS a_message_fits_on_a_screen\nBEFORE INSERT ON message\nWHEN length(NEW.text) > 2000\nBEGIN\n  SELECT RAISE(ABORT, 'that is longer than 2000 characters — split it into a few messages');\nEND;",
+          "statement": "INSERT INTO message (author, email, text)\n-- Members are called what the owner's list calls them. An owner the list\n-- does not name is the owner; their address is never shown to anybody.\nSELECT coalesce($caller_name, CASE WHEN $caller_role = 'owner' THEN 'Owner' END),\n       $caller_email,\n       trim($text)\n WHERE $intent = 'post'\n   AND trim(coalesce($text, '')) <> ''"
+        }
+      },
+      {
+        "uuid": "clear-history-svc",
+        "serviceId": "sql",
+        "serviceName": "Clear history",
+        "state": {
+          "mode": "run",
+          "emit": "input",
+          "database": "group-chat",
+          "statement": "-- The owner's alone: a member asking is a member asking, and deletes nothing.\nDELETE FROM message\n WHERE $intent = 'clear'\n   AND $caller_role = 'owner'"
+        }
+      },
+      {
+        "uuid": "thread-svc",
+        "serviceId": "sql",
+        "serviceName": "Thread",
+        "state": {
+          "mode": "query",
+          "database": "group-chat",
+          "statement": "-- The latest 200, oldest first, as a thread reads. The address stays in\n-- the table: what is sent to everybody is the name.\nSELECT id, author, text,\n       CASE WHEN date(at) = date('now')\n            THEN strftime('%H:%M', at)\n            ELSE strftime('%Y-%m-%d %H:%M', at)\n       END AS time\n  FROM (SELECT * FROM message ORDER BY id DESC LIMIT 200)\n ORDER BY id"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "broadcast": [
+      "thread-svc"
+    ],
+    "init": [
+      {
+        "type": "process",
+        "serviceUuid": "thread-svc",
+        "payload": {}
+      }
+    ],
+    "panels": [
+      {
+        "id": "chat",
+        "title": "Group Chat",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "paddingX": 16,
+          "paddingY": 12,
+          "fill": true,
+          "items": [
+            {
+              "type": "text",
+              "label": "Writing as",
+              "value": {
+                "$user": "name"
+              },
+              "placeholder": "nobody — sign in to write"
+            },
+            {
+              "direction": "column",
+              "collapsible": true,
+              "title": "Room",
+              "open": false,
+              "visibleTo": "owner",
+              "gap": 8,
+              "items": [
+                {
+                  "type": "text",
+                  "tone": "muted",
+                  "fontSize": 12,
+                  "placeholder": "Only you see this. Members write under the name you give them on the board's member list; add yourself to it to choose yours — until then you write as Owner. Clearing removes every message for everybody, and cannot be undone."
+                },
+                {
+                  "type": "button",
+                  "label": "Clear history",
+                  "actions": [
+                    {
+                      "type": "confirm",
+                      "question": "Remove every message in this chat, for everybody?",
+                      "agree": "Clear history",
+                      "decline": "Keep them"
+                    },
+                    {
+                      "type": "process",
+                      "serviceUuid": "clear-history-svc",
+                      "payload": {
+                        "intent": "clear"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "message-list",
+              "grow": true,
+              "source": {
+                "serviceUuid": "thread-svc",
+                "path": "rows"
+              },
+              "mineWhen": {
+                "field": "author",
+                "equals": {
+                  "$user": "name"
+                }
+              },
+              "placeholder": "No messages yet.\nSay hello — everybody the board is shared with sees it.",
+              "composer": {
+                "placeholder": "Message everyone…",
+                "submitLabel": "Send",
+                "actions": [
+                  {
+                    "type": "process",
+                    "serviceUuid": "post-svc",
+                    "payload": {
+                      "intent": "post",
+                      "text": "$$input"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "notices": [
+      {
+        "source": {
+          "serviceUuid": "post-svc",
+          "path": "error"
+        }
+      },
+      {
+        "source": {
+          "serviceUuid": "clear-history-svc",
+          "path": "error"
+        }
+      }
+    ]
+  }
+}
