@@ -25,9 +25,20 @@ import {
 } from "react";
 
 import { BoardContextState } from "../BoardContext";
+import type { BindingSite } from "./bindings";
 
 /** Facade alone, both halves, or the board's runtimes alone. */
 export type FacadeViewMode = "facade" | "split" | "board";
+
+/**
+ * What the editor is asked to open on: a widget, or one of the facade's own
+ * items. `seq` tells one request from the next, so asking for the same widget
+ * twice selects it twice.
+ */
+export type EditorRequest = {
+  target: { kind: "widget"; site: BindingSite } | { kind: "state" | "actions" };
+  seq: number;
+};
 
 export type FacadeViewApi = {
   mode: FacadeViewMode;
@@ -37,6 +48,15 @@ export type FacadeViewApi = {
   showRuntime: boolean;
   editorOpen: boolean;
   toggleEditor: () => void;
+  /**
+   * Whether the facade can be changed here. A deployed board cannot — its
+   * coordinator owns it — so there is no editor, and nothing opens one.
+   */
+  editable: boolean;
+  /** Opens the editor on a widget or one of the facade's own items. */
+  openEditorAt: (target: EditorRequest["target"]) => void;
+  /** What the editor was last asked to open on. */
+  editorRequest: EditorRequest | null;
 };
 
 const FacadeViewCtx = createContext<FacadeViewApi | null>(null);
@@ -94,9 +114,11 @@ export function boardHasFacade(
 
 export function FacadeViewProvider({
   boardName,
+  editable = true,
   children,
 }: {
   boardName: string;
+  editable?: boolean;
   children: React.ReactNode;
 }) {
   const [mode, setModeState] = useState<FacadeViewMode>(() =>
@@ -122,7 +144,29 @@ export function FacadeViewProvider({
   // Not remembered: the editor is opened to make a change and closed again,
   // and a board that opens with it already up hides half of what it is.
   const [editorOpen, setEditorOpen] = useState(false);
-  const toggleEditor = useCallback(() => setEditorOpen((open) => !open), []);
+  const [editorRequest, setEditorRequest] = useState<EditorRequest | null>(
+    null,
+  );
+  // Opened from the toolbar, the editor opens on what it starts with rather
+  // than on what a badge asked for the last time.
+  const toggleEditor = useCallback(() => {
+    setEditorRequest(null);
+    setEditorOpen((open) => !open);
+  }, []);
+  const openEditorAt = useCallback(
+    (target: EditorRequest["target"]) => {
+      if (!editable) {
+        return;
+      }
+      setEditorRequest((prev) => ({ target, seq: (prev?.seq ?? 0) + 1 }));
+      setEditorOpen(true);
+    },
+    [editable],
+  );
+  // Another board's request is not this one's.
+  useEffect(() => {
+    setEditorRequest(null);
+  }, [boardName]);
 
   const api = useMemo<FacadeViewApi>(
     () => ({
@@ -130,10 +174,13 @@ export function FacadeViewProvider({
       setMode,
       showFacade: mode !== "board",
       showRuntime: mode !== "facade",
-      editorOpen,
+      editorOpen: editable && editorOpen,
       toggleEditor,
+      editable,
+      openEditorAt,
+      editorRequest,
     }),
-    [mode, setMode, editorOpen, toggleEditor],
+    [mode, setMode, editorOpen, toggleEditor, editable, openEditorAt, editorRequest],
   );
 
   return (

@@ -11,6 +11,7 @@ import { FacadePanelNavigation } from "./FacadePanelNavigation";
 import { findService, processService } from "./boardServices";
 import { applyInput } from "./applyInput";
 import { FacadeIdentity, isUserRef, resolveUserRef } from "./FacadeIdentity";
+import type { SentVerb } from "./sentCalls";
 
 // Recursively resolves facade-state and action-time references. Runs before
 // $$input substitution so all of them can coexist in one payload.
@@ -92,6 +93,7 @@ export async function executeActions({
   byPerson = false,
   ask,
   askValue,
+  onSent,
 }: {
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
@@ -99,7 +101,9 @@ export async function executeActions({
   confirm?: string;
   value: unknown;
   boardContext: BoardContextState;
-  setState: (key: string, value: unknown) => void;
+  // `step` is the set-state's position in `actions`, for a caller that says
+  // which of its actions wrote — init does.
+  setState: (key: string, value: unknown, step?: number) => void;
   // What the host showing this facade can do with the board itself. Absent for
   // a host that offers none of it, which makes a board action do nothing.
   boardActions?: FacadeBoardActions;
@@ -121,6 +125,15 @@ export async function executeActions({
   // How a prompt step reaches the person. Absent where there is nobody to ask,
   // which cancels.
   askValue?: AskPersonForValue;
+  // Told of each configure and process as it goes out, with the payload as
+  // sent, so a facade can show what a widget sent (see sentCalls). `step` is
+  // the action's position in `actions`, as for `setState`.
+  onSent?: (call: {
+    service: string;
+    verb: SentVerb;
+    payload: unknown;
+    step?: number;
+  }) => void;
 }): Promise<void> {
   // What `$$input` stands for: the widget's value, until a prompt replaces it
   // with the person's answer.
@@ -140,7 +153,10 @@ export async function executeActions({
     ...(actions ?? []),
   ];
 
-  for (const act of all) {
+  // Where `actions` starts in `all`, past the steps the shorthands put first.
+  const offset = all.length - (actions?.length ?? 0);
+  for (const [position, act] of all.entries()) {
+    const step = position >= offset ? position - offset : undefined;
     if (act.type === "configure") {
       const service = findService(boardContext, act.serviceUuid);
       if (!service) {
@@ -154,6 +170,12 @@ export async function executeActions({
       const target = byPerson
         ? (serviceForUserInterface(service) ?? service)
         : service;
+      onSent?.({
+        service: act.serviceUuid,
+        verb: "configure",
+        payload: configure,
+        step,
+      });
       await target.configure(configure);
       if (byPerson) {
         boardContext.markBoardChanged?.();
@@ -162,16 +184,17 @@ export async function executeActions({
       // Same substitution as a configure payload: what a board writes into one
       // it can write into the other.
       const withState = resolveActionRefs(act.payload ?? {}, state ?? {}, identity);
-      processService(
-        boardContext,
-        act.serviceUuid,
-        applyInput(withState, input),
-      );
+      const payload = applyInput(withState, input);
+      // Recorded only once it went out, as a configure whose service is not
+      // found is not.
+      if (processService(boardContext, act.serviceUuid, payload)) {
+        onSent?.({ service: act.serviceUuid, verb: "process", payload, step });
+      }
     } else if (act.type === "set-state") {
       // A written value wins over the widget's own, and `undefined` written on
       // purpose is still a value — which is why the field's presence decides
       // rather than its content.
-      setState(act.key, "value" in act ? act.value : input);
+      setState(act.key, "value" in act ? act.value : input, step);
     } else if (act.type === "board") {
       if (act.action === "partner-board-qr") {
         boardActions?.showPartnerBoardQr();

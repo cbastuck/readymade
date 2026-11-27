@@ -14,10 +14,19 @@ import type { BoardContextState } from "../../BoardContext";
  */
 
 vi.mock("./Board", () => ({ default: () => <div data-testid="board" /> }));
+// The board context each render of the facade was handed, newest last.
+const handed: BoardContextState[] = [];
 vi.mock("../../facade/FacadeRenderer", () => ({
-  default: ({ facade }: { facade: { panels: unknown[] } }) => (
-    <div data-testid="facade" data-panels={facade.panels.length} />
-  ),
+  default: ({
+    facade,
+    boardContext,
+  }: {
+    facade: { panels: unknown[] };
+    boardContext: BoardContextState;
+  }) => {
+    handed.push(boardContext);
+    return <div data-testid="facade" data-panels={facade.panels.length} />;
+  },
 }));
 vi.mock("react-router-dom", () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
@@ -47,16 +56,20 @@ function contextWithViews(): BoardContextState {
   } as unknown as BoardContextState;
 }
 
-function renderEntryPoint() {
-  return render(
+function entryPoint(boardContext: BoardContextState) {
+  return (
     <BoardEntryPoint
       isLoading={false}
       showLoginRequired={false}
-      boardContext={contextWithViews()}
+      boardContext={boardContext}
       description=""
       onChangeBoardname={() => {}}
-    />,
+    />
   );
+}
+
+function renderEntryPoint() {
+  return render(entryPoint(contextWithViews()));
 }
 
 describe("the tabs a composition's views are chosen by", () => {
@@ -76,5 +89,42 @@ describe("the tabs a composition's views are chosen by", () => {
 
     expect(screen.getByRole("tab", { name: "Radio" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Radio Library" })).toBeTruthy();
+  });
+});
+
+describe("the board a unit's view is handed", () => {
+  // The context is a new object on every render of its provider. A view
+  // handed fresh runtimes and services each time would read the board's shape
+  // each time, which asks every service for its configuration.
+  it("keeps its runtimes and services while the board's stay the same", () => {
+    const board = contextWithViews();
+    const { rerender } = render(entryPoint(board));
+    const first = handed[handed.length - 1];
+
+    rerender(entryPoint({ ...board }));
+    const second = handed[handed.length - 1];
+
+    expect(second).not.toBe(first);
+    expect(second.runtimes).toBe(first.runtimes);
+    expect(second.services).toBe(first.services);
+    // Still only the unit's own runtimes.
+    expect(second.runtimes.map((rt) => rt.id)).toEqual(["radio.node"]);
+  });
+
+  it("follows the board when its runtimes change", () => {
+    const board = contextWithViews();
+    const { rerender } = render(entryPoint(board));
+    const first = handed[handed.length - 1];
+
+    rerender(
+      entryPoint({
+        ...board,
+        runtimes: [...board.runtimes, { id: "library.node" }],
+      } as BoardContextState),
+    );
+    const second = handed[handed.length - 1];
+
+    expect(second.runtimes).not.toBe(first.runtimes);
+    expect(second.runtimes.map((rt) => rt.id)).toEqual(["radio.node"]);
   });
 });

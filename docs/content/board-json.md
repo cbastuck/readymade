@@ -20,7 +20,7 @@ Everything else is optional:
 |---|---|
 | `boardName` | display name |
 | `description` | a sentence about the board, shown where boards are listed |
-| `facade` | the app-like surface of widgets drawn over the board |
+| `facade` | the app-like surface of widgets drawn over the board → `concepts/board.md`, "The facade" |
 | `unit` | what this board imports and exports, if it is used as a unit |
 | `units` | the boards this one is assembled from → `concepts/units.md` |
 | `blocks` | services defined once and used by reference wherever a pipeline names them → `concepts/blocks.md` |

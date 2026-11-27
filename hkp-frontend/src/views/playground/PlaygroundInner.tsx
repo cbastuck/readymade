@@ -90,40 +90,42 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
                         centreSlot={<PlayBoardControls />}
                         actionsSlot={
                           <>
-                            <button
-                              type="button"
-                              title="Board Assist"
-                              aria-label="Toggle Board Assist"
-                              aria-controls="board-ai-assist"
-                              aria-pressed={assistVisible}
-                              onClick={() => {
-                                setAssistOpened(true);
-                                setAssistVisible((value) => !value);
-                              }}
-                              style={{
-                                ...TOOLBAR_GROUP_BUTTON,
-                                background: "none",
-                                cursor: "pointer",
-                                color: assistVisible
-                                  ? "var(--hkp-accent, #0abcfb)"
-                                  : "var(--text, #1a1a1a)",
-                              }}
-                            >
-                              <Sparkles
-                                size={TOOLBAR_GROUP_ICON_SIZE}
-                                strokeWidth={1.75}
-                              />
-                            </button>
-                            <RuntimeZoomToolbarButton />
+                            <ToolbarGroup label="Runtimes view">
+                              <RuntimeZoomToolbarButton />
+                              <OverviewToolbarButton />
+                            </ToolbarGroup>
                             <FacadeViewControls />
                             <ToolbarGroup label="Board tools">
                               <FacadeEditorButton />
-                              <OverviewToolbarButton />
+                              <button
+                                type="button"
+                                title="Board Assist"
+                                aria-label="Toggle Board Assist"
+                                aria-controls="board-ai-assist"
+                                aria-pressed={assistVisible}
+                                onClick={() => {
+                                  setAssistOpened(true);
+                                  setAssistVisible((value) => !value);
+                                }}
+                                style={{
+                                  ...TOOLBAR_GROUP_BUTTON,
+                                  background: "none",
+                                  cursor: "pointer",
+                                  color: assistVisible
+                                    ? "var(--hkp-accent, #0abcfb)"
+                                    : "var(--text, #1a1a1a)",
+                                }}
+                              >
+                                <Sparkles
+                                  size={TOOLBAR_GROUP_ICON_SIZE}
+                                  strokeWidth={1.75}
+                                />
+                              </button>
                               <AssetViewToolbarButton />
                             </ToolbarGroup>
-                            <DeployMenu />
                           </>
                         }
+                        deploySlot={<DeployMenu />}
                         includeNavigationLinks={!props.hideNavigation}
                       />
                     </FacadeChrome>
@@ -209,7 +211,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
  * chrome for another.
  */
 function ChromeFooter() {
-  return useChromeRetracted() ? null : <Footer />;
+  return useChromeRetracted() ? null : <Footer flex />;
 }
 
 /**

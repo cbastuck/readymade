@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FacadeStateContext } from "./FacadeStateContext";
+import {
+  FacadeStateContext,
+  StateWrite,
+  recordWrite,
+} from "./FacadeStateContext";
+import { BindingSite } from "./bindings";
+import { createSendLog } from "./sentCalls";
+import { MAX_HISTORY } from "hkp-frontend/src/ui-components/service/flowRecords";
 import { useFacadeInit } from "./useFacadeInit";
 import { useFacadeIdentity } from "./FacadeIdentity";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
@@ -10,9 +17,9 @@ import { FacadeNotices } from "./FacadeNotices";
 import { FacadeTabBar } from "./FacadeTabBar";
 import { currentFace, defaultFaceId, resolveFaces } from "./tabs";
 import { useFacadeView } from "./FacadeViewContext";
-import { useChromeRetracted } from "./FacadeChrome";
 import { FacadeBoardActionsProvider } from "./FacadeBoardActions";
 import { FacadePanelNavigationContext } from "./FacadePanelNavigation";
+import { FacadeBindingsProvider } from "./FacadeBindingsContext";
 import { SwimlaneDragProvider } from "./SwimlaneDragContext";
 
 type FacadeRendererProps = {
@@ -20,6 +27,12 @@ type FacadeRendererProps = {
   boardContext: BoardContextState;
   boardName: string;
   runtimeContent: React.ReactNode;
+  /**
+   * Where the facade editor's changes go to be kept — the board's own facade.
+   * Absent where a change cannot be kept: the editor's changes then last only
+   * as long as the board is open, and it says so.
+   */
+  onFacadeChange?: (facade: FacadeDescriptor) => void;
 };
 
 export default function FacadeRenderer({
@@ -27,26 +40,49 @@ export default function FacadeRenderer({
   boardContext,
   boardName,
   runtimeContent,
+  onFacadeChange,
 }: FacadeRendererProps) {
-  // The copyright strip is fixed to the bottom of the window and paints over
-  // whatever is under it, so the facade keeps clear of it — except where the
-  // chrome has retracted and there is no strip to keep clear of, which is the
-  // one state where those pixels are the difference between a facade that
-  // fills the window and one that stops just short of it.
-  const footerClearance = useChromeRetracted() ? 0 : 36;
-
   // ── facade state store ───────────────────────────────────────────────────
   const [facadeState, setFacadeStateRaw] = useState<Record<string, unknown>>(
     () => facade.state ?? {},
   );
 
+  // What was written to each key, newest first, and by whom — so the state
+  // can be read as something that happened rather than only as where it is.
+  const [stateHistory, setStateHistory] = useState<
+    Record<string, StateWrite[]>
+  >({});
+
+  // What the facade sent to the board, per widget — held outside React state,
+  // since a knob sends on every move (see sentCalls).
+  const [sendLog] = useState(() => createSendLog(MAX_HISTORY));
+
   useEffect(() => {
     setFacadeStateRaw(facade.state ?? {});
-  }, [boardName]);
+    setStateHistory({});
+    sendLog.clear();
+  }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const setFacadeStateEntry = useCallback((key: string, value: unknown) => {
-    setFacadeStateRaw((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const setFacadeStateEntry = useCallback(
+    (key: string, value: unknown, writer?: BindingSite) => {
+      setFacadeStateRaw((prev) => ({ ...prev, [key]: value }));
+      setStateHistory((prev) =>
+        recordWrite(prev, key, { at: Date.now(), value, writer }, MAX_HISTORY),
+      );
+    },
+    [],
+  );
+
+  // Init writes as the facade, by the action's place in `init`.
+  const setStateFromInit = useCallback(
+    (key: string, value: unknown, step?: number) =>
+      setFacadeStateEntry(
+        key,
+        value,
+        step === undefined ? undefined : { kind: "init", index: step },
+      ),
+    [setFacadeStateEntry],
+  );
 
   // Keep a ref so the init effect always sees the latest state at fire time.
   const facadeStateRef = useRef(facadeState);
@@ -57,9 +93,15 @@ export default function FacadeRenderer({
     facade,
     boardContext,
     boardName,
-    setState: setFacadeStateEntry,
+    setState: setStateFromInit,
     stateRef: facadeStateRef,
     identity,
+    // Init sends as the facade, by the action's place in `init`.
+    onSent: ({ step, ...call }) => {
+      if (step !== undefined) {
+        sendLog.record({ kind: "init", index: step }, call);
+      }
+    },
   });
 
   // Which halves are on screen is chosen from the toolbar, above this view.
@@ -77,10 +119,20 @@ export default function FacadeRenderer({
   const showFacade = anyPanels && (view ? view.showFacade : true);
   const showRuntime = !anyPanels || (view ? view.showRuntime : false);
 
-  // Reset the draft whenever a different board is loaded.
+  // The draft follows the facade it was given: another board, or this one's
+  // facade changed by something other than the editor — the editor's own
+  // changes, once kept, come back as the same object.
   useEffect(() => {
     setDraftFacade(facade);
-  }, [boardName]);
+  }, [boardName, facade]);
+
+  const changeFacade = useCallback(
+    (updated: FacadeDescriptor) => {
+      setDraftFacade(updated);
+      onFacadeChange?.(updated);
+    },
+    [onFacadeChange],
+  );
 
   // ── tabs ─────────────────────────────────────────────────────────────────
   // Which face is chosen lives here rather than in storage: a board says what
@@ -199,10 +251,23 @@ export default function FacadeRenderer({
 
   return (
     <FacadeStateContext.Provider
-      value={{ state: facadeState, setState: setFacadeStateEntry }}
+      value={{
+        state: facadeState,
+        setState: setFacadeStateEntry,
+        history: stateHistory,
+        sends: sendLog,
+      }}
     >
       <SwimlaneDragProvider>
         <FacadePanelNavigationContext.Provider value={navigation}>
+        <FacadeBindingsProvider
+          facade={draftFacade}
+          boardContext={boardContext}
+          // Only with the board beside it: a binding points at the board, and
+          // a host with no view controls is showing the facade as an app. And
+          // only where the editor a badge opens can be opened.
+          badges={!!view?.editable && showFacade && showRuntime}
+        >
         <FacadeBoardActionsProvider boardContext={boardContext}>
         {/* Draws nothing: what these have to say arrives as a toast. */}
         <FacadeNotices
@@ -217,7 +282,6 @@ export default function FacadeRenderer({
             background: "hsl(var(--background))",
             overflow: "hidden",
             fontFamily: "'Recursive', monospace",
-            paddingBottom: footerClearance,
           }}
         >
           {/* The board, with the editor alongside it */}
@@ -336,7 +400,8 @@ export default function FacadeRenderer({
                 >
                   <FacadeEditor
                     facade={draftFacade}
-                    onChange={setDraftFacade}
+                    onChange={changeFacade}
+                    kept={!!onFacadeChange}
                   />
                 </div>
               </>
@@ -344,6 +409,7 @@ export default function FacadeRenderer({
           </div>
         </div>
         </FacadeBoardActionsProvider>
+        </FacadeBindingsProvider>
         </FacadePanelNavigationContext.Provider>
       </SwimlaneDragProvider>
     </FacadeStateContext.Provider>

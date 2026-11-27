@@ -223,6 +223,82 @@ sent, so a member is not shown it, cannot act through it, and is not sent what
 it reads; anywhere else whoever has the board open is its owner and sees it
 all ([Cloud boards](./cloud-boards.md#sharing-a-board-members)).
 
+### The facade editor
+
+Open the facade editor from the toolbar to build or change a facade. Its tree
+has three items at the top:
+
+- **Panels**: each panel and its layout. Select a panel or a widget to change
+  its properties. Selecting Panels itself shows the facade's own settings
+  (`layout`, `tabs`, `defaultTab`).
+- **State**: every facade state key, with its value now, the widgets that write
+  and read it, and its recent writes.
+- **Actions and Updates**: what the facade does by itself. That's the
+  **Actions** it runs when it opens (`init`) and the **Updates** it raises as
+  notices.
+
+Whatever you change goes straight into the board's facade and is saved with
+the board. The one exception is a composition: there each unit brings its own
+facade, and changes to it show up but aren't saved yet. The editor tells you
+when that's the case.
+
+When the facade and the board are both on screen ("Facade above the board"),
+every widget that's connected to something gets a small link badge in its
+corner. Click it and the editor opens on that widget. The tree and the facade
+follow each other, so selecting a widget in the tree highlights it on the
+facade too. A deployed board has no editor and no badges: to change one,
+change it in the playground and deploy it again.
+
+### What a widget is connected to
+
+What connects a widget to the board is its **facade bindings**, and they go
+two ways. A selected widget shows each way in its own tab beside its
+properties:
+
+- **Acts on** lists what the widget sends: a `configure` (and which keys), a
+  `process`, a file it hands over, frames it captures. It also lists the
+  facade state the widget writes (`set-state`, a table's or swimlane's
+  selection) and the state its actions use (`{ "$state": … }` in a payload).
+- **Updated by** lists what the widget shows: a service's report (its
+  `source`, at a `path`), and facade state it shows in its `value`, `items` or
+  `summary`.
+
+Each service in the list comes with where it lives, like `Node › Switch ›
+case "paid" › Mailer`, so two services with the same name are easy to tell
+apart. **Show in board** opens every nested pipeline on the way and highlights
+the service. **Inspect** does the same and opens its
+[Flow Inspector](./runtime.md#what-crosses-a-runtime-boundary), on the input for
+something the widget acts on and on the output for something that updates it.
+A service that can't be reached says why: it's missing, it's inside a block
+use (shown as the use as a whole), or its runtime isn't attached.
+
+Every `configure` and `process` also shows **what the widget actually sent**:
+the last payload and, below it, the recent ones. That's the payload after
+`$state`, `$user`, `$$input` and `{{value}}` were filled in, so it's exactly
+what the service got. Your browser keeps the last ten per widget for as long as
+the board is open. It works on any runtime and without Capture mode, because
+the facade records what it sends itself and nothing extra leaves the browser.
+Actions the facade runs when it opens are listed the same way, under Actions
+and Updates.
+
+Nothing in the board document describes these connections. They're read from
+the widgets themselves, so any facade has them:
+
+| Field on a widget | Listed under |
+| --- | --- |
+| `action`, and each `configure` or `process` in `actions` | Acts on |
+| `set-state` in `actions`; `selectable` on a data table or swimlane | Acts on (writes facade state) |
+| `{ "$state": "key" }` inside an action's payload | Acts on (uses facade state) |
+| `source`, `progressServiceUuid`, `thresholdKnobServiceUuid` | Updated by |
+| `{ "$state": "key" }` in `value`, `items` or `summary` | Updated by |
+| `serviceUuid` of a `camera` | Acts on (captures into it) |
+| `serviceUuid` of a `canvas` or `detect` | Updated by (shows its surface) |
+| `serviceUuid` of an `xy-pad` | both: shows its surface, configures `position` and `eventType` |
+
+A uuid inside a payload is a value being sent, not a connection. A repeat's
+template is read once per item, after the item is filled in. The rules live in
+`hkp-frontend/src/facade/bindings.ts`.
+
 ---
 
 ## Who owns a board
