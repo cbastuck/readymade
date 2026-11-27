@@ -4,6 +4,7 @@
 
 #include <secrets.h>
 #include <assets.h>
+#include <resources.h>
 using json = nlohmann::json;
 
 namespace hkp {
@@ -137,6 +138,12 @@ struct RuntimeConfiguration
    * never into service state. See assets.h.
    */
   std::map<std::string, nlohmann::json> assets;
+  /**
+   * Bindings for the `hkp-resource://<id>` references this runtime's services
+   * carry, by id. They go into the runtime's resource store and never into
+   * service state. See resources.h.
+   */
+  std::map<std::string, nlohmann::json> resources;
   std::vector<ServiceConfiguration> services;
 
   // readonly values 

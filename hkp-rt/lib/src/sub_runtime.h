@@ -98,6 +98,7 @@ public:
   // Out to the runtime around this one, for the same reason as secrets: an
   // asset edited while the board runs is what a nested service resolves next.
   AssetStore* assets() override { return m_parent.assets(); }
+  ResourceStore* resources() override { return m_parent.resources(); }
 
   // The cells this pipeline holds values in: the ones the service owning it
   // lent it, and otherwise the ones around it.

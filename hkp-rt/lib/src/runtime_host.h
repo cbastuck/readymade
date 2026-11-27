@@ -13,6 +13,7 @@
 #include <mounts.h>
 #include <secrets.h>
 #include <assets.h>
+#include <resources.h>
 #include <slot_store.h>
 
 namespace hkp {
@@ -142,6 +143,10 @@ public:
   // answers with the store of the runtime around it, for the reason secrets do.
   // Null where the host has none.
   virtual AssetStore* assets() { return nullptr; }
+
+  // The runtime's resource bindings, for a service that connects to an
+  // external resource by reference (`hkp-resource://<id>`).
+  virtual ResourceStore* resources() { return nullptr; }
 
   // The cells this pipeline's values may be held in.
   //

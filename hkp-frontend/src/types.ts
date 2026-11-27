@@ -173,6 +173,13 @@ export interface RuntimeScope {
    * resolution sees. Absent: the runtime has no assets.
    */
   assets?: import("./runtime/board/assets").AssetsSource;
+
+  /**
+   * The resource bindings this runtime's services may reference: those of the
+   * document that contributed the runtime, resolved for where the runtime runs.
+   * Set by the board, read on each use. Absent: the runtime has no resources.
+   */
+  resources?: import("./runtime/board/resources").ResourcesSource;
 }
 
 export type ExternalInput = {
@@ -481,6 +488,11 @@ export type AppImpl = {
    */
   assets?: () => Array<import("./runtime/board/assets").AssetDescriptor>;
   /**
+   * The resource bindings of the board this service belongs to, read as they
+   * are now. Absent where the host has none. See `runtime/board/resources`.
+   */
+  resources?: () => Array<import("./runtime/board/resources").ResourceBinding>;
+  /**
    * The cells a service holds values in between passes, or absent where the
    * runtime it is in has none. See runtime/slots.ts.
    */
@@ -678,6 +690,12 @@ export type RuntimeApi = {
      * attach); the scope keeps the source for later pushes.
      */
     assets?: import("./runtime/board/assets").AssetsSource,
+    /**
+     * The resource bindings this runtime's services may reference, resolved
+     * for where this runtime runs. Sent with its create payload (or again on
+     * attach); the scope keeps the source for later pushes.
+     */
+    resources?: import("./runtime/board/resources").ResourcesSource,
   ) => Promise<RestoreRuntimeResult | null>;
 
   /**
@@ -689,6 +707,16 @@ export type RuntimeApi = {
   pushAssets?: (
     scope: RuntimeScope,
     assets: import("./runtime/board/assets").AssetPush,
+  ) => Promise<string | null>;
+
+  /**
+   * Hands a running runtime new, changed or unbound (`null`) resource
+   * bindings, and answers why it did not take them, or null when it did.
+   * Absent where the runtime reads the board's bindings directly.
+   */
+  pushResources?: (
+    scope: RuntimeScope,
+    resources: import("./runtime/board/resources").ResourcePush,
   ) => Promise<string | null>;
 
   attachRuntimes?: (
@@ -833,6 +861,13 @@ export type BoardDescriptor = {
    * at point of use. See `runtime/board/assets`.
    */
   assets?: Array<import("./runtime/board/assets").AssetDescriptor>;
+  /**
+   * What the board needs from outside Readymade — an Ollama, a Postgres, an S3
+   * bucket — declared by kind and named from service state as
+   * `hkp-resource://<id>`. Descriptors only; bindings are the host's and never
+   * enter the document. See `runtime/board/resources`.
+   */
+  resources?: Array<import("./runtime/board/resources").ResourceDescriptor>;
 };
 
 export function isRuntimeDescriptorConfig(data: any): data is RuntimeDescriptor & { services: any[] } {

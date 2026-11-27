@@ -25,6 +25,7 @@ import RunSheet from "./RunSheet";
 import { CaptureButton, useCaptureControl } from "./capture";
 import { AppModeProvider, useAppModeState } from "./appMode";
 import RuntimeUnreachableDialog from "../../../ui-components/RuntimeUnreachableDialog";
+import UnboundResourceDialog from "../../../ui-components/UnboundResourceDialog";
 import UnknownRemoteDialog from "../../../ui-components/UnknownRemoteDialog";
 import {
   RemoteRuntimeStore,
@@ -747,6 +748,7 @@ export default function MobilePlaygroundInner({
         </PlayProvider>
         <RuntimeUnreachableDialog />
         <HubUnknownRemoteDialog />
+        <UnboundResourceDialog />
       </MobileConnectionsProvider>
     </MobileHostContext.Provider>
   );

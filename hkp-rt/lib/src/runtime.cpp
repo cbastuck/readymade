@@ -168,6 +168,7 @@ void Runtime::load(const RuntimeConfiguration& config)
   // Likewise assets: a service that loads its content while being configured
   // asks for it during construction.
   m_assets.replace(config.assets);
+  m_resources.replace(config.resources);
   auto services = config.services;
   for (auto &service : services)
   {

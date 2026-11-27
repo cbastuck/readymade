@@ -55,6 +55,13 @@ public:
     m_assets.merge(entries);
   }
 
+  ResourceStore* resources() override { return &m_resources; }
+
+  void setResources(const std::map<std::string, nlohmann::json>& entries)
+  {
+    m_resources.merge(entries);
+  }
+
   // The cells services in this runtime hold values in between passes.
   //
   // A runtime is the outermost thing a slot name can mean, so two services
@@ -194,6 +201,7 @@ private:
   std::list<std::shared_ptr<Service>> m_services; // TODO: not thread safe
   SecretVault m_vault;
   AssetStore m_assets;
+  ResourceStore m_resources;
   SlotStore m_slots;
   std::vector<RuntimeInput> m_inputs;
   ProcessDepth m_processDepth;

@@ -98,6 +98,12 @@ public:
   json setRuntimeAssets(const std::string& runtimeId,
                         const std::map<std::string, nlohmann::json>& entries);
 
+  // Hand a running runtime resource bindings, or null for one unbound or
+  // deleted. Answers with the ids it then holds, and null when there is no such
+  // runtime.
+  json setRuntimeResources(const std::string& runtimeId,
+                           const std::map<std::string, nlohmann::json>& entries);
+
   // Whether an asset resolves on a runtime, and to what — a check, never the
   // content. Null when there is no such runtime.
   json checkRuntimeAsset(const std::string& runtimeId, const std::string& assetId);

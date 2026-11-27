@@ -44,12 +44,43 @@ response — the browser blocks it before Ollama ever answers.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `endpoint` | `string` | `"http://localhost:11434/api"` | Base URL of the Ollama API |
+| `endpoint` | `string` | `"http://localhost:11434/api"` | Base URL of the Ollama API, or an `hkp-resource://<id>` reference to an `"ollama"` board resource |
 | `model` | `string` | `""` | Model name to use (e.g. `"llama3"`, `"mistral"`) |
 | `prompt` | `string` | `""` | Prompt template sent to the model |
 | `temperature` | `number` | `0` | Sampling temperature (0 = deterministic) |
 | `seed` | `number` | `0` | Random seed for reproducibility |
 | `responseIsJson` | `boolean` | `false` | Parse the response as JSON before emitting |
+
+### Naming a board resource (`hkp-resource://`)
+
+Rather than hard-coding an address in the board, a board can declare an
+`"ollama"` resource in its top-level `resources` array and reference it from
+`endpoint`:
+
+```json
+{
+  "resources": [
+    { "id": "llm", "kind": "ollama", "models": ["llama3.2"] }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "ask",
+        "serviceId": "hookup.to/service/ollama-prompt",
+        "state": {
+          "endpoint": "hkp-resource://llm",
+          "model": "llama3.2",
+          "prompt": "Summarise this article in one sentence: "
+        }
+      }
+    ]
+  }
+}
+```
+
+When the board opens without a binding for `llm`, the person is prompted for
+where their Ollama runs, and the binding is kept per board and resource id
+without ever entering service state or a saved board.
 
 ### Dynamic prompt composition
 

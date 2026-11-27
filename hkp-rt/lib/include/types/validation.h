@@ -122,6 +122,18 @@ inline std::optional<RuntimeConfiguration> validateRuntime(json config)
     }
   }
 
+  auto resources = config.find("resources");
+  if (resources != config.end())
+  {
+    for (auto& [id, entry] : readResourcesPayload(*resources))
+    {
+      if (!entry.is_null())
+      {
+        conf.resources[id] = entry;
+      }
+    }
+  }
+
   // Absent means off; see RuntimeConfiguration::logData.
   auto state = config.find("state");
   if (state != config.end() && state->is_object())

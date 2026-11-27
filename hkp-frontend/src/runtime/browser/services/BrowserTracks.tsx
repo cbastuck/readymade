@@ -404,8 +404,9 @@ export class BrowserTracks extends ServiceBase<State> {
       },
       new BrowserRegistry(),
     );
-    // The board's assets, as the runtime around this pipeline sees them.
+    // The board's assets and resources, as the runtime around this pipeline sees them.
     scope.assets = () => this.app.assets?.() ?? [];
+    scope.resources = () => this.app.resources?.() ?? [];
     // And whoever is signed in to the app around it is signed in here.
     scope.delegateIdentity(() => this.app.getAuthenticatedUser?.() ?? null);
 

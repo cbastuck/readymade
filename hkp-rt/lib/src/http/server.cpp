@@ -405,6 +405,9 @@ struct Server::impl
           return makeJsonResponse(checked);
         });
 
+    CROW_ROUTE(crow, "/runtimes/<string>/resources")
+        .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return setResources(req, runtimeId); });
+
     // Change what a running runtime records, without rebuilding it. Separate
     // from POST /runtimes/<id>, which processes data rather than configuring
     // anything.
@@ -502,6 +505,7 @@ struct Server::impl
   crow::response rearrangeServices(const crow::request &req, const std::string& runtimeId);
   crow::response setSecrets(const crow::request &req, const std::string& runtimeId);
   crow::response setAssets(const crow::request &req, const std::string& runtimeId);
+  crow::response setResources(const crow::request &req, const std::string& runtimeId);
   crow::response setRuntimeState(const crow::request &req, const std::string& runtimeId);
   crow::response introduceCoordinator(const crow::request &req);
   crow::response processRuntime(const crow::request &req, const std::string& runtimeId);
@@ -1034,6 +1038,30 @@ crow::response Server::impl::setAssets(const crow::request &req, const std::stri
   }
 
   auto held = app->setRuntimeAssets(runtimeId, readAssetsPayload(body));
+  if (held.is_null())
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+  return makeJsonResponse(held);
+}
+
+crow::response Server::impl::setResources(const crow::request &req, const std::string& runtimeId)
+{
+  json body;
+  try
+  {
+    body = json::parse(req.body);
+  }
+  catch (const std::exception&)
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+  if (!body.is_object() && !body.is_array())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto held = app->setRuntimeResources(runtimeId, readResourcesPayload(body));
   if (held.is_null())
   {
     return crow::response{crow::status::NOT_FOUND};

@@ -25,6 +25,7 @@ Everything else is optional:
 | `units` | the boards this one is assembled from → `concepts/units.md` |
 | `blocks` | services defined once and used by reference wherever a pipeline names them → `concepts/blocks.md` |
 | `assets` | content — a page, a script, an image — declared once as descriptors and named from service state as `hkp-asset://<id>` → `concepts/assets.md` |
+| `resources` | what the board needs from outside Readymade — an Ollama server (`"kind": "ollama"`), a Postgres database (`"kind": "postgres"`), an S3 bucket (`"kind": "s3"`) — declared by kind and named from service state as `hkp-resource://<id>` |
 | `registry` | what a runtime reported it could build. Written by machinery, not authored |
 
 ```json
@@ -225,6 +226,13 @@ holds a reference to one of the board's `assets` — `hkp-asset://player` — ra
 than the content itself, and each runtime resolves it where it is used. An asset
 can be inline in the document, or a URL the runtime fetches.
 
+**No addresses, credentials or container images for external resources.** A
+board that needs an Ollama server, a Postgres database or an S3 bucket declares
+it in `resources` by `kind` (e.g. `{ "id": "llm", "kind": "ollama", "models": ["llama3.2"] }`)
+and references it from service state as `hkp-resource://llm`. Where the resource
+runs and what credentials reach it belong to the host's binding, never to the
+board document.
+
 **But not free of machine-written state.** Since `state` is a report, a board can
 carry a resolved endpoint or a port the system assigned. A runtime asked for
 `"port": 0` is given a free one, and saving the board writes down the one it
@@ -268,6 +276,7 @@ actually changed.
 | Unit and composition shape | `hkp-frontend/src/runtime/board/units.ts` |
 | Blocks and their uses | `hkp-frontend/src/runtime/board/blocks.ts`, `hkp-frontend/src/core/linkBlocks.ts` |
 | Assets and references to them | `hkp-frontend/src/runtime/board/assets.ts` |
+| Resources and references to them | `hkp-frontend/src/runtime/board/resources.ts`, `hkp-frontend/src/core/resourcePrompt.ts` |
 | Example boards | `boards/` |
 
 ---

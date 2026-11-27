@@ -13,6 +13,7 @@ import {
 } from "hkp-frontend/src/types";
 
 import { AssetsSource } from "hkp-frontend/src/runtime/board/assets";
+import { ResourcesSource } from "hkp-frontend/src/runtime/board/resources";
 import api, { setRuntimeState } from "./RuntimeRestApi";
 import { isCapturing, onCaptureChange } from "../captureMode";
 import { createRuntimeRestApp } from "./RuntimeRestApp";
@@ -68,6 +69,12 @@ export default class RuntimeRestScope implements RuntimeScope {
    * `runtime/board/assets`.
    */
   assets?: AssetsSource;
+
+  /**
+   * The resource bindings this runtime's services may reference, resolved for
+   * where this runtime runs. See `runtime/board/resources`.
+   */
+  resources?: ResourcesSource;
 
   /**
    * Settles once the runtime knows where to send what its services report:

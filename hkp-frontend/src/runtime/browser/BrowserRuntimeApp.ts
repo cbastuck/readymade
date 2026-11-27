@@ -300,6 +300,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     // Read through for the same reason: an asset edited while the board runs
     // is what a service resolving it next should see.
     assets: () => scope.assets?.() ?? [],
+    resources: () => scope.resources?.() ?? [],
   };
 
   return app;

@@ -29,6 +29,11 @@ import {
 } from "./linkBlocks";
 import { getLocalBoard } from "../views/playground/common";
 import { AssetDescriptor, readBoardAssets } from "../runtime/board/assets";
+import {
+  ResourceDescriptor,
+  readBoardResources,
+} from "../runtime/board/resources";
+import { ensureBoardResourceBindings } from "./resourcePrompt";
 import { loadSavedBoardViaPlatform } from "../platform/PlatformContext";
 import { toast } from "sonner";
 import {
@@ -155,6 +160,21 @@ export async function restoreBoard(
     }),
   );
 
+  // Any resource declared by the board (or by a unit it placed) that has no
+  // binding yet is asked about before the runtimes are restored, so its
+  // binding rides with the create payload. Answering "Not now" leaves the
+  // resource unbound and the board still opens.
+  await ensureBoardResourceBindings(
+    restoredBoardName ?? "",
+    refs.resourcesRef?.current ?? board?.resources,
+  );
+  for (const unit of refs.linkageRef?.current?.units ?? []) {
+    await ensureBoardResourceBindings(
+      unit.source.boardName ?? unit.name,
+      unit.source.resources,
+    );
+  }
+
   const missingSecrets: string[] = [];
   const settled = await Promise.allSettled(
     boardRuntimes.map((rt) => {
@@ -176,13 +196,15 @@ export async function restoreBoard(
       const services = boardServices[rt.id];
       if (api.resolvesAddress) {
         missingSecrets.push(...unavailableSecrets(services));
+        const resolved = resolvedRuntimes.get(rt.id) ?? rt;
         return api.restoreRuntime(
-          resolvedRuntimes.get(rt.id) ?? rt,
+          resolved,
           services,
           currentUser,
           rt.boardName ?? restoredBoardName,
-          // The board's assets for this runtime, as below.
-          refs.assetsFor?.(rt),
+          // The board's assets and resources for this runtime, as below.
+          refs.assetsFor?.(resolved),
+          refs.resourcesFor?.(resolved),
         );
       }
       missingSecrets.push(...unavailableSecrets(services));
@@ -200,6 +222,7 @@ export async function restoreBoard(
         // Read on each use rather than captured: an asset edited while the
         // board runs is what the runtime is pushed and resolves next.
         refs.assetsFor?.(rt),
+        refs.resourcesFor?.(rt),
       );
     }),
   );
@@ -364,6 +387,29 @@ function boardAssets(board: BoardDescriptor | undefined): AssetDescriptor[] | un
   return assets;
 }
 
+/**
+ * The resources a board declares, as the board will hold them: what can be
+ * used, with a warning naming each entry that cannot, or not as written.
+ */
+function boardResources(
+  board: BoardDescriptor | undefined,
+): ResourceDescriptor[] | undefined {
+  if (!board?.resources) {
+    return undefined;
+  }
+  const { resources, problems } = readBoardResources(board.resources);
+  if (problems.length) {
+    console.warn(`Board resources: ${problems.join("; ")}`);
+    toast.warning(
+      problems.length === 1
+        ? "A resource was not read as declared"
+        : `${problems.length} resources were not read as declared`,
+      { description: problems.join("\n") },
+    );
+  }
+  return resources;
+}
+
 export async function fetchBoard(
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
@@ -389,6 +435,7 @@ export async function fetchBoard(
     // Before the runtimes are restored: each is handed the descriptors its
     // services reference with its create payload.
     refs.setAssets?.(boardAssets(linked));
+    refs.setResources?.(boardResources(linked));
     const data = await restoreBoard(linked, refs, waitForUserLogin);
 
     // In-flight cancellation (e.g. React strict-mode unmount/remount).
@@ -504,13 +551,16 @@ export async function serializeBoard(
     },
   }));
 
-  // The board's own assets, as they are: the frontend's document, never
-  // reported by a runtime. Services hold references to them, not content.
+  // The board's own assets and resources, as they are: the frontend's document,
+  // never reported by a runtime. Services hold references to them, not content
+  // or bindings.
   const assets = refs.assetsRef?.current;
+  const resources = refs.resourcesRef?.current;
   const data = {
     runtimes: serializedRuntimes,
     services: serializedServices,
     ...(assets?.length ? { assets } : {}),
+    ...(resources?.length ? { resources } : {}),
   };
 
   const propsRef = refs.propsRef.current!;
@@ -550,6 +600,7 @@ export async function setBoardState(
   refs.setFacade(linked?.facade);
   refs.setLinkage(linkage);
   refs.setAssets?.(boardAssets(linked));
+  refs.setResources?.(boardResources(linked));
   let data: Awaited<ReturnType<typeof restoreBoard>>;
   try {
     data = await restoreBoard(linked, refs, waitForUserLogin);
@@ -561,6 +612,7 @@ export async function setBoardState(
     refs.setFacade(undefined);
     refs.setLinkage(undefined);
     refs.setAssets?.(undefined);
+    refs.setResources?.(undefined);
     refs.setErrorOnFetch(err);
     throw err;
   }
@@ -606,6 +658,7 @@ export async function clearBoard(
   refs.setRegistry({});
   refs.setFacade(undefined);
   refs.setAssets?.(undefined);
+  refs.setResources?.(undefined);
   // What the cleared board was linked from — its units and its blocks — would
   // otherwise be written into whatever is built next.
   refs.setLinkage(undefined);

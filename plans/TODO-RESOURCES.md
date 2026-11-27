@@ -7,8 +7,28 @@ the resource, never where it is.
 
 Raised 2026-11-26, alongside starting the local servers from the app
 ([TODO-LOCAL-SERVERS.md](TODO-LOCAL-SERVERS.md)), which deliberately runs hkp's
-own servers natively and leaves containers to this. Nothing here is
-implemented, and nothing is decided beyond the first section.
+own servers natively and leaves containers to this.
+
+**Status (2026-11-27):** Steps 1 and 2 of §7 are built across the four runtimes,
+together with the address binding store and prompt (`UnboundResourceDialog`):
+- `resources` and `hkp-resource://<id>` in the board vocabulary
+  (`hkp-frontend/src/runtime/board/resources.ts`), validation that strips
+  addresses, credentials and container images from board descriptors, unit
+  scoping (`resourcesOfRuntime`), per-runtime reachability (`bindingForRuntime`),
+  and `findResourceUses` / `renameResourceRefs`.
+- Resource binding store and prompt (`hkp-frontend/src/core/resourcePrompt.ts`,
+  `hkp-frontend/src/ui-components/UnboundResourceDialog.tsx`), wired into board
+  load, save, partner boards, and runtime restore/add/update/move.
+- Resource store and push (`POST /runtimes` `resources` and
+  `POST /runtimes/:id/resources`) in `RuntimeRestApi`, `hkp-node`
+  (`src/resources.ts`), `hkp-python` (`hkp/resources.py`), and `hkp-rt`
+  (`lib/include/resources.h`), including delegation into nested pipelines.
+- `ollama-prompt` (`hkp-frontend/src/runtime/browser/services/OllamaPrompt.ts`)
+  resolving `endpoint` from an `hkp-resource://<id>` reference at point of use
+  while keeping the reference in service state.
+
+Native and container providers (§4, §7.3–7.4) and the `postgres` / `s3`
+services remain open below.
 
 ---
 

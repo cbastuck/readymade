@@ -14,6 +14,7 @@ import {
 } from "../../types";
 import { BoardCoordinator } from "hkp-frontend/src/core/coordinator";
 import { AssetsSource } from "hkp-frontend/src/runtime/board/assets";
+import { ResourcesSource } from "hkp-frontend/src/runtime/board/resources";
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 import api from "./BrowserRuntimeApi";
@@ -489,6 +490,13 @@ export default class BrowserRuntimeScope implements RuntimeScope {
    * runtime, or by the service hosting a nested pipeline.
    */
   assets?: AssetsSource;
+
+  /**
+   * The board's resource bindings for this runtime, read as they are now.
+   * Assigned by whoever restores the runtime, or by the service hosting a
+   * nested pipeline.
+   */
+  resources?: ResourcesSource;
 
   serializeState = () => {
     return this.state;

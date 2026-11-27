@@ -39,6 +39,7 @@ import FacadeViewControls, {
 import FacadeChrome, { useChromeRetracted } from "../../facade/FacadeChrome";
 import { RuntimeZoomProvider, RuntimeZoomToolbarButton } from "./RuntimeZoom";
 import RuntimeUnreachableDialog from "../../ui-components/RuntimeUnreachableDialog";
+import UnboundResourceDialog from "../../ui-components/UnboundResourceDialog";
 import UnknownRemoteDialog from "../../ui-components/UnknownRemoteDialog";
 
 const BoardAssistPanel = lazy(() => import("../../assist/BoardAssistPanel"));
@@ -130,6 +131,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
 
                     <RuntimeUnreachableDialog />
                     <UnknownRemoteDialog />
+                    <UnboundResourceDialog />
                     <ShareQRCodeDialog
                       isOpen={props.showShareBoardQRCodeURL !== null}
                       url={props.showShareBoardQRCodeURL}

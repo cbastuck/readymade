@@ -8,6 +8,7 @@ import {
 import { reorderRuntime } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { assetsById } from "../runtime/board/assets";
+import { resourcesById } from "../runtime/board/resources";
 import {
   cleanAliases,
   remoteNameForBoard,
@@ -100,6 +101,7 @@ export async function addRuntime(
       // there a service can be added to it, and nothing later would send them
       // short of an edit or a reload.
       scope.assets = refs.assetsFor?.(runtimeOnBoard);
+      scope.resources = refs.resourcesFor?.(runtimeOnBoard);
       const refused = await api.pushAssets?.(scope, assetsById(scope.assets?.()));
       if (refused) {
         // Not added without them: it would look like any other runtime and
@@ -119,6 +121,7 @@ export async function addRuntime(
         );
         return null;
       }
+      await api.pushResources?.(scope, resourcesById(scope.resources?.()));
       refs.setRuntimes((prev) => [...prev, runtimeOnBoard]);
       refs.setServices((prev) => ({
         ...prev,
@@ -208,6 +211,7 @@ export async function updateRuntime(
       refs.userRef.current,
       undefined,
       refs.assetsFor?.(updated.runtime),
+      refs.resourcesFor?.(updated.runtime),
     );
     if (result) {
       refs.setRuntimes((prev) =>
@@ -326,6 +330,7 @@ export async function moveRuntime(
     user,
     refs.boardNameRef.current ?? undefined,
     refs.assetsFor?.(moved),
+    refs.resourcesFor?.(moved),
   );
   if (!result) {
     throw new Error(`"${target.name}" did not build the runtime`);

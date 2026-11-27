@@ -57,6 +57,13 @@ import {
   upsertAsset,
 } from "./runtime/board/assets";
 import {
+  ResourceDescriptor,
+  ResourcesSource,
+  bindingForRuntime,
+  resourcesOfRuntime,
+} from "./runtime/board/resources";
+import { resourceBindingStore } from "./core/resourcePrompt";
+import {
   AssetPushFailure,
   assetUses as assetUsesOp,
   pushAssetChanges,
@@ -300,6 +307,8 @@ export type BoardContextState = BoardContextAPI &
     facade?: FacadeDescriptor;
     /** The board's own asset descriptors. See `runtime/board/assets`. */
     assets?: AssetDescriptor[];
+    /** The board's own resource descriptors. See `runtime/board/resources`. */
+    resources?: ResourceDescriptor[];
     /**
      * What linking this board produced: the units it was assembled from and the
      * views they contribute. Absent on a board that declares no units — which
@@ -321,6 +330,7 @@ type ProviderState = EngineState & {
   availableRuntimeEngines: Array<RuntimeClass>;
   facade?: FacadeDescriptor;
   assets?: AssetDescriptor[];
+  resources?: ResourceDescriptor[];
   linkage?: BoardLinkage;
   isFetching: boolean;
   errorOnFetch?: Error;
@@ -355,6 +365,10 @@ type ProviderStateAction =
   | {
       type: "setAssets";
       value: SetStateAction<AssetDescriptor[] | undefined>;
+    }
+  | {
+      type: "setResources";
+      value: SetStateAction<ResourceDescriptor[] | undefined>;
     }
   | { type: "setIsFetching"; value: SetStateAction<boolean> }
   | {
@@ -413,6 +427,11 @@ function providerStateReducer(
       return {
         ...state,
         assets: resolveSetStateAction(state.assets, action.value),
+      };
+    case "setResources":
+      return {
+        ...state,
+        resources: resolveSetStateAction(state.resources, action.value),
       };
     case "setIsFetching":
       return {
@@ -481,6 +500,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       facade: undefined,
       linkage: undefined,
       assets: undefined,
+      resources: undefined,
       isFetching: false,
       errorOnFetch: undefined,
     });
@@ -493,6 +513,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       facade,
       linkage,
       assets,
+      resources,
       isFetching,
       errorOnFetch,
     } = state;
@@ -588,6 +609,29 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     /** The descriptors a runtime's services may reference, as they are when asked. */
     const assetsFor = (runtime: RuntimeDescriptor): AssetsSource => () =>
       assetsOfRuntime(runtime, latestAssetsRef.current, latestLinkageRef.current?.units);
+    const latestResourcesRef = useRef<ResourceDescriptor[] | undefined>(undefined);
+    const setResources: Dispatch<SetStateAction<ResourceDescriptor[] | undefined>> = (
+      value,
+    ) => {
+      latestResourcesRef.current = resolveSetStateAction(latestResourcesRef.current, value);
+      dispatch({ type: "setResources", value: latestResourcesRef.current });
+    };
+    /** The bindings a runtime's services may reference, resolved for where that runtime runs. */
+    const resourcesFor = (runtime: RuntimeDescriptor): ResourcesSource => () => {
+      const declared = resourcesOfRuntime(
+        runtime,
+        latestResourcesRef.current,
+        latestLinkageRef.current?.units,
+      );
+      const boardKey = runtime.boardName ?? boardNameRef.current ?? "";
+      const store = resourceBindingStore();
+      return declared.flatMap((descriptor) => {
+        const binding = store.get(boardKey, descriptor.id);
+        return binding && binding.kind === descriptor.kind
+          ? [bindingForRuntime(binding, runtime)]
+          : [];
+      });
+    };
     const setIsFetching: Dispatch<SetStateAction<boolean>> = (value) =>
       dispatch({ type: "setIsFetching", value });
     const setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>> = (
@@ -628,6 +672,9 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       assetsRef: latestAssetsRef,
       setAssets,
       assetsFor,
+      resourcesRef: latestResourcesRef,
+      setResources,
+      resourcesFor,
     });
 
     const waitForUserLogin = async () => {
@@ -1075,6 +1122,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
           registry,
           facade,
           ...(assets?.length ? { assets } : {}),
+          ...(resources?.length ? { resources } : {}),
         };
         // Handed over both ways round, because the two callers want opposite
         // things: a coordinator registers what actually runs, while anything
@@ -1098,7 +1146,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         }
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [runtimes, services, boardName, registry, facade, linkage, assets]);
+    }, [runtimes, services, boardName, registry, facade, linkage, assets, resources]);
 
     // A tab being hidden is the last reliable moment before it may be closed —
     // and on a phone, before the browser is suspended — so what is pending is
@@ -1209,6 +1257,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       facade,
       linkage,
       assets,
+      resources,
       runtimes,
       services,
       registry,

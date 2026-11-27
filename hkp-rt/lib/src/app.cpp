@@ -368,6 +368,18 @@ json App::setRuntimeAssets(const std::string& runtimeId,
   return json{{"ids", rt->assets()->ids()}};
 }
 
+json App::setRuntimeResources(const std::string& runtimeId,
+                              const std::map<std::string, nlohmann::json>& entries)
+{
+  auto rt = findRuntimeShared(runtimeId);
+  if (!rt)
+  {
+    return nullptr;
+  }
+  rt->setResources(entries);
+  return json{{"ids", rt->resources()->ids()}};
+}
+
 json App::checkRuntimeAsset(const std::string& runtimeId, const std::string& assetId)
 {
   auto rt = findRuntimeShared(runtimeId);

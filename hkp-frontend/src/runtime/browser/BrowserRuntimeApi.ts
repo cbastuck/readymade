@@ -19,6 +19,7 @@ import { extractServiceConfiguration } from "./services/helpers";
 import { defaultBundles } from "./registry/Default";
 import { personRun, startedRun } from "../processContext";
 import { AssetsSource } from "../board/assets";
+import { ResourcesSource } from "../board/resources";
 
 export async function addRuntime(
   rtClass: RuntimeClass,
@@ -58,11 +59,13 @@ async function restoreRuntime(
   _user: User | null,
   boardName?: string,
   assets?: AssetsSource,
+  resources?: ResourcesSource,
 ): Promise<RestoreRuntimeResult | null> {
   const scope = await createScope(runtime, runtime.bundles);
-  // Before any service is added: its store is the board's `assets`, and a
-  // service may resolve one while being configured.
+  // Before any service is added: its store is the board's `assets` and
+  // `resources`, and a service may resolve one while being configured.
   scope.assets = assets;
+  scope.resources = resources;
   const added = await Promise.all(
     services.map((svc) => addService(scope, svc, svc.uuid)),
   );

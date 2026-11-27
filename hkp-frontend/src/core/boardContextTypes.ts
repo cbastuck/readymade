@@ -16,6 +16,7 @@ import {
 import { FacadeDescriptor } from "../facade/types";
 import { BoardLinkage } from "../runtime/board/units";
 import { AssetDescriptor, AssetsSource } from "../runtime/board/assets";
+import { ResourceDescriptor, ResourcesSource } from "../runtime/board/resources";
 import { BoardDocuments } from "./boardPersistence";
 import { BoardSnapshot } from "./boardSnapshots";
 import { UnitOrigin } from "./linkUnits";
@@ -143,6 +144,14 @@ export type BoardStateRefs = {
   setAssets?: Dispatch<SetStateAction<AssetDescriptor[] | undefined>>;
   /** The descriptors a runtime's services may reference; see `runtime/board/assets`. */
   assetsFor?: (runtime: RuntimeDescriptor) => AssetsSource;
+  /**
+   * The board's own resource descriptors as last set — live, not a snapshot of
+   * a render. Absent on hosts that build a partial refs bundle.
+   */
+  resourcesRef?: RefObject<ResourceDescriptor[] | undefined>;
+  setResources?: Dispatch<SetStateAction<ResourceDescriptor[] | undefined>>;
+  /** The bindings a runtime's services may reference; see `runtime/board/resources`. */
+  resourcesFor?: (runtime: RuntimeDescriptor) => ResourcesSource;
 };
 
 export function getRuntimeScopeApi(

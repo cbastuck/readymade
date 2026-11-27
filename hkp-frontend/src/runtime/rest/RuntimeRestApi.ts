@@ -24,6 +24,11 @@ import {
   AssetsSource,
   assetsById,
 } from "hkp-frontend/src/runtime/board/assets";
+import {
+  ResourcePush,
+  ResourcesSource,
+  resourcesById,
+} from "hkp-frontend/src/runtime/board/resources";
 import { isBinaryData, passesNothing } from "./Data";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 import { startedRun } from "../processContext";
@@ -461,6 +466,48 @@ async function pushAssets(scope: RuntimeScope, assets: AssetPush): Promise<strin
   return pushAssetsTo(restScope.descriptor, assets, restScope.authenticatedUser);
 }
 
+/**
+ * Hands a running runtime resource bindings: new, changed, or `null` for one
+ * unbound or deleted.
+ */
+export async function pushResourcesTo(
+  runtime: RuntimeDescriptor,
+  resources: ResourcePush,
+  user: User | null,
+): Promise<string | null> {
+  if (!Object.keys(resources).length) {
+    return null;
+  }
+  try {
+    const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/resources`, {
+      method: "POST",
+      body: JSON.stringify(resources),
+      headers: { "content-type": "application/json", ...authHeaders(user) },
+    });
+    if (!res.ok) {
+      console.warn(
+        `Pushing resources to ${runtime.id} failed (${res.status}); services referencing ${Object.keys(resources).join(", ")} will report them as unbound`,
+      );
+      return `${runtime.name} answered ${res.status}`;
+    }
+    return null;
+  } catch (err: any) {
+    return `${runtime.name} is unreachable: ${err?.message ?? err}`;
+  }
+}
+
+async function pushResources(
+  scope: RuntimeScope,
+  resources: ResourcePush,
+): Promise<string | null> {
+  const restScope = scope as RuntimeRestScope;
+  return pushResourcesTo(
+    restScope.descriptor,
+    resources,
+    restScope.authenticatedUser,
+  );
+}
+
 async function attachRuntime(
   runtime: RuntimeDescriptor,
   // State included: attaching re-pushes the values for the references it
@@ -469,6 +516,7 @@ async function attachRuntime(
   user: User | null,
   boardName = "",
   assets?: AssetsSource,
+  resources?: ResourcesSource,
 ): Promise<RestoreRuntimeResult | null> {
   let res: Response;
   try {
@@ -510,9 +558,11 @@ async function attachRuntime(
   // credentials, and nothing here can tell that apart from one that never
   // stopped. Pushing again is idempotent, so it is done either way.
   await pushSecrets(descriptor, services, user, boardName);
-  // Likewise the asset store, which lives in memory beside the vault.
+  // Likewise the asset and resource stores, which live in memory beside the vault.
   scope.assets = assets;
   await pushAssetsTo(descriptor, assetsById(assets?.()), user);
+  scope.resources = resources;
+  await pushResourcesTo(descriptor, resourcesById(resources?.()), user);
   return {
     runtime: descriptor,
     // The running services, not the board's: their state is what is live.
@@ -528,6 +578,7 @@ async function restoreRuntime(
   user: User | null,
   boardName?: string,
   assets?: AssetsSource,
+  resources?: ResourcesSource,
 ): Promise<RestoreRuntimeResult | null> {
   const svcs = (services ?? []).map((s) => ({
     uuid: s.uuid || uuidv4(),
@@ -536,7 +587,14 @@ async function restoreRuntime(
     state: (s as any).state, // TODO:
   }));
 
-  const attached = await attachRuntime(runtime, svcs, user, boardName, assets);
+  const attached = await attachRuntime(
+    runtime,
+    svcs,
+    user,
+    boardName,
+    assets,
+    resources,
+  );
   if (attached) {
     return attached;
   }
@@ -545,7 +603,7 @@ async function restoreRuntime(
     registry,
     scope,
     services: createdServices,
-  } = await createRuntimeRequest(runtime, svcs, boardName, user, assets);
+  } = await createRuntimeRequest(runtime, svcs, boardName, user, assets, resources);
   return {
     runtime,
     services: createdServices,
@@ -908,7 +966,9 @@ async function createRuntimeRequest(
   boardName?: string,
   user?: User | null,
   assets?: AssetsSource,
+  resources?: ResourcesSource,
 ) {
+  const boundResources = resourcesById(resources?.());
   const payload = {
     name: runtime.name,
     id: runtime.id,
@@ -937,6 +997,7 @@ async function createRuntimeRequest(
     // content while being configured needs the descriptor by then. Every
     // asset this runtime is given, whether or not a service names it yet.
     assets: assetsById(assets?.()),
+    ...(Object.keys(boundResources).length ? { resources: boundResources } : {}),
   };
   const runtimesUrl = `${runtime.url}/runtimes`;
   let res: Response;
@@ -992,6 +1053,7 @@ async function createRuntimeRequest(
   scope.services = rt.services ?? [];
   scope.boardName = boardName ?? "";
   scope.assets = assets;
+  scope.resources = resources;
 
   return {
     runtime: rt,
@@ -1016,6 +1078,7 @@ const api: RuntimeApi = {
   processServiceOnward,
   rearrangeServices,
   pushAssets,
+  pushResources,
 };
 
 export default api;

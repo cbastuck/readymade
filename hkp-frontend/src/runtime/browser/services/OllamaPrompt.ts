@@ -1,4 +1,8 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
+import {
+  parseResourceRef,
+  resolveResource,
+} from "hkp-frontend/src/runtime/board/resources";
 import ServiceBase from "./ServiceBase";
 
 import OllamaPromptUI from "./OllamaPromptUI";
@@ -6,6 +10,14 @@ import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const serviceName = "Ollama Prompt";
 const serviceId = "hookup.to/service/ollama-prompt";
+
+export function ollamaApiEndpoint(url: string): string {
+  const trimmed = url.trim().replace(/\/+$/, "");
+  if (!trimmed) {
+    return "";
+  }
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+}
 
 type State = {
   availableModels: Array<string>;
@@ -35,14 +47,44 @@ export class OllamaPrompt extends ServiceBase<State> {
     });
   }
 
+  resolveEndpoint = (): { endpoint: string | null; problem: string } => {
+    const configured = (this.state.endpoint ?? "").trim();
+    if (!configured) {
+      return { endpoint: null, problem: "Ollama no endpoint specified" };
+    }
+    if (!parseResourceRef(configured)) {
+      return { endpoint: configured, problem: "" };
+    }
+    const { resource, problem } = resolveResource(
+      this.app.resources?.() ?? [],
+      configured,
+      "ollama",
+    );
+    if (!resource) {
+      return { endpoint: null, problem };
+    }
+    const endpoint = ollamaApiEndpoint(resource.url);
+    return endpoint
+      ? { endpoint, problem: "" }
+      : { endpoint: null, problem: `resource "${resource.id}" has no url` };
+  };
+
   fetchAvailableModels = () => {
-    fetch(`${this.state.endpoint}/tags`)
+    const { endpoint } = this.resolveEndpoint();
+    if (!endpoint) {
+      return;
+    }
+    fetch(`${endpoint}/tags`)
       .then((r) => r.json())
       .then((r) => r.models)
-      .then(this.onAvailableModels);
+      .then(this.onAvailableModels)
+      .catch(() => {});
   };
 
   onAvailableModels = (models: Array<{ model: string }>) => {
+    if (!Array.isArray(models)) {
+      return;
+    }
     this.state.availableModels = models.map((m) => m.model);
     this.app.notify(this, {
       availableModels: this.state.availableModels,
@@ -54,6 +96,7 @@ export class OllamaPrompt extends ServiceBase<State> {
 
     if (needsUpdate(endpoint, this.state.endpoint)) {
       this.state.endpoint = endpoint;
+      this.state.availableModels = [];
       this.app.notify(this, { endpoint: this.state.endpoint });
     }
     if (needsUpdate(model, this.state.model)) {
@@ -101,6 +144,13 @@ export class OllamaPrompt extends ServiceBase<State> {
       throw new Error("Ollama no model specified");
     }
 
+    const { endpoint, problem } = this.resolveEndpoint();
+    if (!endpoint) {
+      this.pushErrorNotification(problem);
+      this.app.notify(this, { error: problem });
+      return null;
+    }
+
     const t = typeof params;
     if (t !== "string") {
       if (t === "object") {
@@ -143,7 +193,7 @@ export class OllamaPrompt extends ServiceBase<State> {
 
     const readAsStream = true;
     if (readAsStream) {
-      const resp = await fetch(`${this.state.endpoint}/chat`, {
+      const resp = await fetch(`${endpoint}/chat`, {
         method: "POST",
         body: JSON.stringify({ ...body, stream: true }),
       });
@@ -204,7 +254,7 @@ export class OllamaPrompt extends ServiceBase<State> {
         }
       }
     } else {
-      const resp = await fetch(this.state.endpoint, {
+      const resp = await fetch(endpoint, {
         method: "POST",
         body: JSON.stringify({ ...body, stream: false }),
       });
